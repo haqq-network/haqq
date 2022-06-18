@@ -1,0 +1,40 @@
+{
+  "name": "docs",
+  "version": "1.0.0",
+  "description": "Haqq Documentation",
+  "main": "index.js",
+  "scripts": {
+    "preserve": "./pre.sh",
+    "serve": "vuepress dev",
+    "build": "vuepress build",
+    "docs:build": "vuepress build docs",
+    "postserve": "./post.sh",
+    "prebuild": "./pre.sh",
+    "postbuild": "./post.sh"
+  },
+  "keywords": [
+    "haqq",
+    "cosmos",
+    "ethereum",
+    "blockchain",
+    "cryptocurrency",
+    "evm"
+  ],
+  "author": "Haqq Network",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "entities": "^2.0.3",
+    "markdown-it": "^12.3.2",
+    "markdown-it-katex": "^2.0.3",
+    "vuepress-theme-cosmos": "^1.0.183"
+  },
+  "devDependencies": {
+    "vuepress-plugin-element-tabs": "^0.2.8",
+    "watchpack": "^2.3.1"
+  },
+  "resolutions": {
+    "serialize-javascript": "^4.0.0",
+    "**/node-sass": "npm:sass@*"
+  },
+  "repository": "https://github.com/haqq-network/haqq"
+}

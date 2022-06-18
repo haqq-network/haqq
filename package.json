@@ -1,0 +1,11 @@
+{
+  "name": "haqq",
+  "version": "0.1.1",
+  "main": "index.js",
+  "repository": "https://github.com/haqq-network/haqq.git",
+  "author": "Haqq Network",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "vuepress": "^1.9.7"
+  }
+}
