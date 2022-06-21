@@ -61,7 +61,7 @@ haqqd tx staking create-validator
     --commission-max-change-rate="0.01"
     --min-self-delegation "1"
     --moniker "validator"
-    --chain-id "haqq_9000-2"
+    --chain-id "haqq_11235-1"
     --gas auto
     --node tcp://127.0.0.1:26647
 ```
@@ -110,8 +110,7 @@ The validator operator's "self-bond" refers to the amount of ISLM stake delegate
 
 ### Is there a faucet?
 
-<!-- TODO: add link -->
-If you want to obtain coins for the testnet, you can do so by using the faucet (link to be announced).
+If you want to obtain coins for the testnet, you can do so by using the [faucet](./../../testnet/faucet.md).
 
 ### Is there a minimum amount of ISLM that must be staked to be an active (bonded) validator?
 

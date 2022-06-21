@@ -4,6 +4,8 @@ order: 1
 
 # Upgrade Node
 
+**🚧 `In developing...` 🏗️**
+
 Learn how to upgrade your full node to the latest software version {synopsis}
 
 With every new software release, we strongly recommend validators to perform a software upgrade, in order to prevent [double signing or halting the chain during consensus](https://docs.tendermint.com/master/spec/consensus/signing.html#double-signing).
@@ -35,7 +37,7 @@ $ haqqd version --long
 
 name: haqq
 server_name: haqqd
-version: 0.4.0
+version: 1.0.0
 commit: 070b668f2cbbf52548c46e96b236e09884483dd4
 build_tags: netgo,ledger
 go: go version go1.17 darwin/amd64
@@ -99,18 +101,7 @@ export DAEMON_ALLOW_DOWNLOAD_BINARIES=true
 
 #### Download Genesis File
 
-You can now download the "genesis" file for the chain. It is pre-filled with the entire genesis state and gentxs.
-
-```bash
-$ curl https://raw.githubusercontent.com/tharsis/testnets/main/olympus_mons/genesis.json > ~/.haqqd/config/genesis.json
-```
-
-We recommend using `sha256sum` to check the hash of the genesis.
-
-```bash
-cd ~/.haqqd/config
-echo "2b5164f4bab00263cb424c3d0aa5c47a707184c6ff288322acc4c7e0c5f6f36f  genesis.json" | sha256sum -c
-```
+**🚧 `In developing...` 🏗️**
 
 #### Reset Chain Database
 
@@ -122,13 +113,7 @@ haqqd unsafe-reset-all
 
 #### Ensure that you have set peers
 
-In `~/.haqqd/config/config.toml` you can set your peers. See the [peers.txt](https://github.com/tharsis/testnets/blob/main/olympus_mons/peers.txt) file for a list of up to date peers.
-
-See the [Add persistent peers section](https://evmos.dev/testnet/join.html#add-persistent-peers) in our docs for an automated method, but field should look something like a comma separated string of peers (do not copy this, just an example):
-
-```bash
-persistent_peers = "5576b0160761fe81ccdf88e06031a01bc8643d51@195.201.108.97:24656,13e850d14610f966de38fc2f925f6dc35c7f4bf4@176.9.60.27:26656,38eb4984f89899a5d8d1f04a79b356f15681bb78@18.169.155.159:26656,59c4351009223b3652674bd5ee4324926a5a11aa@51.15.133.26:26656,3a5a9022c8aa2214a7af26ebbfac49b77e34e5c5@65.108.1.46:26656,4fc0bea2044c9fd1ea8cc987119bb8bdff91aaf3@65.21.246.124:26656,6624238168de05893ca74c2b0270553189810aa7@95.216.100.80:26656,9d247286cd407dc8d07502240245f836e18c0517@149.248.32.208:26656,37d59371f7578101dee74d5a26c86128a229b8bf@194.163.172.168:26656,b607050b4e5b06e52c12fcf2db6930fd0937ef3b@95.217.107.96:26656,7a6bbbb6f6146cb11aebf77039089cd038003964@94.130.54.247:26656"
-```
+**🚧 `In developing...` 🏗️**
 
 You can share your peer with
 

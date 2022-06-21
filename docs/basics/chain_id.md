@@ -13,7 +13,7 @@ Learn about the Haqq chain-id format {synopsis}
 
 | Name                              | Chain ID                                              | Identifier | EIP155 Number                                 | Version Number                                      |
 |-----------------------------------|-------------------------------------------------------|------------|-----------------------------------------------|-----------------------------------------------------|
-| Haqq TestNow | `haqq_{{ $themeConfig.project.testnet_chain_id }}-1` | `haqq`    | `{{ $themeConfig.project.testnet_chain_id }}` | `1.0.0` |
+| Haqq TestNow | `haqq_112357-1` | `haqq`    | `112357` | `1.0.0` |
 | Haqq TestEdge                | `haqq_53211-1` | `haqq`    | `53211` | `1.0.0`                                                 |
 
 :::

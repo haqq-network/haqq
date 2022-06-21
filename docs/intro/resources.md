@@ -7,7 +7,7 @@ order: 4
 Learn about Haqq with the list of official resources. {synopsis}
 
 - Official Documentation: [https://docs.haqq.network](https://docs.haqq.network)
-- Official Codebase: [https://github.com/haqq-network](https://github.com/haqq-network)
+- Official Codebase: [https://github.com/haqq-network/haqq](https://github.com/haqq-network)
 <!-- Official Website: [https://islamiccoin.net/](https://islamiccoin.net/) -->
 
 ## Workshops and Videos
