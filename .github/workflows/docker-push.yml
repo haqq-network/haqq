@@ -5,6 +5,8 @@ on:
     tags:
       - "v*.*.*"
 
+  workflow_dispatch:
+
 jobs:
   docker:
     runs-on: ubuntu-latest
