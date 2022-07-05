@@ -7,15 +7,18 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 	"github.com/tharsis/ethermint/encoding"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func TestHaqqAnteHandlerDecorator(t *testing.T) {
@@ -54,6 +57,30 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 		app.StakingKeeper.SetNewValidatorByPowerIndex(ctx, validator)
 	})
 
+	t.Run("try add gov spend proposal", func(t *testing.T) {
+		coins := sdk.NewCoins(sdk.NewCoin("aISLM", sdk.NewInt(100)))
+		newAccPkey := ed25519.GenPrivKey()
+		recipient := sdk.AccAddress(newAccPkey.PubKey().Address())
+
+		// generate submit proposal
+		cpsp := distrtypes.NewCommunityPoolSpendProposal("Test", "description", recipient, coins)
+		sp, _ := govtypes.NewMsgSubmitProposal(cpsp, coins, recipient)
+
+		/// build tx
+		builder := app.GetTxConfig().NewTxBuilder()
+		require.NoError(t, builder.SetMsgs(sp))
+		require.NoError(t, builder.SetSignatures(signing.SignatureV2{
+			PubKey: newAccPkey.PubKey(),
+			Data:   nil,
+		}))
+
+		// run tx
+		ctx := app.NewContext(true, tmproto.Header{Height: 1})
+		_, err = handler(ctx, builder.GetTx(), true)
+
+		require.Error(t, ErrCommunitySpendingComingLater, err)
+	})
+
 	t.Run("create validator", func(t *testing.T) {
 		t.Run("from unknown address", func(t *testing.T) {
 			newValPkey := ed25519.GenPrivKey()
@@ -77,6 +104,8 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 
 			ctx := app.NewContext(true, tmproto.Header{Height: 1})
 			_, err = handler(ctx, builder.GetTx(), true)
+
+			t.Logf("### from unknown address %v ###", err)
 
 			require.Error(t, ErrDelegationComingLater, err)
 		})

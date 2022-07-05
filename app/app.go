@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	enccodec "github.com/tharsis/ethermint/encoding/codec"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -142,7 +143,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.0.0"
+	UpgradeName    = "v1.0.1"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -404,11 +405,9 @@ func NewHaqq(
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		AddRoute(distrtypes.RouterKey, NewHaqqGovHandlerDecorator(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper))).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
-
-	// AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
+		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper)).
+		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper))
 	// AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 	// AddRoute(incentivestypes.RouterKey, incentives.NewIncentivesProposalHandler(&app.IncentivesKeeper))
 
@@ -502,6 +501,8 @@ func NewHaqq(
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
 	// we prefer to be more strict in what arguments the modules expect.
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
+
+	enccodec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -639,6 +640,7 @@ func NewHaqq(
 		crisistypes.ModuleName,
 	)
 
+	ModuleBasics.RegisterInterfaces(app.interfaceRegistry)
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
