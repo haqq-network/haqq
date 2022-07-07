@@ -55,8 +55,8 @@ func (k BaseKeeper) BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Co
 		var feePool distrtypes.FeePool
 		k.cdc.MustUnmarshal(feePoolBin, &feePool)
 
-		coints := sdk.NewDecCoinsFromCoins(amounts...)
-		feePool.CommunityPool = feePool.CommunityPool.Add(coints...)
+		coins := sdk.NewDecCoinsFromCoins(amounts...)
+		feePool.CommunityPool = feePool.CommunityPool.Add(coins...)
 
 		b := k.cdc.MustMarshal(&feePool)
 		kvstore.Set(distrtypes.FeePoolKey, b)

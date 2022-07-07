@@ -132,6 +132,8 @@ import (
 	// ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	// ibctesting "github.com/cosmos/ibc-go/v3/testing"
+
+	v102 "github.com/haqq-network/haqq/app/upgrades/v1.0.2"
 )
 
 func init() {
@@ -718,6 +720,7 @@ func NewHaqq(
 
 	app.SetAnteHandler(NewHaqqAnteHandlerDecorator(app.StakingKeeper, ante.NewAnteHandler(options)))
 	app.SetEndBlocker(app.EndBlocker)
+	app.setupUpgradeHandlers()
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
@@ -963,4 +966,18 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(erc20types.ModuleName)
 	// paramsKeeper.Subspace(incentivestypes.ModuleName)
 	return paramsKeeper
+}
+
+func (app *Haqq) setupUpgradeHandlers() {
+	// v1.0.2 update handler
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v102.UpgradeName,
+		v102.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.BankKeeper,
+			app.appCodec,
+			app.keys[distrtypes.StoreKey],
+		),
+	)
 }
