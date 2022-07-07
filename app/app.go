@@ -8,9 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	"github.com/cosmos/cosmos-sdk/x/bank"
 	enccodec "github.com/tharsis/ethermint/encoding/codec"
 
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -42,7 +43,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
-	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/capability"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
@@ -87,6 +87,7 @@ import (
 
 	srvflags "github.com/tharsis/ethermint/server/flags"
 	ethermint "github.com/tharsis/ethermint/types"
+	etherminttypes "github.com/tharsis/ethermint/types"
 	"github.com/tharsis/ethermint/x/evm"
 	evmrest "github.com/tharsis/ethermint/x/evm/client/rest"
 	evmkeeper "github.com/tharsis/ethermint/x/evm/keeper"
@@ -98,19 +99,21 @@ import (
 	feemarketkeeper "github.com/tharsis/ethermint/x/feemarket/keeper"
 	feemarkettypes "github.com/tharsis/ethermint/x/feemarket/types"
 
-	"github.com/tharsis/evmos/v3/app/ante"
-	"github.com/tharsis/evmos/v3/x/epochs"
-	epochskeeper "github.com/tharsis/evmos/v3/x/epochs/keeper"
-	epochstypes "github.com/tharsis/evmos/v3/x/epochs/types"
+	"github.com/tharsis/evmos/v4/app/ante"
+	"github.com/tharsis/evmos/v4/x/epochs"
+	epochskeeper "github.com/tharsis/evmos/v4/x/epochs/keeper"
+	epochstypes "github.com/tharsis/evmos/v4/x/epochs/types"
 
-	"github.com/tharsis/evmos/v3/x/erc20"
-	erc20client "github.com/tharsis/evmos/v3/x/erc20/client"
-	erc20keeper "github.com/tharsis/evmos/v3/x/erc20/keeper"
-	erc20types "github.com/tharsis/evmos/v3/x/erc20/types"
+	"github.com/tharsis/evmos/v4/x/erc20"
+	erc20client "github.com/tharsis/evmos/v4/x/erc20/client"
+	erc20keeper "github.com/tharsis/evmos/v4/x/erc20/keeper"
+	erc20types "github.com/tharsis/evmos/v4/x/erc20/types"
 
-	"github.com/tharsis/evmos/v3/x/vesting"
-	vestingkeeper "github.com/tharsis/evmos/v3/x/vesting/keeper"
-	vestingtypes "github.com/tharsis/evmos/v3/x/vesting/types"
+	"github.com/tharsis/evmos/v4/x/vesting"
+	vestingkeeper "github.com/tharsis/evmos/v4/x/vesting/keeper"
+	vestingtypes "github.com/tharsis/evmos/v4/x/vesting/types"
+
+	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 
 	// "github.com/tharsis/evmos/v3/x/incentives"
 	// incentivesclient "github.com/tharsis/evmos/v3/x/incentives/client"
@@ -143,7 +146,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.0.1"
+	UpgradeName    = "v1.0.2"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -165,8 +168,8 @@ var (
 			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
 
 			// Evmos proposal types
-			erc20client.RegisterCoinProposalHandler, erc20client.RegisterERC20ProposalHandler,
-			erc20client.ToggleTokenRelayProposalHandler, erc20client.UpdateTokenPairERC20ProposalHandler,
+			erc20client.RegisterCoinProposalHandler, erc20client.RegisterERC20ProposalHandler, erc20client.ToggleTokenConversionProposalHandler,
+			// erc20client.ToggleTokenRelayProposalHandler, erc20client.UpdateTokenPairERC20ProposalHandler,
 
 			// ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 			// incentivesclient.RegisterIncentiveProposalHandler, incentivesclient.CancelIncentiveProposalHandler,
@@ -360,12 +363,16 @@ func NewHaqq(
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), ethermint.ProtoAccount, maccPerms,
 	)
-	bankKeeper := bankkeeper.NewBaseKeeper(
+	haqqBankKeeper := haqqbankkeeper.NewBaseKeeper(
+		appCodec, keys[banktypes.StoreKey], keys[distrtypes.StoreKey], app.AccountKeeper, app.DistrKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedAddrs(),
+	)
+
+	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedAddrs(),
 	)
-	app.BankKeeper = bankKeeper
+
 	stakingKeeper := stakingkeeper.NewKeeper(
-		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName),
+		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, &haqqBankKeeper, app.GetSubspace(stakingtypes.ModuleName),
 	)
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec, keys[distrtypes.StoreKey], app.GetSubspace(distrtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
@@ -413,7 +420,7 @@ func NewHaqq(
 
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, &stakingKeeper, govRouter,
+		app.AccountKeeper, &haqqBankKeeper, &stakingKeeper, govRouter,
 	)
 
 	// Evmos Keeper
@@ -502,7 +509,8 @@ func NewHaqq(
 	// we prefer to be more strict in what arguments the modules expect.
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
-	enccodec.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	enccodec.RegisterInterfaces(interfaceRegistry)
+	etherminttypes.RegisterInterfaces(interfaceRegistry)
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -513,8 +521,8 @@ func NewHaqq(
 			encodingConfig.TxConfig,
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
-		// bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
+		//haqqbank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
@@ -638,6 +646,8 @@ func NewHaqq(
 		epochstypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
+		//ibchost.ModuleName,
+		//ibctransfertypes.ModuleName,
 	)
 
 	ModuleBasics.RegisterInterfaces(app.interfaceRegistry)

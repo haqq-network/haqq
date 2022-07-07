@@ -2,7 +2,6 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/types"
@@ -22,8 +21,6 @@ func NewHaqqAnteHandlerDecorator(sk keeper.Keeper, h types.AnteHandler) types.An
 
 		for i := 0; i < len(msgs); i++ {
 			isValid := true
-
-			fmt.Printf("\n start ante msgs :%#v\n", msgs[i])
 
 			switch msgs[i].(type) {
 			case *stakingtypes.MsgDelegate, *stakingtypes.MsgCreateValidator:
@@ -68,8 +65,6 @@ func NewHaqqAnteHandlerDecorator(sk keeper.Keeper, h types.AnteHandler) types.An
 					return ctx, ErrCommunitySpendingComingLater
 				}
 			}
-
-			fmt.Printf("\n start ante msgs :%#v, isValid: %v\n", msgs, isValid)
 
 			if !isValid {
 				return ctx, errors.New("tx cannot be executed")
