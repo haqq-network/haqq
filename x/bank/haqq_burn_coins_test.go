@@ -28,8 +28,9 @@ import (
 type BurnCoinsTestSuite struct {
 	suite.Suite
 
-	cfg     network.Config
-	network *network.Network
+	cfg              network.Config
+	network          *network.Network
+	govModuleAddress sdk.AccAddress
 }
 
 func NewBurnCoinsTestSuite(cfg network.Config) *BurnCoinsTestSuite {
@@ -46,6 +47,10 @@ func (s *BurnCoinsTestSuite) SetupSuite() {
 
 	_, err = s.network.WaitForHeight(1)
 	s.NoError(err)
+
+	GOVModuleHexAddress := "7B5FE22B5446F7C62EA27B8BD71CEF94E03F3DF2"
+	s.govModuleAddress, err = sdk.AccAddressFromHex(GOVModuleHexAddress)
+	s.NoError(err)
 }
 
 func (s *BurnCoinsTestSuite) TearDownSuite() {
@@ -53,7 +58,7 @@ func (s *BurnCoinsTestSuite) TearDownSuite() {
 	s.network.Cleanup()
 }
 
-func (s *BurnCoinsTestSuite) TestBurnCoinsGOVDeleteDeposit() {
+func (s *BurnCoinsTestSuite) TestNoQuorum() {
 	latestHeight, err := s.network.LatestHeight()
 	s.NoError(err)
 	val := s.network.Validators[0]
@@ -101,12 +106,8 @@ func (s *BurnCoinsTestSuite) TestBurnCoinsGOVDeleteDeposit() {
 	// #################################################################
 	// Check gov module balance before sending proposal is zero
 	// #################################################################
-
-	GOVModuleAddress, err := sdk.AccAddressFromHex("7B5FE22B5446F7C62EA27B8BD71CEF94E03F3DF2")
-	s.NoError(err)
-
 	var govBalanceBefore banktypes.QueryAllBalancesResponse
-	govBalanceBeforeResp, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetBalancesCmd(), []string{GOVModuleAddress.String(), "--output", "json"})
+	govBalanceBeforeResp, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetBalancesCmd(), []string{string(s.govModuleAddress.String()), "--output", "json"})
 	s.NoError(err)
 	json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
 
@@ -152,7 +153,7 @@ func (s *BurnCoinsTestSuite) TestBurnCoinsGOVDeleteDeposit() {
 	s.Equal(totalSupplyBefore, totalSupplyAfter)
 }
 
-func (s *BurnCoinsTestSuite) TestBurnCoinsGOVDeleteDepositNoWithVote() {
+func (s *BurnCoinsTestSuite) TestQuorumNoWithVeto() {
 	val := s.network.Validators[0]
 
 	// check communityPool balance before proposal
@@ -163,8 +164,8 @@ func (s *BurnCoinsTestSuite) TestBurnCoinsGOVDeleteDepositNoWithVote() {
 	s.Equal(cpAmount, 10000002.0)
 
 	// check stacking params before proposal
-	stackingModuleParams := getStackingModuleParams(val)
-	maxValidatorsBeforeProposal := stackingModuleParams.MaxValidators
+	stakingModuleParams := getStackingModuleParams(val)
+	maxValidatorsBeforeProposal := stakingModuleParams.MaxValidators
 
 	s.Equal(maxValidatorsBeforeProposal, 100)
 
@@ -208,13 +209,10 @@ func (s *BurnCoinsTestSuite) TestBurnCoinsGOVDeleteDepositNoWithVote() {
 	// #################################################################
 
 	// Check gov module balance before sending proposal is zero
-	GOVModuleAddress, err := sdk.AccAddressFromHex("7B5FE22B5446F7C62EA27B8BD71CEF94E03F3DF2")
-	s.NoError(err)
-
 	var govBalanceBefore banktypes.QueryAllBalancesResponse
 	govBalanceBeforeResp, err := clitestutil.ExecTestCLICmd(
 		val.ClientCtx, bankcli.GetBalancesCmd(),
-		[]string{GOVModuleAddress.String(), "--output", "json"},
+		[]string{s.govModuleAddress.String(), "--output", "json"},
 	)
 	s.NoError(err)
 	json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
@@ -276,8 +274,8 @@ func (s *BurnCoinsTestSuite) TestBurnCoinsGOVDeleteDepositNoWithVote() {
 	// ########################################################################
 
 	// check stacking params before proposal
-	stackingModuleParams = getStackingModuleParams(val)
-	maxValidatorsAfterProposal := stackingModuleParams.MaxValidators
+	stakingModuleParams = getStackingModuleParams(val)
+	maxValidatorsAfterProposal := stakingModuleParams.MaxValidators
 
 	s.Equal(maxValidatorsBeforeProposal, maxValidatorsAfterProposal)
 
@@ -295,7 +293,7 @@ func (s *BurnCoinsTestSuite) TestBurnCoinsGOVDeleteDepositNoWithVote() {
 	s.Equal(totalSupplyBefore, totalSupplyAfter)
 }
 
-func (s *BurnCoinsTestSuite) TestBurnCoinsGOVWithYesVote() {
+func (s *BurnCoinsTestSuite) TestQuorumYes() {
 	val := s.network.Validators[0]
 
 	// check communityPool balance before proposal
@@ -306,8 +304,8 @@ func (s *BurnCoinsTestSuite) TestBurnCoinsGOVWithYesVote() {
 	s.Equal(cpAmountBefore, 20000006.0)
 
 	// check stacking params before proposal
-	stackingModuleParams := getStackingModuleParams(val)
-	maxValidatorsBeforeProposal := stackingModuleParams.MaxValidators
+	stakingModuleParams := getStackingModuleParams(val)
+	maxValidatorsBeforeProposal := stakingModuleParams.MaxValidators
 
 	s.Equal(maxValidatorsBeforeProposal, 100)
 
@@ -351,13 +349,10 @@ func (s *BurnCoinsTestSuite) TestBurnCoinsGOVWithYesVote() {
 	// #################################################################
 
 	// Check gov module balance before sending proposal is zero
-	GOVModuleAddress, err := sdk.AccAddressFromHex("7B5FE22B5446F7C62EA27B8BD71CEF94E03F3DF2")
-	s.NoError(err)
-
 	var govBalanceBefore banktypes.QueryAllBalancesResponse
 	govBalanceBeforeResp, err := clitestutil.ExecTestCLICmd(
 		val.ClientCtx, bankcli.GetBalancesCmd(),
-		[]string{GOVModuleAddress.String(), "--output", "json"},
+		[]string{s.govModuleAddress.String(), "--output", "json"},
 	)
 	s.NoError(err)
 	json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
@@ -419,8 +414,8 @@ func (s *BurnCoinsTestSuite) TestBurnCoinsGOVWithYesVote() {
 	// ########################################################################
 
 	// check param changed in module after proposal
-	stackingModuleParams = getStackingModuleParams(val)
-	maxValidatorsAfterProposal := stackingModuleParams.MaxValidators
+	stakingModuleParams = getStackingModuleParams(val)
+	maxValidatorsAfterProposal := stakingModuleParams.MaxValidators
 	s.T().Log("maxValidatorsAfterProposal: ", maxValidatorsAfterProposal)
 	s.Equal(maxValidatorsAfterProposal, 10)
 
