@@ -2,6 +2,8 @@ package gov
 
 import (
 	"context"
+	"testing"
+
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,7 +13,6 @@ import (
 	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
 	"github.com/stretchr/testify/suite"
 	"github.com/tharsis/ethermint/testutil/network"
-	"testing"
 )
 
 type IntegrationTestSuite struct {

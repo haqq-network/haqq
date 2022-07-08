@@ -37,11 +37,11 @@ cat $HOME/.haqqd/config/genesis.json | jq '.app_state["gov"]["deposit_params"]["
 cat $HOME/.haqqd/config/genesis.json | jq '.app_state["mint"]["params"]["mint_denom"]="aISLM"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
 cat $HOME/.haqqd/config/genesis.json | jq '.app_state["evm"]["params"]["evm_denom"]="aISLM"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
 
+# 1 min for proposal's vote vaiting
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["gov"]["voting_params"]["voting_period"]="60s"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
+
 # Set gas limit in genesis
 cat $HOME/.haqqd/config/genesis.json | jq '.consensus_params["block"]["max_gas"]="10000000"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
-
-# 1 min for proposal's vote vaiting
-cat $HOME/.haqqd/config/genesis.json | jq '.consensus_params["gov"]["voting_params"]["voting_period"]="60s"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
 
 # if you need disable produce empty block, uncomment code below
 # if [[ "$OSTYPE" == "darwin"* ]]; then

@@ -74,7 +74,7 @@ Also ensure your log rotation is configured properly.
 
 ## Results
 
-Below is the disk usage after two weeks of Haqq Testnet. The default
+Below is the disk usage after two weeks of Evmos Arsia Mons testnet. The default
 configuration results in disk usage of 90GB.
 
 ```bash

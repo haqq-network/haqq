@@ -2,13 +2,17 @@ package network
 
 import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/simapp/params"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+
 	"github.com/haqq-network/haqq/app"
-	dbm "github.com/tendermint/tm-db"
 	"github.com/tharsis/ethermint/testutil/network"
+
+	dbm "github.com/tendermint/tm-db"
+
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 )
 
 type AppConstructor = func(val network.Validator) servertypes.Application

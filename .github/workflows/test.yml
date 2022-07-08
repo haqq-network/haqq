@@ -31,26 +31,20 @@ jobs:
           path: ~/go/bin
           key: ${{ runner.os }}-go-tparse-binary
 
-  # test-unit-cover:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/setup-go@v2.1.4
-  #       with:
-  #         go-version: 1.17
-  #     - uses: actions/checkout@v2.4.0
-  #     - uses: technote-space/get-diff-action@v5
-  #       with:
-  #         PATTERNS: |
-  #           **/**.sol
-  #           **/**.go
-  #           go.mod
-  #           go.sum
-  #     - name: Test and Create Coverage Report
-  #       run: |
-  #         make test-unit-cover
-  #       if: env.GIT_DIFF
-  #     - uses: codecov/codecov-action@v2.1.0
-  #       with:
-  #         file: ./coverage.txt
-  #         fail_ci_if_error: true
-  #       if: env.GIT_DIFF
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2.1.4
+        with:
+          go-version: 1.17
+      - uses: actions/checkout@v2.4.0
+      - uses: technote-space/get-diff-action@v5
+        with:
+          PATTERNS: |
+            **/**.sol
+            **/**.go
+            go.mod
+            go.sum
+      - name: Test unit
+        run: |
+          make test-unit
