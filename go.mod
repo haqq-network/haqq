@@ -14,8 +14,8 @@ require (
 	github.com/stretchr/testify v1.7.5
 	github.com/tendermint/tendermint v0.34.20-0.20220517115723-e6f071164839
 	github.com/tendermint/tm-db v0.6.7
-	github.com/tharsis/ethermint v0.14.0
-	github.com/tharsis/evmos/v3 v3.0.0
+	github.com/tharsis/ethermint v0.15.0
+	github.com/tharsis/evmos/v4 v4.0.1
 	go.opencensus.io v0.23.0
 )
 
@@ -54,7 +54,6 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/dvsekhvalnov/jose2go v0.0.0-20200901110807-248326c1351b // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
-	github.com/evmos/ethermint v0.17.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff // indirect
@@ -132,7 +131,6 @@ require (
 	github.com/tendermint/btcd v0.1.1 // indirect
 	github.com/tendermint/crypto v0.0.0-20191022145703-50d29ede1e15 // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
-	github.com/tharsis/evmos v1.1.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.7 // indirect
 	github.com/tklauser/numcpus v0.2.3 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
