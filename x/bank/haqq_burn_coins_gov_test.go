@@ -58,7 +58,7 @@ func (s *BurnCoinsTestSuite) TearDownSuite() {
 	s.network.Cleanup()
 }
 
-func (s *BurnCoinsTestSuite) TestNoQuorum() {
+func (s *BurnCoinsTestSuite) TestCase1NoQuorum() {
 	latestHeight, err := s.network.LatestHeight()
 	s.NoError(err)
 	val := s.network.Validators[0]
@@ -153,15 +153,13 @@ func (s *BurnCoinsTestSuite) TestNoQuorum() {
 	s.Equal(totalSupplyBefore, totalSupplyAfter)
 }
 
-func (s *BurnCoinsTestSuite) TestQuorumNoWithVeto() {
+func (s *BurnCoinsTestSuite) TestCase2QuorumNoWithVeto() {
 	val := s.network.Validators[0]
 
 	// check communityPool balance before proposal
 	communityPoolStateBefore := getCommunityPoolState(val)
-	cpAmount, err := strconv.ParseFloat(communityPoolStateBefore.Pool[0].Amount, 64)
+	cpAmountBefore, err := strconv.ParseFloat(communityPoolStateBefore.Pool[0].Amount, 64)
 	s.NoError(err)
-
-	s.Equal(cpAmount, 10000002.0)
 
 	// check stacking params before proposal
 	stakingModuleParams := getStackingModuleParams(val)
@@ -281,10 +279,10 @@ func (s *BurnCoinsTestSuite) TestQuorumNoWithVeto() {
 
 	// check communityPool total amount
 	communityPoolStateAfter := getCommunityPoolState(val)
-	cpAmount, err = strconv.ParseFloat(communityPoolStateAfter.Pool[0].Amount, 64)
+	cpAmountAfter, err := strconv.ParseFloat(communityPoolStateAfter.Pool[0].Amount, 64)
 	s.NoError(err)
 
-	s.Equal(cpAmount, 20000006.0)
+	s.Equal(cpAmountAfter, cpAmountBefore+10000004.0)
 
 	// Check total supply after burn
 	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{s.cfg.BondDenom, "--output", "json"})
@@ -293,17 +291,17 @@ func (s *BurnCoinsTestSuite) TestQuorumNoWithVeto() {
 	s.Equal(totalSupplyBefore, totalSupplyAfter)
 }
 
-func (s *BurnCoinsTestSuite) TestQuorumYes() {
+func (s *BurnCoinsTestSuite) TestCase3QuorumYes() {
 	val := s.network.Validators[0]
 
-	// check communityPool balance before proposal
+	// Check communityPool balance before proposal
 	communityPoolStateBefore := getCommunityPoolState(val)
 	cpAmountBefore, err := strconv.ParseFloat(communityPoolStateBefore.Pool[0].Amount, 64)
 	s.NoError(err)
 
 	s.Equal(cpAmountBefore, 20000006.0)
 
-	// check stacking params before proposal
+	// Check stacking params before proposal
 	stakingModuleParams := getStackingModuleParams(val)
 	maxValidatorsBeforeProposal := stakingModuleParams.MaxValidators
 
@@ -395,7 +393,7 @@ func (s *BurnCoinsTestSuite) TestQuorumYes() {
 
 	// ########################################################################
 
-	// skip blocks
+	// Skip blocks
 	currentHeight, err := s.network.LatestHeight()
 	s.NoError(err)
 	_, err = s.network.WaitForHeight(currentHeight + 4)
@@ -413,18 +411,119 @@ func (s *BurnCoinsTestSuite) TestQuorumYes() {
 
 	// ########################################################################
 
-	// check param changed in module after proposal
+	// Check param changed in module after proposal
 	stakingModuleParams = getStackingModuleParams(val)
 	maxValidatorsAfterProposal := stakingModuleParams.MaxValidators
-	s.T().Log("maxValidatorsAfterProposal: ", maxValidatorsAfterProposal)
 	s.Equal(maxValidatorsAfterProposal, 10)
 
-	// check communityPool total amount
+	// Check communityPool total amount
 	communityPoolStateAfter := getCommunityPoolState(val)
 	cpAmountAfter, err := strconv.ParseFloat(communityPoolStateAfter.Pool[0].Amount, 64)
 	s.NoError(err)
 
 	s.Equal(cpAmountAfter, 20000010.0)
+
+	// Check total supply after burn
+	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{s.cfg.BondDenom, "--output", "json"})
+	s.NoError(err)
+
+	s.Equal(totalSupplyBefore, totalSupplyAfter)
+}
+
+func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
+	val := s.network.Validators[0]
+
+	// Check communityPool balance before proposal
+	communityPoolStateBefore := getCommunityPoolState(val)
+	cpAmountBefore, err := strconv.ParseFloat(communityPoolStateBefore.Pool[0].Amount, 64)
+	s.NoError(err)
+
+	s.Equal(cpAmountBefore, 20000010.0)
+
+	// #################################################################
+	// Build proposal tx
+	// #################################################################
+
+	changes := []paramsproposaltypes.ParamChange{
+		paramsproposaltypes.NewParamChange(stakingtypes.ModuleName, string(stakingtypes.KeyMaxValidators), "10"),
+	}
+	proposal := paramsproposaltypes.NewParameterChangeProposal("title", "description", changes)
+
+	depositAmount := sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(1000000)))
+	submitProposalMsg, err := govtypes.NewMsgSubmitProposal(proposal, depositAmount, val.Address)
+	s.NoError(err)
+
+	fee := sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(100)))
+	txBuilder := s.cfg.TxConfig.NewTxBuilder()
+	s.Require().NoError(txBuilder.SetMsgs(submitProposalMsg))
+	txBuilder.SetFeeAmount(fee)
+	txBuilder.SetGasLimit(2000000)
+
+	kb := val.ClientCtx.Keyring
+	s.NoError(err)
+
+	proposaltxFactory := tx.Factory{}
+	proposaltxFactory = proposaltxFactory.
+		WithChainID(s.cfg.ChainID).
+		WithKeybase(kb).
+		WithTxConfig(s.cfg.TxConfig).
+		WithSequence(6)
+
+	err = tx.Sign(proposaltxFactory, "node0", txBuilder, true)
+	s.NoError(err)
+
+	txBytes, err := s.cfg.TxConfig.TxEncoder()(txBuilder.GetTx())
+	s.NoError(err)
+
+	// #################################################################
+	// Get balances state before broadcast proposal tx and do boradcast
+	// #################################################################
+
+	// Check gov module balance before sending proposal is zero
+	var govBalanceBefore banktypes.QueryAllBalancesResponse
+	govBalanceBeforeResp, err := clitestutil.ExecTestCLICmd(
+		val.ClientCtx, bankcli.GetBalancesCmd(),
+		[]string{s.govModuleAddress.String(), "--output", "json"},
+	)
+	s.NoError(err)
+	json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
+
+	s.Equal(len(govBalanceBefore.Balances), 0)
+
+	// Get total supply before broadcast tx
+	totalSupplyBefore, err := clitestutil.ExecTestCLICmd(
+		val.ClientCtx, bankcli.GetCmdQueryTotalSupply(),
+		[]string{s.cfg.BondDenom, "--output", "json"},
+	)
+	s.NoError(err)
+
+	// Broadcast tx with new proposal
+	proposalTxResult, err := val.RPCClient.BroadcastTxCommit(context.Background(), txBytes)
+	s.NoError(err)
+
+	// ########################################################################
+
+	// Skip blocks
+	currentHeight, err := s.network.LatestHeight()
+	s.NoError(err)
+	_, err = s.network.WaitForHeight(currentHeight + 4)
+	s.NoError(err)
+
+	// Check proposal and vote submitted correctly
+	// -- proposal tx
+	proposalTxResp, err := val.RPCClient.Tx(context.Background(), proposalTxResult.Hash, false)
+	s.NoError(err)
+	s.Equal(proposalTxResp.TxResult.Code, uint32(0))
+
+	// ########################################################################
+
+	// Check communityPool total amount
+	communityPoolStateAfter := getCommunityPoolState(val)
+	cpAmountAfter, err := strconv.ParseFloat(communityPoolStateAfter.Pool[0].Amount, 64)
+	s.NoError(err)
+
+	s.Equal(cpAmountAfter, 21000012.0)
+	s.T().Log("cpAmountAfter: ", cpAmountAfter)
 
 	// Check total supply after burn
 	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{s.cfg.BondDenom, "--output", "json"})
@@ -439,7 +538,13 @@ func TestBurnCoins(t *testing.T) {
 	cfg.AppConstructor = haqqnetwork.NewAppConstructor(encCfg)
 	cfg.NumValidators = 1
 
-	genesisGov := strings.Replace(string(cfg.GenesisState["gov"]), "\"voting_period\":\"172800s\"", "\"voting_period\":\"2s\"", 1)
+	genesisGov := strings.Replace(
+		string(cfg.GenesisState["gov"]), "\"voting_period\":\"172800s\"", "\"voting_period\":\"2s\"", 1,
+	)
+	genesisGov = strings.Replace(
+		genesisGov, "\"max_deposit_period\":\"172800s\"", "\"max_deposit_period\":\"2s\"", 1,
+	)
+
 	cfg.GenesisState["gov"] = []byte(genesisGov)
 
 	suite.Run(t, NewBurnCoinsTestSuite(cfg))
