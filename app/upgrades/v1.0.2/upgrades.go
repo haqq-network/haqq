@@ -1,6 +1,9 @@
 package v1_0_2
 
 import (
+	"math"
+	"math/big"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/haqq-network/haqq/types"
@@ -41,25 +44,38 @@ func CreateUpgradeHandler(
 
 // ref: https://github.com/haqq-network/haqq/issues/4
 func FixTotalSupply(ctx sdk.Context, bk bankkeeper.Keeper, cdc codec.BinaryCodec, distrStoreKey sdk.StoreKey) {
-	// amount
-	mintAmount := sdk.NewCoins(sdk.NewCoin("aISLM", sdk.NewInt(70000000)))
+	// get total supply
+	totalSupply := bk.GetSupply(ctx, "aISLM").Amount.BigInt()
 
-	// mint to bank module
-	bk.MintCoins(ctx, erc20types.ModuleName, mintAmount)
+	// 20*10^9*10^18
+	expectedSupply := new(big.Int)
+	// 20*(10^9)
+	part1 := new(big.Int).Mul(big.NewInt(20), big.NewInt(int64(math.Pow(10, 9))))
+	// part1 * (10^18)
+	expectedSupply.Mul(part1, big.NewInt(int64(math.Pow(10, 18))))
 
-	// send coins to distribution module
-	bk.SendCoinsFromModuleToModule(ctx, erc20types.ModuleName, distrtypes.ModuleName, mintAmount)
+	// if total supply lower then expected by white papper
+	if totalSupply.Cmp(expectedSupply) == -1 {
+		diff := big.NewInt(0).Sub(expectedSupply, totalSupply)
+		mintAmount := sdk.NewCoins(sdk.NewCoin("aISLM", sdk.NewIntFromBigInt(diff)))
 
-	// update community pool amount
-	kvstore := ctx.MultiStore().GetKVStore(distrStoreKey)
-	feePoolBin := kvstore.Get(distrtypes.FeePoolKey)
+		// mint to bank module
+		bk.MintCoins(ctx, erc20types.ModuleName, mintAmount)
 
-	var feePool distrtypes.FeePool
-	cdc.MustUnmarshal(feePoolBin, &feePool)
+		// send coins to distribution module
+		bk.SendCoinsFromModuleToModule(ctx, erc20types.ModuleName, distrtypes.ModuleName, mintAmount)
 
-	coins := sdk.NewDecCoinsFromCoins(mintAmount...)
-	feePool.CommunityPool = feePool.CommunityPool.Add(coins...)
+		// update community pool amount
+		kvstore := ctx.MultiStore().GetKVStore(distrStoreKey)
+		feePoolBin := kvstore.Get(distrtypes.FeePoolKey)
 
-	b := cdc.MustMarshal(&feePool)
-	kvstore.Set(distrtypes.FeePoolKey, b)
+		var feePool distrtypes.FeePool
+		cdc.MustUnmarshal(feePoolBin, &feePool)
+
+		coins := sdk.NewDecCoinsFromCoins(mintAmount...)
+		feePool.CommunityPool = feePool.CommunityPool.Add(coins...)
+
+		b := cdc.MustMarshal(&feePool)
+		kvstore.Set(distrtypes.FeePoolKey, b)
+	}
 }
