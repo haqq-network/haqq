@@ -148,7 +148,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.0.2"
+	UpgradeName    = "v1.0.3"
 	MainnetChainID = "haqq_11235"
 )
 

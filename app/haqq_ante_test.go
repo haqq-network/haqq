@@ -107,7 +107,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 
 			t.Logf("### from unknown address %v ###", err)
 
-			require.Error(t, ErrDelegationComingLater, err)
+			require.NoError(t, err)
 		})
 
 		t.Run("from validator address", func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 			ctx := app.NewContext(true, tmproto.Header{Height: 1})
 			_, err := handler(ctx, builder.GetTx(), true)
 
-			require.Error(t, ErrDelegationComingLater, err)
+			require.NoError(t, err)
 		})
 
 		t.Run("from validator address", func(t *testing.T) {
