@@ -4,7 +4,7 @@
 # "live" mode tests assume data dynamic
 
 SCRIPT=$(basename ${BASH_SOURCE[0]})
-TEST=""
+TEST="rpc"
 QTD=1
 SLEEP_TIMEOUT=5
 TEST_QTD=1
@@ -17,8 +17,9 @@ RPC_PORT="854"
 IP_ADDR="0.0.0.0"
 
 KEY="mykey"
-CHAINID="evmos_9000-1"
+CHAINID="haqq_1337-1"
 MONIKER="mymoniker"
+MODE="rpc"
 
 ## default port prefixes for haqqd
 NODE_P2P_PORT="2660"
@@ -67,20 +68,43 @@ make build
 arr=()
 
 init_func() {
-    "$PWD"/build/evmosd keys add $KEY"$i" --keyring-backend test --home "$DATA_DIR$i" --no-backup --algo "eth_secp256k1"
-    "$PWD"/build/evmosd init $MONIKER --chain-id $CHAINID --home "$DATA_DIR$i"
-    "$PWD"/build/evmosd add-genesis-account \
-    "$("$PWD"/build/evmosd keys show "$KEY$i" --keyring-backend test -a --home "$DATA_DIR$i")" 1000000000000000000aphoton,1000000000000000000stake \
-    --keyring-backend test --home "$DATA_DIR$i"
-    "$PWD"/build/evmosd gentx "$KEY$i" 1000000000000000000stake --chain-id $CHAINID --keyring-backend test --home "$DATA_DIR$i"
-    "$PWD"/build/evmosd collect-gentxs --home "$DATA_DIR$i"
-    "$PWD"/build/evmosd validate-genesis --home "$DATA_DIR$i"
+    # validate dependencies are installed
+    command -v jq > /dev/null 2>&1 || { echo >&2 "jq not installed. More info: https://stedolan.github.io/jq/download/"; exit 1; }
+
+    HOME_DIR="$DATA_DIR$i"
+    KEY_NAME=$KEY"$i"
+
+    "$PWD"/build/haqqd keys add $KEY_NAME --keyring-backend test --home $HOME_DIR --no-backup --algo "eth_secp256k1"
+    "$PWD"/build/haqqd init $MONIKER --chain-id $CHAINID --home $HOME_DIR
+
+    # Change parameter token denominations to aISLM
+    cat $HOME_DIR/config/genesis.json | jq '.app_state["staking"]["params"]["bond_denom"]="aISLM"' > $HOME_DIR/config/tmp_genesis.json && \
+    mv $HOME_DIR/config/tmp_genesis.json $HOME_DIR/config/genesis.json
+
+    cat $HOME_DIR/config/genesis.json | jq '.app_state["crisis"]["constant_fee"]["denom"]="aISLM"' > $HOME_DIR/config/tmp_genesis.json && \
+    mv $HOME_DIR/config/tmp_genesis.json $HOME_DIR/config/genesis.json
+
+    # cat $HOME_DIR/config/genesis.json | jq '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="aISLM"' > $HOME_DIR/config/tmp_genesis.json && \ 
+    # mv $HOME_DIR/config/tmp_genesis.json $HOME_DIR/config/genesis.json
+
+    cat $HOME_DIR/config/genesis.json | jq '.app_state["mint"]["params"]["mint_denom"]="aISLM"' > $HOME_DIR/config/tmp_genesis.json && \
+    mv $HOME_DIR/config/tmp_genesis.json $HOME_DIR/config/genesis.json
+
+    cat $HOME_DIR/config/genesis.json | jq '.app_state["evm"]["params"]["evm_denom"]="aISLM"' > $HOME_DIR/config/tmp_genesis.json && \
+    mv $HOME_DIR/config/tmp_genesis.json $HOME_DIR/config/genesis.json
+
+    "$PWD"/build/haqqd add-genesis-account \
+    "$("$PWD"/build/haqqd keys show "$KEY$i" --keyring-backend test -a --home "$HOME_DIR")" 1000000000000000000aISLM \
+    --keyring-backend test --home $HOME_DIR
+    "$PWD"/build/haqqd gentx "$KEY$i" 1000000000000000000aISLM --chain-id $CHAINID --keyring-backend test --home $HOME_DIR
+    "$PWD"/build/haqqd collect-gentxs --home $HOME_DIR
+    "$PWD"/build/haqqd validate-genesis --home $HOME_DIR
 
     if [[ $MODE == "pending" ]]; then
       ls $DATA_DIR$i
       if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' 's/create_empty_blocks_interval = "0s"/create_empty_blocks_interval = "30s"/g' $DATA_DIR$i/config/config.toml
-        sed -i '' 's/timeout_propose = "3s"/timeout_propose = "30s"/g' $DATA_DIR$i/config/config.toml
+        # sed -i '' 's/create_empty_blocks_interval = "0s"/create_empty_blocks_interval = "1s"/g' $DATA_DIR$i/config/config.toml
+        sed -i '' 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $DATA_DIR$i/config/config.toml
         sed -i '' 's/timeout_propose_delta = "500ms"/timeout_propose_delta = "2s"/g' $DATA_DIR$i/config/config.toml
         sed -i '' 's/timeout_prevote = "1s"/timeout_prevote = "120s"/g' $DATA_DIR$i/config/config.toml
         sed -i '' 's/timeout_prevote_delta = "500ms"/timeout_prevote_delta = "2s"/g' $DATA_DIR$i/config/config.toml
@@ -89,8 +113,8 @@ init_func() {
         sed -i '' 's/timeout_commit = "5s"/timeout_commit = "150s"/g' $DATA_DIR$i/config/config.toml
         sed -i '' 's/timeout_broadcast_tx_commit = "10s"/timeout_broadcast_tx_commit = "150s"/g' $DATA_DIR$i/config/config.toml
       else
-        sed -i 's/create_empty_blocks_interval = "0s"/create_empty_blocks_interval = "30s"/g' $DATA_DIR$i/config/config.toml
-        sed -i 's/timeout_propose = "3s"/timeout_propose = "30s"/g' $DATA_DIR$i/config/config.toml
+        # sed -i 's/create_empty_blocks_interval = "0s"/create_empty_blocks_interval = "1s"/g' $DATA_DIR$i/config/config.toml
+        sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $DATA_DIR$i/config/config.toml
         sed -i 's/timeout_propose_delta = "500ms"/timeout_propose_delta = "2s"/g' $DATA_DIR$i/config/config.toml
         sed -i 's/timeout_prevote = "1s"/timeout_prevote = "120s"/g' $DATA_DIR$i/config/config.toml
         sed -i 's/timeout_prevote_delta = "500ms"/timeout_prevote_delta = "2s"/g' $DATA_DIR$i/config/config.toml
@@ -103,17 +127,17 @@ init_func() {
 }
 
 start_func() {
-    echo "starting evmos node $i in background ..."
-    "$PWD"/build/evmosd start --pruning=nothing --rpc.unsafe \
+    echo "starting haqq node $i in background ..."
+    "$PWD"/build/haqqd start --pruning=nothing --rpc.unsafe \
     --p2p.laddr tcp://$IP_ADDR:$NODE_P2P_PORT"$i" --address tcp://$IP_ADDR:$NODE_PORT"$i" --rpc.laddr tcp://$IP_ADDR:$NODE_RPC_PORT"$i" \
     --json-rpc.address=$IP_ADDR:$RPC_PORT"$i" \
     --keyring-backend test --home "$DATA_DIR$i" \
     >"$DATA_DIR"/node"$i".log 2>&1 & disown
 
-    EVMOS_PID=$!
-    echo "started evmos node, pid=$EVMOS_PID"
+    HAQQ_PID=$!
+    echo "started haqq node, pid=$HAQQ_PID"
     # add PID to array
-    arr+=("$EVMOS_PID")
+    arr+=("$HAQQ_PID")
 
     if [[ $MODE == "pending" ]]; then
       echo "waiting for the first block..."
@@ -146,9 +170,16 @@ if [[ -z $TEST || $TEST == "rpc" ||  $TEST == "pending" ]]; then
     fi
 
     for i in $(seq 1 "$TEST_QTD"); do
+        echo "\n### Priv key for Metamask ####"
+        HOME_DIR="$DATA_DIR$i"
+        PRIV_KEY=$(./build/haqqd keys unsafe-export-eth-key $KEY_NAME --home $HOME_DIR --keyring-backend test)
+        echo $PRIV_KEY
+
+        sleep 5
+
         HOST_RPC=http://$IP_ADDR:$RPC_PORT"$i"
-        echo "going to test evmos node $HOST_RPC ..."
-        MODE=$MODE HOST=$HOST_RPC go test ./tests/... -timeout=$time_out -v -short
+        echo "going to test haqq node $HOST_RPC ..."
+        MODE=$MODE HOST=$HOST_RPC PRIV_KEY=$PRIV_KEY go test ./tests/... -timeout=$time_out -v -short
 
         RPC_FAIL=$?
     done
@@ -156,12 +187,12 @@ if [[ -z $TEST || $TEST == "rpc" ||  $TEST == "pending" ]]; then
 fi
 
 stop_func() {
-    EVMOS_PID=$i
-    echo "shutting down node, pid=$EVMOS_PID ..."
+    HAQQ_PID=$i
+    echo "shutting down node, pid=$HAQQ_PID ..."
 
     # Shutdown evmos node
-    kill -9 "$EVMOS_PID"
-    wait "$EVMOS_PID"
+    kill -9 "$HAQQ_PID"
+    wait "$HAQQ_PID"
 
     if [ $REMOVE_DATA_DIR == "true" ]
     then

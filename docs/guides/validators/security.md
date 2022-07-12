@@ -4,8 +4,6 @@ order: 3
 
 # Validator Security
 
-🚧 `In developing...` 🏗
-
 Learn about sentry nodes and HSMs to secure a validator {synopsis}
 
 Each validator candidate is encouraged to run its operations independently, as diverse setups increase the resilience of the network. Validator candidates should commence their setup phase now in order to be on time for launch.
@@ -78,7 +76,7 @@ private_peer_ids = "node_ids_of_private_peers"
 
 By default, uppercase environment variables with the following prefixes will replace lowercase command-line flags:
 
-- `HAQQ` (for Haqq flags)
+- `EVMOS` (for Haqq flags)
 - `TM` (for Tendermint flags)
 - `BC` (for democli or basecli flags)
 
