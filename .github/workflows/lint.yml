@@ -6,7 +6,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
+      - master
 jobs:
   golangci:
     name: Run golangci-lint
