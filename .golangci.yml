@@ -12,10 +12,10 @@ linters:
     - dupl
     # - errcheck
     - goconst
-    - gocritic
+    # - gocritic
     - gofmt
     - goimports
-    - revive
+    # - revive
     - gosec
     - gosimple
     - govet
