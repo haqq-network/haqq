@@ -46,7 +46,6 @@ coverage.txt
 *.out
 sim_log_file
 tests/**/tmp/*
-yarn.lock
 
 # Vagrant
 .vagrant/
