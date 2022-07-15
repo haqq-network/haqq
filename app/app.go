@@ -524,7 +524,7 @@ func NewHaqq(
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
-		//haqqbank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
+		// haqqbank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
@@ -648,8 +648,8 @@ func NewHaqq(
 		epochstypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
-		//ibchost.ModuleName,
-		//ibctransfertypes.ModuleName,
+		// ibchost.ModuleName,
+		// ibctransfertypes.ModuleName,
 	)
 
 	ModuleBasics.RegisterInterfaces(app.interfaceRegistry)

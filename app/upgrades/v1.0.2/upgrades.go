@@ -44,6 +44,8 @@ func CreateUpgradeHandler(
 
 // ref: https://github.com/haqq-network/haqq/issues/4
 func FixTotalSupply(ctx sdk.Context, bk bankkeeper.Keeper, cdc codec.BinaryCodec, distrStoreKey sdk.StoreKey) {
+	logger := ctx.Logger()
+
 	// get total supply
 	totalSupply := bk.GetSupply(ctx, "aISLM").Amount.BigInt()
 
@@ -60,10 +62,14 @@ func FixTotalSupply(ctx sdk.Context, bk bankkeeper.Keeper, cdc codec.BinaryCodec
 		mintAmount := sdk.NewCoins(sdk.NewCoin("aISLM", sdk.NewIntFromBigInt(diff)))
 
 		// mint to bank module
-		bk.MintCoins(ctx, erc20types.ModuleName, mintAmount)
+		if err := bk.MintCoins(ctx, erc20types.ModuleName, mintAmount); err != nil {
+			logger.Error("FAILED TO MINT COINS", "error", err.Error())
+		}
 
 		// send coins to distribution module
-		bk.SendCoinsFromModuleToModule(ctx, erc20types.ModuleName, distrtypes.ModuleName, mintAmount)
+		if err := bk.SendCoinsFromModuleToModule(ctx, erc20types.ModuleName, distrtypes.ModuleName, mintAmount); err != nil {
+			logger.Error("FAILED TO SEND COINS TO MODULE", "error", err.Error())
+		}
 
 		// update community pool amount
 		kvstore := ctx.MultiStore().GetKVStore(distrStoreKey)
