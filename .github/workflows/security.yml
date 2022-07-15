@@ -1,9 +1,9 @@
 name: Run Gosec
 on:
-  # pull_request:
+  pull_request:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   Gosec:
