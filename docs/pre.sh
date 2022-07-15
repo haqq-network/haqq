@@ -35,10 +35,10 @@ if [ ! -d "./modules/auth" ]; then
 fi
 
 if [ ! -d "./modules/transfer" ]; then
-  echo "Directory auth not exists."
+  echo "Directory transfer not exists."
 
   # Include the specs from IBC go
-  git clone https://github.com/cosmos/ibc-go.git
+  git clone https://github.com/cosmos/ibc-go.git --branch v3.1.0 --single-branch
   mv ibc-go/modules/apps/transfer/spec/ ./modules/transfer
   rm -rf ibc-go
 fi
