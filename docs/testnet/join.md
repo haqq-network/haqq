@@ -1,7 +1,5 @@
 # Joining a Testnet
 
-<!-- **🚧 `In developing...` 🏗️** -->
-
 <!--
 order: 4
 -->
@@ -10,17 +8,17 @@ This document outlines the steps to join an existing testnet {synopsis}
 
 ## Pick a Testnet
 
-You specify the network you want to join by setting the **genesis file** and **seeds**.
+You specify the network you want to join by setting the **genesis file** and **seeds**. If you need more information about past networks, check our [testnets repo](https://github.com/haqq-network/testnets).
 
 | Testnet Chain ID | Name | Version | Status | Description
 |--|--|--|--|--| 
-| haqq_112357-1 | Haqq TestNow | v1.0.0 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
-| haqq_53211-1 | Haqq TestEdge | v1.0.0 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
+| haqq_112357-1 | Haqq TestNow | v1.0.3 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
+| haqq_53211-1 | Haqq TestEdge | v1.0.3 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
 
 
 ## Install `haqqd`
 
-Follow the [installation](./quickstart/installation.md) document to install the {{ $themeConfig.project.name }} binary `{{ $themeConfig.project.binary }}`.
+Follow the [installation](./../quickstart/installation.md) document to install the {{ $themeConfig.project.name }} binary `{{ $themeConfig.project.binary }}`.
 
 ```
 ❗️Warning❗️
@@ -32,11 +30,11 @@ Make sure you have the right version of `{{ $themeConfig.project.binary }}` inst
 We recommend saving the testnet `chain-id` into your `{{ $themeConfig.project.binary }}`'s `client.toml`. This will make it so you do not have to manually pass in the `chain-id` flag for every CLI command.
 
 ::: tip
-See the Official [Chain IDs](./../users/technical_concepts/chain_id.md#official-chain-ids) for reference.
+See the Official [Chain IDs](./../basics/chain_id.md) for reference.
 :::
 
 ```bash
-haqqd config chain-id haqq_112357-1
+haqqd config chain-id haqq_53211-1
 ```
 
 ## Initialize Node
@@ -44,7 +42,7 @@ haqqd config chain-id haqq_112357-1
 We need to initialize the node to create all the necessary validator and node configuration files:
 
 ```bash
-haqqd init <your_custom_moniker> --chain-id haqq_112357-1
+haqqd init <your_custom_moniker> --chain-id haqq_53211-1
 ```
 
 ::: danger
@@ -54,30 +52,101 @@ Monikers can contain only ASCII characters. Using Unicode characters will render
 By default, the `init` command creates your `~/.haqqd` (i.e `$HOME`) directory with subfolders `config/` and `data/`.
 In the `config` directory, the most important files for configuration are `app.toml` and `config.toml`.
 
-<!-- TO DO ## Genesis & Seeds -->
+## Genesis & Seeds
 
-<!-- ### Copy the Genesis File -->
+### Copy the Genesis File
 
+Check the `genesis.json` file from the [`archive`](https://github.com/haqq-network/testnets/raw/main/TestEdge/genesis.zip) and copy it over to the `config` directory: `~/.haqqd/config/genesis.json`. Then extract the archive
 
-<!-- ### Add Seed Nodes -->
+This is a genesis file with the chain-id and genesis accounts balances.
 
+```bash
+sudo apt install -y unzip wget
+wget -P ~/.haqqd/config https://github.com/haqq-network/testnets/raw/main/TestEdge/genesis.zip
+unzip ~/.haqqd/config/genesis.zip
+```
 
+Then verify the correctness of the genesis configuration file:
 
-<!-- ### Add Persistent Peers -->
+```bash
+haqqd validate-genesis
+```
+
+<!--### Add Seed Nodes-->
+
+### Add Persistent Peers
+
+We can set the [`persistent_peers`](https://docs.tendermint.com/master/tendermint-core/using-tendermint.html#persistent-peer) field in `~/.haqqd/config/config.toml` to specify peers that your node will maintain persistent connections with. You can retrieve them from the list of
+available peers on the [`testnets`](https://github.com/haqq-network/testnets) repo.
+
+ You can get a random 10 entries from the `peers.txt` file in the `PEERS` variable by running the following command:
+
+```bash
+PEERS=`curl -sL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/peers.txt | sort -R | head -n 10 | awk '{print $1}' | paste -s -d, -`
+```
+
+Use `sed` to include them into the configuration. You can also add them manually:
+
+```bash
+sed -i.bak -e "s/^persistent_peers *=.*/persistent_peers = \"$PEERS\"/" ~/.haqqd/config/config.toml
+```
+
+## Get a snapshot
+
+### Prerequisites
+
+Install lz4 if needed
+
+```
+apt-get install lz4
+```
+
+Download the snapshot
+
+```
+curl http://s.kio.ninja/data_backup_180722.tar.lz4 --output data_backup_180722.tar.lz4
+```
+
+Decompress the snapshot to your database location. You database location will be something to the effect of ~/.haqqd depending on your node implemention.
+
+```
+lz4 -c -d data_backup_180722.tar.lz4  | tar -x -C $HOME/.haqqd
+```
+
+## Pruning
+
+The snapshot is designed for node opeartors to run an efficient validator service on Haqq chain. To make the snapshot as small as possible while still viable as a validator, we use the following setting to save on the disk space. We suggest you make the same adjustment on your node too. Please notice that your node will have very limited functionality beyond signing blocks with the efficient disk space utilization. For example, your node will not be able to serve as a RPC endpoint (which is not suggested to run on a validator node anyway).
+
+Since we periodically state-sync our snapshot nodes, you might notice that sometimes the size of our snapshot is surprisingly small.
+
+app.toml
+
+```
+pruning = "custom"
+pruning-keep-recent = "100"
+pruning-keep-every = "0"
+pruning-interval = "10"
+```
+
+config.toml
+
+```
+indexer = "null"
+```
 
 ## Run a Testnet Validator
 
-Claim your testnet {{ $themeConfig.project.testnet_denom }} on the [faucet](./../developers/faucet.md) using your validator account address and submit your validator account address:
+Claim your testnet {{ $themeConfig.project.testnet_denom }} on the [faucet](./faucet.md) using your validator account address and submit your validator account address:
 
 ::: tip
-For more details on how to run your validator, follow [these](./setup/run_validator.md) instructions.
+For more details on how to run your validator, follow [these](./run_validator.md) instructions.
 :::
 
 ```bash
 haqqd tx staking create-validator \
   --amount=1000000000000aISLM \
   --pubkey=$(haqqd tendermint show-validator) \
-  --moniker="HaqqWhale" \
+  --moniker=<your_moniker_name> \
   --chain-id=<chain_id> \
   --commission-rate="0.10" \
   --commission-max-rate="0.20" \
@@ -90,10 +159,18 @@ haqqd tx staking create-validator \
 
 ## Start testnet
 
-The final step is to [start the nodes](./quickstart/run_node.md#start-node). Once enough voting power (+2/3) from the genesis validators is up-and-running, the testnet will start producing blocks.
+The final step is to [start the nodes](./../quickstart/run_node.md#start-node). Once enough voting power (+2/3) from the genesis validators is up-and-running, the testnet will start producing blocks.
 
 ```bash
 haqqd start
+```
+
+## Staking delegate
+
+You can deligate more ISLM to your stake.
+
+```
+haqqd tx staking delegate <your_validator_address> <quantity_ISLM> --from <key_name> -y
 ```
 
 ## Upgrading Your Node
@@ -130,3 +207,6 @@ To restart your node, just type:
 ```bash
 haqqd start
 ```
+# Automated Upgrades
+
+We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using Cosmovisor. [upgrade](./upgrade.md)
