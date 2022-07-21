@@ -117,10 +117,6 @@ rm -rf ~/.haqqd
 
 To clear all data except key storage (if keyring backend chosen) and then you can rerun the full node installation commands from above to start the node again.
 
-## Recording Transactions Per Second (TPS)
-
-🚧 `In developing...` 🏗
-
 ## Next {hide}
 
-Learn about running a Haqq [testnet](./../testnet/README.md) {hide} 🚧 `In developing...` 🏗
+Learn about running a Haqq [testnet](./../testnet/README.md) {hide}

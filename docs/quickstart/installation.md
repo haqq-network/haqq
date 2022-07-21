@@ -54,7 +54,7 @@ haqqd version
 
 ### Docker
 
-**🚧 `In developing...` 🏗️**
+Docker build instructions available [here](https://hub.docker.com/r/alhaqq/haqq)
 
 ### Releases
 
