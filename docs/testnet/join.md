@@ -11,9 +11,9 @@ This document outlines the steps to join an existing testnet {synopsis}
 You specify the network you want to join by setting the **genesis file** and **seeds**. If you need more information about past networks, check our [testnets repo](https://github.com/haqq-network/testnets).
 
 | Testnet Chain ID | Name | Version | Status | Description
-|--|--|--|--|--| 
-| haqq_112357-1 | Haqq TestNow | v1.0.3 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
+|--|--|--|--|--|
 | haqq_53211-1 | Haqq TestEdge | v1.0.3 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
+| haqq_112357-1 | Haqq TestNow | v1.0.3 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
 
 
 ## Install `haqqd`
@@ -22,7 +22,7 @@ Follow the [installation](./../quickstart/installation.md) document to install t
 
 ```
 ❗️Warning❗️
-Make sure you have the right version of `{{ $themeConfig.project.binary }}` installed.
+Make sure you have the right version of haqqd installed.
 ```
 
 ### Save Chain ID
