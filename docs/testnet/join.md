@@ -6,6 +6,75 @@ order: 4
 
 This document outlines the steps to join an existing testnet {synopsis}
 
+## Quick join to TestEdge
+
+To quickly get started, node operators can choose to sync via State Sync or by downloading a snapshot
+
+Install packages:
+```sh
+sudo apt-get install curl liblz4-tool -y
+```
+
+Download latest binary for your arch:
+https://github.com/haqq-network/haqq/releases/tag/v1.0.3 or build from source 
+```sh
+cd $HOME
+git clone -b v1.0.3 https://github.com/haqq-network/haqq
+cd haqq
+make install
+```
+
+## Option 1: Run by Tendermint State Sync (preferred)
+```sh
+CUSTOM_MONIKER="example_moniker"
+
+haqqd config chain-id haqq_53211-1 && \
+haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
+
+# Prepare genesis file for TestEdge(haqq_53211-1)
+curl https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json -o genesis.json
+mv genesis.json $HOME/.haqqd/config/genesis.json
+
+# Configure State sync
+curl https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh -o state_sync.sh
+sh state_sync.sh
+
+# Start Haqq
+haqqd start --x-crisis-skip-assert-invariants
+```
+
+## Option 2: Run from snapshot
+
+Download the snapshot:
+```sh
+curl https://storage.googleapis.com/haqq-testedge-snapshots/haqq_149008.tar.lz4 -o haqq_149008.tar.lz4
+
+```
+
+```sh
+CUSTOM_MONIKER="example_moniker"
+
+haqqd config chain-id haqq_53211-1 && \
+haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
+
+# Prepare genesis file for TestEdge(haqq_53211-1)
+curl https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json -o genesis.json
+mv genesis.json $HOME/.haqqd/config/genesis.json
+
+# Unzip snapshot to data
+lz4 -c -d haqq_149008.tar.lz4 | tar -x -C $HOME/.haqqd/data
+
+# Setup seeds
+SEEDS="899eb370da6930cf0bfe01478c82548bb7c71460@34.90.233.163:26656,f2a78c20d5bb567dd05d525b76324a45b5b7aa28@34.90.227.10:26656,4705cf12fb56d7f9eb7144937c9f1b1d8c7b6a4a@34.91.195.139:26656,8f7b0add0523ec3648cb48bc12ac35357b1a73ae@195.201.123.87:26656"
+
+sed -i.bak -E "s|^(seeds[[:space:]]+=[[:space:]]+).*$|\1\"$SEEDS\"|" $HOME/.haqqd/config/config.toml
+
+# Start Haqq
+haqqd start --x-crisis-skip-assert-invariants
+```
+
+# Join TestEdge step-by-step
+
 ## Pick a Testnet
 
 You specify the network you want to join by setting the **genesis file** and **seeds**. If you need more information about past networks, check our [testnets repo](https://github.com/haqq-network/testnets).
@@ -104,13 +173,13 @@ apt-get install lz4
 Download the snapshot
 
 ```
-curl http://s.kio.ninja/data_backup_180722.tar.lz4 --output data_backup_180722.tar.lz4
+curl https://storage.googleapis.com/haqq-testedge-snapshots/haqq_149008.tar.lz4 --output haqq_149008.tar.lz4
 ```
 
 Decompress the snapshot to your database location. You database location will be something to the effect of ~/.haqqd depending on your node implemention.
 
 ```
-lz4 -c -d data_backup_180722.tar.lz4  | tar -x -C $HOME/.haqqd
+lz4 -c -d haqq_149008.tar.lz4  | tar -x -C $HOME/.haqqd
 ```
 
 ## Pruning
