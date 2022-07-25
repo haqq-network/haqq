@@ -1,212 +1,312 @@
-# Joining a Testnet
-
 <!--
 order: 4
 -->
 
+# Haqq Network TestEdge
+
+## Overview
+
+The current Haqq version of TestEdge is [`v1.0.3`](https://github.com/haqq-network/haqq/releases/tag/v1.0.3). 
+
+To bootstrap a TestEdge node, it is possible to sync from v1.0.3 via snapshot or via State Sync.
+
 This document outlines the steps to join an existing testnet {synopsis}
 
-## Pick a Testnet
+## Quickstart
 
-You specify the network you want to join by setting the **genesis file** and **seeds**. If you need more information about past networks, check our [testnets repo](https://github.com/haqq-network/testnets).
+Install packages:
 
-| Testnet Chain ID | Name | Version | Status | Description
-|--|--|--|--|--|
-| haqq_53211-1 | Haqq TestEdge | v1.0.3 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
-| haqq_112357-1 | Haqq TestNow | v1.0.3 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
-
-
-## Install `haqqd`
-
-Follow the [installation](./../quickstart/installation.md) document to install the {{ $themeConfig.project.name }} binary `{{ $themeConfig.project.binary }}`.
-
-```
-❗️Warning❗️
-Make sure you have the right version of haqqd installed.
+```sh
+sudo apt-get install curl git make gcc liblz4-tool build-essential jq -y
 ```
 
-### Save Chain ID
+**Preresquisites for compile from source**
+- `make` & `gcc` 
+- `Go 1.16+` ([How to install Go](https://www.digitalocean.com/community/tutorials/how-to-install-go-on-ubuntu-20-04))
 
-We recommend saving the testnet `chain-id` into your `{{ $themeConfig.project.binary }}`'s `client.toml`. This will make it so you do not have to manually pass in the `chain-id` flag for every CLI command.
 
 ::: tip
-See the Official [Chain IDs](./../basics/chain_id.md) for reference.
+
+**If you choose StateSync or Snapshot for node running you need to download or build from source**
+
 :::
 
-```bash
+Build from source:
+
+Download latest binary for your arch:
+
+[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.0.3) 
+
+or
+
+build from source 
+
+```sh
+cd $HOME && \
+git clone -b v1.0.3 https://github.com/haqq-network/haqq && \
+cd haqq && \
+make install
+```
+
+To quickly get started, node operators can choose to sync via State Sync (preferred) or by downloading a snapshot.
+
+:::: tabs
+
+::: tab StateSync
+
+### Run by Tendermint State Sync
+
+Check binary version:
+
+```sh
+haqqd -v
+# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+```
+
+Write your moniker name
+
+```sh
+CUSTOM_MONIKER="example_moniker"
+```
+
+Cofigure TestEdge chain-id
+
+```sh
 haqqd config chain-id haqq_53211-1
 ```
 
-## Initialize Node
+Initialize node
 
-We need to initialize the node to create all the necessary validator and node configuration files:
-
-```bash
-haqqd init <your_custom_moniker> --chain-id haqq_53211-1
+```sh
+haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
 ```
 
-::: danger
-Monikers can contain only ASCII characters. Using Unicode characters will render your node unreachable.
+### Prepare genesis file for TestEdge
+
+Download genesis
+
+```sh
+curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+```
+
+Update genesis file
+
+```sh
+mv genesis.json $HOME/.haqqd/config/genesis.json
+```
+
+### Configure State sync
+
+```sh
+curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh
+```
+
+### Start Haqq node
+
+```sh
+haqqd start --x-crisis-skip-assert-invariants
+```
+
 :::
 
-By default, the `init` command creates your `~/.haqqd` (i.e `$HOME`) directory with subfolders `config/` and `data/`.
-In the `config` directory, the most important files for configuration are `app.toml` and `config.toml`.
+::: tab Snapshot
 
-## Genesis & Seeds
+### Run from snapshot
 
-### Copy the Genesis File
+Check binary version:
 
-Check the `genesis.json` file from the [`archive`](https://github.com/haqq-network/testnets/raw/main/TestEdge/genesis.zip) and copy it over to the `config` directory: `~/.haqqd/config/genesis.json`. Then extract the archive
-
-This is a genesis file with the chain-id and genesis accounts balances.
-
-```bash
-sudo apt install -y unzip wget
-wget -P ~/.haqqd/config https://github.com/haqq-network/testnets/raw/main/TestEdge/genesis.zip
-unzip ~/.haqqd/config/genesis.zip
+```sh
+haqqd -v
+# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
 ```
 
-Then verify the correctness of the genesis configuration file:
-
-```bash
-haqqd validate-genesis
+Download the snapshot:
+```sh
+curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/haqq_167797.tar.lz4
 ```
 
-<!--### Add Seed Nodes-->
+Write your moniker name
 
-### Add Persistent Peers
-
-We can set the [`persistent_peers`](https://docs.tendermint.com/master/tendermint-core/using-tendermint.html#persistent-peer) field in `~/.haqqd/config/config.toml` to specify peers that your node will maintain persistent connections with. You can retrieve them from the list of
-available peers on the [`testnets`](https://github.com/haqq-network/testnets) repo.
-
- You can get a random 10 entries from the `peers.txt` file in the `PEERS` variable by running the following command:
-
-```bash
-PEERS=`curl -sL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/peers.txt | sort -R | head -n 10 | awk '{print $1}' | paste -s -d, -`
+```sh
+CUSTOM_MONIKER="example_moniker"
 ```
 
-Use `sed` to include them into the configuration. You can also add them manually:
+Cofigure TestEdge chain-id
 
-```bash
-sed -i.bak -e "s/^persistent_peers *=.*/persistent_peers = \"$PEERS\"/" ~/.haqqd/config/config.toml
+```sh
+haqqd config chain-id haqq_53211-1
 ```
 
-## Get a snapshot
+Initialize node
 
-### Prerequisites
-
-Install lz4 if needed
-
-```
-apt-get install lz4
+```sh
+haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
 ```
 
-Download the snapshot
+### Prepare genesis file for TestEdge
 
-```
-curl http://s.kio.ninja/data_backup_180722.tar.lz4 --output data_backup_180722.tar.lz4
-```
+Download genesis
 
-Decompress the snapshot to your database location. You database location will be something to the effect of ~/.haqqd depending on your node implemention.
-
-```
-lz4 -c -d data_backup_180722.tar.lz4  | tar -x -C $HOME/.haqqd
+```sh
+curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
 ```
 
-## Pruning
+Update genesis file
 
-The snapshot is designed for node opeartors to run an efficient validator service on Haqq chain. To make the snapshot as small as possible while still viable as a validator, we use the following setting to save on the disk space. We suggest you make the same adjustment on your node too. Please notice that your node will have very limited functionality beyond signing blocks with the efficient disk space utilization. For example, your node will not be able to serve as a RPC endpoint (which is not suggested to run on a validator node anyway).
-
-Since we periodically state-sync our snapshot nodes, you might notice that sometimes the size of our snapshot is surprisingly small.
-
-app.toml
-
-```
-pruning = "custom"
-pruning-keep-recent = "100"
-pruning-keep-every = "0"
-pruning-interval = "10"
+```sh
+mv genesis.json $HOME/.haqqd/config/genesis.json
 ```
 
-config.toml
+### Unzip snapshot to data
 
+```sh
+lz4 -c -d haqq_167797.tar.lz4 | tar -x -C $HOME/.haqqd/data
 ```
-indexer = "null"
+
+### Setup seeds
+
+```sh
+SEEDS="8f7b0add0523ec3648cb48bc12ac35357b1a73ae@195.201.123.87:26656,899eb370da6930cf0bfe01478c82548bb7c71460@34.90.233.163:26656,f2a78c20d5bb567dd05d525b76324a45b5b7aa28@34.90.227.10:26656,4705cf12fb56d7f9eb7144937c9f1b1d8c7b6a4a@34.91.195.139:26656"
 ```
 
-## Run a Testnet Validator
+```sh
+sed -i.bak -E "s|^(seeds[[:space:]]+=[[:space:]]+).*$|\1\"$SEEDS\"|" $HOME/.haqqd/config/config.toml
+```
 
-Claim your testnet {{ $themeConfig.project.testnet_denom }} on the [faucet](./faucet.md) using your validator account address and submit your validator account address:
+### Start Haqq node
 
-::: tip
-For more details on how to run your validator, follow [these](./run_validator.md) instructions.
+```sh
+haqqd start --x-crisis-skip-assert-invariants
+```
+
 :::
 
-```bash
-haqqd tx staking create-validator \
-  --amount=1000000000000aISLM \
-  --pubkey=$(haqqd tendermint show-validator) \
-  --moniker=<your_moniker_name> \
-  --chain-id=<chain_id> \
-  --commission-rate="0.10" \
-  --commission-max-rate="0.20" \
-  --commission-max-change-rate="0.01" \
-  --min-self-delegation="1000000" \
-  --gas="auto" \
-  --gas-prices="0.025aISLM" \
-  --from=<key_name>
+::: tab Sync from scratch
+
+### Run with sync from scratch
+
+The main problem of synchronization from scratch is that we need to consistently change the version of the binary.
+Currently we need upgrades binary by this pipepline:
+v1.0.1 -> v1.0.2 -> v1.0.3
+
+### Download binary v1.0.1 for your arch:
+
+```sh
+https://github.com/haqq-network/haqq/releases/tag/v1.0.1 
 ```
 
-## Start testnet
+or 
 
-The final step is to [start the nodes](./../quickstart/run_node.md#start-node). Once enough voting power (+2/3) from the genesis validators is up-and-running, the testnet will start producing blocks.
+build from source
 
-```bash
-haqqd start
+```sh
+cd $HOME && \
+git clone -b v1.0.1 https://github.com/haqq-network/haqq && \
+cd haqq && \
+make install
 ```
 
-## Staking delegate
+Check binary version:
 
-You can deligate more ISLM to your stake.
+```sh
+haqqd -v
+# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+```
+
+### Start from v1.0.1:
+
+Write your moniker name
+
+```sh
+CUSTOM_MONIKER="example_moniker"
+```
+
+Cofigure TestEdge chain-id
+
+```sh
+haqqd config chain-id haqq_53211-1
+```
+
+Initialize node
+
+```sh
+haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
+```
+
+
+### Prepare genesis file for TestEdge
+
+Download genesis
+
+```sh
+curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+```
+
+Update genesis file
+
+```sh
+mv genesis.json $HOME/.haqqd/config/genesis.json
+```
+
+### Setup seeds
+
+```sh
+SEEDS="8f7b0add0523ec3648cb48bc12ac35357b1a73ae@195.201.123.87:26656,899eb370da6930cf0bfe01478c82548bb7c71460@34.90.233.163:26656,f2a78c20d5bb567dd05d525b76324a45b5b7aa28@34.90.227.10:26656,4705cf12fb56d7f9eb7144937c9f1b1d8c7b6a4a@34.91.195.139:26656"
+```
+
+```sh
+sed -i.bak -E "s|^(seeds[[:space:]]+=[[:space:]]+).*$|\1\"$SEEDS\"|" $HOME/.haqqd/config/config.toml
+```
+
+### Start Haqq
+
+```sh
+haqqd start --x-crisis-skip-assert-invariants
+```
+
+Now wait until the chain reaches block height 1143. It will panic and log the following:
 
 ```
-haqqd tx staking delegate <your_validator_address> <quantity_ISLM> --from <key_name> -y
+panic: UPGRADE "v1.0.2" NEEDED at height: 1143
 ```
 
-## Upgrading Your Node
+It's now time to perform the manual upgrade to `v1.0.2`:
 
-::: tip
-These instructions are for full nodes that have ran on previous versions of and would like to upgrade to the latest testnet version.
+```sh
+git checkout v1.0.2 && \
+make install && \
+haqqd start --x-crisis-skip-assert-invariants
+```
+
+Now wait until the chain reaches block height 1928. It will panic and log the following:
+```
+panic: UPGRADE "v1.0.3" NEEDED at height: 1928
+```
+
+It's now time to perform the manual upgrade to `v1.0.3`:
+
+```sh
+git checkout v1.0.3 && \
+make install && \
+haqqd start --x-crisis-skip-assert-invariants
+```
+
+### Upgrade to Validator Node
+
+You now have an active full node. What's the next step? You can upgrade your full node to become a Haqq Validator. The top 100 validators have the ability to propose new blocks to the Haqq Network. Continue onto the [Validator Setup](https://docs.haqq.network/guides/validators/setup.html).
+
+```sh
+tar cvf - $HOME/haqq_backups/haqq_$LATEST_HEIGHT/ | lz4 - $HOME/haqq_backups/haqq_$LATEST_HEIGHT.tar.lz4
+```
+
+```sh
+cd ~/haqq_backups/haqq_167797
+```
+
 :::
 
-### Reset Data
+::::
 
-:::warning
-If the version **new_version** you are upgrading to is not breaking from the previous one, you **should not** reset the data. If this is the case you can skip to [Restart](#restart)
-:::
+For more advanced information on setting up a node, see the full [Join TestEdge Tutorial](./join_full.md)
 
-First, remove the outdated files and reset the data.
 
-```bash
-rm $HOME/.haqqd/config/addrbook.json $HOME/.haqqd/config/genesis.json
-haqqd tendermint unsafe-reset-all --home $HOME/.haqqd
-```
-
-Your node is now in a pristine state while keeping the original `priv_validator.json` and `config.toml`. If you had any sentry nodes or full nodes setup before,
-your node will still try to connect to them, but may fail if they haven't also
-been upgraded.
-
-::: danger Warning
-Make sure that every node has a unique `priv_validator.json`. Do not copy the `priv_validator.json` from an old node to multiple new nodes. Running two nodes with the same `priv_validator.json` will cause you to double sign.
-:::
-
-### Restart
-
-To restart your node, just type:
-
-```bash
-haqqd start
-```
-# Automated Upgrades
-
-We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using Cosmovisor. [upgrade](./upgrade.md)

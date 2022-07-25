@@ -171,6 +171,11 @@ module.exports = {
               title: 'Deploy Node on Cloud',
               directory: false,
               path: '/testnet/cloud_providers'
+            },
+            {
+              title: 'Automated Upgrades',
+              directory: false,
+              path: '/testnet/upgrade'
             }
           ]
         },
