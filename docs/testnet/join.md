@@ -310,3 +310,6 @@ cd ~/haqq_backups/haqq_167797
 For more advanced information on setting up a node, see the full [Join TestEdge Tutorial](./join_full.md)
 
 
+### Validators community
+
+We are always welcome you as one of our validators. You can join and interacting with other members in our [Discord](https://discord.gg/sbmyN34B).

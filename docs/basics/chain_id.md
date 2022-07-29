@@ -21,7 +21,7 @@ Learn about the Haqq chain-id format {synopsis}
 
 | Name                                            | Chain ID                                      | Identifier | EIP155 Number                         | Version Number                            |
 |-------------------------------------------------|-----------------------------------------------|------------|---------------------------------------|-------------------------------------------|
-| Haqq | `haqq_11235-1` | `haqq`    | `11235` | {{ $themeConfig.project.version_number }} |
+| Haqq Mainnet | `haqq_11235-1` | `haqq`    | `11235` | {{ $themeConfig.project.version_number }} |
 :::
 ::::
 
