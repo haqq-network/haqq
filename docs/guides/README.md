@@ -13,7 +13,7 @@ parent:
     * [Keyring](./keys-wallets/keyring.md)
     * [MetaMask](./keys-wallets/metamask.md)
     * [Multisig](./keys-wallets/multisig.md)
-    <!-- * [Keplr](./keys-wallets/kelpr.md) -->
+    * [Keplr](./keys-wallets/keplr.md)
     * [Ledger](./ledger/ledger.md)
 3. Ethereum Tooling
     * [Remix](./tools/remix.md)

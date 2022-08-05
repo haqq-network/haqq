@@ -15,7 +15,7 @@ Follow the [Metamask](./../../docs/guides/keys-wallets/metamask.md) guide for mo
 ## Request Testnet tokens
 
 <!-- markdown-link-check-disable-next-line -->
-Once you are signed in to the Keplr extension, visit the [Faucet](https://testedge.haqq.network/) to request tokens for the testnet. Click the `Connect Wallet` button.
+Once you are signed in to the MetaMask extension, visit the [Faucet](https://testedge.haqq.network/) to request tokens for the testnet. Click the `Connect Wallet` button.
 
 ![faucet1](./img/testedge_faucet_1.png)
 
