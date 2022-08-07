@@ -8,8 +8,13 @@ Learn how to setup and run a validator node {synopsis}
 
 ## Pre-requisite Readings
 
-- [Validator Overview](./overview.md) {prereq}
-- [Full Node Setup](../localnet/single_node.md#manual-localnet) {prereq}
+::: tip
+
+Pre-requisite Readings
+1) [Validator Overview](./overview.md)
+1) [Full Node Setup](../localnet/single_node.md#manual-localnet)
+
+:::
 
 If you plan to use a Key Management System (KMS), you should go through these steps first: [Using a KMS](./../kms/kms.md).
 
@@ -40,11 +45,29 @@ As the usage of the blockchain grows, the server requirements may increase as we
 
 ## Create Your Validator
 
-Your `haqqvalconspub` can be used to create a new validator by staking tokens. You can find your validator pubkey by running:
+::: danger
 
-```bash
-haqqd tendermint show-validator
-```
+**Before validator creation checklist 📋**
+
+Before you started please make sure that you have been already done this steps for successful validator creation:
+
+1) Init [node](./../../testnet/join_full.md#initialize-node)
+
+1) Create [keys](./../../testnet/join_full.md#create-keys)
+
+1) Configure [chain-id](./../../testnet/join_full.md#save-chain-id)
+
+1) Added some ISLM to your [account](./../../testnet/join_full.md#adding-some-islm-to-your-account)
+
+1) Deligated some ISLM to your [validator](./../../testnet/join_full.md#the-next-step-is-delegation-islm-to-your-validator)
+
+:::
+
+## Additional information
+
+You can found additional about joining TestEdge [here](./../../testnet/join_full.md)
+
+## Create validator
 
 To create your validator, just use the following command:
 
@@ -60,11 +83,14 @@ haqqd tx staking create-validator \
   --min-self-delegation="1000000" \
   --gas="auto" \
   --gas-prices="0.025aISLM" \
-  --from=<key_name>
+  --from=<key_name> \
+  --node https://rpc.tm.testedge.haqq.network:443
 ```
 
 ::: tip
+
 When specifying commission parameters, the `commission-max-change-rate` is used to measure % *point* change over the `commission-rate`. E.g. 1% to 2% is a 100% rate increase, but only 1 percentage point.
+
 :::
 
 ::: tip
@@ -73,7 +99,7 @@ When specifying commission parameters, the `commission-max-change-rate` is used 
 
 You can confirm that you are in the validator set by using a third party explorer.
 
-## Participate in Genesis as a Validator
+<!-- ## Participate in Genesis as a Validator
 
 If you want to participate in genesis as a validator, you need to justify that
 you have some stake at genesis, create one (or multiple) transactions to bond this stake to your validator address, and include this transaction in the genesis file.
@@ -98,10 +124,12 @@ haqqd gentx \
   --commission-max-change-rate <commission_max_change_rate> \
   --pubkey <consensus_pubkey> \
   --name <key_name>
-```
+``` -->
 
 ::: tip
+
 When specifying commission parameters, the `commission-max-change-rate` is used to measure % _point_ change over the `commission-rate`. E.g. 1% to 2% is a 100% rate increase, but only 1 percentage point.
+
 :::
 
 You can then submit your `gentx` on the [launch repository](https://github.com/cosmos/launch). These `gentx` will be used to form the final genesis file. 
@@ -228,3 +256,7 @@ LimitNOFILE=4096
 [Install]
 WantedBy=multi-user.target
 ```
+
+## Validator FAQ
+
+If you have any problems with validator setting up you can visit our [Validator FAQ](faq.md) page.
