@@ -29,7 +29,7 @@ Here is the list of fields that you can use to paste on Metamask:
 :::: tabs
 ::: tab Mainnet
 
-- **Network Name:** `Haqq Network`
+- **Network Name:** `Haqq Mainnet`
 - **New RPC URL:** `https://rpc.eth.haqq.network`
 - **Chain ID:** `11235`
 - **Currency Symbol (optional):** `ISLM`

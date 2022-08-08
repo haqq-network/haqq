@@ -16,4 +16,4 @@ All the following instructions have been tested on *Ubuntu 18.04.2 LTS* with *Do
 
 ## Build with Docker
 
-🚧 `In developing...` 🏗
+Docker build instructions available [here](https://hub.docker.com/r/alhaqq/haqq)
