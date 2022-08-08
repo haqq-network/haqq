@@ -29,18 +29,12 @@ See the Official [Chain IDs](./../basics/chain_id.md) for reference.
 
 :::
 
-### Cofigure TestEdge chain-id
-
-```bash
-haqqd config chain-id haqq_53211-1
-```
-
 ## Initialize Node
 
 We need to initialize the node to create all the necessary validator and node configuration files:
 
 ```bash
-haqqd init <your_custom_moniker> --chain-id haqq_53211-1
+haqqd init <your_moniker_name> --chain-id=<chain_id>
 ```
 
 ::: danger
@@ -52,29 +46,43 @@ Monikers can contain only ASCII characters. Using Unicode characters will render
 By default, the `init` command creates your `~/.haqqd` (i.e `$HOME`) directory with subfolders `config/` and `data/`.
 In the `config` directory, the most important files for configuration are `app.toml` and `config.toml`.
 
+## Create keys
+
+```sh
+haqqd keys add <your_moniker_name>
+```
+
+## Configure chain-id
+
+```sh
+haqqd config chain-id <chain_id>
+```
+
 ## Genesis & Seeds
 
-### Copy the Genesis File
+To quickly get [started](./join.md#quickstart), node operators can choose to sync via State Sync (preferred) or by downloading a snapshot.
 
-Download genesis
+## Copy the Genesis File
+
+### Download genesis
 
 ```sh
 curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
 ```
 
-Update genesis file
+### Update genesis file
 
 ```sh
 mv genesis.json $HOME/.haqqd/config/genesis.json
 ```
 
-Then verify the correctness of the genesis configuration file:
+### Verify the correctness of the genesis configuration file:
 
 ```bash
 haqqd validate-genesis
 ```
 
-Check binary version:
+### Check binary version:
 
 ```sh
 haqqd -v
@@ -83,7 +91,7 @@ haqqd -v
 
 <!--### Add Seed Nodes-->
 
-### Add Persistent Peers
+## Add Persistent Peers
 
 We can set the [`persistent_peers`](https://docs.tendermint.com/master/tendermint-core/using-tendermint.html#persistent-peer) field in `~/.haqqd/config/config.toml` to specify peers that your node will maintain persistent connections with. You can retrieve them from the list of
 available peers on the [`testnets`](https://github.com/haqq-network/testnets) repo.
@@ -104,13 +112,14 @@ sed -i.bak -e "s/^persistent_peers *=.*/persistent_peers = \"$PEERS\"/" ~/.haqqd
 
 ### Prerequisites
 
-Install lz4 if needed
+### Install lz4 if needed
 
 ```
 apt-get install lz4
 ```
 
-Download the snapshot:
+### Download the snapshot:
+
 ```sh
 curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/haqq_167797.tar.lz4
 ```
@@ -142,13 +151,79 @@ config.toml
 indexer = "null"
 ```
 
-## Run a Testnet Validator
 
-Claim your testnet {{ $themeConfig.project.testnet_denom }} on the [faucet](./faucet.md) using your validator account address and submit your validator account address:
+## Adding some ISLM to your account
+
+### You can see your account address via execution this command
+
+```sh
+haqqd keys list
+
+# - name: node01
+#  type: local
+#  address: haqq1jpl3c626gk08j5tkaja9g474xyxlmrqw726yzp
+#  pubkey: '{"@type":"/ethermint.crypto.v1.ethsecp256k1.PubKey","key":"Aub31LXeh0OQrvR53FVhC21vSsO0Ab2Af0Fc4Otaeexi"}'
+#  mnemonic: ""
+```
+
+### See different account address formats
+
+```sh
+haqqd debug addr <your_account_address>
+
+# Address bytes: [144 127 28 105 90 69 158 121 81 118 236 186 84 87 213 49 13 253 140 14] 
+# Address (hex): 907F1C695A459E795176ECBA5457D5310DFD8C0E 
+# Address (EIP-55): 0x907F1c695a459E795176EcBA5457d5310dfd8C0e
+# Bech32 Acc: haqq1jpl3c626gk08j5tkaja9g474xyxlmrqw726yzp
+# Bech32 Val: haqqvaloper1jpl3c626gk08j5tkaja9g474xyxlmrqwjgk2xq
+```
+
+After that you can transfer some ISLM to your validator address.
+If you don't have ISLM you can recive it using our [faucet](./../../testnet/faucet.md)
+
+Claim your testnet ISLM on the [faucet](./faucet.md) using your validator account address and submit your validator account address:
+
+
+### The next step is delegation ISLM to your validator
 
 ::: tip
-For more details on how to run your validator, follow [these](./run_validator.md) instructions.
+
+Make sure you have already started the node.
+
+```bash
+haqqd start
+```
+
 :::
+
+
+### Check your account balance
+
+```sh
+haqqd query bank balances <your_account_address>
+# balances:
+# - amount: "1009999000069343008" // equal to ~0.01 ISLM
+#  denom: aISLM
+# pagination:
+#  next_key: null
+#  total: "0"
+```
+
+Your `haqqvalconspub` can be used to create a new validator by staking tokens. You can find your validator pubkey by running:
+
+```sh
+haqqd tendermint show-address
+```
+
+## Staking delegate
+
+Deligate some ISLM to your validator and make sure that deligation ISLM amount is not more than you have in balance.
+
+```sh
+haqqd tx staking delegate <your_account_tendermint_address> <quantity_ISLM> --from <your_key> -y
+```
+
+## Run a Testnet Validator
 
 ```bash
 haqqd tx staking create-validator \
@@ -162,35 +237,24 @@ haqqd tx staking create-validator \
   --min-self-delegation="1000000" \
   --gas="auto" \
   --gas-prices="0.025aISLM" \
-  --from=<key_name>
-```
-
-## Start testnet
-
-The final step is to [start the nodes](./../quickstart/run_node.md#start-node). Once enough voting power (+2/3) from the genesis validators is up-and-running, the testnet will start producing blocks.
-
-```bash
-haqqd start
-```
-
-## Staking delegate
-
-You can deligate more ISLM to your stake.
-
-```
-haqqd tx staking delegate <your_validator_address> <quantity_ISLM> --from <key_name> -y
+  --from=<key_name> \
+  --node https://rpc.tm.testedge.haqq.network:443
 ```
 
 ## Upgrading Your Node
 
 ::: tip
+
 These instructions are for full nodes that have ran on previous versions of and would like to upgrade to the latest testnet version.
+
 :::
 
 ### Reset Data
 
 :::warning
-If the version **new_version** you are upgrading to is not breaking from the previous one, you **should not** reset the data. If this is the case you can skip to [Restart](#restart)
+
+If the version **{new version}** you are upgrading to is not breaking from the previous one, you **should not**  reset the data. If this is the case you can skip to [Restart](#restart)
+
 :::
 
 First, remove the outdated files and reset the data.
@@ -215,6 +279,16 @@ To restart your node, just type:
 ```bash
 haqqd start
 ```
+
+## Unjail Validator
+When a validator is "jailed" for downtime, you must submit an Unjail transaction from the operator account in order to be able to get block proposer rewards again (depends on the zone fee distribution).
+
+```sh
+haaqd tx slashing unjail \
+  --from=<key_name> \
+  --chain-id=<chain_id>
+```
+
 # Automated Upgrades
 
-We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using Cosmovisor. [upgrade](./upgrade.md)
+We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using [Cosmovisor](./upgrade.md)
