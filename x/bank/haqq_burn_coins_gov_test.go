@@ -9,8 +9,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/simapp"
+	"github.com/evmos/ethermint/testutil/network"
 	"github.com/stretchr/testify/suite"
-	"github.com/tharsis/ethermint/testutil/network"
 
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	sdk "github.com/cosmos/cosmos-sdk/types"

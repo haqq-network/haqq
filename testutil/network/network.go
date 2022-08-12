@@ -6,8 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/simapp/params"
 
+	"github.com/evmos/ethermint/testutil/network"
 	"github.com/haqq-network/haqq/app"
-	"github.com/tharsis/ethermint/testutil/network"
 
 	dbm "github.com/tendermint/tm-db"
 

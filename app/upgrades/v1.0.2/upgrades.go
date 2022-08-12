@@ -12,7 +12,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	erc20types "github.com/tharsis/evmos/v4/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v7/x/erc20/types"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.0.2
