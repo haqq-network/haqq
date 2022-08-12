@@ -11,7 +11,7 @@ import (
 	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
 	"github.com/stretchr/testify/require"
 	"github.com/tharsis/ethermint/testutil/network"
-	erc20types "github.com/tharsis/evmos/v4/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v7/x/erc20/types"
 	"math/big"
 	"testing"
 )

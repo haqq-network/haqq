@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/x/bank"
-	enccodec "github.com/tharsis/ethermint/encoding/codec"
+	enccodec "github.com/evmos/ethermint/encoding/codec"
 
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/gorilla/mux"
@@ -82,36 +82,36 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	// unnamed import of statik for swagger UI support
-	_ "github.com/tharsis/ethermint/client/docs/statik"
-	"github.com/tharsis/ethermint/encoding"
+	_ "github.com/evmos/ethermint/client/docs/statik"
+	"github.com/evmos/ethermint/encoding"
 
-	srvflags "github.com/tharsis/ethermint/server/flags"
-	ethermint "github.com/tharsis/ethermint/types"
-	etherminttypes "github.com/tharsis/ethermint/types"
-	"github.com/tharsis/ethermint/x/evm"
-	evmrest "github.com/tharsis/ethermint/x/evm/client/rest"
-	evmkeeper "github.com/tharsis/ethermint/x/evm/keeper"
-	evmtypes "github.com/tharsis/ethermint/x/evm/types"
+	srvflags "github.com/evmos/ethermint/server/flags"
+	ethermint "github.com/evmos/ethermint/types"
+	etherminttypes "github.com/evmos/ethermint/types"
+	"github.com/evmos/ethermint/x/evm"
+	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
+	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	// v2 "github.com/tharsis/evmos/v2/app/upgrades/v2"
 
-	"github.com/tharsis/ethermint/x/feemarket"
-	feemarketkeeper "github.com/tharsis/ethermint/x/feemarket/keeper"
-	feemarkettypes "github.com/tharsis/ethermint/x/feemarket/types"
+	"github.com/evmos/ethermint/x/feemarket"
+	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
+	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
-	"github.com/tharsis/evmos/v4/app/ante"
-	"github.com/tharsis/evmos/v4/x/epochs"
-	epochskeeper "github.com/tharsis/evmos/v4/x/epochs/keeper"
-	epochstypes "github.com/tharsis/evmos/v4/x/epochs/types"
+	"github.com/evmos/evmos/v7/app/ante"
+	"github.com/evmos/evmos/v7/x/epochs"
+	epochskeeper "github.com/evmos/evmos/v7/x/epochs/keeper"
+	epochstypes "github.com/evmos/evmos/v7/x/epochs/types"
 
-	"github.com/tharsis/evmos/v4/x/erc20"
-	erc20client "github.com/tharsis/evmos/v4/x/erc20/client"
-	erc20keeper "github.com/tharsis/evmos/v4/x/erc20/keeper"
-	erc20types "github.com/tharsis/evmos/v4/x/erc20/types"
+	"github.com/evmos/evmos/v7/x/erc20"
+	erc20client "github.com/evmos/evmos/v7/x/erc20/client"
+	erc20keeper "github.com/evmos/evmos/v7/x/erc20/keeper"
+	erc20types "github.com/evmos/evmos/v7/x/erc20/types"
 
-	"github.com/tharsis/evmos/v4/x/vesting"
-	vestingkeeper "github.com/tharsis/evmos/v4/x/vesting/keeper"
-	vestingtypes "github.com/tharsis/evmos/v4/x/vesting/types"
+	"github.com/evmos/evmos/v7/x/vesting"
+	vestingkeeper "github.com/evmos/evmos/v7/x/vesting/keeper"
+	vestingtypes "github.com/evmos/evmos/v7/x/vesting/types"
 
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 
@@ -395,7 +395,7 @@ func NewHaqq(
 
 	// Create Ethermint keepers
 	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
-		appCodec, keys[feemarkettypes.StoreKey], app.GetSubspace(feemarkettypes.ModuleName),
+		appCodec, app.GetSubspace(feemarkettypes.ModuleName), keys[feemarkettypes.StoreKey], tkeys[feemarkettypes.TransientKey],
 	)
 
 	// Create Ethermint keepers
