@@ -17,18 +17,23 @@ Haqq offers two types block explorers: an EVM explorer and a Cosmos explorer. Ea
 Below is a list of public block explorers that support Haqq Mainnet and Testnet:
 
 :::: tabs
+
 ::: tab Mainnet
 
 |                      | Category | URL                    |
 | -------------------- | -------- | ---------------------- |
-| Blockscout  | `haqq`    | [explorer.haqq.network](https://explorer.haqq.network/)                       |
+| Blockscout  | `evm`    | [explorer.haqq.network](https://explorer.haqq.network/)                       |
+| PingPub | `cosmos` | [pingpub.explorer.haqq.network](https://pingpub.explorer.haqq.network/haqq)
 
 :::
-::: tab Testnet
+
+::: tab TestEdge
 
 |                      | Category | URL                    |
 | -------------------- | -------- | ---------------------- |
-| Blockscout  | `In progress...`    | In progress...                       |
+| Blockscout  | `evm` |[explorer.testedge.haqq.network](https://explorer.testedge.haqq.network/)    |                       |
+| PingPub | `cosmos` | [pingpub.explorer.testedge.haqq.network](https://pingpub.explorer.testedge.haqq.network/haqq)
 
 :::
+
 ::::

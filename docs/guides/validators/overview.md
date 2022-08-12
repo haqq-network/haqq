@@ -34,6 +34,6 @@ Seek legal advice if you intend to run a validator.
 
 ## Community
 
-Discuss the finer details of being a validator on our community chat and forum:
+Discuss the finer details of being a validator on our community chat:
 
-* [Validator FAQ](https://hub.cosmos.network/main/validators/validator-faq.html)
+* [Validators Discord](https://discord.gg/sbmyN34B)

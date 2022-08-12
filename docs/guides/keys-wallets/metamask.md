@@ -29,10 +29,10 @@ Here is the list of fields that you can use to paste on Metamask:
 :::: tabs
 ::: tab Mainnet
 
-- **Network Name:** `Haqq Network`
+- **Network Name:** `Haqq Mainnet`
 - **New RPC URL:** `https://rpc.eth.haqq.network`
-- **Chain ID:** `haqq_11235-1`
-- **Currency Symbol (optional):** `{{ $themeConfig.project.testnet_ticker }}`
+- **Chain ID:** `11235`
+- **Currency Symbol (optional):** `ISLM`
 - **Block Explorer URL (optional):** `{{ $themeConfig.project.block_explorer_url }}`
 :::
 
@@ -42,7 +42,7 @@ Here is the list of fields that you can use to paste on Metamask:
 - **New RPC URL:** `https://rpc.eth.testedge.haqq.network`
 - **Chain ID:** `53211`
 - **Currency Symbol (optional):** `ISLM`
-- **Block Explorer URL (optional):** `{{ $themeConfig.project.block_explorer_url }}`
+- **Block Explorer URL (optional):** `https://explorer.testedge.haqq.network/`
 :::
 
 ::: tab Local Node

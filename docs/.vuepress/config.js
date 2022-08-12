@@ -148,6 +148,16 @@ module.exports = {
               path: '/api/json-rpc'
             },
             {
+              title: 'Cosmos gRPC & REST',
+              directory: false,
+              path: '/api/cosmos_rpc'
+            },
+            {
+              title: 'Tendermint RPC',
+              directory: false,
+              path: '/api/tendermint_rpc'
+            },
+            {
               title: 'Protobuf Reference',
               directory: false,
               path: '/api/proto-docs'
@@ -171,6 +181,11 @@ module.exports = {
               title: 'Deploy Node on Cloud',
               directory: false,
               path: '/testnet/cloud_providers'
+            },
+            {
+              title: 'Automated Upgrades',
+              directory: false,
+              path: '/testnet/upgrade'
             }
           ]
         },
@@ -179,7 +194,7 @@ module.exports = {
           children: [{
             title: 'Modules',
             directory: true,
-            path: '/modules'
+            path: '/modules/'
           }]
         },
         {
