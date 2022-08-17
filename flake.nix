@@ -29,6 +29,7 @@
           buildInputs = (
             with pkgs; [
               go_1_17
+              gh
             ]
           ) ++ (
             with pkgsUnstable; [
@@ -38,3 +39,4 @@
       }
     );
 }
+
