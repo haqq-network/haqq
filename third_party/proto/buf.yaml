@@ -27,6 +27,7 @@ breaking:
   use:
     - FILE
   ignore:
+    - ethermint
     - tendermint
     - gogoproto
     - cosmos_proto
