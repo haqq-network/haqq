@@ -5,7 +5,7 @@ PACKAGES_SIMTEST=$(shell go list ./... | grep '/simulation')
 DIFF_TAG=$(shell git rev-list --tags="v*" --max-count=1 --not $(shell git rev-list --tags="v*" "HEAD..origin"))
 DEFAULT_TAG=$(shell git rev-list --tags="v*" --max-count=1)
 # VERSION ?= $(shell echo $(shell git describe --tags $(or $(DIFF_TAG), $(DEFAULT_TAG))) | sed 's/^v//')
-VERSION := "1.0.3"
+VERSION := "1.1.0"
 TMVERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
@@ -571,7 +571,7 @@ localnet-show-logstream:
 ###############################################################################
 
 PACKAGE_NAME:=github.com/haqq-network/haqq
-GOLANG_CROSS_VERSION  = v1.17.1
+GOLANG_CROSS_VERSION  = v1.18.5
 GOPATH ?= '$(HOME)/go'
 release-dry-run:
 	docker run \

@@ -14,7 +14,7 @@ fi
 if [ ! -d "./modules/evm" ]; then
   echo "Directory emv/feemarket not exists."
 
-  git clone https://github.com/tharsis/ethermint.git
+  git clone https://github.com/evmos/ethermint.git
   mv ethermint/x/evm/spec/ ./modules/evm
   mv ethermint/x/feemarket/spec/ ./modules/feemarket
   rm -rf ethermint
