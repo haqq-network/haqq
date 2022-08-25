@@ -11,7 +11,7 @@ order: 1
 ## Install Go
 
 ::: warning
-Haqq is built using [Go](https://golang.org/dl/) version `1.17+`
+Haqq is built using [Go](https://golang.org/dl/) version `1.18+`
 :::
 
 ```bash
@@ -102,7 +102,8 @@ Now that your account has some tokens, you need to add a validator to your chain
 # Create a gentx
 # NOTE: this command lets you set the number of coins. 
 # Make sure this account has some coins with the genesis.app_state.staking.params.bond_denom denom
-haqqd add-genesis-account my_validator 100000ISLM,100000ISLM
+
+haqqd gentx $KEY 100000ISLM --keyring-backend $KEYRING --chain-id $CHAINID
 ```
 
 A `gentx` does three things:

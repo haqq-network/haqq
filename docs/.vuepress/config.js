@@ -256,11 +256,5 @@ module.exports = {
       },
       ]
     },
-    versions: [
-      {
-        "label": "main",
-        "key": "main"
-      },
-    ],
   }
 };
