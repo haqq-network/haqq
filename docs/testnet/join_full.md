@@ -51,6 +51,9 @@ In the `config` directory, the most important files for configuration are `app.t
 
 ## Create keys
 
+We recommend using [Tendermint KMS](./../guides/kms/kms.md) that allows separating key management from Tendermint nodes.
+It is recommended that the KMS service runs in a separate physical hosts.
+
 ```sh
 haqqd keys add <your_moniker_name>
 ```
@@ -299,6 +302,20 @@ You can read about common validator problems [here](./../guides/validators/setup
 ## Validators FAQ
 
 If you have any problems with validator setting up you can visit our [Validator FAQ](./../guides/validators/faq.md) page.
+
+## Validator Security
+
+:::danger
+
+Before starting a node, we recommend that you read the following articles in order to ensure security and prevent gaining access to a node and your test coins.
+
+[Validator Security](./../guides/validators/security.md)
+
+[Validator Security Checklist](./../guides/validators/checklist.md)
+
+[Tendermint KMS](./../guides/kms/kms.md)
+
+:::
 
 ## Automated Upgrades
 
