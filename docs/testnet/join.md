@@ -83,6 +83,9 @@ haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
 
 Generate keys (if you haven't already done it)
 
+We recommend using [Tendermint KMS](./../guides/kms/kms.md) that allows separating key management from Tendermint nodes.
+It is recommended that the KMS service runs in a separate physical hosts.
+
 ```sh
 haqqd keys add <name>
 ```
@@ -158,6 +161,9 @@ haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
 ```
 
 Generate keys (if you haven't already done it)
+
+We recommend using [Tendermint KMS](./../guides/kms/kms.md) that allows separating key management from Tendermint nodes.
+It is recommended that the KMS service runs in a separate physical hosts.
 
 ```sh
 haqqd keys add <name>
@@ -255,6 +261,9 @@ haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
 
 Generate keys (if you haven't already done it)
 
+We recommend using [Tendermint KMS](./../guides/kms/kms.md) that allows separating key management from Tendermint nodes.
+It is recommended that the KMS service runs in a separate physical hosts.
+
 ```sh
 haqqd keys add <name>
 ```
@@ -333,6 +342,24 @@ cd ~/haqq_backups/haqq_167797
 ::::
 
 For more advanced information on setting up a node, see the full [Join TestEdge Tutorial](./join_full.md)
+
+## Validators FAQ
+
+If you have any problems with validator setting up you can visit our [Validator FAQ](./../guides/validators/faq.md) page.
+
+## Validator Security
+
+:::danger
+
+Before starting a node, we recommend that you read the following articles in order to ensure security and prevent gaining access to a node and your test coins.
+
+[Validator Security](./../guides/validators/security.md)
+
+[Validator Security Checklist](./../guides/validators/checklist.md)
+
+[Tendermint KMS](./../guides/kms/kms.md)
+
+:::
 
 ## Automated Upgrades
 
