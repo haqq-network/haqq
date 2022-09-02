@@ -697,7 +697,7 @@ And of course you can also create your own firewall rules depending on the netwo
 |                        |                                                                                                                                                                                                                                                                             |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Networking             | In order to use ufw and Fail2ban's whitelisting feature, you need to assign static internal IPs to your validator node and daily laptop/PC. This is useful in conjunction with ufw and Fail2ban's whitelisting feature.        |
-| Power Outage           | Make sure your nodes are backed up by turning on the Uninterruptable Power Supply (UPS), which will allow for power surges if there is a blackout. |
+| Power Outage           | Make sure your nodes are backed up by turning on the Uninterruptible Power Supply (UPS), which will allow for power surges if there is a blackout. |
 | Clear the bash history | <p>When pressing the up-arrow key, you can see prior commands which may contain sensitive data. To clear this, run the following:</p><p><code>shred -u ~/.bash_history && touch ~/.bash_history</code></p>                                                        |
 
 ## Additional information
