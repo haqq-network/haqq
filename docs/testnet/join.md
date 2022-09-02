@@ -357,6 +357,8 @@ Before starting a node, we recommend that you read the following articles in ord
 
 [Validator Security Checklist](./../guides/validators/checklist.md)
 
+[Security Best Practices](./../guides/validators/security_best_practices.md)
+
 [Tendermint KMS](./../guides/kms/kms.md)
 
 :::
