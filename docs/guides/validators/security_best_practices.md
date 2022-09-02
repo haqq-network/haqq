@@ -160,9 +160,9 @@ It's critically important to keep your system up-to-date with the latest patches
 :::
 
 ```bash
-sudo apt-get update -y 
-sudo apt dist-upgrade -y
-sudo apt-get autoremove
+sudo apt-get update -y && \
+sudo apt dist-upgrade -y && \
+sudo apt-get autoremove && \
 sudo apt-get autoclean
 ```
 
@@ -406,9 +406,6 @@ For example, you can check your config files for services used:
 
 # Enable defines if the gRPC server should be enabled.
 enable = false
-
-# Address defines the gRPC server address to bind to.
-address = "0.0.0.0:9090"
 ```
 
 
@@ -422,9 +419,6 @@ address = "0.0.0.0:9090"
 # GRPCWebEnable defines if the gRPC-web should be enabled.
 # NOTE: gRPC must also be enabled, otherwise, this configuration is a no-op.
 enable = false
-
-# Address defines the gRPC-web server address to bind to.
-address = "0.0.0.0:9091"
 ```
 
 ```yaml
@@ -436,12 +430,6 @@ address = "0.0.0.0:9091"
 
 # Enable defines if the gRPC server should be enabled.
 enable = false
-
-# Address defines the EVM RPC HTTP server address to bind to.
-address = "0.0.0.0:8545"
-
-# Address defines the EVM WebSocket server address to bind to.
-ws-address = "0.0.0.0:8546"
 ```
 
 As you can see there are a few list of services, and we can have limit access to them via creating some rules:
@@ -576,9 +564,9 @@ So, for example we can use WireGuard for secure connect with node.
 ### Install WireGuard
 
 ```sh
-sudo apt install linux-headers-generic
-sudo add-apt-repository ppa:wireguard/wireguard -y
-sudo apt-get update
+sudo apt install linux-headers-generic && \
+sudo add-apt-repository ppa:wireguard/wireguard -y && \
+sudo apt-get update && \
 sudo apt-get install wireguard -y
 ```
 
@@ -696,8 +684,8 @@ ping 10.0.0.2
 To stop and disable WireGuard execute
 
 ```sh
-sudo systemctl stop wg-quick@wg0
-sudo systemctl disable wg-quick@wg0.service
+sudo systemctl stop wg-quick@wg0 && \
+sudo systemctl disable wg-quick@wg0.service && \
 sudo systemctl daemon-reload
 ```
 
