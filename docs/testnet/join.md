@@ -54,7 +54,7 @@ To quickly get started, node operators can choose to sync via State Sync (prefer
 
 ::: tab StateSync
 
-### Run by Tendermint State Sync
+**Run by Tendermint State Sync**
 
 Check binary version:
 
@@ -90,7 +90,7 @@ It is recommended that the KMS service runs in a separate physical hosts.
 haqqd keys add <name>
 ```
 
-### Prepare genesis file for TestEdge
+**Prepare genesis file for TestEdge**
 
 Download genesis
 
@@ -104,12 +104,18 @@ Update genesis file
 mv genesis.json $HOME/.haqqd/config/genesis.json
 ```
 
-### Configure State sync
+**Configure State sync**
 
 Download script for state sync auto configuration
 
 ```sh
 curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh
+```
+
+List of seeds already included in script
+
+```sh
+SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
 ```
 
 Grant rights to the script and execute it
@@ -118,7 +124,7 @@ Grant rights to the script and execute it
 chmod +x state_sync.sh && ./state_sync.sh
 ```
 
-### Start Haqq node
+**Start Haqq node**
 
 ```sh
 haqqd start --x-crisis-skip-assert-invariants
@@ -128,7 +134,7 @@ haqqd start --x-crisis-skip-assert-invariants
 
 ::: tab Snapshot
 
-### Run from snapshot
+**Run from snapshot**
 
 Check binary version:
 
@@ -169,7 +175,7 @@ It is recommended that the KMS service runs in a separate physical hosts.
 haqqd keys add <name>
 ```
 
-### Prepare genesis file for TestEdge
+**Prepare genesis file for TestEdge**
 
 Download genesis
 
@@ -183,13 +189,13 @@ Update genesis file
 mv genesis.json $HOME/.haqqd/config/genesis.json
 ```
 
-### Unzip snapshot to data
+**Unzip snapshot to data**
 
 ```sh
 lz4 -c -d haqq_latest.tar.lz4 | tar -x -C $HOME/.haqqd
 ```
 
-### Setup seeds
+**Setup seeds**
 
 ```sh
 SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
@@ -199,7 +205,7 @@ SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:2665
 sed -i.bak -E "s|^(seeds[[:space:]]+=[[:space:]]+).*$|\1\"$SEEDS\"|" $HOME/.haqqd/config/config.toml
 ```
 
-### Start Haqq node
+**Start Haqq node**
 
 ```sh
 haqqd start --x-crisis-skip-assert-invariants
@@ -209,13 +215,13 @@ haqqd start --x-crisis-skip-assert-invariants
 
 ::: tab Sync from scratch
 
-### Run with sync from scratch
+**Run with sync from scratch**
 
 The main problem of synchronization from scratch is that we need to consistently change the version of the binary.
 Currently we need upgrades binary by this pipepline:
 v1.0.1 -> v1.0.2 -> v1.0.3
 
-### Download binary v1.0.1 for your arch:
+**Download binary v1.0.1 for your arch:**
 
 ```sh
 https://github.com/haqq-network/haqq/releases/tag/v1.0.1 
@@ -239,7 +245,7 @@ haqqd -v
 # haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
 ```
 
-### Start from v1.0.1:
+**Start from v1.0.1:**
 
 Write your moniker name
 
@@ -268,7 +274,7 @@ It is recommended that the KMS service runs in a separate physical hosts.
 haqqd keys add <name>
 ```
 
-### Prepare genesis file for TestEdge
+**Prepare genesis file for TestEdge**
 
 Download genesis
 
@@ -282,7 +288,7 @@ Update genesis file
 mv genesis.json $HOME/.haqqd/config/genesis.json
 ```
 
-### Setup seeds
+**Setup seeds**
 
 ```sh
 SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
@@ -292,7 +298,7 @@ SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:2665
 sed -i.bak -E "s|^(seeds[[:space:]]+=[[:space:]]+).*$|\1\"$SEEDS\"|" $HOME/.haqqd/config/config.toml
 ```
 
-### Start Haqq
+**Start Haqq**
 
 ```sh
 haqqd start --x-crisis-skip-assert-invariants
@@ -325,7 +331,7 @@ make install && \
 haqqd start --x-crisis-skip-assert-invariants
 ```
 
-### Upgrade to Validator Node
+**Upgrade to Validator Node**
 
 You now have an active full node. What's the next step? You can upgrade your full node to become a Haqq Validator. The top 100 validators have the ability to propose new blocks to the Haqq Network. Continue onto the [Validator Setup](https://docs.haqq.network/guides/validators/setup.html).
 
