@@ -330,19 +330,50 @@ Once the installation is complete, you can save your configuration using the com
 sudo invoke-rc.d iptables-persistent save
 ```
 
-### Rule for ssh connection
+### Simple firewall configuration for **validator**
 
-:::danger
+After executing this command, we will create rules with allowed ports `22` and `26656`, the rest of the ports will be denied on `INPUT` chain:
 
-This is just an **example** 
+* Port 22 (or your custom port) TCP for SSH connection
+* Port 26656 tcp for p2p for incoming connections
+* Deny other `INPUT` connections
 
-:::
+```sh
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT && \
+sudo iptables -A INPUT -p tcp --dport 26656 -j ACCEPT && \
+sudo iptables -P INPUT DROP
+```
+
+Now you can check the `iptable` configuration using `-L` flag.
+
+```sh
+sudo iptables -L
+```
 
 ::: tip
 
-We want to keep our SSH port open from the 192.168.1.3 network we blocked in the above case. That is we only want to allow those packets coming from 192.168.1.3 and which wants to go to the port 22.
+A more detailed description of used ports can be found below.
 
 :::
+
+### Rule for ssh connection
+
+::: tip
+
+We want to keep our SSH port open from the 192.168.1.3. That is we only want to allow those packets coming from 192.168.1.3 and which wants to go to the port 22.
+
+:::
+
+::: danger
+
+If you don't have static IP address we don't recommend add to add this IP specific rule. For that case just allow SSH port (by default it use `22`)
+
+```sh
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+```
+
+:::
+
 
 Execute the below command:
 
@@ -350,7 +381,7 @@ Execute the below command:
 sudo iptables -A INPUT -s 192.168.1.3 -p tcp --dport 22 -j ACCEPT
 ```
 
-The above command says looks for the packets originating from the IP address 192.168.1.3, having a TCP protocol and who wants to deliver something at the port 22 of my computer. If you find those packets then Accept them.
+The above command says looks for the packets originating from the IP address 192.168.1.3, having a TCP protocol and who wants to deliver something at the port 22 of your node. If you find those packets then Accept them.
 
 Now check the `iptable` configuration using `-L` flag.
 
@@ -373,25 +404,31 @@ You can find used ports in your node config files and make your own firewall rul
 ~/.haqqd/config/client.toml
 ```
 
-Here is the list of used services (by default):
+**Here is the best practice of used services:**
 
-- Address defines the API server to listen on `tcp://0.0.0.0:1317`
-- Rosseta API `:8080`
-- gRPC server `0.0.0.0:9090`
-- gRPC web `0.0.0.0:9091`
-- EMV RPC HTTP `0.0.0.0:8545`
-- EMV WebSocket `0.0.0.0:8546`
-- Tendermint RPC `tcp://localhost:26657`
-- ABCI application `tcp://127.0.0.1:26658`
-- pprof (Go pkg) `localhost:6060`
-- p2p incoming connections `tcp://localhost:26656`
-- Prometheus `:26660`
+| port | service | rpc node | validator |
+|---|---|---|---|
+| 1317 | API server | ✅ | ❌ 
+| 8080 | Rosseta API | ✅ | ❌ |
+| 9090 | gRPC server | ✅ | ❌ |
+| 1317 | gRPC web | ✅ | ❌ |
+| 8545 | EMV RPC HTTP | ✅ | ❌ |
+| 8546 | EMV RPC WebSocket | ✅ | ❌ |
+| 26657 | Tendermint RPC | ✅ | ❌ |
+| 26658 | ABCI application | ❌ | ❌ |
+| 6060 | pprof (Go pkg) | ❌ | ❌ |
+| 26656 | p2p incoming connections | ✅ | ✅ |
+| 26660 | Prometheus | ❌ | ❌ |
 
-::: tip
+<br>
 
-For security reasons, we recommend that you use only the services and ports necessary for your node to work.
+:::danger
 
-:::
+For security reasons, you must block access to the listed ports in the table from the public network.
+
+How to do it via [iptables](./security_best_practices.md#tcp-or-unix-socket-address-for-the-rpc-server-to-listen-on) or via [ufw](./security_best_practices.md#ufw-configuration-alternatively)
+
+::: 
 
 For example, you can check your config files for services used:
 
@@ -432,9 +469,11 @@ enable = false
 enable = false
 ```
 
-As you can see there are a few list of services, and we can have limit access to them via creating some rules:
+As you can see there are a few list of services, and we can have limit access to them via creating some specific rules:
 
-**TCP or UNIX socket address for the RPC server to listen on**
+Here is an examples of port specific rules:
+
+### TCP or UNIX socket address for the RPC server to listen on
 
 ```sh
 sudo iptables -A INPUT -p tcp --dport 26657 -j DROP
@@ -447,22 +486,6 @@ sudo iptables -A INPUT -p tcp --dport 26657 -j DROP
 sudo iptables -A INPUT -p tcp --dport 26658 -j DROP
 ```
 
-`Port` 26657 is using by default for RPC server and if you want you can limit incoming connections too.
-
-If you want to use haqq node CLI remotely you might change `laddr` to 0.0.0.0 
-
-**File** config.toml
-
-```yaml
-#######################################################
-###       RPC Server Configuration Options          ###
-#######################################################
-[rpc]
-
-# TCP or UNIX socket address for the RPC server to listen on
-laddr = "tcp://0.0.0.0:26657"
-```
-
 :::danger
 
 We don't recommend limiting connections to this `port` (26656) because it is used in p2p communications between nodes.
@@ -472,6 +495,16 @@ We don't recommend limiting connections to this `port` (26656) because it is use
 
 laddr = "tcp://0.0.0.0:26656"
 ```
+
+Removing all other traffic 
+
+```sh
+sudo iptables -A INPUT -j DROP
+```
+
+### Additional info
+
+You can find additional information and examples [here](https://www.hostinger.com/tutorials/iptables-tutorial)
 
 :::
 
