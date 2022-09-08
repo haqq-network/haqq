@@ -77,6 +77,7 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+
 	"github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
@@ -106,11 +107,6 @@ import (
 	_ "github.com/evmos/ethermint/client/docs/statik"
 
 	"github.com/evmos/evmos/v7/app/ante"
-	// v2 "github.com/tharsis/evmos/v2/app/upgrades/v2"
-	// v4 "github.com/evmos/evmos/v7/app/upgrades/v4"
-	// v5 "github.com/evmos/evmos/v7/app/upgrades/v5"
-	// v6 "github.com/evmos/evmos/v7/app/upgrades/v6"
-	// v7 "github.com/evmos/evmos/v7/app/upgrades/v7"
 	"github.com/evmos/evmos/v7/x/epochs"
 	epochskeeper "github.com/evmos/evmos/v7/x/epochs/keeper"
 	epochstypes "github.com/evmos/evmos/v7/x/epochs/types"
@@ -141,17 +137,18 @@ func init() {
 	}
 
 	DefaultNodeHome = filepath.Join(userHomeDir, ".haqqd")
+
 	// manually update the power reduction by replacing micro (u) -> atto (a) evmos
 	sdk.DefaultPowerReduction = ethermint.PowerReduction
 	// modify fee market parameter defaults through global
-	//feemarkettypes.DefaultMinGasPrice = v5.MainnetMinGasPrices
-	//feemarkettypes.DefaultMinGasMultiplier = v5.MainnetMinGasMultiplier
+	// feemarkettypes.DefaultMinGasPrice = v5.MainnetMinGasPrices
+	// feemarkettypes.DefaultMinGasMultiplier = v5.MainnetMinGasMultiplier
 }
 
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.1.0"
+	UpgradeName    = "v1.2.0"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -171,12 +168,10 @@ var (
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
 			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
-
+			ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 			// Evmos proposal types
 			erc20client.RegisterCoinProposalHandler, erc20client.RegisterERC20ProposalHandler, erc20client.ToggleTokenConversionProposalHandler,
 			// erc20client.ToggleTokenRelayProposalHandler, erc20client.UpdateTokenPairERC20ProposalHandler,
-
-			ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 			// incentivesclient.RegisterIncentiveProposalHandler, incentivesclient.CancelIncentiveProposalHandler,
 		),
 		params.AppModuleBasic{},
@@ -204,10 +199,9 @@ var (
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
+		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-
 		// inflationtypes.ModuleName:      {authtypes.Minter},
 		// incentivestypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
 	}
@@ -215,6 +209,7 @@ var (
 	// module accounts that are allowed to receive tokens
 	allowedReceivingModAcc = map[string]bool{
 		distrtypes.ModuleName: true,
+		// incentivestypes.ModuleName: true,
 	}
 )
 
@@ -255,11 +250,9 @@ type Haqq struct {
 	ParamsKeeper     paramskeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
 	AuthzKeeper      authzkeeper.Keeper
+	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	EvidenceKeeper   evidencekeeper.Keeper
-
-	/// for IBC
-	IBCKeeper      *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	TransferKeeper ibctransferkeeper.Keeper
+	TransferKeeper   ibctransferkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -324,6 +317,8 @@ func NewHaqq(
 		govtypes.StoreKey, paramstypes.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey,
+		// ibc keys
+		ibchost.StoreKey, ibctransfertypes.StoreKey,
 		// ethermint keys
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		// evmos keys
@@ -331,9 +326,6 @@ func NewHaqq(
 		// incentivestypes.StoreKey,
 		erc20types.StoreKey,
 		epochstypes.StoreKey, vestingtypes.StoreKey,
-
-		// ibc keys
-		ibchost.StoreKey, ibctransfertypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
@@ -373,11 +365,9 @@ func NewHaqq(
 	haqqBankKeeper := haqqbankkeeper.NewBaseKeeper(
 		appCodec, keys[banktypes.StoreKey], keys[distrtypes.StoreKey], app.AccountKeeper, app.DistrKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedAddrs(),
 	)
-
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedAddrs(),
 	)
-
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, &haqqBankKeeper, app.GetSubspace(stakingtypes.ModuleName),
 	)
@@ -403,7 +393,6 @@ func NewHaqq(
 		appCodec, app.GetSubspace(feemarkettypes.ModuleName), keys[feemarkettypes.StoreKey], tkeys[feemarkettypes.TransientKey],
 	)
 
-	// Create Ethermint keepers
 	app.EvmKeeper = evmkeeper.NewKeeper(
 		appCodec, keys[evmtypes.StoreKey], tkeys[evmtypes.TransientKey], app.GetSubspace(evmtypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, &stakingKeeper, app.FeeMarketKeeper,
@@ -421,7 +410,7 @@ func NewHaqq(
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
 		//AddRoute(incentivestypes.RouterKey, incentives.NewIncentivesProposalHandler(&app.IncentivesKeeper))
 
@@ -469,6 +458,7 @@ func NewHaqq(
 		epochskeeper.NewMultiEpochHooks(
 		// insert epoch hooks receivers here
 		// app.IncentivesKeeper.Hooks(),
+		// app.InflationKeeper.Hooks(),
 		),
 	)
 
@@ -481,22 +471,33 @@ func NewHaqq(
 		),
 	)
 
-	/// for IBC
+	// Create Transfer Stack
+
+	// SendPacket, since it is originating from the application to core IBC:
+	// transferKeeper.SendPacket -> ibcFirewall.SendPacket -> channel.SendPacket
+
+	// RecvPacket, message that originates from core IBC and goes down to app, the flow is the otherway
+	// channel.RecvPacket -> ibcFirewall.OnRecvPacket -> transfer.OnRecvPacket
+
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		// app.ClaimsKeeper, // ICS4 Wrapper: claims IBC middleware
-		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeper, // ICS4 Wrapper: claims IBC middleware
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)
 
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 
-	// // create IBC module from bottom to top of stack
+	// transfer stack contains (from top to bottom):
+	// - IBC Firewall Middleware
+	// - Transfer
+
+	// create IBC module from bottom to top of stack
 	var transferStack porttypes.IBCModule
 
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	// // removed evmos recovery and airdrop middlewares
+	// TODO Add IBC Firewall Middleware
+	// transferStack = firewall.NewIBCMiddleware(*app.FirewallKeeper, transferStack)
 
 	// // Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
@@ -517,7 +518,6 @@ func NewHaqq(
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	enccodec.RegisterInterfaces(interfaceRegistry)
-	ethermint.RegisterInterfaces(interfaceRegistry)
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -575,6 +575,7 @@ func NewHaqq(
 		stakingtypes.ModuleName,
 		ibchost.ModuleName,
 		// no-op modules
+		ibctransfertypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		govtypes.ModuleName,
@@ -584,9 +585,8 @@ func NewHaqq(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
-		erc20types.ModuleName,
-		ibctransfertypes.ModuleName,
 		// inflationtypes.ModuleName,
+		erc20types.ModuleName,
 		// incentivestypes.ModuleName,
 	)
 
@@ -600,6 +600,8 @@ func NewHaqq(
 		// Note: epochs' endblock should be "real" end of epochs, we keep epochs endblock at the end
 		epochstypes.ModuleName,
 		// no-op modules
+		ibchost.ModuleName,
+		ibctransfertypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -613,10 +615,8 @@ func NewHaqq(
 		upgradetypes.ModuleName,
 		// Evmos modules
 		vestingtypes.ModuleName,
-		erc20types.ModuleName,
-		ibchost.ModuleName,
-		ibctransfertypes.ModuleName,
 		// inflationtypes.ModuleName,
+		erc20types.ModuleName,
 		// incentivestypes.ModuleName,
 	)
 
@@ -637,7 +637,10 @@ func NewHaqq(
 		govtypes.ModuleName,
 		ibchost.ModuleName,
 		// Ethermint modules
+		// evm module denomination is used by the fees module, in AnteHandle
 		evmtypes.ModuleName,
+		// NOTE: feemarket module needs to be initialized before genutil module:
+		// gentx transactions use MinGasPriceDecorator.AnteHandle
 		feemarkettypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -711,12 +714,12 @@ func NewHaqq(
 		EvmKeeper:       app.EvmKeeper,
 		StakingKeeper:   app.StakingKeeper,
 		FeegrantKeeper:  app.FeeGrantKeeper,
+		IBCKeeper:       app.IBCKeeper,
 		FeeMarketKeeper: app.FeeMarketKeeper,
 		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 		SigGasConsumer:  SigVerificationGasConsumer,
 		Cdc:             appCodec,
 		MaxTxGasWanted:  maxGasWanted,
-		IBCKeeper:       app.IBCKeeper,
 	}
 
 	if err := options.Validate(); err != nil {
@@ -750,9 +753,12 @@ func NewHaqq(
 // Name returns the name of the App
 func (app *Haqq) Name() string { return app.BaseApp.Name() }
 
-// BeginBlocker updates every begin block
+// BeginBlocker runs the Tendermint ABCI BeginBlock logic. It executes state changes at the beginning
+// of the new block for every registered module. If there is a registered fork at the current height,
+// BeginBlocker will schedule the upgrade plan and perform the state migration (if any).
 func (app *Haqq) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	BeginBlockForks(ctx, app)
+	// Perform any scheduled forks before executing the modules logic
+	app.ScheduleForkUpgrade(ctx)
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -782,7 +788,9 @@ func (app *Haqq) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci.Re
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
+
 	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
+
 	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
 }
 
