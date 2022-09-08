@@ -25,6 +25,7 @@
             with pkgs; [
               go_1_18
               gh
+              gosec
             ]
           ) ++ (
             with pkgsUnstable; [
