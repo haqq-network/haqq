@@ -38,5 +38,3 @@ To learn how the Haqq works from a high-level perspective, go to the [Introducti
 
 <!-- ## Community -->
 <!-- ## Contributing -->
-
-

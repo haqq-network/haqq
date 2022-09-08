@@ -9,6 +9,9 @@ You specify the network you want to join by setting the **genesis file** and **s
 | haqq_53211-1 | Haqq TestEdge | v1.0.3 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
 | haqq_112357-1 | Haqq TestNow | v1.0.3 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
 
+## Preresquisites
+- `make` & `gcc` 
+- `Go 1.18+` [Install Go](https://go.dev/doc/install)
 
 ## Install `haqqd`
 
@@ -47,6 +50,9 @@ By default, the `init` command creates your `~/.haqqd` (i.e `$HOME`) directory w
 In the `config` directory, the most important files for configuration are `app.toml` and `config.toml`.
 
 ## Create keys
+
+We recommend using [Tendermint KMS](./../guides/kms/kms.md) that allows separating key management from Tendermint nodes.
+It is recommended that the KMS service runs in a separate physical hosts.
 
 ```sh
 haqqd keys add <your_moniker_name>
@@ -121,13 +127,13 @@ apt-get install lz4
 ### Download the snapshot:
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/haqq_167797.tar.lz4
+curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/haqq_latest.tar.lz4
 ```
 
 Decompress the snapshot to your database location. You database location will be something to the effect of ~/.haqqd depending on your node implemention.
 
 ```sh
-lz4 -c -d haqq_167797.tar.lz4 | tar -x -C $HOME/.haqqd/data
+lz4 -c -d haqq_latest.tar.lz4 | tar -x -C $HOME/.haqqd
 ```
 
 ## Pruning
@@ -289,6 +295,30 @@ haaqd tx slashing unjail \
   --chain-id=<chain_id>
 ```
 
-# Automated Upgrades
+## Common problems
+
+You can read about common validator problems [here](./../guides/validators/setup.md#common-problems)
+
+## Validators FAQ
+
+If you have any problems with validator setting up you can visit our [Validator FAQ](./../guides/validators/faq.md) page.
+
+## Validator Security
+
+:::danger
+
+Before starting a node, we recommend that you read the following articles in order to ensure security and prevent gaining access to a node and your test coins.
+
+[Validator Security](./../guides/validators/security.md)
+
+[Validator Security Checklist](./../guides/validators/checklist.md)
+
+[Security Best Practices](./../guides/validators/security_best_practices.md)
+
+[Tendermint KMS](./../guides/kms/kms.md)
+
+:::
+
+## Automated Upgrades
 
 We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using [Cosmovisor](./upgrade.md)

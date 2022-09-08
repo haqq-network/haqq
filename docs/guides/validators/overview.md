@@ -36,4 +36,4 @@ Seek legal advice if you intend to run a validator.
 
 Discuss the finer details of being a validator on our community chat:
 
-* [Validators Discord](https://discord.gg/sbmyN34B)
+* [Validators Discord](https://discord.gg/aZMm8pekhZ)

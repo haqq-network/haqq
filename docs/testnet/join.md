@@ -22,7 +22,7 @@ sudo apt-get install curl git make gcc liblz4-tool build-essential jq -y
 
 **Preresquisites for compile from source**
 - `make` & `gcc` 
-- `Go 1.16+` ([How to install Go](https://www.digitalocean.com/community/tutorials/how-to-install-go-on-ubuntu-20-04))
+- `Go 1.18+` [Install Go](https://go.dev/doc/install)
 
 
 ::: tip
@@ -81,6 +81,15 @@ Initialize node
 haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
 ```
 
+Generate keys (if you haven't already done it)
+
+We recommend using [Tendermint KMS](./../guides/kms/kms.md) that allows separating key management from Tendermint nodes.
+It is recommended that the KMS service runs in a separate physical hosts.
+
+```sh
+haqqd keys add <name>
+```
+
 ### Prepare genesis file for TestEdge
 
 Download genesis
@@ -97,8 +106,16 @@ mv genesis.json $HOME/.haqqd/config/genesis.json
 
 ### Configure State sync
 
+Download script for state sync auto configuration
+
 ```sh
 curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh
+```
+
+Grant rights to the script and execute it
+
+```sh
+chmod +x state_sync.sh && ./state_sync.sh
 ```
 
 ### Start Haqq node
@@ -122,7 +139,7 @@ haqqd -v
 
 Download the snapshot:
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/haqq_167797.tar.lz4
+curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/haqq_latest.tar.lz4
 ```
 
 Write your moniker name
@@ -143,6 +160,15 @@ Initialize node
 haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
 ```
 
+Generate keys (if you haven't already done it)
+
+We recommend using [Tendermint KMS](./../guides/kms/kms.md) that allows separating key management from Tendermint nodes.
+It is recommended that the KMS service runs in a separate physical hosts.
+
+```sh
+haqqd keys add <name>
+```
+
 ### Prepare genesis file for TestEdge
 
 Download genesis
@@ -160,13 +186,13 @@ mv genesis.json $HOME/.haqqd/config/genesis.json
 ### Unzip snapshot to data
 
 ```sh
-lz4 -c -d haqq_167797.tar.lz4 | tar -x -C $HOME/.haqqd/data
+lz4 -c -d haqq_latest.tar.lz4 | tar -x -C $HOME/.haqqd
 ```
 
 ### Setup seeds
 
 ```sh
-SEEDS="8f7b0add0523ec3648cb48bc12ac35357b1a73ae@195.201.123.87:26656,899eb370da6930cf0bfe01478c82548bb7c71460@34.90.233.163:26656,f2a78c20d5bb567dd05d525b76324a45b5b7aa28@34.90.227.10:26656,4705cf12fb56d7f9eb7144937c9f1b1d8c7b6a4a@34.91.195.139:26656"
+SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
 ```
 
 ```sh
@@ -233,6 +259,14 @@ Initialize node
 haqqd init CUSTOM_MONIKER --chain-id haqq_53211-1
 ```
 
+Generate keys (if you haven't already done it)
+
+We recommend using [Tendermint KMS](./../guides/kms/kms.md) that allows separating key management from Tendermint nodes.
+It is recommended that the KMS service runs in a separate physical hosts.
+
+```sh
+haqqd keys add <name>
+```
 
 ### Prepare genesis file for TestEdge
 
@@ -251,7 +285,7 @@ mv genesis.json $HOME/.haqqd/config/genesis.json
 ### Setup seeds
 
 ```sh
-SEEDS="8f7b0add0523ec3648cb48bc12ac35357b1a73ae@195.201.123.87:26656,899eb370da6930cf0bfe01478c82548bb7c71460@34.90.233.163:26656,f2a78c20d5bb567dd05d525b76324a45b5b7aa28@34.90.227.10:26656,4705cf12fb56d7f9eb7144937c9f1b1d8c7b6a4a@34.91.195.139:26656"
+SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
 ```
 
 ```sh
@@ -309,7 +343,30 @@ cd ~/haqq_backups/haqq_167797
 
 For more advanced information on setting up a node, see the full [Join TestEdge Tutorial](./join_full.md)
 
+## Validators FAQ
+
+If you have any problems with validator setting up you can visit our [Validator FAQ](./../guides/validators/faq.md) page.
+
+## Validator Security
+
+:::danger
+
+Before starting a node, we recommend that you read the following articles in order to ensure security and prevent gaining access to a node and your test coins.
+
+[Validator Security](./../guides/validators/security.md)
+
+[Validator Security Checklist](./../guides/validators/checklist.md)
+
+[Security Best Practices](./../guides/validators/security_best_practices.md)
+
+[Tendermint KMS](./../guides/kms/kms.md)
+
+:::
+
+## Automated Upgrades
+
+We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using [Cosmovisor](./upgrade.md)
 
 ### Validators community
 
-We are always welcome you as one of our validators. You can join and interacting with other members in our [Discord](https://discord.gg/sbmyN34B).
+We are always welcome you as one of our validators. You can join and interacting with other members in our [Discord](https://discord.gg/aZMm8pekhZ).
