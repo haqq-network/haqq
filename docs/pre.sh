@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# rm -rf modules && mkdir -p modules
-
-# cat ../x/README.md | sed 's/\.\/x/\/modules/g' | sed 's/spec\/README.md//g' | sed 's/\.\.\/docs\/building-modules\/README\.md/\/building-modules\/intro\.html/g' > ./modules/README.md
-
 if [ ! -d "./modules" ]; then
   echo "Modules directory not exists."
   mkdir -p modules
@@ -23,7 +19,7 @@ fi
 if [ ! -d "./modules/auth" ]; then
   echo "Directory auth not exists."
   # Include the specs from Cosmos SDK
-  git clone https://github.com/cosmos/cosmos-sdk.git
+  git clone -b v0.45.8 https://github.com/cosmos/cosmos-sdk.git
   mv cosmos-sdk/x/auth/spec/ ./modules/auth
   mv cosmos-sdk/x/bank/spec/ ./modules/bank
   mv cosmos-sdk/x/crisis/spec/ ./modules/crisis
