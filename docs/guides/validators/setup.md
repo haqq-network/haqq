@@ -59,7 +59,7 @@ Before you started please make sure that you have been already done this steps f
 
 1) Added some ISLM to your [account](./../../testnet/join_full.md#adding-some-islm-to-your-account)
 
-1) Deligated some ISLM to your [validator](./../../testnet/join_full.md#the-next-step-is-delegation-islm-to-your-validator)
+1) Delegated some ISLM to your [validator](./../../testnet/join_full.md#the-next-step-is-delegation-islm-to-your-validator)
 
 1) Familiarize yourself with the best practices for node [security](./../validators/security_best_practices.md)
 
