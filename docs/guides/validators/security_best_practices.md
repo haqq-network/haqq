@@ -406,19 +406,19 @@ You can find used ports in your node config files and make your own firewall rul
 
 **Here is the best practice of used services:**
 
-| port | service | rpc node | validator |
-|---|---|---|---|
-| 1317 | API server | ✅ | ❌ 
-| 8080 | Rosseta API | ✅ | ❌ |
-| 9090 | gRPC server | ✅ | ❌ |
-| 1317 | gRPC web | ✅ | ❌ |
-| 8545 | EMV RPC HTTP | ✅ | ❌ |
-| 8546 | EMV RPC WebSocket | ✅ | ❌ |
-| 26657 | Tendermint RPC | ✅ | ❌ |
-| 26658 | ABCI application | ❌ | ❌ |
-| 6060 | pprof (Go pkg) | ❌ | ❌ |
-| 26656 | p2p incoming connections | ✅ | ✅ |
-| 26660 | Prometheus | ❌ | ❌ |
+| port | service | rpc node | validator | sentry |
+|---|---|---|---|---|
+| 1317 | API server | ✅ | ❌ | ❌ |
+| 8080 | Rosseta API | ✅ | ❌ | ❌ |
+| 9090 | gRPC server | ✅ | ❌ | ❌ |
+| 1317 | gRPC web | ✅ | ❌ | ❌ |
+| 8545 | EMV RPC HTTP | ✅ | ❌ | ❌ |
+| 8546 | EMV RPC WebSocket | ✅ | ❌ | ❌ |
+| 26657 | Tendermint RPC | ✅ | ❌ | ❌ |
+| 26658 | ABCI application | ❌ | ❌ | ❌ |
+| 6060 | pprof (Go pkg) | ❌ | ❌ | ❌ |
+| 26656 | p2p incoming connections | ✅ | ✅ | ✅ |
+| 26660 | Prometheus | ❌ | ❌ | ❌ |
 
 <br>
 
