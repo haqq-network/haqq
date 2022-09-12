@@ -128,6 +128,7 @@ import (
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 
 	v102 "github.com/haqq-network/haqq/app/upgrades/v1.0.2"
+	v120 "github.com/haqq-network/haqq/app/upgrades/v1.2.0"
 )
 
 func init() {
@@ -991,6 +992,14 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.BankKeeper,
 			app.appCodec,
 			app.keys[distrtypes.StoreKey],
+		),
+	)
+	// v1.2.0 update handler (IBC Enable)
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v120.UpgradeName,
+		v120.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
 		),
 	)
 }
