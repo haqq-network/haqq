@@ -17,9 +17,9 @@ func CreateUpgradeHandler(
 		logger := ctx.Logger()
 		logger.Debug("run migration v1.2.0")
 
+		// Skip module migrations if existing version is greater than new one (should not happen).
 		moduleVersion := ibc.AppModule{}.ConsensusVersion()
-		ibcVersion, exists := vm[ibchost.ModuleName]
-		if !exists || ibcVersion < moduleVersion {
+		if ibcVersion, exists := vm[ibchost.ModuleName]; exists && ibcVersion > moduleVersion {
 			vm[ibchost.ModuleName] = moduleVersion
 		}
 
