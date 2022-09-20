@@ -24,7 +24,6 @@ tools/bin/*
 docs/_build
 docs/tutorial
 docs/node_modules
-docs/modules
 dist
 tools-stamp
 docs-tools-stamp
