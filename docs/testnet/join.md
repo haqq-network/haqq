@@ -95,7 +95,7 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+curl -OL https://github.com/haqq-network/validators-contest/raw/master/genesis.json
 ```
 
 Update genesis file
