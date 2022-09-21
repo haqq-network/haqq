@@ -115,7 +115,7 @@ curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/s
 List of seeds already included in script
 
 ```sh
-SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
+SEEDS="62bf004201a90ce00df6f69390378c3d90f6dd7e@seed2.testedge2.haqq.network:26656,23a1176c9911eac442d6d1bf15f92eeabb3981d5@seed1.testedge2.haqq.network:26656"
 ```
 
 Grant rights to the script and execute it
@@ -163,7 +163,7 @@ haqqd config chain-id haqq_54211-2
 Initialize node
 
 ```sh
-haqqd init CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-2
 ```
 
 Generate keys (if you haven't already done it)
@@ -180,7 +180,7 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh
 ```
 
 Update genesis file
@@ -198,7 +198,7 @@ lz4 -c -d haqq_latest.tar.lz4 | tar -x -C $HOME/.haqqd
 **Setup seeds**
 
 ```sh
-SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
+SEEDS="62bf004201a90ce00df6f69390378c3d90f6dd7e@seed2.testedge2.haqq.network:26656,23a1176c9911eac442d6d1bf15f92eeabb3981d5@seed1.testedge2.haqq.network:26656"
 ```
 
 ```sh
@@ -262,7 +262,7 @@ haqqd config chain-id haqq_54211-2
 Initialize node
 
 ```sh
-haqqd init CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-2
 ```
 
 Generate keys (if you haven't already done it)
@@ -279,7 +279,7 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh
 ```
 
 Update genesis file
@@ -291,7 +291,7 @@ mv genesis.json $HOME/.haqqd/config/genesis.json
 **Setup seeds**
 
 ```sh
-SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
+SEEDS="62bf004201a90ce00df6f69390378c3d90f6dd7e@seed2.testedge2.haqq.network:26656,23a1176c9911eac442d6d1bf15f92eeabb3981d5@seed1.testedge2.haqq.network:26656"
 ```
 
 ```sh
