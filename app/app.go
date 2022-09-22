@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
 	"io"
 	"net/http"
 	"os"
@@ -413,7 +414,7 @@ func NewHaqq(
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
-		//AddRoute(incentivestypes.RouterKey, incentives.NewIncentivesProposalHandler(&app.IncentivesKeeper))
+	//AddRoute(incentivestypes.RouterKey, incentives.NewIncentivesProposalHandler(&app.IncentivesKeeper))
 
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName),
@@ -497,8 +498,10 @@ func NewHaqq(
 	var transferStack porttypes.IBCModule
 
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	// TODO Add IBC Firewall Middleware
-	// transferStack = firewall.NewIBCMiddleware(*app.FirewallKeeper, transferStack)
+	// Add IBC Firewall Middleware
+	transferStack = firewall.NewIBCMiddleware(transferStack, app.IBCKeeper.ChannelKeeper, map[string]bool{
+		"haqq1azmcjm5350qd7d23mdrkmmw3k43q5z4swhg3pr": true,
+	})
 
 	// // Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
