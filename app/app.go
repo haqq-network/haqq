@@ -481,9 +481,13 @@ func NewHaqq(
 	// RecvPacket, message that originates from core IBC and goes down to app, the flow is the otherway
 	// channel.RecvPacket -> ibcFirewall.OnRecvPacket -> transfer.OnRecvPacket
 
+	ics4Wrapper := firewall.NewICS4Wrapper(app.IBCKeeper.ChannelKeeper, map[string]bool{
+		"haqq1azmcjm5350qd7d23mdrkmmw3k43q5z4swhg3pr": true,
+	})
+
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, // ICS4 Wrapper: claims IBC middleware
+		ics4Wrapper, // ICS4 Wrapper: claims IBC middleware
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)

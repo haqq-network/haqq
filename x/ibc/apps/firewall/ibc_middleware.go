@@ -29,6 +29,13 @@ func NewIBCMiddleware(app porttypes.IBCModule, w porttypes.ICS4Wrapper, wl map[s
 	}
 }
 
+func NewICS4Wrapper(w porttypes.ICS4Wrapper, wl map[string]bool) IBCMiddleware {
+	return IBCMiddleware{
+		ics4Wrapper: w,
+		whitelist:   wl,
+	}
+}
+
 // IsAllowedAddress checks if given address is allowed to make IBC transfers
 func (im IBCMiddleware) IsAllowedAddress(addr string) bool {
 	return im.whitelist[addr]
