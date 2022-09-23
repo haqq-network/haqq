@@ -19,14 +19,6 @@ jobs:
           # fetch all commits to get last updated time or other git log info
           fetch-depth: 0
 
-      - uses: technote-space/get-diff-action@v5
-        id: git_diff
-        with:
-          PATTERNS: |
-            docs/*
-          SUFFIX_FILTER: |
-            .md
-
       - name: Install dependencies and build docs 🧱
         run: |
           make build-docs

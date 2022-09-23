@@ -57,9 +57,11 @@ Before you started please make sure that you have been already done this steps f
 
 1) Configure [chain-id](./../../testnet/join_full.md#save-chain-id)
 
-1) Added some ISLM to your [account](./../../testnet/join_full.md#adding-some-islm-to-your-account)
+1) Add some ISLM to your [account](./../../testnet/join_full.md#adding-some-islm-to-your-account)
 
-1) Deligated some ISLM to your [validator](./../../testnet/join_full.md#the-next-step-is-delegation-islm-to-your-validator)
+1) Delegate some ISLM to your [validator](./../../testnet/join_full.md#the-next-step-is-delegation-islm-to-your-validator)
+
+1) Familiarize yourself with the best practices for node [security](./../validators/security_best_practices.md)
 
 :::
 
@@ -167,7 +169,7 @@ __Note__: The `commission-rate` value must adhere to the following invariants:
 View the validator's information with this command:
 
 ```bash
-haqqd query staking validator <account_cosmos>
+haqqd query staking validator <account_validator>
 ```
 
 ## Track Validator Signing Information
@@ -257,6 +259,39 @@ LimitNOFILE=4096
 WantedBy=multi-user.target
 ```
 
+### Problem #3: My node crashes because of `validator set is nil in genesis and still empty after InitChain`
+
+Make sure you have a genesis file in `$HOME/.haqqd/config/genesis.json` if you don't have this file you can find it here
+
+```sh
+curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+```
+
+And also you can validate genesis file using this command
+
+```sh
+haqqd validate-genesis
+```
+
+### Problem #4: I have an error while running validator `wrong Block.Header.AppHash.`
+
+First of all, you should make sure that your bin file is up to date
+
+```sh
+haqqd -v
+# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+```
+
+We are currently using version `1.0.3` on TestEdge.
+
+This error can also occur if you run the validator from a period when blocks were produced on a different version of the binary. 
+
+From this point, we recommend starting the node using snapshot or statesync. More information you can find [here](./../../testnet/join_full.md)
+
+### Unknown problems
+
+If you encounter bugs that are not covered in our documentation portal, we'd love to see your bug report on our [discord](https://discord.gg/aZMm8pekhZ)
+
 ## Validator FAQ
 
-If you have any problems with validator setting up you can visit our [Validator FAQ](faq.md) page.
+If you have any problems with validator setting up you can visit our [Validator FAQ](./faq.md) page.
