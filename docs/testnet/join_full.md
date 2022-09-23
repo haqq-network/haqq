@@ -243,8 +243,7 @@ haqqd tx staking create-validator \
   --min-self-delegation="1000000" \
   --gas="auto" \
   --gas-prices="0.025aISLM" \
-  --from=<key_name> \
-  --node https://rpc.tm.testedge.haqq.network:443
+  --from=<key_name>
 ```
 
 ## Upgrading Your Node
