@@ -11,7 +11,7 @@ order: 1
 ## Install Go
 
 ::: warning
-Haqq is built using [Go](https://golang.org/dl/) version `1.17+`
+Haqq is built using [Go](https://golang.org/dl/) version `1.18+`
 :::
 
 ```bash

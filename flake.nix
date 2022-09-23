@@ -5,14 +5,9 @@
     nixpkgs.url = github:NixOS/nixpkgs/22.05;
     nixpkgs-unstable.url = github:NixOS/nixpkgs/nixpkgs-unstable;
 
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
+    flake-utils.url = "github:numtide/flake-utils";
     flake-compat = {
       url = "github:edolstra/flake-compat";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
       flake = false;
     };
   };
@@ -28,7 +23,8 @@
         devShell = pkgs.mkShell {
           buildInputs = (
             with pkgs; [
-              go_1_17
+              go_1_18
+              gh
             ]
           ) ++ (
             with pkgsUnstable; [
