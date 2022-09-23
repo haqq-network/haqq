@@ -26,7 +26,7 @@ func NewHaqqAnteHandlerDecorator(sk keeper.Keeper, h types.AnteHandler) types.An
 
 			switch msgs[i].(type) {
 			case *stakingtypes.MsgDelegate, *stakingtypes.MsgCreateValidator:
-				if haqqtypes.IsMainNetwork(ctx.ChainID()) {
+				if haqqtypes.IsMainNetwork(ctx.ChainID()) || haqqtypes.IsTestEdgeNetwork(ctx.ChainID()) {
 					isValid = false
 
 					if ctx.BlockHeight() == 0 {
