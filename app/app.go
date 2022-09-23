@@ -8,10 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	enccodec "github.com/tharsis/ethermint/encoding/codec"
-
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -37,12 +33,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
+	"github.com/cosmos/cosmos-sdk/x/bank"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/capability"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
@@ -80,58 +77,59 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-
-	// unnamed import of statik for swagger UI support
-	_ "github.com/tharsis/ethermint/client/docs/statik"
-	"github.com/tharsis/ethermint/encoding"
-
-	srvflags "github.com/tharsis/ethermint/server/flags"
-	ethermint "github.com/tharsis/ethermint/types"
-	etherminttypes "github.com/tharsis/ethermint/types"
-	"github.com/tharsis/ethermint/x/evm"
-	evmrest "github.com/tharsis/ethermint/x/evm/client/rest"
-	evmkeeper "github.com/tharsis/ethermint/x/evm/keeper"
-	evmtypes "github.com/tharsis/ethermint/x/evm/types"
-
-	// v2 "github.com/tharsis/evmos/v2/app/upgrades/v2"
-
-	"github.com/tharsis/ethermint/x/feemarket"
-	feemarketkeeper "github.com/tharsis/ethermint/x/feemarket/keeper"
-	feemarkettypes "github.com/tharsis/ethermint/x/feemarket/types"
-
-	"github.com/tharsis/evmos/v4/app/ante"
-	"github.com/tharsis/evmos/v4/x/epochs"
-	epochskeeper "github.com/tharsis/evmos/v4/x/epochs/keeper"
-	epochstypes "github.com/tharsis/evmos/v4/x/epochs/types"
-
-	"github.com/tharsis/evmos/v4/x/erc20"
-	erc20client "github.com/tharsis/evmos/v4/x/erc20/client"
-	erc20keeper "github.com/tharsis/evmos/v4/x/erc20/keeper"
-	erc20types "github.com/tharsis/evmos/v4/x/erc20/types"
-
-	"github.com/tharsis/evmos/v4/x/vesting"
-	vestingkeeper "github.com/tharsis/evmos/v4/x/vesting/keeper"
-	vestingtypes "github.com/tharsis/evmos/v4/x/vesting/types"
-
-	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
-
-	// "github.com/tharsis/evmos/v3/x/incentives"
-	// incentivesclient "github.com/tharsis/evmos/v3/x/incentives/client"
-	// incentiveskeeper "github.com/tharsis/evmos/v3/x/incentives/keeper"
-	// incentivestypes "github.com/tharsis/evmos/v3/x/incentives/types"
-	// "github.com/tharsis/evmos/v2/x/inflation"
-	// inflationkeeper "github.com/tharsis/evmos/v2/x/inflation/keeper"
-	// inflationtypes "github.com/tharsis/evmos/v2/x/inflation/types"
 	// "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 	// ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
 	// ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	// ibc "github.com/cosmos/ibc-go/v3/modules/core"
 	// ibcclient "github.com/cosmos/ibc-go/v3/modules/core/02-client"
 	// ibcclientclient "github.com/cosmos/ibc-go/v3/modules/core/02-client/client"
+	// ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	// porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	// ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	// ibctesting "github.com/cosmos/ibc-go/v3/testing"
+
+	ethermintapp "github.com/evmos/ethermint/app"
+	"github.com/evmos/ethermint/encoding"
+	enccodec "github.com/evmos/ethermint/encoding/codec"
+	srvflags "github.com/evmos/ethermint/server/flags"
+	ethermint "github.com/evmos/ethermint/types"
+	"github.com/evmos/ethermint/x/evm"
+	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
+	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/evmos/ethermint/x/feemarket"
+	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
+	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+
+	// unnamed import of statik for swagger UI support
+	_ "github.com/evmos/ethermint/client/docs/statik"
+
+	"github.com/evmos/evmos/v7/app/ante"
+	// v2 "github.com/tharsis/evmos/v2/app/upgrades/v2"
+	// v4 "github.com/evmos/evmos/v7/app/upgrades/v4"
+	// v5 "github.com/evmos/evmos/v7/app/upgrades/v5"
+	// v6 "github.com/evmos/evmos/v7/app/upgrades/v6"
+	// v7 "github.com/evmos/evmos/v7/app/upgrades/v7"
+	"github.com/evmos/evmos/v7/x/epochs"
+	epochskeeper "github.com/evmos/evmos/v7/x/epochs/keeper"
+	epochstypes "github.com/evmos/evmos/v7/x/epochs/types"
+	"github.com/evmos/evmos/v7/x/erc20"
+	erc20client "github.com/evmos/evmos/v7/x/erc20/client"
+	erc20keeper "github.com/evmos/evmos/v7/x/erc20/keeper"
+	erc20types "github.com/evmos/evmos/v7/x/erc20/types"
+	// "github.com/evmos/evmos/v7/x/incentives"
+	// incentivesclient "github.com/evmos/evmos/v7/x/incentives/client"
+	// incentiveskeeper "github.com/evmos/evmos/v7/x/incentives/keeper"
+	// incentivestypes "github.com/evmos/evmos/v7/x/incentives/types"
+	// "github.com/evmos/evmos/v7/x/inflation"
+	// inflationkeeper "github.com/evmos/evmos/v7/x/inflation/keeper"
+	// inflationtypes "github.com/evmos/evmos/v7/x/inflation/types"
+	"github.com/evmos/evmos/v7/x/vesting"
+	vestingkeeper "github.com/evmos/evmos/v7/x/vesting/keeper"
+	vestingtypes "github.com/evmos/evmos/v7/x/vesting/types"
+
+	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 
 	v102 "github.com/haqq-network/haqq/app/upgrades/v1.0.2"
 )
@@ -143,12 +141,17 @@ func init() {
 	}
 
 	DefaultNodeHome = filepath.Join(userHomeDir, ".haqqd")
+	// manually update the power reduction by replacing micro (u) -> atto (a) evmos
+	sdk.DefaultPowerReduction = ethermint.PowerReduction
+	// modify fee market parameter defaults through global
+	//feemarkettypes.DefaultMinGasPrice = v5.MainnetMinGasPrices
+	//feemarkettypes.DefaultMinGasMultiplier = v5.MainnetMinGasMultiplier
 }
 
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.0.3"
+	UpgradeName    = "v1.1.0"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -168,31 +171,28 @@ var (
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
 			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
-
+			// ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 			// Evmos proposal types
 			erc20client.RegisterCoinProposalHandler, erc20client.RegisterERC20ProposalHandler, erc20client.ToggleTokenConversionProposalHandler,
 			// erc20client.ToggleTokenRelayProposalHandler, erc20client.UpdateTokenPairERC20ProposalHandler,
-
-			// ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 			// incentivesclient.RegisterIncentiveProposalHandler, incentivesclient.CancelIncentiveProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
 		slashing.AppModuleBasic{},
+		// ibc.AppModuleBasic{},
 		authzmodule.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
+		// transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
-		erc20.AppModuleBasic{},
-		epochs.AppModuleBasic{},
-
-		// ibc.AppModuleBasic{},
-		// transfer.AppModuleBasic{},
 		// inflation.AppModuleBasic{},
+		erc20.AppModuleBasic{},
 		// incentives.AppModuleBasic{},
+		epochs.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -216,8 +216,11 @@ var (
 	}
 )
 
-var _ servertypes.Application = (*Haqq)(nil) // _ simapp.App              = (*Haqq)(nil)
-// _ ibctesting.TestingApp = (*Haqq)(nil)
+var (
+	_ servertypes.Application = (*Haqq)(nil)
+	_ simapp.App              = (*Haqq)(nil)
+	//_ ibctesting.TestingApp = (*Haqq)(nil)
+)
 
 // Haqq implements an extended ABCI application. It is an application
 // that may process transactions through Ethereum's EVM running atop of
@@ -332,7 +335,7 @@ func NewHaqq(
 	)
 
 	// Add the EVM transient store key
-	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey)
+	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &Haqq{
@@ -395,7 +398,7 @@ func NewHaqq(
 
 	// Create Ethermint keepers
 	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
-		appCodec, keys[feemarkettypes.StoreKey], app.GetSubspace(feemarkettypes.ModuleName),
+		appCodec, app.GetSubspace(feemarkettypes.ModuleName), keys[feemarkettypes.StoreKey], tkeys[feemarkettypes.TransientKey],
 	)
 
 	// Create Ethermint keepers
@@ -414,11 +417,11 @@ func NewHaqq(
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
+		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper)).
-		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper))
-	// AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-	// AddRoute(incentivestypes.RouterKey, incentives.NewIncentivesProposalHandler(&app.IncentivesKeeper))
+		//AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
+		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
+		//AddRoute(incentivestypes.RouterKey, incentives.NewIncentivesProposalHandler(&app.IncentivesKeeper))
 
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName),
@@ -512,7 +515,7 @@ func NewHaqq(
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	enccodec.RegisterInterfaces(interfaceRegistry)
-	etherminttypes.RegisterInterfaces(interfaceRegistry)
+	ethermint.RegisterInterfaces(interfaceRegistry)
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
@@ -522,7 +525,7 @@ func NewHaqq(
 			app.AccountKeeper, app.StakingKeeper, app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 		),
-		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
+		auth.NewAppModule(appCodec, app.AccountKeeper, ethermintapp.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		// haqqbank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
@@ -630,16 +633,17 @@ func NewHaqq(
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
+		// ibchost.ModuleName,
+		// Ethermint modules
+		evmtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
-		// ibchost.ModuleName,
 		// ibctransfertypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
-		// Ethermint modules
-		evmtypes.ModuleName, feemarkettypes.ModuleName,
 		// Evmos modules
 		vestingtypes.ModuleName,
 		// inflationtypes.ModuleName,
@@ -648,8 +652,6 @@ func NewHaqq(
 		epochstypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
-		// ibchost.ModuleName,
-		// ibctransfertypes.ModuleName,
 	)
 
 	ModuleBasics.RegisterInterfaces(app.interfaceRegistry)
@@ -670,7 +672,7 @@ func NewHaqq(
 	// NOTE: this is not required apps that don't use the simulator for fuzz testing
 	// transactions
 	app.sm = module.NewSimulationManager(
-		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
+		auth.NewAppModule(appCodec, app.AccountKeeper, ethermintapp.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
@@ -700,6 +702,7 @@ func NewHaqq(
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 
+	maxGasWanted := cast.ToUint64(appOpts.Get(srvflags.EVMMaxTxGasWanted))
 	options := ante.HandlerOptions{
 		AccountKeeper:   app.AccountKeeper,
 		BankKeeper:      app.BankKeeper,
@@ -710,7 +713,7 @@ func NewHaqq(
 		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 		SigGasConsumer:  SigVerificationGasConsumer,
 		Cdc:             appCodec,
-
+		MaxTxGasWanted:  maxGasWanted,
 		// IBCKeeper:       app.IBCKeeper,
 	}
 

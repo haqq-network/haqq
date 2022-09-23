@@ -5,7 +5,7 @@ PACKAGES_SIMTEST=$(shell go list ./... | grep '/simulation')
 DIFF_TAG=$(shell git rev-list --tags="v*" --max-count=1 --not $(shell git rev-list --tags="v*" "HEAD..origin"))
 DEFAULT_TAG=$(shell git rev-list --tags="v*" --max-count=1)
 # VERSION ?= $(shell echo $(shell git describe --tags $(or $(DIFF_TAG), $(DEFAULT_TAG))) | sed 's/^v//')
-VERSION := "1.0.3"
+VERSION := "1.1.0"
 TMVERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
@@ -475,8 +475,8 @@ proto-check-breaking:
 TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.15/proto/tendermint
 GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
 COSMOS_SDK_URL      = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.45.1
-ETHERMINT_URL      	= https://raw.githubusercontent.com/tharsis/ethermint/v0.10.0
-IBC_GO_URL      		= https://raw.githubusercontent.com/cosmos/ibc-go/v3.0.0-rc0
+ETHERMINT_URL      	= https://raw.githubusercontent.com/evmos/ethermint/v0.18.0
+IBC_GO_URL      	= https://raw.githubusercontent.com/cosmos/ibc-go/v3.0.0-rc0
 COSMOS_PROTO_URL    = https://raw.githubusercontent.com/regen-network/cosmos-proto/master
 
 TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
@@ -571,7 +571,7 @@ localnet-show-logstream:
 ###############################################################################
 
 PACKAGE_NAME:=github.com/haqq-network/haqq
-GOLANG_CROSS_VERSION  = v1.17.1
+GOLANG_CROSS_VERSION  = v1.18
 GOPATH ?= '$(HOME)/go'
 release-dry-run:
 	docker run \
@@ -582,7 +582,7 @@ release-dry-run:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-v ${GOPATH}/pkg:/go/pkg \
 		-w /go/src/$(PACKAGE_NAME) \
-		ghcr.io/troian/golang-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		--rm-dist --skip-validate --skip-publish --snapshot
 
 release:
@@ -598,7 +598,7 @@ release:
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		ghcr.io/troian/golang-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		release --rm-dist --skip-validate
 
 .PHONY: release-dry-run release

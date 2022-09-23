@@ -10,9 +10,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/evmos/ethermint/testutil/network"
 	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
 	"github.com/stretchr/testify/suite"
-	"github.com/tharsis/ethermint/testutil/network"
 )
 
 type IntegrationTestSuite struct {

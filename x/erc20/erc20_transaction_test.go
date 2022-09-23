@@ -8,10 +8,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/evmos/ethermint/testutil/network"
+	erc20types "github.com/evmos/evmos/v7/x/erc20/types"
 	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
 	"github.com/stretchr/testify/require"
-	"github.com/tharsis/ethermint/testutil/network"
-	erc20types "github.com/tharsis/evmos/v4/x/erc20/types"
 	"math/big"
 	"testing"
 )
@@ -87,4 +87,3 @@ func TestTransferETH(t *testing.T) {
 	balanceAfter, err := val.JSONRPCClient.BalanceAt(context.Background(), addr, big.NewInt(int64(ethBlockNumber)))
 	require.Equal(t, 1, balanceBefore.CmpAbs(balanceAfter))
 }
-

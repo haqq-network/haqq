@@ -20,12 +20,12 @@ jobs:
     steps:
       - uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.17
+          go-version: 1.18
       - name: Display Go Version
         run: go version
       - name: Install tparse
         run: |
-          export GO111MODULE="on" && go get github.com/mfridman/tparse@latest
+          export GO111MODULE="on" && go install github.com/mfridman/tparse@latest
       - uses: actions/cache@v2.1.7
         with:
           path: ~/go/bin
@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v2.1.4
         with:
-          go-version: 1.17
+          go-version: 1.18
       - uses: actions/checkout@v2.4.0
       - uses: technote-space/get-diff-action@v5
         with:
