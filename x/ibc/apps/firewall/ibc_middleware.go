@@ -8,6 +8,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+	utils "github.com/haqq-network/haqq/types"
 )
 
 var _ porttypes.Middleware = &IBCMiddleware{}
@@ -17,28 +18,46 @@ var _ porttypes.Middleware = &IBCMiddleware{}
 type IBCMiddleware struct {
 	app         porttypes.IBCModule
 	ics4Wrapper porttypes.ICS4Wrapper
-	whitelist   map[string]bool
 }
 
-// NewIBCMiddleware creates a new IBCMiddlware given the keeper and underlying application
-func NewIBCMiddleware(app porttypes.IBCModule, w porttypes.ICS4Wrapper, wl map[string]bool) IBCMiddleware {
+// NewIBCMiddleware creates new IBCMiddleware with given ICS4 wrapper and underlying application
+func NewIBCMiddleware(app porttypes.IBCModule, w porttypes.ICS4Wrapper) IBCMiddleware {
 	return IBCMiddleware{
 		app:         app,
 		ics4Wrapper: w,
-		whitelist:   wl,
 	}
 }
 
-func NewICS4Wrapper(w porttypes.ICS4Wrapper, wl map[string]bool) IBCMiddleware {
+// NewICS4Wrapper creates new IBCMiddleware with given underlying ICS4 wrapper
+func NewICS4Wrapper(w porttypes.ICS4Wrapper) IBCMiddleware {
 	return IBCMiddleware{
 		ics4Wrapper: w,
-		whitelist:   wl,
 	}
 }
 
 // IsAllowedAddress checks if given address is allowed to make IBC transfers
-func (im IBCMiddleware) IsAllowedAddress(addr string) bool {
-	return im.whitelist[addr]
+func (im IBCMiddleware) IsAllowedAddress(chainID, addr string) bool {
+	var wl map[string]bool
+
+	if utils.IsMainNetwork(chainID) {
+		wl = map[string]bool{
+			// Put here MainNet addresses
+			"haqq1uu7epkq75j2qzqvlyzfkljc8h277gz7kxqah0v": true,
+		}
+	}
+
+	if utils.IsTestEdgeNetwork(chainID) {
+		wl = map[string]bool{
+			// Put here TestEdge addresses
+			"haqq1dz25tp2llzus5mpy0h5nzxzw8r233r8egsjr5v": true,
+			"haqq1zmh0d60prm7sqjpayurnsnlw85xrpy73av48ak": true,
+			"haqq1zqc0juh5psyek9d4asc828fs3k48ed5xaje3lj": true,
+			"haqq15gl76py2lqqrlawzs0afkmh9k7kxc6wmvcqqlm": true,
+		}
+	}
+
+	// By default, all addresses are not allowed
+	return wl[addr]
 }
 
 // OnChanOpenInit implements the IBCMiddleware interface
@@ -124,6 +143,11 @@ func (im IBCMiddleware) OnRecvPacket(
 	logger := ctx.Logger()
 	logger.Debug("run OnRecvPacket from IBC Firewall Middleware")
 
+	// Allow all IBC packets by default, restrict for MainNet and TestEdge
+	if !utils.IsMainNetwork(ctx.ChainID()) && !utils.IsTestEdgeNetwork(ctx.ChainID()) {
+		return im.app.OnRecvPacket(ctx, packet, relayer)
+	}
+
 	// Decode packet data and check if receiver is eligible to use IBC transfer
 	var data types.FungibleTokenPacketData
 	var ackErr error
@@ -133,7 +157,7 @@ func (im IBCMiddleware) OnRecvPacket(
 	}
 
 	logger.Debug("OnRecvPacket -> check allowance of receiver address ", data.Receiver)
-	if !im.IsAllowedAddress(data.Receiver) {
+	if !im.IsAllowedAddress(ctx.ChainID(), data.Receiver) {
 		logger.Debug("OnRecvPacket -> address NOT ALLOWED to receive IBC Transfers", data.Receiver)
 		err := sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", data.Receiver)
 		return channeltypes.NewErrorAcknowledgement(err.Error())
@@ -162,7 +186,7 @@ func (im IBCMiddleware) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	// call underlying callback
+	// call underlying app's OnTimeoutPacket callback
 	return im.app.OnTimeoutPacket(ctx, packet, relayer)
 }
 
@@ -175,6 +199,11 @@ func (im IBCMiddleware) SendPacket(
 	logger := ctx.Logger()
 	logger.Debug("run SendPacket from IBC Firewall Middleware")
 
+	// Allow all IBC packets by default, restrict for MainNet and TestEdge
+	if !utils.IsMainNetwork(ctx.ChainID()) && !utils.IsTestEdgeNetwork(ctx.ChainID()) {
+		return im.ics4Wrapper.SendPacket(ctx, chanCap, packet)
+	}
+
 	// Decode packet data and check if receiver is eligible to use IBC transfer
 	var data types.FungibleTokenPacketData
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
@@ -182,13 +211,13 @@ func (im IBCMiddleware) SendPacket(
 	}
 
 	logger.Debug("SendPacket -> check allowance of sender address ", data.Receiver)
-	if !im.IsAllowedAddress(data.Sender) {
+	if !im.IsAllowedAddress(ctx.ChainID(), data.Sender) {
 		logger.Debug("SendPacket -> address NOT ALLOWED to send IBC Transfers", data.Sender)
 		return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to send funds", data.Sender)
 	}
 
 	logger.Debug("SendPacket -> address ALLOWED to send IBC Transfers. Proceed!", data.Sender)
-	// call underlying app's OnRecvPacket callback.
+	// call underlying ICS4 Wrapper's SendPacket callback.
 	return im.ics4Wrapper.SendPacket(ctx, chanCap, packet)
 }
 
@@ -199,6 +228,6 @@ func (im IBCMiddleware) WriteAcknowledgement(
 	packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
-	// call underlying callback
+	// call underlying ICS4 Wrapper's WriteAcknowledgement callback
 	return im.ics4Wrapper.WriteAcknowledgement(ctx, chanCap, packet, ack)
 }
