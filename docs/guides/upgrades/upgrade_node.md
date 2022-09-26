@@ -38,7 +38,7 @@ server_name: haqqd
 version: 0.4.0
 commit: 070b668f2cbbf52548c46e96b236e09884483dd4
 build_tags: netgo,ledger
-go: go version go1.17 darwin/amd64
+go: go version go1.18 darwin/amd64
 ...
 ```
 

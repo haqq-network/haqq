@@ -1,10 +1,8 @@
 <!--
-order: 3
+order: 2
 -->
 
 # Multisig
-
-🚧 `In developing...` 🏗
 
 Learn how to generate, sign and broadcast a transaction using the keyring multisig {synopsis}
 

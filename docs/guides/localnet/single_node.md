@@ -20,11 +20,11 @@ go version
 
 :::tip
 If the `haqqd: command not found` error message is returned, confirm that your [`GOPATH`](https://golang.org/doc/gopath_code#GOPATH) is correctly configured by running the following command:
+:::
 
 ```bash
 export PATH=$PATH:$(go env GOPATH)/bin
 ```
-:::
 
 ## Automated Localnet (script)
 
@@ -32,6 +32,7 @@ You can customize the local testnet script by changing values for convenience fo
 
 ```bash
 # customize the name of your key, the chain-id, moniker of the node, keyring backend, and log level
+
 KEY="mykey"
 CHAINID="haqq_121799-1"
 MONIKER="localtestnet"

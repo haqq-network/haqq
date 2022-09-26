@@ -11,6 +11,8 @@ Learn about the encoding formats used on Haqq. {synopsis}
 - [Cosmos SDK Encoding](https://docs.cosmos.network/master/core/encoding.html) {prereq}
 - [Ethereum RLP](https://eth.wiki/en/fundamentals/rlp) {prereq}
 
+<!--[link](https://islamiccoin.net){:target="_blank"} {prereq}-->
+
 ## Encoding Formats
 
 ### Protocol Buffers

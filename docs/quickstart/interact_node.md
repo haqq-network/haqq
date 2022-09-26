@@ -198,7 +198,7 @@ curl \
 
 Make sure to replace `localhost:1317` with the REST endpoint of your node, configured under the `api.address` field.
 
-The list of all available REST endpoints is available as a Swagger specification file, it can be viewed at `localhost:1317/swagger`. Make sure that the `api.swagger` field is set to true in your [`app.toml`](/run-node.md#configuring-the-node-using-apptoml) file.
+The list of all available REST endpoints is available as a Swagger specification file, it can be viewed at `localhost:1317/swagger`. Make sure that the `api.swagger` field is set to true in your `app.toml` file.
 
 ### Query for historical state using REST
 
@@ -216,4 +216,4 @@ Assuming the state at that block has not yet been pruned by the node, this query
 
 ### Cross-Origin Resource Sharing (CORS)
 
-[CORS policies](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) are not enabled by default to help with security. If you would like to use the rest-server in a public environment we recommend you provide a reverse proxy, this can be done with [nginx](https://www.nginx.com/). For testing and development purposes there is an `enabled-unsafe-cors` field inside [`app.toml`](/run-node.md#configuring-the-node-using-apptoml).
+[CORS policies](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) are not enabled by default to help with security. If you would like to use the rest-server in a public environment we recommend you provide a reverse proxy, this can be done with [nginx](https://www.nginx.com/). For testing and development purposes there is an `enabled-unsafe-cors` field inside `app.toml`.

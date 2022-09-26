@@ -17,7 +17,7 @@ Haqq defines its own custom `Account` type that uses Ethereum's ECDSA secp256k1 
 satisfies the [EIP84](https://github.com/ethereum/EIPs/issues/84) for full [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) paths.
 The root HD path for Haqq-based accounts is `m/44'/60'/0'/0`.
 
-+++ https://github.com/tharsis/ethermint/blob/main/types/account.pb.go#L28-L33
++++ https://github.com/evmos/ethermint/blob/main/types/account.pb.go#L28-L33
 
 ## Addresses and Public Keys
 
@@ -25,9 +25,9 @@ The root HD path for Haqq-based accounts is `m/44'/60'/0'/0`.
 
 | Network   | Mainnet | Testnet | Regtest |
 |-----------|---------|---------|---------|
-| Haqq     | `haqq` | `haqq` |         |
+| Haqq      | `haqq`  | `haqq`  |         |
 
-There are 3 main types of HRP for the `Addresses`/`PubKeys` available by default on Haqq:
+There are 3 main types of HRP for the `Addresses`/ `PubKeys` available by default on Haqq:
 
 - Addresses and Keys for **accounts**, which identify users (e.g. the sender of a `message`). They are derived using the **`eth_secp256k1`** curve.
 - Addresses and Keys for **validator operators**, which identify the operators of validators. They are derived using the **`eth_secp256k1`** curve.
@@ -35,9 +35,9 @@ There are 3 main types of HRP for the `Addresses`/`PubKeys` available by default
 
 |                    | Address bech32 Prefix | Pubkey bech32 Prefix | Curve           | Address byte length | Pubkey byte length |
 |--------------------|-----------------------|----------------------|-----------------|---------------------|--------------------|
-| Accounts           | `haqq`               | `haqqpub`           | `eth_secp256k1` | `20`                | `33` (compressed)  |
-| Validator Operator | `haqqvaloper`        | `haqqvaloperpub`    | `eth_secp256k1` | `20`                | `33` (compressed)  |
-| Consensus Nodes    | `haqqvalcons`        | `haqqvalconspub`    | `ed25519`       | `20`                | `32`               |
+| Accounts           | `haqq`                | `haqqpub`            | `eth_secp256k1` | `20`                | `33` (compressed)  |
+| Validator Operator | `haqqvaloper`         | `haqqvaloperpub`     | `eth_secp256k1` | `20`                | `33` (compressed)  |
+| Consensus Nodes    | `haqqvalcons`         | `haqqvalconspub`     | `ed25519`       | `20`                | `32`               |
 
 ## Address formats for clients
 
@@ -53,7 +53,7 @@ Cosmos `sdk.AccAddress`.
 
 ### Address conversion
 
-The `Haqqd debug addr <address>` can be used to convert an address between hex and bech32 formats. For example:
+The `haqqd debug addr <address>` can be used to convert an address between hex and bech32 formats. For example:
 
 :::: tabs
 ::: tab Bech32
@@ -137,7 +137,7 @@ You can query an account address using the CLI, gRPC or
 ```bash
 # NOTE: the --output (-o) flag will define the output format in JSON or YAML (text)
 haqqd q auth account $(haqqd keys show mykey -a) -o text
-|
+
   '@type': /ethermint.types.v1.EthAccount
   base_account:
     account_number: "0"

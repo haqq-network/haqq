@@ -31,8 +31,8 @@ Below is a list of public block explorers that support Haqq Mainnet and Testnet:
 
 |                      | Category | URL                    |
 | -------------------- | -------- | ---------------------- |
-| Blockscout  | `evm` |[explorer.testedge.haqq.network](https://explorer.testedge.haqq.network/)    |                       |
-| PingPub | `cosmos` | [pingpub.explorer.testedge.haqq.network](https://pingpub.explorer.testedge.haqq.network/haqq)
+| Blockscout  | `evm` |[explorer.testedge2.haqq.network](https://explorer.testedge2.haqq.network/)    |                       |
+| PingPub | `cosmos` | [pingpub.explorer.testedge2.haqq.network](https://pingpub.explorer.testedge2.haqq.network/haqq)
 | Manticore | `cosmos` | [testnet.manticore.team](https://testnet.manticore.team/haqq)
 | NodesGuru | `cosmos` | [haqq.explorers.guru](https://haqq.explorers.guru/)
 

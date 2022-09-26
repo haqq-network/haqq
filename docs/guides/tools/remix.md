@@ -53,7 +53,7 @@ You should see your account show up in the left-hand panel.
 Now that your account is connected, you are able to deploy the contract. Press the `Deploy` button. A metamask pop-up will appear asking you to confirm. Confirm the transaction. You should see a log for the deployment transaction in the Haqq daemon logs:
 
 ```bash
-I[2020-07-15|17:26:43.155] Added good transaction                       module=mempool tx=877A8E6600FA27EC2B2362719274314977B243671DC4E5F8796ED97FFC0CBE42 res="&{CheckTx:log:\"[]\" gas_wanted:121193 }" height=31 total=1
+I[2020-07-15|17:26:43.155] Added good transaction       module=mempool tx=877A8E6600FA27EC2B2362719274314977B243671DC4E5F8796ED97FFC0CBE42 res="&{CheckTx:log:\"[]\" gas_wanted:121193 }" height=31 total=1
 ```
 
 Once the contract has been successfully deployed, you will see it show up in the `Deployed Contracts` section in the left-hand side, as well as a green check in the Remix console showing the transaction details.

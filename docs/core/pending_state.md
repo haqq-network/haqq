@@ -8,7 +8,7 @@ Learn how Haqq handles pending state queries. {synopsis}
 
 ## Pre-requisite Readings
 
-- [Tendermint Mempool](https://docs.tendermint.com/master/tendermint-core/mempool/) {prereq}
+- [Tendermint Mempool](https://github.com/tendermint/tendermint/blob/v0.34.x/spec/p2p/messages/mempool.md) {prereq}
 
 ## Haqq vs Ethereum
 

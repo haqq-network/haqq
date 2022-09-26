@@ -22,13 +22,14 @@ go version
 ```
 
 :::tip
+
 If the `haqqd: command not found` error message is returned, confirm that your [`GOPATH`](https://golang.org/doc/gopath_code#GOPATH) is correctly configured by running the following command:
+
+:::
 
 ```bash
 export PATH=$PATH:$(go env GOPATH)/bin
 ```
-
-:::
 
 ## Install Binaries
 

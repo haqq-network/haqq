@@ -39,10 +39,10 @@ software to seamlessly deploy smart contracts which interact with the rest of th
 
 ## Quick Facts Table
 
-| Property                     | Value                                                |
-|------------------------------|------------------------------------------------------|
-| Haqq Mainnet | `haqq_11235-1`                |
-| Haqq TestNow                | `haqq_112357-1`        |
-| Haqq TestEdge                | `haqq_53211-1`        |
-| Block Explorers       | [Block Explorers](./../tools/explorers.md) |
-| Block Time                   | ~7 seconds                                           |
+| Property                     | Value                                      |
+|------------------------------|--------------------------------------------|
+| Haqq Mainnet                 | `haqq_11235-1`                             |
+| Haqq TestNow                 | `haqq_112357-1`                            |
+| Haqq TestEdge                | `haqq_54211-2`                             |
+| Block Explorers              | [Block Explorers](./../tools/explorers.md) |
+| Block Time                   | ~6 seconds                                 |

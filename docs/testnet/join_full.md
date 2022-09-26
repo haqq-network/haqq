@@ -6,7 +6,7 @@ You specify the network you want to join by setting the **genesis file** and **s
 
 | Testnet Chain ID | Name | Version | Status | Description
 |--|--|--|--|--|
-| haqq_53211-1 | Haqq TestEdge | v1.0.3 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
+| haqq_54211-2 | Haqq TestEdge | v1.1.0 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
 | haqq_112357-1 | Haqq TestNow | v1.0.3 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
 
 ## Preresquisites
@@ -73,7 +73,7 @@ To quickly get [started](./join.md#quickstart), node operators can choose to syn
 ### Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+https://github.com/haqq-network/validators-contest/raw/master/genesis.json
 ```
 
 ### Update genesis file
@@ -244,7 +244,7 @@ haqqd tx staking create-validator \
   --gas="auto" \
   --gas-prices="0.025aISLM" \
   --from=<key_name> \
-  --node https://rpc.tm.testedge.haqq.network:443
+  --node https://rpc.tm.testedge2.haqq.network:443
 ```
 
 ## Upgrading Your Node

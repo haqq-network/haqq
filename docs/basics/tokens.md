@@ -22,13 +22,13 @@ The denomination used for staking, governance and gas consumption on the EVM is 
 
 Haqq uses [Atto](https://en.wikipedia.org/wiki/Atto-) ISLM as the base denomination to maintain parity with Ethereum.
 
-$$1 ISLM = 1 ~ * ~ 10^{18} aISLM$$
+`1 ISLM = 1018 aISLM`
 
 This matches Ethereum denomination of:
 
-$$1 ETH = 1 ~ * ~ 10^{18} wei$$
+`1 ETH = 1018 wei`
 
 ### EVM Tokens
 
-Haqq is compatible with ERC20 tokens and other non-fungible token standards (EIP721, EIP1155)
+Haqq is compatible with [ERC20](https://ethereum.org/ru/developers/docs/standards/tokens/erc-20/) tokens and other non-fungible token standards ([EIP721](https://eips.ethereum.org/EIPS/eip-721), [EIP1155](https://eips.ethereum.org/EIPS/eip-1155))
 that are natively supported by the EVM.
