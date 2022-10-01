@@ -16,7 +16,7 @@ command -v jq > /dev/null 2>&1 || { echo >&2 "jq not installed. More info: https
 rm -rf ~/.haqqd* > /dev/null 2>&1
 
 # remove previous builds
-rm -rf build
+rm -rf build > /dev/null 2>&1
 
 make 
 BINARY=build/haqqd
