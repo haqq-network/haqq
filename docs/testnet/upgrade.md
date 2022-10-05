@@ -35,7 +35,7 @@ mkdir -p ~/.haqqd/cosmovisor/genesis
 mkdir -p ~/.haqqd/cosmovisor/genesis/bin
 mkdir -p ~/.haqqd/cosmovisor/upgrades
 
-cp $GOPATH/bin/haqqd ~/.haqqd/cosmovisor/genesis/bin
+cp $HOME/go/bin/haqqd ~/.haqqd/cosmovisor/genesis/bin
 ```
 
 To check that you did this correctly, ensure your versions of `cosmovisor` and `haqqd` are the same:
@@ -65,7 +65,7 @@ cosmovisor/
 │   └── bin
 │       └── haqqd
 └── upgrades
-    └── v1.0.3
+    └── vX.X.X   # v1.2.0 example
         ├── bin
         │   └── haqqd
         └── upgrade-info.json
@@ -90,7 +90,7 @@ echo "export DAEMON_ALLOW_DOWNLOAD_BINARIES=true" >> ~/.profile
 Now that everything is setup and ready to go, you can start your node.
 
 ```bash
-cosmovisor start
+cosmovisor run start
 ```
 
 You will need some way to keep the process always running. If you're on linux, you can do this by creating a service.
@@ -103,7 +103,7 @@ After=network-online.target
 
 [Service]
 User=$USER
-ExecStart=$(which cosmovisor) start
+ExecStart=$(which cosmovisor) run start
 Restart=always
 RestartSec=3
 LimitNOFILE=infinity
@@ -165,12 +165,11 @@ Verify that you've successfully installed Haqq on your system by using the `vers
 ```bash
 $ haqqd version --long
 
-name: haqqd
+name: haqq
 server_name: haqqd
-version: 1.0.3
-commit: fe9df43332800a74a163c014c69e62765d8206e3
-build_tags: netgo,ledger
-go: go version go1.18 darwin/amd64
+version: '"1.2.0"'
+commit: 40935b70fb1da4ee28f1d91e8601060e533f6fd0
+build_tags: netgo ledger,
 ...
 ```
 
