@@ -2,13 +2,13 @@
 order: 4
 -->
 
-# Haqq Network TestEdge
+# Haqq Network TestEdge-2
 
 ## Overview
 
-The current Haqq version of TestEdge is [`v1.0.3`](https://github.com/haqq-network/haqq/releases/tag/v1.0.3). 
+The current Haqq version of TestEdge is [`v1.2.0`](https://github.com/haqq-network/haqq/releases/). 
 
-To bootstrap a TestEdge node, it is possible to sync from v1.0.3 via snapshot or via State Sync.
+To bootstrap a TestEdge node, it is possible to sync from v1.2.0 via snapshot or via State Sync.
 
 This document outlines the steps to join an existing testnet {synopsis}
 
@@ -35,7 +35,7 @@ Build from source:
 
 Download latest binary for your arch:
 
-[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.0.3) 
+[Release page](https://github.com/haqq-network/haqq/releases/) 
 
 or
 
@@ -43,7 +43,7 @@ build from source
 
 ```sh
 cd $HOME && \
-git clone -b v1.0.3 https://github.com/haqq-network/haqq && \
+git clone https://github.com/haqq-network/haqq && \
 cd haqq && \
 make install
 ```
@@ -60,7 +60,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 Write your moniker name
@@ -109,7 +109,7 @@ mv genesis.json $HOME/.haqqd/config/genesis.json
 Download script for state sync auto configuration
 
 ```sh
-curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh
+curl -OL https://github.com/haqq-network/testnets/blob/main/TestEdge-2/state_sync.sh
 ```
 
 List of seeds already included in script
@@ -140,7 +140,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 Download the snapshot:
@@ -219,7 +219,7 @@ haqqd start --x-crisis-skip-assert-invariants
 
 The main problem of synchronization from scratch is that we need to consistently change the version of the binary.
 Currently we need upgrades binary by this pipepline:
-v1.0.1 -> v1.0.2 -> v1.0.3
+v1.0.1 -> v1.0.2 -> v1.0.3 -> v1.1.0 -> v1.2.0
 
 **Download binary v1.0.1 for your arch:**
 
@@ -319,6 +319,7 @@ haqqd start --x-crisis-skip-assert-invariants
 ```
 
 Now wait until the chain reaches block height 1928. It will panic and log the following:
+
 ```
 panic: UPGRADE "v1.0.3" NEEDED at height: 1928
 ```
@@ -331,17 +332,40 @@ make install && \
 haqqd start --x-crisis-skip-assert-invariants
 ```
 
+Now wait until the chain reaches block height 256200. It will panic and log the following:
+
+```
+panic: UPGRADE "v1.1.0" NEEDED at height: 256200
+```
+
+at block height: 256200 
+upgrade to v1.1.0
+
+```sh
+git checkout v1.1.0 && \
+make install && \
+haqqd start --x-crisis-skip-assert-invariants
+```
+
+Now wait until the chain reaches block height 355555. It will panic and log the following:
+
+```
+panic: UPGRADE "v1.2.0" NEEDED at height: 355555
+```
+
+at block height: 355555 
+upgrade to v1.2.0
+
+```sh
+git checkout v1.2.0 && \
+make install && \
+haqqd start --x-crisis-skip-assert-invariants
+```
+
 **Upgrade to Validator Node**
 
 You now have an active full node. What's the next step? You can upgrade your full node to become a Haqq Validator. The top 100 validators have the ability to propose new blocks to the Haqq Network. Continue onto the [Validator Setup](https://docs.haqq.network/guides/validators/setup.html).
 
-```sh
-tar cvf - $HOME/haqq_backups/haqq_$LATEST_HEIGHT/ | lz4 - $HOME/haqq_backups/haqq_$LATEST_HEIGHT.tar.lz4
-```
-
-```sh
-cd ~/haqq_backups/haqq_167797
-```
 
 :::
 
