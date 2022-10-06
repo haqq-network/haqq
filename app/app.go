@@ -132,6 +132,7 @@ import (
 
 	v102 "github.com/haqq-network/haqq/app/upgrades/v1.0.2"
 	v120 "github.com/haqq-network/haqq/app/upgrades/v1.2.0"
+	v121 "github.com/haqq-network/haqq/app/upgrades/v1.2.1"
 )
 
 func init() {
@@ -1002,6 +1003,14 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v120.UpgradeName,
 		v120.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+		),
+	)
+	// v1.2.1 update handler (Evmos v8 + IBC Upgrade)
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v121.UpgradeName,
+		v121.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
 		),
