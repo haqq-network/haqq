@@ -3,11 +3,12 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -107,24 +108,25 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/evmos/ethermint/client/docs/statik"
 
-	"github.com/evmos/evmos/v7/app/ante"
-	"github.com/evmos/evmos/v7/x/epochs"
-	epochskeeper "github.com/evmos/evmos/v7/x/epochs/keeper"
-	epochstypes "github.com/evmos/evmos/v7/x/epochs/types"
-	"github.com/evmos/evmos/v7/x/erc20"
-	erc20client "github.com/evmos/evmos/v7/x/erc20/client"
-	erc20keeper "github.com/evmos/evmos/v7/x/erc20/keeper"
-	erc20types "github.com/evmos/evmos/v7/x/erc20/types"
-	// "github.com/evmos/evmos/v7/x/incentives"
-	// incentivesclient "github.com/evmos/evmos/v7/x/incentives/client"
-	// incentiveskeeper "github.com/evmos/evmos/v7/x/incentives/keeper"
-	// incentivestypes "github.com/evmos/evmos/v7/x/incentives/types"
-	// "github.com/evmos/evmos/v7/x/inflation"
-	// inflationkeeper "github.com/evmos/evmos/v7/x/inflation/keeper"
-	// inflationtypes "github.com/evmos/evmos/v7/x/inflation/types"
-	"github.com/evmos/evmos/v7/x/vesting"
-	vestingkeeper "github.com/evmos/evmos/v7/x/vesting/keeper"
-	vestingtypes "github.com/evmos/evmos/v7/x/vesting/types"
+	"github.com/evmos/evmos/v8/app/ante"
+	"github.com/evmos/evmos/v8/x/epochs"
+	epochskeeper "github.com/evmos/evmos/v8/x/epochs/keeper"
+	epochstypes "github.com/evmos/evmos/v8/x/epochs/types"
+	"github.com/evmos/evmos/v8/x/erc20"
+	erc20client "github.com/evmos/evmos/v8/x/erc20/client"
+	erc20keeper "github.com/evmos/evmos/v8/x/erc20/keeper"
+	erc20types "github.com/evmos/evmos/v8/x/erc20/types"
+
+	// "github.com/evmos/evmos/v8/x/incentives"
+	// incentivesclient "github.com/evmos/evmos/v8/x/incentives/client"
+	// incentiveskeeper "github.com/evmos/evmos/v8/x/incentives/keeper"
+	// incentivestypes "github.com/evmos/evmos/v8/x/incentives/types"
+	// "github.com/evmos/evmos/v8/x/inflation"
+	// inflationkeeper "github.com/evmos/evmos/v8/x/inflation/keeper"
+	// inflationtypes "github.com/evmos/evmos/v8/x/inflation/types"
+	"github.com/evmos/evmos/v8/x/vesting"
+	vestingkeeper "github.com/evmos/evmos/v8/x/vesting/keeper"
+	vestingtypes "github.com/evmos/evmos/v8/x/vesting/types"
 
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 
@@ -150,7 +152,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.2.0"
+	UpgradeName    = "v1.2.1"
 	MainnetChainID = "haqq_11235"
 )
 

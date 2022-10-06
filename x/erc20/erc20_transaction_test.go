@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/ethermint/testutil/network"
-	erc20types "github.com/evmos/evmos/v7/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v8/x/erc20/types"
 	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
 	"github.com/stretchr/testify/require"
 	"math/big"

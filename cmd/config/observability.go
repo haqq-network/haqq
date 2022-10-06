@@ -7,7 +7,7 @@ import (
 	"contrib.go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/stats/view"
 
-	"github.com/evmos/evmos/v7/app"
+	"github.com/evmos/evmos/v8/app"
 )
 
 func EnableObservability() error {
