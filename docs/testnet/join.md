@@ -8,7 +8,7 @@ order: 4
 
 The current Haqq version of TestEdge is [`v1.2.0`](https://github.com/haqq-network/haqq/releases/tag/v1.2.0). 
 
-To bootstrap a TestEdge node, it is possible to sync from v1.0.3 via snapshot or via State Sync.
+To bootstrap a TestEdge node, it is possible to sync from v1.2.0 via snapshot or via State Sync.
 
 This document outlines the steps to join an existing testnet {synopsis}
 
@@ -35,7 +35,7 @@ Build from source:
 
 Download latest binary for your arch:
 
-[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.0.3) 
+[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.2.0) 
 
 or
 
@@ -43,7 +43,7 @@ build from source
 
 ```sh
 cd $HOME && \
-git clone -b v1.0.3 https://github.com/haqq-network/haqq && \
+git clone -b v1.2.0 https://github.com/haqq-network/haqq && \
 cd haqq && \
 make install
 ```
@@ -60,7 +60,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 Write your moniker name
@@ -140,7 +140,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 Download the snapshot:
@@ -219,7 +219,7 @@ haqqd start --x-crisis-skip-assert-invariants
 
 The main problem of synchronization from scratch is that we need to consistently change the version of the binary.
 Currently we need upgrades binary by this pipepline:
-v1.0.1 -> v1.0.2 -> v1.0.3
+v1.0.1 -> v1.0.2 -> v1.0.3 -> v1.1.0 -> 1.2.0
 
 **Download binary v1.0.1 for your arch:**
 
@@ -242,7 +242,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.0.1" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 **Start from v1.0.1:**
