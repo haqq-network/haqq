@@ -14,7 +14,7 @@ Haqq is a scalable, high-throughput Proof-of-Stake blockchain that is fully comp
 It's built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) which runs on top of [Tendermint Core](https://github.com/tendermint/tendermint) consensus engine.
 Ethereum compatibility allows developers to build applications on Haqq using the existing Ethereum codebase and toolset,
 without rewriting smart contracts that already work on Ethereum or other Ethereum-compatible networks.
-Ethereum compatibility is done using modules built by [Tharsis](https://thars.is) for their [Evmos](https://evmos.org) network.
+Ethereum compatibility is done using modules built by [Tharsis](https://evmos.notion.site) for their [Evmos](https://evmos.org) network.
 
 Haqq Network’s Shariah-compliant native currency is ISLM – [Fatwa](https://islamiccoin.net/fatwa).
 
