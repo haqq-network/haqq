@@ -180,7 +180,7 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh
+curl -OL https://github.com/haqq-network/validators-contest/raw/master/genesis.json
 ```
 
 Update genesis file
@@ -279,7 +279,7 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh
+curl -OL https://github.com/haqq-network/validators-contest/raw/master/genesis.json
 ```
 
 Update genesis file
