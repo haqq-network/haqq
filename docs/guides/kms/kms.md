@@ -116,7 +116,7 @@ Now, modify the `tmkms.toml` file
 ```sh
 nano $HOME/tmkms/config/tmkms.toml
 ```
-In this example, my validator has the IP address of 123.456.32.123 and we will be using port 688 to feed the validator key to the validator. We will also be using chain_id `haqq_11235-1` for Haqq Mainnet, but if you are doing this on the testnet be sure to use `haqq_53211-1` instead:
+In this example, my validator has the IP address of 123.456.32.123 and we will be using port 688 to feed the validator key to the validator. We will also be using chain_id `haqq_11235-1` for Haqq Mainnet, but if you are doing this on the testnet be sure to use `haqq_54211-2` instead:
 
 ## Chain Configuration
 
@@ -170,7 +170,7 @@ reconnect = true
 ### Cosmos Hub Network
 
 [[chain]]
-id = "haqq_53211-1"
+id = "haqq_54211-2"
 key_format = { type = "cosmos-json", account_key_prefix = "haqqpub", consensus_key_prefix = "haqqvalconspub" }
 state_file = "/root/tmkms/config/state/priv_validator_state.json"
 
@@ -179,14 +179,14 @@ state_file = "/root/tmkms/config/state/priv_validator_state.json"
 ### Software-based Signer Configuration
 
 [[providers.softsign]]
-chain_ids = ["haqq_53211-1"]
+chain_ids = ["haqq_54211-2"]
 key_type = "consensus"
 path = "/root/tmkms/config/secrets/priv_validator_key"
 
 ## Validator Configuration
 
 [[validator]]
-chain_id = "haqq_53211-1"
+chain_id = "haqq_54211-2"
 addr = "tcp://123.456.32.123:688" # your validator node ip and port
 secret_key = "/root/tmkms/config/secrets/secret_connection_key"
 protocol_version = "v0.34"
