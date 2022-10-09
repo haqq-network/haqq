@@ -6,7 +6,7 @@ order: 4
 
 ## Overview
 
-The current Haqq version of TestEdge is [`v1.0.3`](https://github.com/haqq-network/haqq/releases/tag/v1.0.3). 
+The current Haqq version of TestEdge is [`v1.2.0`](https://github.com/haqq-network/haqq/releases/tag/v1.2.0). 
 
 To bootstrap a TestEdge node, it is possible to sync from v1.0.3 via snapshot or via State Sync.
 
