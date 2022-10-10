@@ -1,15 +1,5 @@
-
-rem evmos compile on windows
-rem install golang , gcc, sed for windows
-rem 1. install msys2 : https://www.msys2.org/
-rem 2. pacman -S mingw-w64-x86_64-toolchain
-rem    pacman -S sed
-rem    pacman -S mingw-w64-x86_64-jq
-rem 3. add path C:\msys64\mingw64\bin  
-rem             C:\msys64\usr\bin
-
-set KEY="mykey"
-set CHAINID="evmos_9000-1"
+set KEY="localkey"
+set CHAINID="haqq_54211-2"
 set MONIKER="localtestnet"
 set KEYRING="test"
 set KEYALGO="eth_secp256k1"
@@ -23,49 +13,92 @@ set ETHCONFIG=%HOME%\config\config.toml
 set GENESIS=%HOME%\config\genesis.json
 set TMPGENESIS=%HOME%\config\tmp_genesis.json
 
-@echo build binary
-go build .\cmd\evmosd
+# validate dependencies are installed
+command -v jq > /dev/null 2>&1 || { echo >&2 "jq not installed. More info: https://stedolan.github.io/jq/download/"; exit 1; }
 
+# remove existing daemon
+rm -rf ~/.haqqd*
 
-@echo clear home folder
-del /s /q %HOME%
+# remove previus builds
+rm -rf build
 
-evmosd config keyring-backend %KEYRING%
-evmosd config chain-id %CHAINID%
+make 
+BINARY=build/haqqd
+$BINARY config keyring-backend $KEYRING
+$BINARY config chain-id $CHAINID
 
-evmosd keys add %KEY% --keyring-backend %KEYRING% --algo %KEYALGO%
+# if $KEY exists it should be deleted
+$BINARY keys add $KEY --keyring-backend $KEYRING
 
-rem Set moniker and chain-id for Evmos (Moniker can be anything, chain-id must be an integer)
-evmosd init %MONIKER% --chain-id %CHAINID% 
+# Set moniker and chain-id for Evmos (Moniker can be anything, chain-id must be an integer)
+$BINARY init $MONIKER --chain-id $CHAINID 
 
-rem Change parameter token denominations to aphoton
-cat %GENESIS% | jq ".app_state[\"staking\"][\"params\"][\"bond_denom\"]=\"aphoton\""   >   %TMPGENESIS% && move %TMPGENESIS% %GENESIS%
-cat %GENESIS% | jq ".app_state[\"crisis\"][\"constant_fee\"][\"denom\"]=\"aphoton\"" > %TMPGENESIS% && move %TMPGENESIS% %GENESIS%
-cat %GENESIS% | jq ".app_state[\"gov\"][\"deposit_params\"][\"min_deposit\"][0][\"denom\"]=\"aphoton\"" > %TMPGENESIS% && move %TMPGENESIS% %GENESIS%
-cat %GENESIS% | jq ".app_state[\"mint\"][\"params\"][\"mint_denom\"]=\"aphoton\"" > %TMPGENESIS% && move %TMPGENESIS% %GENESIS%
+# Change parameter token denominations to aISLM
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["staking"]["params"]["bond_denom"]="aISLM"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["crisis"]["constant_fee"]["denom"]="aISLM"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="aISLM"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["mint"]["params"]["mint_denom"]="aISLM"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["evm"]["params"]["evm_denom"]="aISLM"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
 
-rem increase block time (?)
-cat %GENESIS% | jq ".consensus_params[\"block\"][\"time_iota_ms\"]=\"30000\"" > %TMPGENESIS% && move %TMPGENESIS% %GENESIS%
+# 1 min for proposal's vote vaiting
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["gov"]["voting_params"]["voting_period"]="60s"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
 
-rem gas limit in genesis
-cat %GENESIS% | jq ".consensus_params[\"block\"][\"max_gas\"]=\"10000000\"" > %TMPGENESIS% && move %TMPGENESIS% %GENESIS%
+# Set gas limit in genesis
+cat $HOME/.haqqd/config/genesis.json | jq '.consensus_params["block"]["max_gas"]="10000000"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
 
-rem setup
-sed -i "s/create_empty_blocks = true/create_empty_blocks = false/g" %ETHCONFIG%
+# if you need disable produce empty block, uncomment code below
+# if [[ "$OSTYPE" == "darwin"* ]]; then
+#     sed -i '' 's/create_empty_blocks = true/create_empty_blocks = false/g' $HOME/.haqqd/config/config.toml
+#   else
+#     sed -i 's/create_empty_blocks = true/create_empty_blocks = false/g' $HOME/.haqqd/config/config.toml
+# fi
 
-rem Allocate genesis accounts (cosmos formatted addresses)
-evmosd add-genesis-account %KEY% 100000000000000000000000000aphoton --keyring-backend %KEYRING%
+if [[ $1 == "pending" ]]; then
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' 's/create_empty_blocks_interval = "0s"/create_empty_blocks_interval = "30s"/g' $HOME/.haqqd/config/config.toml
+      sed -i '' 's/timeout_propose = "3s"/timeout_propose = "30s"/g' $HOME/.haqqd/config/config.toml
+      sed -i '' 's/timeout_propose_delta = "500ms"/timeout_propose_delta = "5s"/g' $HOME/.haqqd/config/config.toml
+      sed -i '' 's/timeout_prevote = "1s"/timeout_prevote = "10s"/g' $HOME/.haqqd/config/config.toml
+      sed -i '' 's/timeout_prevote_delta = "500ms"/timeout_prevote_delta = "5s"/g' $HOME/.haqqd/config/config.toml
+      sed -i '' 's/timeout_precommit = "1s"/timeout_precommit = "10s"/g' $HOME/.haqqd/config/config.toml
+      sed -i '' 's/timeout_precommit_delta = "500ms"/timeout_precommit_delta = "5s"/g' $HOME/.haqqd/config/config.toml
+      sed -i '' 's/timeout_commit = "5s"/timeout_commit = "150s"/g' $HOME/.haqqd/config/config.toml
+      sed -i '' 's/timeout_broadcast_tx_commit = "10s"/timeout_broadcast_tx_commit = "150s"/g' $HOME/.haqqd/config/config.toml
+  else
+      sed -i 's/create_empty_blocks_interval = "0s"/create_empty_blocks_interval = "30s"/g' $HOME/.haqqd/config/config.toml
+      sed -i 's/timeout_propose = "3s"/timeout_propose = "30s"/g' $HOME/.haqqd/config/config.toml
+      sed -i 's/timeout_propose_delta = "500ms"/timeout_propose_delta = "5s"/g' $HOME/.haqqd/config/config.toml
+      sed -i 's/timeout_prevote = "1s"/timeout_prevote = "10s"/g' $HOME/.haqqd/config/config.toml
+      sed -i 's/timeout_prevote_delta = "500ms"/timeout_prevote_delta = "5s"/g' $HOME/.haqqd/config/config.toml
+      sed -i 's/timeout_precommit = "1s"/timeout_precommit = "10s"/g' $HOME/.haqqd/config/config.toml
+      sed -i 's/timeout_precommit_delta = "500ms"/timeout_precommit_delta = "5s"/g' $HOME/.haqqd/config/config.toml
+      sed -i 's/timeout_commit = "5s"/timeout_commit = "150s"/g' $HOME/.haqqd/config/config.toml
+      sed -i 's/timeout_broadcast_tx_commit = "10s"/timeout_broadcast_tx_commit = "150s"/g' $HOME/.haqqd/config/config.toml
+  fi
+fi
 
-rem Sign genesis transaction
-evmosd gentx %KEY% 1000000000000000000000aphoton --keyring-backend %KEYRING% --chain-id %CHAINID%
+# Allocate genesis accounts (cosmos formatted addresses)
+$BINARY add-genesis-account $KEY 100000000000000000000000000aISLM --keyring-backend $KEYRING &> /dev/null
 
-rem Collect genesis tx
-evmosd collect-gentxs
+# Sign genesis transaction
+$BINARY gentx $KEY 1000000000000000000000aISLM --keyring-backend $KEYRING --chain-id $CHAINID &> /dev/null
 
-rem Run this to ensure everything worked and that the genesis file is setup correctly
-evmosd validate-genesis
+# Collect genesis tx
+$BINARY collect-gentxs &> /dev/null
 
+# Run this to ensure everything worked and that the genesis file is setup correctly
+$BINARY validate-genesis 
 
+if [[ $1 == "pending" ]]; then
+  echo "pending mode is on, please wait for the first block committed."
+fi
 
-rem Start the node (remove the --pruning=nothing flag if historical queries are not needed)
-evmosd start --pruning=nothing %TRACE% --log_level %LOGLEVEL% --minimum-gas-prices=0.0001aphoton
+echo "\n### Priv key for Metamask ####"
+$BINARY keys unsafe-export-eth-key $KEY --home=$HOME/.haqqd --keyring-backend $KEYRING
+echo "\n\n\n"
+
+# Start the node (remove the --pruning=nothing flag if historical queries are not needed)
+$BINARY start --pruning=nothing $TRACE --log_level $LOGLEVEL \
+--minimum-gas-prices=0.0001aISLM \
+--json-rpc.api eth,txpool,personal,net,debug,web3 \
+--json-rpc.enable true --keyring-backend $KEYRING
