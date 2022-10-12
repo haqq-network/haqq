@@ -6,9 +6,9 @@ order: 4
 
 ## Overview
 
-The current Haqq version of TestEdge is [`v1.0.3`](https://github.com/haqq-network/haqq/releases/tag/v1.0.3). 
+The current Haqq version of TestEdge is [`v1.2.0`](https://github.com/haqq-network/haqq/releases/tag/v1.2.0). 
 
-To bootstrap a TestEdge node, it is possible to sync from v1.0.3 via snapshot or via State Sync.
+To bootstrap a TestEdge node, it is possible to sync from v1.2.0 via snapshot or via State Sync.
 
 This document outlines the steps to join an existing testnet {synopsis}
 
@@ -35,15 +35,14 @@ Build from source:
 
 Download latest binary for your arch:
 
-[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.0.3) 
-
+[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.2.0)
 or
 
 build from source 
 
 ```sh
 cd $HOME && \
-git clone -b v1.0.3 https://github.com/haqq-network/haqq && \
+git clone -b v1.2.0 https://github.com/haqq-network/haqq && \
 cd haqq && \
 make install
 ```
@@ -60,7 +59,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.2.0" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
 ```
 
 Write your moniker name
@@ -95,7 +94,8 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+curl -OL https://raw.githubusercontent.com/haqq-network/validators-contest/master/genesis.json
+
 ```
 
 Update genesis file
@@ -115,7 +115,8 @@ curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/s
 List of seeds already included in script
 
 ```sh
-SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
+seeds="62bf004201a90ce00df6f69390378c3d90f6dd7e@seed2.testedge2.haqq.network:26656,23a1176c9911eac442d6d1bf15f92eeabb3981d5@seed1.testedge2.haqq.network:26656"
+
 ```
 
 Grant rights to the script and execute it
@@ -140,7 +141,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.2.0" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
 ```
 
 Download the snapshot:
@@ -180,7 +181,7 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+curl -OL https://storage.googleapis.com/haqq-testedge2-snapshots/genesis.json
 ```
 
 Update genesis file
@@ -198,7 +199,8 @@ lz4 -c -d haqq_latest.tar.lz4 | tar -x -C $HOME/.haqqd
 **Setup seeds**
 
 ```sh
-SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
+SEEDS="62bf004201a90ce00df6f69390378c3d90f6dd7e@seed2.testedge2.haqq.network:26656,23a1176c9911eac442d6d1bf15f92eeabb3981d5@seed1.testedge2.haqq.network:26656"
+
 ```
 
 ```sh
@@ -219,7 +221,7 @@ haqqd start --x-crisis-skip-assert-invariants
 
 The main problem of synchronization from scratch is that we need to consistently change the version of the binary.
 Currently we need upgrades binary by this pipepline:
-v1.0.1 -> v1.0.2 -> v1.0.3
+v1.0.1 -> v1.0.2 -> v1.0.3 ->v1.1.0 ->v1.2.0
 
 **Download binary v1.0.1 for your arch:**
 
@@ -279,7 +281,8 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+curl -OL https://storage.googleapis.com/haqq-testedge2-snapshots/genesis.json
+
 ```
 
 Update genesis file
@@ -291,7 +294,7 @@ mv genesis.json $HOME/.haqqd/config/genesis.json
 **Setup seeds**
 
 ```sh
-SEEDS="ddc217640ab137ad6f9cf11fd94fba02eb1e1972@seed1.testedge.haqq.network:26656,7028d26e4d37506b4d5e1f668c945a93693d111b@seed2.testedge.haqq.network:26656"
+SEEDS="62bf004201a90ce00df6f69390378c3d90f6dd7e@seed2.testedge2.haqq.network:26656,23a1176c9911eac442d6d1bf15f92eeabb3981d5@seed1.testedge2.haqq.network:26656"
 ```
 
 ```sh
