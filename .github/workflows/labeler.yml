@@ -1,14 +1,14 @@
-name: "Pull Request Labeler"
-on:
-  pull_request:
-  push:
-    branches:
-      - master
+# name: "Pull Request Labeler"
+# on:
+#   pull_request:
+#   push:
+#     branches:
+#       - master
 
-jobs:
-  triage:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/labeler@v4
-      with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+# jobs:
+#   triage:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - uses: actions/labeler@v4
+#       with:
+#         repo-token: "${{ secrets.GITHUB_TOKEN }}"
