@@ -1,6 +1,6 @@
 
 KEY="localkey"
-CHAINID="haqq_121799-1"
+CHAINID="haqq_54211-3"
 MONIKER="localtestnet"
 KEYRING="test"
 KEYALGO="eth_secp256k1"
