@@ -11,26 +11,26 @@ Follow the Metamask guide for more info on how to setup your wallet account.
 
 Request Testnet tokens
 Once you are signed in to the MetaMask extension, visit the Faucet to request tokens for the testnet. Click the MetaMask button.
-https://miro.medium.com/max/4800/1*JvCDx8BJKYsUe9UPw0QMkA.jpeg
+![faucet1](./img/faucet1.jpeg)
 
 After that, you can see a topup window with your Metamask account. You can choose account for the connection with Faucet.Then click Next button and Connect but for establishing connection.
 
 Then click Next button and Connect but for establishing connection.
 
-https://miro.medium.com/max/4800/1*PpPEJcNCK0fQo4tQdN3Lag.jpeg
-https://miro.medium.com/max/4800/1*0mJCgFhP2EYAbA96jxc1jw.jpeg
-https://miro.medium.com/max/4800/1*PMXL-3AYCvSmztOpWXVc_A.jpeg
+![faucet2](./img/faucet2.jpeg)
+![faucet3](./img/faucet3.jpeg)
+![faucet4](./img/faucet4.jpeg)
 
 
 Please wait until connection will be establish.
 
 After that click on Login button to authorizing via your GitHub account.
 
-https://miro.medium.com/max/4800/1*m4VfCX7Y6xfjKRWH2uc6SQ.jpeg
+![faucet5](./img/faucet5.jpeg)
 
 Click on Request Tokens button to recive ISLM.
 
-https://miro.medium.com/max/4800/1*0mEKHE4Sxs3DpMviNHbpNQ.jpeg
+![faucet6](./img/faucet6.jpeg)
 
 Rate limits
 To prevent the faucet account from draining the available funds, the Haqq TestEdge faucet imposes a maximum number of requests for a period of time. By default, the faucet service accepts 1 request per day per address. You can request ISLM from the faucet for each address only once every 24h. If you try to request multiple times within the 24h cooldown phase, no transaction will be initiated. Please try again in 24 hours.
