@@ -22,7 +22,7 @@ Haqq Network’s Shariah-compliant native currency is ISLM – [Fatwa](https://i
 
 ## Installation
 
-**Note**: Make sure that you install `Go` (you can follow official guide [Install Go](https://go.dev/doc/install) and `GOPATH` is configured for source directory.
+**Note**: Make sure that you install `Go` (you can follow official guide [Install Go](https://go.dev/doc/install) and `GOPATH` is configured for source directory).
 
 For prerequisites and detailed build instructions please read the [Installation](https://docs.haqq.network/quickstart/installation.html) instructions. Once the dependencies are installed, run:
 
