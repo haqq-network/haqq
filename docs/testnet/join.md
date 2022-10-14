@@ -72,13 +72,13 @@ CUSTOM_MONIKER="example_moniker"
 Cofigure TestEdge chain-id
 
 ```sh
-haqqd config chain-id haqq_54211-2
+haqqd config chain-id haqq_54211-3
 ```
 
 Initialize node
 
 ```sh
-haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-3
 ```
 
 Generate keys (if you haven't already done it)
@@ -157,13 +157,13 @@ CUSTOM_MONIKER="example_moniker"
 Cofigure TestEdge chain-id
 
 ```sh
-haqqd config chain-id haqq_54211-2
+haqqd config chain-id haqq_54211-3
 ```
 
 Initialize node
 
 ```sh
-haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-3
 ```
 
 Generate keys (if you haven't already done it)
@@ -256,13 +256,13 @@ CUSTOM_MONIKER="example_moniker"
 Cofigure TestEdge chain-id
 
 ```sh
-haqqd config chain-id haqq_54211-2
+haqqd config chain-id haqq_54211-3
 ```
 
 Initialize node
 
 ```sh
-haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-3
 ```
 
 Generate keys (if you haven't already done it)
