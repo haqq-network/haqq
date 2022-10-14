@@ -6,7 +6,7 @@ You specify the network you want to join by setting the **genesis file** and **s
 
 | Testnet Chain ID | Name | Version | Status | Description
 |--|--|--|--|--|
-| haqq_54211-2 | Haqq TestEdge | v1.0.3 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
+| haqq_54211-3 | Haqq TestEdge | v1.2.0 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
 | haqq_112357-1 | Haqq TestNow | v1.0.3 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
 
 ## Preresquisites
@@ -73,7 +73,7 @@ To quickly get [started](./join.md#quickstart), node operators can choose to syn
 ### Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+curl -OL https://github.com/haqq-network/validators-contest/raw/master/genesis.json
 ```
 
 ### Update genesis file
@@ -92,20 +92,17 @@ haqqd validate-genesis
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version 1.2.0 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 <!--### Add Seed Nodes-->
 
 ## Add Persistent Peers
 
-We can set the [`persistent_peers`](https://docs.tendermint.com/master/tendermint-core/using-tendermint.html#persistent-peer) field in `~/.haqqd/config/config.toml` to specify peers that your node will maintain persistent connections with. You can retrieve them from the list of
-available peers on the [`testnets`](https://github.com/haqq-network/testnets) repo.
-
- You can get a random 10 entries from the `peers.txt` file in the `PEERS` variable by running the following command:
+We can set the [`persistent_peers`](https://docs.tendermint.com/master/tendermint-core/using-tendermint.html#persistent-peer) field in `~/.haqqd/config/config.toml` to specify peers that your node will maintain persistent connections with. 
 
 ```bash
-PEERS=`curl -sL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/peers.txt | sort -R | head -n 10 | awk '{print $1}' | paste -s -d, -`
+PEERS="b3ce1618585a9012c42e9a78bf4a5c1b4bad1123@65.21.170.3:33656,952b9d918037bc8f6d52756c111d0a30a456b3fe@213.239.217.52:29656,85301989752fe0ca934854aecc6379c1ccddf937@65.109.49.111:26556,d648d598c34e0e58ec759aa399fe4534021e8401@109.205.180.81:29956,f2c77f2169b753f93078de2b6b86bfa1ec4a6282@141.95.124.150:20116,eaa6d38517bbc32bdc487e894b6be9477fb9298f@78.107.234.44:45656,37513faac5f48bd043a1be122096c1ea1c973854@65.108.52.192:36656,d2764c55607aa9e8d4cee6e763d3d14e73b83168@66.94.119.47:26656,fc4311f0109d5aed5fcb8656fb6eab29c15d1cf6@65.109.53.53:26656,297bf784ea674e05d36af48e3a951de966f9aa40@65.109.34.133:36656,bc8c24e9d231faf55d4c6c8992a8b187cdd5c214@65.109.17.86:32656"
 ```
 
 Use `sed` to include them into the configuration. You can also add them manually:
@@ -244,7 +241,7 @@ haqqd tx staking create-validator \
   --gas="auto" \
   --gas-prices="0.025aISLM" \
   --from=<key_name> \
-  --node https://rpc.tm.testedge.haqq.network:443
+  --node https://rpc.tm.testedge2.haqq.network:443
 ```
 
 ## Upgrading Your Node

@@ -36,14 +36,14 @@ haqqd tx staking create-validator \
 --amount=1000000000000aISLM \
 --pubkey=$(haqqd tendermint show-validator) \
 --moniker="your_moniker_name" \
---chain-id=haqq_54211-2 \
+--chain-id=haqq_54211-3 \
 --commission-rate="0.10" \
 --commission-max-rate="0.20" \
 --commission-max-change-rate="0.01" \
 --min-self-delegation="1000000" \
 --from=<key_name> \
 --fees=20aISLM \
---node https://rpc.tm.testedge.haqq.network:443
+--node https://rpc.tm.testedge2.haqq.network:443
 ```
 
 ::: tip

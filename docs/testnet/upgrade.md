@@ -65,7 +65,7 @@ cosmovisor/
 │   └── bin
 │       └── haqqd
 └── upgrades
-    └── v1.0.3
+    └── v1.2.0
         ├── bin
         │   └── haqqd
         └── upgrade-info.json
@@ -164,13 +164,12 @@ Verify that you've successfully installed Haqq on your system by using the `vers
 
 ```bash
 $ haqqd version --long
-
-name: haqqd
+name: haqq
 server_name: haqqd
-version: 1.0.3
-commit: fe9df43332800a74a163c014c69e62765d8206e3
-build_tags: netgo,ledger
-go: go version go1.18 darwin/amd64
+version: 1.2.0
+commit: 40935b70fb1da4ee28f1d91e8601060e533f6fd0
+build_tags: ""
+go: go version go1.18.3 linux/amd64
 ...
 ```
 

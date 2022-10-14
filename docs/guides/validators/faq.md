@@ -64,7 +64,7 @@ haqqd tx staking create-validator \
   --gas="auto" \
   --gas-prices="0.025aISLM" \
   --from=<key_name> \
-  --node https://rpc.tm.testedge.haqq.network:443
+  --node https://rpc.tm.testedge2.haqq.network:443
 ```
 
 Once a validator is created and registered, ISLM holders can delegate ISLMs to it, effectively adding stake to its pool. The total stake of a validator is the sum of the ISLM self-bonded by the validator's operator and the ISLM bonded by external delegators.

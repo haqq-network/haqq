@@ -43,6 +43,6 @@ software to seamlessly deploy smart contracts which interact with the rest of th
 |------------------------------|------------------------------------------------------|
 | Haqq Mainnet | `haqq_11235-1`                |
 | Haqq TestNow                | `haqq_112357-1`        |
-| Haqq TestEdge                | `haqq_54211-2`        |
+| Haqq TestEdge                | `haqq_54211-3`        |
 | Block Explorers       | [Block Explorers](./../tools/explorers.md) |
 | Block Time                   | ~7 seconds                                           |

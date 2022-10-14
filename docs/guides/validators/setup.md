@@ -86,7 +86,7 @@ haqqd tx staking create-validator \
   --gas="auto" \
   --gas-prices="0.025aISLM" \
   --from=<key_name> \
-  --node https://rpc.tm.testedge.haqq.network:443
+  --node https://rpc.tm.testedge2.haqq.network:443
 ```
 
 ::: tip
@@ -264,7 +264,7 @@ WantedBy=multi-user.target
 Make sure you have a genesis file in `$HOME/.haqqd/config/genesis.json` if you don't have this file you can find it here
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+curl -OL https://github.com/haqq-network/validators-contest/raw/master/genesis.json
 ```
 
 And also you can validate genesis file using this command
@@ -279,10 +279,10 @@ First of all, you should make sure that your bin file is up to date
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version 1.2.0 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
-We are currently using version `1.0.3` on TestEdge.
+We are currently using version `1.2.0` on TestEdge.
 
 This error can also occur if you run the validator from a period when blocks were produced on a different version of the binary. 
 
