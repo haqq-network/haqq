@@ -6,9 +6,9 @@ order: 4
 
 ## Overview
 
-The current Haqq version of TestEdge is [`v1.0.3`](https://github.com/haqq-network/haqq/releases/tag/v1.0.3). 
+The current Haqq version of TestEdge is [`v1.2.0`](https://github.com/haqq-network/haqq/releases/tag/v1.2.0). 
 
-To bootstrap a TestEdge node, it is possible to sync from v1.0.3 via snapshot or via State Sync.
+To bootstrap a TestEdge node, it is possible to sync from v1.2.0 via snapshot or via State Sync.
 
 This document outlines the steps to join an existing testnet {synopsis}
 
@@ -35,7 +35,7 @@ Build from source:
 
 Download latest binary for your arch:
 
-[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.0.3) 
+[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.2.0) 
 
 or
 
@@ -43,7 +43,7 @@ build from source
 
 ```sh
 cd $HOME && \
-git clone -b v1.0.3 https://github.com/haqq-network/haqq && \
+git clone -b v1.2.0 https://github.com/haqq-network/haqq && \
 cd haqq && \
 make install
 ```
@@ -60,7 +60,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 Write your moniker name
@@ -72,13 +72,13 @@ CUSTOM_MONIKER="example_moniker"
 Cofigure TestEdge chain-id
 
 ```sh
-haqqd config chain-id haqq_54211-2
+haqqd config chain-id haqq_54211-3
 ```
 
 Initialize node
 
 ```sh
-haqqd init CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-3
 ```
 
 Generate keys (if you haven't already done it)
@@ -140,7 +140,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+#haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 Download the snapshot:
@@ -157,13 +157,13 @@ CUSTOM_MONIKER="example_moniker"
 Cofigure TestEdge chain-id
 
 ```sh
-haqqd config chain-id haqq_54211-2
+haqqd config chain-id haqq_54211-3
 ```
 
 Initialize node
 
 ```sh
-haqqd init CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init $CUSTOM_MONIKER --chain-id haqq_54211-3
 ```
 
 Generate keys (if you haven't already done it)
