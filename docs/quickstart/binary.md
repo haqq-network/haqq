@@ -143,7 +143,7 @@ keyring-backend = "os"
 
 # CLI output format (text|json)
 
-output = "number"
+output = "text"
 
 # <host>:<port> to Tendermint RPC interface for this chain
 
@@ -161,7 +161,7 @@ haqqd config
 {
  "chain-id": "haqq_11235-1",
  "keyring-backend": "os",
- "output": "number",
+ "output": "text",
  "node": "tcp://localhost:26657",
  "broadcast-mode": "sync"
 }
