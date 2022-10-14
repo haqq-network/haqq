@@ -39,7 +39,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### State Machine Breaking
 
-- [\#173](https://github.com/tharsis/evmos/pull/173) Rename `intrarelayer` module to `erc20`
+- [\#173](https://github.com/tharsis/evmos/pull/173) Rename `intrarelayer` module to `erc20`.
 
 ### Improvements
 
@@ -62,11 +62,11 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Improvements
 
-- (build) [\#143](https://github.com/tharsis/evmos/pull/143) Added `build-reproducible` rule in `Makefile` to build docker containers
+- (build) [\#143](https://github.com/tharsis/evmos/pull/143) Added `build-reproducible` rule in `Makefile` to build docker containers.
 
 ### Bug Fixes
 
-- (build) [\#151](https://github.com/tharsis/evmos/pull/151) Fixes `version` command by picking the latest tag in the current branch instead of across all branches as the current version
+- (build) [\#151](https://github.com/tharsis/evmos/pull/151) Fixes `version` command by picking the latest tag in the current branch instead of across all branches as the current version.
 
 ## [v0.4.0] - 2021-12-02
 
@@ -78,12 +78,12 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 - (app) [\#128](https://github.com/tharsis/evmos/pull/128) Add ibc-go `TestingApp` interface.
 - (ci) [\#117](https://github.com/tharsis/evmos/pull/117) Enable automatic backport of PRs.
-- (deps) [\#135](https://github.com/tharsis/evmos/pull/135) Bump Ethermint version to [`v0.9.0`](https://github.com/tharsis/ethermint/releases/tag/v0.9.0)
-- (ci) [\#136](https://github.com/tharsis/evmos/pull/136) Deploy `evmos` docker container to [docker hub](https://hub.docker.com/u/tharsishq) for every versioned releases
+- (deps) [\#135](https://github.com/tharsis/evmos/pull/135) Bump Ethermint version to [`v0.9.0`](https://github.com/tharsis/ethermint/releases/tag/v0.9.0).
+- (ci) [\#136](https://github.com/tharsis/evmos/pull/136) Deploy `evmos` docker container to [docker hub](https://hub.docker.com/u/tharsishq) for every versioned releases.
 
 ### Bug Fixes
 
-- (build) [\#116](https://github.com/tharsis/evmos/pull/116) Fix `build-docker` command
+- (build) [\#116](https://github.com/tharsis/evmos/pull/116) Fix `build-docker` command.
 
 ## [v0.3.0] - 2021-11-24
 
@@ -93,32 +93,32 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Improvements
 
-- (deps) [\#110](https://github.com/tharsis/evmos/pull/110) Bump Ethermint version to [`v0.8.1`](https://github.com/tharsis/ethermint/releases/tag/v0.8.1)
-- (erc20) [\#107](https://github.com/tharsis/evmos/pull/107) Add IBC validation
+- (deps) [\#110](https://github.com/tharsis/evmos/pull/110) Bump Ethermint version to [`v0.8.1`](https://github.com/tharsis/ethermint/releases/tag/v0.8.1).
+- (erc20) [\#107](https://github.com/tharsis/evmos/pull/107) Add IBC validation.
 - (cmd) [\#105](https://github.com/tharsis/evmos/pull/105) Improve testnet command to include JSON-RPC client.
 
 ## Bug Fixes
 
 - (erc20) [\#109](https://github.com/tharsis/evmos/pull/109) Fix hardcoded erc20 nonce and `UpdateTokenPairERC20` proposal to support ERC20s with 0 decimals.
-- (erc20) [\#102](https://github.com/tharsis/evmos/pull/102) Add `convert-erc20` cmd
+- (erc20) [\#102](https://github.com/tharsis/evmos/pull/102) Add `convert-erc20` cmd.
 
 ## [v0.2.0] - 2021-11-17
 
 ### Features
 
-- (erc20) [\#82](https://github.com/tharsis/evmos/pull/82) ERC20 module
+- (erc20) [\#82](https://github.com/tharsis/evmos/pull/82) ERC20 module.
 - (cmd) [\#32](https://github.com/tharsis/evmos/pull/32) Create `testnet` command that spins up a new local testnet with N nodes.
 
 ### Improvements
 
-- (deps) [\#94](https://github.com/tharsis/evmos/pull/94) Bump Ethermint version to [`v0.8.0`](https://github.com/tharsis/ethermint/releases/tag/v0.8.0)
-- (deps) [\#80](https://github.com/tharsis/evmos/pull/80) Bump ibc-go to [`v2.0.0`](https://github.com/cosmos/ibc-go/releases/tag/v2.0.0)
+- (deps) [\#94](https://github.com/tharsis/evmos/pull/94) Bump Ethermint version to [`v0.8.0`](https://github.com/tharsis/ethermint/releases/tag/v0.8.0).
+- (deps) [\#80](https://github.com/tharsis/evmos/pull/80) Bump ibc-go to [`v2.0.0`](https://github.com/cosmos/ibc-go/releases/tag/v2.0.0).
 
 ## [v0.1.3] - 2021-10-24
 
 ### Improvements
 
-- (deps) [\#64](https://github.com/tharsis/evmos/pull/64) Bump Ethermint version to `v0.7.2`
+- (deps) [\#64](https://github.com/tharsis/evmos/pull/64) Bump Ethermint version to `v0.7.2`.
 
 ### Bug Fixes
 
@@ -128,7 +128,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Improvements
 
-- (deps) [\#34](https://github.com/tharsis/evmos/pull/34) Bump Ethermint version to `v0.7.1`
+- (deps) [\#34](https://github.com/tharsis/evmos/pull/34) Bump Ethermint version to `v0.7.1`.
 
 ## [v0.1.1] - 2021-10-07
 
@@ -141,4 +141,4 @@ Ref: https://keepachangelog.com/en/1.0.0/
 ### Improvements
 
 - (cmd) [\#26](https://github.com/tharsis/evmos/pull/26) Use config on genesis accounts.
-- (deps) [\#28](https://github.com/tharsis/evmos/pull/28) Bump Ethermint version to `v0.7.0`
+- (deps) [\#28](https://github.com/tharsis/evmos/pull/28) Bump Ethermint version to `v0.7.0`.

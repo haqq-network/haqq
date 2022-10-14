@@ -77,17 +77,17 @@ original repo,`$GOPATH/src/github.com/haqq-network/haqq`, and do all the work th
 For instance, to create a fork and work on a branch of it, you would:
 
 1. Create the fork on github, using the fork button.
-2. Go to the original repo checked out locally. (i.e. `$GOPATH/src/github.com/haqq-network/haqq`)
-3. `git remote rename origin upstream`
-4. `git remote add origin git@github.com:haqq-network/haqq.git`
+2. Go to the original repo checked out locally. (i.e. `$GOPATH/src/github.com/haqq-network/haqq`).
+3. `git remote rename origin upstream`.
+4. `git remote add origin git@github.com:haqq-network/haqq.git`.
 
 Now `origin` refers to my fork and `upstream` refers to the haqq version. So I can `git push -u origin master` to
 update my fork, and make pull requests to haqq from there. Of course, replace `tharsis` with your git handle.
 
 To pull in updates from the origin repo, run:
 
-1. `git fetch upstream`
-2. `git rebase upstream/master` (or whatever branch you want)
+1. `git fetch upstream`.
+2. `git rebase upstream/master` (or whatever branch you want).
 
 Please **NO DOT** make Pull Requests from `development`.
 
@@ -138,7 +138,7 @@ For example, in vscode your `.vscode/settings.json` should look like:
 
 1. The latest state of development is on `development`.
 2. `development` must never
-   fail `make lint, make test, make test-race, make test-rpc, make test-import`
+   fail `make lint, make test, make test-race, make test-rpc, make test-import`.
 3. No `--force` onto `development` (except when reverting a broken commit, which should seldom happen).
 4. Create your feature branch from `development` either on `github.com/haqq-network/haqq`, or your fork (
    using `git remote add origin`).

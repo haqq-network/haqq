@@ -13,10 +13,10 @@ TRACE=""
 command -v jq > /dev/null 2>&1 || { echo >&2 "jq not installed. More info: https://stedolan.github.io/jq/download/"; exit 1; }
 
 # remove existing daemon
-rm -rf ~/.haqqd*
+rm -rf ~/.haqqd* > /dev/null 2>&1
 
-# remove previus builds
-rm -rf build
+# remove previous builds
+rm -rf build > /dev/null 2>&1
 
 make 
 BINARY=build/haqqd
@@ -95,7 +95,10 @@ $BINARY keys unsafe-export-eth-key $KEY --home=$HOME/.haqqd --keyring-backend $K
 echo "\n\n\n"
 
 # Start the node (remove the --pruning=nothing flag if historical queries are not needed)
-$BINARY start --pruning=nothing $TRACE --log_level $LOGLEVEL \
+$BINARY start \
+--pruning=nothing $TRACE \
+--log_level $LOGLEVEL \
 --minimum-gas-prices=0.0001aISLM \
 --json-rpc.api eth,txpool,personal,net,debug,web3 \
---json-rpc.enable true --keyring-backend $KEYRING
+--json-rpc.enable true \
+--keyring-backend $KEYRING
