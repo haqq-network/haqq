@@ -179,7 +179,7 @@ state_file = "/root/tmkms/config/state/priv_validator_state.json"
 ### Software-based Signer Configuration
 
 [[providers.softsign]]
-chain_ids = ["haqq_53211-1"]
+chain_ids = ["haqq_54211-3"]
 key_type = "consensus"
 path = "/root/tmkms/config/secrets/priv_validator_key"
 
