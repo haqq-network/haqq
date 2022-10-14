@@ -14,7 +14,7 @@ parent:
     * [MetaMask](./keys-wallets/metamask.md)
     * [Multisig](./keys-wallets/multisig.md)
     * [Keplr](./keys-wallets/keplr.md)
-    * [Ledger](./ledger/ledger.md)
+    * [Ledger](./ledger/ledger.md)(wil be soon)
 3. Ethereum Tooling
     * [Remix](./tools/remix.md)
     * [Hardhat](./tools/hardhat.md)
