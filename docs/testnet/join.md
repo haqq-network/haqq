@@ -59,7 +59,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.2.0" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 Write your moniker name
@@ -71,13 +71,13 @@ CUSTOM_MONIKER="example_moniker"
 Cofigure TestEdge chain-id
 
 ```sh
-haqqd config chain-id haqq_54211-2
+haqqd config chain-id haqq_54211-3
 ```
 
 Initialize node
 
 ```sh
-haqqd init CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init CUSTOM_MONIKER --chain-id haqq_54211-3
 ```
 
 Generate keys (if you haven't already done it)
@@ -94,7 +94,7 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://raw.githubusercontent.com/haqq-network/validators-contest/master/genesis.json
+curl -OL https://github.com/haqq-network/validators-contest/raw/master/genesis.json
 
 ```
 
@@ -102,27 +102,6 @@ Update genesis file
 
 ```sh
 mv genesis.json $HOME/.haqqd/config/genesis.json
-```
-
-**Configure State sync**
-
-Download script for state sync auto configuration
-
-```sh
-curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge/state_sync.sh
-```
-
-List of seeds already included in script
-
-```sh
-seeds="62bf004201a90ce00df6f69390378c3d90f6dd7e@seed2.testedge2.haqq.network:26656,23a1176c9911eac442d6d1bf15f92eeabb3981d5@seed1.testedge2.haqq.network:26656"
-
-```
-
-Grant rights to the script and execute it
-
-```sh
-chmod +x state_sync.sh && ./state_sync.sh
 ```
 
 **Start Haqq node**
@@ -141,7 +120,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.2.0" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 Download the snapshot:
@@ -158,13 +137,13 @@ CUSTOM_MONIKER="example_moniker"
 Cofigure TestEdge chain-id
 
 ```sh
-haqqd config chain-id haqq_54211-2
+haqqd config chain-id haqq_54211-3
 ```
 
 Initialize node
 
 ```sh
-haqqd init CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init CUSTOM_MONIKER --chain-id haqq_54211-3
 ```
 
 Generate keys (if you haven't already done it)
@@ -181,7 +160,7 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge2-snapshots/genesis.json
+curl -OL https://github.com/haqq-network/validators-contest/raw/master/genesis.json
 ```
 
 Update genesis file
@@ -244,7 +223,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+# haqqd version "1.0.1" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
 ```
 
 **Start from v1.0.1:**
@@ -258,13 +237,13 @@ CUSTOM_MONIKER="example_moniker"
 Cofigure TestEdge chain-id
 
 ```sh
-haqqd config chain-id haqq_54211-2
+haqqd config chain-id haqq_54211-3
 ```
 
 Initialize node
 
 ```sh
-haqqd init CUSTOM_MONIKER --chain-id haqq_54211-2
+haqqd init CUSTOM_MONIKER --chain-id haqq_54211-3
 ```
 
 Generate keys (if you haven't already done it)
@@ -281,7 +260,7 @@ haqqd keys add <name>
 Download genesis
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge2-snapshots/genesis.json
+curl -OL https://github.com/haqq-network/validators-contest/raw/master/genesis.json
 
 ```
 
@@ -330,6 +309,29 @@ It's now time to perform the manual upgrade to `v1.0.3`:
 
 ```sh
 git checkout v1.0.3 && \
+make install && \
+haqqd start --x-crisis-skip-assert-invariants
+```
+Now wait until the chain reaches block height 256200. It will panic and log the following:
+```
+panic: UPGRADE "v1.1.0" NEEDED at height: 256200
+```
+
+It's now time to perform the manual upgrade to `v1.1.0`:
+
+```sh
+git checkout v1.1.0 && \
+make install && \
+haqqd start --x-crisis-skip-assert-invariants
+```
+Now wait until the chain reaches block height 355555. It will panic and log the following:
+```
+panic: UPGRADE "v1.2.0" NEEDED at height: 355555
+
+It's now time to perform the manual upgrade to `v1.2.0`:
+
+```sh
+git checkout v1.2.0 && \
 make install && \
 haqqd start --x-crisis-skip-assert-invariants
 ```
