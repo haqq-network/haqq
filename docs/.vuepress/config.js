@@ -49,7 +49,7 @@ module.exports = {
       rpc_url_local: 'http://localhost:8545/',
       chain_id: '11235',
       testnet_chain_id: '112357',
-      latest_version: 'v1.0.0',
+      latest_version: 'v1.2.0',
       version_number: '1',
       testnet_version_number: '1',
       block_explorer_url: 'https://explorer.haqq.network/',
