@@ -8,7 +8,7 @@ Learn about the encoding formats used on Haqq. {synopsis}
 
 ## Pre-requisite Readings
 
-- [Cosmos SDK Encoding](https://docs.cosmos.network/master/core/encoding.html) {prereq}
+- [Cosmos SDK Encoding](https://docs.cosmos.network/main/core/encoding) {prereq}
 - [Ethereum RLP](https://eth.wiki/en/fundamentals/rlp) {prereq}
 
 ## Encoding Formats
