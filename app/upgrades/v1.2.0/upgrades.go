@@ -8,7 +8,7 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 )
 
-// CreateUpgradeHandler creates an SDK upgrade handler for v1.0.2
+// CreateUpgradeHandler creates an SDK upgrade handler for v1.2.0
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
