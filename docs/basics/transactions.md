@@ -8,7 +8,7 @@ This document describes the lifecycle of a transaction from creation to committe
 
 ## Pre-requisite Readings
 
-- [SDK transaction lifecycle](https://docs.cosmos.network/master/basics/tx-lifecycle.html) {prereq}
+- [SDK transaction lifecycle](https://docs.cosmos.network/main/basics/tx-lifecycle) {prereq}
 
 <!-- TODO: rewrite. This is not a lifecycle doc -->
 ## Routing
