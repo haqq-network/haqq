@@ -27,11 +27,9 @@ sudo apt-get install curl git make gcc liblz4-tool build-essential jq -y
 
 ::: tip
 
-**If you choose StateSync or Snapshot for node running you need to download or build from source**
+**If you choose StateSync or Snapshot for node running you need to download or build from source the latest binary.**
 
 :::
-
-Build from source:
 
 Download latest binary for your arch:
 
@@ -39,7 +37,7 @@ Download latest binary for your arch:
 
 or
 
-build from source 
+build from source: 
 
 ```sh
 cd $HOME && \
@@ -347,7 +345,7 @@ cd ~/haqq_backups/haqq_167797
 
 ::::
 
-For more advanced information on setting up a node, see the full [Join TestEdge Tutorial](./join_full.md)
+For more advanced information on setting up a node, see the full [Join TestEdge Tutorial](./join_full.md).
 
 ## Validators FAQ
 
@@ -371,7 +369,7 @@ Before starting a node, we recommend that you read the following articles in ord
 
 ## Automated Upgrades
 
-We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using [Cosmovisor](./upgrade.md)
+We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using [Cosmovisor](./upgrade.md).
 
 ### Validators community
 
