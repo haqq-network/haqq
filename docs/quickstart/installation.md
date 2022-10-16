@@ -26,6 +26,7 @@ If the `haqqd: command not found` error message is returned, confirm that your [
 
 ```bash
 export PATH=$PATH:$(go env GOPATH)/bin
+echo "export PATH=$PATH:$(go env GOPATH)/bin" >> $HOME/.bash_profile
 ```
 
 :::
