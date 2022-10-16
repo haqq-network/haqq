@@ -1,19 +1,5 @@
-This PR is regarding the task "Work on mistakes!"
+Description:
 
-Task description:
-*************************
-MISSION 🎯
-Find any inconsistency in our documents and offer to fix it.
+https://github.com/haqq-network/haqq/blob/master/docs/quickstart/interact_node.md#using-the-rest-endpoints:~:text=The%20list%20of%20all%20available%20REST%20endpoints%20is%20available%20as%20a%20Swagger%20specification%20file%2C%20it%20can%20be%20viewed%20at%20localhost%3A1317/swagger.%20Make%20sure%20that%20the%20api.swagger%20field%20is%20set%20to%20true%20in%20your%20app.toml%20file.
 
-SUBMISSION 📝
-Try to describe why you think the changes should be the way they are.
-*************************
-
-
-Solution:
-*************************
-https://docs.haqq.network/quickstart/interact_node.html#:~:text=The%20list%20of%20all%20available%20REST%20endpoints%20is%20available%20as%20a%20Swagger%20specification%20file%2C%20it%20can%20be%20viewed%20at%20localhost%3A1317/swagger.
-
-The above linked text in the documentation says there is a list of available REST endpoints as a Swagger specification file. However, with the api.swagger field set to true in the app.toml file, calling http://localhost:1317/swagger URL produces empty result. Also, you can view the result here: http://206.189.234.163:1317/swagger . I suggest fixing it.
-*************************
-
+The above linked text in the documentation says there is a list of available REST endpoints as a Swagger specification file. However, with the api.swagger field set to true in the app.toml file, calling http://localhost:1317/swagger URL produces empty result. Also, you can view the result here: http://38.242.242.5:1317/swagger . It looks like an inconsistency in the documentation and my suggestion is to fix it.
