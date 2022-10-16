@@ -132,6 +132,14 @@ You can check the status with:
 systemctl status haqqd
 ```
 
+You can check logs with:
+
+```bash
+journalctl -u haqqd -f -o cat | grep indexed
+journalctl -f -n 100 -u haqqd -o cat
+```
+
+
 # Manual Upgrades
 
 Learn how to manually upgrade your node. {synopsis}
@@ -229,8 +237,10 @@ Make sure that every node has a unique `priv_validator.json`. **DO NOT** copy th
 
 ## 4. Restart Node
 
-To restart your node once the new genesis has been updated, use the `start` command:
+To restart your node once the new genesis has been updated, use these commands:
 
 ```bash
-haqqd start
+sudo -S systemctl daemon-reload
+sudo -S systemctl enable haqqd
+sudo -S systemctl restart haqqd
 ```
