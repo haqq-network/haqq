@@ -185,7 +185,7 @@ haqqd debug addr <your_account_address>
 ```
 
 After that you can transfer some ISLM to your validator address.
-If you don't have ISLM you can recive it using our [faucet](./../../testnet/faucet.md)
+If you don't have ISLM you can recive it using our [faucet](./../../testnet/faucet.md).
 
 Claim your testnet ISLM on the [faucet](./faucet.md) using your validator account address and submit your validator account address:
 
@@ -259,7 +259,7 @@ These instructions are for full nodes that have ran on previous versions of and 
 
 :::warning
 
-If the version **{new version}** you are upgrading to is not breaking from the previous one, you **should not**  reset the data. If this is the case you can skip to [Restart](#restart)
+If the version **{new version}** you are upgrading to is not breaking from the previous one, you **should not**  reset the data. If this is the case you can skip to [Restart](#restart).
 
 :::
 
@@ -297,7 +297,7 @@ haaqd tx slashing unjail \
 
 ## Common problems
 
-You can read about common validator problems [here](./../guides/validators/setup.md#common-problems)
+You can read about common validator problems [here](./../guides/validators/setup.md#common-problems).
 
 ## Validators FAQ
 
@@ -321,4 +321,4 @@ Before starting a node, we recommend that you read the following articles in ord
 
 ## Automated Upgrades
 
-We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using [Cosmovisor](./upgrade.md)
+We are highly recommend use Cosmovisor for node upgrading. Learn how to automate chain upgrades using [Cosmovisor](./upgrade.md).
