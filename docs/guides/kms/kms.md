@@ -81,7 +81,8 @@ If on x86_64 architecture:
 :::
 
 ```sh
-export RUSTFLAGS=-Ctarget-feature=+aes,+ssse3
+echo 'export RUSTFLAGS=-Ctarget-feature=+aes,+ssse3' >> $HOME/.bash_profile
+. $HOME/.bash_profile
 ```
 
 ## Setup TMKMS
