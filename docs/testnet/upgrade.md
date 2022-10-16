@@ -65,7 +65,7 @@ cosmovisor/
 │   └── bin
 │       └── haqqd
 └── upgrades
-    └── v1.0.3
+    └── v1.2.0
         ├── bin
         │   └── haqqd
         └── upgrade-info.json
@@ -167,8 +167,8 @@ $ haqqd version --long
 
 name: haqqd
 server_name: haqqd
-version: 1.0.3
-commit: fe9df43332800a74a163c014c69e62765d8206e3
+version: 1.2.0
+commit: 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 build_tags: netgo,ledger
 go: go version go1.18 darwin/amd64
 ...
@@ -176,6 +176,10 @@ go: go version go1.18 darwin/amd64
 
 ::: tip
 If the software version does not match, then please check your `$PATH` to ensure the correct `haqqd` is running.
+```
+# Check path of binary file haqqd which system is using
+which haqqd
+```
 :::
 
 ## 2. Replace Genesis file
@@ -183,14 +187,15 @@ If the software version does not match, then please check your `$PATH` to ensure
 ::: tip
 You can find the latest `genesis.json` file for mainnet or testnet in the following repositories:
 
-- **Testnet**: [github.com/haqq-network/testnets](https://github.com/haqq-network/testnets)
+- **Testnet**: [genesis.json](https://github.com/haqq-network/validators-contest/blob/master/genesis.json)
 :::
 
 Save the new genesis as `new_genesis.json`. Then, replace the old `genesis.json` located in your `config/` directory with `new_genesis.json`:
 
 ```bash
 cd $HOME/.haqqd/config
-cp -f genesis.json new_genesis.json
+wget -O new_genesis.json https://github.com/haqq-network/validators-contest/raw/master/genesis.json
+cp -f genesis.json old_genesis.json
 mv new_genesis.json genesis.json
 ```
 
@@ -213,18 +218,19 @@ Check [here](./upgrades.md) if the version you are upgrading require a data rese
 Remove the outdated files and reset the data:
 
 ```bash
+# Stop haqqd process firstly
 rm $HOME/.haqqd/config/addrbook.json
 haqqd tendermint unsafe-reset-all --home $HOME/.haqqd
 ```
 
-Your node is now in a pristine state while keeping the original `priv_validator.json` and `config.toml`. If you had any sentry nodes or full nodes setup before,
+Your node is now in a pristine state while keeping the original `priv_validator_key.json` and `config.toml`. If you had any sentry nodes or full nodes setup before,
 your node will still try to connect to them, but may fail if they haven't also
 been upgraded.
 
 ::: danger
 🚨 **IMPORTANT** 🚨
 
-Make sure that every node has a unique `priv_validator.json`. **DO NOT** copy the `priv_validator.json` from an old node to multiple new nodes. Running two nodes with the same `priv_validator.json` will cause you to [double sign](https://docs.tendermint.com/master/spec/consensus/signing.html#double-signing).
+Make sure that every node has a unique `priv_validator_key.json`. **DO NOT** copy the `priv_validator_key.json` from an old node to multiple new nodes. Running two nodes with the same `priv_validator_key.json` will cause you to [double sign](https://docs.tendermint.com/master/spec/consensus/signing.html#double-signing).
 :::
 
 ## 4. Restart Node
