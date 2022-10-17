@@ -140,7 +140,7 @@ Check binary version:
 
 ```sh
 haqqd -v
-#haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
+# haqqd version "1.2.0" 40935b70fb1da4ee28f1d91e8601060e533f6fd0
 ```
 
 Download the snapshot:
