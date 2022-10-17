@@ -1,4 +1,5 @@
-
+#!/bin/bash 
+set -e
 KEY="localkey"
 CHAINID="haqq_121799-1"
 MONIKER="localtestnet"
