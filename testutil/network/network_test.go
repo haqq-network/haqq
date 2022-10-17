@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/evmos/ethermint/server/config"
 	"github.com/evmos/ethermint/testutil/network"
-	evmosnetwork "github.com/evmos/evmos/v7/testutil/network"
+	evmosnetwork "github.com/evmos/evmos/v8/testutil/network"
 )
 
 type IntegrationTestSuite struct {
