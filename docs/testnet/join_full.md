@@ -6,7 +6,7 @@ You specify the network you want to join by setting the **genesis file** and **s
 
 | Testnet Chain ID | Name | Version | Status | Description
 |--|--|--|--|--|
-| haqq_53211-1 | Haqq TestEdge | v1.0.3 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
+| haqq_54211-3 | Haqq TestEdge | v1.2.0 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
 | haqq_112357-1 | Haqq TestNow | v1.0.3 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
 
 ## Preresquisites

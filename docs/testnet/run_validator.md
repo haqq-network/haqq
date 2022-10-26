@@ -36,7 +36,7 @@ haqqd tx staking create-validator \
 --amount=1000000000000aISLM \
 --pubkey=$(haqqd tendermint show-validator) \
 --moniker="your_moniker_name" \
---chain-id=haqq_53211-1 \
+--chain-id=haqq_54211-3 \
 --commission-rate="0.10" \
 --commission-max-rate="0.20" \
 --commission-max-change-rate="0.01" \

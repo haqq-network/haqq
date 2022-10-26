@@ -2,7 +2,7 @@ package types
 
 const (
 	MainNetChainID     = "haqq_11235-1"
-	TestEdgeNetChainID = "haqq_53211-1"
+	TestEdgeNetChainID = "haqq_54211-3"
 	LocalNetChainID    = "haqq_121799-1"
 )
 
