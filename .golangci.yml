@@ -16,7 +16,7 @@ linters:
     - gofmt
     - goimports
     # - revive
-    - gosec
+    # - gosec
     - gosimple
     - govet
     - ineffassign

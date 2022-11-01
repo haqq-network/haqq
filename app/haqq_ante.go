@@ -14,8 +14,10 @@ import (
 	haqqtypes "github.com/haqq-network/haqq/types"
 )
 
-var ErrDelegationComingLater = sdkerrors.Register("haqq-ante", 6000, "delegation coming later")
-var ErrCommunitySpendingComingLater = sdkerrors.Register("haqq-ante", 6001, "community fund spend coming later")
+var (
+	ErrDelegationComingLater        = sdkerrors.Register("haqq-ante", 6000, "delegation coming later")
+	ErrCommunitySpendingComingLater = sdkerrors.Register("haqq-ante", 6001, "community fund spend coming later")
+)
 
 func NewHaqqAnteHandlerDecorator(sk keeper.Keeper, h types.AnteHandler) types.AnteHandler {
 	return func(ctx types.Context, tx types.Tx, simulate bool) (newCtx types.Context, err error) {

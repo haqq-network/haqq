@@ -146,7 +146,7 @@ The `--identity` can be used as to verify identity with systems like Keybase or 
 
 ```bash
 haqqd tx staking edit-validator
-  --moniker="choose a moniker" \
+  --new-moniker="choose a moniker" \
   --website="https://islamiccoin.net" \
   --identity=6A0D65E29A4CBC8E \
   --details="To infinity and beyond!" \

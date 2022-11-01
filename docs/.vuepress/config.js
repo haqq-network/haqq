@@ -11,24 +11,6 @@ module.exports = {
       md.use(require("markdown-it-katex"));
     },
   },
-  head: [
-    [
-      "link",
-      {
-        rel: "stylesheet",
-        href:
-          "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css",
-      },
-    ],
-    [
-      "link",
-      {
-        rel: "stylesheet",
-        href:
-          "https://cdn.jsdelivr.net/github-markdown-css/2.2.1/github-markdown.css",
-      },
-    ],
-  ],
   base: process.env.VUEPRESS_BASE || '/',
   plugins: [
     'vuepress-plugin-element-tabs'
@@ -42,6 +24,8 @@ module.exports = {
     ['meta', { name: "theme-color", content: "#ffffff" }],
     ['link', { rel: "icon", type: "image/svg+xml", href: "/favicon.ico" }],
     // ['link', { rel: "apple-touch-icon-precomposed", href: "/apple-touch-icon-precomposed.png" }],
+    ["link", {rel: "stylesheet", href: "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.css"}],
+    ["link", {rel: "stylesheet", href: "https://cdn.jsdelivr.net/github-markdown-css/2.2.1/github-markdown.css"}],
   ],
   themeConfig: {
     repo: 'haqq-network/haqq',
@@ -65,7 +49,7 @@ module.exports = {
       rpc_url_local: 'http://localhost:8545/',
       chain_id: '11235',
       testnet_chain_id: '112357',
-      latest_version: 'v1.0.0',
+      latest_version: 'v1.2.0',
       version_number: '1',
       testnet_version_number: '1',
       block_explorer_url: 'https://explorer.haqq.network/',
