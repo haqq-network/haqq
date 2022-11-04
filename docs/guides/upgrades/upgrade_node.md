@@ -217,8 +217,8 @@ Save the new genesis as `new_genesis.json`. Then, replace the old `genesis.json`
 
 ```bash
 cd $HOME/.haqqd/config
-cp -f genesis.json new_genesis.json
-mv new_genesis.json genesis.json
+cp -f genesis.json old_genesis.json
+mv /PATH/to/new_genesis.json genesis.json
 ```
 
 
@@ -248,8 +248,8 @@ haqqd export --height [height] --for-zero-height > new_genesis.json
 Then, replace the old `genesis.json` with `new_genesis.json`.
 
 ```bash
-cp -f genesis.json new_genesis.json
-mv new_genesis.json genesis.json
+cp -f genesis.json old_genesis.json
+mv /PATH/to/new_genesis.json genesis.json
 ```
 
 At this point, you might want to run a script to update the exported genesis into a genesis state that is compatible with your new version.
