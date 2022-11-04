@@ -36,6 +36,38 @@ To start your node, just type:
 ```bash
 haqqd start --json-rpc.enable=true --json-rpc.api="eth,web3,net"
 ```
+Alternatively, you can run your node as a service. To do this, first create systemd service file in /etc/systemd/system as in the following example:
+
+```bash
+tee $HOME/haqqd.service > /dev/null <<EOF
+[Unit]
+Description=Haqq Node
+After=network.target
+[Service]
+User=root
+Type=simple
+ExecStart=/root/go/bin/haqqd start
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65535
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo mv $HOME/haqqd.service /etc/systemd/system/
+```
+Next, enable the haqqd service, reload systemd, and start the node:
+
+```bash
+sudo systemctl enable haqqd
+sudo systemctl daemon-reload
+sudo systemctl start haqqd
+```
+Check that your node is working correctly in logs:
+
+```bash
+journalctl -u haqqd -f -o cat
+```
 
 ## Key Management
 

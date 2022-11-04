@@ -19,6 +19,8 @@ After you have obtained the latest `haqqd` binary, run:
 ```bash
 haqqd [command]
 ```
+to execute cli commands.
+
 
 Check the version you are running using
 
