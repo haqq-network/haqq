@@ -120,24 +120,25 @@ For more information about the Keyring and its backend options, click [here](./.
 
 ### Reset Data
 
-Alternatively, you can **reset** the blockchain database, remove the node's address book files, and reset the `priv_validator.json` to the genesis state.
+Alternatively, you can **reset** the blockchain database, remove the node's address book files, and reset the `$HOME/.haqqd/data/priv_validator_state.json` to the genesis state.
 
 ::: danger
 If you are running a **validator node**, always be careful when doing `haqqd unsafe-reset-all`. You should never use this command if you are not switching `chain-id`.
 :::
 
 ::: danger
-**IMPORTANT**: Make sure that every node has a unique `priv_validator.json`. **Do not** copy the `priv_validator.json` from an old node to multiple new nodes. Running two nodes with the same `priv_validator.json` will cause you to double sign!
+**IMPORTANT**: Make sure that every node has a unique file `priv_validator_key.json`. **Do not** copy the `priv_validator_key.json` from an old node to multiple new nodes. Running two nodes with the same `priv_validator_key.json` will cause you to double sign! 
 :::
 
 First, remove the outdated files and reset the data.
 
 ```bash
+sudo systemctl stop haqqd
 rm $HOME/.haqqd/config/addrbook.json $HOME/.haqqd/config/genesis.json
 haqqd unsafe-reset-all
 ```
 
-Your node is now in a pristine state while keeping the original `priv_validator.json` and `config.toml`. If you had any sentry nodes or full nodes setup before, your node will still try to connect to them, but may fail if they haven't also been upgraded.
+Your node is now in a pristine state while keeping the original `priv_validator_key.json` and `config.toml`. If you had any sentry nodes or full nodes setup before, your node will still try to connect to them, but may fail if they haven't also been upgraded.
 
 ### Delete Data
 
