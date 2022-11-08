@@ -3,11 +3,13 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -29,6 +31,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -115,6 +118,7 @@ import (
 	erc20client "github.com/evmos/evmos/v7/x/erc20/client"
 	erc20keeper "github.com/evmos/evmos/v7/x/erc20/keeper"
 	erc20types "github.com/evmos/evmos/v7/x/erc20/types"
+
 	// "github.com/evmos/evmos/v7/x/incentives"
 	// incentivesclient "github.com/evmos/evmos/v7/x/incentives/client"
 	// incentiveskeeper "github.com/evmos/evmos/v7/x/incentives/keeper"
@@ -129,7 +133,7 @@ import (
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 
 	v102 "github.com/haqq-network/haqq/app/upgrades/v1.0.2"
-	v120 "github.com/haqq-network/haqq/app/upgrades/v1.2.0"
+	v119 "github.com/haqq-network/haqq/app/upgrades/v1.1.9"
 )
 
 func init() {
@@ -150,7 +154,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.2.0"
+	UpgradeName    = "v1.1.9"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -996,12 +1000,38 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.keys[distrtypes.StoreKey],
 		),
 	)
-	// v1.2.0 update handler (IBC Enable)
 	app.UpgradeKeeper.SetUpgradeHandler(
-		v120.UpgradeName,
-		v120.CreateUpgradeHandler(
+		v119.UpgradeName,
+		v119.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
 		),
 	)
+
+	// When a planned update height is reached, the old binary will panic
+	// writing on disk the height and name of the update that triggered it
+	// This will read that value, and execute the preparations for the upgrade.
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Errorf("failed to read upgrade info from disk: %w", err))
+	}
+
+	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		return
+	}
+
+	var storeUpgrades *storetypes.StoreUpgrades
+
+	switch upgradeInfo.Name {
+	case v119.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{"ibc", ibctransfertypes.ModuleName},
+		}
+	}
+
+	if storeUpgrades != nil {
+		// configure store loader that checks if version == upgradeHeight and applies store upgrades
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
+	}
+
 }
