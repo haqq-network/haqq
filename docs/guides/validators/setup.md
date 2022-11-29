@@ -264,7 +264,9 @@ WantedBy=multi-user.target
 Make sure you have a genesis file in `$HOME/.haqqd/config/genesis.json` if you don't have this file you can find it here
 
 ```sh
-curl -OL https://storage.googleapis.com/haqq-testedge-snapshots/genesis.json
+curl -OL https://raw.githubusercontent.com/haqq-network/testnets/main/TestEdge2/genesis.tar.bz2 && \
+bzip2 -d genesis.tar.bz2 && \
+tar -xvf genesis.tar 
 ```
 
 And also you can validate genesis file using this command
@@ -278,11 +280,11 @@ haqqd validate-genesis
 First of all, you should make sure that your bin file is up to date
 
 ```sh
-haqqd -v
-# haqqd version "1.0.3" 58215364d5be4c9ab2b17b2a80cf89f10f6de38a
+haqq@haqq-node:~# haqqd -v
+haqqd version "1.2.1" 4d25b4ae8c52011a64c7279454e88c372f515673
 ```
 
-We are currently using version `1.0.3` on TestEdge.
+We are currently using version `1.2.1` on TestEdge2.
 
 This error can also occur if you run the validator from a period when blocks were produced on a different version of the binary. 
 
