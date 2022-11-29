@@ -38,11 +38,11 @@ Here is the list of fields that you can use to paste on Metamask:
 
 ::: tab Testnet
 
-- **Network Name:** `Haqq TestEdge`
-- **New RPC URL:** `https://rpc.eth.testedge.haqq.network`
+- **Network Name:** `Haqq TestEdge2`
+- **New RPC URL:** `https://rpc.eth.testedge2.haqq.network`
 - **Chain ID:** `54211`
 - **Currency Symbol (optional):** `ISLM`
-- **Block Explorer URL (optional):** `https://explorer.testedge.haqq.network/`
+- **Block Explorer URL (optional):** `https://explorer.testedge2.haqq.network/`
 :::
 
 ::: tab Local Node
