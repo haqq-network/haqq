@@ -2,11 +2,11 @@
 order: 2
 -->
 
-# Faucet-TestEdge
+# Faucet-TestEdge2
 
 Check how to obtain testnet tokens from the Haqq faucet website {synopsis}
 
-The Haqq TestEdge Faucet distributes small amounts of ISLM to anyone who can provide a valid testnet address for free.
+The Haqq TestEdge2 Faucet distributes small amounts of ISLM to anyone who can provide a valid testnet address for free.
 
 ::: tip
 Follow the [Metamask](./../../docs/guides/keys-wallets/metamask.md) guide for more info on how to setup your wallet account.
@@ -15,33 +15,17 @@ Follow the [Metamask](./../../docs/guides/keys-wallets/metamask.md) guide for mo
 ## Request Testnet tokens
 
 <!-- markdown-link-check-disable-next-line -->
-Once you are signed in to the MetaMask extension, visit the [Faucet](https://testedge.haqq.network/) to request tokens for the testnet. Click the `Connect Wallet` button.
+1. Once you are signed in to the MetaMask extension, visit the [Faucet](https://testedge2.haqq.network/) to request tokens for the testnet. Click the `MetaMask` button in connect wallet secion.
 
-![faucet1](./img/testedge_faucet_1.png)
-
-After that, you can see a topup window with your Metamask account. You can choose account for the connection with `Faucet`.Then click `Next` button and `Connect` but for establishing connection.
-
-![faucet2](./img/testedge_faucet_2.png)
-
-Please wait until connection will be establish.
-
-![faucet3](./img/testedge_faucet_3.png)
-
-After that click on `Login` button to authorizing via your GitHub account.
-
-![faucet4](./img/testedge_faucet_4.png)
-
-Click on `Sign in with Github` button to approve authorization.
-
-![faucet5](./img/testedge_faucet_5.png)
-
-Click on `Request Tokens` button to recive ISLM.
-
-![faucet6](./img/testedge_faucet_6.png)
+2. After that, you can see a topup window with your Metamask account. You can choose account for the connection with `Faucet`.Then click `Next` button and `Connect` but for establishing connection.
+3. After that click on `Login with Github` button to authorizing via your GitHub account.
+4. Click on `Sign up with Github` button to approve authorization.
+5. Finish reCAPTCHA test on robot.
+6. Click on `Request Tokens` button to recive ISLM.
 
 ## Rate limits
 
-To prevent the faucet account from draining the available funds, the Haqq TestEdge faucet imposes a maximum number of requests for a period of time. By default, the faucet service accepts 1 request per day per address. You can request ISLM from the faucet for each address only once every 24h. If you try to request multiple times within the 24h cooldown phase, no transaction will be initiated. Please try again in 24 hours.
+To prevent the faucet account from draining the available funds, the Haqq TestEdge2 faucet imposes a maximum number of requests for a period of time. By default, the faucet service accepts 1 request per day per address. You can request ISLM from the faucet for each address only once every 24h. If you try to request multiple times within the 24h cooldown phase, no transaction will be initiated. Please try again in 24 hours.
 
 ## Amount
 
