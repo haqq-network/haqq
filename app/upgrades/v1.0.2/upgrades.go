@@ -30,7 +30,7 @@ func CreateUpgradeHandler(
 		// - https://docs.cosmos.network/master/migrations/chain-upgrade-guide-044.html#chain-upgrade
 
 		if types.IsMainNetwork(ctx.ChainID()) ||
-			types.IsTestEdgeNetwork(ctx.ChainID()) ||
+			types.IsTestEdge1Network(ctx.ChainID()) ||
 			types.IsLocalNetwork(ctx.ChainID()) {
 			logger.Debug("run migration v1.0.2")
 

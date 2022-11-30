@@ -1,0 +1,74 @@
+syntax = "proto3";
+package haqq.coinomics.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "haqq/coinomics/v1/genesis.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/coinomics/types";
+
+// Query provides defines the gRPC querier service.
+service Query {
+  // Era retrieves current era.
+  rpc Era(QueryEraRequest) returns (QueryEraResponse) {
+    option (google.api.http).get = "/haqqd/coinomics/v1/era";
+  }
+
+  // EraTargetSupply retrieves current era target supply.
+  rpc EraClosingSupply(QueryEraClosingSupplyRequest) returns (QueryEraClosingSupplyResponse) {
+    option (google.api.http).get = "/haqqd/coinomics/v1/era_closing_supply";
+  }
+
+  // MaxSupply retrieves total coins of all eras and when mint ended.
+  rpc MaxSupply(QueryMaxSupplyRequest) returns (QueryMaxSupplyResponse) {
+    option (google.api.http).get = "/haqqd/coinomics/v1/max_supply";
+  }
+
+  // InflationRate retrieves current era inflation rate.
+  rpc InflationRate(QueryInflationRateRequest)
+      returns (QueryInflationRateResponse) {
+    option (google.api.http).get = "/haqq/coinomics/v1/inflation_rate";
+  }
+
+  // Params retrieves coinomics moudle params.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/haqq/coinomics/v1/params";
+  }
+}
+
+message QueryEraRequest {}
+message QueryEraResponse {
+  uint64 era = 1;
+}
+
+message QueryEraClosingSupplyRequest {}
+message QueryEraClosingSupplyResponse {
+  cosmos.base.v1beta1.Coin era_closing_supply = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryMaxSupplyRequest {}
+message QueryMaxSupplyResponse {
+  cosmos.base.v1beta1.Coin max_supply = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryInflationRateRequest {}
+message QueryInflationRateResponse {
+  // rate by which the total supply increases within one era
+  string inflation_rate = 1 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message QueryParamsRequest {}
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}

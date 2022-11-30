@@ -44,6 +44,13 @@ cat $HOME/.haqqd/config/genesis.json | jq '.app_state["gov"]["voting_params"]["v
 # Set gas limit in genesis
 cat $HOME/.haqqd/config/genesis.json | jq '.consensus_params["block"]["max_gas"]="10000000"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
 
+# Distribution settings
+
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["distribution"]["params"]["base_proposer_reward"]="0.010000000000000000"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["distribution"]["params"]["bonus_proposer_reward"]="0.040000000000000000"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
+cat $HOME/.haqqd/config/genesis.json | jq '.app_state["distribution"]["params"]["community_tax"]="0.100000000000000000"' > $HOME/.haqqd/config/tmp_genesis.json && mv $HOME/.haqqd/config/tmp_genesis.json $HOME/.haqqd/config/genesis.json
+
+
 # if you need disable produce empty block, uncomment code below
 # if [[ "$OSTYPE" == "darwin"* ]]; then
 #     sed -i '' 's/create_empty_blocks = true/create_empty_blocks = false/g' $HOME/.haqqd/config/config.toml
@@ -76,10 +83,10 @@ if [[ $1 == "pending" ]]; then
 fi
 
 # Allocate genesis accounts (cosmos formatted addresses)
-$BINARY add-genesis-account $KEY 100000000000000000000000000aISLM --keyring-backend $KEYRING &> /dev/null
+$BINARY add-genesis-account $KEY 20000000000000000000000000000aISLM --keyring-backend $KEYRING &> /dev/null
 
 # Sign genesis transaction
-$BINARY gentx $KEY 1000000000000000000000aISLM --keyring-backend $KEYRING --chain-id $CHAINID &> /dev/null
+$BINARY gentx $KEY 2000000000000000000aISLM --keyring-backend $KEYRING --chain-id $CHAINID &> /dev/null
 
 # Collect genesis tx
 $BINARY collect-gentxs &> /dev/null

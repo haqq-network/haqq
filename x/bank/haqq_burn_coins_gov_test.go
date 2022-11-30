@@ -533,7 +533,7 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 }
 
 func TestBurnCoins(t *testing.T) {
-	cfg := network.DefaultConfig()
+	cfg := haqqnetwork.HaqqNetworkConfigCoinomicsDisabled()
 	encCfg := simapp.MakeTestEncodingConfig()
 	cfg.AppConstructor = haqqnetwork.NewAppConstructor(encCfg)
 	cfg.NumValidators = 1

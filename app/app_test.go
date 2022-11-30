@@ -53,7 +53,7 @@ func TestPoA(t *testing.T) {
 	// Initialize the chain
 	app.InitChain(
 		abci.RequestInitChain{
-			ChainId:       "evmos_9000-1",
+			ChainId:       MainnetChainID + "-1",
 			Validators:    []abci.ValidatorUpdate{},
 			AppStateBytes: stateBytes,
 		},
