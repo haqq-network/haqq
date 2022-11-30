@@ -57,147 +57,155 @@ func (suite *KeeperTestSuite) TestEra() {
 	}
 }
 
-// func (suite *KeeperTestSuite) TestEpochMintProvision() {
-// 	var (
-// 		req    *types.QueryEpochMintProvisionRequest
-// 		expRes *types.QueryEpochMintProvisionResponse
-// 	)
+func (suite *KeeperTestSuite) TestEraClosingSupply() {
+	var (
+		req    *types.QueryEraClosingSupplyRequest
+		expRes *types.QueryEraClosingSupplyResponse
+	)
 
-// 	testCases := []struct {
-// 		name     string
-// 		malleate func()
-// 		expPass  bool
-// 	}{
-// 		{
-// 			"default epochMintProvision",
-// 			func() {
-// 				params := types.DefaultParams()
-// 				defaultEpochMintProvision := types.CalculateEpochMintProvision(
-// 					params,
-// 					uint64(0),
-// 					365,
-// 					sdk.OneDec(),
-// 				)
-// 				req = &types.QueryEpochMintProvisionRequest{}
-// 				expRes = &types.QueryEpochMintProvisionResponse{
-// 					EpochMintProvision: sdk.NewDecCoinFromDec(types.DefaultInflationDenom, defaultEpochMintProvision),
-// 				}
-// 			},
-// 			true,
-// 		},
-// 		{
-// 			"set epochMintProvision",
-// 			func() {
-// 				epochMintProvision := sdk.NewDec(1_000_000)
-// 				suite.app.InflationKeeper.SetEpochMintProvision(suite.ctx, epochMintProvision)
-// 				suite.Commit()
+	testCases := []struct {
+		name     string
+		malleate func()
+		expPass  bool
+	}{
+		{
+			"default era closing supply",
+			func() {
+				req = &types.QueryEraClosingSupplyRequest{}
+				expRes = &types.QueryEraClosingSupplyResponse{EraClosingSupply: sdk.NewCoin("aISLM", sdk.NewInt(0))}
+			},
+			true,
+		},
+		{
+			"set era closing supply",
+			func() {
+				eraClosingSupply := sdk.NewCoin("aISLM", sdk.NewIntWithDecimal(1337, 18))
+				suite.app.CoinomicsKeeper.SetEraClosingSupply(suite.ctx, eraClosingSupply)
 
-// 				req = &types.QueryEpochMintProvisionRequest{}
-// 				expRes = &types.QueryEpochMintProvisionResponse{EpochMintProvision: sdk.NewDecCoinFromDec(types.DefaultInflationDenom, epochMintProvision)}
-// 			},
-// 			true,
-// 		},
-// 	}
-// 	for _, tc := range testCases {
-// 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-// 			suite.SetupTest() // reset
+				req = &types.QueryEraClosingSupplyRequest{}
+				expRes = &types.QueryEraClosingSupplyResponse{EraClosingSupply: eraClosingSupply}
+			},
+			true,
+		},
+	}
+	for _, tc := range testCases {
+		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
+			suite.SetupTest() // reset
 
-// 			ctx := sdk.WrapSDKContext(suite.ctx)
-// 			tc.malleate()
+			ctx := sdk.WrapSDKContext(suite.ctx)
+			tc.malleate()
 
-// 			res, err := suite.queryClient.EpochMintProvision(ctx, req)
-// 			if tc.expPass {
-// 				suite.Require().NoError(err)
-// 				suite.Require().Equal(expRes, res)
-// 			} else {
-// 				suite.Require().Error(err)
-// 			}
-// 		})
-// 	}
-// }
+			res, err := suite.queryClient.EraClosingSupply(ctx, req)
 
-// func (suite *KeeperTestSuite) TestSkippedEpochs() {
-// 	var (
-// 		req    *types.QuerySkippedEpochsRequest
-// 		expRes *types.QuerySkippedEpochsResponse
-// 	)
+			println("EraClosingSupply: ", res.EraClosingSupply.Amount.String())
 
-// 	testCases := []struct {
-// 		name     string
-// 		malleate func()
-// 		expPass  bool
-// 	}{
-// 		{
-// 			"default skipped epochs",
-// 			func() {
-// 				req = &types.QuerySkippedEpochsRequest{}
-// 				expRes = &types.QuerySkippedEpochsResponse{}
-// 			},
-// 			true,
-// 		},
-// 		{
-// 			"set skipped epochs",
-// 			func() {
-// 				skippedEpochs := uint64(9)
-// 				suite.app.InflationKeeper.SetSkippedEpochs(suite.ctx, skippedEpochs)
-// 				suite.Commit()
+			if tc.expPass {
+				suite.Require().NoError(err)
+				suite.Require().Equal(expRes, res)
+			} else {
+				suite.Require().Error(err)
+			}
+		})
+	}
+}
 
-// 				req = &types.QuerySkippedEpochsRequest{}
-// 				expRes = &types.QuerySkippedEpochsResponse{SkippedEpochs: skippedEpochs}
-// 			},
-// 			true,
-// 		},
-// 	}
-// 	for _, tc := range testCases {
-// 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-// 			suite.SetupTest() // reset
+func (suite *KeeperTestSuite) TestInflationRate() {
+	var (
+		req    *types.QueryInflationRateRequest
+		expRes *types.QueryInflationRateResponse
+	)
 
-// 			ctx := sdk.WrapSDKContext(suite.ctx)
-// 			tc.malleate()
+	testCases := []struct {
+		name     string
+		malleate func()
+		expPass  bool
+	}{
+		{
+			"default inflation rate",
+			func() {
+				req = &types.QueryInflationRateRequest{}
+				expRes = &types.QueryInflationRateResponse{InflationRate: sdk.ZeroDec()}
+			},
+			true,
+		},
+		{
+			"set inflation rate",
+			func() {
+				rate := sdk.NewDec(10)
+				suite.app.CoinomicsKeeper.SetInflation(suite.ctx, rate)
 
-// 			res, err := suite.queryClient.SkippedEpochs(ctx, req)
-// 			if tc.expPass {
-// 				suite.Require().NoError(err)
-// 				suite.Require().Equal(expRes, res)
-// 			} else {
-// 				suite.Require().Error(err)
-// 			}
-// 		})
-// 	}
-// }
+				req = &types.QueryInflationRateRequest{}
+				expRes = &types.QueryInflationRateResponse{InflationRate: rate}
+			},
+			true,
+		},
+	}
+	for _, tc := range testCases {
+		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
+			suite.SetupTest() // reset
 
-// func (suite *KeeperTestSuite) TestQueryCirculatingSupply() {
-// 	// Team allocation is only set on mainnet
-// 	ctx := sdk.WrapSDKContext(suite.ctx)
+			ctx := sdk.WrapSDKContext(suite.ctx)
+			tc.malleate()
 
-// 	// Mint coins to increase supply
-// 	mintDenom := suite.app.InflationKeeper.GetParams(suite.ctx).MintDenom
-// 	mintCoin := sdk.NewCoin(mintDenom, sdk.TokensFromConsensusPower(int64(400_000_000), ethermint.PowerReduction))
-// 	err := suite.app.InflationKeeper.MintCoins(suite.ctx, mintCoin)
-// 	suite.Require().NoError(err)
+			res, err := suite.queryClient.InflationRate(ctx, req)
+			if tc.expPass {
+				suite.Require().NoError(err)
+				suite.Require().Equal(expRes, res)
+			} else {
+				suite.Require().Error(err)
+			}
+		})
+	}
+}
 
-// 	// team allocation is zero if not on mainnet
-// 	expCirculatingSupply := sdk.NewDecCoin(mintDenom, sdk.TokensFromConsensusPower(200_000_000, ethermint.PowerReduction))
+func (suite *KeeperTestSuite) TestMaxSupply() {
+	var (
+		req    *types.QueryMaxSupplyRequest
+		expRes *types.QueryMaxSupplyResponse
+	)
 
-// 	res, err := suite.queryClient.CirculatingSupply(ctx, &types.QueryCirculatingSupplyRequest{})
-// 	suite.Require().NoError(err)
-// 	suite.Require().Equal(expCirculatingSupply, res.CirculatingSupply)
-// }
+	testCases := []struct {
+		name     string
+		malleate func()
+		expPass  bool
+	}{
+		{
+			"default max supply",
+			func() {
+				req = &types.QueryMaxSupplyRequest{}
+				expRes = &types.QueryMaxSupplyResponse{MaxSupply: sdk.Coin{Denom: "aISLM", Amount: sdk.NewIntWithDecimal(100_000_000_000, 18)}}
+			},
+			true,
+		},
+		{
+			"set max supply",
+			func() {
+				maxSupply := sdk.Coin{Denom: "aISLM", Amount: sdk.NewIntWithDecimal(1337, 18)}
+				suite.app.CoinomicsKeeper.SetMaxSupply(suite.ctx, maxSupply)
 
-// func (suite *KeeperTestSuite) TestQueryInflationRate() {
-// 	ctx := sdk.WrapSDKContext(suite.ctx)
+				req = &types.QueryMaxSupplyRequest{}
+				expRes = &types.QueryMaxSupplyResponse{MaxSupply: maxSupply}
+			},
+			true,
+		},
+	}
+	for _, tc := range testCases {
+		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
+			suite.SetupTest() // reset
 
-// 	// Mint coins to increase supply
-// 	mintDenom := suite.app.CoinomicsKeeper.GetParams(suite.ctx).MintDenom
-// 	mintCoin := sdk.NewCoin(mintDenom, sdk.TokensFromConsensusPower(int64(400_000_000), ethermint.PowerReduction))
-// 	err := suite.app.CoinomicsKeeper.MintCoins(suite.ctx, mintCoin)
-// 	suite.Require().NoError(err)
+			ctx := sdk.WrapSDKContext(suite.ctx)
+			tc.malleate()
 
-// 	expInflationRate := sdk.MustNewDecFromStr("154.687500000000000000")
-// 	res, err := suite.queryClient.InflationRate(ctx, &types.QueryInflationRateRequest{})
-// 	suite.Require().NoError(err)
-// 	suite.Require().Equal(expInflationRate, res.InflationRate)
-// }
+			res, err := suite.queryClient.MaxSupply(ctx, req)
+			if tc.expPass {
+				suite.Require().NoError(err)
+				suite.Require().Equal(expRes, res)
+			} else {
+				suite.Require().Error(err)
+			}
+		})
+	}
+}
 
 func (suite *KeeperTestSuite) TestQueryParams() {
 	ctx := sdk.WrapSDKContext(suite.ctx)
