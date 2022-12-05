@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -30,6 +31,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -130,9 +132,14 @@ import (
 
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 
+	"github.com/haqq-network/haqq/x/coinomics"
+	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+
 	v102 "github.com/haqq-network/haqq/app/upgrades/v1.0.2"
 	v120 "github.com/haqq-network/haqq/app/upgrades/v1.2.0"
 	v121 "github.com/haqq-network/haqq/app/upgrades/v1.2.1"
+	v130 "github.com/haqq-network/haqq/app/upgrades/v1.3.0"
 )
 
 func init() {
@@ -153,7 +160,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.2.1"
+	UpgradeName    = "v1.3.0"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -191,7 +198,7 @@ var (
 		vesting.AppModuleBasic{},
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
-		// inflation.AppModuleBasic{},
+		coinomics.AppModuleBasic{},
 		erc20.AppModuleBasic{},
 		// incentives.AppModuleBasic{},
 		epochs.AppModuleBasic{},
@@ -207,7 +214,7 @@ var (
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
-		// inflationtypes.ModuleName:      {authtypes.Minter},
+		coinomicstypes.ModuleName:      {authtypes.Minter},
 		// incentivestypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
 	}
 
@@ -268,11 +275,13 @@ type Haqq struct {
 	FeeMarketKeeper feemarketkeeper.Keeper
 
 	// Evmos keepers
-	// InflationKeeper  inflationkeeper.Keeper
-	Erc20Keeper erc20keeper.Keeper
-	// IncentivesKeeper incentiveskeeper.Keeper
+	Erc20Keeper   erc20keeper.Keeper
 	EpochsKeeper  epochskeeper.Keeper
 	VestingKeeper vestingkeeper.Keeper
+	// IncentivesKeeper incentiveskeeper.Keeper
+
+	// Haqq keepers
+	CoinomicsKeeper coinomicskeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -327,10 +336,11 @@ func NewHaqq(
 		// ethermint keys
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		// evmos keys
-		// inflationtypes.StoreKey,
 		// incentivestypes.StoreKey,
 		erc20types.StoreKey,
 		epochstypes.StoreKey, vestingtypes.StoreKey,
+		// haqq keys
+		coinomicstypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
@@ -424,12 +434,12 @@ func NewHaqq(
 		app.AccountKeeper, &haqqBankKeeper, &stakingKeeper, govRouter,
 	)
 
-	// Evmos Keeper
-	// app.InflationKeeper = inflationkeeper.NewKeeper(
-	// 	keys[inflationtypes.StoreKey], appCodec, app.GetSubspace(inflationtypes.ModuleName),
-	// 	app.AccountKeeper, app.BankKeeper, app.DistrKeeper, &stakingKeeper,
-	// 	authtypes.FeeCollectorName,
-	// )
+	// Haqq Keeper
+	app.CoinomicsKeeper = coinomicskeeper.NewKeeper(
+		keys[coinomicstypes.StoreKey], appCodec, app.GetSubspace(coinomicstypes.ModuleName),
+		app.AccountKeeper, app.BankKeeper, app.DistrKeeper, &stakingKeeper,
+		authtypes.FeeCollectorName,
+	)
 
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
@@ -439,7 +449,6 @@ func NewHaqq(
 			app.DistrKeeper.Hooks(),
 			app.SlashingKeeper.Hooks(),
 			// app.ClaimsKeeper.Hooks(),
-			// HaqqStakingHooks(),
 		),
 	)
 
@@ -554,12 +563,15 @@ func NewHaqq(
 		// Ethermint app modules
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
+
 		// Evmos app modules
-		// inflation.NewAppModule(app.InflationKeeper, app.AccountKeeper, app.StakingKeeper),
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
-		// incentives.NewAppModule(app.IncentivesKeeper, app.AccountKeeper),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+		// incentives.NewAppModule(app.IncentivesKeeper, app.AccountKeeper),
+
+		// Haqq app modules
+		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -591,8 +603,9 @@ func NewHaqq(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
-		// inflationtypes.ModuleName,
 		erc20types.ModuleName,
+		coinomicstypes.ModuleName,
+
 		// incentivestypes.ModuleName,
 	)
 
@@ -619,11 +632,14 @@ func NewHaqq(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
+
 		// Evmos modules
 		vestingtypes.ModuleName,
-		// inflationtypes.ModuleName,
 		erc20types.ModuleName,
 		// incentivestypes.ModuleName,
+
+		// Haqq modules
+		coinomicstypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -657,7 +673,7 @@ func NewHaqq(
 		upgradetypes.ModuleName,
 		// Evmos modules
 		vestingtypes.ModuleName,
-		// inflationtypes.ModuleName,
+		coinomicstypes.ModuleName,
 		erc20types.ModuleName,
 		// incentivestypes.ModuleName,
 		epochstypes.ModuleName,
@@ -981,9 +997,11 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	// evmos subspaces
-	// paramsKeeper.Subspace(inflationtypes.ModuleName)
 	paramsKeeper.Subspace(erc20types.ModuleName)
 	// paramsKeeper.Subspace(incentivestypes.ModuleName)
+	// haqq subspaces
+	paramsKeeper.Subspace(coinomicstypes.ModuleName)
+
 	return paramsKeeper
 }
 
@@ -1015,4 +1033,39 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.configurator,
 		),
 	)
+	// v1.3.0 update handler (Coinomics)
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v130.UpgradeName,
+		v130.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.DistrKeeper,
+		),
+	)
+
+	// When a planned update height is reached, the old binary will panic
+	// writing on disk the height and name of the update that triggered it
+	// This will read that value, and execute the preparations for the upgrade.
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Errorf("failed to read upgrade info from disk: %w", err))
+	}
+
+	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		return
+	}
+
+	var storeUpgrades *storetypes.StoreUpgrades
+
+	switch upgradeInfo.Name {
+	case v130.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{coinomicstypes.ModuleName},
+		}
+	}
+
+	if storeUpgrades != nil {
+		// configure store loader that checks if version == upgradeHeight and applies store upgrades
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
+	}
 }

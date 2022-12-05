@@ -1,0 +1,58 @@
+syntax = "proto3";
+package haqq.coinomics.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/coinomics/types";
+
+// GenesisState defines the inflation module's genesis state.
+message GenesisState {
+  // params defines all the paramaters of the module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+
+  // current inflation rate
+  string inflation = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", 
+    (gogoproto.nullable) = false
+  ];
+
+  // current era number
+  uint64 era = 3;
+
+  // era started block number
+  uint64 era_started_at_block = 4;
+
+  // target mint for current era
+  cosmos.base.v1beta1.Coin era_target_mint = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+    (gogoproto.moretags)   = "yaml:\"era_target_mint\"",
+    (gogoproto.nullable)   = false
+  ];
+
+  // closing supply for current era
+  cosmos.base.v1beta1.Coin era_closing_supply = 6 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+    (gogoproto.moretags)   = "yaml:\"era_closing_supply\"",
+    (gogoproto.nullable)   = false
+  ];
+
+  // max supply
+  cosmos.base.v1beta1.Coin max_supply = 7 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
+    (gogoproto.moretags)   = "yaml:\"max_supply\"",
+    (gogoproto.nullable)   = false
+  ];
+}
+
+// Params holds parameters for the coinomics module.
+message Params {
+  // type of coin to mint
+  string mint_denom = 1;
+
+  // number of blocks per era
+  uint64 blocks_per_era = 2;
+
+  // parameter to enable coinmoics
+  bool enable_coinomics = 3;
+}

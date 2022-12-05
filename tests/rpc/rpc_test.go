@@ -4,7 +4,7 @@
 // and have started the RPC service with `ethermintd rest-server`.
 //
 // You can configure the desired HOST and MODE as well
-package rpc
+package rpctesting
 
 import (
 	"context"

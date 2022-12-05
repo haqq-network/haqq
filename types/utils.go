@@ -1,19 +1,26 @@
 package types
 
+import "strings"
+
 const (
-	MainNetChainID     = "haqq_11235-1"
-	TestEdgeNetChainID = "haqq_54211-3"
-	LocalNetChainID    = "haqq_121799-1"
+	MainNetChainID   = "haqq_11235"
+	TestEdge1ChainID = "haqq_53211"
+	TestEdge2ChainID = "haqq_54211"
+	LocalNetChainID  = "haqq_121799"
 )
 
 func IsMainNetwork(chainID string) bool {
-	return chainID == MainNetChainID
+	return strings.HasPrefix(chainID, MainNetChainID)
 }
 
-func IsTestEdgeNetwork(chainID string) bool {
-	return chainID == TestEdgeNetChainID
+func IsTestEdge1Network(chainID string) bool {
+	return strings.HasPrefix(chainID, TestEdge1ChainID)
+}
+
+func IsTestEdge2Network(chainID string) bool {
+	return strings.HasPrefix(chainID, TestEdge2ChainID)
 }
 
 func IsLocalNetwork(chainID string) bool {
-	return chainID == LocalNetChainID
+	return strings.HasPrefix(chainID, LocalNetChainID)
 }

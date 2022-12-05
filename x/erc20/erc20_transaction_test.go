@@ -17,7 +17,7 @@ import (
 )
 
 func TestTransferETH(t *testing.T) {
-	cfg := network.DefaultConfig()
+	cfg := haqqnetwork.HaqqNetworkConfig()
 	encCfg := simapp.MakeTestEncodingConfig()
 	cfg.AppConstructor = haqqnetwork.NewAppConstructor(encCfg)
 	cfg.NumValidators = 1

@@ -36,7 +36,9 @@ func (suite *UpgradeTestSuite) SetupTest(chainID string) {
 	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
 
 	// NOTE: this is the new binary, not the old one.
-	suite.app = app.Setup(checkTx, feemarkettypes.DefaultGenesisState())
+	app, _ := app.Setup(checkTx, feemarkettypes.DefaultGenesisState())
+
+	suite.app = app
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, tmproto.Header{
 		Height:          1,
 		ChainID:         chainID,

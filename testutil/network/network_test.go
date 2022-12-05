@@ -30,6 +30,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	cfg.JSONRPCAddress = config.DefaultJSONRPCAddress
 	cfg.NumValidators = 1
 
+
 	s.network, err = network.New(s.T(), s.T().TempDir(), cfg)
 	s.Require().NoError(err)
 	s.Require().NotNil(s.network)

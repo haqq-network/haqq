@@ -56,7 +56,7 @@ func (im IBCMiddleware) IsAllowedAddress(chainID, addr string) bool {
 		}
 	}
 
-	if utils.IsTestEdgeNetwork(chainID) {
+	if utils.IsTestEdge1Network(chainID) {
 		wl = map[string]bool{
 			// Put here TestEdge addresses
 			"haqq1dz25tp2llzus5mpy0h5nzxzw8r233r8egsjr5v": true,
@@ -154,7 +154,7 @@ func (im IBCMiddleware) OnRecvPacket(
 	logger.Debug("run OnRecvPacket from IBC Firewall Middleware")
 
 	// Allow all IBC packets by default, restrict for MainNet and TestEdge
-	if !utils.IsMainNetwork(ctx.ChainID()) && !utils.IsTestEdgeNetwork(ctx.ChainID()) {
+	if !utils.IsMainNetwork(ctx.ChainID()) && !utils.IsTestEdge1Network(ctx.ChainID()) {
 		return im.app.OnRecvPacket(ctx, packet, relayer)
 	}
 
@@ -210,7 +210,7 @@ func (im IBCMiddleware) SendPacket(
 	logger.Debug("run SendPacket from IBC Firewall Middleware")
 
 	// Allow all IBC packets by default, restrict for MainNet and TestEdge
-	if !utils.IsMainNetwork(ctx.ChainID()) && !utils.IsTestEdgeNetwork(ctx.ChainID()) {
+	if !utils.IsMainNetwork(ctx.ChainID()) && !utils.IsTestEdge1Network(ctx.ChainID()) {
 		return im.ics4Wrapper.SendPacket(ctx, chanCap, packet)
 	}
 

@@ -34,7 +34,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 
 	app.InitChain(
 		abci.RequestInitChain{
-			ChainId:       "evmos_9000-1",
+			ChainId:       MainnetChainID + "-1",
 			Validators:    []abci.ValidatorUpdate{},
 			AppStateBytes: stateBytes,
 		},

@@ -125,7 +125,7 @@ chmod +x state_sync.sh && ./state_sync.sh
 haqqd start
 ```
 
-### Upgrade to Validator Node
+**Upgrade to Validator Node**
 
 You now have an active full node. What's the next step? You can upgrade your full node to become a Haqq Validator. The top 100 validators have the ability to propose new blocks to the Haqq Network. Continue onto the [Validator Setup](https://docs.haqq.network/guides/validators/setup.html).
 
