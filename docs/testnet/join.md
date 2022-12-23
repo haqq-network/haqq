@@ -49,7 +49,7 @@ Check binary version:
 
 ```sh
 haqq@haqq-node:~# haqqd -v
-haqqd version "1.3.0" a9a92e5e524ca651204f8ee6ebe5d1b12e4519b3
+haqqd version "1.3.0" 39b4dcb706e72c187fc23ec6dddcfed20c79bc9d
 ```
 
 Write your moniker name
