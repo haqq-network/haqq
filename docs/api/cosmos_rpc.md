@@ -246,4 +246,4 @@ curl -X GET "http://localhost:26657/tx_search?query=ethereum_tx.ethereumTxHash%3
 
 ## Cosmos Swagger
 
-Swagger: [Cosmos RPC](https://v1.cosmos.network/rpc/v0.41.4)
+Swagger: [Cosmos RPC](https://v1.cosmos.network/rpc/v0.45.1)
