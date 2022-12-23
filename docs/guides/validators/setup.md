@@ -281,10 +281,10 @@ First of all, you should make sure that your bin file is up to date
 
 ```sh
 haqq@haqq-node:~# haqqd -v
-haqqd version "1.2.1" 4d25b4ae8c52011a64c7279454e88c372f515673
+haqqd version "1.3.0" a9a92e5e524ca651204f8ee6ebe5d1b12e4519b3
 ```
 
-We are currently using version `1.2.1` on TestEdge2.
+We are currently using version `1.3.0` on TestEdge2.
 
 This error can also occur if you run the validator from a period when blocks were produced on a different version of the binary. 
 

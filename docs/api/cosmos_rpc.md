@@ -238,10 +238,10 @@ curl -X GET "http://localhost:26657/tx_search?query=ethereum_tx.ethereumTxHash%3
 - [gRPC - https://grpc.cosmos.haqq.network](https://grpc.cosmos.haqq.network)
 - [REST API - https://rest.cosmos.haqq.network](https://rest.cosmos.haqq.network)
 
-**Haqq TestEdge**:
+**Haqq TestEdge2**:
 
-- [gRPC - https://grpc.cosmos.testedge.haqq.network](https://grpc.cosmos.testedge.haqq.network)
-- [REST API - https://rest.cosmos.testedge.haqq.network](https://rest.cosmos.testedge.haqq.network)
+- [gRPC - https://grpc.cosmos.testedge.haqq.network](https://grpc.cosmos.testedge2.haqq.network)
+- [REST API - https://rest.cosmos.testedge.haqq.network](https://rest.cosmos.testedge2.haqq.network)
 
 
 ## Cosmos Swagger

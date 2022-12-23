@@ -6,9 +6,9 @@ order: 4
 
 ## Overview
 
-The current Haqq version of TestEdge2 is [`v1.2.1`](https://github.com/haqq-network/haqq/releases/tag/v1.2.1). 
+The current Haqq version of TestEdge2 is [`v1.3.0`](https://github.com/haqq-network/haqq/releases/tag/v1.3.0). 
 
-To bootstrap a TestEdge node, it is possible to sync from v1.2.1 via snapshot or via State Sync.
+To bootstrap a TestEdge node, it is possible to sync from v1.3.0 via snapshot or via State Sync.
 
 This document outlines the steps to join an existing testnet {synopsis}
 
@@ -28,7 +28,7 @@ Build from source:
 
 Download latest binary for your arch:
 
-[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.2.1) 
+[Release page](https://github.com/haqq-network/haqq/releases/tag/v1.3.0) 
 
 or
 
@@ -36,7 +36,7 @@ build from source
 
 ```sh
 cd $HOME && \
-git clone -b v1.2.1 https://github.com/haqq-network/haqq && \
+git clone -b v1.3.0 https://github.com/haqq-network/haqq && \
 cd haqq && \
 make install
 ```
@@ -49,7 +49,7 @@ Check binary version:
 
 ```sh
 haqq@haqq-node:~# haqqd -v
-haqqd version "1.2.1" 4d25b4ae8c52011a64c7279454e88c372f515673
+haqqd version "1.3.0" a9a92e5e524ca651204f8ee6ebe5d1b12e4519b3
 ```
 
 Write your moniker name
