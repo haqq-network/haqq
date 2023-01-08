@@ -7,10 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/haqq-network/haqq/app"
+	tmcfg "github.com/tendermint/tendermint/config"
 
 	"github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/snapshots"
+	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
 	"github.com/spf13/cast"
@@ -42,6 +43,7 @@ import (
 	servercfg "github.com/evmos/ethermint/server/config"
 	srvflags "github.com/evmos/ethermint/server/flags"
 
+	"github.com/haqq-network/haqq/app"
 	cmdcfg "github.com/haqq-network/haqq/cmd/config"
 )
 
@@ -54,7 +56,7 @@ const (
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	initClientCtx := client.Context{}.
-		WithCodec(encodingConfig.Marshaler).
+		WithCodec(encodingConfig.Codec).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
 		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
@@ -90,8 +92,9 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 			// override the app and tendermint configuration
 			customAppTemplate, customAppConfig := initAppConfig()
+			customTMConfig := initTendermintConfig()
 
-			err = sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig)
+			err = sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customTMConfig)
 			if err != nil {
 				return err
 			}
@@ -140,7 +143,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	}
 
 	// add rosetta
-	rootCmd.AddCommand(sdkserver.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
+	rootCmd.AddCommand(sdkserver.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Codec))
 
 	return rootCmd, encodingConfig
 }
@@ -248,6 +251,11 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		panic(err)
 	}
 
+	snapshotOptions := snapshottypes.NewSnapshotOptions(
+		cast.ToUint64(appOpts.Get(sdkserver.FlagStateSyncSnapshotInterval)),
+		cast.ToUint32(appOpts.Get(sdkserver.FlagStateSyncSnapshotKeepRecent)),
+	)
+
 	haqqApp := app.NewHaqq(
 		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
@@ -262,11 +270,9 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		baseapp.SetInterBlockCache(cache),
 		baseapp.SetTrace(cast.ToBool(appOpts.Get(sdkserver.FlagTrace))),
 		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(sdkserver.FlagIndexEvents))),
-		baseapp.SetSnapshotStore(snapshotStore),
-		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(sdkserver.FlagStateSyncSnapshotInterval))),
-		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(sdkserver.FlagStateSyncSnapshotKeepRecent))),
+		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
 		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(sdkserver.FlagIAVLCacheSize))),
-		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(sdkserver.FlagIAVLFastNode))),
+		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(sdkserver.FlagDisableIAVLFastNode))),
 	)
 
 	return haqqApp
@@ -295,4 +301,17 @@ func (a appCreator) appExport(
 	}
 
 	return haqqApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
+}
+
+func initTendermintConfig() *tmcfg.Config {
+	cfg := tmcfg.DefaultConfig()
+	// cfg.Consensus.TimeoutCommit = time.Second * 5
+	// use v0 since v1 severely impacts the node's performance
+	cfg.Mempool.Version = tmcfg.MempoolV0
+
+	// to put a higher strain on node memory, use these values:
+	// cfg.P2P.MaxNumInboundPeers = 100
+	// cfg.P2P.MaxNumOutboundPeers = 40
+
+	return cfg
 }

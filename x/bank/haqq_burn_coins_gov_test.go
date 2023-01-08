@@ -17,7 +17,7 @@ import (
 	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distcli "github.com/cosmos/cosmos-sdk/x/distribution/client/cli"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	paramsproposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -49,7 +49,7 @@ func (s *BurnCoinsTestSuite) SetupSuite() {
 	s.NoError(err)
 
 	GOVModuleHexAddress := "7B5FE22B5446F7C62EA27B8BD71CEF94E03F3DF2"
-	s.govModuleAddress, err = sdk.AccAddressFromHex(GOVModuleHexAddress)
+	s.govModuleAddress, err = sdk.AccAddressFromHexUnsafe(GOVModuleHexAddress)
 	s.NoError(err)
 }
 

@@ -4,16 +4,17 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"math/big"
+	"testing"
+
 	"github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/ethermint/testutil/network"
-	erc20types "github.com/evmos/evmos/v8/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
 	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"testing"
 )
 
 func TestTransferETH(t *testing.T) {

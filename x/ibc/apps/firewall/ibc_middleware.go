@@ -4,10 +4,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	"github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
-	"github.com/cosmos/ibc-go/v3/modules/core/exported"
+	"github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
+	"github.com/cosmos/ibc-go/v5/modules/core/exported"
 	utils "github.com/haqq-network/haqq/types"
 )
 
@@ -80,8 +80,9 @@ func (im IBCMiddleware) OnChanOpenInit(
 	channelCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
-) error {
+) (string, error) {
 	// call underlying app's OnChanOpenInit callback with the counterparty app version.
+
 	return im.app.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, channelCap, counterparty, version)
 }
 
@@ -163,14 +164,14 @@ func (im IBCMiddleware) OnRecvPacket(
 	var ackErr error
 	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
 		ackErr = sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "cannot unmarshal ICS-20 transfer packet data")
-		return channeltypes.NewErrorAcknowledgement(ackErr.Error())
+		return channeltypes.NewErrorAcknowledgement(ackErr)
 	}
 
 	logger.Debug("OnRecvPacket -> check allowance of receiver address ", data.Receiver)
 	if !im.IsAllowedAddress(ctx.ChainID(), data.Receiver) {
 		logger.Debug("OnRecvPacket -> address NOT ALLOWED to receive IBC Transfers", data.Receiver)
 		err := sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to receive funds", data.Receiver)
-		return channeltypes.NewErrorAcknowledgement(err.Error())
+		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
 	logger.Debug("OnRecvPacket -> address ALLOWED to receive IBC Transfers. Proceed!", data.Receiver)
@@ -240,4 +241,8 @@ func (im IBCMiddleware) WriteAcknowledgement(
 ) error {
 	// call underlying ICS4 Wrapper's WriteAcknowledgement callback
 	return im.ics4Wrapper.WriteAcknowledgement(ctx, chanCap, packet, ack)
+}
+
+func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
+	return im.GetAppVersion(ctx, portID, channelID)
 }

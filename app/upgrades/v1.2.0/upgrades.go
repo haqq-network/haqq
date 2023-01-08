@@ -4,8 +4,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	ibc "github.com/cosmos/ibc-go/v3/modules/core"
-	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	ibc "github.com/cosmos/ibc-go/v5/modules/core"
+	ibchost "github.com/cosmos/ibc-go/v5/modules/core/24-host"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.2.0

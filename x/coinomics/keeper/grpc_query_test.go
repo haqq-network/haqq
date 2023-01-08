@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"cosmossdk.io/math"
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
 
@@ -79,7 +80,7 @@ func (suite *KeeperTestSuite) TestEraClosingSupply() {
 		{
 			"set era closing supply",
 			func() {
-				eraClosingSupply := sdk.NewCoin("aISLM", sdk.NewIntWithDecimal(1337, 18))
+				eraClosingSupply := sdk.NewCoin("aISLM", math.NewIntWithDecimal(1337, 18))
 				suite.app.CoinomicsKeeper.SetEraClosingSupply(suite.ctx, eraClosingSupply)
 
 				req = &types.QueryEraClosingSupplyRequest{}
@@ -173,14 +174,14 @@ func (suite *KeeperTestSuite) TestMaxSupply() {
 			"default max supply",
 			func() {
 				req = &types.QueryMaxSupplyRequest{}
-				expRes = &types.QueryMaxSupplyResponse{MaxSupply: sdk.Coin{Denom: "aISLM", Amount: sdk.NewIntWithDecimal(100_000_000_000, 18)}}
+				expRes = &types.QueryMaxSupplyResponse{MaxSupply: sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(100_000_000_000, 18)}}
 			},
 			true,
 		},
 		{
 			"set max supply",
 			func() {
-				maxSupply := sdk.Coin{Denom: "aISLM", Amount: sdk.NewIntWithDecimal(1337, 18)}
+				maxSupply := sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(1337, 18)}
 				suite.app.CoinomicsKeeper.SetMaxSupply(suite.ctx, maxSupply)
 
 				req = &types.QueryMaxSupplyRequest{}

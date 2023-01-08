@@ -3,7 +3,9 @@ package keeper_test
 import (
 	"math/big"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	// "github.com/cosmos/cosmos-sdk/x/staking/types"
 	// "github.com/evmos/ethermint/crypto/ethsecp256k1"
 	// "github.com/haqq-network/haqq/testutil"
@@ -43,7 +45,7 @@ var _ = Describe("Coinomics", Ordered, func() {
 				currentSupply := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				currentEra := s.app.CoinomicsKeeper.GetEra(s.ctx)
 
-				start_expectedSupply := sdk.NewCoin(denomMint, sdk.NewIntWithDecimal(20_000_000_000, 18))
+				start_expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
 
 				Expect(start_expectedSupply.Amount).To(Equal(currentSupply.Amount))
 				Expect(currentEra).To(Equal(uint64(0)))
@@ -73,7 +75,7 @@ var _ = Describe("Coinomics", Ordered, func() {
 					currentSupply := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 					currentEra := s.app.CoinomicsKeeper.GetEra(s.ctx)
 
-					start_expectedSupply := sdk.NewCoin(denomMint, sdk.NewIntWithDecimal(20_000_000_000, 18))
+					start_expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
 
 					Expect(start_expectedSupply.Amount).To(Equal(currentSupply.Amount))
 					Expect(currentEra).To(Equal(uint64(0)))
