@@ -111,10 +111,10 @@ func (s *BurnCoinsTestSuite) TestCase1NoQuorum() {
 	s.NoError(err)
 	json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
 
-	s.Equal(len(govBalanceBefore.Balances), 0)
+	s.Equal(0, len(govBalanceBefore.Balances), "zero gov module balance before proposal")
 
 	// Get total supply before broadcast tx
-	totalSupplyBefore, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{s.cfg.BondDenom, "--output", "json"})
+	totalSupplyBefore, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{"--denom", s.cfg.BondDenom, "--output", "json"})
 	s.NoError(err)
 
 	// #################################################################
@@ -144,13 +144,14 @@ func (s *BurnCoinsTestSuite) TestCase1NoQuorum() {
 	cpAmount, err := strconv.ParseFloat(communityPoolStateAfter.Pool[0].Amount, 64)
 	s.NoError(err)
 
-	s.Equal(cpAmount, 10000002.0)
+	// Proposal deposit shouldn't be sent to the pool, only txs fees
+	s.Equal(2.0, cpAmount, "community pool balance")
 
 	// Check total supply
-	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{s.cfg.BondDenom, "--output", "json"})
+	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{"--denom", s.cfg.BondDenom, "--output", "json"})
 	s.NoError(err)
 
-	s.Equal(totalSupplyBefore, totalSupplyAfter)
+	s.Equal(totalSupplyBefore, totalSupplyAfter, "total supply hasn't changed")
 }
 
 func (s *BurnCoinsTestSuite) TestCase2QuorumNoWithVeto() {
@@ -220,7 +221,7 @@ func (s *BurnCoinsTestSuite) TestCase2QuorumNoWithVeto() {
 	// Get total supply before broadcast tx
 	totalSupplyBefore, err := clitestutil.ExecTestCLICmd(
 		val.ClientCtx, bankcli.GetCmdQueryTotalSupply(),
-		[]string{s.cfg.BondDenom, "--output", "json"},
+		[]string{"--denom", s.cfg.BondDenom, "--output", "json"},
 	)
 	s.NoError(err)
 
@@ -282,10 +283,11 @@ func (s *BurnCoinsTestSuite) TestCase2QuorumNoWithVeto() {
 	cpAmountAfter, err := strconv.ParseFloat(communityPoolStateAfter.Pool[0].Amount, 64)
 	s.NoError(err)
 
+	// Proposal deposit MUST be sent to the pool
 	s.Equal(cpAmountAfter, cpAmountBefore+10000004.0)
 
 	// Check total supply after burn
-	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{s.cfg.BondDenom, "--output", "json"})
+	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{"--denom", s.cfg.BondDenom, "--output", "json"})
 	s.NoError(err)
 
 	s.Equal(totalSupplyBefore, totalSupplyAfter)
@@ -299,7 +301,8 @@ func (s *BurnCoinsTestSuite) TestCase3QuorumYes() {
 	cpAmountBefore, err := strconv.ParseFloat(communityPoolStateBefore.Pool[0].Amount, 64)
 	s.NoError(err)
 
-	s.Equal(cpAmountBefore, 20000006.0)
+	// Pool balance before should contain vetoed proposal deposit and all funds from txs.
+	s.Equal(10000006.0, cpAmountBefore)
 
 	// Check stacking params before proposal
 	stakingModuleParams := getStackingModuleParams(val)
@@ -360,7 +363,7 @@ func (s *BurnCoinsTestSuite) TestCase3QuorumYes() {
 	// Get total supply before broadcast tx
 	totalSupplyBefore, err := clitestutil.ExecTestCLICmd(
 		val.ClientCtx, bankcli.GetCmdQueryTotalSupply(),
-		[]string{s.cfg.BondDenom, "--output", "json"},
+		[]string{"--denom", s.cfg.BondDenom, "--output", "json"},
 	)
 	s.NoError(err)
 
@@ -421,10 +424,11 @@ func (s *BurnCoinsTestSuite) TestCase3QuorumYes() {
 	cpAmountAfter, err := strconv.ParseFloat(communityPoolStateAfter.Pool[0].Amount, 64)
 	s.NoError(err)
 
-	s.Equal(cpAmountAfter, 20000010.0)
+	// Pool balance before should contain vetoed proposal deposit and all funds from txs.
+	s.Equal(10000010.0, cpAmountAfter)
 
 	// Check total supply after burn
-	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{s.cfg.BondDenom, "--output", "json"})
+	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{"--denom", s.cfg.BondDenom, "--output", "json"})
 	s.NoError(err)
 
 	s.Equal(totalSupplyBefore, totalSupplyAfter)
@@ -438,7 +442,8 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 	cpAmountBefore, err := strconv.ParseFloat(communityPoolStateBefore.Pool[0].Amount, 64)
 	s.NoError(err)
 
-	s.Equal(cpAmountBefore, 20000010.0)
+	// Pool balance before should contain vetoed proposal deposit and all funds from txs.
+	s.Equal(10000010.0, cpAmountBefore)
 
 	// #################################################################
 	// Build proposal tx
@@ -493,7 +498,7 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 	// Get total supply before broadcast tx
 	totalSupplyBefore, err := clitestutil.ExecTestCLICmd(
 		val.ClientCtx, bankcli.GetCmdQueryTotalSupply(),
-		[]string{s.cfg.BondDenom, "--output", "json"},
+		[]string{"--denom", s.cfg.BondDenom, "--output", "json"},
 	)
 	s.NoError(err)
 
@@ -522,11 +527,11 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 	cpAmountAfter, err := strconv.ParseFloat(communityPoolStateAfter.Pool[0].Amount, 64)
 	s.NoError(err)
 
-	s.Equal(cpAmountAfter, 21000012.0)
-	s.T().Log("cpAmountAfter: ", cpAmountAfter)
+	// Deposits from non-fully-funded proposals shouldn't be sent to the pool
+	s.Equal(10000012.0, cpAmountAfter)
 
 	// Check total supply after burn
-	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{s.cfg.BondDenom, "--output", "json"})
+	totalSupplyAfter, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetCmdQueryTotalSupply(), []string{"--denom", s.cfg.BondDenom, "--output", "json"})
 	s.NoError(err)
 
 	s.Equal(totalSupplyBefore, totalSupplyAfter)
