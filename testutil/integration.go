@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 

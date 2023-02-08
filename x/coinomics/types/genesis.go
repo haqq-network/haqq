@@ -3,6 +3,7 @@ package types
 import (
 	fmt "fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -29,7 +30,7 @@ func NewGenesisState(
 func DefaultGenesisState() *GenesisState {
 	params := DefaultParams()
 
-	maxSupply := sdk.NewIntWithDecimal(100_000_000_000, 18)
+	maxSupply := math.NewIntWithDecimal(100_000_000_000, 18)
 
 	return &GenesisState{
 		Params:            params,

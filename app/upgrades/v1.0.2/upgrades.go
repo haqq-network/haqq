@@ -8,11 +8,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/haqq-network/haqq/types"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	erc20types "github.com/evmos/evmos/v8/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.0.2
@@ -21,7 +22,7 @@ func CreateUpgradeHandler(
 	configurator module.Configurator,
 	bk bankkeeper.Keeper,
 	cdc codec.BinaryCodec,
-	distrStoreKey sdk.StoreKey,
+	distrStoreKey storetypes.StoreKey,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger()
@@ -43,7 +44,7 @@ func CreateUpgradeHandler(
 }
 
 // ref: https://github.com/haqq-network/haqq/issues/4
-func FixTotalSupply(ctx sdk.Context, bk bankkeeper.Keeper, cdc codec.BinaryCodec, distrStoreKey sdk.StoreKey) {
+func FixTotalSupply(ctx sdk.Context, bk bankkeeper.Keeper, cdc codec.BinaryCodec, distrStoreKey storetypes.StoreKey) {
 	logger := ctx.Logger()
 
 	// get total supply

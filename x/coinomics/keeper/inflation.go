@@ -37,7 +37,7 @@ func (k Keeper) CalcTargetMintForEra(ctx sdk.Context, eraNumber uint64) sdk.Coin
 
 		// -----------  NUM ------------- / ---------- DEN -------------
 		// (1-era_coef)*total_mint_needed / (1-era_coef^(100/era_period))
-		num := (sdk.OneDec().Sub(eraCoef)).Mul(totalMintNeeded.Amount.ToDec())
+		num := (sdk.OneDec().Sub(eraCoef)).Mul(sdk.NewDecFromInt(totalMintNeeded.Amount))
 		den := sdk.OneDec().Sub(eraCoef.Power(100 / eraPeriod))
 
 		target := num.Quo(den)
@@ -45,7 +45,7 @@ func (k Keeper) CalcTargetMintForEra(ctx sdk.Context, eraNumber uint64) sdk.Coin
 		return sdk.NewCoin(params.MintDenom, target.RoundInt())
 	} else if eraNumber > 1 && eraNumber < 50 {
 		prevTargetMint := k.GetEraTargetMint(ctx)
-		currTargetMint := prevTargetMint.Amount.ToDec().Mul(eraCoef)
+		currTargetMint := sdk.NewDecFromInt(prevTargetMint.Amount).Mul(eraCoef)
 
 		return sdk.NewCoin(types.DefaultMintDenom, currTargetMint.RoundInt())
 	} else if eraNumber == 50 {
@@ -63,8 +63,8 @@ func (k Keeper) CalcInflation(ctx sdk.Context, era uint64, eraTargetSupply sdk.C
 		return sdk.NewDec(0)
 	}
 
-	return eraTargetMint.Amount.ToDec().
-		Quo(eraTargetSupply.SubAmount(eraTargetMint.Amount).Amount.ToDec()).
+	return sdk.NewDecFromInt(eraTargetMint.Amount).
+		Quo(sdk.NewDecFromInt(eraTargetSupply.SubAmount(eraTargetMint.Amount).Amount)).
 		Mul(sdk.NewDec(100))
 }
 

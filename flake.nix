@@ -23,11 +23,11 @@
         devShell = pkgs.mkShell {
           buildInputs = (
             with pkgs; [
-              go_1_18
               gh
             ]
           ) ++ (
             with pkgsUnstable; [
+              go
             ]
           );
         };

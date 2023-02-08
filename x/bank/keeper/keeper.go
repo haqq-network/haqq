@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -18,14 +19,14 @@ type BaseKeeper struct {
 
 	ak            banktypes.AccountKeeper
 	dk            distrkeeper.Keeper
-	distrStoreKey sdk.StoreKey
+	distrStoreKey storetypes.StoreKey
 	cdc           codec.BinaryCodec
 }
 
 func NewBaseKeeper(
 	cdc codec.BinaryCodec,
-	storeKey sdk.StoreKey,
-	distrStoreKey sdk.StoreKey,
+	storeKey storetypes.StoreKey,
+	distrStoreKey storetypes.StoreKey,
 	ak banktypes.AccountKeeper,
 	dk distrkeeper.Keeper,
 	paramSpace paramtypes.Subspace,

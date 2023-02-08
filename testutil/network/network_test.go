@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/evmos/ethermint/server/config"
 	"github.com/evmos/ethermint/testutil/network"
-	evmosnetwork "github.com/evmos/evmos/v8/testutil/network"
+	evmosnetwork "github.com/evmos/evmos/v10/testutil/network"
 )
 
 type IntegrationTestSuite struct {
@@ -29,7 +29,6 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	cfg := evmosnetwork.DefaultConfig()
 	cfg.JSONRPCAddress = config.DefaultJSONRPCAddress
 	cfg.NumValidators = 1
-
 
 	s.network, err = network.New(s.T(), s.T().TempDir(), cfg)
 	s.Require().NoError(err)
