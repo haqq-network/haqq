@@ -131,9 +131,10 @@ import (
 	// "github.com/evmos/evmos/v8/x/inflation"
 	// inflationkeeper "github.com/evmos/evmos/v8/x/inflation/keeper"
 	// inflationtypes "github.com/evmos/evmos/v8/x/inflation/types"
-	"github.com/evmos/evmos/v10/x/vesting"
-	vestingkeeper "github.com/evmos/evmos/v10/x/vesting/keeper"
-	vestingtypes "github.com/evmos/evmos/v10/x/vesting/types"
+
+	"github.com/haqq-network/haqq/x/vesting"
+	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 
