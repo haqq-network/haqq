@@ -2,12 +2,11 @@ name: Docs build
 # This workflow runs when a PR is labeled with `docs`
 # This will check if the docs build successfully by running `npm run build`
 on:
-  # pull_request:
+  pull_request:
   push:
     branches:
       - main
       - release/*
-      - fix_build_docs
 
 jobs:
   check-docs-build:
