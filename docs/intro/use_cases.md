@@ -6,7 +6,7 @@ order: 3
 
 Check out the 2 use cases for the Haqq project. {synopsis}
 
-## Haqq chain
+## HAQQ chain
 
 The Haqq blockchain provides Ethereum developers to deploy their smart contracts to the
 Haqq EVM and get the benefits of a fast-finality Proof-of-Stake (PoS) chain. Developers will

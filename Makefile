@@ -571,7 +571,7 @@ localnet-show-logstream:
 ###############################################################################
 
 PACKAGE_NAME:=github.com/haqq-network/haqq
-GOLANG_CROSS_VERSION  = v1.18
+GOLANG_CROSS_VERSION  = v1.19
 GOPATH ?= '$(HOME)/go'
 release-dry-run:
 	docker run \

@@ -6,7 +6,7 @@ parent:
 
 # Quick Start
 
-This repository contains reference documentation on how to install and run an Haqq full node.
+This repository contains reference documentation on how to install and run an HAQQ full node.
 
 1. [Installation](./installation.md)
 1. [Build and Configuration](./binary.md)

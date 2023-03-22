@@ -1,6 +1,6 @@
 <!--
 layout: home
-title: Haqq Documentation
+title: HAQQ Documentation
 description: Haqq is a scalable and interoperable Ethereum, built on Proof-of-Stake with fast-finality. Islamic Coin (ISLM) is a native currency of Haqq.
 sections:
   - title: Introduction
@@ -36,7 +36,7 @@ footer:
 aside: false
 -->
 
-# Haqq Documentation
+# HAQQ Documentation
 
 ## Get Started
 

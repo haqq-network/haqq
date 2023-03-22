@@ -24,6 +24,7 @@
           buildInputs = (
             with pkgs; [
               gh
+              yarn
             ]
           ) ++ (
             with pkgsUnstable; [
