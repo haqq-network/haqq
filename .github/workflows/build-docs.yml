@@ -26,4 +26,5 @@ jobs:
             .md
       - name: Install dependencies and build docs 🧱
         run: |
+          export NODE_OPTIONS=--openssl-legacy-provider
           make build-docs
