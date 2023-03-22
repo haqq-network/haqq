@@ -17,7 +17,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	evm "github.com/evmos/ethermint/x/evm/types"
 
-	"github.com/evmos/evmos/v10/app"
+	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -38,7 +38,7 @@ type KeeperTestSuite struct {
 	suite.Suite
 
 	ctx            sdk.Context
-	app            *app.Evmos
+	app            *app.Haqq
 	queryClientEvm evm.QueryClient
 	queryClient    types.QueryClient
 	address        common.Address

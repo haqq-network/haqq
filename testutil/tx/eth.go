@@ -1,18 +1,3 @@
-// Copyright 2022 Evmos Foundation
-// This file is part of the Evmos Network packages.
-//
-// Evmos is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The Evmos packages are distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the Evmos packages. If not, see https://github.com/evmos/evmos/blob/main/LICENSE
 package tx
 
 import (
@@ -33,8 +18,8 @@ import (
 
 	"github.com/evmos/ethermint/server/config"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	"github.com/evmos/evmos/v10/app"
 
+	"github.com/haqq-network/haqq/app"
 	haqqtypes "github.com/haqq-network/haqq/types"
 )
 
@@ -42,13 +27,13 @@ import (
 // It returns the signed transaction and an error
 func PrepareEthTx(
 	txCfg client.TxConfig,
-	appEvmos *app.Evmos,
+	appHaqq *app.Haqq,
 	priv cryptotypes.PrivKey,
 	msgs ...sdk.Msg,
 ) (authsigning.Tx, error) {
 	txBuilder := txCfg.NewTxBuilder()
 
-	signer := ethtypes.LatestSignerForChainID(appEvmos.EvmKeeper.ChainID())
+	signer := ethtypes.LatestSignerForChainID(appHaqq.EvmKeeper.ChainID())
 	txFee := sdk.Coins{}
 	txGasLimit := uint64(0)
 
@@ -105,7 +90,7 @@ func PrepareEthTx(
 // Should this not be the case, just pass in zero.
 func CreateEthTx(
 	ctx sdk.Context,
-	appEvmos *app.Evmos,
+	appHaqq *app.Haqq,
 	privKey cryptotypes.PrivKey,
 	from sdk.AccAddress,
 	dest sdk.AccAddress,
@@ -114,16 +99,16 @@ func CreateEthTx(
 ) (*evmtypes.MsgEthereumTx, error) {
 	toAddr := common.BytesToAddress(dest.Bytes())
 	fromAddr := common.BytesToAddress(from.Bytes())
-	chainID := appEvmos.EvmKeeper.ChainID()
+	chainID := appHaqq.EvmKeeper.ChainID()
 
 	// When we send multiple Ethereum Tx's in one Cosmos Tx, we need to increment the nonce for each one.
-	nonce := appEvmos.EvmKeeper.GetNonce(ctx, fromAddr) + uint64(nonceIncrement)
-	msgEthereumTx := evmtypes.NewTx(chainID, nonce, &toAddr, amount, 100000, nil, appEvmos.FeeMarketKeeper.GetBaseFee(ctx), big.NewInt(1), nil, &ethtypes.AccessList{})
+	nonce := appHaqq.EvmKeeper.GetNonce(ctx, fromAddr) + uint64(nonceIncrement)
+	msgEthereumTx := evmtypes.NewTx(chainID, nonce, &toAddr, amount, 100000, nil, appHaqq.FeeMarketKeeper.GetBaseFee(ctx), big.NewInt(1), nil, &ethtypes.AccessList{})
 	msgEthereumTx.From = fromAddr.String()
 
 	// If we are creating multiple eth Tx's with different senders, we need to sign here rather than later.
 	if privKey != nil {
-		signer := ethtypes.LatestSignerForChainID(appEvmos.EvmKeeper.ChainID())
+		signer := ethtypes.LatestSignerForChainID(appHaqq.EvmKeeper.ChainID())
 		err := msgEthereumTx.Sign(signer, NewSigner(privKey))
 		if err != nil {
 			return nil, err

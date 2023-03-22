@@ -33,6 +33,7 @@ import (
 	vestingexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
+	evmosvestingtypes "github.com/evmos/evmos/v10/x/vesting/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -347,7 +348,7 @@ func (k Keeper) addGrant(
 
 	if newLockupStart != newVestingStart {
 		return errorsmod.Wrapf(
-			types.ErrVestingLockup,
+			evmosvestingtypes.ErrVestingLockup,
 			"vesting start time calculation should match lockup start (%d ≠ %d)",
 			newVestingStart, newLockupStart,
 		)
