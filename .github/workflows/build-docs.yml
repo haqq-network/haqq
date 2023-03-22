@@ -2,7 +2,7 @@ name: Docs build
 # This workflow runs when a PR is labeled with `docs`
 # This will check if the docs build successfully by running `npm run build`
 on:
-  # pull_request:
+  pull_request:
   push:
     branches:
       - main
@@ -25,6 +25,7 @@ jobs:
           SUFFIX_FILTER: |
             .md
       - name: Install dependencies and build docs 🧱
+        env:
+          NODE_OPTIONS: "--openssl-legacy-provider"
         run: |
-          export NODE_OPTIONS=--openssl-legacy-provider
           make build-docs
