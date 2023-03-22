@@ -25,6 +25,7 @@ jobs:
           SUFFIX_FILTER: |
             .md
       - name: Install dependencies and build docs 🧱
+        env:
+          NODE_OPTIONS: "--openssl-legacy-provider"
         run: |
-          export NODE_OPTIONS=--openssl-legacy-provider
           make build-docs
