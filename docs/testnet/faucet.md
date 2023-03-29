@@ -29,12 +29,14 @@ Follow the [Metamask](./../../guides/keys-wallets/metamask.md) guide for more in
 ## Request Tokens on Web
 
 <!-- markdown-link-check-disable-next-line -->
-1. Sign in to the MetaMask extension and visit the Faucet to request tokens for the testnet. Click on the MetaMask button in the connect wallet section.
-2. A popup window with your MetaMask account will appear. Choose the account you want to connect with the Faucet. Then, click on the Next button and the Connect button to establish the connection.
-3. Click on the Login with Github button to authorize via your GitHub account.
-4. Click on the Sign up with Github button to approve authorization.
-5. Complete the reCAPTCHA test to confirm that you are not a robot.
-6. Click on the Request Tokens button to receive 1000 ISLM.
+1. Sign in to the MetaMask extension. 
+2. Visit the [TestEdge-2 Faucet](https://testedge2.haqq.network) to request tokens for the testnet.
+3. Click on the MetaMask button in the connect wallet section.
+4. A popup window with your MetaMask account will appear. Choose the account you want to connect with the Faucet. Then, click on the Next button and the Connect button to establish the connection.
+5. Click on the Login with Github button to authorize via your GitHub account.
+6. Click on the Sign up with Github button to approve authorization.
+7. Complete the reCAPTCHA test to confirm that you are not a robot.
+8. Click on the Request Tokens button to receive 1000 ISLM.
 
 ## Rate limits
 

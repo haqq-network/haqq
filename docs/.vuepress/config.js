@@ -127,6 +127,11 @@ module.exports = {
           title: 'APIs',
           children: [
             {
+              title: 'Networks',
+              directory: false,
+              path: '/api/networks'
+            },
+            {
               title: 'JSON-RPC',
               directory: true,
               path: '/api/json-rpc'
