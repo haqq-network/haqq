@@ -24,6 +24,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/libs/log"
 
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -34,7 +36,7 @@ type Keeper struct {
 
 	accountKeeper types.AccountKeeper
 	bankKeeper    types.BankKeeper
-	stakingKeeper types.StakingKeeper
+	stakingKeeper stakingkeeper.Keeper
 }
 
 // NewKeeper creates new instances of the vesting Keeper
@@ -43,7 +45,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
-	sk types.StakingKeeper,
+	sk stakingkeeper.Keeper,
 ) Keeper {
 	return Keeper{
 		storeKey:      storeKey,

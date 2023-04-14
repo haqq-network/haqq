@@ -18,6 +18,8 @@ package cli
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -37,6 +39,7 @@ const (
 	FlagDest     = "dest"
 	FlagLockup   = "lockup"
 	FlagMerge    = "merge"
+	FlagLongTerm = "long_term"
 	FlagVesting  = "vesting"
 	FlagClawback = "clawback"
 	FlagFunder   = "funder"
@@ -58,6 +61,8 @@ func NewTxCmd() *cobra.Command {
 		NewMsgClawbackCmd(),
 		NewMsgUpdateVestingFunderCmd(),
 		NewMsgConvertVestingAccountCmd(),
+		NewMsgConvertIntoVestingAccountCmd(),
+		NewMsgUpdateVestingScheduleCmd(),
 	)
 
 	return txCmd
@@ -251,6 +256,144 @@ func NewMsgConvertVestingAccountCmd() *cobra.Command {
 			}
 
 			msg := types.NewMsgConvertVestingAccount(addr)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+// NewMsgConvertIntoVestingAccountCmd returns a CLI command handler for creating a
+// MsgConvertIntoVestingAccount transaction.
+func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "convert-into ETH_ACCOUNT_ADDRESS START_TIME AMOUNT",
+		Short: "Convert a chain's default account type to the vesting account.",
+		Long: "Convert a chain's default account type to the vesting account. " +
+			"The chain's default account must be of type AccAddress to convert" +
+			"it to the vesting account type.",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var (
+				vestingStart  int64
+				vestingAmount sdk.Coin
+			)
+
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			hexAddr := common.HexToAddress(args[0])
+			addr := sdk.AccAddress(hexAddr.Bytes())
+
+			vestingStart, err = strconv.ParseInt(args[1], 10, 64)
+			if err != nil {
+				return fmt.Errorf("START_TIME %s not a valid int64, please input a valid START_TIME", args[1])
+			}
+
+			vestingAmount, err = sdk.ParseCoinNormalized(args[2])
+			if err != nil {
+				return err
+			}
+
+			longTerm, _ := cmd.Flags().GetBool(FlagLongTerm)
+
+			msg := types.NewMsgConvertIntoVestingAccount(
+				clientCtx.FromAddress,
+				addr,
+				time.Unix(vestingStart, 0),
+				vestingAmount,
+				longTerm,
+			)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+func NewMsgUpdateVestingScheduleCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update-vesting-schedule VESTING_ACCOUNT_ADDRESS",
+		Short: "Update the vesting schedule of an existing ClawbackVestingAccount.",
+		Long: `Must be requested by the original funder address (--from).
+Need to provide the target VESTING_ACCOUNT_ADDRESS to update and a lockup periods file (--lockup),
+a vesting periods file (--vesting), or both.
+If both files are given, they must describe schedules for the same total amount.
+If one file is omitted, it will default to a schedule that immediately unlocks or vests the entire amount.
+The new periods must describe schedules for the same total amount as an original vesting periods.
+
+Coins may not be transferred out of the account if they are locked or unvested. Only vested coins may be staked.
+
+A periods file is a JSON object describing a sequence of unlocking or vesting events,
+with a start time and an array of coins strings and durations relative to the start or previous event.`,
+		Example: `Sample period file contents:
+{
+  "start_time": 1625204910,
+  "periods": [
+    {
+      "coins": "10test",
+      "length_seconds": 2592000 //30 days
+    },
+    {
+      "coins": "10test",
+      "length_seconds": 2592000 //30 days
+    }
+  ]
+}`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var (
+				lockupStart, vestingStart     int64
+				lockupPeriods, vestingPeriods sdkvesting.Periods
+			)
+
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			vestingAddress, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			lockupFile, _ := cmd.Flags().GetString(FlagLockup)
+			vestingFile, _ := cmd.Flags().GetString(FlagVesting)
+			if lockupFile == "" && vestingFile == "" {
+				return fmt.Errorf("must specify at least one of %s or %s", FlagLockup, FlagVesting)
+			}
+			if lockupFile != "" {
+				lockupStart, lockupPeriods, err = ReadScheduleFile(lockupFile)
+				if err != nil {
+					return err
+				}
+			}
+			if vestingFile != "" {
+				vestingStart, vestingPeriods, err = ReadScheduleFile(vestingFile)
+				if err != nil {
+					return err
+				}
+			}
+
+			commonStart, _ := types.AlignSchedules(lockupStart, vestingStart, lockupPeriods, vestingPeriods)
+
+			msg := types.NewMsgUpdateVestingSchedule(
+				clientCtx.GetFromAddress(),
+				vestingAddress,
+				time.Unix(commonStart, 0),
+				lockupPeriods,
+				vestingPeriods,
+			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
