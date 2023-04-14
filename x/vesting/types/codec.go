@@ -1,19 +1,3 @@
-// Copyright 2022 Evmos Foundation
-// This file is part of the Evmos Network packages.
-//
-// Evmos is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The Evmos packages are distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the Evmos packages. If not, see https://github.com/evmos/evmos/blob/main/LICENSE
-
 package types
 
 import (
@@ -41,6 +25,8 @@ const (
 	createClawbackVestingAccount = "evmos/MsgCreateClawbackVestingAccount"
 	updateVestingFunder          = "evmos/MsgUpdateVestingFunder"
 	convertVestingAccount        = "evmos/MsgConvertVestingAccount"
+	convertIntoVestingAccount    = "evmos/MsgConvertIntoVestingAccount"
+	updateVestingSchedule        = "evmos/MsgUpdateVestingSchedule"
 )
 
 // NOTE: This is required for the GetSignBytes function
@@ -78,6 +64,8 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&MsgCreateClawbackVestingAccount{},
 		&MsgUpdateVestingFunder{},
 		&MsgConvertVestingAccount{},
+		&MsgConvertIntoVestingAccount{},
+		&MsgUpdateVestingSchedule{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
@@ -91,4 +79,6 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgCreateClawbackVestingAccount{}, createClawbackVestingAccount, nil)
 	cdc.RegisterConcrete(&MsgUpdateVestingFunder{}, updateVestingFunder, nil)
 	cdc.RegisterConcrete(&MsgConvertVestingAccount{}, convertVestingAccount, nil)
+	cdc.RegisterConcrete(&MsgConvertIntoVestingAccount{}, convertIntoVestingAccount, nil)
+	cdc.RegisterConcrete(&MsgUpdateVestingSchedule{}, updateVestingSchedule, nil)
 }

@@ -5,6 +5,7 @@ import "cosmos/vesting/v1beta1/vesting.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/vesting/types";
 
@@ -27,6 +28,14 @@ service Msg {
   // ConvertVestingAccount converts a ClawbackVestingAccount to a Eth account
   rpc ConvertVestingAccount(MsgConvertVestingAccount) returns (MsgConvertVestingAccountResponse) {
     option (google.api.http).get = "/haqq/vesting/v1/tx/convert_vesting_account";
+  };
+  // ConvertIntoVestingAccount converts a Eth account to a ClawbackVestingAccount
+  rpc ConvertIntoVestingAccount(MsgConvertIntoVestingAccount) returns (MsgConvertIntoVestingAccountResponse) {
+    option (google.api.http).get = "/haqq/vesting/v1/tx/convert_into_vesting_account";
+  };
+  // ConvertIntoVestingAccount converts a Eth account to a ClawbackVestingAccount
+  rpc UpdateVestingSchedule(MsgUpdateVestingSchedule) returns (MsgUpdateVestingScheduleResponse) {
+    option (google.api.http).get = "/haqq/vesting/v1/tx/update_vesting_schedule";
   };
 }
 
@@ -104,3 +113,47 @@ message MsgConvertVestingAccount {
 
 // MsgConvertVestingAccountResponse defines the MsgConvertVestingAccount response type.
 message MsgConvertVestingAccountResponse {}
+
+// MsgConvertIntoVestingAccount defines a message that enables converting a eth account to a vesting account
+message MsgConvertIntoVestingAccount {
+  option (gogoproto.equal) = false;
+  // from_address specifies the account to provide the funds and sign the
+  // clawback request
+  string from_address = 1;
+  // vesting_address is the address of the vesting account to convert
+  string eth_address = 2;
+  // start_time defines the time at which the vesting period begins
+  google.protobuf.Timestamp start_time = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  // amount defines the amount of coins that will vest.
+  cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
+  // long_term defines the unlocking schedule relative to the start_time.
+  bool long_term = 5;
+}
+
+// MsgConvertIntoVestingAccountResponse defines the MsgConvertIntoVestingAccount response type.
+message MsgConvertIntoVestingAccountResponse {}
+
+// MsgUpdateVestingSchedule defines a message that updates the vesting schedule of a
+// ClawbackVestingAccount.
+message MsgUpdateVestingSchedule {
+  option (gogoproto.equal) = false;
+  // funder_address is the address which funded the account
+  string funder_address = 1;
+  // vesting_address specifies the account to update vesting schedule for
+  string vesting_address = 2;
+  // start_time defines the time at which the vesting period begins
+  google.protobuf.Timestamp start_time = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  // lockup_periods defines the unlocking schedule relative to the start_time
+  repeated cosmos.vesting.v1beta1.Period lockup_periods = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/x/auth/vesting/types.Periods"
+  ];
+  // vesting_periods defines the vesting schedule relative to the start_time
+  repeated cosmos.vesting.v1beta1.Period vesting_periods = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/x/auth/vesting/types.Periods"
+  ];
+}
+
+// MsgUpdateVestingScheduleResponse defines the MsgUpdateVestingSchedule response type.
+message MsgUpdateVestingScheduleResponse {}

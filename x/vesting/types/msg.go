@@ -1,19 +1,3 @@
-// Copyright 2022 Evmos Foundation
-// This file is part of the Evmos Network packages.
-//
-// Evmos is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The Evmos packages are distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the Evmos packages. If not, see https://github.com/evmos/evmos/blob/main/LICENSE
-
 package types
 
 import (
@@ -23,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
@@ -30,6 +15,8 @@ var (
 	_ sdk.Msg = &MsgClawback{}
 	_ sdk.Msg = &MsgConvertVestingAccount{}
 	_ sdk.Msg = &MsgUpdateVestingFunder{}
+	_ sdk.Msg = &MsgConvertIntoVestingAccount{}
+	_ sdk.Msg = &MsgUpdateVestingSchedule{}
 )
 
 const (
@@ -37,6 +24,8 @@ const (
 	TypeMsgClawback                     = "clawback"
 	TypeMsgUpdateVestingFunder          = "update_vesting_funder"
 	TypeMsgConvertVestingAccount        = "convert_vesting_account"
+	TypeMsgConvertIntoVestingAccount    = "convert_into_vesting_account"
+	TypeMsgUpdateVestingSchedule        = "update_vesting_schedule"
 )
 
 // NewMsgCreateClawbackVestingAccount creates new instance of MsgCreateClawbackVestingAccount
@@ -238,4 +227,124 @@ func (msg *MsgConvertVestingAccount) GetSignBytes() []byte {
 func (msg MsgConvertVestingAccount) GetSigners() []sdk.AccAddress {
 	vesting := sdk.MustAccAddressFromBech32(msg.VestingAddress)
 	return []sdk.AccAddress{vesting}
+}
+
+// NewMsgConvertIntoVestingAccount creates new instance of MsgConvertIntoVestingAccount
+func NewMsgConvertIntoVestingAccount(
+	funder, address sdk.AccAddress,
+	startTime time.Time,
+	amount sdk.Coin,
+	longTerm bool,
+) *MsgConvertIntoVestingAccount {
+	return &MsgConvertIntoVestingAccount{
+		FromAddress: funder.String(),
+		EthAddress:  common.Bytes2Hex(address.Bytes()),
+		StartTime:   startTime,
+		Amount:      amount,
+		LongTerm:    longTerm,
+	}
+}
+
+// Route returns the name of the module
+func (msg MsgConvertIntoVestingAccount) Route() string { return RouterKey }
+
+// Type returns the action
+func (msg MsgConvertIntoVestingAccount) Type() string { return TypeMsgConvertIntoVestingAccount }
+
+// ValidateBasic runs stateless checks on the message
+func (msg MsgConvertIntoVestingAccount) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.FromAddress); err != nil {
+		return errorsmod.Wrapf(err, "invalid from address")
+	}
+
+	if ok := common.IsHexAddress(msg.EthAddress); !ok {
+		return errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid eth address")
+	}
+
+	coins := sdk.NewCoins()
+	coins = coins.Add(msg.Amount)
+	zeroCoins := sdk.NewCoins()
+
+	// IsEqual can panic, so use (a == b) <=> (a <= b && b <= a).
+	if coins.IsAllLTE(zeroCoins) && zeroCoins.IsAllLTE(coins) {
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "amount is not specified")
+	}
+
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg *MsgConvertIntoVestingAccount) GetSignBytes() []byte {
+	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgConvertIntoVestingAccount) GetSigners() []sdk.AccAddress {
+	from := sdk.MustAccAddressFromBech32(msg.FromAddress)
+	return []sdk.AccAddress{from}
+}
+
+// NewMsgUpdateVestingSchedule creates new instance of MsgUpdateVestingSchedule
+func NewMsgUpdateVestingSchedule(
+	funder, vesting sdk.AccAddress,
+	startTime time.Time,
+	lockupPeriods,
+	vestingPeriods sdkvesting.Periods,
+) *MsgUpdateVestingSchedule {
+	return &MsgUpdateVestingSchedule{
+		FunderAddress:  funder.String(),
+		VestingAddress: vesting.String(),
+		StartTime:      startTime,
+		LockupPeriods:  lockupPeriods,
+		VestingPeriods: vestingPeriods,
+	}
+}
+
+// Route returns the message route for a MsgUpdateVestingFunder.
+func (msg MsgUpdateVestingSchedule) Route() string { return RouterKey }
+
+// Type returns the message type for a MsgUpdateVestingFunder.
+func (msg MsgUpdateVestingSchedule) Type() string { return TypeMsgUpdateVestingSchedule }
+
+// ValidateBasic runs stateless checks on the MsgUpdateVestingFunder message
+func (msg MsgUpdateVestingSchedule) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.GetVestingAddress()); err != nil {
+		return errorsmod.Wrapf(err, "invalid vesting account address")
+	}
+
+	lockupCoins := sdk.NewCoins()
+	for i, period := range msg.LockupPeriods {
+		if period.Length < 1 {
+			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
+		}
+		lockupCoins = lockupCoins.Add(period.Amount...)
+	}
+
+	vestingCoins := sdk.NewCoins()
+	for i, period := range msg.VestingPeriods {
+		if period.Length < 1 {
+			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
+		}
+		vestingCoins = vestingCoins.Add(period.Amount...)
+	}
+
+	// If both schedules are present, the must describe the same total amount.
+	// IsEqual can panic, so use (a == b) <=> (a <= b && b <= a).
+	if len(msg.LockupPeriods) > 0 && len(msg.VestingPeriods) > 0 &&
+		!(lockupCoins.IsAllLTE(vestingCoins) && vestingCoins.IsAllLTE(lockupCoins)) {
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "vesting and lockup schedules must have same total coins")
+	}
+
+	return nil
+}
+
+// GetSignBytes encodes the message for signing
+func (msg *MsgUpdateVestingSchedule) GetSignBytes() []byte {
+	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgUpdateVestingSchedule) GetSigners() []sdk.AccAddress {
+	funder := sdk.MustAccAddressFromBech32(msg.FunderAddress)
+	return []sdk.AccAddress{funder}
 }
