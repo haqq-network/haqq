@@ -20,7 +20,6 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/haqq-network/haqq/app"
-	haqqtypes "github.com/haqq-network/haqq/types"
 )
 
 // PrepareEthTx creates an ethereum tx and signs it with the provided messages and private key.
@@ -54,7 +53,7 @@ func PrepareEthTx(
 		msg.From = ""
 
 		txGasLimit += msg.GetGas()
-		txFee = txFee.Add(sdk.Coin{Denom: haqqtypes.BaseDenom, Amount: sdkmath.NewIntFromBigInt(msg.GetFee())})
+		txFee = txFee.Add(sdk.Coin{Denom: "aphoton", Amount: sdkmath.NewIntFromBigInt(msg.GetFee())})
 	}
 
 	if err := txBuilder.SetMsgs(msgs...); err != nil {

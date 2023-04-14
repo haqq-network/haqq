@@ -19,20 +19,18 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	//evmante "github.com/evmos/ethermint/app/ante"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/evmos/ethermint/encoding"
-	//evmostestutil "github.com/evmos/ethermint/testutil"
 	evmostypes "github.com/evmos/ethermint/types"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	//cosmosante "github.com/evmos/evmos/v10/app/ante/cosmos"
 	"github.com/evmos/evmos/v10/contracts"
 	epochstypes "github.com/evmos/evmos/v10/x/epochs/types"
 
 	"github.com/haqq-network/haqq/app"
+	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
+	evmante "github.com/haqq-network/haqq/app/ante/evm"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 
 	"github.com/stretchr/testify/require"
@@ -95,7 +93,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 		suite.ctx,
 		suite.app.BankKeeper,
 		suite.priv.PubKey().Address().Bytes(),
-		sdk.NewCoins(sdk.NewCoin(haqqtypes.BaseDenom, amt)),
+		sdk.NewCoins(sdk.NewCoin("aphoton", amt)),
 	)
 	suite.Require().NoError(err)
 
@@ -217,31 +215,23 @@ func assertEthSucceeds(testAccounts []TestClawbackAccount, funder sdk.AccAddress
 
 // delegate is a helper function which creates a message to delegate a given amount of tokens
 // to a validator and checks if the Cosmos vesting delegation decorator returns no error.
-func delegate(clawbackAccount *types.ClawbackVestingAccount, amount sdkmath.Int) error {
+func delegate(clawbackAccount *types.ClawbackVestingAccount, amount sdkmath.Int, addrvalop string) error {
+	addr, err := sdk.AccAddressFromBech32(clawbackAccount.Address)
+	s.Require().NoError(err)
 
-	return nil
+	val, err := sdk.ValAddressFromBech32(addrvalop)
+	s.Require().NoError(err)
+	delegateMsg := stakingtypes.NewMsgDelegate(addr, val, sdk.NewCoin("aphoton", amount))
 
-	//TODO FIX
-	//addr, err := sdk.AccAddressFromBech32(clawbackAccount.Address)
-	//s.Require().NoError(err)
-	//
-	//val, err := sdk.ValAddressFromBech32("evmosvaloper1z3t55m0l9h0eupuz3dp5t5cypyv674jjn4d6nn")
-	//s.Require().NoError(err)
-	//delegateMsg := stakingtypes.NewMsgDelegate(addr, val, sdk.NewCoin(haqqtypes.BaseDenom, amount))
-	//
-	//dec := cosmosante.NewVestingDelegationDecorator(s.app.AccountKeeper, s.app.StakingKeeper, types.ModuleCdc)
-	//err = evmostestutil.ValidateAnteForMsgs(s.ctx, dec, delegateMsg)
-	//return err
+	dec := cosmosante.NewVestingDelegationDecorator(s.app.AccountKeeper, s.app.StakingKeeper, types.ModuleCdc)
+	err = testutil.ValidateAnteForMsgs(s.ctx, dec, delegateMsg)
+	return err
 }
 
 // validateEthVestingTransactionDecorator is a helper function to execute the eth vesting transaction decorator
 // with 1 or more given messages and return any occurring error.
 func validateEthVestingTransactionDecorator(msgs ...sdk.Msg) error {
-
-	return nil
-
-	//TODO FIX
-	//dec := evmante.NewEthVestingTransactionDecorator(s.app.AccountKeeper, s.app.BankKeeper, s.app.EvmKeeper)
-	//err = evmostestutil.ValidateAnteForMsgs(s.ctx, dec, msgs...)
-	//return err
+	dec := evmante.NewEthVestingTransactionDecorator(s.app.AccountKeeper, s.app.BankKeeper, s.app.EvmKeeper)
+	err = testutil.ValidateAnteForMsgs(s.ctx, dec, msgs...)
+	return err
 }

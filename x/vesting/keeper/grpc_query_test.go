@@ -7,7 +7,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/evmos/ethermint/tests"
-	"github.com/evmos/evmos/v10/testutil"
+	"github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 

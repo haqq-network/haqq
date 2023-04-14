@@ -16,7 +16,6 @@ import (
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -42,7 +41,7 @@ var err error
 // 23/02 Lock ends
 var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 	// Monthly vesting period
-	stakeDenom := haqqtypes.BaseDenom
+	stakeDenom := "aphoton"
 	amt := sdk.NewInt(1e17)
 	vestingLength := int64(60 * 60 * 24 * 30) // in seconds
 	vestingAmt := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt))
@@ -155,7 +154,7 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 		})
 
 		It("cannot delegate tokens", func() {
-			err := delegate(clawbackAccount, math.NewInt(100))
+			err := delegate(clawbackAccount, math.NewInt(100), s.validator.GetOperator().String())
 			Expect(err).ToNot(BeNil())
 		})
 
@@ -221,12 +220,12 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 		})
 
 		It("can delegate vested tokens", func() {
-			err := delegate(clawbackAccount, vested.AmountOf(stakeDenom))
+			err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator().String())
 			Expect(err).To(BeNil())
 		})
 
 		It("cannot delegate unvested tokens", func() {
-			err := delegate(clawbackAccount, vestingAmtTotal.AmountOf(stakeDenom))
+			err := delegate(clawbackAccount, vestingAmtTotal.AmountOf(stakeDenom), s.validator.GetOperator().String())
 			Expect(err).ToNot(BeNil())
 		})
 
@@ -467,12 +466,12 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 		})
 
 		It("can delegate vested tokens", func() {
-			err := delegate(clawbackAccount, vested.AmountOf(stakeDenom))
+			err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator().String())
 			Expect(err).To(BeNil())
 		})
 
 		It("cannot delegate unvested tokens", func() {
-			err := delegate(clawbackAccount, vestingAmtTotal.AmountOf(stakeDenom))
+			err := delegate(clawbackAccount, vestingAmtTotal.AmountOf(stakeDenom), s.validator.GetOperator().String())
 			Expect(err).ToNot(BeNil())
 		})
 
@@ -568,7 +567,7 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 // 23/02 Lock ends
 var _ = Describe("Clawback Vesting Accounts - claw back tokens", Ordered, func() {
 	// Monthly vesting period
-	stakeDenom := haqqtypes.BaseDenom
+	stakeDenom := "aphoton"
 	amt := sdk.NewInt(1)
 	vestingLength := int64(60 * 60 * 24 * 30) // in seconds
 	vestingAmt := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt))
@@ -694,7 +693,7 @@ var _ = Describe("Clawback Vesting Accounts - claw back tokens", Ordered, func()
 		balanceDest := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
 
 		// stake vested tokens
-		err := delegate(clawbackAccount, vested.AmountOf(stakeDenom))
+		err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator().String())
 		Expect(err).To(BeNil())
 
 		// Perform clawback
@@ -741,7 +740,7 @@ var _ = Describe("Clawback Vesting Accounts - claw back tokens", Ordered, func()
 		balanceDest := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
 
 		// stake vested tokens
-		err := delegate(clawbackAccount, vested.AmountOf(stakeDenom))
+		err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator().String())
 		Expect(err).To(BeNil())
 
 		// Perform clawback
@@ -786,7 +785,7 @@ var _ = Describe("Clawback Vesting Accounts - claw back tokens", Ordered, func()
 		balanceDest := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
 
 		// stake vested tokens
-		err := delegate(clawbackAccount, vested.AmountOf(stakeDenom))
+		err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator().String())
 		Expect(err).To(BeNil())
 
 		// Perform clawback
