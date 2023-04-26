@@ -115,7 +115,6 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/evmos/ethermint/client/docs/statik"
 
-	"github.com/evmos/evmos/v10/app/ante"
 	"github.com/evmos/evmos/v10/x/epochs"
 	epochskeeper "github.com/evmos/evmos/v10/x/epochs/keeper"
 	epochstypes "github.com/evmos/evmos/v10/x/epochs/types"
@@ -123,6 +122,7 @@ import (
 	erc20client "github.com/evmos/evmos/v10/x/erc20/client"
 	erc20keeper "github.com/evmos/evmos/v10/x/erc20/keeper"
 	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/haqq-network/haqq/app/ante"
 
 	// "github.com/evmos/evmos/v8/x/incentives"
 	// incentivesclient "github.com/evmos/evmos/v8/x/incentives/client"
