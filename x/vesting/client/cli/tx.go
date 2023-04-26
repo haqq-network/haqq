@@ -276,7 +276,7 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 		Long: "Convert a chain's default account type to the vesting account. " +
 			"The chain's default account must be of type AccAddress to convert" +
 			"it to the vesting account type.",
-		Args: cobra.ExactArgs(1),
+		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				vestingStart  int64
@@ -288,6 +288,9 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 				return err
 			}
 
+			if !common.IsHexAddress(args[0]) {
+				return fmt.Errorf("ETH_ACCOUNT_ADDRESS %s not a valid hex encoded address, please input a valid ETH_ACCOUNT_ADDRESS", args[0])
+			}
 			hexAddr := common.HexToAddress(args[0])
 			addr := sdk.AccAddress(hexAddr.Bytes())
 
@@ -317,6 +320,8 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
+
+	cmd.Flags().String(FlagLongTerm, "", "Set long term locking period for vesting")
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }
@@ -401,6 +406,9 @@ with a start time and an array of coins strings and durations relative to the st
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
+
+	cmd.Flags().String(FlagLockup, "", "path to file containing unlocking periods")
+	cmd.Flags().String(FlagVesting, "", "path to file containing vesting periods")
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }
