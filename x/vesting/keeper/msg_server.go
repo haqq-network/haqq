@@ -398,7 +398,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 			baseAcc,
 			funder,
 			vestingCoins,
-			startNow,
+			msg.StartTime,
 			lockingPeriods,
 			vestingPeriods,
 		)
@@ -411,7 +411,9 @@ func (k Keeper) ConvertIntoVestingAccount(
 			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s can only accept grants from account %s", msg.EthAddress, vestingAcc.FunderAddress)
 		}
 
-		err := k.addGrant(ctx, vestingAcc, startNow.Unix(), lockingPeriods, vestingPeriods, vestingCoins)
+		k.Logger(ctx).Info(fmt.Sprintf("[ConvertIntoVestingAccount] Add grant for %s: %s", vestingAcc.Address, vestingCoins.String()))
+
+		err := k.addGrant(ctx, vestingAcc, types.Min64(msg.StartTime.Unix(), vestingAcc.StartTime.Unix()), lockingPeriods, vestingPeriods, vestingCoins)
 		if err != nil {
 			return nil, err
 		}
@@ -462,7 +464,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 				types.EventTypeCreateClawbackVestingAccount,
 				sdk.NewAttribute(sdk.AttributeKeySender, funder.String()),
 				sdk.NewAttribute(types.AttributeKeyCoins, vestingCoins.String()),
-				sdk.NewAttribute(types.AttributeKeyStartTime, startNow.String()),
+				sdk.NewAttribute(types.AttributeKeyStartTime, vestingAcc.StartTime.String()),
 				sdk.NewAttribute(types.AttributeKeyMerge, strconv.FormatBool(isClawback)),
 				sdk.NewAttribute(types.AttributeKeyAccount, vestingAcc.Address),
 			),
