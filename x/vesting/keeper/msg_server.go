@@ -18,6 +18,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -339,6 +340,8 @@ func (k Keeper) ConvertIntoVestingAccount(
 	bondDenom := k.stakingKeeper.BondDenom(ctx)
 	targetAccount := k.accountKeeper.GetAccount(ctx, targetAddress)
 
+	k.Logger(ctx).Info(fmt.Sprintf("[ConvertIntoVestingAccount] Handle message: %s", msg.String()))
+
 	if targetAccount == nil {
 		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", msg.EthAddress)
 	}
@@ -348,6 +351,8 @@ func (k Keeper) ConvertIntoVestingAccount(
 			"%s is not allowed to be converted into vesting", msg.EthAddress,
 		)
 	}
+
+	k.Logger(ctx).Info(fmt.Sprintf("[ConvertIntoVestingAccount] Check denom: bondDenom = %s, amountDenom = %s", bondDenom, msg.Amount.Denom))
 
 	// Check denom
 	if msg.Amount.Denom != bondDenom {
@@ -363,6 +368,9 @@ func (k Keeper) ConvertIntoVestingAccount(
 	balances := k.bankKeeper.GetAllBalances(ctx, targetAddress)
 	bondDenomBalance := balances.AmountOf(bondDenom)
 	oneISLM := sdk.NewCoin(bondDenom, sdk.NewInt(1000000000000000000))
+
+	k.Logger(ctx).Info(fmt.Sprintf("[ConvertIntoVestingAccount] Check balances for %s — %s", targetAddress.String(), balances.String()))
+
 	if bondDenomBalance.GTE(oneISLM.Amount) {
 		return nil, errorsmod.Wrapf(
 			errortypes.ErrInvalidRequest,
@@ -378,9 +386,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 	var isClawback bool
 
 	// TODO Set startDate or lockLength based on msg.LongTerm value
-	//twoYears := time.Hour * 24 * 365 * 2
 	lockLength := time.Minute * 5
-	startNow := time.Now()
 	vestingCoins := sdk.NewCoins(msg.Amount)
 
 	// Setup default locking and vesting periods
@@ -404,6 +410,8 @@ func (k Keeper) ConvertIntoVestingAccount(
 		)
 		acc := k.accountKeeper.NewAccount(ctx, vestingAcc)
 		k.accountKeeper.SetAccount(ctx, acc)
+
+		k.Logger(ctx).Info(fmt.Sprintf("[ConvertIntoVestingAccount] New clawback account: %s", vestingAcc.String()))
 
 		madeNewAcc = true
 	} else {
@@ -436,10 +444,22 @@ func (k Keeper) ConvertIntoVestingAccount(
 		}()
 	}
 
+	// TODO Remove
+	//kvsk := sdk.NewKVStoreKey("bank")
+	//bankStore := ctx.KVStore(kvsk)
+
+	balBefore := k.bankKeeper.GetAllBalances(ctx, targetAddress)
+	k.Logger(ctx).Info(fmt.Sprintf("Bank balance before — %s: %s", targetAddress.String(), balBefore.AmountOf(bondDenom).String()))
+	k.Logger(ctx).Info(fmt.Sprintf("Bank->SendCoins: %s -> %s -> %s", funder.String(), vestingCoins.String(), targetAddress.String()))
+
 	// Send coins from the funder to vesting account
 	if err := k.bankKeeper.SendCoins(ctx, funder, targetAddress, vestingCoins); err != nil {
 		return nil, err
 	}
+
+	// TODO Remove
+	balAfter := k.bankKeeper.GetAllBalances(ctx, targetAddress)
+	k.Logger(ctx).Info(fmt.Sprintf("Bank balance after — %s: %s", targetAddress.String(), balAfter.AmountOf(bondDenom).String()))
 
 	// TODO Set certain validator
 	validators := k.stakingKeeper.GetAllValidators(ctx)
