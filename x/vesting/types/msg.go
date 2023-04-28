@@ -238,7 +238,7 @@ func NewMsgConvertIntoVestingAccount(
 ) *MsgConvertIntoVestingAccount {
 	return &MsgConvertIntoVestingAccount{
 		FromAddress: funder.String(),
-		EthAddress:  common.Bytes2Hex(address.Bytes()),
+		EthAddress:  common.BytesToAddress(address.Bytes()).Hex(),
 		StartTime:   startTime,
 		Amount:      amount,
 		LongTerm:    longTerm,
