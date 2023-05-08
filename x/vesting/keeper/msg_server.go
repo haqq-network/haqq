@@ -532,11 +532,41 @@ func (k Keeper) UpdateVestingSchedule(
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "schedule update can only be requested by original funder %s", va.FunderAddress)
 	}
 
-	// TODO Setup rules
-	// Return error if schedule update is attempted after start time
-	//if ctx.BlockTime().After(va.StartTime) {
-	//	return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "schedule update can only be executed before vesting begins: %s", va.FunderAddress)
-	//}
+	// Verify schedule amounts if update is attempted after start time
+	// Check vested and unlocked amounts if existing start time before or equal to new one
+	if ctx.BlockTime().After(va.StartTime) || ctx.BlockTime().After(msg.GetStartTime()) || va.StartTime.After(msg.GetStartTime()) {
+		vestedAmount := va.GetVestedOnly(ctx.BlockTime())
+		newVestedAmount := types.ReadSchedule(
+			msg.GetStartTime().Unix(),
+			msg.GetStartTime().Add(msg.GetVestingPeriods().TotalDuration()).Unix(),
+			msg.GetVestingPeriods(),
+			msg.GetVestingPeriods().TotalAmount(),
+			ctx.BlockTime().Unix(),
+		)
+
+		// The already vested amount must be less or equal to newly vested amount.
+		if !(vestedAmount.IsAllLTE(newVestedAmount)) {
+			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest,
+				"already vested and newly vested amounts must be equal",
+			)
+		}
+
+		unlockedAmount := va.GetUnlockedOnly(ctx.BlockTime())
+		newUnlockedAmount := types.ReadSchedule(
+			msg.GetStartTime().Unix(),
+			msg.GetStartTime().Add(msg.GetLockupPeriods().TotalDuration()).Unix(),
+			msg.GetLockupPeriods(),
+			msg.GetLockupPeriods().TotalAmount(),
+			ctx.BlockTime().Unix(),
+		)
+
+		// The already unlocked amount must be less or equal to newly unlocked amount.
+		if !(unlockedAmount.IsAllLTE(newUnlockedAmount)) {
+			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest,
+				"already unlocked and newly unlocked amounts must be equal",
+			)
+		}
+	}
 
 	vestingCoins := msg.VestingPeriods.TotalAmount()
 	lockupCoins := msg.LockupPeriods.TotalAmount()
