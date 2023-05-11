@@ -13,19 +13,20 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
 	"github.com/evmos/ethermint/tests"
-	"github.com/evmos/evmos/v10/testutil"
 
+	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
 var (
-	balances       = sdk.NewCoins(sdk.NewInt64Coin("test", 1000))
-	quarter        = sdk.NewCoins(sdk.NewInt64Coin("test", 250))
+	balances       = sdk.NewCoins(sdk.NewInt64Coin("aphoton", 1000))
+	quarter        = sdk.NewCoins(sdk.NewInt64Coin("aphoton", 250))
 	addr           = sdk.AccAddress(tests.GenerateAddress().Bytes())
 	addr2          = sdk.AccAddress(tests.GenerateAddress().Bytes())
 	addr3          = sdk.AccAddress(tests.GenerateAddress().Bytes())
 	addr4          = sdk.AccAddress(tests.GenerateAddress().Bytes())
+	addr5          = sdk.AccAddress(tests.GenerateAddress().Bytes())
 	lockupPeriods  = sdkvesting.Periods{{Length: 5000, Amount: balances}}
 	vestingPeriods = sdkvesting.Periods{
 		{Length: 2000, Amount: quarter},
@@ -204,8 +205,8 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			res, err := suite.app.VestingKeeper.CreateClawbackVestingAccount(ctx, msg)
 
 			expRes := &types.MsgCreateClawbackVestingAccountResponse{}
-			balanceSource := suite.app.BankKeeper.GetBalance(suite.ctx, tc.from, "test")
-			balanceDest := suite.app.BankKeeper.GetBalance(suite.ctx, tc.to, "test")
+			balanceSource := suite.app.BankKeeper.GetBalance(suite.ctx, tc.from, "aphoton")
+			balanceDest := suite.app.BankKeeper.GetBalance(suite.ctx, tc.to, "aphoton")
 
 			if tc.expectPass {
 				suite.Require().NoError(err, tc.name)
@@ -214,8 +215,8 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 				accI := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.to)
 				suite.Require().NotNil(accI)
 				suite.Require().IsType(&types.ClawbackVestingAccount{}, accI)
-				suite.Require().Equal(sdk.NewInt64Coin("test", 0), balanceSource)
-				suite.Require().Equal(sdk.NewInt64Coin("test", 1000+tc.expectExtraBalance), balanceDest)
+				suite.Require().Equal(sdk.NewInt64Coin("aphoton", 0), balanceSource)
+				suite.Require().Equal(sdk.NewInt64Coin("aphoton", 1000+tc.expectExtraBalance), balanceDest)
 			} else {
 				suite.Require().Error(err, tc.name)
 			}
@@ -312,8 +313,8 @@ func (suite *KeeperTestSuite) TestMsgClawback() {
 			suite.Require().NoError(err)
 			suite.Require().NotNil(createRes)
 
-			balanceDest := suite.app.BankKeeper.GetBalance(suite.ctx, addr2, "test")
-			suite.Require().Equal(balanceDest, sdk.NewInt64Coin("test", 1000))
+			balanceDest := suite.app.BankKeeper.GetBalance(suite.ctx, addr2, "aphoton")
+			suite.Require().Equal(balanceDest, sdk.NewInt64Coin("aphoton", 1000))
 
 			tc.malleate()
 
@@ -322,16 +323,16 @@ func (suite *KeeperTestSuite) TestMsgClawback() {
 			res, err := suite.app.VestingKeeper.Clawback(ctx, msg)
 
 			expRes := &types.MsgClawbackResponse{}
-			balanceDest = suite.app.BankKeeper.GetBalance(suite.ctx, addr2, "test")
-			balanceClaw := suite.app.BankKeeper.GetBalance(suite.ctx, tc.dest, "test")
+			balanceDest = suite.app.BankKeeper.GetBalance(suite.ctx, addr2, "aphoton")
+			balanceClaw := suite.app.BankKeeper.GetBalance(suite.ctx, tc.dest, "aphoton")
 			if len(tc.dest) == 0 {
-				balanceClaw = suite.app.BankKeeper.GetBalance(suite.ctx, tc.funder, "test")
+				balanceClaw = suite.app.BankKeeper.GetBalance(suite.ctx, tc.funder, "aphoton")
 			}
 
 			if tc.expectedPass {
 				suite.Require().NoError(err)
 				suite.Require().Equal(expRes, res)
-				suite.Require().Equal(sdk.NewInt64Coin("test", 0), balanceDest)
+				suite.Require().Equal(sdk.NewInt64Coin("aphoton", 0), balanceDest)
 				suite.Require().Equal(balances[0], balanceClaw)
 			} else {
 				suite.Require().Error(err)
@@ -414,8 +415,8 @@ func (suite *KeeperTestSuite) TestMsgUpdateVestingFunder() {
 			suite.Require().NoError(err)
 			suite.Require().NotNil(createRes)
 
-			balanceDest := suite.app.BankKeeper.GetBalance(suite.ctx, addr2, "test")
-			suite.Require().Equal(balanceDest, sdk.NewInt64Coin("test", 1000))
+			balanceDest := suite.app.BankKeeper.GetBalance(suite.ctx, addr2, "aphoton")
+			suite.Require().Equal(balanceDest, sdk.NewInt64Coin("aphoton", 1000))
 
 			tc.malleate()
 
@@ -583,6 +584,146 @@ func (suite *KeeperTestSuite) TestConvertVestingAccount() {
 			_, ok = account.(ethtypes.EthAccountI)
 			suite.Require().True(ok)
 
+		} else {
+			suite.Require().Error(err)
+			suite.Require().Nil(res)
+		}
+	}
+}
+
+func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
+	//startTime := s.ctx.BlockTime().Add(-5 * time.Second)
+	testCases := []struct {
+		name     string
+		malleate func() (from, to authtypes.AccountI, amount sdk.Coin)
+		expPass  bool
+	}{
+		{
+			"fail - no account found",
+			func() (fromAcc, toAcc authtypes.AccountI, amount sdk.Coin) {
+				bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+
+				from, fromPriv := utiltx.NewAccAddressAndKey()
+				fromAcc = authtypes.NewBaseAccount(from, fromPriv.PubKey(), 1, 5)
+				fromBalance := sdk.NewInt64Coin(bondDenom, 5000000000000000000)                             // 5 ISLM
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, fromAcc.GetAddress(), sdk.Coins{fromBalance}) //nolint:errcheck
+
+				to, toPriv := utiltx.NewAccAddressAndKey()
+				toAcc = authtypes.NewBaseAccount(to, toPriv.PubKey(), 2, 6)
+				amount = sdk.NewInt64Coin(bondDenom, 1000000000000000000)
+				return
+			},
+			false,
+		},
+		{
+			"fail - vesting denom not equal to bond denom",
+			func() (fromAcc, toAcc authtypes.AccountI, amount sdk.Coin) {
+				from, priv := utiltx.NewAccAddressAndKey()
+				fromAcc = authtypes.NewBaseAccount(from, priv.PubKey(), 3, 7)
+				fromBalance := sdk.NewInt64Coin("nBND", 5000000000000000000)                                // 5 nBND
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, fromAcc.GetAddress(), sdk.Coins{fromBalance}) //nolint:errcheck
+
+				to, toPriv := utiltx.NewAccAddressAndKey()
+				toAcc = authtypes.NewBaseAccount(to, toPriv.PubKey(), 4, 8)
+				amount = sdk.NewInt64Coin("nBND", 1000000000000000000)
+
+				suite.app.AccountKeeper.SetAccount(suite.ctx, fromAcc)
+				suite.app.AccountKeeper.SetAccount(suite.ctx, toAcc)
+				return
+			},
+			false,
+		},
+		{
+			"fail - target balance greater than allowed staking denom balance",
+			func() (fromAcc, toAcc authtypes.AccountI, amount sdk.Coin) {
+				bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+
+				from, fromPriv := utiltx.NewAccAddressAndKey()
+				fromAcc = authtypes.NewBaseAccount(from, fromPriv.PubKey(), 5, 9)
+				fromBalance := sdk.NewInt64Coin(bondDenom, 5000000000000000000)                             // 5 ISLM
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, fromAcc.GetAddress(), sdk.Coins{fromBalance}) //nolint:errcheck
+
+				to, toPriv := utiltx.NewAccAddressAndKey()
+				toAcc = authtypes.NewBaseAccount(to, toPriv.PubKey(), 6, 10)
+				toBalance := sdk.NewInt64Coin(bondDenom, 2000000000000000000)                           // 2 ISLM
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, toAcc.GetAddress(), sdk.Coins{toBalance}) //nolint:errcheck
+				amount = sdk.NewInt64Coin(bondDenom, 1000000000000000000)
+
+				suite.app.AccountKeeper.SetAccount(suite.ctx, fromAcc)
+				suite.app.AccountKeeper.SetAccount(suite.ctx, toAcc)
+				return
+			},
+			false,
+		},
+		{
+			"fail - insufficient funds on fromAccount",
+			func() (fromAcc, toAcc authtypes.AccountI, amount sdk.Coin) {
+				bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+
+				from, fromPriv := utiltx.NewAccAddressAndKey()
+				fromAcc = authtypes.NewBaseAccount(from, fromPriv.PubKey(), 7, 11)
+				fromBalance := sdk.NewInt64Coin(bondDenom, 5000000000000000000)                             // 5 ISLM
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, fromAcc.GetAddress(), sdk.Coins{fromBalance}) //nolint:errcheck
+
+				to, toPriv := utiltx.NewAccAddressAndKey()
+				toAcc = authtypes.NewBaseAccount(to, toPriv.PubKey(), 8, 12)
+				toBalance := sdk.NewInt64Coin(bondDenom, 999000000000000000)                            // 0.999 ISLM
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, toAcc.GetAddress(), sdk.Coins{toBalance}) //nolint:errcheck
+				amount = sdk.NewInt64Coin(bondDenom, 7000000000000000000)
+
+				suite.app.AccountKeeper.SetAccount(suite.ctx, fromAcc)
+				suite.app.AccountKeeper.SetAccount(suite.ctx, toAcc)
+				return
+			},
+			false,
+		},
+		{
+			"success - create staked vesting",
+			func() (fromAcc, toAcc authtypes.AccountI, amount sdk.Coin) {
+				bondDenom := suite.app.StakingKeeper.BondDenom(suite.ctx)
+
+				from, fromPriv := utiltx.NewAccAddressAndKey()
+				fromAcc = authtypes.NewBaseAccount(from, fromPriv.PubKey(), 9, 13)
+				fromBalance := sdk.NewInt64Coin(bondDenom, 5000000000000000000)                             // 5 ISLM
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, fromAcc.GetAddress(), sdk.Coins{fromBalance}) //nolint:errcheck
+
+				to, toPriv := utiltx.NewAccAddressAndKey()
+				toAcc = authtypes.NewBaseAccount(to, toPriv.PubKey(), 10, 14)
+				toBalance := sdk.NewInt64Coin(bondDenom, 999000000000000000)                            // 0.999 ISLM
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, toAcc.GetAddress(), sdk.Coins{toBalance}) //nolint:errcheck
+				amount = sdk.NewInt64Coin(bondDenom, 2000000000000000000)                               // 2 ISLM
+
+				suite.app.AccountKeeper.SetAccount(suite.ctx, fromAcc)
+				suite.app.AccountKeeper.SetAccount(suite.ctx, toAcc)
+				return
+			},
+			true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.SetupTest() // reset
+		ctx := sdk.WrapSDKContext(suite.ctx)
+
+		fromAcc, toAcc, amount := tc.malleate()
+
+		msg := types.NewMsgConvertIntoVestingAccount(fromAcc.GetAddress(), toAcc.GetAddress(), time.Now(), amount, true)
+		res, err := suite.app.VestingKeeper.ConvertIntoVestingAccount(ctx, msg)
+
+		if tc.expPass {
+			suite.Require().NoError(err)
+			suite.Require().NotNil(res)
+
+			account := suite.app.AccountKeeper.GetAccount(suite.ctx, toAcc.GetAddress())
+
+			_, ok := account.(vestingexported.VestingAccount)
+			suite.Require().True(ok)
+
+			_, ok = account.(ethtypes.EthAccountI)
+			suite.Require().False(ok)
+
+			staked := suite.app.StakingKeeper.GetDelegatorDelegations(suite.ctx, toAcc.GetAddress(), 32)
+			suite.Require().NotEmpty(staked)
 		} else {
 			suite.Require().Error(err)
 			suite.Require().Nil(res)
