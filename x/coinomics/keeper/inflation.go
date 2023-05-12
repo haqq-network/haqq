@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
@@ -72,7 +74,12 @@ func (k Keeper) MintAndAllocateInflation(ctx sdk.Context) error {
 	params := k.GetParams(ctx)
 	eraTargetMint := k.GetEraTargetMint(ctx)
 
-	totalMintOnBlockInt := eraTargetMint.Amount.Quo(sdk.NewInt(int64(params.BlocksPerEra)))
+	// BlocksPerEra is unsigned and can't be negative, so check only for zero value
+	if params.BlocksPerEra == 0 {
+		return errors.New("BlocksPerEra is zero")
+	}
+
+	totalMintOnBlockInt := eraTargetMint.Amount.Quo(sdk.NewIntFromUint64(params.BlocksPerEra))
 	totalMintOnBlockCoin := sdk.NewCoin(params.MintDenom, totalMintOnBlockInt)
 
 	// Mint coins to coinomics module
