@@ -15,6 +15,12 @@ func (k Keeper) EndBlocker(ctx sdk.Context) {
 
 	currentBlock := uint64(ctx.BlockHeight())
 	currentEra := k.GetEra(ctx)
+
+	// Short-circuit as all inflation calculations will be 0 after 50 eras (100 years) have passed
+	if currentEra > 50 {
+		return
+	}
+
 	eraForBlock := k.CountEraForBlock(ctx, params, currentEra, currentBlock)
 
 	if currentEra != eraForBlock {
@@ -32,6 +38,7 @@ func (k Keeper) EndBlocker(ctx sdk.Context) {
 		k.SetInflation(ctx, nextEraInflation)
 	}
 
-	//nolint:errcheck
-	k.MintAndAllocateInflation(ctx)
+	if err := k.MintAndAllocateInflation(ctx); err != nil {
+		ctx.Logger().Error("Failed MintAndAllocateInflation: ", err.Error())
+	}
 }
