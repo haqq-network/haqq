@@ -24,7 +24,7 @@ div
         .features__item__text
           .features__item__text__h2 use
           .features__item__text__h1 Guides
-          .features__item__text__p Follow guides to using popular Ethereum tools with Haqq.
+          .features__item__text__p Follow guides to using popular Ethereum tools with HAQQ.
     .sections__wrapper
       .h2 Explore Haqq
       .p__alt Get familiar with Haqq and explore its main concepts.
@@ -138,7 +138,7 @@ div
     box-shadow: 0px 2px 4px rgba(22, 25, 49, 0.05), 0px 0px 1px rgba(22, 25, 49, 0.2), 0px 0.5px 0px rgba(22, 25, 49, 0.05);
     position: relative;
     border-radius: 0.5rem;
-    background: linear-gradient(281.08deg, #FFFFFF 48.96%, #E8F3FF 100%);
+    background: linear-gradient(80deg, #FFFFFF 52%, rgba(#ec5728 0.3) 100%);
     outline: none;
     transition: box-shadow 0.25s ease-out, transform 0.25s ease-out, opacity 0.4s ease-out;
 
@@ -153,23 +153,23 @@ div
       transition-duration: 0s;
     }
 
-    &__dark {
-      background: linear-gradient(112.22deg, #161831 0%, #2E3148 100%);
-    }
+    // &__dark {
+    //  background: linear-gradient(112.22deg, #161831 0%, #2E3148 100%);
+    // }
 
-    &__dark &__text__h2 {
-      color: white;
-      opacity: 0.5;
-    }
+    // &__dark &__text__h2 {
+    //   color: white;
+    //   opacity: 0.5;
+    // }
 
-    &__dark &__text__h1 {
-      color: white;
-    }
+    // &__dark &__text__h1 {
+    //   color: white;
+    // }
 
-    &__dark &__text__p {
-      color: white;
-      opacity: 0.8;
-    }
+    // &__dark &__text__p {
+    //   color: white;
+    //   opacity: 0.8;
+    // }
 
     &__icon {
       position: absolute;
@@ -201,9 +201,11 @@ div
       }
     }
 
-    &:hover:not(:active) &__image {
-      transform: translateY(-0.25rem) scale(1.02);
-      transition-duration: 0.1s;
+    &:hover:not(:active) {
+      &__image {
+        transform: translateY(-0.25rem) scale(1.02);
+        transition-duration: 125ms;
+      }
     }
 
     &__text {

@@ -11,7 +11,7 @@ This document describes the in-built accounts system of Haqq. {synopsis}
 - [Cosmos SDK Accounts](https://docs.cosmos.network/master/basics/accounts.html) {prereq}
 - [Ethereum Accounts](https://ethereum.org/en/whitepaper/#ethereum-accounts) {prereq}
 
-## Haqq Accounts
+## HAQQ Accounts
 
 Haqq defines its own custom `Account` type that uses Ethereum's ECDSA secp256k1 curve for keys. This
 satisfies the [EIP84](https://github.com/ethereum/EIPs/issues/84) for full [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) paths.

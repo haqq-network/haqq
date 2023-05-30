@@ -14,7 +14,7 @@ Learn about the Haqq chain-id format {synopsis}
 | Name                              | Chain ID                                              | Identifier | EIP155 Number                                 | Version Number                                      |
 |-----------------------------------|-------------------------------------------------------|------------|-----------------------------------------------|-----------------------------------------------------|
 | Haqq TestNow | `haqq_{{ $themeConfig.project.testnet_chain_id }}-1` | `haqq`    | `{{ $themeConfig.project.testnet_chain_id }}` | `1.2.0` |
-| Haqq TestEdge                | `haqq_54211-3` | `haqq`    | `54211` | `1.2.0`                                                 |
+| Haqq TestEdge-2 | `haqq_54211-3` | `haqq`    | `54211` | `1.2.0`                                                 |
 
 :::
 ::: tab Mainnet

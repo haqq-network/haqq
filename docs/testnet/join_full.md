@@ -9,9 +9,9 @@ You specify the network you want to join by setting the **genesis file** and **s
 | haqq_54211-3 | Haqq TestEdge | v1.3.0 | Live | This test network contains features which we plan to release on Haqq Mainnet. |
 | haqq_112357-1 | Haqq TestNow | v1.0.3 | WIP | This test network is functionally equivalent to the current Haqq Mainnet and it built for developers and exchanges who are integrating with Haqq. |
 
-## Preresquisites
+## Requirements
 - `make` & `gcc` 
-- `Go 1.18+` [Install Go](https://go.dev/doc/install)
+- `Go 1.19+` [Install Go](https://go.dev/doc/install)
 
 ## Install `haqqd`
 
@@ -19,7 +19,7 @@ Follow the [installation](./../quickstart/installation.md) document to install t
 
 ```
 ❗️Warning❗️
-Make sure you have the right version of haqqd installed.
+Make sure you have the right version of `haqqd` installed.
 ```
 
 ### Save Chain ID
@@ -185,7 +185,7 @@ haqqd debug addr <your_account_address>
 ```
 
 After that you can transfer some ISLM to your validator address.
-If you don't have ISLM you can recive it using our [faucet](./../../testnet/faucet.md)
+If you don't have ISLM you can receive it using our [faucet](./../../testnet/faucet.md)
 
 Claim your testnet ISLM on the [faucet](./faucet.md) using your validator account address and submit your validator account address:
 
@@ -223,7 +223,7 @@ haqqd tendermint show-address
 
 ## Staking delegate
 
-Deligate some ISLM to your validator and make sure that deligation ISLM amount is not more than you have in balance.
+Delegate some ISLM to your validator and make sure that delegation ISLM amount is not more than you have in balance.
 
 ```sh
 haqqd tx staking delegate <your_account_tendermint_address> <quantity_ISLM> --from <your_key> -y
@@ -287,10 +287,10 @@ haqqd start
 ```
 
 ## Unjail Validator
-When a validator is "jailed" for downtime, you must submit an Unjail transaction from the operator account in order to be able to get block proposer rewards again (depends on the zone fee distribution).
+When a validator is "jailed" for downtime, you must submit an `Unjail` transaction from the operator account in order to be able to get block proposer rewards again (depends on the zone fee distribution).
 
 ```sh
-haaqd tx slashing unjail \
+haqqd tx slashing unjail \
   --from=<key_name> \
   --chain-id=<chain_id>
 ```

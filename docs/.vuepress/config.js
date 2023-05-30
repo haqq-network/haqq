@@ -1,6 +1,6 @@
 module.exports = {
   theme: 'cosmos',
-  title: 'Haqq Documentation',
+  title: 'HAQQ Documentation',
   locales: {
     '/': {
       lang: 'en-US'
@@ -55,7 +55,7 @@ module.exports = {
       block_explorer_url: 'https://explorer.haqq.network/',
     },
     logo: {
-      src: '/haqq1.svg',
+      src: '/haqq_logo.svg',
     },
     topbar: {
       banner: false
@@ -127,6 +127,11 @@ module.exports = {
           title: 'APIs',
           children: [
             {
+              title: 'Networks',
+              directory: false,
+              path: '/api/networks'
+            },
+            {
               title: 'JSON-RPC',
               directory: true,
               path: '/api/json-rpc'
@@ -189,8 +194,12 @@ module.exports = {
               path: '/tools/explorers'
             },
             {
-              title: 'Haqq explorer',
+              title: 'Mainnet // EVM layer',
               path: 'https://explorer.haqq.network/'
+            },
+            {
+              title: 'Mainnet // Cosmos layer',
+              path: 'https://pingpub.explorer.haqq.network'
             },
           ]
         },
@@ -210,7 +219,7 @@ module.exports = {
       ]
     },
     footer: {
-      logo: '/haqq1.svg',
+      logo: '/haqq_logo.svg',
       textLink: {
         //text: 'Haqq Network',
         url: 'https://docs.haqq.network'
