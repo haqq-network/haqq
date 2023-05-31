@@ -147,6 +147,7 @@ import (
 	v121 "github.com/haqq-network/haqq/app/upgrades/v1.2.1"
 	v130 "github.com/haqq-network/haqq/app/upgrades/v1.3.0"
 	v131 "github.com/haqq-network/haqq/app/upgrades/v1.3.1"
+	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
 )
 
 func init() {
@@ -1086,6 +1087,10 @@ func (app *Haqq) setupUpgradeHandlers() {
 	case v130.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{coinomicstypes.ModuleName},
+		}
+	case v140.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{vestingtypes.ModuleName},
 		}
 	}
 
