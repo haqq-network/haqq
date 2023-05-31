@@ -62,7 +62,6 @@ func NewTxCmd() *cobra.Command {
 		NewMsgUpdateVestingFunderCmd(),
 		NewMsgConvertVestingAccountCmd(),
 		NewMsgConvertIntoVestingAccountCmd(),
-		NewMsgUpdateVestingScheduleCmd(),
 	)
 
 	return txCmd
@@ -322,93 +321,6 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 	}
 
 	cmd.Flags().String(FlagLongTerm, "", "Set long term locking period for vesting")
-	flags.AddTxFlagsToCmd(cmd)
-	return cmd
-}
-
-func NewMsgUpdateVestingScheduleCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "update-vesting-schedule VESTING_ACCOUNT_ADDRESS",
-		Short: "Update the vesting schedule of an existing ClawbackVestingAccount.",
-		Long: `Must be requested by the original funder address (--from).
-Need to provide the target VESTING_ACCOUNT_ADDRESS to update and a lockup periods file (--lockup),
-a vesting periods file (--vesting), or both.
-If both files are given, they must describe schedules for the same total amount.
-If one file is omitted, it will default to a schedule that immediately unlocks or vests the entire amount.
-The new periods must describe schedules for the same total amount as an original vesting periods.
-
-Coins may not be transferred out of the account if they are locked or unvested. Only vested coins may be staked.
-
-A periods file is a JSON object describing a sequence of unlocking or vesting events,
-with a start time and an array of coins strings and durations relative to the start or previous event.`,
-		Example: `Sample period file contents:
-{
-  "start_time": 1625204910,
-  "periods": [
-    {
-      "coins": "10test",
-      "length_seconds": 2592000 //30 days
-    },
-    {
-      "coins": "10test",
-      "length_seconds": 2592000 //30 days
-    }
-  ]
-}`,
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			var (
-				lockupStart, vestingStart     int64
-				lockupPeriods, vestingPeriods sdkvesting.Periods
-			)
-
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			vestingAddress, err := sdk.AccAddressFromBech32(args[0])
-			if err != nil {
-				return err
-			}
-
-			lockupFile, _ := cmd.Flags().GetString(FlagLockup)
-			vestingFile, _ := cmd.Flags().GetString(FlagVesting)
-			if lockupFile == "" && vestingFile == "" {
-				return fmt.Errorf("must specify at least one of %s or %s", FlagLockup, FlagVesting)
-			}
-			if lockupFile != "" {
-				lockupStart, lockupPeriods, err = ReadScheduleFile(lockupFile)
-				if err != nil {
-					return err
-				}
-			}
-			if vestingFile != "" {
-				vestingStart, vestingPeriods, err = ReadScheduleFile(vestingFile)
-				if err != nil {
-					return err
-				}
-			}
-
-			commonStart, _ := types.AlignSchedules(lockupStart, vestingStart, lockupPeriods, vestingPeriods)
-
-			msg := types.NewMsgUpdateVestingSchedule(
-				clientCtx.GetFromAddress(),
-				vestingAddress,
-				time.Unix(commonStart, 0),
-				lockupPeriods,
-				vestingPeriods,
-			)
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
-
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
-		},
-	}
-
-	cmd.Flags().String(FlagLockup, "", "path to file containing unlocking periods")
-	cmd.Flags().String(FlagVesting, "", "path to file containing vesting periods")
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }

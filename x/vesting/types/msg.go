@@ -16,7 +16,6 @@ var (
 	_ sdk.Msg = &MsgConvertVestingAccount{}
 	_ sdk.Msg = &MsgUpdateVestingFunder{}
 	_ sdk.Msg = &MsgConvertIntoVestingAccount{}
-	_ sdk.Msg = &MsgUpdateVestingSchedule{}
 )
 
 const (
@@ -282,69 +281,4 @@ func (msg *MsgConvertIntoVestingAccount) GetSignBytes() []byte {
 func (msg MsgConvertIntoVestingAccount) GetSigners() []sdk.AccAddress {
 	from := sdk.MustAccAddressFromBech32(msg.FromAddress)
 	return []sdk.AccAddress{from}
-}
-
-// NewMsgUpdateVestingSchedule creates new instance of MsgUpdateVestingSchedule
-func NewMsgUpdateVestingSchedule(
-	funder, vesting sdk.AccAddress,
-	startTime time.Time,
-	lockupPeriods,
-	vestingPeriods sdkvesting.Periods,
-) *MsgUpdateVestingSchedule {
-	return &MsgUpdateVestingSchedule{
-		FunderAddress:  funder.String(),
-		VestingAddress: vesting.String(),
-		StartTime:      startTime,
-		LockupPeriods:  lockupPeriods,
-		VestingPeriods: vestingPeriods,
-	}
-}
-
-// Route returns the message route for a MsgUpdateVestingFunder.
-func (msg MsgUpdateVestingSchedule) Route() string { return RouterKey }
-
-// Type returns the message type for a MsgUpdateVestingFunder.
-func (msg MsgUpdateVestingSchedule) Type() string { return TypeMsgUpdateVestingSchedule }
-
-// ValidateBasic runs stateless checks on the MsgUpdateVestingFunder message
-func (msg MsgUpdateVestingSchedule) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.GetVestingAddress()); err != nil {
-		return errorsmod.Wrapf(err, "invalid vesting account address")
-	}
-
-	lockupCoins := sdk.NewCoins()
-	for i, period := range msg.LockupPeriods {
-		if period.Length < 1 {
-			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
-		}
-		lockupCoins = lockupCoins.Add(period.Amount...)
-	}
-
-	vestingCoins := sdk.NewCoins()
-	for i, period := range msg.VestingPeriods {
-		if period.Length < 1 {
-			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
-		}
-		vestingCoins = vestingCoins.Add(period.Amount...)
-	}
-
-	// If both schedules are present, the must describe the same total amount.
-	// IsEqual can panic, so use (a == b) <=> (a <= b && b <= a).
-	if len(msg.LockupPeriods) > 0 && len(msg.VestingPeriods) > 0 &&
-		!(lockupCoins.IsAllLTE(vestingCoins) && vestingCoins.IsAllLTE(lockupCoins)) {
-		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "vesting and lockup schedules must have same total coins")
-	}
-
-	return nil
-}
-
-// GetSignBytes encodes the message for signing
-func (msg *MsgUpdateVestingSchedule) GetSignBytes() []byte {
-	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
-}
-
-// GetSigners defines whose signature is required
-func (msg MsgUpdateVestingSchedule) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.FunderAddress)
-	return []sdk.AccAddress{funder}
 }

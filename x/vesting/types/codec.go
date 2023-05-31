@@ -26,7 +26,6 @@ const (
 	updateVestingFunder          = "evmos/MsgUpdateVestingFunder"
 	convertVestingAccount        = "evmos/MsgConvertVestingAccount"
 	convertIntoVestingAccount    = "evmos/MsgConvertIntoVestingAccount"
-	updateVestingSchedule        = "evmos/MsgUpdateVestingSchedule"
 )
 
 // NOTE: This is required for the GetSignBytes function
@@ -65,7 +64,6 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		&MsgUpdateVestingFunder{},
 		&MsgConvertVestingAccount{},
 		&MsgConvertIntoVestingAccount{},
-		&MsgUpdateVestingSchedule{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
@@ -80,5 +78,4 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgUpdateVestingFunder{}, updateVestingFunder, nil)
 	cdc.RegisterConcrete(&MsgConvertVestingAccount{}, convertVestingAccount, nil)
 	cdc.RegisterConcrete(&MsgConvertIntoVestingAccount{}, convertIntoVestingAccount, nil)
-	cdc.RegisterConcrete(&MsgUpdateVestingSchedule{}, updateVestingSchedule, nil)
 }
