@@ -18,7 +18,7 @@ package types
 
 const (
 	// ModuleName defines the module's name.
-	ModuleName = "vesting"
+	ModuleName = "haqqvesting"
 
 	// StoreKey to be used when creating the KVStore
 	StoreKey = ModuleName
