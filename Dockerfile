@@ -3,13 +3,13 @@ FROM golang:1.19-alpine3.17 AS build-env
 RUN apk add --no-cache --update \
   ca-certificates \
   git \
+  gcc \
   make
 
 WORKDIR /go/src/github.com/haqq-network/haqq
 
 COPY . .
 ENV CGO_ENABLED=0
-ENV LEDGER_ENABLED=false
 
 RUN make build
 
