@@ -115,7 +115,6 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/evmos/ethermint/client/docs/statik"
 
-	"github.com/evmos/evmos/v10/app/ante"
 	"github.com/evmos/evmos/v10/x/epochs"
 	epochskeeper "github.com/evmos/evmos/v10/x/epochs/keeper"
 	epochstypes "github.com/evmos/evmos/v10/x/epochs/types"
@@ -123,6 +122,7 @@ import (
 	erc20client "github.com/evmos/evmos/v10/x/erc20/client"
 	erc20keeper "github.com/evmos/evmos/v10/x/erc20/keeper"
 	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/haqq-network/haqq/app/ante"
 
 	// "github.com/evmos/evmos/v8/x/incentives"
 	// incentivesclient "github.com/evmos/evmos/v8/x/incentives/client"
@@ -131,9 +131,10 @@ import (
 	// "github.com/evmos/evmos/v8/x/inflation"
 	// inflationkeeper "github.com/evmos/evmos/v8/x/inflation/keeper"
 	// inflationtypes "github.com/evmos/evmos/v8/x/inflation/types"
-	"github.com/evmos/evmos/v10/x/vesting"
-	vestingkeeper "github.com/evmos/evmos/v10/x/vesting/keeper"
-	vestingtypes "github.com/evmos/evmos/v10/x/vesting/types"
+
+	"github.com/haqq-network/haqq/x/vesting"
+	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 
@@ -146,6 +147,7 @@ import (
 	v121 "github.com/haqq-network/haqq/app/upgrades/v1.2.1"
 	v130 "github.com/haqq-network/haqq/app/upgrades/v1.3.0"
 	v131 "github.com/haqq-network/haqq/app/upgrades/v1.3.1"
+	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
 )
 
 func init() {
@@ -168,7 +170,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.3.1"
+	UpgradeName    = "v1.4.0"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -1067,6 +1069,19 @@ func (app *Haqq) setupUpgradeHandlers() {
 		),
 	)
 
+	// v1.4.0 update handler (Reset Coinomics for TestEdge2)
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v140.UpgradeName,
+		v140.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.StakingKeeper,
+			app.CoinomicsKeeper,
+			app.SlashingKeeper,
+			app.GovKeeper,
+		),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1085,6 +1100,10 @@ func (app *Haqq) setupUpgradeHandlers() {
 	case v130.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{coinomicstypes.ModuleName},
+		}
+	case v140.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{vestingtypes.ModuleName},
 		}
 	}
 
