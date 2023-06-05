@@ -76,7 +76,7 @@ func UpdateSlashingParams(ctx sdk.Context, slashingkeeper slashingkeeper.Keeper)
 func UpdateStakingParams(ctx sdk.Context, sk stakingkeeper.Keeper) error {
 	params := sk.GetParams(ctx)
 	params.MaxValidators = 150
-	params.MinCommissionRate = sdk.NewDecWithPrec(5, 3) // 5% (0.05)
+	params.MinCommissionRate = sdk.NewDecWithPrec(5, 2) // 5% (0.05)
 	sk.SetParams(ctx, params)
 
 	return nil
