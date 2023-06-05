@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"errors"
+	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/haqq-network/haqq/x/coinomics/types"
@@ -77,6 +78,11 @@ func (k Keeper) MintAndAllocateInflation(ctx sdk.Context) error {
 	// BlocksPerEra is unsigned and can't be negative, so check only for zero value
 	if params.BlocksPerEra == 0 {
 		return errors.New("BlocksPerEra is zero")
+	}
+
+	// Check if BlocksPerEra is within the uint64 range
+	if params.BlocksPerEra > math.MaxUint64 {
+		return errors.New("BlocksPerEra is out of uint64 range")
 	}
 
 	totalMintOnBlockInt := eraTargetMint.Amount.Quo(sdk.NewIntFromUint64(params.BlocksPerEra))
