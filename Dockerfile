@@ -1,18 +1,22 @@
-FROM golang:stretch AS build-env
+FROM golang:1.19-alpine3.17 AS build-env
+
+RUN apk add --no-cache --update \
+  ca-certificates \
+  git \
+  make
 
 WORKDIR /go/src/github.com/haqq-network/haqq
 
-RUN apt update
-RUN apt install git -y
-
 COPY . .
+ENV CGO_ENABLED=0
+ENV LEDGER_ENABLED=false
 
 RUN make build
 
-FROM golang:stretch
+FROM alpine:3.17
 
-RUN apt update
-RUN apt install ca-certificates jq -y
+RUN apk update
+RUN apk add ca-certificates jq
 
 WORKDIR /root
 
