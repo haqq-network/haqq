@@ -1077,6 +1077,8 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.configurator,
 			app.StakingKeeper,
 			app.CoinomicsKeeper,
+			app.SlashingKeeper,
+			app.GovKeeper,
 		),
 	)
 
