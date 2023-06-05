@@ -18,6 +18,7 @@ package keeper
 
 import (
 	"context"
+	"sort"
 	"strconv"
 	"time"
 
@@ -439,9 +440,14 @@ func (k Keeper) ConvertIntoVestingAccount(
 	}
 
 	// TODO Set certain validator
-	validators := k.stakingKeeper.GetAllValidators(ctx)
+	validators := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
 	// NOTE: source funds are always unbonded
-	newShares, err := k.stakingKeeper.Delegate(ctx, targetAddress, vestingCoins.AmountOf(bondDenom), stakingtypes.Unbonded, validators[0], true)
+
+	if len(validators) > 25 {
+		validators = validators[:25]
+	}
+
+	newShares, err := k.stakingKeeper.Delegate(ctx, targetAddress, vestingCoins.AmountOf(bondDenom), stakingtypes.Unbonded, validators[len(validators)-1], true)
 	if err != nil {
 		return nil, err
 	}
