@@ -18,7 +18,6 @@ package keeper
 
 import (
 	"context"
-	"sort"
 	"strconv"
 	"time"
 
