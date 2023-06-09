@@ -148,6 +148,7 @@ import (
 	v130 "github.com/haqq-network/haqq/app/upgrades/v1.3.0"
 	v131 "github.com/haqq-network/haqq/app/upgrades/v1.3.1"
 	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
+	v150 "github.com/haqq-network/haqq/app/upgrades/v1.5.0"
 )
 
 func init() {
@@ -170,7 +171,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.4.0"
+	UpgradeName    = "v1.5.0"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -227,7 +228,7 @@ var (
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		coinomicstypes.ModuleName:      {authtypes.Minter},
-		// incentivestypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
+		vestingtypes.ModuleName:        nil, // Add vesting module account
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -1079,6 +1080,20 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.CoinomicsKeeper,
 			app.SlashingKeeper,
 			app.GovKeeper,
+		),
+	)
+
+	// v1.5.0 update handler (Revesting all the accounts)
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v150.UpgradeName,
+		v150.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.AccountKeeper,
+			app.BankKeeper,
+			app.StakingKeeper,
+			app.EvmKeeper,
+			app.VestingKeeper,
 		),
 	)
 
