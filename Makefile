@@ -169,7 +169,7 @@ clean:
 
 all: build
 
-build-all: tools build lint test
+build-all: tools build lint test vulncheck
 
 .PHONY: distclean clean build-all
 
@@ -182,45 +182,46 @@ STATIK         = $(TOOLS_DESTDIR)/statik
 RUNSIM         = $(TOOLS_DESTDIR)/runsim
 
 # Install the runsim binary with a temporary workaround of entering an outside
-# directory as the "go get" command ignores the -mod option and will polute the
+# directory as the "go install" command ignores the -mod option and will polute the
 # go.{mod, sum} files.
 #
 # ref: https://github.com/golang/go/issues/30515
 runsim: $(RUNSIM)
 $(RUNSIM):
 	@echo "Installing runsim..."
-	@(cd /tmp && ${GO_MOD} go get github.com/cosmos/tools/cmd/runsim@master)
+	@(cd /tmp && ${GO_MOD} go install github.com/cosmos/tools/cmd/runsim@master)
 
 statik: $(STATIK)
 $(STATIK):
 	@echo "Installing statik..."
-	@(cd /tmp && go get github.com/rakyll/statik@v0.1.6)
+	@(cd /tmp && go install github.com/rakyll/statik@v0.1.6)
 
 contract-tools:
 ifeq (, $(shell which stringer))
 	@echo "Installing stringer..."
-	@go get golang.org/x/tools/cmd/stringer
+	@go install golang.org/x/tools/cmd/stringer@latest
 else
 	@echo "stringer already installed; skipping..."
 endif
 
 ifeq (, $(shell which go-bindata))
 	@echo "Installing go-bindata..."
-	@go get github.com/kevinburke/go-bindata/go-bindata
+	@go install github.com/kevinburke/go-bindata/go-bindata@latest
 else
 	@echo "go-bindata already installed; skipping..."
 endif
 
 ifeq (, $(shell which gencodec))
 	@echo "Installing gencodec..."
-	@go get github.com/fjl/gencodec
+	@go install github.com/fjl/gencodec@latest
 else
 	@echo "gencodec already installed; skipping..."
 endif
 
 ifeq (, $(shell which protoc-gen-go))
 	@echo "Installing protoc-gen-go..."
-	@go get github.com/fjl/gencodec github.com/golang/protobuf/protoc-gen-go
+	@go install github.com/fjl/gencodec@latest
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 else
 	@echo "protoc-gen-go already installed; skipping..."
 endif
@@ -231,6 +232,12 @@ ifeq (, $(shell which protoc))
 	@echo "linux: apt-get install -f -y protobuf-compiler"
 else
 	@echo "protoc already installed; skipping..."
+endif
+
+ifeq (, $(shell which protoc-gen-go-grpc))
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+else
+	@echo "protoc-gen-go-grpc already installed; skipping..."
 endif
 
 ifeq (, $(shell which solcjs))
@@ -265,12 +272,16 @@ docs-tools-stamp: docs-tools
 	# in a row.
 	touch $@
 
-.PHONY: runsim statik tools contract-tools docs-tools proto-tools  tools-stamp tools-clean docs-tools-stamp
+.PHONY: runsim statik tools contract-tools docs-tools proto-tools tools-stamp tools-clean docs-tools-stamp
 
 go.sum: go.mod
 	echo "Ensure dependencies have not been modified ..." >&2
 	go mod verify
 	go mod tidy
+
+vulncheck: $(BUILDDIR)/
+	GOBIN=$(BUILDDIR) go install golang.org/x/vuln/cmd/govulncheck@latest
+	$(BUILDDIR)/govulncheck ./...
 
 ###############################################################################
 ###                              Documentation                              ###
@@ -341,7 +352,17 @@ $(TEST_TARGETS): run-tests
 test-unit-cover: ARGS=-timeout=10m -race -coverprofile=coverage.txt -covermode=atomic
 test-unit-cover: TEST_PACKAGES=$(PACKAGES_UNIT)
 
-run-tests:
+test-upgrade:
+ifeq (, $(TARGET_VERSION))
+	@make build-docker
+endif
+	mkdir -p ./build
+	rm -rf build/.haqqd
+	INITIAL_VERSION=$(INITIAL_VERSION) TARGET_VERSION=$(TARGET_VERSION) \
+	E2E_SKIP_CLEANUP=$(E2E_SKIP_CLEANUP) MOUNT_PATH=$(MOUNT_PATH) CHAIN_ID=$(CHAIN_ID) \
+	go test -v ./tests/e2e/...
+
+run-tests: build-docker
 ifneq (,$(shell which tparse 2>/dev/null))
 	go test -mod=readonly -json $(ARGS) $(EXTRA_ARGS) $(TEST_PACKAGES) | tparse
 else
@@ -419,6 +440,7 @@ benchmark:
 
 lint:
 	golangci-lint run --out-format=tab
+	solhint contracts/**/*.sol
 
 lint-contracts:
 	@cd contracts && \
@@ -445,13 +467,16 @@ format:
 ###                                Protobuf                                 ###
 ###############################################################################
 
-containerProtoVer=v0.2
+containerProtoVer=v0.7
 containerProtoImage=tendermintdev/sdk-proto-gen:$(containerProtoVer)
 containerProtoGen=cosmos-sdk-proto-gen-$(containerProtoVer)
 containerProtoGenSwagger=cosmos-sdk-proto-gen-swagger-$(containerProtoVer)
 containerProtoFmt=cosmos-sdk-proto-fmt-$(containerProtoVer)
 
 proto-all: proto-format proto-lint proto-gen
+
+proto-buf:
+
 
 proto-gen:
 	@echo "Generating Protobuf files"
@@ -472,11 +497,11 @@ proto-check-breaking:
 	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=master
 
 
-TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.15/proto/tendermint
+TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.20/proto/tendermint
 GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-COSMOS_SDK_URL      = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.45.1
+COSMOS_SDK_URL      = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.46.10
 ETHERMINT_URL      	= https://raw.githubusercontent.com/evmos/ethermint/v0.18.0
-IBC_GO_URL      	= https://raw.githubusercontent.com/cosmos/ibc-go/v3.0.0-rc0
+IBC_GO_URL      	= https://raw.githubusercontent.com/cosmos/ibc-go/v5.2.1
 COSMOS_PROTO_URL    = https://raw.githubusercontent.com/regen-network/cosmos-proto/master
 
 TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
@@ -484,7 +509,6 @@ TM_ABCI_TYPES       = third_party/proto/tendermint/abci
 TM_TYPES            = third_party/proto/tendermint/types
 
 GOGO_PROTO_TYPES    = third_party/proto/gogoproto
-
 COSMOS_PROTO_TYPES  = third_party/proto/cosmos_proto
 
 proto-update-deps:

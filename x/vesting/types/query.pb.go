@@ -6,10 +6,8 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
-	_ "github.com/gogo/protobuf/gogoproto"
-	grpc1 "github.com/gogo/protobuf/grpc"
+	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
@@ -81,11 +79,11 @@ func (m *QueryBalancesRequest) GetAddress() string {
 // method.
 type QueryBalancesResponse struct {
 	// locked defines the current amount of locked tokens
-	Locked github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,1,rep,name=locked,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"locked"`
+	Locked []types.Coin `protobuf:"bytes,1,rep,name=locked,proto3" json:"locked"`
 	// unvested defines the current amount of unvested tokens
-	Unvested github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=unvested,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"unvested"`
+	Unvested []types.Coin `protobuf:"bytes,2,rep,name=unvested,proto3" json:"unvested"`
 	// vested defines the current amount of vested tokens
-	Vested github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,3,rep,name=vested,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"vested"`
+	Vested []types.Coin `protobuf:"bytes,3,rep,name=vested,proto3" json:"vested"`
 }
 
 func (m *QueryBalancesResponse) Reset()         { *m = QueryBalancesResponse{} }
@@ -121,21 +119,21 @@ func (m *QueryBalancesResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryBalancesResponse proto.InternalMessageInfo
 
-func (m *QueryBalancesResponse) GetLocked() github_com_cosmos_cosmos_sdk_types.Coins {
+func (m *QueryBalancesResponse) GetLocked() []types.Coin {
 	if m != nil {
 		return m.Locked
 	}
 	return nil
 }
 
-func (m *QueryBalancesResponse) GetUnvested() github_com_cosmos_cosmos_sdk_types.Coins {
+func (m *QueryBalancesResponse) GetUnvested() []types.Coin {
 	if m != nil {
 		return m.Unvested
 	}
 	return nil
 }
 
-func (m *QueryBalancesResponse) GetVested() github_com_cosmos_cosmos_sdk_types.Coins {
+func (m *QueryBalancesResponse) GetVested() []types.Coin {
 	if m != nil {
 		return m.Vested
 	}
@@ -195,10 +193,10 @@ type QueryClient interface {
 }
 
 type queryClient struct {
-	cc grpc1.ClientConn
+	cc *grpc.ClientConn
 }
 
-func NewQueryClient(cc grpc1.ClientConn) QueryClient {
+func NewQueryClient(cc *grpc.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
@@ -225,7 +223,7 @@ func (*UnimplementedQueryServer) Balances(ctx context.Context, req *QueryBalance
 	return nil, status.Errorf(codes.Unimplemented, "method Balances not implemented")
 }
 
-func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
+func RegisterQueryServer(s *grpc.Server, srv QueryServer) {
 	s.RegisterService(&_Query_serviceDesc, srv)
 }
 
