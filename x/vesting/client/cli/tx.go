@@ -39,7 +39,6 @@ const (
 	FlagDest      = "dest"
 	FlagLockup    = "lockup"
 	FlagMerge     = "merge"
-	FlagLongTerm  = "long_term"
 	FlagVesting   = "vesting"
 	FlagClawback  = "clawback"
 	FlagFunder    = "funder"
@@ -271,7 +270,7 @@ func NewMsgConvertVestingAccountCmd() *cobra.Command {
 // MsgConvertIntoVestingAccount transaction.
 func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "convert-into [to-address] [amount]",
+		Use:   "convert-into [to-address]",
 		Short: "Convert a chain's default account type to the vesting account.",
 		Long: "Convert a chain's default account type to the vesting account. " +
 			"The chain's default account must be of type AccAddress to convert" +
@@ -279,7 +278,6 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				amount                        sdk.Coin
 				lockupStart, vestingStart     int64
 				lockupPeriods, vestingPeriods sdkvesting.Periods
 				staking                       bool
@@ -292,11 +290,6 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 			}
 
 			toAddr, err := sdk.AccAddressFromBech32(args[0])
-			if err != nil {
-				return err
-			}
-
-			amount, err = sdk.ParseCoinNormalized(args[1])
 			if err != nil {
 				return err
 			}
@@ -336,7 +329,7 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 				}
 			}
 
-			msg := types.NewMsgConvertIntoVestingAccount(clientCtx.GetFromAddress(), toAddr, time.Unix(commonStart, 0), amount, lockupPeriods, vestingPeriods, merge, staking, valAddr)
+			msg := types.NewMsgConvertIntoVestingAccount(clientCtx.GetFromAddress(), toAddr, time.Unix(commonStart, 0), lockupPeriods, vestingPeriods, merge, staking, valAddr)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
