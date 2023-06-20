@@ -406,8 +406,8 @@ func (k Keeper) ConvertIntoVestingAccount(
 			msg.LockupPeriods,
 			msg.VestingPeriods,
 		)
-		acc := k.accountKeeper.NewAccount(ctx, vestingAcc)
-		k.accountKeeper.SetAccount(ctx, acc)
+		acc := ak.NewAccount(ctx, vestingAcc)
+		ak.SetAccount(ctx, acc)
 
 		madeNewAcc = true
 	} else {
@@ -419,7 +419,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 		if err != nil {
 			return nil, err
 		}
-		k.accountKeeper.SetAccount(ctx, vestingAcc)
+		ak.SetAccount(ctx, vestingAcc)
 	}
 
 	if madeNewAcc {
