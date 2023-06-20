@@ -233,14 +233,20 @@ func NewMsgConvertIntoVestingAccount(
 	funder, address sdk.AccAddress,
 	startTime time.Time,
 	amount sdk.Coin,
-	longTerm bool,
+	lockupPeriods sdkvesting.Periods,
+	vestingPeriods sdkvesting.Periods,
+	merge bool,
+	stake bool,
+	validatorAddress sdk.ValAddress,
 ) *MsgConvertIntoVestingAccount {
 	return &MsgConvertIntoVestingAccount{
-		FromAddress: funder.String(),
-		EthAddress:  common.BytesToAddress(address.Bytes()).Hex(),
-		StartTime:   startTime,
-		Amount:      amount,
-		LongTerm:    longTerm,
+		FromAddress:      funder.String(),
+		ToAddress:        common.BytesToAddress(address.Bytes()).Hex(),
+		StartTime:        startTime,
+		Amount:           amount,
+		LockupPeriods:    lockupPeriods,
+		VestingPeriods:   vestingPeriods,
+		ValidatorAddress: validatorAddress.String(),
 	}
 }
 
@@ -256,8 +262,8 @@ func (msg MsgConvertIntoVestingAccount) ValidateBasic() error {
 		return errorsmod.Wrapf(err, "invalid from address")
 	}
 
-	if ok := common.IsHexAddress(msg.EthAddress); !ok {
-		return errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid eth address")
+	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
+		return errorsmod.Wrapf(err, "invalid to address")
 	}
 
 	coins := sdk.NewCoins()
