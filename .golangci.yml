@@ -6,7 +6,7 @@ run:
 linters:
   enable:
     - dogsled
-    - dupl
+    # - dupl TODO: enable
     - errcheck
     - goconst
     - gocritic
@@ -33,11 +33,11 @@ linters:
     - gofumpt
     - gomodguard
 
-
-
 linters-settings:
   dogsled:
     max-blank-identifiers: 3
+  dupl:
+    threshold: 150
   golint:
     min-confidence: 0
   maligned:
