@@ -806,6 +806,24 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			0,
 			true,
 		},
+		{
+			"fail - account exists - not eth, not vesting, unsupported",
+			func() {
+				// Existing module account
+				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
+				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewModuleAccount(baseAccount, "testmodule"))
+			},
+			addr,
+			addr2,
+			time.Now(),
+			lockupPeriods,
+			nil,
+			true,
+			true,
+			0,
+			0,
+			false,
+		},
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {

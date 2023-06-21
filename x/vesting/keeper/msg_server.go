@@ -398,7 +398,13 @@ func (k Keeper) ConvertIntoVestingAccount(
 	var vestingAcc *types.ClawbackVestingAccount
 	var isClawback bool
 
+	_, isEthAccount := targetAccount.(*ethtypes.EthAccount)
 	vestingAcc, isClawback = targetAccount.(*types.ClawbackVestingAccount)
+
+	if !isClawback && !isEthAccount && !createNewAcc {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists but can't be converted into vesting account", msg.ToAddress)
+	}
+
 	if !isClawback || createNewAcc {
 		baseAcc := authtypes.NewBaseAccountWithAddress(to)
 		vestingAcc = types.NewClawbackVestingAccount(
@@ -432,16 +438,6 @@ func (k Keeper) ConvertIntoVestingAccount(
 	if madeNewAcc {
 		defer func() {
 			telemetry.IncrCounter(1, "new", "account")
-
-			//for _, a := range balances {
-			//	if a.Amount.IsInt64() {
-			//		telemetry.SetGaugeWithLabels(
-			//			[]string{"tx", "msg", "create_clawback_vesting_account"},
-			//			float32(a.Amount.Int64()),
-			//			[]metrics.Label{telemetry.NewLabel("denom", a.Denom)},
-			//		)
-			//	}
-			//}
 		}()
 	}
 
@@ -484,11 +480,6 @@ func (k Keeper) ConvertIntoVestingAccount(
 
 		defer func() {
 			telemetry.IncrCounter(1, stakingtypes.ModuleName, "delegate")
-			//telemetry.SetGaugeWithLabels(
-			//	[]string{"tx", "msg", stakingtypes.TypeMsgDelegate},
-			//	float32(vestingCoins.AmountOf(sk.BondDenom(ctx)).Int64()),
-			//	[]metrics.Label{telemetry.NewLabel("denom", bondDenom)},
-			//)
 		}()
 
 		events = append(events, sdk.NewEvent(
