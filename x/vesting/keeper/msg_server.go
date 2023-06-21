@@ -112,16 +112,6 @@ func (k Keeper) CreateClawbackVestingAccount(
 	if madeNewAcc {
 		defer func() {
 			telemetry.IncrCounter(1, "new", "account")
-
-			//for _, a := range vestingCoins {
-			//	if a.Amount.IsInt64() {
-			//		telemetry.SetGaugeWithLabels(
-			//			[]string{"tx", "msg", "create_clawback_vesting_account"},
-			//			float32(a.Amount.Int64()),
-			//			[]metrics.Label{telemetry.NewLabel("denom", a.Denom)},
-			//		)
-			//	}
-			//}
 		}()
 	}
 

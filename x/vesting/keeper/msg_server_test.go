@@ -669,7 +669,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 				ethAccount := ethtypes.ProtoAccount().(*ethtypes.EthAccount)
 				ethAccount.BaseAccount = baseAccount
 				s.app.AccountKeeper.SetAccount(s.ctx, ethAccount)
-
 			},
 			addr,
 			addr3,
@@ -689,7 +688,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 				ethAccount := ethtypes.ProtoAccount().(*ethtypes.EthAccount)
 				ethAccount.BaseAccount = baseAccount
 				s.app.AccountKeeper.SetAccount(s.ctx, ethAccount)
-
 			},
 			addr,
 			addr3,
@@ -810,11 +808,11 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			"fail - account exists - not eth, not vesting, unsupported",
 			func() {
 				// Existing module account
-				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
+				baseAccount := authtypes.NewBaseAccountWithAddress(addr5)
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewModuleAccount(baseAccount, "testmodule"))
 			},
 			addr,
-			addr2,
+			addr5,
 			time.Now(),
 			lockupPeriods,
 			nil,
