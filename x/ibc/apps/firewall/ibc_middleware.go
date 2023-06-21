@@ -244,5 +244,5 @@ func (im IBCMiddleware) WriteAcknowledgement(
 }
 
 func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
-	return im.GetAppVersion(ctx, portID, channelID)
+	return im.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
 }
