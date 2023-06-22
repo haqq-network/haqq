@@ -663,6 +663,36 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			true,
 		},
 		{
+			"fail - new account - no vested coins to delegate",
+			func() {},
+			addr,
+			addr2,
+			time.Now(),
+			lockupPeriods,
+			vestingPeriods,
+			false,
+			true,
+			0,
+			0,
+			false,
+		},
+		{
+			"fail - new account - vested coins is not bondable",
+			func() {
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewInt64Coin("NBND", 500))) //nolint:errcheck
+			},
+			addr,
+			addr2,
+			time.Now(),
+			sdkvesting.Periods{{Length: 5000, Amount: sdk.NewCoins(sdk.NewInt64Coin("NBND", 500))}},
+			nil,
+			false,
+			true,
+			0,
+			0,
+			false,
+		},
+		{
 			"ok - account exists - no clawback - convert without staking",
 			func() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr3)

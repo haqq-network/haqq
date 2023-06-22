@@ -542,13 +542,14 @@ func (k Keeper) delegateVestedCoins(ctx sdk.Context, to sdk.AccAddress, msg *typ
 	)
 	if vestedCoins.IsZero() {
 		// Nothing to delegate
-		return events, nil
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "no vested coins to delegate immediately, check your vesting schedule")
 	}
 
-	found, amountToDelegate := vestedCoins.Find(k.stakingKeeper.BondDenom(ctx))
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	found, amountToDelegate := vestedCoins.Find(bondDenom)
 	if !found || amountToDelegate.IsZero() {
 		// Nothing to delegate
-		return events, nil
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "coin denom not match bonding denom '%s', check your vesting schedule", bondDenom)
 	}
 
 	newShares, err := k.stakingKeeper.Delegate(ctx, to, amountToDelegate.Amount, stakingtypes.Unbonded, validator, true)
