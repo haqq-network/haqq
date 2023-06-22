@@ -93,7 +93,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 		suite.ctx,
 		suite.app.BankKeeper,
 		suite.priv.PubKey().Address().Bytes(),
-		sdk.NewCoins(sdk.NewCoin("aphoton", amt)),
+		sdk.NewCoins(sdk.NewCoin(suite.app.StakingKeeper.BondDenom(suite.ctx), amt)),
 	)
 	suite.Require().NoError(err)
 
@@ -173,7 +173,7 @@ func assertEthFails(msgs ...sdk.Msg) {
 	Expect(strings.Contains(err.Error(), insufficientUnlocked))
 
 	// Sanity check that delivery fails as well
-	_, err = testutil.DeliverEthTx(s.app, nil, msgs...)
+	_, err = testutil.DeliverEthTx(s.ctx, s.app, nil, msgs...)
 	Expect(err).ToNot(BeNil())
 	Expect(strings.Contains(err.Error(), insufficientUnlocked))
 }
@@ -197,7 +197,7 @@ func assertEthSucceeds(testAccounts []TestClawbackAccount, funder sdk.AccAddress
 	Expect(err).To(BeNil())
 
 	// Expect delivery to succeed, then compare balances
-	_, err = testutil.DeliverEthTx(s.app, nil, msgs...)
+	_, err = testutil.DeliverEthTx(s.ctx, s.app, nil, msgs...)
 	Expect(err).To(BeNil())
 
 	fb := s.app.BankKeeper.GetBalance(s.ctx, funder, denom)
@@ -221,7 +221,7 @@ func delegate(clawbackAccount *types.ClawbackVestingAccount, amount sdkmath.Int,
 
 	val, err := sdk.ValAddressFromBech32(addrvalop)
 	s.Require().NoError(err)
-	delegateMsg := stakingtypes.NewMsgDelegate(addr, val, sdk.NewCoin("aphoton", amount))
+	delegateMsg := stakingtypes.NewMsgDelegate(addr, val, sdk.NewCoin(s.app.StakingKeeper.BondDenom(s.ctx), amount))
 
 	dec := cosmosante.NewVestingDelegationDecorator(s.app.AccountKeeper, s.app.StakingKeeper, types.ModuleCdc)
 	err = testutil.ValidateAnteForMsgs(s.ctx, dec, delegateMsg)
