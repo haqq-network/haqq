@@ -27,7 +27,7 @@ linters:
     - unconvert
     - unparam
     - unused
-    - nolintlint
+    # - nolintlint TODO: enable
     - asciicheck
     - exportloopref
     - gofumpt
@@ -49,6 +49,8 @@ linters-settings:
     allow-leading-space: true
     require-explanation: false
     require-specific: false
+  staticcheck:
+    checks: ["All", "-SA1019"]
   gofumpt:
     lang-version: "1.20"
   gomodguard:

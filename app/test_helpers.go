@@ -29,7 +29,7 @@ import (
 	"github.com/haqq-network/haqq/cmd/config"
 )
 
-const PREMINT_AMOUNT = 20_000_000_000
+const PremintAmount = 20_000_000_000
 
 func init() {
 	cfg := sdk.GetConfig()
@@ -82,7 +82,7 @@ func Setup(
 	senderPrivKey := secp256k1.GenPrivKey()
 	acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), 0, 0)
 
-	mintAmount := sdk.TokensFromConsensusPower(PREMINT_AMOUNT, sdk.DefaultPowerReduction)
+	mintAmount := sdk.TokensFromConsensusPower(PremintAmount, sdk.DefaultPowerReduction)
 	mintAmount = mintAmount.Sub(sdk.DefaultPowerReduction) // for delegation
 	mintCoin := sdk.NewCoin("aISLM", mintAmount)
 

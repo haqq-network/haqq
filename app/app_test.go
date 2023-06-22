@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	evm "github.com/evmos/ethermint/x/evm/types"
 	"os"
 	"testing"
 
@@ -12,6 +11,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/ibc-go/v5/testing/mock"
+	evm "github.com/evmos/ethermint/x/evm/types"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"

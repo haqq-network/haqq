@@ -124,7 +124,8 @@ func (suite *TransferETHTestSuite) DoSetupTest(t require.TestingT) {
 	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
-	suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	err = suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 
@@ -149,7 +150,7 @@ func (suite *TransferETHTestSuite) CommitBlock() {
 	header := suite.ctx.BlockHeader()
 	_ = suite.app.Commit()
 
-	header.Height += 1
+	header.Height++
 
 	// run begin block
 	suite.app.BeginBlock(abci.RequestBeginBlock{
@@ -208,7 +209,7 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	suite.Require().NoError(err)
 	res, err := suite.queryClientEvm.EstimateGas(ctx, &evm.EthCallRequest{
 		Args:   args,
-		GasCap: uint64(config.DefaultGasCap),
+		GasCap: config.DefaultGasCap,
 	})
 	suite.Require().NoError(err)
 

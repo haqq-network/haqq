@@ -24,12 +24,13 @@ func (app *Haqq) ScheduleForkUpgrade(ctx sdk.Context) {
 	// 	Height: ctx.BlockHeight(),
 	// }
 
+	// TODO No-op, remove?
 	// handle mainnet forks
-	switch ctx.BlockHeight() {
-	default:
-		// No-op
-		return
-	}
+	// switch ctx.BlockHeight() {
+	// default:
+	// No-op
+	// 	return
+	// }
 
 	// if err := app.UpgradeKeeper.ScheduleUpgrade(ctx, upgradePlan); err != nil {
 	// 	panic(
