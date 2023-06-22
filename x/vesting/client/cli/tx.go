@@ -259,7 +259,7 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 		Long: "Convert a chain's default account type to the vesting account. " +
 			"The chain's default account must be of type AccAddress to convert" +
 			"it to the vesting account type.",
-		Args: cobra.ExactArgs(2),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
 				lockupStart, vestingStart     int64

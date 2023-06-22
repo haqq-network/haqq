@@ -240,7 +240,7 @@ func NewMsgConvertIntoVestingAccount(
 ) *MsgConvertIntoVestingAccount {
 	return &MsgConvertIntoVestingAccount{
 		FromAddress:      funder.String(),
-		ToAddress:        common.BytesToAddress(address.Bytes()).Hex(),
+		ToAddress:        address.String(),
 		StartTime:        startTime,
 		LockupPeriods:    lockupPeriods,
 		VestingPeriods:   vestingPeriods,
@@ -262,7 +262,13 @@ func (msg MsgConvertIntoVestingAccount) ValidateBasic() error {
 		return errorsmod.Wrapf(err, "invalid from address")
 	}
 
-	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
+	to, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	if err != nil {
+		hexTargetAddr := common.HexToAddress(msg.ToAddress)
+		to = hexTargetAddr.Bytes()
+	}
+
+	if err := sdk.VerifyAddressFormat(to); err != nil {
 		return errorsmod.Wrapf(err, "invalid to address")
 	}
 
