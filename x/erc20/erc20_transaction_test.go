@@ -189,7 +189,8 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	suite.Commit(3)
 	ctx := sdk.WrapSDKContext(suite.ctx)
 
-	suite.MintToAccount(sdk.NewCoins(sdk.NewCoin(evm.DefaultEVMDenom, sdk.NewInt(100000))))
+	evmDenom := suite.app.EvmKeeper.GetEVMDenom(suite.ctx)
+	suite.MintToAccount(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(100000))))
 
 	suite.T().Log(suite.address.String())
 	balanceBefore, err := suite.queryClientEvm.Balance(ctx, &evm.QueryBalanceRequest{Address: suite.address.String()})
@@ -214,7 +215,7 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	suite.Require().NoError(err)
 
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
-	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evm.DefaultEVMDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
+	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 
 	tx := evm.NewTx(
 		chainID,
