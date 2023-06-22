@@ -307,7 +307,6 @@ func (k Keeper) ConvertIntoVestingAccount(
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	ak := k.accountKeeper
 	bk := k.bankKeeper
-	sk := k.stakingKeeper
 
 	var (
 		to  sdk.AccAddress
@@ -437,31 +436,10 @@ func (k Keeper) ConvertIntoVestingAccount(
 	}
 
 	if msg.Stake {
-		valAddress, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+		events, err = k.delegateVestedCoins(ctx, to, msg, events)
 		if err != nil {
-			return nil, errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid validator address: %s", msg.ValidatorAddress)
+			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to delegate vested coins: %s", err.Error())
 		}
-
-		validator, found := sk.GetValidator(ctx, valAddress)
-		if !found {
-			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "validator %s not found", msg.ValidatorAddress)
-		}
-
-		newShares, err := k.stakingKeeper.Delegate(ctx, to, vestingCoins.AmountOf(sk.BondDenom(ctx)), stakingtypes.Unbonded, validator, true)
-		if err != nil {
-			return nil, err
-		}
-
-		defer func() {
-			telemetry.IncrCounter(1, stakingtypes.ModuleName, "delegate")
-		}()
-
-		events = append(events, sdk.NewEvent(
-			stakingtypes.EventTypeDelegate,
-			sdk.NewAttribute(stakingtypes.AttributeKeyValidator, validator.OperatorAddress),
-			sdk.NewAttribute(sdk.AttributeKeyAmount, vestingCoins.AmountOf(sk.BondDenom(ctx)).String()),
-			sdk.NewAttribute(stakingtypes.AttributeKeyNewShares, newShares.String()),
-		))
 	}
 
 	ctx.EventManager().EmitEvents(events)
@@ -536,4 +514,56 @@ func (k Keeper) transferClawback(
 
 	// Transfer clawback to the destination (funder)
 	return k.bankKeeper.SendCoins(ctx, addr, dest, toClawBack)
+}
+
+func (k Keeper) delegateVestedCoins(ctx sdk.Context, to sdk.AccAddress, msg *types.MsgConvertIntoVestingAccount, events sdk.Events) (sdk.Events, error) {
+	valAddress, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+	if err != nil {
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid validator address: %s", msg.ValidatorAddress)
+	}
+
+	validator, found := k.stakingKeeper.GetValidator(ctx, valAddress)
+	if !found {
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "validator %s not found", msg.ValidatorAddress)
+	}
+
+	newVestingStart, newVestingEnd, _ := types.DisjunctPeriods(
+		msg.GetStartTime().Unix(),
+		msg.GetStartTime().Unix(),
+		msg.GetVestingPeriods(),
+		msg.GetVestingPeriods(),
+	)
+	vestedCoins := types.ReadSchedule(
+		newVestingStart,
+		newVestingEnd,
+		msg.GetVestingPeriods(),
+		msg.GetVestingPeriods().TotalAmount(),
+		ctx.BlockTime().Unix(),
+	)
+	if vestedCoins.IsZero() {
+		// Nothing to delegate
+		return events, nil
+	}
+
+	found, amountToDelegate := vestedCoins.Find(k.stakingKeeper.BondDenom(ctx))
+	if !found || amountToDelegate.IsZero() {
+		// Nothing to delegate
+		return events, nil
+	}
+
+	newShares, err := k.stakingKeeper.Delegate(ctx, to, amountToDelegate.Amount, stakingtypes.Unbonded, validator, true)
+	if err != nil {
+		return events, err
+	}
+
+	telemetry.IncrCounter(1, stakingtypes.ModuleName, "delegate")
+
+	events = append(events, sdk.NewEvent(
+		stakingtypes.EventTypeDelegate,
+		sdk.NewAttribute(stakingtypes.AttributeKeyValidator, validator.OperatorAddress),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, amountToDelegate.String()),
+		sdk.NewAttribute(stakingtypes.AttributeKeyNewShares, newShares.String()),
+	))
+
+	return events, nil
 }
