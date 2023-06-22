@@ -602,7 +602,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 		vesting            sdkvesting.Periods
 		merge              bool
 		stake              bool
-		expectDelegation   int64
+		expectDelegation   uint64
 		expectExtraBalance int64
 		expectPass         bool
 	}{
@@ -800,8 +800,35 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			nil,
 			true,
 			true,
+			1000,
 			0,
-			0,
+			true,
+		},
+		{
+			"ok - account exists - addGrant with partial vesting and staking",
+			func() {
+				// Existing clawback account
+				vestingStart := s.ctx.BlockTime()
+				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
+				funder := addr
+				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr2, balances) //nolint:errcheck
+				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
+			},
+			addr,
+			addr2,
+			time.Now(),
+			lockupPeriods,
+			sdkvesting.Periods{
+				{Length: 0, Amount: quarter},
+				{Length: 2000, Amount: quarter},
+				{Length: 2000, Amount: quarter},
+				{Length: 2000, Amount: quarter},
+			},
+			true,
+			true,
+			250,
+			750,
 			true,
 		},
 		{
@@ -842,7 +869,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 				valopAddress := vals[0].OperatorAddress
 				valAddr, err = sdk.ValAddressFromBech32(valopAddress)
 				suite.Require().NoError(err)
-				expBalanceBonded = sdk.NewIntFromUint64(1000)
+				expBalanceBonded = sdk.NewIntFromUint64(tc.expectDelegation)
 			}
 
 			msg := types.NewMsgConvertIntoVestingAccount(
