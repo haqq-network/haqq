@@ -30,7 +30,8 @@ func (k Keeper) CalcTargetMintForEra(ctx sdk.Context, eraNumber uint64) sdk.Coin
 
 	eraCoef := sdk.NewDecWithPrec(95, 2) // 0.95
 
-	if eraNumber == 1 {
+	switch {
+	case eraNumber == 1:
 		eraPeriod := uint64(2) // 2 years
 		currentTotalSupply := k.bankKeeper.GetSupply(ctx, types.DefaultMintDenom)
 		maxSupply := k.GetMaxSupply(ctx)
@@ -45,22 +46,22 @@ func (k Keeper) CalcTargetMintForEra(ctx sdk.Context, eraNumber uint64) sdk.Coin
 		target := num.Quo(den)
 
 		return sdk.NewCoin(params.MintDenom, target.RoundInt())
-	} else if eraNumber > 1 && eraNumber < 50 {
+	case eraNumber > 1 && eraNumber < 50:
 		prevTargetMint := k.GetEraTargetMint(ctx)
 		currTargetMint := sdk.NewDecFromInt(prevTargetMint.Amount).Mul(eraCoef)
 
 		return sdk.NewCoin(types.DefaultMintDenom, currTargetMint.RoundInt())
-	} else if eraNumber == 50 {
+	case eraNumber == 50:
 		currentTotalSupply := k.bankKeeper.GetSupply(ctx, types.DefaultMintDenom)
 		maxSupply := k.GetMaxSupply(ctx)
 
 		return maxSupply.SubAmount(currentTotalSupply.Amount)
-	} else {
+	default:
 		return sdk.NewCoin(params.MintDenom, sdk.NewInt(0))
 	}
 }
 
-func (k Keeper) CalcInflation(ctx sdk.Context, era uint64, eraTargetSupply sdk.Coin, eraTargetMint sdk.Coin) sdk.Dec {
+func (k Keeper) CalcInflation(_ sdk.Context, era uint64, eraTargetSupply sdk.Coin, eraTargetMint sdk.Coin) sdk.Dec {
 	if era > 50 {
 		return sdk.NewDec(0)
 	}

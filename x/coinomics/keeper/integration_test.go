@@ -32,7 +32,7 @@ var _ = Describe("Coinomics", Ordered, func() {
 		s.app.DistrKeeper.SetParams(s.ctx, distributionParams)
 	})
 
-	Describe("Commiting a block", func() {
+	Describe("Committing a block", func() {
 		Context("with coinomics disabled", func() {
 			BeforeEach(func() {
 				params := s.app.CoinomicsKeeper.GetParams(s.ctx)
@@ -45,9 +45,9 @@ var _ = Describe("Coinomics", Ordered, func() {
 				currentSupply := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				currentEra := s.app.CoinomicsKeeper.GetEra(s.ctx)
 
-				start_expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
+				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
 
-				Expect(start_expectedSupply.Amount).To(Equal(currentSupply.Amount))
+				Expect(startExpectedSupply.Amount).To(Equal(currentSupply.Amount))
 				Expect(currentEra).To(Equal(uint64(0)))
 
 				for era := 1; era <= 50; era++ {
@@ -56,7 +56,7 @@ var _ = Describe("Coinomics", Ordered, func() {
 					currentSupply = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 					currentEra = s.app.CoinomicsKeeper.GetEra(s.ctx)
 
-					Expect(start_expectedSupply.Amount).To(Equal(currentSupply.Amount))
+					Expect(startExpectedSupply.Amount).To(Equal(currentSupply.Amount))
 					Expect(currentEra).To(Equal(uint64(0)))
 				}
 			})
@@ -75,9 +75,9 @@ var _ = Describe("Coinomics", Ordered, func() {
 					currentSupply := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 					currentEra := s.app.CoinomicsKeeper.GetEra(s.ctx)
 
-					start_expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
+					startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
 
-					Expect(start_expectedSupply.Amount).To(Equal(currentSupply.Amount))
+					Expect(startExpectedSupply.Amount).To(Equal(currentSupply.Amount))
 					Expect(currentEra).To(Equal(uint64(0)))
 
 					expectedSupplys := []string{
@@ -140,10 +140,10 @@ var _ = Describe("Coinomics", Ordered, func() {
 						currentSupply = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 						currentEra = s.app.CoinomicsKeeper.GetEra(s.ctx)
 
-						era_expectedSupplyBigInt, _ := big.NewInt(0).SetString(expectedSupplys[era-1], 0)
-						era_expectedSupply := sdk.NewCoin(denomMint, sdk.NewIntFromBigInt(era_expectedSupplyBigInt))
+						eraExpectedSupplyBigInt, _ := big.NewInt(0).SetString(expectedSupplys[era-1], 0)
+						eraExpectedSupply := sdk.NewCoin(denomMint, sdk.NewIntFromBigInt(eraExpectedSupplyBigInt))
 
-						Expect(era_expectedSupply.Amount).To(Equal(currentSupply.Amount))
+						Expect(eraExpectedSupply.Amount).To(Equal(currentSupply.Amount))
 						Expect(currentEra).To(Equal(uint64(era)))
 					}
 				})

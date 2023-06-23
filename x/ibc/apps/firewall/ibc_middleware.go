@@ -40,10 +40,10 @@ func NewICS4Wrapper(w porttypes.ICS4Wrapper) IBCMiddleware {
 // Allow only team addresses to ibc-transfer coins outside the Haqq network.
 //
 // This is required until listing happens so that:
-// * team is able to transfer ISLM to Gravity Bridge and create a ERC-20 wrap
-//   for listing on exchanges which we agreed to list ERC-20 token
-// * presale participants and partners won't be able to transfer ISLM
-//   to a network with AMMs or DEXes and define a price before the official listing
+//   - team is able to transfer ISLM to Gravity Bridge and create a ERC-20 wrap
+//     for listing on exchanges which we agreed to list ERC-20 token
+//   - presale participants and partners won't be able to transfer ISLM
+//     to a network with AMMs or DEXes and define a price before the official listing
 //
 // After the official listing this restriction will be removed.
 func (im IBCMiddleware) IsAllowedAddress(chainID, addr string) bool {
@@ -244,5 +244,5 @@ func (im IBCMiddleware) WriteAcknowledgement(
 }
 
 func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
-	return im.GetAppVersion(ctx, portID, channelID)
+	return im.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
 }

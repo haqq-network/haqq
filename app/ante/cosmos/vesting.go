@@ -90,8 +90,7 @@ func (vdd VestingDelegationDecorator) validateMsg(ctx sdk.Context, msg sdk.Msg) 
 		}
 
 		// error if bond amount is > vested coins
-		//bondDenom := vdd.sk.BondDenom(ctx)
-		bondDenom := "aphoton"
+		bondDenom := vdd.sk.BondDenom(ctx)
 		coins := clawbackAccount.GetVestedOnly(ctx.BlockTime())
 		if coins == nil || coins.Empty() {
 			return errorsmod.Wrap(

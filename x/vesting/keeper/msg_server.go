@@ -1,27 +1,9 @@
-// Copyright 2022 Evmos Foundation
-// This file is part of the Evmos Network packages.
-//
-// Evmos is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The Evmos packages are distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the Evmos packages. If not, see https://github.com/evmos/evmos/blob/main/LICENSE
-
 package keeper
 
 import (
 	"context"
 	"strconv"
 	"time"
-
-	ethtypes "github.com/evmos/ethermint/types"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/telemetry"
@@ -31,8 +13,8 @@ import (
 	vestingexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/evmos/ethermint/types"
 	evmosvestingtypes "github.com/evmos/evmos/v10/x/vesting/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
@@ -130,16 +112,6 @@ func (k Keeper) CreateClawbackVestingAccount(
 	if madeNewAcc {
 		defer func() {
 			telemetry.IncrCounter(1, "new", "account")
-
-			//for _, a := range vestingCoins {
-			//	if a.Amount.IsInt64() {
-			//		telemetry.SetGaugeWithLabels(
-			//			[]string{"tx", "msg", "create_clawback_vesting_account"},
-			//			float32(a.Amount.Int64()),
-			//			[]metrics.Label{telemetry.NewLabel("denom", a.Denom)},
-			//		)
-			//	}
-			//}
 		}()
 	}
 
@@ -333,156 +305,144 @@ func (k Keeper) ConvertIntoVestingAccount(
 	msg *types.MsgConvertIntoVestingAccount,
 ) (*types.MsgConvertIntoVestingAccountResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	funder := sdk.MustAccAddressFromBech32(msg.FromAddress)
-	hexTargetAddr := common.HexToAddress(msg.EthAddress)
-	targetAddress := sdk.AccAddress(hexTargetAddr.Bytes())
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	targetAccount := k.accountKeeper.GetAccount(ctx, targetAddress)
+	ak := k.accountKeeper
+	bk := k.bankKeeper
+
+	var (
+		to  sdk.AccAddress
+		err error
+	)
+
+	// to address can be both Bech32 or Hex
+	from := sdk.MustAccAddressFromBech32(msg.FromAddress)
+	to, err = sdk.AccAddressFromBech32(msg.ToAddress)
+	if err != nil {
+		hexTargetAddr := common.HexToAddress(msg.ToAddress)
+		to = hexTargetAddr.Bytes()
+	}
+
+	if err := sdk.VerifyAddressFormat(to); err != nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidAddress,
+			"%s is not valid address", msg.ToAddress,
+		)
+	}
+
+	if bk.BlockedAddr(to) {
+		return nil, errorsmod.Wrapf(errortypes.ErrUnauthorized,
+			"%s is not allowed to be converted into vesting", msg.ToAddress,
+		)
+	}
+
+	vestingCoins := msg.VestingPeriods.TotalAmount()
+	lockupCoins := msg.LockupPeriods.TotalAmount()
+
+	// If lockup absent, default to an instant unlock schedule
+	if !vestingCoins.IsZero() && len(msg.LockupPeriods) == 0 {
+		msg.LockupPeriods = sdkvesting.Periods{
+			{Length: 0, Amount: vestingCoins},
+		}
+		lockupCoins = vestingCoins
+	}
+
+	// If vesting absent, default to an instant vesting schedule
+	if !lockupCoins.IsZero() && len(msg.VestingPeriods) == 0 {
+		msg.VestingPeriods = sdkvesting.Periods{
+			{Length: 0, Amount: lockupCoins},
+		}
+		vestingCoins = lockupCoins
+	}
+
+	// The vesting and lockup schedules must describe the same total amount.
+	// IsEqual can panic, so use (a == b) <=> (a <= b && b <= a).
+	if !(vestingCoins.IsAllLTE(lockupCoins) && lockupCoins.IsAllLTE(vestingCoins)) {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest,
+			"lockup and vesting amounts must be equal",
+		)
+	}
+
+	createNewAcc := false
+	targetAccount := k.accountKeeper.GetAccount(ctx, to)
 
 	if targetAccount == nil {
-		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", msg.EthAddress)
-	}
-
-	if k.bankKeeper.BlockedAddr(targetAddress) {
-		return nil, errorsmod.Wrapf(errortypes.ErrUnauthorized,
-			"%s is not allowed to be converted into vesting", msg.EthAddress,
-		)
-	}
-
-	// Check denom
-	if msg.Amount.Denom != bondDenom {
-		return nil, errorsmod.Wrapf(
-			errortypes.ErrInvalidRequest,
-			"vesting denom %s is not equal to bond denom %s",
-			msg.Amount.Denom,
-			bondDenom,
-		)
-	}
-
-	// Get all balances of target account
-	balances := k.bankKeeper.GetAllBalances(ctx, targetAddress)
-	bondDenomBalance := balances.AmountOf(bondDenom)
-	oneISLM := sdk.NewCoin(bondDenom, sdk.NewInt(1000000000000000000))
-
-	if bondDenomBalance.GTE(oneISLM.Amount) {
-		return nil, errorsmod.Wrapf(
-			errortypes.ErrInvalidRequest,
-			"account balance [%s] is greater than %s %s",
-			msg.EthAddress,
-			oneISLM.Amount,
-			oneISLM.Denom,
-		)
+		createNewAcc = true
 	}
 
 	madeNewAcc := false
 	var vestingAcc *types.ClawbackVestingAccount
 	var isClawback bool
 
-	// TODO Set startDate or lockLength based on msg.LongTerm value
-	lockLength := time.Minute * 5
-	vestingCoins := sdk.NewCoins(msg.Amount)
-
-	// Setup default locking and vesting periods
-	lockingPeriods := sdkvesting.Periods{
-		{Length: lockLength.Milliseconds(), Amount: vestingCoins},
-	}
-	vestingPeriods := sdkvesting.Periods{
-		{Length: 0, Amount: vestingCoins},
-	}
-
+	_, isEthAccount := targetAccount.(*ethtypes.EthAccount)
 	vestingAcc, isClawback = targetAccount.(*types.ClawbackVestingAccount)
-	if !isClawback {
-		baseAcc := authtypes.NewBaseAccountWithAddress(targetAddress)
+
+	if !isClawback && !isEthAccount && !createNewAcc {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists but can't be converted into vesting account", msg.ToAddress)
+	}
+
+	if !isClawback || createNewAcc {
+		baseAcc := authtypes.NewBaseAccountWithAddress(to)
 		vestingAcc = types.NewClawbackVestingAccount(
 			baseAcc,
-			funder,
+			from,
 			vestingCoins,
 			msg.StartTime,
-			lockingPeriods,
-			vestingPeriods,
+			msg.LockupPeriods,
+			msg.VestingPeriods,
 		)
-		acc := k.accountKeeper.NewAccount(ctx, vestingAcc)
-		k.accountKeeper.SetAccount(ctx, acc)
+		acc := ak.NewAccount(ctx, vestingAcc)
+		ak.SetAccount(ctx, acc)
 
 		madeNewAcc = true
 	} else {
-		if msg.FromAddress != vestingAcc.FunderAddress {
-			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s can only accept grants from account %s", msg.EthAddress, vestingAcc.FunderAddress)
+		if !msg.Merge {
+			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists; consider using --merge", msg.ToAddress)
 		}
 
-		err := k.addGrant(ctx, vestingAcc, types.Min64(msg.StartTime.Unix(), vestingAcc.StartTime.Unix()), lockingPeriods, vestingPeriods, vestingCoins)
+		if msg.FromAddress != vestingAcc.FunderAddress {
+			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s can only accept grants from account %s", msg.ToAddress, vestingAcc.FunderAddress)
+		}
+
+		err := k.addGrant(ctx, vestingAcc, types.Min64(msg.StartTime.Unix(), vestingAcc.StartTime.Unix()), msg.LockupPeriods, msg.VestingPeriods, vestingCoins)
 		if err != nil {
 			return nil, err
 		}
-		k.accountKeeper.SetAccount(ctx, vestingAcc)
+		ak.SetAccount(ctx, vestingAcc)
 	}
 
 	if madeNewAcc {
 		defer func() {
 			telemetry.IncrCounter(1, "new", "account")
-
-			//for _, a := range balances {
-			//	if a.Amount.IsInt64() {
-			//		telemetry.SetGaugeWithLabels(
-			//			[]string{"tx", "msg", "create_clawback_vesting_account"},
-			//			float32(a.Amount.Int64()),
-			//			[]metrics.Label{telemetry.NewLabel("denom", a.Denom)},
-			//		)
-			//	}
-			//}
 		}()
 	}
 
 	// Send coins from the funder to vesting account
-	if err := k.bankKeeper.SendCoins(ctx, funder, targetAddress, vestingCoins); err != nil {
+	if err := k.bankKeeper.SendCoins(ctx, from, to, vestingCoins); err != nil {
 		return nil, err
 	}
 
-	// TODO Set certain validator
-	validators := k.stakingKeeper.GetBondedValidatorsByPower(ctx)
-	// NOTE: source funds are always unbonded
-
-	if len(validators) > 25 {
-		validators = validators[:25]
+	events := sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeCreateClawbackVestingAccount,
+			sdk.NewAttribute(sdk.AttributeKeySender, from.String()),
+			sdk.NewAttribute(types.AttributeKeyCoins, vestingCoins.String()),
+			sdk.NewAttribute(types.AttributeKeyStartTime, vestingAcc.StartTime.String()),
+			sdk.NewAttribute(types.AttributeKeyMerge, strconv.FormatBool(isClawback)),
+			sdk.NewAttribute(types.AttributeKeyAccount, vestingAcc.Address),
+		),
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, stakingtypes.AttributeValueCategory),
+			sdk.NewAttribute(sdk.AttributeKeySender, to.String()),
+		),
 	}
 
-	newShares, err := k.stakingKeeper.Delegate(ctx, targetAddress, vestingCoins.AmountOf(bondDenom), stakingtypes.Unbonded, validators[len(validators)-1], true)
-	if err != nil {
-		return nil, err
+	if msg.Stake {
+		events, err = k.delegateVestedCoins(ctx, to, msg, events)
+		if err != nil {
+			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to delegate vested coins: %s", err.Error())
+		}
 	}
 
-	defer func() {
-		telemetry.IncrCounter(1, stakingtypes.ModuleName, "delegate")
-		//	telemetry.SetGaugeWithLabels(
-		//		[]string{"tx", "msg", stakingtypes.TypeMsgDelegate},
-		//		float32(balances.AmountOf(bondDenom).Int64()),
-		//		[]metrics.Label{telemetry.NewLabel("denom", bondDenom)},
-		//	)
-	}()
-
-	ctx.EventManager().EmitEvents(
-		sdk.Events{
-			sdk.NewEvent(
-				types.EventTypeCreateClawbackVestingAccount,
-				sdk.NewAttribute(sdk.AttributeKeySender, funder.String()),
-				sdk.NewAttribute(types.AttributeKeyCoins, vestingCoins.String()),
-				sdk.NewAttribute(types.AttributeKeyStartTime, vestingAcc.StartTime.String()),
-				sdk.NewAttribute(types.AttributeKeyMerge, strconv.FormatBool(isClawback)),
-				sdk.NewAttribute(types.AttributeKeyAccount, vestingAcc.Address),
-			),
-			sdk.NewEvent(
-				stakingtypes.EventTypeDelegate,
-				sdk.NewAttribute(stakingtypes.AttributeKeyValidator, validators[0].OperatorAddress),
-				sdk.NewAttribute(sdk.AttributeKeyAmount, vestingCoins.AmountOf(bondDenom).String()),
-				sdk.NewAttribute(stakingtypes.AttributeKeyNewShares, newShares.String()),
-			),
-			sdk.NewEvent(
-				sdk.EventTypeMessage,
-				sdk.NewAttribute(sdk.AttributeKeyModule, stakingtypes.AttributeValueCategory),
-				sdk.NewAttribute(sdk.AttributeKeySender, targetAddress.String()),
-			),
-		},
-	)
+	ctx.EventManager().EmitEvents(events)
 
 	return &types.MsgConvertIntoVestingAccountResponse{}, nil
 }
@@ -554,4 +514,57 @@ func (k Keeper) transferClawback(
 
 	// Transfer clawback to the destination (funder)
 	return k.bankKeeper.SendCoins(ctx, addr, dest, toClawBack)
+}
+
+func (k Keeper) delegateVestedCoins(ctx sdk.Context, to sdk.AccAddress, msg *types.MsgConvertIntoVestingAccount, events sdk.Events) (sdk.Events, error) {
+	valAddress, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+	if err != nil {
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid validator address: %s", msg.ValidatorAddress)
+	}
+
+	validator, found := k.stakingKeeper.GetValidator(ctx, valAddress)
+	if !found {
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "validator %s not found", msg.ValidatorAddress)
+	}
+
+	newVestingStart, newVestingEnd, _ := types.DisjunctPeriods(
+		msg.GetStartTime().Unix(),
+		msg.GetStartTime().Unix(),
+		msg.GetVestingPeriods(),
+		msg.GetVestingPeriods(),
+	)
+	vestedCoins := types.ReadSchedule(
+		newVestingStart,
+		newVestingEnd,
+		msg.GetVestingPeriods(),
+		msg.GetVestingPeriods().TotalAmount(),
+		ctx.BlockTime().Unix(),
+	)
+	if vestedCoins.IsZero() {
+		// Nothing to delegate
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "no vested coins to delegate immediately, check your vesting schedule")
+	}
+
+	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	found, amountToDelegate := vestedCoins.Find(bondDenom)
+	if !found || amountToDelegate.IsZero() {
+		// Nothing to delegate
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "coin denom not match bonding denom '%s', check your vesting schedule", bondDenom)
+	}
+
+	newShares, err := k.stakingKeeper.Delegate(ctx, to, amountToDelegate.Amount, stakingtypes.Unbonded, validator, true)
+	if err != nil {
+		return events, err
+	}
+
+	telemetry.IncrCounter(1, stakingtypes.ModuleName, "delegate")
+
+	events = append(events, sdk.NewEvent(
+		stakingtypes.EventTypeDelegate,
+		sdk.NewAttribute(stakingtypes.AttributeKeyValidator, validator.OperatorAddress),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, amountToDelegate.String()),
+		sdk.NewAttribute(stakingtypes.AttributeKeyNewShares, newShares.String()),
+	))
+
+	return events, nil
 }

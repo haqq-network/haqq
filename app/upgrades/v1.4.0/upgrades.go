@@ -1,4 +1,4 @@
-package v1_4_0
+package v140
 
 import (
 	"cosmossdk.io/math"
@@ -44,7 +44,7 @@ func CreateUpgradeHandler(
 	}
 }
 
-func UpdateGovParams(ctx sdk.Context, gk govkeeper.Keeper, sk stakingkeeper.Keeper) error {
+func UpdateGovParams(ctx sdk.Context, gk govkeeper.Keeper, sk stakingkeeper.Keeper) {
 	depositParams := gk.GetDepositParams(ctx)
 
 	if types.IsMainNetwork(ctx.ChainID()) {
@@ -60,26 +60,20 @@ func UpdateGovParams(ctx sdk.Context, gk govkeeper.Keeper, sk stakingkeeper.Keep
 	}
 
 	gk.SetDepositParams(ctx, depositParams)
-
-	return nil
 }
 
-func UpdateSlashingParams(ctx sdk.Context, slashingkeeper slashingkeeper.Keeper) error {
+func UpdateSlashingParams(ctx sdk.Context, slashingkeeper slashingkeeper.Keeper) {
 	params := slashingkeeper.GetParams(ctx)
 	params.SignedBlocksWindow = 35000
 	params.SlashFractionDowntime = sdk.NewDecWithPrec(1, 4) // 0.01% (0.0001)
 	slashingkeeper.SetParams(ctx, params)
-
-	return nil
 }
 
-func UpdateStakingParams(ctx sdk.Context, sk stakingkeeper.Keeper) error {
+func UpdateStakingParams(ctx sdk.Context, sk stakingkeeper.Keeper) {
 	params := sk.GetParams(ctx)
 	params.MaxValidators = 150
 	params.MinCommissionRate = sdk.NewDecWithPrec(5, 2) // 5% (0.05)
 	sk.SetParams(ctx, params)
-
-	return nil
 }
 
 func ResetCoinomicsState(ctx sdk.Context, sk stakingkeeper.Keeper, ck coinomicskeeper.Keeper) error {

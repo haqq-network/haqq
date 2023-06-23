@@ -40,18 +40,18 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestEth_SendTransaction(t *testing.T) {
+func TestEth_SendTransaction(_ *testing.T) {
 	// txHash := sendTestTransaction(t)
 
 	fmt.Printf("\n\n\n#########################\n\n\n")
 
 	client, _ := ethclient.Dial(HOST)
 
-	block_number, _ := client.BlockNumber(context.Background())
+	blockNumber, _ := client.BlockNumber(context.Background())
 
 	fmt.Printf("Host: %v\n", HOST)
 	fmt.Printf("privKey: %v\n", privKey)
-	fmt.Printf("block_number: %v\n", block_number)
+	fmt.Printf("blockNumber: %v\n", blockNumber)
 
 	ecdsaKey, _ := ethcrypto.ToECDSA(common.Hex2Bytes(privKey))
 	fmt.Printf("ecdsaKey: %v\n", ecdsaKey)
