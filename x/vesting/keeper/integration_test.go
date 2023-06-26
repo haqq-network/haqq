@@ -41,7 +41,7 @@ var err error
 // 23/02 Lock ends
 var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 	// Monthly vesting period
-	stakeDenom := "aphoton"
+	stakeDenom := s.app.StakingKeeper.BondDenom(s.ctx)
 	amt := sdk.NewInt(1e17)
 	vestingLength := int64(60 * 60 * 24 * 30) // in seconds
 	vestingAmt := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt))
@@ -410,7 +410,7 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			err = validateEthVestingTransactionDecorator(normalAccMsg, msg)
 			Expect(err).ToNot(BeNil())
 
-			_, err = testutil.DeliverEthTx(s.app, nil, msg)
+			_, err = testutil.DeliverEthTx(s.ctx, s.app, nil, msg)
 			Expect(err).ToNot(BeNil())
 		})
 	})
@@ -567,7 +567,7 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 // 23/02 Lock ends
 var _ = Describe("Clawback Vesting Accounts - claw back tokens", Ordered, func() {
 	// Monthly vesting period
-	stakeDenom := "aphoton"
+	stakeDenom := s.app.StakingKeeper.BondDenom(s.ctx)
 	amt := sdk.NewInt(1)
 	vestingLength := int64(60 * 60 * 24 * 30) // in seconds
 	vestingAmt := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt))

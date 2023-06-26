@@ -232,15 +232,21 @@ func (msg MsgConvertVestingAccount) GetSigners() []sdk.AccAddress {
 func NewMsgConvertIntoVestingAccount(
 	funder, address sdk.AccAddress,
 	startTime time.Time,
-	amount sdk.Coin,
-	longTerm bool,
+	lockupPeriods sdkvesting.Periods,
+	vestingPeriods sdkvesting.Periods,
+	merge bool,
+	stake bool,
+	validatorAddress sdk.ValAddress,
 ) *MsgConvertIntoVestingAccount {
 	return &MsgConvertIntoVestingAccount{
-		FromAddress: funder.String(),
-		EthAddress:  common.BytesToAddress(address.Bytes()).Hex(),
-		StartTime:   startTime,
-		Amount:      amount,
-		LongTerm:    longTerm,
+		FromAddress:      funder.String(),
+		ToAddress:        address.String(),
+		StartTime:        startTime,
+		LockupPeriods:    lockupPeriods,
+		VestingPeriods:   vestingPeriods,
+		Merge:            merge,
+		Stake:            stake,
+		ValidatorAddress: validatorAddress.String(),
 	}
 }
 
@@ -256,17 +262,37 @@ func (msg MsgConvertIntoVestingAccount) ValidateBasic() error {
 		return errorsmod.Wrapf(err, "invalid from address")
 	}
 
-	if ok := common.IsHexAddress(msg.EthAddress); !ok {
-		return errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid eth address")
+	to, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	if err != nil {
+		hexTargetAddr := common.HexToAddress(msg.ToAddress)
+		to = hexTargetAddr.Bytes()
 	}
 
-	coins := sdk.NewCoins()
-	coins = coins.Add(msg.Amount)
-	zeroCoins := sdk.NewCoins()
+	if err := sdk.VerifyAddressFormat(to); err != nil {
+		return errorsmod.Wrapf(err, "invalid to address")
+	}
 
+	lockupCoins := sdk.NewCoins()
+	for i, period := range msg.LockupPeriods {
+		if period.Length < 1 {
+			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
+		}
+		lockupCoins = lockupCoins.Add(period.Amount...)
+	}
+
+	vestingCoins := sdk.NewCoins()
+	for i, period := range msg.VestingPeriods {
+		if period.Length < 1 {
+			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
+		}
+		vestingCoins = vestingCoins.Add(period.Amount...)
+	}
+
+	// If both schedules are present, the must describe the same total amount.
 	// IsEqual can panic, so use (a == b) <=> (a <= b && b <= a).
-	if coins.IsAllLTE(zeroCoins) && zeroCoins.IsAllLTE(coins) {
-		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "amount is not specified")
+	if len(msg.LockupPeriods) > 0 && len(msg.VestingPeriods) > 0 &&
+		!(lockupCoins.IsAllLTE(vestingCoins) && vestingCoins.IsAllLTE(lockupCoins)) {
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "vesting and lockup schedules must have same total coins")
 	}
 
 	return nil
