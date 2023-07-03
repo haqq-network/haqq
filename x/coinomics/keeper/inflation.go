@@ -1,11 +1,11 @@
 package keeper
 
 import (
-	"errors"
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/haqq-network/haqq/x/coinomics/types"
+	"github.com/pkg/errors"
 )
 
 // NextPhase calculus
@@ -29,46 +29,53 @@ func (k Keeper) CountEraForBlock(ctx sdk.Context, params types.Params, currentEr
 func (k Keeper) CalcTargetMintForEra(ctx sdk.Context, eraNumber uint64) sdk.Coin {
 	params := k.GetParams(ctx)
 
+	// eraCoef can't be declared as constant because it's a sdk.Dec with a dynamic constructor
 	eraCoef := sdk.NewDecWithPrec(95, 2) // 0.95
 
-	if eraNumber == 1 {
-		eraPeriod := uint64(2) // 2 years
+	switch {
+	case eraNumber == 1:
 		currentTotalSupply := k.bankKeeper.GetSupply(ctx, types.DefaultMintDenom)
 		maxSupply := k.GetMaxSupply(ctx)
 
 		totalMintNeeded := maxSupply.SubAmount(currentTotalSupply.Amount)
-
 		// -----------  NUM ------------- / ---------- DEN -------------
+		// era_period = 2 years
 		// (1-era_coef)*total_mint_needed / (1-era_coef^(100/era_period))
-		num := (sdk.OneDec().Sub(eraCoef)).Mul(sdk.NewDecFromInt(totalMintNeeded.Amount))
-		den := sdk.OneDec().Sub(eraCoef.Power(100 / eraPeriod))
-
+		num := sdk.NewDecWithPrec(5, 2).Mul(sdk.NewDecFromInt(totalMintNeeded.Amount))
+		den := sdk.OneDec().Sub(eraCoef.Power(50))
 		target := num.Quo(den)
 
 		return sdk.NewCoin(params.MintDenom, target.RoundInt())
-	} else if eraNumber > 1 && eraNumber < 50 {
+	case eraNumber > 1 && eraNumber < 50:
 		prevTargetMint := k.GetEraTargetMint(ctx)
 		currTargetMint := sdk.NewDecFromInt(prevTargetMint.Amount).Mul(eraCoef)
 
 		return sdk.NewCoin(types.DefaultMintDenom, currTargetMint.RoundInt())
-	} else if eraNumber == 50 {
+	case eraNumber == 50:
 		currentTotalSupply := k.bankKeeper.GetSupply(ctx, types.DefaultMintDenom)
 		maxSupply := k.GetMaxSupply(ctx)
 
 		return maxSupply.SubAmount(currentTotalSupply.Amount)
-	} else {
+	default:
 		return sdk.NewCoin(params.MintDenom, sdk.NewInt(0))
 	}
 }
 
-func (k Keeper) CalcInflation(ctx sdk.Context, era uint64, eraTargetSupply sdk.Coin, eraTargetMint sdk.Coin) sdk.Dec {
+func (k Keeper) CalcInflation(_ sdk.Context, era uint64, eraTargetSupply sdk.Coin, eraTargetMint sdk.Coin) sdk.Dec {
 	if era > 50 {
 		return sdk.NewDec(0)
 	}
 
-	return sdk.NewDecFromInt(eraTargetMint.Amount).
-		Quo(sdk.NewDecFromInt(eraTargetSupply.SubAmount(eraTargetMint.Amount).Amount)).
-		Mul(sdk.NewDec(100))
+	if eraTargetSupply.IsZero() {
+		return sdk.NewDec(0)
+	}
+
+	quoAmount := sdk.NewDecFromInt(eraTargetSupply.SubAmount(eraTargetMint.Amount).Amount)
+	if quoAmount.IsZero() {
+		return sdk.NewDec(0)
+	}
+
+	return sdk.NewDecFromInt(eraTargetMint.Amount).Quo(quoAmount).Mul(sdk.NewDec(100))
 }
 
 func (k Keeper) MintAndAllocateInflation(ctx sdk.Context) error {
@@ -90,7 +97,7 @@ func (k Keeper) MintAndAllocateInflation(ctx sdk.Context) error {
 
 	// Mint coins to coinomics module
 	if err := k.MintCoins(ctx, totalMintOnBlockCoin); err != nil {
-		ctx.Logger().Error("FAILED MintCoins: ", err.Error())
+		return errors.Wrap(err, "failed mint coins")
 	}
 
 	// Allocate remaining coinomics module balance to destribution
@@ -101,7 +108,7 @@ func (k Keeper) MintAndAllocateInflation(ctx sdk.Context) error {
 		sdk.NewCoins(totalMintOnBlockCoin),
 	)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed send coins from coinomics to distribution")
 	}
 
 	return nil

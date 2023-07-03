@@ -77,23 +77,23 @@ func (k Keeper) GetEraTargetMint(ctx sdk.Context) sdk.Coin {
 		return sdk.NewCoin(params.MintDenom, sdk.ZeroInt())
 	}
 
-	var eraTragetMintValue sdk.Coin
-	err := eraTragetMintValue.Unmarshal(bz)
+	var eraTargetMintValue sdk.Coin
+	err := eraTargetMintValue.Unmarshal(bz)
 	if err != nil {
-		panic(fmt.Errorf("unable to unmarshal eraTragetMintValue value: %w", err))
+		panic(fmt.Errorf("unable to unmarshal eraTargetMintValue value: %w", err))
 	}
 
-	return eraTragetMintValue
+	return eraTargetMintValue
 }
 
 func (k Keeper) SetEraTargetMint(ctx sdk.Context, eraMint sdk.Coin) {
-	binaryEraTragetMintValue, err := eraMint.Marshal()
+	binaryEraTargetMintValue, err := eraMint.Marshal()
 	if err != nil {
 		panic(fmt.Errorf("unable to marshal amount value: %w", err))
 	}
 
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.KetPrefixEraTargetMint, binaryEraTragetMintValue)
+	store.Set(types.KetPrefixEraTargetMint, binaryEraTargetMintValue)
 }
 
 func (k Keeper) GetEraClosingSupply(ctx sdk.Context) sdk.Coin {
