@@ -3,6 +3,7 @@ package types
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -69,6 +70,11 @@ func validateBlockPerEra(i interface{}) error {
 
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	// Check if BlocksPerEra is within the uint64 range
+	if v > math.MaxUint64 {
+		return errors.New("BlocksPerEra is out of uint64 range")
 	}
 
 	if v == 0 {
