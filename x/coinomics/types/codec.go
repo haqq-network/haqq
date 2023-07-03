@@ -13,4 +13,4 @@ import (
 var ModuleCdc = codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
 
 // RegisterInterfaces register implementations
-func RegisterInterfaces(registry codectypes.InterfaceRegistry) {}
+func RegisterInterfaces(_ codectypes.InterfaceRegistry) {}

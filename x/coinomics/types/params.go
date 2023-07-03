@@ -27,7 +27,6 @@ func NewParams(
 	mintDenom string,
 	blockPerEra uint64,
 	enableCoinomics bool,
-	mintDistribution MintDistribution,
 ) Params {
 	return Params{
 		MintDenom:       mintDenom,
@@ -62,11 +61,8 @@ func validateMintDenom(i interface{}) error {
 	if strings.TrimSpace(v) == "" {
 		return errors.New("mint denom cannot be blank")
 	}
-	if err := sdk.ValidateDenom(v); err != nil {
-		return err
-	}
 
-	return nil
+	return sdk.ValidateDenom(v)
 }
 
 func validateBlockPerEra(i interface{}) error {

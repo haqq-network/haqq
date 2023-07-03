@@ -23,7 +23,7 @@ Below is a list of public block explorers that support Haqq Mainnet and Testnet:
 |                      | Layer | URL                    |
 | -------------------- | -------- | ---------------------- |
 | Blockscout  | `evm`    | [explorer.haqq.network](https://explorer.haqq.network/)                       |
-| PingPub | `cosmos` | [pingpub.explorer.haqq.network](https://pingpub.explorer.haqq.network/haqq)
+| PingPub | `cosmos` | [ping.pub](https://ping.pub/haqq)
 
 :::
 
@@ -32,7 +32,7 @@ Below is a list of public block explorers that support Haqq Mainnet and Testnet:
 |                      | Layer | URL                    |
 | -------------------- | -------- | ---------------------- |
 | Blockscout  | `evm` | [explorer.testedge2.haqq.network](https://explorer.testedge2.haqq.network/)    |                       |
-| PingPub | `cosmos` | [pingpub.explorer.testedge2.haqq.network](https://pingpub.explorer.testedge2.haqq.network/haqq)
+| PingPub | `cosmos` | [testnet.ping.pub](https://testnet.ping.pub/haqq)
 | Manticore | `cosmos` | [testnet.manticore.team](https://testnet.manticore.team/haqq)
 | NodesGuru | `cosmos` | [haqq.explorers.guru](https://haqq.explorers.guru/)
 | StakeMe | `cosmos` | [haqq.exploreme.pro](https://haqq.exploreme.pro/)
