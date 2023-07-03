@@ -1,12 +1,17 @@
-package v1_5_0
+package v150
 
 import (
-	"cosmossdk.io/math"
 	"encoding/json"
+	"math/big"
+	"strconv"
+	"strings"
+
+	"cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -17,12 +22,11 @@ import (
 	"github.com/evmos/ethermint/types"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/pkg/errors"
+	dbm "github.com/tendermint/tm-db"
+
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
-	"github.com/pkg/errors"
-	"math/big"
-	"strconv"
-	"strings"
 )
 
 type RevestingUpgradeHandler struct {
@@ -32,7 +36,15 @@ type RevestingUpgradeHandler struct {
 	StakingKeeper stakingkeeper.Keeper
 	EvmKeeper     *evmkeeper.Keeper
 	VestingKeeper vestingkeeper.Keeper
-	vals          map[*sdk.ValAddress]math.Int
+	vals          map[string]math.Int
+	db            dbm.DB
+	keys          map[string]*storetypes.KVStoreKey
+	stores        map[storetypes.StoreKey]storetypes.CommitKVStore
+	cdc           codec.Codec
+	height        int64
+	threshold     math.Int
+	wl            map[types.EthAccount]bool
+	ignore        map[string]bool
 }
 
 func NewRevestingUpgradeHandler(
@@ -42,6 +54,11 @@ func NewRevestingUpgradeHandler(
 	sk stakingkeeper.Keeper,
 	evm *evmkeeper.Keeper,
 	vk vestingkeeper.Keeper,
+	db dbm.DB,
+	keys map[string]*storetypes.KVStoreKey,
+	cdc codec.Codec,
+	height int64,
+	threshold math.Int,
 ) *RevestingUpgradeHandler {
 	return &RevestingUpgradeHandler{
 		ctx:           ctx,
@@ -50,8 +67,20 @@ func NewRevestingUpgradeHandler(
 		StakingKeeper: sk,
 		EvmKeeper:     evm,
 		VestingKeeper: vk,
-		vals:          make(map[*sdk.ValAddress]math.Int),
+		vals:          make(map[string]math.Int),
+		db:            db,
+		keys:          keys,
+		stores:        make(map[storetypes.StoreKey]storetypes.CommitKVStore),
+		cdc:           cdc,
+		height:        height,
+		threshold:     threshold,
+		wl:            make(map[types.EthAccount]bool),
+		ignore:        make(map[string]bool),
 	}
+}
+
+func (r *RevestingUpgradeHandler) SetIgnoreList(list map[string]bool) {
+	r.ignore = list
 }
 
 func (r *RevestingUpgradeHandler) Run() error {
@@ -61,23 +90,24 @@ func (r *RevestingUpgradeHandler) Run() error {
 		r.ctx.Logger().Info("No accounts found")
 		return nil
 	}
+	r.ctx.Logger().Info("Found accounts to process: " + strconv.Itoa(len(accounts)))
 
-	// Store validators and their bonded tokens for further processing
-	validators := r.StakingKeeper.GetBondedValidatorsByPower(r.ctx)
-	if len(validators) > 50 {
-		validators = validators[:50]
+	if err := r.storeBondedValidatorsByPower(); err != nil {
+		return errors.Wrap(err, "error storing bonded validators by power")
+	}
+	r.ctx.Logger().Info("Stored bonded validators before upgrade: " + strconv.Itoa(len(r.vals)))
+
+	if err := r.loadStateOnHeight(); err != nil {
+		return errors.Wrap(err, "error loading state on height 160000")
 	}
 
-	if len(validators) == 0 {
-		return errors.New("no bonded validators found")
+	if err := r.prepareWhitelistFromHistoryState(); err != nil {
+		return errors.Wrap(err, "error preparing whitelist from history state")
 	}
 
-	for _, validator := range validators {
-		op := validator.GetOperator()
-		r.vals[&op] = validator.GetTokens()
+	if err := r.validateWhitelist(); err != nil {
+		return errors.Wrap(err, "error	validating whitelist")
 	}
-
-	r.ctx.Logger().Info("Total validators before upgrade: " + strconv.Itoa(len(r.vals)))
 
 	for _, acc := range accounts {
 		r.ctx.Logger().Info("---")
@@ -86,21 +116,24 @@ func (r *RevestingUpgradeHandler) Run() error {
 		evmAddr := common.BytesToAddress(acc.GetAddress().Bytes())
 		r.ctx.Logger().Info("EVM Account: " + evmAddr.Hex())
 
-		if r.isAccountWhitelisted(acc.GetAddress().String()) {
-			r.ctx.Logger().Info("WHITELISTED — skip")
-			continue
-		}
-
 		// Check if account is a ETH account
-		if _, ok := acc.(*types.EthAccount); !ok {
+		ethAcc, ok := acc.(*types.EthAccount)
+		if !ok {
 			r.ctx.Logger().Info("Not a ETH Account — skip")
 			continue
 		}
 
+		if r.isAccountWhitelisted(*ethAcc) {
+			r.ctx.Logger().Info("WHITELISTED — skip")
+			continue
+		}
+
+		// Restake coins by default
+		isSmartContract := false
 		evmAcc := r.EvmKeeper.GetAccountWithoutBalance(r.ctx, evmAddr)
 		if evmAcc != nil && evmAcc.IsContract() {
-			r.ctx.Logger().Info("CONTRACT — skip")
-			continue
+			r.ctx.Logger().Info("CONTRACT — do not delegate its coins")
+			isSmartContract = true
 		}
 
 		// TODO Remove before release
@@ -108,17 +141,24 @@ func (r *RevestingUpgradeHandler) Run() error {
 		balanceBeforeUND := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
 		r.ctx.Logger().Info("Balance before undelegation: " + balanceBeforeUND.String())
 
-		// Undelegate all coins for account
-		oldDelegations, totalUndelegatedAmount, err := r.UndelegateAllTokens(acc.GetAddress())
-		if err != nil {
-			return errors.Wrap(err, "error undelegating tokens")
-		}
-		r.ctx.Logger().Info("Total undelegated amount: " + totalUndelegatedAmount.String())
+		var (
+			totalUndelegatedAmount sdk.Coin
+			err                    error
+		)
+		oldDelegations := make(map[*sdk.ValAddress]sdk.Coin)
+		if !isSmartContract {
+			// Undelegate all coins for account
+			oldDelegations, totalUndelegatedAmount, err = r.UndelegateAllTokens(acc.GetAddress())
+			if err != nil {
+				return errors.Wrap(err, "error undelegating tokens")
+			}
+			r.ctx.Logger().Info("Total undelegated amount: " + totalUndelegatedAmount.String())
 
-		// TODO Remove before release
-		// Log balance before upgrade
-		balanceAfterUND := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
-		r.ctx.Logger().Info("Balance after undelegation: " + balanceAfterUND.String())
+			// TODO Remove before release
+			// Log balance before upgrade
+			balanceAfterUND := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
+			r.ctx.Logger().Info("Balance after undelegation: " + balanceAfterUND.String())
+		}
 
 		vestedAmount, err := r.WithdrawCoinsFromVestingContract(evmAddr)
 		if err != nil {
@@ -135,353 +175,25 @@ func (r *RevestingUpgradeHandler) Run() error {
 			return errors.Wrap(err, "error revesting")
 		}
 
+		if !isSmartContract {
+			shares, err := r.Restaking(acc, balance, oldDelegations)
+			if err != nil {
+				return errors.Wrap(err, "error restaking")
+			}
+
+			r.ctx.Logger().Info("New staking shares:")
+			for valAddr, share := range shares {
+				r.ctx.Logger().Info(share.String() + " to " + valAddr.String())
+			}
+		}
+
 		// TODO Remove before release
 		// Log balance after revesting
-		// --------------------------
-
-		shares, err := r.Restaking(acc, balance, oldDelegations)
-		if err != nil {
-			return errors.Wrap(err, "error restaking")
-		}
-
-		r.ctx.Logger().Info("New staking shares:")
-		for valAddr, share := range shares {
-			r.ctx.Logger().Info(share.String() + " to " + valAddr.String())
-		}
-
-		// TODO Remove before release
-		// Log balance before upgrade
 		balanceAfter := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
-		r.ctx.Logger().Info("Balance after (re)staking: " + balanceAfter.String())
+		r.ctx.Logger().Info("Balance after (re)vesting: " + balanceAfter.String())
 	}
 
 	return nil
-}
-
-func (r *RevestingUpgradeHandler) isAccountWhitelisted(addr string) bool {
-	whitelist := map[string]bool{
-		//"haqq196srgtdaqrhqehdx36hfacrwmhlfznwpt78rct": true, // random address
-	}
-
-	_, ok := whitelist[addr]
-	return ok
-}
-
-func (r *RevestingUpgradeHandler) getVestingSmartContract() (common.Address, string) {
-	contract := common.HexToAddress("0x40a3e24b85D32f3f68Ee9e126B8dD9dBC2D301Eb")
-	contractAbi := `[
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "beneficiaryAddress",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "depositId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "timestamp",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "sumInWeiDeposited",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "depositedBy",
-                  "type": "address"
-                }
-              ],
-              "name": "DepositMade",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": false,
-                  "internalType": "uint8",
-                  "name": "version",
-                  "type": "uint8"
-                }
-              ],
-              "name": "Initialized",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "beneficiary",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "sumInWei",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "triggeredByAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "WithdrawalMade",
-              "type": "event"
-            },
-            {
-              "inputs": [],
-              "name": "MAX_DEPOSITS",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "NUMBER_OF_PAYMENTS",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "TIME_BETWEEN_PAYMENTS",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "_depositId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "amountForOneWithdrawal",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "_depositId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "amountToWithdrawNow",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "calculateAvailableSumForAllDeposits",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "deposit",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "success",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "payable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "name": "deposits",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "timestamp",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "sumInWeiDeposited",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "sumPaidAlready",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "name": "depositsCounter",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "_depositId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "totalPayoutsUnblocked",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_newBeneficiaryAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "transferDepositRights",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "withdraw",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "success",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            }
-          ]`
-
-	return contract, contractAbi
 }
 
 // UndelegateAllTokens undelegates all tokens from the all validators and returns the undelegated amount per validator
@@ -520,6 +232,8 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 			if err := r.BankKeeper.UndelegateCoinsFromModuleToAccount(r.ctx, stakingtypes.NotBondedPoolName, delAddr, coins); err != nil {
 				return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to transfer tokens from not bonded pool to delegator's address")
 			}
+
+			r.reduceValidatorPower(valAddr.String(), ubdAmount)
 		} else {
 			// Should not happen
 			r.ctx.Logger().Info("Validator is not bonded...")
@@ -547,7 +261,7 @@ func (r *RevestingUpgradeHandler) WithdrawCoinsFromVestingContract(addr common.A
 
 	// Create a call data buffer for the function call
 	// Use "calculateTotalRemainingForAllDeposits" on release
-	//callData, err := cAbi.Pack("calculateTotalRemainingForAllDeposits", addr)
+	// callData, err := cAbi.Pack("calculateTotalRemainingForAllDeposits", addr)
 	callData, err := cAbi.Pack("calculateAvailableSumForAllDeposits", addr)
 	if err != nil {
 		return totalVestingAmount, errors.Wrap(err, "abi.Pack")
@@ -558,6 +272,9 @@ func (r *RevestingUpgradeHandler) WithdrawCoinsFromVestingContract(addr common.A
 		To:   &contractAddress,
 		Data: (*hexutil.Bytes)(&callData),
 	})
+	if err != nil {
+		return totalVestingAmount, errors.Wrap(err, "json.Marshal")
+	}
 
 	calReq := &evmtypes.EthCallRequest{
 		Args:   args,
@@ -573,7 +290,7 @@ func (r *RevestingUpgradeHandler) WithdrawCoinsFromVestingContract(addr common.A
 	// Parse contract response
 	var amount *big.Int
 	// Use "calculateTotalRemainingForAllDeposits" on release
-	//if err := cAbi.UnpackIntoInterface(&amount, "calculateTotalRemainingForAllDeposits", resp.Ret); err != nil {
+	// if err := cAbi.UnpackIntoInterface(&amount, "calculateTotalRemainingForAllDeposits", resp.Ret); err != nil {
 	if err := cAbi.UnpackIntoInterface(&amount, "calculateAvailableSumForAllDeposits", resp.Ret); err != nil {
 		return totalVestingAmount, errors.Wrap(err, "abi.UnpackIntoInterface")
 	}
@@ -627,9 +344,6 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 		vestingPeriods,
 		true,
 	)
-	if err := msg.ValidateBasic(); err != nil {
-		return errors.Wrap(err, "failed to validate msg")
-	}
 
 	_, err := r.VestingKeeper.CreateClawbackVestingAccount(r.ctx, msg)
 	if err != nil {
@@ -637,40 +351,6 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 	}
 
 	return nil
-}
-
-func (r *RevestingUpgradeHandler) getVestingPeriods(totalAmount sdk.Coin) (sdkvesting.Periods, sdkvesting.Periods) {
-	periodLength := int64(2592000) // 30 days in seconds
-	unlockAmount := sdk.NewCoin(totalAmount.Denom, totalAmount.Amount.QuoRaw(24))
-	restAmount := totalAmount
-
-	lockupPeriods := make(sdkvesting.Periods, 0, 24)
-	for i := 0; i < 24; i++ {
-		if i == 23 {
-			unlockAmount = restAmount
-		}
-
-		period := sdkvesting.Period{Length: periodLength, Amount: sdk.NewCoins(unlockAmount)}
-		lockupPeriods = append(lockupPeriods, period)
-		restAmount = restAmount.Sub(unlockAmount)
-	}
-
-	vestingPeriods := sdkvesting.Periods{
-		sdkvesting.Period{Length: 1, Amount: sdk.NewCoins(totalAmount)},
-	}
-
-	return lockupPeriods, vestingPeriods
-}
-
-func (r *RevestingUpgradeHandler) getZeroVestingPeriods() (sdkvesting.Periods, sdkvesting.Periods) {
-	lockupPeriods := sdkvesting.Periods{
-		sdkvesting.Period{Length: 1, Amount: sdk.NewCoins(sdk.NewCoin(r.StakingKeeper.BondDenom(r.ctx), sdk.ZeroInt()))},
-	}
-	vestingPeriods := sdkvesting.Periods{
-		sdkvesting.Period{Length: 1, Amount: sdk.NewCoins(sdk.NewCoin(r.StakingKeeper.BondDenom(r.ctx), sdk.ZeroInt()))},
-	}
-
-	return lockupPeriods, vestingPeriods
 }
 
 func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount sdk.Coin, oldDelegations map[*sdk.ValAddress]sdk.Coin) (map[*sdk.ValAddress]sdk.Dec, error) {
@@ -690,6 +370,7 @@ func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount 
 				return map[*sdk.ValAddress]sdk.Dec{}, errors.Wrap(err, "failed to delegate")
 			}
 
+			r.increaseValidatorPower(valAddr.String(), amt.Amount)
 			r.ctx.Logger().Info("restaked " + amt.String() + " to " + valAddr.String())
 
 			restAmount = restAmount.Sub(amt)
@@ -697,45 +378,19 @@ func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount 
 		}
 	}
 
-	// 1ISL deductable, leave it for future fees
-	oneISLM := sdk.NewCoin(r.StakingKeeper.BondDenom(r.ctx), sdk.NewInt(1000000000000000000))
-	if oneISLM.IsGTE(restAmount) {
-		r.ctx.Logger().Info("too small balance to stake: " + restAmount.String())
-		return shares, nil
+	val, valAddr, err := r.getWeakestValidator()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get weakest validator")
 	}
-	restAmount = restAmount.Sub(oneISLM)
 
-	val, valAddr := r.getWeakestValidator()
-	restShares, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), restAmount.Amount, stakingtypes.Unbonded, val, true)
+	restShares, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), restAmount.Amount, stakingtypes.Unbonded, *val, true)
 	if err != nil {
 		return map[*sdk.ValAddress]sdk.Dec{}, errors.Wrap(err, "failed to delegate")
 	}
 	shares[valAddr] = restShares
 
 	// Add power to validator
-	r.vals[valAddr] = r.vals[valAddr].Add(restAmount.Amount)
+	r.increaseValidatorPower(valAddr.String(), restAmount.Amount)
 
 	return shares, nil
-}
-
-func (r *RevestingUpgradeHandler) getWeakestValidator() (stakingtypes.Validator, *sdk.ValAddress) {
-	var weakestAddr *sdk.ValAddress
-	for valAddr, _ := range r.vals {
-		if weakestAddr == nil {
-			weakestAddr = valAddr
-			continue
-		}
-
-		if r.vals[valAddr].LT(r.vals[weakestAddr]) {
-			weakestAddr = valAddr
-		}
-	}
-
-	val, found := r.StakingKeeper.GetValidator(r.ctx, weakestAddr.Bytes())
-	if !found {
-		// Should never happen, but just in case
-		panic("validator not found")
-	}
-
-	return val, weakestAddr
 }

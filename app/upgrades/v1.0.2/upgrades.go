@@ -5,15 +5,15 @@ import (
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/haqq-network/haqq/types"
-
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
+
+	"github.com/haqq-network/haqq/types"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.0.2

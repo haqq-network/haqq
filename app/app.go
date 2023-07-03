@@ -766,7 +766,7 @@ func NewHaqq(
 
 	app.SetAnteHandler(NewHaqqAnteHandlerDecorator(app.StakingKeeper, ante.NewAnteHandler(options)))
 	app.SetEndBlocker(app.EndBlocker)
-	app.setupUpgradeHandlers()
+	app.setupUpgradeHandlers(db, app.keys)
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
@@ -1024,7 +1024,7 @@ func initParamsKeeper(
 	return paramsKeeper
 }
 
-func (app *Haqq) setupUpgradeHandlers() {
+func (app *Haqq) setupUpgradeHandlers(db dbm.DB, keys map[string]*storetypes.KVStoreKey) {
 	// v1.0.2 update handler
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v102.UpgradeName,
@@ -1087,6 +1087,9 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v150.UpgradeName,
 		v150.CreateUpgradeHandler(
+			db,
+			keys,
+			app.appCodec,
 			app.mm,
 			app.configurator,
 			app.AccountKeeper,
