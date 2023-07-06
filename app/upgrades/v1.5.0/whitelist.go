@@ -3,15 +3,16 @@ package v150
 import (
 	"strconv"
 
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/evmos/ethermint/types"
 	"github.com/pkg/errors"
 )
 
-func (r *RevestingUpgradeHandler) prepareWhitelistFromHistoryState() error {
+func (r *RevestingUpgradeHandler) prepareWhitelistFromHistoryState(accounts []authtypes.AccountI) error {
 	r.ctx.Logger().Info("Prepare whiltelist from history state")
 
-	accounts := r.AccountKeeper.GetAllAccounts(r.ctx)
 	for _, acc := range accounts {
 		// Check if account is a ETH account
 		ethAcc, ok := acc.(*types.EthAccount)
@@ -64,6 +65,16 @@ func (r *RevestingUpgradeHandler) validateWhitelist() error {
 			balance = balance.Add(delegation.Balance)
 		}
 
+		evmAddr := common.BytesToAddress(acc.GetAddress().Bytes())
+		vestingBalance, err := r.getVestingContractBalance(evmAddr)
+		if err != nil {
+			return errors.Wrap(err, "failed to get vesting contract balance")
+		}
+
+		if !vestingBalance.IsZero() {
+			balance = balance.Add(vestingBalance)
+		}
+
 		if !balance.IsZero() && balance.Amount.GT(r.threshold) && ok {
 			r.ctx.Logger().Info("balance now greater than threshold: " + acc.GetAddress().String() + " (" + balance.String() + "); WILL BE REVESTED")
 			r.wl[acc] = false
@@ -83,7 +94,7 @@ func (r *RevestingUpgradeHandler) validateWhitelist() error {
 
 func (r *RevestingUpgradeHandler) isAccountWhitelisted(acc types.EthAccount) bool {
 	allowed, ok := r.wl[acc]
-	if !ok {
+	if !ok || !allowed {
 		return r.isAccountIgnored(acc.GetAddress().String())
 	}
 
