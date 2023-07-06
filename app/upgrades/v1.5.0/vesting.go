@@ -1,13 +1,23 @@
 package v150
 
 import (
+	"encoding/json"
+	"math/big"
+	"strings"
+
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/evmos/ethermint/server/config"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/pkg/errors"
 )
 
 func (r *RevestingUpgradeHandler) getVestingPeriods(totalAmount sdk.Coin) (sdkvesting.Periods, sdkvesting.Periods) {
-	periodLength := int64(2592000) // 30 days in seconds
+	periodLength := cliffPeriod
 	unlockAmount := sdk.NewCoin(totalAmount.Denom, totalAmount.Amount.QuoRaw(24))
 	restAmount := totalAmount
 
@@ -20,6 +30,10 @@ func (r *RevestingUpgradeHandler) getVestingPeriods(totalAmount sdk.Coin) (sdkve
 		period := sdkvesting.Period{Length: periodLength, Amount: sdk.NewCoins(unlockAmount)}
 		lockupPeriods = append(lockupPeriods, period)
 		restAmount = restAmount.Sub(unlockAmount)
+
+		if i == 0 {
+			periodLength = unlockPeriod
+		}
 	}
 
 	vestingPeriods := sdkvesting.Periods{
@@ -29,20 +43,8 @@ func (r *RevestingUpgradeHandler) getVestingPeriods(totalAmount sdk.Coin) (sdkve
 	return lockupPeriods, vestingPeriods
 }
 
-func (r *RevestingUpgradeHandler) getZeroVestingPeriods() (sdkvesting.Periods, sdkvesting.Periods) {
-	lockupPeriods := sdkvesting.Periods{
-		sdkvesting.Period{Length: 0, Amount: sdk.NewCoins(sdk.NewCoin(r.StakingKeeper.BondDenom(r.ctx), sdk.ZeroInt()))},
-	}
-	vestingPeriods := sdkvesting.Periods{
-		sdkvesting.Period{Length: 0, Amount: sdk.NewCoins(sdk.NewCoin(r.StakingKeeper.BondDenom(r.ctx), sdk.ZeroInt()))},
-	}
-
-	return lockupPeriods, vestingPeriods
-}
-
-func (r *RevestingUpgradeHandler) getVestingSmartContract() (common.Address, string) {
-	contract := common.HexToAddress("0x40a3e24b85D32f3f68Ee9e126B8dD9dBC2D301Eb")
-	contractAbi := `[
+func (r *RevestingUpgradeHandler) getVestingContractABI() string {
+	return `[
             {
               "anonymous": false,
               "inputs": [
@@ -353,6 +355,68 @@ func (r *RevestingUpgradeHandler) getVestingSmartContract() (common.Address, str
               "type": "function"
             }
           ]`
+}
 
-	return contract, contractAbi
+func (r *RevestingUpgradeHandler) getVestingContractAddress() common.Address {
+	return common.HexToAddress(vestingContract)
+}
+
+func (r *RevestingUpgradeHandler) getVestingContractBalance(addr common.Address) (sdk.Coin, error) {
+	bondDenom := r.StakingKeeper.BondDenom(r.ctx)
+	totalVestingAmount := sdk.NewCoin(bondDenom, sdk.ZeroInt())
+
+	contractAddress := r.getVestingContractAddress()
+	contractABI := r.getVestingContractABI()
+
+	// Parse the contract ABI
+	cAbi, err := abi.JSON(strings.NewReader(contractABI))
+	if err != nil {
+		return totalVestingAmount, errors.Wrap(err, "abi.JSON")
+	}
+
+	// Create a call data buffer for the function call
+	// Use "calculateTotalRemainingForAllDeposits" on release
+	// callData, err := cAbi.Pack("calculateTotalRemainingForAllDeposits", addr)
+	// TODO SET CORRECT FUNCTION NAME
+	callData, err := cAbi.Pack("calculateAvailableSumForAllDeposits", addr)
+	if err != nil {
+		return totalVestingAmount, errors.Wrap(err, "abi.Pack")
+	}
+
+	args, err := json.Marshal(evmtypes.TransactionArgs{
+		From: &addr,
+		To:   &contractAddress,
+		Data: (*hexutil.Bytes)(&callData),
+	})
+	if err != nil {
+		return totalVestingAmount, errors.Wrap(err, "json.Marshal")
+	}
+
+	calReq := &evmtypes.EthCallRequest{
+		Args:   args,
+		GasCap: config.DefaultGasCap,
+	}
+
+	// Call smart-contract
+	resp, err := r.EvmKeeper.EthCall(r.ctx, calReq)
+	if err != nil {
+		return totalVestingAmount, errors.Wrap(err, "evm.EthCall")
+	}
+
+	// Parse contract response
+	var amount *big.Int
+	// Use "calculateTotalRemainingForAllDeposits" on release
+	// if err := cAbi.UnpackIntoInterface(&amount, "calculateTotalRemainingForAllDeposits", resp.Ret); err != nil {
+	// TODO SET CORRECT FUNCTION NAME
+	if err := cAbi.UnpackIntoInterface(&amount, "calculateAvailableSumForAllDeposits", resp.Ret); err != nil {
+		return totalVestingAmount, errors.Wrap(err, "abi.UnpackIntoInterface")
+	}
+
+	amt := math.NewIntFromBigInt(amount)
+
+	if !amt.IsZero() {
+		totalVestingAmount = sdk.NewCoin(bondDenom, amt)
+	}
+
+	return totalVestingAmount, nil
 }

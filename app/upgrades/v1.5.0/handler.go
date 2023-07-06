@@ -1,10 +1,7 @@
 package v150
 
 import (
-	"encoding/json"
-	"math/big"
 	"strconv"
-	"strings"
 
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -15,13 +12,9 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/evmos/ethermint/server/config"
 	"github.com/evmos/ethermint/types"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	"github.com/pkg/errors"
 	dbm "github.com/tendermint/tm-db"
 
@@ -101,7 +94,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 		return errors.Wrap(err, "error loading state on height 160000")
 	}
 
-	if err := r.prepareWhitelistFromHistoryState(); err != nil {
+	if err := r.prepareWhitelistFromHistoryState(accounts); err != nil {
 		return errors.Wrap(err, "error preparing whitelist from history state")
 	}
 
@@ -211,15 +204,22 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 	undelegatedAmounts := make(map[*sdk.ValAddress]sdk.Coin, len(delegations))
 	for _, delegation := range delegations {
 		valAddr, _ := sdk.ValAddressFromBech32(delegation.GetValidatorAddr().String())
-		ubdAmount, err := r.StakingKeeper.Unbond(r.ctx, delAddr, valAddr, delegation.GetShares())
-		if err != nil {
-			return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to unbond tokens")
-		}
-
 		validator, found := r.StakingKeeper.GetValidator(r.ctx, valAddr)
 		if !found {
 			// Impossible as we are iterating over active delegations
 			return nil, totalUndelegatedAmount, errors.New("validator not found")
+		}
+
+		// Skip self delegation if it's lower than threshold to prevent auto jail
+		isValidatorOperator := delAddr.Equals(validator.GetOperator())
+		delAmount := validator.TokensFromShares(delegation.Shares).TruncateInt()
+		if isValidatorOperator && delAmount.LT(r.threshold) {
+			continue
+		}
+
+		ubdAmount, err := r.StakingKeeper.Unbond(r.ctx, delAddr, valAddr, delegation.GetShares())
+		if err != nil {
+			return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to unbond tokens")
 		}
 
 		// transfer the validator tokens to the not bonded pool
@@ -248,65 +248,22 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 }
 
 func (r *RevestingUpgradeHandler) WithdrawCoinsFromVestingContract(addr common.Address) (sdk.Coin, error) {
-	bondDenom := r.StakingKeeper.BondDenom(r.ctx)
-	totalVestingAmount := sdk.NewCoin(bondDenom, sdk.NewInt(0))
-
-	contractAddress, contractABI := r.getVestingSmartContract()
-
-	// Parse the contract ABI
-	cAbi, err := abi.JSON(strings.NewReader(contractABI))
+	vestingBalance, err := r.getVestingContractBalance(addr)
 	if err != nil {
-		return totalVestingAmount, errors.Wrap(err, "abi.JSON")
+		return sdk.Coin{}, errors.Wrap(err, "failed to get vesting contract balance")
 	}
 
-	// Create a call data buffer for the function call
-	// Use "calculateTotalRemainingForAllDeposits" on release
-	// callData, err := cAbi.Pack("calculateTotalRemainingForAllDeposits", addr)
-	callData, err := cAbi.Pack("calculateAvailableSumForAllDeposits", addr)
-	if err != nil {
-		return totalVestingAmount, errors.Wrap(err, "abi.Pack")
-	}
-
-	args, err := json.Marshal(evmtypes.TransactionArgs{
-		From: &addr,
-		To:   &contractAddress,
-		Data: (*hexutil.Bytes)(&callData),
-	})
-	if err != nil {
-		return totalVestingAmount, errors.Wrap(err, "json.Marshal")
-	}
-
-	calReq := &evmtypes.EthCallRequest{
-		Args:   args,
-		GasCap: config.DefaultGasCap,
-	}
-
-	// Call smart-contract
-	resp, err := r.EvmKeeper.EthCall(r.ctx, calReq)
-	if err != nil {
-		return totalVestingAmount, errors.Wrap(err, "evm.EthCall")
-	}
-
-	// Parse contract response
-	var amount *big.Int
-	// Use "calculateTotalRemainingForAllDeposits" on release
-	// if err := cAbi.UnpackIntoInterface(&amount, "calculateTotalRemainingForAllDeposits", resp.Ret); err != nil {
-	if err := cAbi.UnpackIntoInterface(&amount, "calculateAvailableSumForAllDeposits", resp.Ret); err != nil {
-		return totalVestingAmount, errors.Wrap(err, "abi.UnpackIntoInterface")
-	}
-
-	amt := math.NewIntFromBigInt(amount)
 	// Transfer the tokens from the vesting contract to the account
-	if !amt.IsZero() {
-		totalVestingAmount.Amount = amt
+	if !vestingBalance.IsZero() {
+		contractAddress := r.getVestingContractAddress()
 		contractAccount := sdk.AccAddress(contractAddress.Bytes())
 		acc := sdk.AccAddress(addr.Bytes())
-		if err := r.BankKeeper.SendCoins(r.ctx, contractAccount, acc, sdk.NewCoins(totalVestingAmount)); err != nil {
-			return totalVestingAmount, errors.Wrap(err, "failed to transfer tokens from vesting contract to account")
+		if err := r.BankKeeper.SendCoins(r.ctx, contractAccount, acc, sdk.NewCoins(vestingBalance)); err != nil {
+			return vestingBalance, errors.Wrap(err, "failed to transfer tokens from vesting contract to account")
 		}
 	}
 
-	return totalVestingAmount, nil
+	return vestingBalance, nil
 }
 
 func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coin) error {
@@ -320,34 +277,22 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 		return errors.Wrap(err, "failed to send coins to vesting module")
 	}
 
-	// Convert to empty vesting account
-	zeroLockingPeriods, zeroVestingPeriods := r.getZeroVestingPeriods()
-	baseAcc := authtypes.NewBaseAccountWithAddress(acc.GetAddress())
-	vestingAcc := vestingtypes.NewClawbackVestingAccount(
-		baseAcc,
-		moduleAcc.GetAddress(),
-		sdk.NewCoins(sdk.NewCoin(coin.Denom, sdk.ZeroInt())),
-		r.ctx.BlockTime(),
-		zeroLockingPeriods,
-		zeroVestingPeriods,
-	)
-	newAcc := r.AccountKeeper.NewAccount(r.ctx, vestingAcc)
-	r.AccountKeeper.SetAccount(r.ctx, newAcc)
-
-	// Create a new vesting by merge
+	// Convert to a vesting account
 	lockupPeriods, vestingPeriods := r.getVestingPeriods(coin)
-	msg := vestingtypes.NewMsgCreateClawbackVestingAccount(
+	msg := vestingtypes.NewMsgConvertIntoVestingAccount(
 		moduleAcc.GetAddress(),
 		acc.GetAddress(),
 		r.ctx.BlockTime(),
 		lockupPeriods,
 		vestingPeriods,
 		true,
+		false,
+		nil,
 	)
 
-	_, err := r.VestingKeeper.CreateClawbackVestingAccount(r.ctx, msg)
+	_, err := r.VestingKeeper.ConvertIntoVestingAccount(r.ctx, msg)
 	if err != nil {
-		return errors.Wrap(err, "failed to create clawback vesting account")
+		return errors.Wrap(err, "failed to convert into clawback vesting account")
 	}
 
 	return nil
