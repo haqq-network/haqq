@@ -76,6 +76,10 @@ func (r *RevestingUpgradeHandler) SetIgnoreList(list map[string]bool) {
 	r.ignore = list
 }
 
+func (r *RevestingUpgradeHandler) GetIgnoreList() map[string]bool {
+	return r.ignore
+}
+
 func (r *RevestingUpgradeHandler) Run() error {
 	accounts := r.AccountKeeper.GetAllAccounts(r.ctx)
 	if len(accounts) == 0 {
