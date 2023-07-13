@@ -106,7 +106,7 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 				vestingStart := s.ctx.BlockTime()
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
 				funder := sdk.AccAddress(types.ModuleName)
-				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr2, balances) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -150,7 +150,7 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 				vestingStart := s.ctx.BlockTime()
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
 				funder := sdk.AccAddress(types.ModuleName)
-				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr2, balances) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -170,7 +170,7 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 				vestingStart := s.ctx.BlockTime()
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
 				funder := addr
-				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr2, balances) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -451,7 +451,7 @@ func (suite *KeeperTestSuite) TestClawbackVestingAccountStore() {
 	funder := sdk.AccAddress(types.ModuleName)
 	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 	baseAccount := authtypes.NewBaseAccountWithAddress(addr)
-	acc := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+	acc := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 	suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
 	acc2 := suite.app.AccountKeeper.GetAccount(suite.ctx, acc.GetAddress())
@@ -467,7 +467,7 @@ func (suite *KeeperTestSuite) TestClawbackVestingAccountMarshal() {
 	funder := sdk.AccAddress(types.ModuleName)
 	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 	baseAccount := authtypes.NewBaseAccountWithAddress(addr)
-	acc := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+	acc := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 
 	bz, err := suite.app.AccountKeeper.MarshalAccount(acc)
 	suite.Require().NoError(err)
@@ -520,7 +520,7 @@ func (suite *KeeperTestSuite) TestConvertVestingAccount() {
 					{Length: 2000, Amount: quarter},
 					{Length: 2000, Amount: quarter},
 				}
-				vestingAcc := types.NewClawbackVestingAccount(baseAcc, from, balances, startTime, lockupPeriods, vestingPeriods)
+				vestingAcc := types.NewClawbackVestingAccount(baseAcc, from, balances, startTime, lockupPeriods, vestingPeriods, nil)
 				suite.app.AccountKeeper.SetAccount(suite.ctx, vestingAcc)
 				return vestingAcc
 			},
@@ -532,7 +532,7 @@ func (suite *KeeperTestSuite) TestConvertVestingAccount() {
 				from, priv := utiltx.NewAccAddressAndKey()
 				vestingPeriods := sdkvesting.Periods{{Length: 0, Amount: balances}}
 				baseAcc := authtypes.NewBaseAccount(from, priv.PubKey(), 1, 5)
-				vestingAcc := types.NewClawbackVestingAccount(baseAcc, from, balances, startTime, lockupPeriods, vestingPeriods)
+				vestingAcc := types.NewClawbackVestingAccount(baseAcc, from, balances, startTime, lockupPeriods, vestingPeriods, nil)
 				suite.app.AccountKeeper.SetAccount(suite.ctx, vestingAcc)
 				return vestingAcc
 			},
@@ -543,7 +543,7 @@ func (suite *KeeperTestSuite) TestConvertVestingAccount() {
 			func() authtypes.AccountI {
 				from, priv := utiltx.NewAccAddressAndKey()
 				baseAcc := authtypes.NewBaseAccount(from, priv.PubKey(), 1, 5)
-				vestingAcc := types.NewClawbackVestingAccount(baseAcc, from, balances, suite.ctx.BlockTime(), lockupPeriods, vestingPeriods)
+				vestingAcc := types.NewClawbackVestingAccount(baseAcc, from, balances, suite.ctx.BlockTime(), lockupPeriods, vestingPeriods, nil)
 				suite.app.AccountKeeper.SetAccount(suite.ctx, vestingAcc)
 				return vestingAcc
 			},
@@ -555,7 +555,7 @@ func (suite *KeeperTestSuite) TestConvertVestingAccount() {
 				from, priv := utiltx.NewAccAddressAndKey()
 				baseAcc := authtypes.NewBaseAccount(from, priv.PubKey(), 1, 5)
 				vestingPeriods := sdkvesting.Periods{{Length: 0, Amount: balances}}
-				vestingAcc := types.NewClawbackVestingAccount(baseAcc, from, balances, startTime, nil, vestingPeriods)
+				vestingAcc := types.NewClawbackVestingAccount(baseAcc, from, balances, startTime, nil, vestingPeriods, nil)
 				suite.app.AccountKeeper.SetAccount(suite.ctx, vestingAcc)
 				return vestingAcc
 			},
@@ -753,7 +753,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 				vestingStart := s.ctx.BlockTime()
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
 				funder := sdk.AccAddress(types.ModuleName)
-				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr2, balances) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -775,7 +775,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 				vestingStart := s.ctx.BlockTime()
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
 				funder := sdk.AccAddress(types.ModuleName)
-				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr2, balances) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -797,7 +797,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 				vestingStart := s.ctx.BlockTime()
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
 				funder := addr
-				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr2, balances) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -819,7 +819,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 				vestingStart := s.ctx.BlockTime()
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
 				funder := addr
-				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr2, balances) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -841,7 +841,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 				vestingStart := s.ctx.BlockTime()
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr2)
 				funder := addr
-				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods)
+				clawbackAccount := types.NewClawbackVestingAccount(baseAccount, funder, balances, vestingStart, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr2, balances) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},

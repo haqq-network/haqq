@@ -103,6 +103,7 @@ func (k Keeper) CreateClawbackVestingAccount(
 			msg.StartTime,
 			msg.LockupPeriods,
 			msg.VestingPeriods,
+			nil,
 		)
 		acc := ak.NewAccount(ctx, vestingAcc)
 		ak.SetAccount(ctx, acc)
@@ -293,6 +294,7 @@ func (k Keeper) ConvertVestingAccount(
 
 	ethAccount := ethtypes.ProtoAccount().(*ethtypes.EthAccount)
 	ethAccount.BaseAccount = vestingAcc.BaseAccount
+	ethAccount.SetCodeHash(vestingAcc.GetCodeHash()) // nolint: errcheck // There's always nil error
 	k.accountKeeper.SetAccount(ctx, ethAccount)
 
 	return &types.MsgConvertVestingAccountResponse{}, nil
@@ -371,7 +373,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 	var vestingAcc *types.ClawbackVestingAccount
 	var isClawback bool
 
-	_, isEthAccount := targetAccount.(*ethtypes.EthAccount)
+	ethAcc, isEthAccount := targetAccount.(*ethtypes.EthAccount)
 	vestingAcc, isClawback = targetAccount.(*types.ClawbackVestingAccount)
 
 	if !isClawback && !isEthAccount && !createNewAcc {
@@ -379,6 +381,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 	}
 
 	if !isClawback || createNewAcc {
+		codeHash := ethAcc.GetCodeHash()
 		baseAcc := authtypes.NewBaseAccountWithAddress(to)
 		vestingAcc = types.NewClawbackVestingAccount(
 			baseAcc,
@@ -387,6 +390,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 			msg.StartTime,
 			msg.LockupPeriods,
 			msg.VestingPeriods,
+			&codeHash,
 		)
 		acc := ak.NewAccount(ctx, vestingAcc)
 		ak.SetAccount(ctx, acc)
