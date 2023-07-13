@@ -1,4 +1,4 @@
-package erc20
+package tests
 
 import (
 	"encoding/json"
@@ -22,9 +22,9 @@ import (
 	"github.com/evmos/ethermint/tests"
 	evm "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
 	"github.com/haqq-network/haqq/app"
 	haqqtypes "github.com/haqq-network/haqq/types"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
