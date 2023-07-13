@@ -133,7 +133,7 @@ import (
 	"github.com/haqq-network/haqq/x/erc20"
 	erc20client "github.com/haqq-network/haqq/x/erc20/client"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"

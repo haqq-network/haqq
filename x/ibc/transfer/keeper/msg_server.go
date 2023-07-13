@@ -12,7 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
 )
 
 var _ types.MsgServer = Keeper{}

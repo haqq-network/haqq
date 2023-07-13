@@ -13,8 +13,8 @@ import (
 	"github.com/evmos/ethermint/encoding"
 
 	"github.com/evmos/evmos/v10/app"
+	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
 	v2 "github.com/haqq-network/haqq/x/erc20/migrations/v2"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 func TestUpdateParams(t *testing.T) {

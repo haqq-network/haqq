@@ -12,7 +12,7 @@ import (
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
 	"github.com/evmos/evmos/v10/contracts"
-	"github.com/haqq-network/haqq/x/erc20/types"
+	"github.com/evmos/evmos/v10/x/erc20/types"
 )
 
 var _ evmtypes.EvmHooks = Hooks{}
@@ -46,7 +46,7 @@ func (h Hooks) PostTxProcessing(ctx sdk.Context, msg core.Message, receipt *etht
 // `ConvertERC20` msg does not trigger the hook as it only calls `ApplyMessage`.
 func (k Keeper) PostTxProcessing(
 	ctx sdk.Context,
-	msg core.Message,
+	_ core.Message,
 	receipt *ethtypes.Receipt,
 ) error {
 	params := k.GetParams(ctx)
