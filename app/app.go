@@ -87,8 +87,7 @@ import (
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
-	"github.com/cosmos/ibc-go/v5/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v5/modules/apps/transfer/keeper"
+	ibctransfer "github.com/cosmos/ibc-go/v5/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v5/modules/core"
 	ibcclient "github.com/cosmos/ibc-go/v5/modules/core/02-client"
@@ -118,19 +117,8 @@ import (
 	"github.com/evmos/evmos/v10/x/epochs"
 	epochskeeper "github.com/evmos/evmos/v10/x/epochs/keeper"
 	epochstypes "github.com/evmos/evmos/v10/x/epochs/types"
-	"github.com/evmos/evmos/v10/x/erc20"
-	erc20client "github.com/evmos/evmos/v10/x/erc20/client"
-	erc20keeper "github.com/evmos/evmos/v10/x/erc20/keeper"
-	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
-	"github.com/haqq-network/haqq/app/ante"
 
-	// "github.com/evmos/evmos/v8/x/incentives"
-	// incentivesclient "github.com/evmos/evmos/v8/x/incentives/client"
-	// incentiveskeeper "github.com/evmos/evmos/v8/x/incentives/keeper"
-	// incentivestypes "github.com/evmos/evmos/v8/x/incentives/types"
-	// "github.com/evmos/evmos/v8/x/inflation"
-	// inflationkeeper "github.com/evmos/evmos/v8/x/inflation/keeper"
-	// inflationtypes "github.com/evmos/evmos/v8/x/inflation/types"
+	"github.com/haqq-network/haqq/app/ante"
 
 	"github.com/haqq-network/haqq/x/vesting"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
@@ -142,12 +130,22 @@ import (
 	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 
+	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/haqq-network/haqq/x/erc20"
+	erc20client "github.com/haqq-network/haqq/x/erc20/client"
+	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
+
+	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
+	"github.com/haqq-network/haqq/x/ibc/transfer"
+	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
+
 	v102 "github.com/haqq-network/haqq/app/upgrades/v1.0.2"
 	v120 "github.com/haqq-network/haqq/app/upgrades/v1.2.0"
 	v121 "github.com/haqq-network/haqq/app/upgrades/v1.2.1"
 	v130 "github.com/haqq-network/haqq/app/upgrades/v1.3.0"
 	v131 "github.com/haqq-network/haqq/app/upgrades/v1.3.1"
 	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
+	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
 	v150 "github.com/haqq-network/haqq/app/upgrades/v1.5.0"
 )
 
@@ -194,9 +192,12 @@ var (
 				paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.LegacyProposalHandler, upgradeclient.LegacyCancelProposalHandler,
 				ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 				// Evmos proposal types
-				erc20client.RegisterCoinProposalHandler, erc20client.RegisterERC20ProposalHandler, erc20client.ToggleTokenConversionProposalHandler,
-				// erc20client.ToggleTokenRelayProposalHandler, erc20client.UpdateTokenPairERC20ProposalHandler,
-				// incentivesclient.RegisterIncentiveProposalHandler, incentivesclient.CancelIncentiveProposalHandler,
+				erc20client.RegisterCoinProposalHandler,
+				erc20client.RegisterERC20ProposalHandler,
+				erc20client.ToggleTokenConversionProposalHandler,
+
+				// erc20client.ToggleTokenRelayProposalHandler,
+				// erc20client.UpdateTokenPairERC20ProposalHandler,
 			},
 		),
 		params.AppModuleBasic{},
@@ -207,7 +208,7 @@ var (
 		feegrantmodule.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
-		transfer.AppModuleBasic{},
+		transfer.AppModuleBasic{AppModuleBasic: &ibctransfer.AppModuleBasic{}},
 		vesting.AppModuleBasic{},
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
@@ -277,7 +278,7 @@ type Haqq struct {
 	AuthzKeeper      authzkeeper.Keeper
 	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	EvidenceKeeper   evidencekeeper.Keeper
-	TransferKeeper   ibctransferkeeper.Keeper
+	TransferKeeper   transferkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -441,7 +442,6 @@ func NewHaqq(
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
-	// AddRoute(incentivestypes.RouterKey, incentives.NewIncentivesProposalHandler(&app.IncentivesKeeper))
 
 	govConfig := govtypes.DefaultConfig()
 
@@ -464,7 +464,6 @@ func NewHaqq(
 		stakingtypes.NewMultiStakingHooks(
 			app.DistrKeeper.Hooks(),
 			app.SlashingKeeper.Hooks(),
-			// app.ClaimsKeeper.Hooks(),
 		),
 	)
 
@@ -475,7 +474,7 @@ func NewHaqq(
 
 	app.Erc20Keeper = erc20keeper.NewKeeper(
 		keys[erc20types.StoreKey], appCodec, app.GetSubspace(erc20types.ModuleName),
-		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper, nil,
+		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
 	)
 
 	// app.IncentivesKeeper = incentiveskeeper.NewKeeper(
@@ -510,11 +509,12 @@ func NewHaqq(
 	// channel.RecvPacket -> ibcFirewall.OnRecvPacket -> transfer.OnRecvPacket
 
 	ics4Wrapper := firewall.NewICS4Wrapper(app.IBCKeeper.ChannelKeeper)
-	app.TransferKeeper = ibctransferkeeper.NewKeeper(
+	app.TransferKeeper = transferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		ics4Wrapper, // ICS4 Wrapper: claims IBC middleware
+		ics4Wrapper, // ICS4 Wrapper
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
+		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
 	)
 
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
@@ -522,11 +522,14 @@ func NewHaqq(
 	// transfer stack contains (from top to bottom):
 	// - IBC Firewall Middleware
 	// - Transfer
+	// - ERC20 Middleware
 
 	// create IBC module from bottom to top of stack
 	var transferStack porttypes.IBCModule
 
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = erc20.NewIBCMiddleware(app.Erc20Keeper, transferStack)
+
 	// Add IBC Firewall Middleware
 	transferStack = firewall.NewIBCMiddleware(transferStack, app.IBCKeeper.ChannelKeeper)
 
@@ -584,7 +587,6 @@ func NewHaqq(
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		// incentives.NewAppModule(app.IncentivesKeeper, app.AccountKeeper),
 
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
@@ -621,8 +623,6 @@ func NewHaqq(
 		vestingtypes.ModuleName,
 		erc20types.ModuleName,
 		coinomicstypes.ModuleName,
-
-		// incentivestypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -652,7 +652,6 @@ func NewHaqq(
 		// Evmos modules
 		vestingtypes.ModuleName,
 		erc20types.ModuleName,
-		// incentivestypes.ModuleName,
 
 		// Haqq modules
 		coinomicstypes.ModuleName,
@@ -691,7 +690,6 @@ func NewHaqq(
 		vestingtypes.ModuleName,
 		coinomicstypes.ModuleName,
 		erc20types.ModuleName,
-		// incentivestypes.ModuleName,
 		epochstypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
@@ -732,6 +730,8 @@ func NewHaqq(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
+		// Haqq app modules
+		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
 	)
 
 	app.sm.RegisterStoreDecoders()
@@ -1080,6 +1080,15 @@ func (app *Haqq) setupUpgradeHandlers(db dbm.DB, keys map[string]*storetypes.KVS
 			app.CoinomicsKeeper,
 			app.SlashingKeeper,
 			app.GovKeeper,
+		),
+	)
+
+	// v1.4.1 Fix handle ERC20 fro IBC Channels
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v141.UpgradeName,
+		v141.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
 		),
 	)
 

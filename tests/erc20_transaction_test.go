@@ -1,4 +1,4 @@
-package erc20
+package tests
 
 import (
 	"encoding/json"
