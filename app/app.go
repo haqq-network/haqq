@@ -214,7 +214,6 @@ var (
 		feemarket.AppModuleBasic{},
 		coinomics.AppModuleBasic{},
 		erc20.AppModuleBasic{},
-		// incentives.AppModuleBasic{},
 		epochs.AppModuleBasic{},
 	)
 
@@ -235,7 +234,6 @@ var (
 	// module accounts that are allowed to receive tokens
 	allowedReceivingModAcc = map[string]bool{
 		distrtypes.ModuleName: true,
-		// incentivestypes.ModuleName: true,
 	}
 )
 
@@ -292,7 +290,6 @@ type Haqq struct {
 	Erc20Keeper   erc20keeper.Keeper
 	EpochsKeeper  epochskeeper.Keeper
 	VestingKeeper vestingkeeper.Keeper
-	// IncentivesKeeper incentiveskeeper.Keeper
 
 	// Haqq keepers
 	CoinomicsKeeper coinomicskeeper.Keeper
@@ -350,7 +347,6 @@ func NewHaqq(
 		// ethermint keys
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		// evmos keys
-		// incentivestypes.StoreKey,
 		erc20types.StoreKey,
 		epochstypes.StoreKey, vestingtypes.StoreKey,
 		// haqq keys
@@ -477,16 +473,10 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
 	)
 
-	// app.IncentivesKeeper = incentiveskeeper.NewKeeper(
-	// keys[incentivestypes.StoreKey], appCodec, app.GetSubspace(incentivestypes.ModuleName),
-	// app.AccountKeeper, app.BankKeeper, app.InflationKeeper, app.StakingKeeper, app.EvmKeeper,
-	// )
-
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
 		epochskeeper.NewMultiEpochHooks(
 		// insert epoch hooks receivers here
-		// app.IncentivesKeeper.Hooks(),
 		// app.InflationKeeper.Hooks(),
 		),
 	)
@@ -496,7 +486,6 @@ func NewHaqq(
 	app.EvmKeeper = app.EvmKeeper.SetHooks(
 		evmkeeper.NewMultiEvmHooks(
 			app.Erc20Keeper.Hooks(),
-			// app.IncentivesKeeper.Hooks(),
 		),
 	)
 
@@ -1017,7 +1006,6 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	// evmos subspaces
 	paramsKeeper.Subspace(erc20types.ModuleName)
-	// paramsKeeper.Subspace(incentivestypes.ModuleName)
 	// haqq subspaces
 	paramsKeeper.Subspace(coinomicstypes.ModuleName)
 
