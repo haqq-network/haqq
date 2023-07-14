@@ -11,7 +11,7 @@ option go_package = "github.com/haqq-network/haqq/x/vesting/types";
 service Query {
   // Balances retrieves the unvested, vested and locked tokens for a vesting account
   rpc Balances(QueryBalancesRequest) returns (QueryBalancesResponse) {
-    option (google.api.http).get = "/evmos/vesting/v1/balances/{address}";
+    option (google.api.http).get = "/haqq/vesting/v1/balances/{address}";
   }
 }
 

@@ -3,6 +3,7 @@ package types
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,7 +27,6 @@ func NewParams(
 	mintDenom string,
 	blockPerEra uint64,
 	enableCoinomics bool,
-	mintDistribution MintDistribution,
 ) Params {
 	return Params{
 		MintDenom:       mintDenom,
@@ -61,11 +61,8 @@ func validateMintDenom(i interface{}) error {
 	if strings.TrimSpace(v) == "" {
 		return errors.New("mint denom cannot be blank")
 	}
-	if err := sdk.ValidateDenom(v); err != nil {
-		return err
-	}
 
-	return nil
+	return sdk.ValidateDenom(v)
 }
 
 func validateBlockPerEra(i interface{}) error {
@@ -73,6 +70,11 @@ func validateBlockPerEra(i interface{}) error {
 
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	// Check if BlocksPerEra is within the uint64 range
+	if v > math.MaxUint64 {
+		return errors.New("BlocksPerEra is out of uint64 range")
 	}
 
 	if v == 0 {

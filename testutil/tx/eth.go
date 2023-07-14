@@ -25,6 +25,7 @@ import (
 // PrepareEthTx creates an ethereum tx and signs it with the provided messages and private key.
 // It returns the signed transaction and an error
 func PrepareEthTx(
+	ctx sdk.Context,
 	txCfg client.TxConfig,
 	appHaqq *app.Haqq,
 	priv cryptotypes.PrivKey,
@@ -53,7 +54,7 @@ func PrepareEthTx(
 		msg.From = ""
 
 		txGasLimit += msg.GetGas()
-		txFee = txFee.Add(sdk.Coin{Denom: "aphoton", Amount: sdkmath.NewIntFromBigInt(msg.GetFee())})
+		txFee = txFee.Add(sdk.Coin{Denom: appHaqq.StakingKeeper.BondDenom(ctx), Amount: sdkmath.NewIntFromBigInt(msg.GetFee())})
 	}
 
 	if err := txBuilder.SetMsgs(msgs...); err != nil {

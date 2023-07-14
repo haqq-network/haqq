@@ -107,9 +107,10 @@ func (s *BurnCoinsTestSuite) TestCase1NoQuorum() {
 	// Check gov module balance before sending proposal is zero
 	// #################################################################
 	var govBalanceBefore banktypes.QueryAllBalancesResponse
-	govBalanceBeforeResp, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetBalancesCmd(), []string{string(s.govModuleAddress.String()), "--output", "json"})
+	govBalanceBeforeResp, err := clitestutil.ExecTestCLICmd(val.ClientCtx, bankcli.GetBalancesCmd(), []string{s.govModuleAddress.String(), "--output", "json"})
 	s.NoError(err)
-	json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
+	_ = json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
+	// s.NoError(err) // FIXME json: cannot unmarshal string into Go struct field PageResponse.pagination.total of type uint64
 
 	s.Equal(0, len(govBalanceBefore.Balances), "zero gov module balance before proposal")
 
@@ -204,7 +205,7 @@ func (s *BurnCoinsTestSuite) TestCase2QuorumNoWithVeto() {
 	s.NoError(err)
 
 	// #################################################################
-	// Get balances state before broadcast proposal tx and do boradcast
+	// Get balances state before broadcast proposal tx and do broadcast
 	// #################################################################
 
 	// Check gov module balance before sending proposal is zero
@@ -214,7 +215,8 @@ func (s *BurnCoinsTestSuite) TestCase2QuorumNoWithVeto() {
 		[]string{s.govModuleAddress.String(), "--output", "json"},
 	)
 	s.NoError(err)
-	json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
+	_ = json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
+	// s.NoError(err) // FIXME json: cannot unmarshal string into Go struct field PageResponse.pagination.total of type uint64
 
 	s.Equal(len(govBalanceBefore.Balances), 0)
 
@@ -234,10 +236,10 @@ func (s *BurnCoinsTestSuite) TestCase2QuorumNoWithVeto() {
 	// Build vote transaction with option: NoWithVote
 	voteMsg := govtypes.NewMsgVote(val.Address, 2, govtypes.OptionNoWithVeto)
 
-	vote_fee := sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(100)))
+	voteFee := sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(100)))
 	voteTxBuilder := s.cfg.TxConfig.NewTxBuilder()
 	s.Require().NoError(voteTxBuilder.SetMsgs(voteMsg))
-	voteTxBuilder.SetFeeAmount(vote_fee)
+	voteTxBuilder.SetFeeAmount(voteFee)
 	voteTxBuilder.SetGasLimit(2000000)
 
 	voteTxFactory := proposaltxFactory.WithSequence(3)
@@ -346,7 +348,7 @@ func (s *BurnCoinsTestSuite) TestCase3QuorumYes() {
 	s.NoError(err)
 
 	// #################################################################
-	// Get balances state before broadcast proposal tx and do boradcast
+	// Get balances state before broadcast proposal tx and do broadcast
 	// #################################################################
 
 	// Check gov module balance before sending proposal is zero
@@ -356,7 +358,8 @@ func (s *BurnCoinsTestSuite) TestCase3QuorumYes() {
 		[]string{s.govModuleAddress.String(), "--output", "json"},
 	)
 	s.NoError(err)
-	json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
+	_ = json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
+	// s.NoError(err) // FIXME json: cannot unmarshal string into Go struct field PageResponse.pagination.total of type uint64
 
 	s.Equal(len(govBalanceBefore.Balances), 0)
 
@@ -376,10 +379,10 @@ func (s *BurnCoinsTestSuite) TestCase3QuorumYes() {
 	// Build vote transaction with option: Yes
 	voteMsg := govtypes.NewMsgVote(val.Address, 3, govtypes.OptionYes)
 
-	vote_fee := sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(100)))
+	voteFee := sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(100)))
 	voteTxBuilder := s.cfg.TxConfig.NewTxBuilder()
 	s.Require().NoError(voteTxBuilder.SetMsgs(voteMsg))
-	voteTxBuilder.SetFeeAmount(vote_fee)
+	voteTxBuilder.SetFeeAmount(voteFee)
 	voteTxBuilder.SetGasLimit(2000000)
 
 	voteTxFactory := proposaltxFactory.WithSequence(5)
@@ -481,7 +484,7 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 	s.NoError(err)
 
 	// #################################################################
-	// Get balances state before broadcast proposal tx and do boradcast
+	// Get balances state before broadcast proposal tx and do broadcast
 	// #################################################################
 
 	// Check gov module balance before sending proposal is zero
@@ -491,7 +494,8 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 		[]string{s.govModuleAddress.String(), "--output", "json"},
 	)
 	s.NoError(err)
-	json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
+	_ = json.Unmarshal(govBalanceBeforeResp.Bytes(), &govBalanceBefore)
+	// s.NoError(err) // FIXME json: cannot unmarshal string into Go struct field PageResponse.pagination.total of type uint64
 
 	s.Equal(len(govBalanceBefore.Balances), 0)
 
@@ -570,19 +574,19 @@ type StackingModuleParams struct {
 }
 
 func getCommunityPoolState(val *network.Validator) CommunityPool {
-	communityPoolStateJson, _ := clitestutil.ExecTestCLICmd(val.ClientCtx, distcli.GetCmdQueryCommunityPool(), []string{"--output", "json"})
+	communityPoolStateJSON, _ := clitestutil.ExecTestCLICmd(val.ClientCtx, distcli.GetCmdQueryCommunityPool(), []string{"--output", "json"})
 
 	var communityPoolState CommunityPool
-	json.Unmarshal(communityPoolStateJson.Bytes(), &communityPoolState)
+	_ = json.Unmarshal(communityPoolStateJSON.Bytes(), &communityPoolState)
 
 	return communityPoolState
 }
 
 func getStackingModuleParams(val *network.Validator) StackingModuleParams {
-	stakingParamsJson, _ := clitestutil.ExecTestCLICmd(val.ClientCtx, stakingcli.GetCmdQueryParams(), []string{"--output", "json"})
+	stakingParamsJSON, _ := clitestutil.ExecTestCLICmd(val.ClientCtx, stakingcli.GetCmdQueryParams(), []string{"--output", "json"})
 
 	var stackingParams StackingModuleParams
-	json.Unmarshal(stakingParamsJson.Bytes(), &stackingParams)
+	_ = json.Unmarshal(stakingParamsJSON.Bytes(), &stackingParams)
 
 	return stackingParams
 }

@@ -23,11 +23,12 @@ func InitGenesis(
 	// Set genesis state
 	params := data.Params
 
-	if haqqtypes.IsMainNetwork(ctx.ChainID()) {
+	switch {
+	case haqqtypes.IsMainNetwork(ctx.ChainID()):
 		params.EnableCoinomics = false
-	} else if haqqtypes.IsTestEdge1Network(ctx.ChainID()) {
+	case haqqtypes.IsTestEdge1Network(ctx.ChainID()):
 		params.BlocksPerEra = 8640 // 30 days until max supply minted
-	} else if haqqtypes.IsTestEdge2Network(ctx.ChainID()) {
+	case haqqtypes.IsTestEdge2Network(ctx.ChainID()):
 		params.BlocksPerEra = 17280 // 60 days until max supply minted
 	}
 

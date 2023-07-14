@@ -62,7 +62,8 @@ func (app *Haqq) ExportAppStateAndValidators(
 
 // prepare for fresh start at zero height
 // NOTE zero height genesis is a temporary feature which will be deprecated
-//      in favor of export at a block height
+//
+//	in favor of export at a block height
 func (app *Haqq) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) error {
 	applyAllowedAddrs := false
 
@@ -125,7 +126,7 @@ func (app *Haqq) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []st
 		feePool.CommunityPool = feePool.CommunityPool.Add(scraps...)
 		app.DistrKeeper.SetFeePool(ctx, feePool)
 
-		app.DistrKeeper.Hooks().AfterValidatorCreated(ctx, val.GetOperator())
+		app.DistrKeeper.Hooks().AfterValidatorCreated(ctx, val.GetOperator()) // nolint: errcheck
 		return false
 	})
 
@@ -139,8 +140,8 @@ func (app *Haqq) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []st
 		if err != nil {
 			return err
 		}
-		app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, delAddr, valAddr)
-		app.DistrKeeper.Hooks().AfterDelegationModified(ctx, delAddr, valAddr)
+		app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, delAddr, valAddr) // nolint: errcheck
+		app.DistrKeeper.Hooks().AfterDelegationModified(ctx, delAddr, valAddr) // nolint: errcheck
 	}
 
 	// reset context height

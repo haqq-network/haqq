@@ -1,25 +1,9 @@
-// Copyright 2022 Evmos Foundation
-// This file is part of the Evmos Network packages.
-//
-// Evmos is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The Evmos packages are distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the Evmos packages. If not, see https://github.com/evmos/evmos/blob/main/LICENSE
-
 package cli
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"strconv"
+	// "github.com/ethereum/go-ethereum/common"
+	// "strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -35,14 +19,14 @@ import (
 
 // Transaction command flags
 const (
-	FlagDelayed  = "delayed"
-	FlagDest     = "dest"
-	FlagLockup   = "lockup"
-	FlagMerge    = "merge"
-	FlagLongTerm = "long_term"
-	FlagVesting  = "vesting"
-	FlagClawback = "clawback"
-	FlagFunder   = "funder"
+	FlagDelayed   = "delayed"
+	FlagDest      = "dest"
+	FlagLockup    = "lockup"
+	FlagMerge     = "merge"
+	FlagVesting   = "vesting"
+	FlagClawback  = "clawback"
+	FlagFunder    = "funder"
+	FlagValidator = "validator"
 )
 
 // NewTxCmd returns a root CLI command handler for certain modules/vesting
@@ -270,16 +254,18 @@ func NewMsgConvertVestingAccountCmd() *cobra.Command {
 // MsgConvertIntoVestingAccount transaction.
 func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "convert-into ETH_ACCOUNT_ADDRESS START_TIME AMOUNT",
+		Use:   "convert-into [to-address]",
 		Short: "Convert a chain's default account type to the vesting account.",
 		Long: "Convert a chain's default account type to the vesting account. " +
 			"The chain's default account must be of type AccAddress to convert" +
 			"it to the vesting account type.",
-		Args: cobra.ExactArgs(3),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var (
-				vestingStart  int64
-				vestingAmount sdk.Coin
+				lockupStart, vestingStart     int64
+				lockupPeriods, vestingPeriods sdkvesting.Periods
+				staking                       bool
+				valAddr                       sdk.ValAddress
 			)
 
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -287,31 +273,47 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 				return err
 			}
 
-			if !common.IsHexAddress(args[0]) {
-				return fmt.Errorf("ETH_ACCOUNT_ADDRESS %s not a valid hex encoded address, please input a valid ETH_ACCOUNT_ADDRESS", args[0])
-			}
-			hexAddr := common.HexToAddress(args[0])
-			addr := sdk.AccAddress(hexAddr.Bytes())
-
-			vestingStart, err = strconv.ParseInt(args[1], 10, 64)
-			if err != nil {
-				return fmt.Errorf("START_TIME %s not a valid int64, please input a valid START_TIME", args[1])
-			}
-
-			vestingAmount, err = sdk.ParseCoinNormalized(args[2])
+			toAddr, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
 				return err
 			}
 
-			longTerm, _ := cmd.Flags().GetBool(FlagLongTerm)
+			lockupFile, _ := cmd.Flags().GetString(FlagLockup)
+			vestingFile, _ := cmd.Flags().GetString(FlagVesting)
+			if lockupFile == "" && vestingFile == "" {
+				return fmt.Errorf("must specify at least one of %s or %s", FlagLockup, FlagVesting)
+			}
+			if lockupFile != "" {
+				lockupStart, lockupPeriods, err = ReadScheduleFile(lockupFile)
+				if err != nil {
+					return err
+				}
+			}
+			if vestingFile != "" {
+				vestingStart, vestingPeriods, err = ReadScheduleFile(vestingFile)
+				if err != nil {
+					return err
+				}
+			}
 
-			msg := types.NewMsgConvertIntoVestingAccount(
-				clientCtx.FromAddress,
-				addr,
-				time.Unix(vestingStart, 0),
-				vestingAmount,
-				longTerm,
-			)
+			commonStart, _ := types.AlignSchedules(lockupStart, vestingStart, lockupPeriods, vestingPeriods)
+
+			merge, _ := cmd.Flags().GetBool(FlagMerge)
+
+			// valAddr, err := sdk.ValAddressFromBech32(args[0])
+			valAddrStr, err := cmd.Flags().GetString(FlagValidator)
+			if err != nil {
+				staking = false
+				valAddr = sdk.ValAddress{}
+			} else {
+				staking = true
+				valAddr, err = sdk.ValAddressFromBech32(valAddrStr)
+				if err != nil {
+					return err
+				}
+			}
+
+			msg := types.NewMsgConvertIntoVestingAccount(clientCtx.GetFromAddress(), toAddr, time.Unix(commonStart, 0), lockupPeriods, vestingPeriods, merge, staking, valAddr)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
@@ -320,7 +322,10 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(FlagLongTerm, "", "Set long term locking period for vesting")
+	cmd.Flags().Bool(FlagMerge, false, "Merge new amount and schedule with existing ClawbackVestingAccount, if any")
+	cmd.Flags().String(FlagLockup, "", "path to file containing unlocking periods")
+	cmd.Flags().String(FlagVesting, "", "path to file containing vesting periods")
+	cmd.Flags().String(FlagValidator, "", "Validator address for vesting coins delegation")
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }

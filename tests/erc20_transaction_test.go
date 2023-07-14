@@ -1,4 +1,4 @@
-package erc20
+package tests
 
 import (
 	"encoding/json"
@@ -124,7 +124,8 @@ func (suite *TransferETHTestSuite) DoSetupTest(t require.TestingT) {
 	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
-	suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	err = suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 
@@ -149,7 +150,7 @@ func (suite *TransferETHTestSuite) CommitBlock() {
 	header := suite.ctx.BlockHeader()
 	_ = suite.app.Commit()
 
-	header.Height += 1
+	header.Height++
 
 	// run begin block
 	suite.app.BeginBlock(abci.RequestBeginBlock{
@@ -188,7 +189,8 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	suite.Commit(3)
 	ctx := sdk.WrapSDKContext(suite.ctx)
 
-	suite.MintToAccount(sdk.NewCoins(sdk.NewCoin(evm.DefaultEVMDenom, sdk.NewInt(100000))))
+	evmDenom := suite.app.EvmKeeper.GetEVMDenom(suite.ctx)
+	suite.MintToAccount(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(100000))))
 
 	suite.T().Log(suite.address.String())
 	balanceBefore, err := suite.queryClientEvm.Balance(ctx, &evm.QueryBalanceRequest{Address: suite.address.String()})
@@ -208,12 +210,12 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	suite.Require().NoError(err)
 	res, err := suite.queryClientEvm.EstimateGas(ctx, &evm.EthCallRequest{
 		Args:   args,
-		GasCap: uint64(config.DefaultGasCap),
+		GasCap: config.DefaultGasCap,
 	})
 	suite.Require().NoError(err)
 
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
-	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evm.DefaultEVMDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
+	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 
 	tx := evm.NewTx(
 		chainID,
