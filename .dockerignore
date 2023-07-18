@@ -1,5 +1,3 @@
-# localnet-setup
-localnet-setup
-
-# build
+.direnv
 build
+localnet-setup
