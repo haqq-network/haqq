@@ -37,20 +37,15 @@ func CreateUpgradeHandler(
 		logger.Info("######### REVESTING ########")
 
 		// TODO PUT HERE THE HEIGHT "BEFORE" THE UPGRADE AND BALANCE THRESHOLD
-		ts, ok := math.NewIntFromString(threshold) // 10 ISLM for tests
-		if !ok {
-			panic("invalid balance threshold")
-		}
+		ts := math.NewIntFromUint64(exp) // 1 ISLM
+		ts = ts.MulRaw(threshold)        // 10 ISLM for tests
 
 		logger.Info("# Upgrade height: " + strconv.FormatInt(ctx.BlockHeight(), 10))
 		logger.Info("# History state height: " + strconv.FormatInt(historyStateHeight, 10))
-		logger.Info("# Balance threshold: " + threshold + " aISLM")
+		logger.Info("# Balance threshold: " + ts.String() + " aISLM")
 
 		revesting := NewRevestingUpgradeHandler(ctx, ak, bk, sk, evm, vk, db, keys, cdc, historyStateHeight, ts)
-		revesting.SetIgnoreList(map[string]bool{
-			"haqq196srgtdaqrhqehdx36hfacrwmhlfznwpt78rct": true, // Team account
-			"haqq1gz37yju96vhn768wncfxhrwem0pdxq0ty9v2p5": true, // Vesting Contract
-		})
+		revesting.SetIgnoreList(getIgnoreList())
 
 		if err := revesting.Run(); err != nil {
 			panic(err)

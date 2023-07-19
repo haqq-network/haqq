@@ -327,6 +327,10 @@ func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount 
 		}
 	}
 
+	if restAmount.IsZero() {
+		return shares, nil
+	}
+
 	val, valAddr, err := r.getWeakestValidator()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get weakest validator")

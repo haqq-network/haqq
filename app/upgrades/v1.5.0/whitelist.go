@@ -31,6 +31,9 @@ func (r *RevestingUpgradeHandler) prepareWhitelistFromHistoryState(accounts []au
 			return errors.Wrap(err, "failed to get delegated coins from history for account "+acc.GetAddress().String())
 		}
 
+		// TODO GetAllUnbondingDelegations from history
+		// TODO Redelegation from history
+
 		balance = balance.Add(delegated)
 
 		if !balance.IsZero() && balance.Amount.GT(r.threshold) {
@@ -65,6 +68,9 @@ func (r *RevestingUpgradeHandler) validateWhitelist() error {
 			balance = balance.Add(delegation.Balance)
 		}
 
+		// TODO GetAllUnbondingDelegations
+		// TODO Redelegation
+
 		evmAddr := common.BytesToAddress(acc.GetAddress().Bytes())
 		vestingBalance, err := r.getVestingContractBalance(evmAddr)
 		if err != nil {
@@ -77,7 +83,7 @@ func (r *RevestingUpgradeHandler) validateWhitelist() error {
 
 		if !balance.IsZero() && balance.Amount.GT(r.threshold) && ok {
 			r.ctx.Logger().Info("balance now greater than threshold: " + acc.GetAddress().String() + " (" + balance.String() + "); WILL BE REVESTED")
-			r.wl[acc] = false
+			delete(r.wl, acc)
 			changes++
 		}
 	}
