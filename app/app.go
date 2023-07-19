@@ -146,6 +146,7 @@ import (
 	v131 "github.com/haqq-network/haqq/app/upgrades/v1.3.1"
 	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
 	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
+	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
 )
 
 func init() {
@@ -168,7 +169,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.4.0"
+	UpgradeName    = "v1.4.2"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -1086,6 +1087,15 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v141.UpgradeName,
 		v141.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+		),
+	)
+
+	// v1.4.2 Security upgrade
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v142.UpgradeName,
+		v142.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
 		),
