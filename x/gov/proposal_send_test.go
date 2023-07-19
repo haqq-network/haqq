@@ -44,7 +44,6 @@ func (s *IntegrationTestSuite) TearDownSuite() {
 }
 
 func (s *IntegrationTestSuite) TestCommunityProposals() {
-	//test
 	val := s.network.Validators[0]
 
 	testCases := []struct {

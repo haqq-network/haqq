@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/haqq-network/haqq/types"
-
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	ibctesting "github.com/cosmos/ibc-go/v5/testing"
 	"github.com/cosmos/ibc-go/v5/testing/mock"
@@ -24,12 +22,14 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/evmos/ethermint/encoding"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
 
 	"github.com/haqq-network/haqq/cmd/config"
+	"github.com/haqq-network/haqq/types"
 )
 
-const PREMINT_AMOUNT = 20_000_000_000
+const PremintAmount = 20_000_000_000
 
 func init() {
 	cfg := sdk.GetConfig()
@@ -82,7 +82,7 @@ func Setup(
 	senderPrivKey := secp256k1.GenPrivKey()
 	acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), 0, 0)
 
-	mintAmount := sdk.TokensFromConsensusPower(PREMINT_AMOUNT, sdk.DefaultPowerReduction)
+	mintAmount := sdk.TokensFromConsensusPower(PremintAmount, sdk.DefaultPowerReduction)
 	mintAmount = mintAmount.Sub(sdk.DefaultPowerReduction) // for delegation
 	mintCoin := sdk.NewCoin("aISLM", mintAmount)
 
@@ -164,6 +164,11 @@ func GenesisStateWithValSet(app *Haqq, genesisState simapp.GenesisState,
 	stakingparams.BondDenom = "aISLM"
 	stakingGenesis := stakingtypes.NewGenesisState(stakingparams, validators, delegations)
 	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(stakingGenesis)
+
+	evmparams := evmtypes.DefaultParams()
+	evmparams.EvmDenom = "aISLM"
+	evmGenesis := evmtypes.NewGenesisState(evmparams, []evmtypes.GenesisAccount{})
+	genesisState[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
 
 	totalSupply := sdk.NewCoins()
 	for _, b := range balances {

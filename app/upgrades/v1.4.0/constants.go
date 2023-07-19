@@ -1,4 +1,4 @@
-package v1_4_0
+package v140
 
 const (
 	// UpgradeName is the shared upgrade plan name for mainnet and testnet

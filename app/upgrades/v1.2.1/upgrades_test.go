@@ -1,4 +1,4 @@
-package v1_2_1_test
+package v121_test
 
 import (
 	"testing"

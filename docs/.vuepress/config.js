@@ -199,7 +199,7 @@ module.exports = {
             },
             {
               title: 'Mainnet // Cosmos layer',
-              path: 'https://pingpub.explorer.haqq.network'
+              path: 'https://ping.pub/haqq'
             },
           ]
         },

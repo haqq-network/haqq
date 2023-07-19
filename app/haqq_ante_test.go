@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/evmos/ethermint/encoding"
 	"github.com/stretchr/testify/require"
-	tmcrypto "github.com/tendermint/tendermint/crypto"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -31,8 +30,8 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 	valPkey := ed25519.GenPrivKey()
 	valAddr := sdk.ValAddress(valPkey.PubKey().Address())
 
-	var tmPubKey tmcrypto.PubKey
-	tmPubKey = tmed25519.PubKey(valPkey.PubKey().Bytes())
+	// tmPubKey implements tmcrypto.PubKey interface
+	tmPubKey := tmed25519.PubKey(valPkey.PubKey().Bytes())
 
 	// create validator set with single validator
 	validator := tmtypes.NewValidator(tmPubKey, 1)
