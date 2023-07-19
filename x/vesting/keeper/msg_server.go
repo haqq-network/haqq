@@ -14,8 +14,10 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	ethtypes "github.com/evmos/ethermint/types"
 	evmosvestingtypes "github.com/evmos/evmos/v10/x/vesting/types"
+
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -381,7 +383,10 @@ func (k Keeper) ConvertIntoVestingAccount(
 	}
 
 	if !isClawback || createNewAcc {
-		codeHash := ethAcc.GetCodeHash()
+		codeHash := common.BytesToHash(crypto.Keccak256(nil))
+		if ethAcc != nil {
+			codeHash = ethAcc.GetCodeHash()
+		}
 		baseAcc := authtypes.NewBaseAccountWithAddress(to)
 		vestingAcc = types.NewClawbackVestingAccount(
 			baseAcc,
