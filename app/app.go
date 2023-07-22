@@ -87,17 +87,17 @@ import (
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
-	ibctransfer "github.com/cosmos/ibc-go/v5/modules/apps/transfer"
-	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v5/modules/core"
-	ibcclient "github.com/cosmos/ibc-go/v5/modules/core/02-client"
-	ibcclientclient "github.com/cosmos/ibc-go/v5/modules/core/02-client/client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
-	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
-	ibchost "github.com/cosmos/ibc-go/v5/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v5/modules/core/keeper"
-	ibctesting "github.com/cosmos/ibc-go/v5/testing"
-	ibctestingtypes "github.com/cosmos/ibc-go/v5/testing/types"
+	ibctransfer "github.com/cosmos/ibc-go/v6/modules/apps/transfer"
+	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v6/modules/core"
+	ibcclient "github.com/cosmos/ibc-go/v6/modules/core/02-client"
+	ibcclientclient "github.com/cosmos/ibc-go/v6/modules/core/02-client/client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
+	ibctesting "github.com/cosmos/ibc-go/v6/testing"
+	ibctestingtypes "github.com/cosmos/ibc-go/v6/testing/types"
 
 	"github.com/evmos/ethermint/encoding"
 	enccodec "github.com/evmos/ethermint/encoding/codec"
@@ -114,9 +114,9 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/evmos/ethermint/client/docs/statik"
 
-	"github.com/evmos/evmos/v10/x/epochs"
-	epochskeeper "github.com/evmos/evmos/v10/x/epochs/keeper"
-	epochstypes "github.com/evmos/evmos/v10/x/epochs/types"
+	"github.com/evmos/evmos/v13/x/epochs"
+	epochskeeper "github.com/evmos/evmos/v13/x/epochs/keeper"
+	epochstypes "github.com/evmos/evmos/v13/x/epochs/types"
 
 	"github.com/haqq-network/haqq/app/ante"
 

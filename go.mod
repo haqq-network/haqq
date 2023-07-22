@@ -8,10 +8,9 @@ require (
 	github.com/armon/go-metrics v0.4.1
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3
 	github.com/cosmos/cosmos-sdk v0.46.14
-	github.com/cosmos/ibc-go/v5 v5.2.1
-	github.com/ethereum/go-ethereum v1.10.26
-	github.com/evmos/ethermint v0.20.0
-	github.com/evmos/evmos/v10 v10.0.1
+	github.com/cosmos/ibc-go/v6 v6.2.0
+	github.com/ethereum/go-ethereum v1.11.5
+	github.com/evmos/evmos/v13 v13.0.2
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
@@ -199,12 +198,16 @@ replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	// use Cosmos-SDK fork to enable Ledger functionality
-	github.com/cosmos/cosmos-sdk => github.com/evmos/cosmos-sdk v0.46.9-ledger
+	github.com/cosmos/cosmos-sdk => github.com/evmos/cosmos-sdk v0.46.13-alpha.ledger.8
+	// use Evmos geth fork
+	github.com/ethereum/go-ethereum => github.com/evmos/go-ethereum v1.10.26-evmos-rc2
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// TODO: remove it: https://github.com/cosmos/cosmos-sdk/issues/13134
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
 	// use cosmos flavored protobufs
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+	// replace broken goleveldb
+	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	// use informal system fork of tendermint
-	github.com/tendermint/tendermint => github.com/informalsystems/tendermint v0.34.26
+	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.29
 )
