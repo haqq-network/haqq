@@ -21,9 +21,9 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/evmos/ethermint/encoding"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	"github.com/haqq-network/haqq/encoding"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 
 	"github.com/haqq-network/haqq/cmd/config"
 	"github.com/haqq-network/haqq/types"

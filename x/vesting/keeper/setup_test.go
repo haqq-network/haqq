@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	evm "github.com/evmos/ethermint/x/evm/types"
+	evm "github.com/haqq-network/haqq/x/evm/types"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/x/vesting/types"
