@@ -30,6 +30,7 @@ import (
 	"github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/testutil/contracts"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	utils "github.com/haqq-network/haqq/types"
 )
 
 var s *UpgradeTestSuite
@@ -46,6 +47,9 @@ type UpgradeTestSuite struct {
 	ethAddress    common.Address
 	accAddress    sdk.AccAddress
 	signer        keyring.Signer
+	// test accounts
+	accounts []testAcc
+
 	// validator
 	valAddr   sdk.ValAddress
 	validator stakingtypes.Validator
@@ -60,7 +64,7 @@ type UpgradeTestSuite struct {
 	contractAddress common.Address
 }
 
-func TestKeeperTestSuite(t *testing.T) {
+func TestUpgradeTestSuite(t *testing.T) {
 	s = new(UpgradeTestSuite)
 	suite.Run(t, s)
 
@@ -77,7 +81,7 @@ func (suite *UpgradeTestSuite) DoSetupTest(t require.TestingT) {
 	var err error
 	checkTx := false
 	suite.t = t
-	suite.chainID = "haqq-121799-1"
+	suite.chainID = utils.LocalNetChainID + "-1"
 
 	// account key
 	suite.accPrivateKey, err = ethsecp256k1.GenerateKey()
@@ -132,7 +136,7 @@ func (suite *UpgradeTestSuite) DoSetupTest(t require.TestingT) {
 
 	// Set Validator
 	suite.valAddr = sdk.ValAddress(suite.accAddress)
-	validator, err := stakingtypes.NewValidator(suite.valAddr, suite.accPrivateKey.PubKey(), stakingtypes.Description{})
+	validator, err := stakingtypes.NewValidator(suite.valAddr, consPrivateKey.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
 	err = suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())

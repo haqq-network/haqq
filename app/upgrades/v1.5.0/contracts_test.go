@@ -1,7 +1,6 @@
 package v150_test
 
 import (
-	"encoding/json"
 	"math/big"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -10,15 +9,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	"github.com/evmos/ethermint/server/config"
-	evm "github.com/evmos/ethermint/x/evm/types"
+	"github.com/evmos/ethermint/types"
 
 	"github.com/haqq-network/haqq/testutil"
-	"github.com/haqq-network/haqq/testutil/contracts"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	utils "github.com/haqq-network/haqq/types"
 )
 
 type testAcc struct {
@@ -28,77 +24,61 @@ type testAcc struct {
 	signer        keyring.Signer
 }
 
-const oneISLM = uint64(10e17)
+const denomExp = uint64(10e17)
 
-var _ = Describe("Performing EVM contract calls before revesting", Ordered, func() {
+var _ = Describe("Performing EVM contract calls", Ordered, func() {
 	BeforeEach(func() {
 		s.SetupTest()
+
+		s.accounts = make([]testAcc, 10)
+		for i := 0; i < 10; i++ {
+			s.accounts[i].accPrivateKey, _ = ethsecp256k1.GenerateKey()
+			s.accounts[i].ethAddress = common.BytesToAddress(s.accounts[i].accPrivateKey.PubKey().Address().Bytes())
+			s.accounts[i].accAddress = sdk.AccAddress(s.accounts[i].ethAddress.Bytes())
+			s.accounts[i].signer = utiltx.NewSigner(s.accounts[i].accPrivateKey)
+		}
+
+		hundredISLM := sdk.NewCoin(utils.BaseDenom, sdk.NewIntFromUint64(denomExp))
+		hundredISLM.Amount = hundredISLM.Amount.MulRaw(100)
+		err := testutil.FundAccount(s.ctx, s.app.BankKeeper, s.accounts[0].accAddress, sdk.NewCoins(hundredISLM))
+		Expect(err).To(BeNil())
+		s.Commit()
 	})
 
-	bondDenom := s.app.StakingKeeper.BondDenom(s.ctx)
-	var err error
-	accounts := make([]testAcc, 10)
-	for i := 0; i < 10; i++ {
-		accounts[i].accPrivateKey, err = ethsecp256k1.GenerateKey()
-		Expect(err).To(BeNil())
-		accounts[i].ethAddress = common.BytesToAddress(accounts[i].accPrivateKey.PubKey().Address().Bytes())
-		accounts[i].accAddress = sdk.AccAddress(accounts[i].ethAddress.Bytes())
-		accounts[i].signer = utiltx.NewSigner(accounts[i].accPrivateKey)
-	}
+	Context("Before conversion into VestingAccount", func() {
+		It("success - deposit and withdraw tokens", func() {
+			// check contract account type
+			contractAcc := s.app.AccountKeeper.GetAccount(s.ctx, s.contractAddress.Bytes())
+			_, ok := contractAcc.(*types.EthAccount)
+			Expect(ok).To(BeTrue())
 
-	Context("deposit contract", func() {
-		It("should be successful", func() {
-			tenISLM := sdk.NewCoin(bondDenom, sdk.NewIntFromUint64(10*oneISLM))
-			err = testutil.FundAccount(s.ctx, s.app.BankKeeper, accounts[0].accAddress, sdk.NewCoins(tenISLM))
-			Expect(err).To(BeNil())
-			s.Commit()
+			// check contract balance before deposit
+			balance := s.app.BankKeeper.GetBalance(s.ctx, sdk.AccAddress(s.contractAddress.Bytes()), utils.BaseDenom)
+			Expect(balance.IsZero()).To(BeTrue())
 
 			// deposit contract
-			callData, err := contracts.HaqqTestingContract.ABI.Pack("deposit", accounts[1].ethAddress)
-			Expect(err).To(BeNil())
-
 			amount := big.NewInt(0)
-			amount.SetUint64(oneISLM)
-			hexAmount := hexutil.Big(*amount)
-
-			args, err := json.Marshal(&evm.TransactionArgs{
-				To:    &s.contractAddress,
-				From:  &accounts[0].ethAddress,
-				Value: &hexAmount,
-				Data:  (*hexutil.Bytes)(&callData),
-			})
-			Expect(err).To(BeNil())
-
-			res, err := s.queryClientEvm.EstimateGas(s.ctx, &evm.EthCallRequest{
-				Args:   args,
-				GasCap: config.DefaultGasCap,
-			})
-			Expect(err).To(BeNil())
-
-			// Mint the max gas to the FeeCollector to ensure balance in case of refund
-			s.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evm.DefaultEVMDenom, sdk.NewInt(s.app.FeeMarketKeeper.GetBaseFee(s.ctx).Int64()*int64(res.Gas)))))
-
-			nonce := s.app.EvmKeeper.GetNonce(s.ctx, accounts[0].ethAddress)
-
-			ercTransferTx := evm.NewTx(
-				s.app.EvmKeeper.ChainID(),
-				nonce,
-				&s.contractAddress,
-				amount,
-				res.Gas,
-				nil,
-				s.app.FeeMarketKeeper.GetBaseFee(s.ctx),
-				big.NewInt(1),
-				callData,
-				&ethtypes.AccessList{}, // accesses
-			)
-
-			ercTransferTx.From = accounts[0].ethAddress.Hex()
-			err = ercTransferTx.Sign(ethtypes.LatestSignerForChainID(s.app.EvmKeeper.ChainID()), accounts[0].signer)
-			Expect(err).To(BeNil())
-			rsp, err := s.app.EvmKeeper.EthereumTx(s.ctx, ercTransferTx)
+			amount.SetUint64(denomExp)
+			rsp, err := depositContract(s.accounts[0], s.accounts[1], amount)
 			Expect(err).To(BeNil())
 			Expect(rsp.VmError).To(BeEmpty())
+
+			// check balance after deposit
+			balanceAfter := s.app.BankKeeper.GetBalance(s.ctx, sdk.AccAddress(s.contractAddress.Bytes()), utils.BaseDenom)
+			Expect(balanceAfter.IsZero()).To(BeFalse())
+			Expect(balanceAfter.Equal(sdk.NewCoin(utils.BaseDenom, sdk.NewIntFromUint64(denomExp)))).To(BeTrue())
+
+			rsp2, err := withdrawContract(s.accounts[1], amount)
+			Expect(err).To(BeNil())
+			Expect(rsp2.VmError).To(BeEmpty())
+
+			balanceFinal := s.app.BankKeeper.GetBalance(s.ctx, sdk.AccAddress(s.contractAddress.Bytes()), utils.BaseDenom)
+			Expect(balanceFinal.IsZero()).To(BeTrue())
+			// check balances after withdrawal
+			oneISLM := sdk.NewCoin(utils.BaseDenom, sdk.NewIntFromUint64(denomExp))
+			balanceBenefeciary := s.app.BankKeeper.GetBalance(s.ctx, s.accounts[1].accAddress, utils.BaseDenom)
+			Expect(balanceBenefeciary.IsZero()).To(BeFalse())
+			Expect(balanceBenefeciary.IsGTE(oneISLM)).To(BeTrue())
 		})
 	})
 })
