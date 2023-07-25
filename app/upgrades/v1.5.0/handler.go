@@ -81,6 +81,14 @@ func (r *RevestingUpgradeHandler) GetIgnoreList() map[string]bool {
 }
 
 func (r *RevestingUpgradeHandler) Run() error {
+	r.ctx.Logger().Info("Run revesting upgrade.")
+
+	r.ctx.Logger().Info("Force unbonding and redelegation.")
+	err := r.forceDequeueUnbondingAndRedelegation()
+	if err != nil {
+		return errors.Wrap(err, "error force dequeue unbonding and redelegation")
+	}
+
 	accounts := r.AccountKeeper.GetAllAccounts(r.ctx)
 	if len(accounts) == 0 {
 		// Short circuit if there are no accounts
@@ -88,11 +96,6 @@ func (r *RevestingUpgradeHandler) Run() error {
 		return nil
 	}
 	r.ctx.Logger().Info("Found accounts to process: " + strconv.Itoa(len(accounts)))
-
-	if err := r.storeBondedValidatorsByPower(); err != nil {
-		return errors.Wrap(err, "error storing bonded validators by power")
-	}
-	r.ctx.Logger().Info("Stored bonded validators before upgrade: " + strconv.Itoa(len(r.vals)))
 
 	if err := r.loadStateOnHeight(); err != nil {
 		return errors.Wrap(err, "error loading state on height 160000")
