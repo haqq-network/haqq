@@ -3,6 +3,7 @@ package v150
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/pkg/errors"
 )
 
 func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
@@ -20,7 +21,7 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 
 		balances, err := r.completeUnbonding(r.ctx, delegatorAddress, addr)
 		if err != nil {
-			continue
+			return errors.Wrap(err, "failed to complete unbonding")
 		}
 
 		r.ctx.EventManager().EmitEvent(
@@ -53,7 +54,7 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 			valDstAddr,
 		)
 		if err != nil {
-			continue
+			return errors.Wrap(err, "failed to complete redelegation")
 		}
 
 		r.ctx.EventManager().EmitEvent(

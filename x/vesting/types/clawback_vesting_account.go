@@ -223,24 +223,24 @@ func (va ClawbackVestingAccount) HasLockedCoins(blockTime time.Time) bool {
 }
 
 // EthAddress returns the account address ethereum format.
-func (acc ClawbackVestingAccount) EthAddress() common.Address {
-	return common.BytesToAddress(acc.GetAddress().Bytes())
+func (va ClawbackVestingAccount) EthAddress() common.Address {
+	return common.BytesToAddress(va.GetAddress().Bytes())
 }
 
 // GetCodeHash returns the account code hash in byte format
-func (acc ClawbackVestingAccount) GetCodeHash() common.Hash {
-	return common.HexToHash(acc.CodeHash)
+func (va ClawbackVestingAccount) GetCodeHash() common.Hash {
+	return common.HexToHash(va.CodeHash)
 }
 
 // SetCodeHash sets the account code hash to the EthAccount fields
-func (acc *ClawbackVestingAccount) SetCodeHash(codeHash common.Hash) error {
-	acc.CodeHash = codeHash.Hex()
+func (va *ClawbackVestingAccount) SetCodeHash(codeHash common.Hash) error {
+	va.CodeHash = codeHash.Hex()
 	return nil
 }
 
 // Type returns the type of Ethereum Account (EOA or Contract)
-func (acc ClawbackVestingAccount) Type() int8 {
-	if bytes.Equal(emptyCodeHash, common.HexToHash(acc.CodeHash).Bytes()) {
+func (va ClawbackVestingAccount) Type() int8 {
+	if bytes.Equal(emptyCodeHash, common.HexToHash(va.CodeHash).Bytes()) {
 		return evmostypes.AccountTypeEOA
 	}
 	return evmostypes.AccountTypeContract

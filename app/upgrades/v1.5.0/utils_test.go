@@ -2,18 +2,19 @@ package v150_test
 
 import (
 	"encoding/json"
+	"math/big"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/ethermint/server/config"
 	evm "github.com/evmos/ethermint/x/evm/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	"github.com/haqq-network/haqq/testutil/contracts"
 	"github.com/stretchr/testify/require"
-	"math/big"
+
+	"github.com/haqq-network/haqq/testutil/contracts"
 )
 
-func depositContract(from, to testAcc, amount *big.Int) (*evmtypes.MsgEthereumTxResponse, error) {
+func depositContract(from, to testAcc, amount *big.Int) (*evm.MsgEthereumTxResponse, error) {
 	// deposit contract
 	callData, err := contracts.HaqqTestingContract.ABI.Pack("deposit", to.ethAddress)
 	require.NoError(s.t, err)
@@ -61,7 +62,7 @@ func depositContract(from, to testAcc, amount *big.Int) (*evmtypes.MsgEthereumTx
 	return s.app.EvmKeeper.EthereumTx(s.ctx, ercTransferTx)
 }
 
-func withdrawContract(to testAcc, amount *big.Int) (*evmtypes.MsgEthereumTxResponse, error) {
+func withdrawContract(to testAcc, amount *big.Int) (*evm.MsgEthereumTxResponse, error) {
 	// deposit contract
 	callData, err := contracts.HaqqTestingContract.ABI.Pack("withdraw", amount)
 	require.NoError(s.t, err)

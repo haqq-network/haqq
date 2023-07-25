@@ -1,19 +1,19 @@
 package v150_test
 
 import (
-	"cosmossdk.io/math"
-	v150 "github.com/haqq-network/haqq/app/upgrades/v1.5.0"
 	"math/big"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/evmos/ethermint/crypto/ethsecp256k1"
 	"github.com/evmos/ethermint/types"
 
+	v150 "github.com/haqq-network/haqq/app/upgrades/v1.5.0"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	utils "github.com/haqq-network/haqq/types"
