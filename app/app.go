@@ -1081,12 +1081,14 @@ func (app *Haqq) setupUpgradeHandlers(db dbm.DB, keys map[string]*storetypes.KVS
 		),
 	)
 
-  // v1.4.2 Security upgrade
-  app.UpgradeKeeper.SetUpgradeHandler(
+	// v1.4.2 Security upgrade
+	app.UpgradeKeeper.SetUpgradeHandler(
 		v142.UpgradeName,
 		v142.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
+		),
+	)
 
 	// v1.5.0 update handler (Revesting all the accounts)
 	app.UpgradeKeeper.SetUpgradeHandler(
