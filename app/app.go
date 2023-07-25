@@ -146,6 +146,7 @@ import (
 	v131 "github.com/haqq-network/haqq/app/upgrades/v1.3.1"
 	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
 	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
+	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
 	v150 "github.com/haqq-network/haqq/app/upgrades/v1.5.0"
 )
 
@@ -1079,6 +1080,13 @@ func (app *Haqq) setupUpgradeHandlers(db dbm.DB, keys map[string]*storetypes.KVS
 			app.configurator,
 		),
 	)
+
+  // v1.4.2 Security upgrade
+  app.UpgradeKeeper.SetUpgradeHandler(
+		v142.UpgradeName,
+		v142.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
 
 	// v1.5.0 update handler (Revesting all the accounts)
 	app.UpgradeKeeper.SetUpgradeHandler(
