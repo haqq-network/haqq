@@ -21,18 +21,11 @@ func (r *RevestingUpgradeHandler) prepareWhitelistFromHistoryState(accounts []au
 			continue
 		}
 
-		balance, err := r.getBondableBalanceFromHistory(acc)
-		if err != nil {
-			return errors.Wrap(err, "failed to get bondable balance from history for account "+acc.GetAddress().String())
-		}
-
+		balance := r.getBondableBalanceFromHistory(acc)
 		delegated, err := r.getDelegatedCoinsFromHistory(acc)
 		if err != nil {
 			return errors.Wrap(err, "failed to get delegated coins from history for account "+acc.GetAddress().String())
 		}
-
-		// TODO GetAllUnbondingDelegations from history
-		// TODO Redelegation from history
 
 		balance = balance.Add(delegated)
 
@@ -67,9 +60,6 @@ func (r *RevestingUpgradeHandler) validateWhitelist() error {
 		for _, delegation := range delegationResps {
 			balance = balance.Add(delegation.Balance)
 		}
-
-		// TODO GetAllUnbondingDelegations
-		// TODO Redelegation
 
 		evmAddr := common.BytesToAddress(acc.GetAddress().Bytes())
 		vestingBalance, err := r.getVestingContractBalance(evmAddr)

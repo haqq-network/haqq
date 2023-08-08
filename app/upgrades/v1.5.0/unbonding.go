@@ -1,6 +1,8 @@
 package v150
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/pkg/errors"
@@ -8,10 +10,14 @@ import (
 
 func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 	blockTime := r.ctx.BlockHeader().Time
-	unbondingPriod := r.StakingKeeper.UnbondingTime(r.ctx)
+	unbondingPeriod := r.StakingKeeper.UnbondingTime(r.ctx)
+
+	unbondedCoins := sdk.NewCoins(sdk.NewCoin(r.StakingKeeper.BondDenom(r.ctx), sdk.ZeroInt()))
+	failedToUnbondAttempts := 0
 
 	// Remove all unbonding delegations from the ubd queue.
-	unbonds := r.StakingKeeper.DequeueAllMatureUBDQueue(r.ctx, blockTime.Add(unbondingPriod))
+	unbonds := r.StakingKeeper.DequeueAllMatureUBDQueue(r.ctx, blockTime.Add(unbondingPeriod))
+	r.ctx.Logger().Info(fmt.Sprintf("Unbonding delegations to be completed: %d", len(unbonds)))
 	for _, dvPair := range unbonds {
 		addr, err := sdk.ValAddressFromBech32(dvPair.ValidatorAddress)
 		if err != nil {
@@ -19,9 +25,16 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 		}
 		delegatorAddress := sdk.MustAccAddressFromBech32(dvPair.DelegatorAddress)
 
+		r.ctx.Logger().Info("Try completeUnbonding: " + delegatorAddress.String() + " -> " + addr.String())
 		balances, err := r.completeUnbonding(r.ctx, delegatorAddress, addr)
 		if err != nil {
+			r.ctx.Logger().Error("completeUnbonding: " + err.Error() + "! Delegator: " + delegatorAddress.String() + " Validator: " + addr.String())
+			failedToUnbondAttempts++
+			continue
 			return errors.Wrap(err, "failed to complete unbonding")
+		} else {
+			r.ctx.Logger().Info("Unbonded: " + balances.String())
+			unbondedCoins = unbondedCoins.Add(balances...)
 		}
 
 		r.ctx.EventManager().EmitEvent(
@@ -33,9 +46,11 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 			),
 		)
 	}
+	r.ctx.Logger().Error("Total unbonded tokens: " + unbondedCoins.String())
+	r.ctx.Logger().Error(fmt.Sprintf("Failed attempts: %d", failedToUnbondAttempts))
 
 	// Remove all mature redelegations from the red queue.
-	matureRedelegations := r.StakingKeeper.DequeueAllMatureRedelegationQueue(r.ctx, blockTime.Add(unbondingPriod))
+	matureRedelegations := r.StakingKeeper.DequeueAllMatureRedelegationQueue(r.ctx, blockTime.Add(unbondingPeriod))
 	for _, dvvTriplet := range matureRedelegations {
 		valSrcAddr, err := sdk.ValAddressFromBech32(dvvTriplet.ValidatorSrcAddress)
 		if err != nil {
@@ -146,4 +161,12 @@ func (r *RevestingUpgradeHandler) completeRedelegation(
 	}
 
 	return balances, nil
+}
+
+func (r *RevestingUpgradeHandler) checkUnbondingPoolBalance() sdk.Coin {
+	bondDenom := r.StakingKeeper.GetParams(r.ctx).BondDenom
+	poolAcc := r.AccountKeeper.GetModuleAccount(r.ctx, types.NotBondedPoolName)
+	balance := r.BankKeeper.GetBalance(r.ctx, poolAcc.GetAddress(), bondDenom)
+
+	return balance
 }

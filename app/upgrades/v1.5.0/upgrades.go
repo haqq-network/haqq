@@ -1,11 +1,10 @@
 package v150
 
 import (
+	"github.com/cosmos/cosmos-sdk/codec"
 	"strconv"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -13,16 +12,12 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
-	dbm "github.com/tendermint/tm-db"
 
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.4.0
 func CreateUpgradeHandler(
-	db dbm.DB,
-	keys map[string]*storetypes.KVStoreKey,
-	cdc codec.Codec,
 	mm *module.Manager,
 	configurator module.Configurator,
 	ak authkeeper.AccountKeeper,
@@ -30,6 +25,7 @@ func CreateUpgradeHandler(
 	sk stakingkeeper.Keeper,
 	evm *evmkeeper.Keeper,
 	vk vestingkeeper.Keeper,
+	cdc codec.Codec,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger()
@@ -37,14 +33,14 @@ func CreateUpgradeHandler(
 		logger.Info("######### REVESTING ########")
 
 		// TODO PUT HERE THE HEIGHT "BEFORE" THE UPGRADE AND BALANCE THRESHOLD
-		ts := math.NewIntFromUint64(exp) // 1 ISLM
-		ts = ts.MulRaw(threshold)        // 10 ISLM for tests
+		ts := math.NewIntFromUint64(exp)
+		ts = ts.MulRaw(threshold)
 
 		logger.Info("# Upgrade height: " + strconv.FormatInt(ctx.BlockHeight(), 10))
-		logger.Info("# History state height: " + strconv.FormatInt(historyStateHeight, 10))
 		logger.Info("# Balance threshold: " + ts.String() + " aISLM")
 
-		revesting := NewRevestingUpgradeHandler(ctx, ak, bk, sk, evm, vk, db, keys, cdc, historyStateHeight, ts)
+		revesting := NewRevestingUpgradeHandler(ctx, ak, bk, sk, evm, vk, ts, cdc)
+
 		revesting.SetIgnoreList(getIgnoreList())
 		if err := revesting.SetValidatorsList(getWhitelistedValidators()); err != nil {
 			panic("failed to prepare validators list for upgrade" + err.Error())
@@ -55,7 +51,7 @@ func CreateUpgradeHandler(
 		}
 
 		// TODO Remove before release
-		panic("test abort")
+		//panic("test abort")
 
 		return mm.RunMigrations(ctx, configurator, vm)
 	}

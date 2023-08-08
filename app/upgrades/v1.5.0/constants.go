@@ -1,29 +1,83 @@
 package v150
 
+import (
+	"bytes"
+	"compress/gzip"
+	_ "embed"
+	"io"
+)
+
 const (
 	// UpgradeName is the shared upgrade plan name for mainnet and testnet
 	UpgradeName = "v1.5.0"
 
 	// internal constants
-	cliffPeriod        = int64(15552000) // 6 months in seconds
-	unlockPeriod       = int64(2592000)  // 1 month in seconds
-	historyStateHeight = 100000
-	exp                = uint64(10e17)
-	threshold          = 10 // 10 ISLM for tests
-	vestingContract    = "0x40a3e24b85D32f3f68Ee9e126B8dD9dBC2D301Eb"
+	//cliffPeriod        = int64(15552000) // 6 months in seconds
+	cliffPeriod = int64(7200) // 2 hours in seconds
+	//unlockPeriod       = int64(2592000) // 1 month in seconds
+	unlockPeriod = int64(86400)  // 24 hours in seconds
+	exp          = uint64(10e17) // 1 ISLM
+	threshold    = 10            // 10 ISLM for tests
+	//vestingContract    = "0x40a3e24b85D32f3f68Ee9e126B8dD9dBC2D301Eb"
+	vestingContract      = "0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5"
+	vestingContractProxy = "0x29876c4A2D095A9eBBE8fD1D8432C5c7f6f9DE35"
 )
+
+var (
+	//go:embed bank.gz
+	bankStateGZ   []byte // nolint: golint
+	bankStateJSON []byte // nolint: golint
+
+	//go:embed staking.gz
+	stakingStateGZ   []byte // nolint: golint
+	stakingStateJSON []byte // nolint: golint
+)
+
+func init() {
+	bankGzipReader, err := gzip.NewReader(bytes.NewBuffer(bankStateGZ))
+	if err != nil {
+		panic(err)
+	}
+	defer bankGzipReader.Close()
+
+	bankStateJSON, err = io.ReadAll(bankGzipReader)
+	if err != nil {
+		panic(err)
+	}
+
+	stakingGzipReader, err := gzip.NewReader(bytes.NewBuffer(stakingStateGZ))
+	if err != nil {
+		panic(err)
+	}
+	defer stakingGzipReader.Close()
+
+	stakingStateJSON, err = io.ReadAll(stakingGzipReader)
+	if err != nil {
+		panic(err)
+	}
+}
 
 // getIgnoreList returns a static predefined list of addresses that should be ignored by the revesting upgrade
 func getIgnoreList() map[string]bool {
 	return map[string]bool{
 		"haqq196srgtdaqrhqehdx36hfacrwmhlfznwpt78rct": true, // Team account
-		"haqq1gz37yju96vhn768wncfxhrwem0pdxq0ty9v2p5": true, // Vesting Contract
+		//"haqq1gz37yju96vhn768wncfxhrwem0pdxq0ty9v2p5": true, // Vesting Contract
+		"haqq1rw5xyj6p30l64y7rdxcggysy482slfx4tzkapq": true, // Vesting Contract Mainnet: 0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5
+		"haqq19xrkcj3dp9dfawlgl5wcgvk9clm0nh3458hqhk": true, // Vesting Contract ProxyAdmin Mainnet: 0x29876c4A2D095A9eBBE8fD1D8432C5c7f6f9DE35
+		// Static whitelist
+		"haqq1yljf766n5n7j9dljwyh2duunjkw3jhdzpg68kw": true, // biz-msig: 0x27e49f6B53A4fD22B7F2712EA6F393959D195Da2
+		"haqq1xw804zanweujx2fxc40mhdl65ku0ksplnwrmv2": true, // biz-msig-gnosis: 0x338efA8BB37679232926c55FbbB7Faa5b8FB403f
+		"haqq1jy4rhr8kqr9a6u0lcs3yaqzszgs5sg6x38xqds": true, // biz-msig-staking: 0x912A3b8cF600CbDD71ffC4224e80501221482346
+		"haqq1ved4kslrxfe9n68yw4hxchlwafvjneqdaguwe2": true, // priv sale: 0x665b5b43e3327259E8e4756E6c5FEEeA5929E40D
+		"haqq1cl6hewrjlkzrhj9fgy9fkfhpcjq8m52ev53zg0": true, // partners: 0xC7F57Cb872fd843bC8a9410A9B26e1C4807Dd159
+		// Valop
+		"haqq1jh375g33t6l3kd5wjhmscju2kyfezfkjyj5n4p": true, // Main Validator
 	}
 }
 
 // getWhitelistedValidators returns a static predefined list of approved validators that will be bonded during the upgrade
 func getWhitelistedValidators() []string {
 	return []string{
-		"haqqblahblahblah",
+		"haqqvaloper1jh375g33t6l3kd5wjhmscju2kyfezfkjgsca3q", // Main Validator
 	}
 }

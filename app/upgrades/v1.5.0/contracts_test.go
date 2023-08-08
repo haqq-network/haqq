@@ -118,11 +118,8 @@ var _ = Describe("Performing EVM contract calls", Ordered, func() {
 				s.app.StakingKeeper,
 				s.app.EvmKeeper,
 				s.app.VestingKeeper,
-				nil,
-				nil,
-				nil,
-				1,
 				math.NewIntFromUint64(1),
+				s.app.AppCodec(),
 			)
 			err = revesting.Revesting(contractAcc, balanceAfterDeposit1)
 			Expect(err).To(BeNil())

@@ -43,318 +43,8 @@ func (r *RevestingUpgradeHandler) getVestingPeriods(totalAmount sdk.Coin) (sdkve
 	return lockupPeriods, vestingPeriods
 }
 
-func (r *RevestingUpgradeHandler) getVestingContractABI() string {
-	return `[
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "beneficiaryAddress",
-                  "type": "address"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "depositId",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "uint256",
-                  "name": "timestamp",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "sumInWeiDeposited",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "address",
-                  "name": "depositedBy",
-                  "type": "address"
-                }
-              ],
-              "name": "DepositMade",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": false,
-                  "internalType": "uint8",
-                  "name": "version",
-                  "type": "uint8"
-                }
-              ],
-              "name": "Initialized",
-              "type": "event"
-            },
-            {
-              "anonymous": false,
-              "inputs": [
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "beneficiary",
-                  "type": "address"
-                },
-                {
-                  "indexed": false,
-                  "internalType": "uint256",
-                  "name": "sumInWei",
-                  "type": "uint256"
-                },
-                {
-                  "indexed": true,
-                  "internalType": "address",
-                  "name": "triggeredByAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "WithdrawalMade",
-              "type": "event"
-            },
-            {
-              "inputs": [],
-              "name": "MAX_DEPOSITS",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "NUMBER_OF_PAYMENTS",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [],
-              "name": "TIME_BETWEEN_PAYMENTS",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "_depositId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "amountForOneWithdrawal",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "_depositId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "amountToWithdrawNow",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "calculateAvailableSumForAllDeposits",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "deposit",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "success",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "payable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "name": "deposits",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "timestamp",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "sumInWeiDeposited",
-                  "type": "uint256"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "sumPaidAlready",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "",
-                  "type": "address"
-                }
-              ],
-              "name": "depositsCounter",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                },
-                {
-                  "internalType": "uint256",
-                  "name": "_depositId",
-                  "type": "uint256"
-                }
-              ],
-              "name": "totalPayoutsUnblocked",
-              "outputs": [
-                {
-                  "internalType": "uint256",
-                  "name": "",
-                  "type": "uint256"
-                }
-              ],
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_newBeneficiaryAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "transferDepositRights",
-              "outputs": [],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            },
-            {
-              "inputs": [
-                {
-                  "internalType": "address",
-                  "name": "_beneficiaryAddress",
-                  "type": "address"
-                }
-              ],
-              "name": "withdraw",
-              "outputs": [
-                {
-                  "internalType": "bool",
-                  "name": "success",
-                  "type": "bool"
-                }
-              ],
-              "stateMutability": "nonpayable",
-              "type": "function"
-            }
-          ]`
+func (r *RevestingUpgradeHandler) getVestingContractABI() (string, string) {
+	return "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_beneficiaryAddress\",\"type\":\"address\"}],\"name\":\"calculateTotalRemainingForAllDeposits\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]", "calculateTotalRemainingForAllDeposits"
 }
 
 func (r *RevestingUpgradeHandler) getVestingContractAddress() common.Address {
@@ -366,7 +56,11 @@ func (r *RevestingUpgradeHandler) getVestingContractBalance(addr common.Address)
 	totalVestingAmount := sdk.NewCoin(bondDenom, sdk.ZeroInt())
 
 	contractAddress := r.getVestingContractAddress()
-	contractABI := r.getVestingContractABI()
+	contractABI, contractFunction := r.getVestingContractABI()
+
+	if addr.Hex() == contractAddress.Hex() || addr.Hex() == vestingContractProxy {
+		return totalVestingAmount, nil
+	}
 
 	// Parse the contract ABI
 	cAbi, err := abi.JSON(strings.NewReader(contractABI))
@@ -375,10 +69,7 @@ func (r *RevestingUpgradeHandler) getVestingContractBalance(addr common.Address)
 	}
 
 	// Create a call data buffer for the function call
-	// Use "calculateTotalRemainingForAllDeposits" on release
-	// callData, err := cAbi.Pack("calculateTotalRemainingForAllDeposits", addr)
-	// TODO SET CORRECT FUNCTION NAME
-	callData, err := cAbi.Pack("calculateAvailableSumForAllDeposits", addr)
+	callData, err := cAbi.Pack(contractFunction, addr)
 	if err != nil {
 		return totalVestingAmount, errors.Wrap(err, "abi.Pack")
 	}
@@ -405,10 +96,7 @@ func (r *RevestingUpgradeHandler) getVestingContractBalance(addr common.Address)
 
 	// Parse contract response
 	var amount *big.Int
-	// Use "calculateTotalRemainingForAllDeposits" on release
-	// if err := cAbi.UnpackIntoInterface(&amount, "calculateTotalRemainingForAllDeposits", resp.Ret); err != nil {
-	// TODO SET CORRECT FUNCTION NAME
-	if err := cAbi.UnpackIntoInterface(&amount, "calculateAvailableSumForAllDeposits", resp.Ret); err != nil {
+	if err := cAbi.UnpackIntoInterface(&amount, contractFunction, resp.Ret); err != nil {
 		return totalVestingAmount, errors.Wrap(err, "abi.UnpackIntoInterface")
 	}
 

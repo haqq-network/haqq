@@ -1,11 +1,11 @@
 package v150
 
 import (
+	"fmt"
 	"strconv"
 
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -15,29 +15,26 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/evmos/ethermint/types"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
-	"github.com/pkg/errors"
-	dbm "github.com/tendermint/tm-db"
-
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+	"github.com/pkg/errors"
 )
 
 type RevestingUpgradeHandler struct {
-	ctx           sdk.Context
-	AccountKeeper authkeeper.AccountKeeper
-	BankKeeper    bankkeeper.Keeper
-	StakingKeeper stakingkeeper.Keeper
-	EvmKeeper     *evmkeeper.Keeper
-	VestingKeeper vestingkeeper.Keeper
-	vals          map[string]math.Int
-	db            dbm.DB
-	keys          map[string]*storetypes.KVStoreKey
-	stores        map[storetypes.StoreKey]storetypes.CommitKVStore
-	cdc           codec.Codec
-	height        int64
-	threshold     math.Int
-	wl            map[types.EthAccount]bool
-	ignore        map[string]bool
+	ctx            sdk.Context
+	AccountKeeper  authkeeper.AccountKeeper
+	BankKeeper     bankkeeper.Keeper
+	StakingKeeper  stakingkeeper.Keeper
+	EvmKeeper      *evmkeeper.Keeper
+	VestingKeeper  vestingkeeper.Keeper
+	oldBalances    map[string]sdk.Coin
+	oldDelegations map[string][]stakingtypes.Delegation
+	oldValidators  map[string]stakingtypes.Validator
+	cdc            codec.Codec
+	vals           map[string]math.Int
+	threshold      math.Int
+	wl             map[types.EthAccount]bool
+	ignore         map[string]bool
 }
 
 func NewRevestingUpgradeHandler(
@@ -47,11 +44,8 @@ func NewRevestingUpgradeHandler(
 	sk stakingkeeper.Keeper,
 	evm *evmkeeper.Keeper,
 	vk vestingkeeper.Keeper,
-	db dbm.DB,
-	keys map[string]*storetypes.KVStoreKey,
-	cdc codec.Codec,
-	height int64,
 	threshold math.Int,
+	cdc codec.Codec,
 ) *RevestingUpgradeHandler {
 	return &RevestingUpgradeHandler{
 		ctx:           ctx,
@@ -60,12 +54,8 @@ func NewRevestingUpgradeHandler(
 		StakingKeeper: sk,
 		EvmKeeper:     evm,
 		VestingKeeper: vk,
-		vals:          make(map[string]math.Int),
-		db:            db,
-		keys:          keys,
-		stores:        make(map[storetypes.StoreKey]storetypes.CommitKVStore),
 		cdc:           cdc,
-		height:        height,
+		vals:          make(map[string]math.Int),
 		threshold:     threshold,
 		wl:            make(map[types.EthAccount]bool),
 		ignore:        make(map[string]bool),
@@ -83,11 +73,28 @@ func (r *RevestingUpgradeHandler) GetIgnoreList() map[string]bool {
 func (r *RevestingUpgradeHandler) Run() error {
 	r.ctx.Logger().Info("Run revesting upgrade.")
 
+	if err := r.loadHistoryBalancesState(); err != nil {
+		return errors.Wrap(err, "error loading history balances state")
+	}
+
+	if err := r.loadHistoryStakingState(); err != nil {
+		return errors.Wrap(err, "error loading history staking state")
+	}
+
+	r.ctx.Logger().Info(fmt.Sprintf("Found %d validators", len(r.oldValidators)))
+	r.ctx.Logger().Info(fmt.Sprintf("Found %d delegations", len(r.oldDelegations)))
+	r.ctx.Logger().Info(fmt.Sprintf("Found %d balances", len(r.oldBalances)))
+
+	ubdPoolBalanceBefore := r.checkUnbondingPoolBalance()
+	r.ctx.Logger().Info("Unbonding pool balance before: " + ubdPoolBalanceBefore.String())
 	r.ctx.Logger().Info("Force unbonding and redelegation.")
-	err := r.forceDequeueUnbondingAndRedelegation()
-	if err != nil {
+
+	if err := r.forceDequeueUnbondingAndRedelegation(); err != nil {
 		return errors.Wrap(err, "error force dequeue unbonding and redelegation")
 	}
+
+	ubdPoolBalanceAfter := r.checkUnbondingPoolBalance()
+	r.ctx.Logger().Info("Unbonding pool balance after: " + ubdPoolBalanceAfter.String())
 
 	accounts := r.AccountKeeper.GetAllAccounts(r.ctx)
 	if len(accounts) == 0 {
@@ -96,10 +103,6 @@ func (r *RevestingUpgradeHandler) Run() error {
 		return nil
 	}
 	r.ctx.Logger().Info("Found accounts to process: " + strconv.Itoa(len(accounts)))
-
-	if err := r.loadStateOnHeight(); err != nil {
-		return errors.Wrap(err, "error loading state on height 160000")
-	}
 
 	if err := r.prepareWhitelistFromHistoryState(accounts); err != nil {
 		return errors.Wrap(err, "error preparing whitelist from history state")
@@ -145,10 +148,10 @@ func (r *RevestingUpgradeHandler) Run() error {
 			totalUndelegatedAmount sdk.Coin
 			err                    error
 		)
-		oldDelegations := make(map[*sdk.ValAddress]sdk.Coin)
+		restoreDelegations := make(map[*sdk.ValAddress]sdk.Coin)
 		if !isSmartContract {
 			// Undelegate all coins for account
-			oldDelegations, totalUndelegatedAmount, err = r.UndelegateAllTokens(acc.GetAddress())
+			restoreDelegations, totalUndelegatedAmount, err = r.UndelegateAllTokens(acc.GetAddress())
 			if err != nil {
 				return errors.Wrap(err, "error undelegating tokens")
 			}
@@ -176,7 +179,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 		}
 
 		if !isSmartContract {
-			shares, err := r.Restaking(acc, balance, oldDelegations)
+			shares, err := r.Restaking(acc, balance, restoreDelegations)
 			if err != nil {
 				return errors.Wrap(err, "error restaking")
 			}
@@ -217,14 +220,37 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 			return nil, totalUndelegatedAmount, errors.New("validator not found")
 		}
 
-		// Skip self delegation if it's lower than threshold to prevent auto jail
+		delegationShares := delegation.GetShares()
 		isValidatorOperator := delAddr.Equals(validator.GetOperator())
-		delAmount := validator.TokensFromShares(delegation.Shares).TruncateInt()
-		if isValidatorOperator && delAmount.LT(r.threshold) {
-			continue
+		delegatedAmount := validator.TokensFromShares(delegationShares).TruncateInt()
+
+		// Reduce unbonding amount if validator's min self delegation is less than threshold
+		// and delegation is from validator's operator.
+		// This is needed to avoid auto-jail validator on unbonding.
+		// If validator's min self delegation is greater than threshold, then jail validator.
+		if isValidatorOperator && validator.MinSelfDelegation.LT(r.threshold) {
+			r.ctx.Logger().Info("Validator operator self delegation!")
+			// Skip if delegated amount is less than validator's min self delegation
+			if delegatedAmount.LT(validator.MinSelfDelegation) {
+				continue
+			}
+
+			amountToUnbond := delegatedAmount.Sub(validator.MinSelfDelegation)
+			sharesToUnbond, err := validator.SharesFromTokens(amountToUnbond)
+			if err != nil {
+				return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to reduce unbonding amount")
+			}
+
+			r.ctx.Logger().Info(fmt.Sprintf(
+				"Unbonding validator's self delegation: %s out of %s shares",
+				sharesToUnbond.String(),
+				delegationShares.String(),
+			))
+
+			delegationShares = sharesToUnbond
 		}
 
-		ubdAmount, err := r.StakingKeeper.Unbond(r.ctx, delAddr, valAddr, delegation.GetShares())
+		ubdAmount, err := r.StakingKeeper.Unbond(r.ctx, delAddr, valAddr, delegationShares)
 		if err != nil {
 			return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to unbond tokens")
 		}
@@ -243,7 +269,11 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 			r.reduceValidatorPower(valAddr.String(), ubdAmount)
 		} else {
 			// Should not happen
-			r.ctx.Logger().Info("Validator is not bonded...")
+			r.ctx.Logger().Error("Validator is not bonded!")
+			r.ctx.Logger().Error("Validator: " + valAddr.String())
+			r.ctx.Logger().Error("Delegator: " + delAddr.String())
+			r.ctx.Logger().Error("Amount: " + delegatedAmount.String())
+			continue
 		}
 
 		undelegatedCoin := sdk.NewCoin(bondDenom, ubdAmount)
