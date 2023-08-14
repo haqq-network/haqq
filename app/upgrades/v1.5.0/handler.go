@@ -15,26 +15,28 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/evmos/ethermint/types"
 	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
+	"github.com/pkg/errors"
+
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
-	"github.com/pkg/errors"
 )
 
 type RevestingUpgradeHandler struct {
-	ctx            sdk.Context
-	AccountKeeper  authkeeper.AccountKeeper
-	BankKeeper     bankkeeper.Keeper
-	StakingKeeper  stakingkeeper.Keeper
-	EvmKeeper      *evmkeeper.Keeper
-	VestingKeeper  vestingkeeper.Keeper
+	ctx           sdk.Context
+	AccountKeeper authkeeper.AccountKeeper
+	BankKeeper    bankkeeper.Keeper
+	StakingKeeper stakingkeeper.Keeper
+	EvmKeeper     *evmkeeper.Keeper
+	VestingKeeper vestingkeeper.Keeper
+	cdc           codec.Codec
+	vals          map[string]math.Int
+	threshold     math.Int
+	wl            map[types.EthAccount]bool
+	ignore        map[string]bool
+
 	oldBalances    map[string]sdk.Coin
 	oldDelegations map[string][]stakingtypes.Delegation
 	oldValidators  map[string]stakingtypes.Validator
-	cdc            codec.Codec
-	vals           map[string]math.Int
-	threshold      math.Int
-	wl             map[types.EthAccount]bool
-	ignore         map[string]bool
 }
 
 func NewRevestingUpgradeHandler(
@@ -104,6 +106,12 @@ func (r *RevestingUpgradeHandler) Run() error {
 	}
 	r.ctx.Logger().Info("Found accounts to process: " + strconv.Itoa(len(accounts)))
 
+	r.ctx.Logger().Info("Withdraw funds from Vesting Contract...")
+	withdrawnVestingAmounts, err := r.forceContractVestingWithdraw(accounts)
+	if err != nil {
+		return errors.Wrap(err, "error force contract vesting withdraw")
+	}
+
 	if err := r.prepareWhitelistFromHistoryState(accounts); err != nil {
 		return errors.Wrap(err, "error preparing whitelist from history state")
 	}
@@ -156,18 +164,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 				return errors.Wrap(err, "error undelegating tokens")
 			}
 			r.ctx.Logger().Info("Total undelegated amount: " + totalUndelegatedAmount.String())
-
-			// TODO Remove before release
-			// Log balance before upgrade
-			balanceAfterUND := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
-			r.ctx.Logger().Info("Balance after undelegation: " + balanceAfterUND.String())
 		}
-
-		vestedAmount, err := r.WithdrawCoinsFromVestingContract(evmAddr)
-		if err != nil {
-			return errors.Wrap(err, "error withdrawing coins from vesting contract")
-		}
-		r.ctx.Logger().Info("Total vested amount: " + vestedAmount.String())
 
 		// Get account balance
 		balance := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
@@ -190,10 +187,17 @@ func (r *RevestingUpgradeHandler) Run() error {
 			}
 		}
 
+		// Delete entry from map to prevent double revesting
+		delete(withdrawnVestingAmounts, acc.GetAddress().String())
+
 		// TODO Remove before release
 		// Log balance after revesting
 		balanceAfter := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
 		r.ctx.Logger().Info("Balance after (re)vesting: " + balanceAfter.String())
+	}
+
+	if err := r.FinalizeContractRevesting(withdrawnVestingAmounts); err != nil {
+		return errors.Wrap(err, "error finalize contract revesting")
 	}
 
 	return nil
@@ -203,7 +207,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 // and the total undelegated amount
 func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (map[*sdk.ValAddress]sdk.Coin, sdk.Coin, error) {
 	bondDenom := r.StakingKeeper.BondDenom(r.ctx)
-	totalUndelegatedAmount := sdk.NewCoin(bondDenom, sdk.NewInt(0))
+	totalUndelegatedAmount := sdk.NewCoin(bondDenom, sdk.ZeroInt())
 
 	delegations := r.StakingKeeper.GetAllDelegatorDelegations(r.ctx, delAddr)
 	if len(delegations) == 0 {
@@ -256,6 +260,7 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 		}
 
 		// transfer the validator tokens to the not bonded pool
+		// TODO Cover unbonding and unbonded validators
 		coins := sdk.NewCoins(sdk.NewCoin(bondDenom, ubdAmount))
 		if validator.IsBonded() {
 			if err := r.BankKeeper.SendCoinsFromModuleToModule(r.ctx, stakingtypes.BondedPoolName, stakingtypes.NotBondedPoolName, coins); err != nil {
@@ -277,30 +282,11 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 		}
 
 		undelegatedCoin := sdk.NewCoin(bondDenom, ubdAmount)
-		undelegatedAmounts[&valAddr] = sdk.NewCoin(bondDenom, ubdAmount)
+		undelegatedAmounts[&valAddr] = undelegatedCoin
 		totalUndelegatedAmount = totalUndelegatedAmount.Add(undelegatedCoin)
 	}
 
 	return undelegatedAmounts, totalUndelegatedAmount, nil
-}
-
-func (r *RevestingUpgradeHandler) WithdrawCoinsFromVestingContract(addr common.Address) (sdk.Coin, error) {
-	vestingBalance, err := r.getVestingContractBalance(addr)
-	if err != nil {
-		return sdk.Coin{}, errors.Wrap(err, "failed to get vesting contract balance")
-	}
-
-	// Transfer the tokens from the vesting contract to the account
-	if !vestingBalance.IsZero() {
-		contractAddress := r.getVestingContractAddress()
-		contractAccount := sdk.AccAddress(contractAddress.Bytes())
-		acc := sdk.AccAddress(addr.Bytes())
-		if err := r.BankKeeper.SendCoins(r.ctx, contractAccount, acc, sdk.NewCoins(vestingBalance)); err != nil {
-			return vestingBalance, errors.Wrap(err, "failed to transfer tokens from vesting contract to account")
-		}
-	}
-
-	return vestingBalance, nil
 }
 
 func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coin) error {
@@ -379,4 +365,50 @@ func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount 
 	r.increaseValidatorPower(valAddr.String(), restAmount.Amount)
 
 	return shares, nil
+}
+
+func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmounts map[string]sdk.Coin) error {
+	r.ctx.Logger().Info("Finalize Contract Revesting")
+
+	if len(withdrawnVestingAmounts) == 0 {
+		r.ctx.Logger().Info("Nothing to do")
+		return nil
+	}
+
+	for addr, amount := range withdrawnVestingAmounts {
+		var (
+			totalUndelegatedAmount sdk.Coin
+			err                    error
+		)
+		accAddr := sdk.MustAccAddressFromBech32(addr)
+		acc := types.ProtoAccount()
+		if err := acc.SetAddress(accAddr); err != nil {
+			return errors.Wrap(err, "get account from address")
+		}
+		restoreDelegations := make(map[*sdk.ValAddress]sdk.Coin)
+		restoreDelegations, totalUndelegatedAmount, err = r.UndelegateAllTokens(accAddr)
+		if err != nil {
+			return errors.Wrap(err, "error undelegating tokens")
+		}
+		r.ctx.Logger().Info("Total undelegated amount: " + totalUndelegatedAmount.String())
+
+		balance := amount.Add(totalUndelegatedAmount)
+
+		// Send all coins to the vesting module account and process revesting with staking
+		if err := r.Revesting(acc, balance); err != nil {
+			return errors.Wrap(err, "error revesting")
+		}
+
+		shares, err := r.Restaking(acc, balance, restoreDelegations)
+		if err != nil {
+			return errors.Wrap(err, "error restaking")
+		}
+
+		r.ctx.Logger().Info("New staking shares:")
+		for valAddr, share := range shares {
+			r.ctx.Logger().Info(share.String() + " to " + valAddr.String())
+		}
+	}
+
+	return nil
 }

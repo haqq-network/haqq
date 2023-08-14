@@ -2,11 +2,13 @@ package v150
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strings"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -107,4 +109,44 @@ func (r *RevestingUpgradeHandler) getVestingContractBalance(addr common.Address)
 	}
 
 	return totalVestingAmount, nil
+}
+
+func (r *RevestingUpgradeHandler) forceContractVestingWithdraw(accounts []authtypes.AccountI) (map[string]sdk.Coin, error) {
+	withdrawn := make(map[string]sdk.Coin)
+	fails := 0
+
+	for _, acc := range accounts {
+		evmAddr := common.BytesToAddress(acc.GetAddress().Bytes())
+		vestingBalance, err := r.getVestingContractBalance(evmAddr)
+		if err != nil {
+			fails++
+			r.ctx.Logger().Error(
+				"forceContractVestingWithdraw -> getVestingContractBalance: " + err.Error() + "! " +
+					"Account: " + acc.GetAddress().String() + "[" + evmAddr.Hex() + "]",
+			)
+			continue
+		}
+
+		if !vestingBalance.IsZero() {
+			contractAddress := r.getVestingContractAddress()
+			contractAccount := sdk.AccAddress(contractAddress.Bytes())
+			if err := r.BankKeeper.SendCoins(r.ctx, contractAccount, acc.GetAddress(), sdk.NewCoins(vestingBalance)); err != nil {
+				fails++
+				r.ctx.Logger().Error(
+					"forceContractVestingWithdraw: failed to transfer tokens from vesting contract to account: " + err.Error() + "! " +
+						"Account: " + acc.GetAddress().String() + "[" + evmAddr.Hex() + "], Amount: " + vestingBalance.String(),
+				)
+				continue
+			}
+			withdrawn[acc.GetAddress().String()] = vestingBalance
+		}
+	}
+
+	if fails > 0 {
+		r.ctx.Logger().Error(fmt.Sprintf("forceContractVestingWithdraw: %d fails", fails))
+	} else {
+		r.ctx.Logger().Info("forceContractVestingWithdraw: SUCCESS!")
+	}
+
+	return withdrawn, nil
 }

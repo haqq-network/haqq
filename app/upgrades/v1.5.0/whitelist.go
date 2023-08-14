@@ -5,7 +5,6 @@ import (
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/evmos/ethermint/types"
 	"github.com/pkg/errors"
 )
@@ -59,16 +58,6 @@ func (r *RevestingUpgradeHandler) validateWhitelist() error {
 
 		for _, delegation := range delegationResps {
 			balance = balance.Add(delegation.Balance)
-		}
-
-		evmAddr := common.BytesToAddress(acc.GetAddress().Bytes())
-		vestingBalance, err := r.getVestingContractBalance(evmAddr)
-		if err != nil {
-			return errors.Wrap(err, "failed to get vesting contract balance")
-		}
-
-		if !vestingBalance.IsZero() {
-			balance = balance.Add(vestingBalance)
 		}
 
 		if !balance.IsZero() && balance.Amount.GT(r.threshold) && ok {

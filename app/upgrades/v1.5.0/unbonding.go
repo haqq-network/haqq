@@ -31,7 +31,6 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 			r.ctx.Logger().Error("completeUnbonding: " + err.Error() + "! Delegator: " + delegatorAddress.String() + " Validator: " + addr.String())
 			failedToUnbondAttempts++
 			continue
-			return errors.Wrap(err, "failed to complete unbonding")
 		} else {
 			r.ctx.Logger().Info("Unbonded: " + balances.String())
 			unbondedCoins = unbondedCoins.Add(balances...)
@@ -46,7 +45,7 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 			),
 		)
 	}
-	r.ctx.Logger().Error("Total unbonded tokens: " + unbondedCoins.String())
+	r.ctx.Logger().Info("Total unbonded tokens: " + unbondedCoins.String())
 	r.ctx.Logger().Error(fmt.Sprintf("Failed attempts: %d", failedToUnbondAttempts))
 
 	// Remove all mature redelegations from the red queue.

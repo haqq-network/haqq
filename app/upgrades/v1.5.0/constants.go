@@ -13,12 +13,11 @@ const (
 
 	// internal constants
 	//cliffPeriod        = int64(15552000) // 6 months in seconds
-	cliffPeriod = int64(7200) // 2 hours in seconds
 	//unlockPeriod       = int64(2592000) // 1 month in seconds
-	unlockPeriod = int64(86400)  // 24 hours in seconds
-	exp          = uint64(10e17) // 1 ISLM
-	threshold    = 10            // 10 ISLM for tests
-	//vestingContract    = "0x40a3e24b85D32f3f68Ee9e126B8dD9dBC2D301Eb"
+	cliffPeriod          = int64(7200)   // 2 hours in seconds
+	unlockPeriod         = int64(3600)   // 1 hour in seconds
+	exp                  = uint64(10e17) // 1 ISLM base
+	threshold            = 1000000       // 1000000 ISLM for prod
 	vestingContract      = "0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5"
 	vestingContractProxy = "0x29876c4A2D095A9eBBE8fD1D8432C5c7f6f9DE35"
 )
