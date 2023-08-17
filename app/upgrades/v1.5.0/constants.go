@@ -58,7 +58,6 @@ func init() {
 func getIgnoreList() map[string]bool {
 	return map[string]bool{
 		"haqq196srgtdaqrhqehdx36hfacrwmhlfznwpt78rct": true, // Team account
-		//"haqq1gz37yju96vhn768wncfxhrwem0pdxq0ty9v2p5": true, // Vesting Contract
 		"haqq1rw5xyj6p30l64y7rdxcggysy482slfx4tzkapq": true, // Vesting Contract Mainnet: 0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5
 		"haqq19xrkcj3dp9dfawlgl5wcgvk9clm0nh3458hqhk": true, // Vesting Contract ProxyAdmin Mainnet: 0x29876c4A2D095A9eBBE8fD1D8432C5c7f6f9DE35
 		// Static whitelist

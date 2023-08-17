@@ -51,9 +51,6 @@ func (r *RevestingUpgradeHandler) loadHistoryStakingState() error {
 
 	r.oldDelegations = make(map[string][]stakingtypes.Delegation, len(stakingState.Delegations))
 	for _, delegation := range stakingState.Delegations {
-		//if _, ok := r.oldDelegations[delegation.DelegatorAddress]; !ok {
-		//	r.oldDelegations[delegation.DelegatorAddress] = make([]stakingtypes.Delegation, 0)
-		//}
 		r.oldDelegations[delegation.DelegatorAddress] = append(r.oldDelegations[delegation.DelegatorAddress], delegation)
 	}
 

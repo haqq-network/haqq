@@ -3,6 +3,7 @@ package contracts
 import (
 	_ "embed"
 	"encoding/json"
+
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 )
 

@@ -184,9 +184,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 		}
 
 		// Delete entry from map to prevent double revesting
-		if _, found := withdrawnVestingAmounts[acc.GetAddress().String()]; found {
-			delete(withdrawnVestingAmounts, acc.GetAddress().String())
-		}
+		delete(withdrawnVestingAmounts, acc.GetAddress().String())
 
 		// TODO Remove before release
 		// Log balance after revesting

@@ -31,10 +31,10 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 			r.ctx.Logger().Error("completeUnbonding: " + err.Error() + "! Delegator: " + delegatorAddress.String() + " Validator: " + addr.String())
 			failedToUnbondAttempts++
 			continue
-		} else {
-			r.ctx.Logger().Info("Unbonded: " + balances.String())
-			unbondedCoins = unbondedCoins.Add(balances...)
 		}
+
+		r.ctx.Logger().Info("Unbonded: " + balances.String())
+		unbondedCoins = unbondedCoins.Add(balances...)
 
 		r.ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
@@ -121,9 +121,10 @@ func (r *RevestingUpgradeHandler) completeUnbonding(
 	}
 
 	// set the unbonding delegation or remove it if there are no more entries
-	if len(ubd.Entries) == 0 {
+	switch {
+	case len(ubd.Entries) == 0:
 		r.StakingKeeper.RemoveUnbondingDelegation(ctx, ubd)
-	} else {
+	default:
 		r.StakingKeeper.SetUnbondingDelegation(ctx, ubd)
 	}
 
@@ -153,9 +154,10 @@ func (r *RevestingUpgradeHandler) completeRedelegation(
 	}
 
 	// set the redelegation or remove it if there are no more entries
-	if len(red.Entries) == 0 {
+	switch {
+	case len(red.Entries) == 0:
 		r.StakingKeeper.RemoveRedelegation(ctx, red)
-	} else {
+	default:
 		r.StakingKeeper.SetRedelegation(ctx, red)
 	}
 
