@@ -12,10 +12,8 @@ const (
 	UpgradeName = "v1.5.0"
 
 	// internal constants
-	//cliffPeriod        = int64(15552000) // 6 months in seconds
-	//unlockPeriod       = int64(2592000) // 1 month in seconds
-	cliffPeriod          = int64(7200)   // 2 hours in seconds
-	unlockPeriod         = int64(3600)   // 1 hour in seconds
+	cliffPeriod          = int64(7200)   // 2 hours in seconds TODO set to 15552000 (6 months in seconds)
+	unlockPeriod         = int64(3600)   // 1 hour in seconds TODO set to 2592000 (1 month in seconds)
 	exp                  = uint64(10e17) // 1 ISLM base
 	threshold            = 1000000       // 1000000 ISLM for prod
 	vestingContract      = "0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5"
@@ -70,7 +68,7 @@ func getIgnoreList() map[string]bool {
 		"haqq1ved4kslrxfe9n68yw4hxchlwafvjneqdaguwe2": true, // priv sale: 0x665b5b43e3327259E8e4756E6c5FEEeA5929E40D
 		"haqq1cl6hewrjlkzrhj9fgy9fkfhpcjq8m52ev53zg0": true, // partners: 0xC7F57Cb872fd843bC8a9410A9B26e1C4807Dd159
 		// Valop
-		"haqq1jh375g33t6l3kd5wjhmscju2kyfezfkjyj5n4p": true, // Main Validator
+		// "haqq1jh375g33t6l3kd5wjhmscju2kyfezfkjyj5n4p": true, // Main Validator
 	}
 }
 

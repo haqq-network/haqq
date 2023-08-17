@@ -22,18 +22,17 @@ import (
 )
 
 type RevestingUpgradeHandler struct {
-	ctx           sdk.Context
-	AccountKeeper authkeeper.AccountKeeper
-	BankKeeper    bankkeeper.Keeper
-	StakingKeeper stakingkeeper.Keeper
-	EvmKeeper     *evmkeeper.Keeper
-	VestingKeeper vestingkeeper.Keeper
-	cdc           codec.Codec
-	vals          map[string]math.Int
-	threshold     math.Int
-	wl            map[types.EthAccount]bool
-	ignore        map[string]bool
-
+	ctx            sdk.Context
+	AccountKeeper  authkeeper.AccountKeeper
+	BankKeeper     bankkeeper.Keeper
+	StakingKeeper  stakingkeeper.Keeper
+	EvmKeeper      *evmkeeper.Keeper
+	VestingKeeper  vestingkeeper.Keeper
+	cdc            codec.Codec
+	vals           map[string]math.Int
+	threshold      math.Int
+	wl             map[types.EthAccount]bool
+	ignore         map[string]bool
 	oldBalances    map[string]sdk.Coin
 	oldDelegations map[string][]stakingtypes.Delegation
 	oldValidators  map[string]stakingtypes.Validator
@@ -107,10 +106,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 	r.ctx.Logger().Info("Found accounts to process: " + strconv.Itoa(len(accounts)))
 
 	r.ctx.Logger().Info("Withdraw funds from Vesting Contract...")
-	withdrawnVestingAmounts, err := r.forceContractVestingWithdraw(accounts)
-	if err != nil {
-		return errors.Wrap(err, "error force contract vesting withdraw")
-	}
+	withdrawnVestingAmounts := r.forceContractVestingWithdraw(accounts)
 
 	if err := r.prepareWhitelistFromHistoryState(accounts); err != nil {
 		return errors.Wrap(err, "error preparing whitelist from history state")
@@ -188,7 +184,9 @@ func (r *RevestingUpgradeHandler) Run() error {
 		}
 
 		// Delete entry from map to prevent double revesting
-		delete(withdrawnVestingAmounts, acc.GetAddress().String())
+		if _, found := withdrawnVestingAmounts[acc.GetAddress().String()]; found {
+			delete(withdrawnVestingAmounts, acc.GetAddress().String())
+		}
 
 		// TODO Remove before release
 		// Log balance after revesting
@@ -385,8 +383,7 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 		if err := acc.SetAddress(accAddr); err != nil {
 			return errors.Wrap(err, "get account from address")
 		}
-		restoreDelegations := make(map[*sdk.ValAddress]sdk.Coin)
-		restoreDelegations, totalUndelegatedAmount, err = r.UndelegateAllTokens(accAddr)
+		restoreDelegations, totalUndelegatedAmount, err := r.UndelegateAllTokens(accAddr)
 		if err != nil {
 			return errors.Wrap(err, "error undelegating tokens")
 		}

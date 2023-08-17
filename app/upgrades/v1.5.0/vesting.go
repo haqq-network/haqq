@@ -111,7 +111,7 @@ func (r *RevestingUpgradeHandler) getVestingContractBalance(addr common.Address)
 	return totalVestingAmount, nil
 }
 
-func (r *RevestingUpgradeHandler) forceContractVestingWithdraw(accounts []authtypes.AccountI) (map[string]sdk.Coin, error) {
+func (r *RevestingUpgradeHandler) forceContractVestingWithdraw(accounts []authtypes.AccountI) map[string]sdk.Coin {
 	withdrawn := make(map[string]sdk.Coin)
 	fails := 0
 
@@ -142,11 +142,12 @@ func (r *RevestingUpgradeHandler) forceContractVestingWithdraw(accounts []authty
 		}
 	}
 
-	if fails > 0 {
+	switch {
+	case fails > 0:
 		r.ctx.Logger().Error(fmt.Sprintf("forceContractVestingWithdraw: %d fails", fails))
-	} else {
+	default:
 		r.ctx.Logger().Info("forceContractVestingWithdraw: SUCCESS!")
 	}
 
-	return withdrawn, nil
+	return withdrawn
 }
