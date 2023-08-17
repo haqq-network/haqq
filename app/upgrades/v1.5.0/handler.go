@@ -374,6 +374,9 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 	}
 
 	for addr, amount := range withdrawnVestingAmounts {
+		r.ctx.Logger().Info("---")
+		r.ctx.Logger().Info("Account: " + addr)
+
 		var (
 			totalUndelegatedAmount sdk.Coin
 			err                    error
@@ -405,6 +408,11 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 		for valAddr, share := range shares {
 			r.ctx.Logger().Info(share.String() + " to " + valAddr.String())
 		}
+
+		// TODO Remove before release
+		// Log balance after revesting
+		balanceAfter := r.BankKeeper.GetBalance(r.ctx, accAddr, r.StakingKeeper.BondDenom(r.ctx))
+		r.ctx.Logger().Info("Balance after (re)vesting: " + balanceAfter.String())
 	}
 
 	return nil
