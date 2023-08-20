@@ -12,8 +12,9 @@ const (
 	UpgradeName = "v1.5.0"
 
 	// internal constants
-	cliffPeriod          = int64(7200)   // 2 hours in seconds TODO set to 15552000 (6 months in seconds)
-	unlockPeriod         = int64(3600)   // 1 hour in seconds TODO set to 2592000 (1 month in seconds)
+	numberOfPeriods      = 720
+	cliffPeriod          = int64(120)    // 2 minutes in seconds TODO set to 15552000 (6 months in seconds)
+	unlockPeriod         = int64(15)     // 15 seconds TODO set to 86400 (24 hours in seconds)
 	exp                  = uint64(10e17) // 1 ISLM base
 	threshold            = 1000000       // 1000000 ISLM for prod
 	vestingContract      = "0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5"

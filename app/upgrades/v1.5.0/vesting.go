@@ -20,12 +20,12 @@ import (
 
 func (r *RevestingUpgradeHandler) getVestingPeriods(totalAmount sdk.Coin) (sdkvesting.Periods, sdkvesting.Periods) {
 	periodLength := cliffPeriod
-	unlockAmount := sdk.NewCoin(totalAmount.Denom, totalAmount.Amount.QuoRaw(24))
+	unlockAmount := sdk.NewCoin(totalAmount.Denom, totalAmount.Amount.QuoRaw(numberOfPeriods))
 	restAmount := totalAmount
 
-	lockupPeriods := make(sdkvesting.Periods, 0, 24)
-	for i := 0; i < 24; i++ {
-		if i == 23 {
+	lockupPeriods := make(sdkvesting.Periods, 0, numberOfPeriods)
+	for i := 0; i < numberOfPeriods; i++ {
+		if i == numberOfPeriods-1 {
 			unlockAmount = restAmount
 		}
 
