@@ -1,7 +1,7 @@
 package v150
 
 import (
-	"strconv"
+	"fmt"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -10,13 +10,13 @@ import (
 )
 
 func (r *RevestingUpgradeHandler) prepareWhitelistFromHistoryState(accounts []authtypes.AccountI) error {
-	r.ctx.Logger().Info("Prepare whiltelist from history state")
+	r.ctx.Logger().Info("Prepare whiltelist from historical state")
+	r.ctx.Logger().Info("Accounts to be revested:")
 
+	toBeRevested := 0
 	for _, acc := range accounts {
-		// Check if account is a ETH account
 		ethAcc, ok := acc.(*types.EthAccount)
 		if !ok {
-			r.ctx.Logger().Info(acc.GetAddress().String() + " - not a ETH Account")
 			continue
 		}
 
@@ -28,14 +28,16 @@ func (r *RevestingUpgradeHandler) prepareWhitelistFromHistoryState(accounts []au
 
 		balance = balance.Add(delegated)
 
-		if !balance.IsZero() && balance.Amount.GT(r.threshold) {
-			r.ctx.Logger().Info("balance greater that threshold: " + acc.GetAddress().String() + " (" + balance.String() + "); WILL BE REVESTED")
+		if !balance.IsZero() && balance.Amount.GTE(r.threshold) {
+			r.ctx.Logger().Info(fmt.Sprintf(" - %s: %s", acc.GetAddress().String(), balance.String()))
+			toBeRevested++
 			continue
 		}
 
-		r.ctx.Logger().Info("balance lower that threshold: " + acc.GetAddress().String() + " (" + balance.String() + "); WHITELISTED")
 		r.wl[*ethAcc] = true
 	}
+
+	r.ctx.Logger().Info(fmt.Sprintf("Number of accounts to be revested: %d", toBeRevested))
 
 	return nil
 }
@@ -46,8 +48,9 @@ func (r *RevestingUpgradeHandler) validateWhitelist() error {
 	sk := r.StakingKeeper
 	bk := r.BankKeeper
 	bondDenom := sk.BondDenom(r.ctx)
-
 	changes := 0
+
+	r.ctx.Logger().Info("Accounts excluded from whitelist and will be revested:")
 	for acc, ok := range r.wl {
 		balance := bk.GetBalance(r.ctx, acc.GetAddress(), bondDenom)
 		delegations := sk.GetAllDelegatorDelegations(r.ctx, acc.GetAddress())
@@ -60,8 +63,8 @@ func (r *RevestingUpgradeHandler) validateWhitelist() error {
 			balance = balance.Add(delegation.Balance)
 		}
 
-		if !balance.IsZero() && balance.Amount.GT(r.threshold) && ok {
-			r.ctx.Logger().Info("balance now greater than threshold: " + acc.GetAddress().String() + " (" + balance.String() + "); WILL BE REVESTED")
+		if !balance.IsZero() && balance.Amount.GTE(r.threshold) && ok {
+			r.ctx.Logger().Info(fmt.Sprintf(" - %s: %s", acc.GetAddress().String(), balance.String()))
 			delete(r.wl, acc)
 			changes++
 		}
@@ -69,7 +72,7 @@ func (r *RevestingUpgradeHandler) validateWhitelist() error {
 
 	switch {
 	case changes > 0:
-		r.ctx.Logger().Info("Accounts excluded from whitelist: " + strconv.Itoa(changes))
+		r.ctx.Logger().Info(fmt.Sprintf("Number of excluded accounts: %d", changes))
 	default:
 		r.ctx.Logger().Info("Nothing changed.")
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (r *RevestingUpgradeHandler) loadHistoryBalancesState() error {
+func (r *RevestingUpgradeHandler) loadHistoricalBalances() error {
 	r.ctx.Logger().Info("Loading history balances state")
 	bondDenom := r.StakingKeeper.BondDenom(r.ctx)
 
@@ -37,7 +37,7 @@ func (r *RevestingUpgradeHandler) loadHistoryBalancesState() error {
 	return nil
 }
 
-func (r *RevestingUpgradeHandler) loadHistoryStakingState() error {
+func (r *RevestingUpgradeHandler) loadHistoricalDelegations() error {
 	r.ctx.Logger().Info("Loading history balances state")
 
 	var stakingState stakingtypes.GenesisState

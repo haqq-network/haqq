@@ -9,32 +9,32 @@ import (
 )
 
 func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
+	r.ctx.Logger().Info("Force unbonding and redelegation.")
+
 	blockTime := r.ctx.BlockHeader().Time
 	unbondingPeriod := r.StakingKeeper.UnbondingTime(r.ctx)
-
 	unbondedCoins := sdk.NewCoins(sdk.NewCoin(r.StakingKeeper.BondDenom(r.ctx), sdk.ZeroInt()))
-	failedToUnbondAttempts := 0
+	failedUnbondingAttempts := 0
 
 	// Remove all unbonding delegations from the ubd queue.
-	unbonds := r.StakingKeeper.DequeueAllMatureUBDQueue(r.ctx, blockTime.Add(unbondingPeriod))
-	r.ctx.Logger().Info(fmt.Sprintf("Unbonding delegations to be completed: %d", len(unbonds)))
-	for _, dvPair := range unbonds {
-		addr, err := sdk.ValAddressFromBech32(dvPair.ValidatorAddress)
+	ubdq := r.StakingKeeper.DequeueAllMatureUBDQueue(r.ctx, blockTime.Add(unbondingPeriod))
+	r.ctx.Logger().Info(fmt.Sprintf("Found %d unbonding delegations to be completed:", len(ubdq)))
+	for _, dvPair := range ubdq {
+		valAddr, err := sdk.ValAddressFromBech32(dvPair.ValidatorAddress)
 		if err != nil {
 			panic(err)
 		}
 		delegatorAddress := sdk.MustAccAddressFromBech32(dvPair.DelegatorAddress)
 
-		r.ctx.Logger().Info("Try completeUnbonding: " + delegatorAddress.String() + " -> " + addr.String())
-		balances, err := r.completeUnbonding(r.ctx, delegatorAddress, addr)
+		balances, err := r.completeUnbonding(r.ctx, delegatorAddress, valAddr)
 		if err != nil {
-			r.ctx.Logger().Error("completeUnbonding: " + err.Error() + "! Delegator: " + delegatorAddress.String() + " Validator: " + addr.String())
-			failedToUnbondAttempts++
+			r.ctx.Logger().Error(fmt.Sprintf(" - failed unbonding %s -> %s: %s", valAddr.String(), delegatorAddress.String(), err.Error()))
+			failedUnbondingAttempts++
 			continue
 		}
 
-		r.ctx.Logger().Info("Unbonded: " + balances.String())
 		unbondedCoins = unbondedCoins.Add(balances...)
+		r.ctx.Logger().Info(fmt.Sprintf(" - unbonded %s -> %s: %s", valAddr.String(), delegatorAddress.String(), balances.String()))
 
 		r.ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
@@ -46,7 +46,7 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 		)
 	}
 	r.ctx.Logger().Info("Total unbonded tokens: " + unbondedCoins.String())
-	r.ctx.Logger().Error(fmt.Sprintf("Failed attempts: %d", failedToUnbondAttempts))
+	r.ctx.Logger().Error(fmt.Sprintf("Failed attempts: %d", failedUnbondingAttempts))
 
 	// Remove all mature redelegations from the red queue.
 	matureRedelegations := r.StakingKeeper.DequeueAllMatureRedelegationQueue(r.ctx, blockTime.Add(unbondingPeriod))

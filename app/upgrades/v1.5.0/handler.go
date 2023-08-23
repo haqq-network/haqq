@@ -74,11 +74,11 @@ func (r *RevestingUpgradeHandler) GetIgnoreList() map[string]bool {
 func (r *RevestingUpgradeHandler) Run() error {
 	r.ctx.Logger().Info("Run revesting upgrade.")
 
-	if err := r.loadHistoryBalancesState(); err != nil {
+	if err := r.loadHistoricalBalances(); err != nil {
 		return errors.Wrap(err, "error loading history balances state")
 	}
 
-	if err := r.loadHistoryStakingState(); err != nil {
+	if err := r.loadHistoricalDelegations(); err != nil {
 		return errors.Wrap(err, "error loading history staking state")
 	}
 
@@ -86,9 +86,15 @@ func (r *RevestingUpgradeHandler) Run() error {
 	r.ctx.Logger().Info(fmt.Sprintf("Found %d delegations", len(r.oldDelegations)))
 	r.ctx.Logger().Info(fmt.Sprintf("Found %d balances", len(r.oldBalances)))
 
+	deposits, err := r.readVestingContractState()
+	if err != nil {
+		return errors.Wrap(err, "error reading vesting contract state")
+	}
+
+	r.ctx.Logger().Info(fmt.Sprintf("Contract deposits found: %d", len(deposits)))
+
 	ubdPoolBalanceBefore := r.checkUnbondingPoolBalance()
 	r.ctx.Logger().Info("Unbonding pool balance before: " + ubdPoolBalanceBefore.String())
-	r.ctx.Logger().Info("Force unbonding and redelegation.")
 
 	if err := r.forceDequeueUnbondingAndRedelegation(); err != nil {
 		return errors.Wrap(err, "error force dequeue unbonding and redelegation")
@@ -105,35 +111,40 @@ func (r *RevestingUpgradeHandler) Run() error {
 	}
 	r.ctx.Logger().Info("Found accounts to process: " + strconv.Itoa(len(accounts)))
 
-	r.ctx.Logger().Info("Withdraw funds from Vesting Contract...")
-	withdrawnVestingAmounts := r.forceContractVestingWithdraw(accounts)
+	vcBalanceBefore := r.checkVestingContractBalance()
+	r.ctx.Logger().Info("Vesting Contract balance before: " + vcBalanceBefore.String())
+
+	withdrawnVestingAmounts := r.forceVestingContractWithdraw(accounts, deposits)
+
+	vcBalanceAfter := r.checkVestingContractBalance()
+	r.ctx.Logger().Info("Vesting Contract balance after: " + vcBalanceAfter.String())
 
 	if err := r.prepareWhitelistFromHistoryState(accounts); err != nil {
 		return errors.Wrap(err, "error preparing whitelist from history state")
 	}
+
+	r.ctx.Logger().Info(fmt.Sprintf("Number of accounts whitelisted: %d", len(r.wl)))
 
 	if err := r.validateWhitelist(); err != nil {
 		return errors.Wrap(err, "error	validating whitelist")
 	}
 
 	for _, acc := range accounts {
-		r.ctx.Logger().Info("---")
-		r.ctx.Logger().Info("Account: " + acc.GetAddress().String())
-
 		evmAddr := common.BytesToAddress(acc.GetAddress().Bytes())
-		r.ctx.Logger().Info("EVM Account: " + evmAddr.Hex())
 
 		// Check if account is a ETH account
 		ethAcc, ok := acc.(*types.EthAccount)
 		if !ok {
-			r.ctx.Logger().Info("Not a ETH Account — skip")
 			continue
 		}
 
 		if r.isAccountWhitelisted(*ethAcc) {
-			r.ctx.Logger().Info("WHITELISTED — skip")
 			continue
 		}
+
+		r.ctx.Logger().Info("---")
+		r.ctx.Logger().Info("Account: " + acc.GetAddress().String())
+		r.ctx.Logger().Info("EVM Account: " + evmAddr.Hex())
 
 		// Restake coins by default
 		isSmartContract := false
@@ -159,6 +170,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 			if err != nil {
 				return errors.Wrap(err, "error undelegating tokens")
 			}
+
 			r.ctx.Logger().Info("Total undelegated amount: " + totalUndelegatedAmount.String())
 		}
 
@@ -172,14 +184,9 @@ func (r *RevestingUpgradeHandler) Run() error {
 		}
 
 		if !isSmartContract {
-			shares, err := r.Restaking(acc, balance, restoreDelegations)
+			err := r.Restaking(acc, balance, restoreDelegations)
 			if err != nil {
 				return errors.Wrap(err, "error restaking")
-			}
-
-			r.ctx.Logger().Info("New staking shares:")
-			for valAddr, share := range shares {
-				r.ctx.Logger().Info(share.String() + " to " + valAddr.String())
 			}
 		}
 
@@ -192,7 +199,9 @@ func (r *RevestingUpgradeHandler) Run() error {
 		r.ctx.Logger().Info("Balance after (re)vesting: " + balanceAfter.String())
 	}
 
-	if err := r.FinalizeContractRevesting(withdrawnVestingAmounts); err != nil {
+	r.ctx.Logger().Info(fmt.Sprintf("Account to migrate from contract to module: %d", len(withdrawnVestingAmounts)))
+
+	if err := r.FinalizeContractRevesting(withdrawnVestingAmounts, deposits); err != nil {
 		return errors.Wrap(err, "error finalize contract revesting")
 	}
 
@@ -211,6 +220,7 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 	}
 
 	// unbond from all validators
+	r.ctx.Logger().Info("Undelegate all tokens before revesting:")
 	undelegatedAmounts := make(map[*sdk.ValAddress]sdk.Coin, len(delegations))
 	for _, delegation := range delegations {
 		valAddr, _ := sdk.ValAddressFromBech32(delegation.GetValidatorAddr().String())
@@ -229,7 +239,7 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 		// This is needed to avoid auto-jail validator on unbonding.
 		// If validator's min self delegation is greater than threshold, then jail validator.
 		if isValidatorOperator && validator.MinSelfDelegation.LT(r.threshold) {
-			r.ctx.Logger().Info("Validator operator self delegation!")
+			r.ctx.Logger().Info(" - self delegation")
 			// Skip if delegated amount is less than validator's min self delegation
 			if delegatedAmount.LT(validator.MinSelfDelegation) {
 				continue
@@ -240,12 +250,6 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 			if err != nil {
 				return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to reduce unbonding amount")
 			}
-
-			r.ctx.Logger().Info(fmt.Sprintf(
-				"Unbonding validator's self delegation: %s out of %s shares",
-				sharesToUnbond.String(),
-				delegationShares.String(),
-			))
 
 			delegationShares = sharesToUnbond
 		}
@@ -270,22 +274,25 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 			r.reduceValidatorPower(valAddr.String(), ubdAmount)
 		} else {
 			// Should not happen
-			r.ctx.Logger().Error("Validator is not bonded!")
-			r.ctx.Logger().Error("Validator: " + valAddr.String())
-			r.ctx.Logger().Error("Delegator: " + delAddr.String())
-			r.ctx.Logger().Error("Amount: " + delegatedAmount.String())
+			r.ctx.Logger().Error(" -- Validator is not bonded!")
+			r.ctx.Logger().Error(" -- Validator: " + valAddr.String())
+			r.ctx.Logger().Error(" -- Delegator: " + delAddr.String())
+			r.ctx.Logger().Error(" -- Amount: " + delegatedAmount.String())
 			continue
 		}
 
 		undelegatedCoin := sdk.NewCoin(bondDenom, ubdAmount)
 		undelegatedAmounts[&valAddr] = undelegatedCoin
 		totalUndelegatedAmount = totalUndelegatedAmount.Add(undelegatedCoin)
+		r.ctx.Logger().Info(fmt.Sprintf(" - unbonded %s -> %s: %s", valAddr.String(), delAddr.String(), undelegatedCoin.String()))
 	}
 
 	return undelegatedAmounts, totalUndelegatedAmount, nil
 }
 
 func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coin) error {
+	r.ctx.Logger().Info("Convert into vesting account")
+
 	moduleAcc := r.AccountKeeper.GetModuleAccount(r.ctx, vestingtypes.ModuleName)
 	if err := r.BankKeeper.SendCoinsFromAccountToModule(
 		r.ctx,
@@ -297,7 +304,7 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 	}
 
 	// Convert to a vesting account
-	lockupPeriods, vestingPeriods := r.getVestingPeriods(coin)
+	lockupPeriods, vestingPeriods := r.getDefaultVestingPeriods(coin)
 	msg := vestingtypes.NewMsgConvertIntoVestingAccount(
 		moduleAcc.GetAddress(),
 		acc.GetAddress(),
@@ -317,54 +324,53 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 	return nil
 }
 
-func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount sdk.Coin, oldDelegations map[*sdk.ValAddress]sdk.Coin) (map[*sdk.ValAddress]sdk.Dec, error) {
-	shares := make(map[*sdk.ValAddress]sdk.Dec)
+func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount sdk.Coin, oldDelegations map[*sdk.ValAddress]sdk.Coin) error {
 	restAmount := totalAmount
+
+	r.ctx.Logger().Info("Delegate tokens:")
 	if len(oldDelegations) > 0 {
 		r.ctx.Logger().Info("found old delegations, restaking...")
 		for valAddr, amt := range oldDelegations {
 			val, found := r.StakingKeeper.GetValidator(r.ctx, valAddr.Bytes())
 			if !found {
 				// Should never happen, but just in case
-				return map[*sdk.ValAddress]sdk.Dec{}, errors.Wrapf(stakingtypes.ErrNoValidatorFound, "validator %s does not exist", valAddr)
+				return errors.Wrapf(stakingtypes.ErrNoValidatorFound, "validator %s does not exist", valAddr)
 			}
 
-			newShares, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), amt.Amount, stakingtypes.Unbonded, val, true)
-			if err != nil {
-				return map[*sdk.ValAddress]sdk.Dec{}, errors.Wrap(err, "failed to delegate")
+			if _, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), amt.Amount, stakingtypes.Unbonded, val, true); err != nil {
+				return errors.Wrap(err, "failed to delegate")
 			}
 
 			r.increaseValidatorPower(valAddr.String(), amt.Amount)
-			r.ctx.Logger().Info("restaked " + amt.String() + " to " + valAddr.String())
 
 			restAmount = restAmount.Sub(amt)
-			shares[valAddr] = newShares
+			r.ctx.Logger().Info(fmt.Sprintf(" - restored delegation %s -> %s: %s", acc.GetAddress().String(), valAddr.String(), amt.String()))
 		}
 	}
 
 	if restAmount.IsZero() {
-		return shares, nil
+		return nil
 	}
 
 	val, valAddr, err := r.getWeakestValidator()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get weakest validator")
+		return errors.Wrap(err, "failed to get weakest validator")
 	}
 
-	restShares, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), restAmount.Amount, stakingtypes.Unbonded, *val, true)
-	if err != nil {
-		return map[*sdk.ValAddress]sdk.Dec{}, errors.Wrap(err, "failed to delegate")
+	if _, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), restAmount.Amount, stakingtypes.Unbonded, *val, true); err != nil {
+		return errors.Wrap(err, "failed to delegate")
 	}
-	shares[valAddr] = restShares
+
+	r.ctx.Logger().Info(fmt.Sprintf(" - new delegation %s -> %s: %s", acc.GetAddress().String(), valAddr.String(), restAmount.String()))
 
 	// Add power to validator
 	r.increaseValidatorPower(valAddr.String(), restAmount.Amount)
 
-	return shares, nil
+	return nil
 }
 
-func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmounts map[string]sdk.Coin) error {
-	r.ctx.Logger().Info("Finalize Contract Revesting")
+func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmounts map[string]sdk.Coin, deposits map[string][]DepositTyped) error {
+	r.ctx.Logger().Info("Migrate Vesting Contract deposits to Vesting Module")
 
 	if len(withdrawnVestingAmounts) == 0 {
 		r.ctx.Logger().Info("Nothing to do")
@@ -373,44 +379,38 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 
 	for addr, amount := range withdrawnVestingAmounts {
 		r.ctx.Logger().Info("---")
-		r.ctx.Logger().Info("Account: " + addr)
+		r.ctx.Logger().Info(fmt.Sprintf("Account: %s", addr))
 
-		var (
-			totalUndelegatedAmount sdk.Coin
-			err                    error
-		)
 		accAddr := sdk.MustAccAddressFromBech32(addr)
 		acc := types.ProtoAccount()
 		if err := acc.SetAddress(accAddr); err != nil {
 			return errors.Wrap(err, "get account from address")
 		}
-		restoreDelegations, totalUndelegatedAmount, err := r.UndelegateAllTokens(accAddr)
-		if err != nil {
-			return errors.Wrap(err, "error undelegating tokens")
-		}
-		r.ctx.Logger().Info("Total undelegated amount: " + totalUndelegatedAmount.String())
 
-		balance := amount.Add(totalUndelegatedAmount)
-
-		// Send all coins to the vesting module account and process revesting with staking
-		if err := r.Revesting(acc, balance); err != nil {
-			return errors.Wrap(err, "error revesting")
+		accDeposits, ok := deposits[addr]
+		if !ok {
+			// should never happen
+			r.ctx.Logger().Error(" -- no deposits!")
+			continue
 		}
 
-		shares, err := r.Restaking(acc, balance, restoreDelegations)
-		if err != nil {
-			return errors.Wrap(err, "error restaking")
+		// Log balance after revesting
+		balanceBefore := r.BankKeeper.GetBalance(r.ctx, accAddr, r.StakingKeeper.BondDenom(r.ctx))
+		r.ctx.Logger().Info("Balance before migration: " + balanceBefore.String())
+		r.ctx.Logger().Info("Expecting vesting amount: " + amount.String())
+
+		if err := r.implicitConvertIntoVestingAccount(acc, amount, accDeposits); err != nil {
+			return errors.Wrap(err, "error convert into vesting account")
 		}
 
-		r.ctx.Logger().Info("New staking shares:")
-		for valAddr, share := range shares {
-			r.ctx.Logger().Info(share.String() + " to " + valAddr.String())
+		if err := r.Restaking(acc, amount, nil); err != nil {
+			return errors.Wrap(err, "error delegate migrated tokens")
 		}
 
 		// TODO Remove before release
 		// Log balance after revesting
 		balanceAfter := r.BankKeeper.GetBalance(r.ctx, accAddr, r.StakingKeeper.BondDenom(r.ctx))
-		r.ctx.Logger().Info("Balance after (re)vesting: " + balanceAfter.String())
+		r.ctx.Logger().Info("Balance after migration: " + balanceAfter.String())
 	}
 
 	return nil
