@@ -38,9 +38,6 @@ func CreateUpgradeHandler(
 
 		revesting := NewRevestingUpgradeHandler(ctx, ak, bk, sk, evm, vk, ts, cdc)
 		revesting.SetIgnoreList(getIgnoreList())
-		if err := revesting.SetValidatorsList(getWhitelistedValidators()); err != nil {
-			panic("failed to prepare validators list for upgrade" + err.Error())
-		}
 
 		if err := revesting.Run(); err != nil {
 			panic(err)

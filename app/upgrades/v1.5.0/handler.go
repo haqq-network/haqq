@@ -270,8 +270,6 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 			if err := r.BankKeeper.UndelegateCoinsFromModuleToAccount(r.ctx, stakingtypes.NotBondedPoolName, delAddr, coins); err != nil {
 				return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to transfer tokens from not bonded pool to delegator's address")
 			}
-
-			r.reduceValidatorPower(valAddr.String(), ubdAmount)
 		} else {
 			// Should not happen
 			r.ctx.Logger().Error(" -- Validator is not bonded!")
@@ -341,30 +339,30 @@ func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount 
 				return errors.Wrap(err, "failed to delegate")
 			}
 
-			r.increaseValidatorPower(valAddr.String(), amt.Amount)
+			// r.increaseValidatorPower(valAddr.String(), amt.Amount)
 
 			restAmount = restAmount.Sub(amt)
 			r.ctx.Logger().Info(fmt.Sprintf(" - restored delegation %s -> %s: %s", acc.GetAddress().String(), valAddr.String(), amt.String()))
 		}
 	}
 
-	if restAmount.IsZero() {
-		return nil
-	}
+	// if restAmount.IsZero() {
+	// 	return nil
+	// }
 
-	val, valAddr, err := r.getWeakestValidator()
-	if err != nil {
-		return errors.Wrap(err, "failed to get weakest validator")
-	}
+	// val, valAddr, err := r.getWeakestValidator()
+	// if err != nil {
+	// 	return errors.Wrap(err, "failed to get weakest validator")
+	// }
 
-	if _, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), restAmount.Amount, stakingtypes.Unbonded, *val, true); err != nil {
-		return errors.Wrap(err, "failed to delegate")
-	}
+	// if _, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), restAmount.Amount, stakingtypes.Unbonded, *val, true); err != nil {
+	// 	return errors.Wrap(err, "failed to delegate")
+	// }
 
-	r.ctx.Logger().Info(fmt.Sprintf(" - new delegation %s -> %s: %s", acc.GetAddress().String(), valAddr.String(), restAmount.String()))
+	// r.ctx.Logger().Info(fmt.Sprintf(" - new delegation %s -> %s: %s", acc.GetAddress().String(), valAddr.String(), restAmount.String()))
 
-	// Add power to validator
-	r.increaseValidatorPower(valAddr.String(), restAmount.Amount)
+	// // Add power to validator
+	// r.increaseValidatorPower(valAddr.String(), restAmount.Amount)
 
 	return nil
 }
