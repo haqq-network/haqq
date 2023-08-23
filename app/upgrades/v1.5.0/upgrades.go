@@ -46,8 +46,6 @@ func CreateUpgradeHandler(
 		logger.Info("##############################################")
 		logger.Info("############# REVESTING COMPLETE #############")
 		logger.Info("##############################################")
-		// TODO Remove before release
-		// panic("test abort")
 
 		return mm.RunMigrations(ctx, configurator, vm)
 	}

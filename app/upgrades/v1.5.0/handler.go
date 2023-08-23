@@ -154,7 +154,6 @@ func (r *RevestingUpgradeHandler) Run() error {
 			isSmartContract = true
 		}
 
-		// TODO Remove before release
 		// Log balance before Undelegate
 		balanceBeforeUND := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
 		r.ctx.Logger().Info("Balance before undelegation: " + balanceBeforeUND.String())
@@ -193,7 +192,6 @@ func (r *RevestingUpgradeHandler) Run() error {
 		// Delete entry from map to prevent double revesting
 		delete(withdrawnVestingAmounts, acc.GetAddress().String())
 
-		// TODO Remove before release
 		// Log balance after revesting
 		balanceAfter := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
 		r.ctx.Logger().Info("Balance after (re)vesting: " + balanceAfter.String())
@@ -339,30 +337,10 @@ func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount 
 				return errors.Wrap(err, "failed to delegate")
 			}
 
-			// r.increaseValidatorPower(valAddr.String(), amt.Amount)
-
 			restAmount = restAmount.Sub(amt)
 			r.ctx.Logger().Info(fmt.Sprintf(" - restored delegation %s -> %s: %s", acc.GetAddress().String(), valAddr.String(), amt.String()))
 		}
 	}
-
-	// if restAmount.IsZero() {
-	// 	return nil
-	// }
-
-	// val, valAddr, err := r.getWeakestValidator()
-	// if err != nil {
-	// 	return errors.Wrap(err, "failed to get weakest validator")
-	// }
-
-	// if _, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), restAmount.Amount, stakingtypes.Unbonded, *val, true); err != nil {
-	// 	return errors.Wrap(err, "failed to delegate")
-	// }
-
-	// r.ctx.Logger().Info(fmt.Sprintf(" - new delegation %s -> %s: %s", acc.GetAddress().String(), valAddr.String(), restAmount.String()))
-
-	// // Add power to validator
-	// r.increaseValidatorPower(valAddr.String(), restAmount.Amount)
 
 	return nil
 }
@@ -401,11 +379,6 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 			return errors.Wrap(err, "error convert into vesting account")
 		}
 
-		if err := r.Restaking(acc, amount, nil); err != nil {
-			return errors.Wrap(err, "error delegate migrated tokens")
-		}
-
-		// TODO Remove before release
 		// Log balance after revesting
 		balanceAfter := r.BankKeeper.GetBalance(r.ctx, accAddr, r.StakingKeeper.BondDenom(r.ctx))
 		r.ctx.Logger().Info("Balance after migration: " + balanceAfter.String())

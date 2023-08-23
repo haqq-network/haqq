@@ -145,6 +145,7 @@ func (r *RevestingUpgradeHandler) getVestingContractAddress() common.Address {
 
 func (r *RevestingUpgradeHandler) forceVestingContractWithdraw(accounts []authtypes.AccountI, deposits map[string][]DepositTyped) map[string]sdk.Coin {
 	r.ctx.Logger().Info("Force Vesting Contract Withdraw:")
+
 	withdrawn := make(map[string]sdk.Coin)
 	fails := 0
 	contractAddress := r.getVestingContractAddress()
@@ -280,8 +281,7 @@ func (r *RevestingUpgradeHandler) implicitConvertIntoVestingAccount(acc authtype
 	unvestedOnly := vestingAcc.GetUnvestedOnly(r.ctx.BlockTime())
 	vested := vestingAcc.GetVestedOnly(r.ctx.BlockTime())
 
-	r.ctx.Logger().Info(fmt.Sprintf(" - start time: %s", vestingAcc.StartTime.String()))
-	r.ctx.Logger().Info(fmt.Sprintf(" - start time unix: %d", vestingAcc.StartTime.Unix()))
+	r.ctx.Logger().Info(fmt.Sprintf(" - start time: %d", vestingAcc.StartTime.Unix()))
 	r.ctx.Logger().Info(fmt.Sprintf(" - end time: %d", vestingAcc.EndTime))
 	r.ctx.Logger().Info(fmt.Sprintf(" - lockup periods: %d", len(vestingAcc.LockupPeriods)))
 	r.ctx.Logger().Info(fmt.Sprintf(" - vesting periods: %d", len(vestingAcc.VestingPeriods)))

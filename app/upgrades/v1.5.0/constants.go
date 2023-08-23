@@ -12,13 +12,12 @@ const (
 	UpgradeName = "v1.5.0"
 
 	// internal constants
-	numberOfPeriods      = 720
-	cliffPeriod          = int64(120)    // 2 minutes in seconds TODO set to 15552000 (6 months in seconds)
-	unlockPeriod         = int64(15)     // 15 seconds TODO set to 86400 (24 hours in seconds)
-	exp                  = uint64(10e17) // 1 ISLM base
-	threshold            = 1000000       // 1000000 ISLM for prod
-	vestingContract      = "0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5"
-	vestingContractProxy = "0x29876c4A2D095A9eBBE8fD1D8432C5c7f6f9DE35"
+	numberOfPeriods = 720
+	cliffPeriod     = int64(120)    // 2 minutes in seconds TODO set to 15552000 (6 months in seconds)
+	unlockPeriod    = int64(15)     // 15 seconds TODO set to 86400 (24 hours in seconds)
+	exp             = uint64(10e17) // 1 ISLM base
+	threshold       = 1000000       // 1000000 ISLM for prod
+	vestingContract = "0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5"
 )
 
 var (
@@ -69,12 +68,5 @@ func getIgnoreList() map[string]bool {
 		"haqq1cl6hewrjlkzrhj9fgy9fkfhpcjq8m52ev53zg0": true, // partners: 0xC7F57Cb872fd843bC8a9410A9B26e1C4807Dd159
 		// Valop
 		// "haqq1jh375g33t6l3kd5wjhmscju2kyfezfkjyj5n4p": true, // Main Validator
-	}
-}
-
-// getWhitelistedValidators returns a static predefined list of approved validators that will be bonded during the upgrade
-func getWhitelistedValidators() []string {
-	return []string{
-		"haqqvaloper1jh375g33t6l3kd5wjhmscju2kyfezfkjgsca3q", // Main Validator
 	}
 }
