@@ -258,23 +258,16 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 		}
 
 		// transfer the validator tokens to the not bonded pool
-		// TODO Cover unbonding and unbonded validators
 		coins := sdk.NewCoins(sdk.NewCoin(bondDenom, ubdAmount))
 		if validator.IsBonded() {
 			if err := r.BankKeeper.SendCoinsFromModuleToModule(r.ctx, stakingtypes.BondedPoolName, stakingtypes.NotBondedPoolName, coins); err != nil {
 				return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to transfer tokens from bonded to not bonded pool")
 			}
+		}
 
-			if err := r.BankKeeper.UndelegateCoinsFromModuleToAccount(r.ctx, stakingtypes.NotBondedPoolName, delAddr, coins); err != nil {
-				return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to transfer tokens from not bonded pool to delegator's address")
-			}
-		} else {
-			// Should not happen
-			r.ctx.Logger().Error(" -- Validator is not bonded!")
-			r.ctx.Logger().Error(" -- Validator: " + valAddr.String())
-			r.ctx.Logger().Error(" -- Delegator: " + delAddr.String())
-			r.ctx.Logger().Error(" -- Amount: " + delegatedAmount.String())
-			continue
+		// transfer the validator tokens to the delegator
+		if err := r.BankKeeper.UndelegateCoinsFromModuleToAccount(r.ctx, stakingtypes.NotBondedPoolName, delAddr, coins); err != nil {
+			return nil, totalUndelegatedAmount, errors.Wrap(err, "failed to transfer tokens from not bonded pool to delegator's address")
 		}
 
 		undelegatedCoin := sdk.NewCoin(bondDenom, ubdAmount)
