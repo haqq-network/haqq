@@ -296,7 +296,8 @@ func (r *RevestingUpgradeHandler) implicitConvertIntoVestingAccount(acc authtype
 
 func (r *RevestingUpgradeHandler) getContractVestingPeriods(depo DepositTyped) (sdkvesting.Periods, sdkvesting.Periods) {
 	bondDenom := r.StakingKeeper.BondDenom(r.ctx)
-	periodLength := int64(2592000) // 30 days in seconds
+	lockupPeriodLength := int64(2592000) // 30 days in seconds
+	periodLength := int64(0)
 	periodsNumber := 24
 
 	unlockAmount := sdk.NewCoin(bondDenom, depo.Amount.Amount.QuoRaw(int64(periodsNumber)))
@@ -313,7 +314,7 @@ func (r *RevestingUpgradeHandler) getContractVestingPeriods(depo DepositTyped) (
 		restAmount = restAmount.Sub(unlockAmount)
 
 		if i == 0 {
-			periodLength = unlockPeriod
+			periodLength = lockupPeriodLength
 		}
 	}
 
