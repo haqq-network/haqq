@@ -15,6 +15,7 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 	unbondingPeriod := r.StakingKeeper.UnbondingTime(r.ctx)
 	unbondedCoins := sdk.NewCoins(sdk.NewCoin(r.StakingKeeper.BondDenom(r.ctx), sdk.ZeroInt()))
 	failedUnbondingAttempts := 0
+	processedPairs := make(map[string]bool)
 
 	// Remove all unbonding delegations from the ubd queue.
 	ubdq := r.StakingKeeper.DequeueAllMatureUBDQueue(r.ctx, blockTime.Add(unbondingPeriod))
@@ -26,12 +27,18 @@ func (r *RevestingUpgradeHandler) forceDequeueUnbondingAndRedelegation() error {
 		}
 		delegatorAddress := sdk.MustAccAddressFromBech32(dvPair.DelegatorAddress)
 
+		if _, done := processedPairs[fmt.Sprintf("%s-%s", valAddr.String(), delegatorAddress.String())]; done {
+			continue
+		}
+
 		balances, err := r.completeUnbonding(r.ctx, delegatorAddress, valAddr)
 		if err != nil {
 			r.ctx.Logger().Error(fmt.Sprintf(" - failed unbonding %s -> %s: %s", valAddr.String(), delegatorAddress.String(), err.Error()))
 			failedUnbondingAttempts++
 			continue
 		}
+
+		processedPairs[fmt.Sprintf("%s-%s", valAddr.String(), delegatorAddress.String())] = true
 
 		unbondedCoins = unbondedCoins.Add(balances...)
 		r.ctx.Logger().Info(fmt.Sprintf(" - unbonded %s -> %s: %s", valAddr.String(), delegatorAddress.String(), balances.String()))
