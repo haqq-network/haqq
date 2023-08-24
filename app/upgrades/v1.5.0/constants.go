@@ -57,16 +57,27 @@ func init() {
 // getIgnoreList returns a static predefined list of addresses that should be ignored by the revesting upgrade
 func getIgnoreList() map[string]bool {
 	return map[string]bool{
-		"haqq196srgtdaqrhqehdx36hfacrwmhlfznwpt78rct": true, // Team account
-		"haqq1rw5xyj6p30l64y7rdxcggysy482slfx4tzkapq": true, // Vesting Contract Mainnet: 0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5
-		"haqq19xrkcj3dp9dfawlgl5wcgvk9clm0nh3458hqhk": true, // Vesting Contract ProxyAdmin Mainnet: 0x29876c4A2D095A9eBBE8fD1D8432C5c7f6f9DE35
-		// Static whitelist
-		"haqq1yljf766n5n7j9dljwyh2duunjkw3jhdzpg68kw": true, // biz-msig: 0x27e49f6B53A4fD22B7F2712EA6F393959D195Da2
-		"haqq1xw804zanweujx2fxc40mhdl65ku0ksplnwrmv2": true, // biz-msig-gnosis: 0x338efA8BB37679232926c55FbbB7Faa5b8FB403f
-		"haqq1jy4rhr8kqr9a6u0lcs3yaqzszgs5sg6x38xqds": true, // biz-msig-staking: 0x912A3b8cF600CbDD71ffC4224e80501221482346
-		"haqq1ved4kslrxfe9n68yw4hxchlwafvjneqdaguwe2": true, // priv sale: 0x665b5b43e3327259E8e4756E6c5FEEeA5929E40D
-		"haqq1cl6hewrjlkzrhj9fgy9fkfhpcjq8m52ev53zg0": true, // partners: 0xC7F57Cb872fd843bC8a9410A9B26e1C4807Dd159
-		// Valop
-		// "haqq1jh375g33t6l3kd5wjhmscju2kyfezfkjyj5n4p": true, // Main Validator
+		// -- Team account
+		"haqq196srgtdaqrhqehdx36hfacrwmhlfznwpt78rct": true,
+
+		// -- Vesting contract
+
+		// Contract Mainnet: 0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5
+		"haqq1rw5xyj6p30l64y7rdxcggysy482slfx4tzkapq": true,
+		// Contract ProxyAdmin Mainnet: 0x29876c4A2D095A9eBBE8fD1D8432C5c7f6f9DE35
+		"haqq19xrkcj3dp9dfawlgl5wcgvk9clm0nh3458hqhk": true,
+
+		// --- Static whitelist
+
+		// biz-msig: 0x27e49f6B53A4fD22B7F2712EA6F393959D195Da2
+		"haqq1yljf766n5n7j9dljwyh2duunjkw3jhdzpg68kw": true,
+		// biz-msig-gnosis: 0x338efA8BB37679232926c55FbbB7Faa5b8FB403f
+		"haqq1xw804zanweujx2fxc40mhdl65ku0ksplnwrmv2": true,
+		// biz-msig-staking: 0x912A3b8cF600CbDD71ffC4224e80501221482346
+		"haqq1jy4rhr8kqr9a6u0lcs3yaqzszgs5sg6x38xqds": true,
+		// priv sale: 0x665b5b43e3327259E8e4756E6c5FEEeA5929E40D
+		"haqq1ved4kslrxfe9n68yw4hxchlwafvjneqdaguwe2": true,
+		// partners: 0xC7F57Cb872fd843bC8a9410A9B26e1C4807Dd159
+		"haqq1cl6hewrjlkzrhj9fgy9fkfhpcjq8m52ev53zg0": true,
 	}
 }
