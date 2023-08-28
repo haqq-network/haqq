@@ -292,8 +292,15 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 		return errors.Wrap(err, "failed to send coins to vesting module")
 	}
 
+	// Set one year cliff for certain accounts
+	longCliff := false
+	switch acc.GetAddress().String() {
+	case longCliffAddress1, longCliffAddress2:
+		longCliff = true
+	}
+
 	// Convert to a vesting account
-	lockupPeriods, vestingPeriods := r.getDefaultVestingPeriods(coin)
+	lockupPeriods, vestingPeriods := r.getDefaultVestingPeriods(coin, longCliff)
 	msg := vestingtypes.NewMsgConvertIntoVestingAccount(
 		moduleAcc.GetAddress(),
 		acc.GetAddress(),

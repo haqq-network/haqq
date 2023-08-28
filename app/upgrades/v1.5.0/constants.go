@@ -12,12 +12,15 @@ const (
 	UpgradeName = "v1.5.0"
 
 	// internal constants
-	numberOfPeriods = 720
-	cliffPeriod     = int64(15552000) // 6 months in seconds
-	unlockPeriod    = int64(86400)    // 24 hours in seconds
-	exp             = uint64(10e17)   // 1 ISLM base
-	threshold       = 1000000         // 1000000 ISLM for prod
-	vestingContract = "0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5"
+	numberOfPeriods      = 720
+	cliffSixMonthsPeriod = int64(15552000) // 6 months in seconds
+	cliffOneYearPeriod   = int64(31104000) // 1 year in seconds
+	unlockPeriod         = int64(86400)    // 24 hours in seconds
+	exp                  = uint64(10e17)   // 1 ISLM base
+	threshold            = 1000000         // 1000000 ISLM for prod
+	vestingContract      = "0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5"
+	longCliffAddress1    = "haqq1mrng5yt8jaky0v9khkzexgag0c6rpqvycfpjr7"
+	longCliffAddress2    = "haqq1gfceaq3qgprtevetasej0648pty6kruveattv6"
 )
 
 var (

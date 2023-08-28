@@ -105,8 +105,12 @@ func (r *RevestingUpgradeHandler) readVestingContractState() (map[string][]Depos
 	return depositsTyped, nil
 }
 
-func (r *RevestingUpgradeHandler) getDefaultVestingPeriods(totalAmount sdk.Coin) (sdkvesting.Periods, sdkvesting.Periods) {
-	periodLength := cliffPeriod
+func (r *RevestingUpgradeHandler) getDefaultVestingPeriods(totalAmount sdk.Coin, longCliff bool) (sdkvesting.Periods, sdkvesting.Periods) {
+	periodLength := cliffSixMonthsPeriod
+	if longCliff {
+		periodLength = cliffOneYearPeriod
+	}
+
 	unlockAmount := sdk.NewCoin(totalAmount.Denom, totalAmount.Amount.QuoRaw(numberOfPeriods))
 	restAmount := totalAmount
 
