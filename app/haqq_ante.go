@@ -4,12 +4,12 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	haqqtypes "github.com/haqq-network/haqq/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
@@ -19,8 +19,8 @@ var (
 	ErrVestingComingLater           = sdkerrors.Register("haqq-ante", 6002, "vesting coming later")
 )
 
-func NewHaqqAnteHandlerDecorator(_ keeper.Keeper, h types.AnteHandler) types.AnteHandler {
-	return func(ctx types.Context, tx types.Tx, simulate bool) (newCtx types.Context, err error) {
+func NewHaqqAnteHandlerDecorator(_ keeper.Keeper, h sdk.AnteHandler) sdk.AnteHandler {
+	return func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
 		msgs := tx.GetMsgs()
 
 		for i := 0; i < len(msgs); i++ {

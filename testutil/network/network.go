@@ -3,33 +3,32 @@ package network
 import (
 	"time"
 
+	dbm "github.com/cometbft/cometbft-db"
+
+	"cosmossdk.io/simapp/params"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/simapp/params"
-
-	"github.com/evmos/ethermint/testutil/network"
-	"github.com/haqq-network/haqq/app"
-
-	dbm "github.com/tendermint/tm-db"
-
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
+	simutils "github.com/cosmos/cosmos-sdk/testutil/sims"
 
-	pruningtypes "github.com/cosmos/cosmos-sdk/pruning/types"
+	"github.com/evmos/evmos/v14/testutil/network"
+
+	"github.com/haqq-network/haqq/app"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 
 type AppConstructor = func(val network.Validator) servertypes.Application
 
 // NewAppConstructor returns a new simapp AppConstructor
-func NewAppConstructor(encodingCfg params.EncodingConfig) network.AppConstructor {
+func NewAppConstructor(encodingCfg params.EncodingConfig, chainID string) network.AppConstructor {
 	return func(val network.Validator) servertypes.Application {
 		return app.NewHaqq(
 			val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
 			encodingCfg,
-			simapp.EmptyAppOptions{},
+			simutils.NewAppOptionsWithFlagHome(val.Ctx.Config.RootDir),
 			baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 			baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
+			baseapp.SetChainID(chainID),
 		)
 	}
 }

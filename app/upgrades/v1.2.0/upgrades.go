@@ -4,8 +4,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	ibc "github.com/cosmos/ibc-go/v5/modules/core"
-	ibchost "github.com/cosmos/ibc-go/v5/modules/core/24-host"
+	ibc "github.com/cosmos/ibc-go/v7/modules/core"
+	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.2.0
@@ -19,8 +19,8 @@ func CreateUpgradeHandler(
 
 		// Skip module migrations if existing version is greater than new one (should not happen).
 		moduleVersion := ibc.AppModule{}.ConsensusVersion()
-		if ibcVersion, exists := vm[ibchost.ModuleName]; exists && ibcVersion > moduleVersion {
-			vm[ibchost.ModuleName] = moduleVersion
+		if ibcVersion, exists := vm[ibcexported.ModuleName]; exists && ibcVersion > moduleVersion {
+			vm[ibcexported.ModuleName] = moduleVersion
 		}
 
 		return mm.RunMigrations(ctx, configurator, vm)

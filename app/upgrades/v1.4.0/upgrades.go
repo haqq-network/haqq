@@ -45,7 +45,7 @@ func CreateUpgradeHandler(
 }
 
 func UpdateGovParams(ctx sdk.Context, gk govkeeper.Keeper, sk stakingkeeper.Keeper) {
-	depositParams := gk.GetDepositParams(ctx)
+	depositParams := gk.GetParams(ctx)
 
 	if types.IsMainNetwork(ctx.ChainID()) {
 		minDeposit := math.NewIntWithDecimal(6_000, 18) // 6 000 ISLM
@@ -59,21 +59,27 @@ func UpdateGovParams(ctx sdk.Context, gk govkeeper.Keeper, sk stakingkeeper.Keep
 		)
 	}
 
-	gk.SetDepositParams(ctx, depositParams)
+	if err := gk.SetParams(ctx, depositParams); err != nil {
+		panic(err)
+	}
 }
 
 func UpdateSlashingParams(ctx sdk.Context, slashingkeeper slashingkeeper.Keeper) {
 	params := slashingkeeper.GetParams(ctx)
 	params.SignedBlocksWindow = 35000
 	params.SlashFractionDowntime = sdk.NewDecWithPrec(1, 4) // 0.01% (0.0001)
-	slashingkeeper.SetParams(ctx, params)
+	if err := slashingkeeper.SetParams(ctx, params); err != nil {
+		panic(err)
+	}
 }
 
 func UpdateStakingParams(ctx sdk.Context, sk stakingkeeper.Keeper) {
 	params := sk.GetParams(ctx)
 	params.MaxValidators = 150
 	params.MinCommissionRate = sdk.NewDecWithPrec(5, 2) // 5% (0.05)
-	sk.SetParams(ctx, params)
+	if err := sk.SetParams(ctx, params); err != nil {
+		panic(err)
+	}
 }
 
 func ResetCoinomicsState(ctx sdk.Context, sk stakingkeeper.Keeper, ck coinomicskeeper.Keeper) error {

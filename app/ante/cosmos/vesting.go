@@ -7,8 +7,10 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	vestingerrors "github.com/evmos/evmos/v10/x/vesting/types"
+
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	vestingerrors "github.com/evmos/evmos/v14/x/vesting/types"
+
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -18,14 +20,16 @@ import (
 type VestingDelegationDecorator struct {
 	ak  evmtypes.AccountKeeper
 	sk  vestingtypes.StakingKeeper
+	bk  evmtypes.BankKeeper
 	cdc codec.BinaryCodec
 }
 
 // NewVestingDelegationDecorator creates a new VestingDelegationDecorator
-func NewVestingDelegationDecorator(ak evmtypes.AccountKeeper, sk vestingtypes.StakingKeeper, cdc codec.BinaryCodec) VestingDelegationDecorator {
+func NewVestingDelegationDecorator(ak evmtypes.AccountKeeper, sk vestingtypes.StakingKeeper, bk evmtypes.BankKeeper, cdc codec.BinaryCodec) VestingDelegationDecorator {
 	return VestingDelegationDecorator{
 		ak:  ak,
 		sk:  sk,
+		bk:  bk,
 		cdc: cdc,
 	}
 }
@@ -99,12 +103,19 @@ func (vdd VestingDelegationDecorator) validateMsg(ctx sdk.Context, msg sdk.Msg) 
 			)
 		}
 
-		vested := coins.AmountOf(bondDenom)
+		balance := vdd.bk.GetBalance(ctx, addr, bondDenom)
+		unvestedOnly := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
+		spendable, hasNeg := sdk.Coins{balance}.SafeSub(unvestedOnly...)
+		if hasNeg {
+			spendable = sdk.NewCoins()
+		}
+
+		vested := spendable.AmountOf(bondDenom)
 		if vested.LT(delegateMsg.Amount.Amount) {
 			return errorsmod.Wrapf(
 				vestingerrors.ErrInsufficientVestedCoins,
-				"cannot delegate unvested coins. coins vested < delegation amount (%s %s < %s %s)",
-				vested, bondDenom, delegateMsg.Amount.Amount, delegateMsg.Amount.Denom,
+				"cannot delegate unvested coins. coins vested < delegation amount (%s < %s)",
+				vested, delegateMsg.Amount.Amount,
 			)
 		}
 	}

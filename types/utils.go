@@ -8,7 +8,7 @@ const (
 	TestEdge2ChainID = "haqq_54211"
 	LocalNetChainID  = "haqq_121799"
 	// BaseDenom defines the Evmos mainnet denomination
-	BaseDenom = "aislm"
+	BaseDenom = "aISLM"
 )
 
 func IsMainNetwork(chainID string) bool {

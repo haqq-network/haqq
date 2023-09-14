@@ -15,9 +15,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	ethermint "github.com/evmos/ethermint/types"
+	ethermint "github.com/evmos/evmos/v14/types"
 
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 // NewTxCmd returns a root CLI command handler for erc20 transaction commands
@@ -136,14 +136,13 @@ func NewConvertERC20Cmd() *cobra.Command {
 }
 
 // NewRegisterCoinProposalCmd implements the command to submit a community-pool-spend proposal
-// nolint:staticcheck
 func NewRegisterCoinProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register-coin METADATA_FILE",
 		Args:  cobra.ExactArgs(1),
 		Short: "Submit a register coin proposal",
 		Long:  `Submit a proposal to register a Cosmos coin to the erc20 along with an initial deposit. The proposal details must be supplied via a JSON file.`,
-		Example: fmt.Sprintf(`$ %s tx gov submit-proposal register-coin metadata.json --from=<key_or_address>
+		Example: fmt.Sprintf(`$ %s tx gov submit-legacy-proposal register-coin metadata.json --from=<key_or_address>
 
 Where metadata.json contains (example):
 
@@ -181,7 +180,7 @@ Where metadata.json contains (example):
 				return err
 			}
 
-			description, err := cmd.Flags().GetString(cli.FlagDescription)
+			description, err := cmd.Flags().GetString(cli.FlagDescription) //nolint:staticcheck,nolintlint
 			if err != nil {
 				return err
 			}
@@ -219,12 +218,12 @@ Where metadata.json contains (example):
 	}
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
-	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") //nolint:staticcheck,nolintlint
 	cmd.Flags().String(cli.FlagDeposit, "1aevmos", "deposit of proposal")
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
-	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
+	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil { //nolint:staticcheck,nolintlint
 		panic(err)
 	}
 	if err := cmd.MarkFlagRequired(cli.FlagDeposit); err != nil {
@@ -234,14 +233,13 @@ Where metadata.json contains (example):
 }
 
 // NewRegisterERC20ProposalCmd implements the command to submit a community-pool-spend proposal
-// nolint:staticcheck
 func NewRegisterERC20ProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "register-erc20 ERC20_ADDRESS...",
 		Args:    cobra.MinimumNArgs(1),
 		Short:   "Submit a proposal to register ERC20 token",
 		Long:    "Submit a proposal to register ERC20 tokens along with an initial deposit. To register multiple tokens in one proposal pass them after each other e.g. `register-erc20 <contract-address1> <contract-address2>` ",
-		Example: fmt.Sprintf("$ %s tx gov submit-proposal register-erc20 <contract-address> --from=<key_or_address>", version.AppName),
+		Example: fmt.Sprintf("$ %s tx gov submit-legacy-proposal register-erc20 <contract-address> --from=<key_or_address>", version.AppName),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -253,7 +251,7 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 				return err
 			}
 
-			description, err := cmd.Flags().GetString(cli.FlagDescription)
+			description, err := cmd.Flags().GetString(cli.FlagDescription) //nolint:staticcheck
 			if err != nil {
 				return err
 			}
@@ -286,12 +284,12 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 	}
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
-	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") //nolint:staticcheck
 	cmd.Flags().String(cli.FlagDeposit, "1aevmos", "deposit of proposal")
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
-	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
+	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil { //nolint:staticcheck
 		panic(err)
 	}
 	if err := cmd.MarkFlagRequired(cli.FlagDeposit); err != nil {
@@ -301,14 +299,13 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 }
 
 // NewToggleTokenConversionProposalCmd implements the command to submit a community-pool-spend proposal
-// nolint:staticcheck
 func NewToggleTokenConversionProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "toggle-token-conversion TOKEN",
 		Args:    cobra.ExactArgs(1),
 		Short:   "Submit a toggle token conversion proposal",
 		Long:    "Submit a proposal to toggle the conversion of a token pair along with an initial deposit.",
-		Example: fmt.Sprintf("$ %s tx gov submit-proposal toggle-token-conversion DENOM_OR_CONTRACT --from=<key_or_address>", version.AppName),
+		Example: fmt.Sprintf("$ %s tx gov submit-legacy-proposal toggle-token-conversion DENOM_OR_CONTRACT --from=<key_or_address>", version.AppName),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -320,7 +317,7 @@ func NewToggleTokenConversionProposalCmd() *cobra.Command {
 				return err
 			}
 
-			description, err := cmd.Flags().GetString(cli.FlagDescription)
+			description, err := cmd.Flags().GetString(cli.FlagDescription) //nolint:staticcheck
 			if err != nil {
 				return err
 			}
@@ -353,12 +350,12 @@ func NewToggleTokenConversionProposalCmd() *cobra.Command {
 	}
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
-	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") //nolint:staticcheck
 	cmd.Flags().String(cli.FlagDeposit, "1aevmos", "deposit of proposal")
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
-	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
+	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil { //nolint:staticcheck
 		panic(err)
 	}
 	if err := cmd.MarkFlagRequired(cli.FlagDeposit); err != nil {

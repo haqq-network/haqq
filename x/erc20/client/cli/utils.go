@@ -7,10 +7,10 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/evmos/evmos/v14/x/erc20/types"
 )
 
-// ParseRegisterCoinProposal reads and parses a ParseRegisterCoinProposal from a file.
+// ParseMetadata reads and parses a ProposalMetadata from a file.
 func ParseMetadata(cdc codec.JSONCodec, metadataFile string) ([]banktypes.Metadata, error) {
 	proposalMetadata := types.ProposalMetadata{}
 

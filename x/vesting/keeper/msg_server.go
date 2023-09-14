@@ -14,8 +14,8 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/evmos/ethermint/types"
-	evmosvestingtypes "github.com/evmos/evmos/v10/x/vesting/types"
+	ethtypes "github.com/evmos/evmos/v14/types"
+	evmosvestingtypes "github.com/evmos/evmos/v14/x/vesting/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -428,11 +428,11 @@ func (k Keeper) ConvertIntoVestingAccount(
 			sdk.NewAttribute(types.AttributeKeyMerge, strconv.FormatBool(isClawback)),
 			sdk.NewAttribute(types.AttributeKeyAccount, vestingAcc.Address),
 		),
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, stakingtypes.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeySender, to.String()),
-		),
+		//sdk.NewEvent(
+		//	sdk.EventTypeMessage,
+		//	sdk.NewAttribute(sdk.AttributeKeyModule, stakingtypes.AttributeValueCategory),
+		//	sdk.NewAttribute(sdk.AttributeKeySender, to.String()),
+		//),
 	}
 
 	if msg.Stake {

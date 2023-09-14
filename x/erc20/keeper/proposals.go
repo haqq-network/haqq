@@ -7,7 +7,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 // RegisterCoin deploys an erc20 contract and creates the token pair for the
@@ -43,7 +43,7 @@ func (k Keeper) RegisterCoin(
 		)
 	}
 
-	pair := types.NewTokenPair(addr, coinMetadata.Base, true, types.OWNER_MODULE)
+	pair := types.NewTokenPair(addr, coinMetadata.Base, types.OWNER_MODULE)
 	k.SetTokenPair(ctx, pair)
 	k.SetDenomMap(ctx, pair.Denom, pair.GetID())
 	k.SetERC20Map(ctx, common.HexToAddress(pair.Erc20Address), pair.GetID())
@@ -71,7 +71,7 @@ func (k Keeper) RegisterERC20(
 		)
 	}
 
-	pair := types.NewTokenPair(contract, metadata.Name, true, types.OWNER_EXTERNAL)
+	pair := types.NewTokenPair(contract, metadata.Name, types.OWNER_EXTERNAL)
 	k.SetTokenPair(ctx, pair)
 	k.SetDenomMap(ctx, pair.Denom, pair.GetID())
 	k.SetERC20Map(ctx, common.HexToAddress(pair.Erc20Address), pair.GetID())

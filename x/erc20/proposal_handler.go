@@ -7,7 +7,7 @@ import (
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
 )
 

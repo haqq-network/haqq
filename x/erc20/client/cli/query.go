@@ -7,7 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
 
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 // GetQueryCmd returns the parent command for all erc20 CLI query commands
@@ -65,7 +65,7 @@ func GetTokenPairsCmd() *cobra.Command {
 	return cmd
 }
 
-// GetTokenPairsCmd queries a registered token pair
+// GetTokenPairCmd queries a registered token pair
 func GetTokenPairCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token-pair TOKEN",

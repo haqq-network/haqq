@@ -8,13 +8,13 @@ package erc20_test
 
 // 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-// 	"github.com/tendermint/tendermint/crypto/tmhash"
-// 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-// 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-// 	"github.com/tendermint/tendermint/version"
+// 	"github.com/cometbft/cometbft/crypto/tmhash"
+// 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+// 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+// 	"github.com/cometbft/cometbft/version"
 
-// 	"github.com/evmos/ethermint/tests"
-// 	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+// 	"github.com/evmos/evmos/v14/tests"
+// 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
 // 	"github.com/haqq-network/haqq/app"
 // 	"github.com/haqq-network/haqq/x/erc20"

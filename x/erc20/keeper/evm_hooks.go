@@ -2,17 +2,16 @@ package keeper
 
 import (
 	"bytes"
-	// nolint: typecheck
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 
-	"github.com/evmos/evmos/v10/contracts"
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/evmos/evmos/v14/contracts"
+	"github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 var _ evmtypes.EvmHooks = Hooks{}
@@ -22,7 +21,7 @@ type Hooks struct {
 	k Keeper
 }
 
-// Return the wrapper struct
+// Hooks Return the wrapper struct
 func (k Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
