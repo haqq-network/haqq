@@ -34,10 +34,22 @@ jobs:
   test-unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v2.1.4
+      - name: Set up go
+        uses: actions/setup-go@v2.1.4
         with:
           go-version: 1.19
-      - uses: actions/checkout@v2.4.0
+      - name: Checkout source
+        uses: actions/checkout@v2.4.0
+      - name: Generate LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
+      - name: Pull LFS files
+        run: git lfs pull
       - uses: technote-space/get-diff-action@v5
         with:
           PATTERNS: |
