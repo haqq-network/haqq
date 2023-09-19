@@ -295,7 +295,7 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 	// Set one year cliff for certain accounts
 	longCliff := false
 	switch acc.GetAddress().String() {
-	case longCliffAddress1, longCliffAddress2:
+	case longCliffAddress1, longCliffAddress2, longCliffAddress3:
 		longCliff = true
 	}
 
