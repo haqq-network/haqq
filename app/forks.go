@@ -3,7 +3,7 @@ package app
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 )
 
 // ScheduleForkUpgrade executes any necessary fork logic for based upon the current
@@ -16,7 +16,7 @@ import (
 //  2. Release the software defined in the upgrade-info
 func (app *Haqq) ScheduleForkUpgrade(ctx sdk.Context) {
 	// NOTE: there are no testnet forks for the existing versions
-	if !types.IsMainNetwork(ctx.ChainID()) {
+	if !utils.IsMainNetwork(ctx.ChainID()) {
 		return
 	}
 

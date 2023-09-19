@@ -23,7 +23,7 @@ import (
 
 	"github.com/evmos/evmos/v14/encoding"
 
-	utils "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 )
 
 func TestExport(t *testing.T) {

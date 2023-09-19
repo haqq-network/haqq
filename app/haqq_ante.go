@@ -10,7 +10,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
-	haqqtypes "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -35,7 +35,7 @@ func NewHaqqAnteHandlerDecorator(_ keeper.Keeper, h sdk.AnteHandler) sdk.AnteHan
 
 				signers := sigTx.GetSigners()
 				for j := 0; j < len(signers); j++ {
-					if !haqqtypes.IsAllowedVestingFunderAccount(signers[j].String()) {
+					if !utils.IsAllowedVestingFunderAccount(signers[j].String()) {
 						isValid = false
 						break
 					}

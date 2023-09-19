@@ -4,7 +4,7 @@
   - /**/*.pb.go
   - /**/*.pb.gw.go
 "C:Types":
-  - types/**/*
+  - utils/**/*
 "Type: Build":
   - Makefile
   - Dockerfile

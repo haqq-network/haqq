@@ -26,7 +26,7 @@ import (
 
 	"github.com/haqq-network/haqq/app"
 	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
-	utils "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 )
 
 type BurnCoinsTestSuite struct {

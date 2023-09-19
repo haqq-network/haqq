@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,9 +30,9 @@ func CreateUpgradeHandler(
 		// - https://docs.cosmos.network/master/building-modules/upgrade.html#registering-migrations
 		// - https://docs.cosmos.network/master/migrations/chain-upgrade-guide-044.html#chain-upgrade
 
-		if types.IsMainNetwork(ctx.ChainID()) ||
-			types.IsTestEdge1Network(ctx.ChainID()) ||
-			types.IsLocalNetwork(ctx.ChainID()) {
+		if utils.IsMainNetwork(ctx.ChainID()) ||
+			utils.IsTestEdge1Network(ctx.ChainID()) ||
+			utils.IsLocalNetwork(ctx.ChainID()) {
 			logger.Debug("run migration v1.0.2")
 
 			FixTotalSupply(ctx, bk, cdc, distrStoreKey)

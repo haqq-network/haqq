@@ -10,7 +10,7 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 
-	utils "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 )
 
 var _ porttypes.Middleware = &IBCMiddleware{}

@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"github.com/haqq-network/haqq/types"
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -30,7 +29,7 @@ import (
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
 	"github.com/haqq-network/haqq/cmd/config"
-	utils "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 )
 
 func init() {
@@ -113,7 +112,7 @@ func Setup(
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         types.LocalNetChainID + "-1",
+				ChainId:         utils.LocalNetChainID + "-1",
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,

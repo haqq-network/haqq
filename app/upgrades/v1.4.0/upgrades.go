@@ -7,7 +7,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
-	"github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 
@@ -34,7 +34,7 @@ func CreateUpgradeHandler(
 		UpdateGovParams(ctx, gk, sk)
 
 		// Reset coinomics state for TestEdge2
-		if types.IsTestEdge2Network(ctx.ChainID()) {
+		if utils.IsTestEdge2Network(ctx.ChainID()) {
 			if err := ResetCoinomicsState(ctx, sk, ck); err != nil {
 				logger.Error("FAILED: reset coinomics params error: ", err.Error())
 			}
@@ -47,7 +47,7 @@ func CreateUpgradeHandler(
 func UpdateGovParams(ctx sdk.Context, gk govkeeper.Keeper, sk stakingkeeper.Keeper) {
 	depositParams := gk.GetParams(ctx)
 
-	if types.IsMainNetwork(ctx.ChainID()) {
+	if utils.IsMainNetwork(ctx.ChainID()) {
 		minDeposit := math.NewIntWithDecimal(6_000, 18) // 6 000 ISLM
 		depositParams.MinDeposit = sdk.NewCoins(
 			sdk.NewCoin(sk.BondDenom(ctx), minDeposit),

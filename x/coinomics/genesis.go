@@ -3,7 +3,7 @@ package coinomics
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	haqqtypes "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/coinomics/keeper"
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
@@ -25,11 +25,11 @@ func InitGenesis(
 	params := data.Params
 
 	switch {
-	case haqqtypes.IsMainNetwork(ctx.ChainID()):
+	case utils.IsMainNetwork(ctx.ChainID()):
 		params.EnableCoinomics = false
-	case haqqtypes.IsTestEdge1Network(ctx.ChainID()):
+	case utils.IsTestEdge1Network(ctx.ChainID()):
 		params.BlocksPerEra = 8640 // 30 days until max supply minted
-	case haqqtypes.IsTestEdge2Network(ctx.ChainID()):
+	case utils.IsTestEdge2Network(ctx.ChainID()):
 		params.BlocksPerEra = 17280 // 60 days until max supply minted
 	}
 
