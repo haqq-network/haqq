@@ -36,6 +36,7 @@ type RevestingUpgradeHandler struct {
 	oldBalances    map[string]sdk.Coin
 	oldDelegations map[string][]stakingtypes.Delegation
 	oldValidators  map[string]stakingtypes.Validator
+	vestedAmount   sdk.Coin
 }
 
 func NewRevestingUpgradeHandler(
@@ -60,6 +61,7 @@ func NewRevestingUpgradeHandler(
 		threshold:     threshold,
 		wl:            make(map[types.EthAccount]bool),
 		ignore:        make(map[string]bool),
+		vestedAmount:  sdk.NewCoin(sk.BondDenom(ctx), sdk.ZeroInt()),
 	}
 }
 
@@ -203,6 +205,8 @@ func (r *RevestingUpgradeHandler) Run() error {
 		return errors.Wrap(err, "error finalize contract revesting")
 	}
 
+	r.ctx.Logger().Info(fmt.Sprintf("Total vested coins: %s", r.vestedAmount.String()))
+
 	return nil
 }
 
@@ -228,9 +232,18 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 			return nil, totalUndelegatedAmount, errors.New("validator not found")
 		}
 
+		if validator.OperatorAddress == "haqqvaloper1jh375g33t6l3kd5wjhmscju2kyfezfkjgsca3q" {
+			// skip localtest validator, not exists on mainnet
+			continue
+		}
+
 		delegationShares := delegation.GetShares()
 		isValidatorOperator := delAddr.Equals(validator.GetOperator())
 		delegatedAmount := validator.TokensFromShares(delegationShares).TruncateInt()
+		r.ctx.Logger().Info(fmt.Sprintf("# Undelegate from %s:", validator.OperatorAddress))
+		r.ctx.Logger().Info(fmt.Sprintf("# Undelegate for %s:", delAddr.String()))
+		r.ctx.Logger().Info(fmt.Sprintf(" ## shares %s:", delegationShares.String()))
+		r.ctx.Logger().Info(fmt.Sprintf(" ## amount %s:", delegatedAmount.String()))
 
 		// Reduce unbonding amount if validator's min self delegation is less than threshold
 		// and delegation is from validator's operator.
@@ -250,6 +263,10 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 			}
 
 			delegationShares = sharesToUnbond
+
+			r.ctx.Logger().Info(fmt.Sprintf("# CORRECTION ON SELF DELEGATE!"))
+			r.ctx.Logger().Info(fmt.Sprintf(" ## shares %s:", delegationShares.String()))
+			r.ctx.Logger().Info(fmt.Sprintf(" ## amount %s:", amountToUnbond.String()))
 		}
 
 		ubdAmount, err := r.StakingKeeper.Unbond(r.ctx, delAddr, valAddr, delegationShares)
@@ -317,6 +334,10 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 		return errors.Wrap(err, "failed to convert into clawback vesting account")
 	}
 
+	// skip localtest account, it's empty on mainnet
+	if acc.GetAddress().String() != "haqq1jh375g33t6l3kd5wjhmscju2kyfezfkjyj5n4p" {
+		r.vestedAmount = r.vestedAmount.Add(coin)
+	}
 	return nil
 }
 
@@ -378,6 +399,8 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 		if err := r.implicitConvertIntoVestingAccount(acc, amount, accDeposits); err != nil {
 			return errors.Wrap(err, "error convert into vesting account")
 		}
+
+		r.vestedAmount = r.vestedAmount.Add(amount)
 
 		// Log balance after revesting
 		balanceAfter := r.BankKeeper.GetBalance(r.ctx, accAddr, r.StakingKeeper.BondDenom(r.ctx))
