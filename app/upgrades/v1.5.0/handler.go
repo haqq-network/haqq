@@ -318,6 +318,8 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 		return errors.Wrap(err, "failed to convert into clawback vesting account")
 	}
 
+	r.vestedAmount = r.vestedAmount.Add(coin)
+
 	return nil
 }
 
