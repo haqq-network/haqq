@@ -156,10 +156,6 @@ func (r *RevestingUpgradeHandler) Run() error {
 			isSmartContract = true
 		}
 
-		// Log balance before Undelegate
-		balanceBeforeUND := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
-		r.ctx.Logger().Info("Balance before undelegation: " + balanceBeforeUND.String())
-
 		var (
 			totalUndelegatedAmount sdk.Coin
 			err                    error
@@ -177,7 +173,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 
 		// Get account balance
 		balance := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
-		r.ctx.Logger().Info("Balance before revesting: " + balance.String())
+		r.ctx.Logger().Info("Balance to be revested: " + balance.String())
 
 		// Send all coins to the vesting module account and process revesting with staking
 		if err := r.Revesting(acc, balance); err != nil {
@@ -193,10 +189,6 @@ func (r *RevestingUpgradeHandler) Run() error {
 
 		// Delete entry from map to prevent double revesting
 		delete(withdrawnVestingAmounts, acc.GetAddress().String())
-
-		// Log balance after revesting
-		balanceAfter := r.BankKeeper.GetBalance(r.ctx, acc.GetAddress(), r.StakingKeeper.BondDenom(r.ctx))
-		r.ctx.Logger().Info("Balance after (re)vesting: " + balanceAfter.String())
 	}
 
 	r.ctx.Logger().Info(fmt.Sprintf("Account to migrate from contract to module: %d", len(withdrawnVestingAmounts)))
@@ -240,10 +232,6 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 		delegationShares := delegation.GetShares()
 		isValidatorOperator := delAddr.Equals(validator.GetOperator())
 		delegatedAmount := validator.TokensFromShares(delegationShares).TruncateInt()
-		r.ctx.Logger().Info(fmt.Sprintf("# Undelegate from %s:", validator.OperatorAddress))
-		r.ctx.Logger().Info(fmt.Sprintf("# Undelegate for %s:", delAddr.String()))
-		r.ctx.Logger().Info(fmt.Sprintf(" ## shares %s:", delegationShares.String()))
-		r.ctx.Logger().Info(fmt.Sprintf(" ## amount %s:", delegatedAmount.String()))
 
 		// Reduce unbonding amount if validator's min self delegation is less than threshold
 		// and delegation is from validator's operator.
@@ -263,10 +251,6 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 			}
 
 			delegationShares = sharesToUnbond
-
-			r.ctx.Logger().Info(fmt.Sprintf("# CORRECTION ON SELF DELEGATE!"))
-			r.ctx.Logger().Info(fmt.Sprintf(" ## shares %s:", delegationShares.String()))
-			r.ctx.Logger().Info(fmt.Sprintf(" ## amount %s:", amountToUnbond.String()))
 		}
 
 		ubdAmount, err := r.StakingKeeper.Unbond(r.ctx, delAddr, valAddr, delegationShares)
@@ -334,19 +318,14 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 		return errors.Wrap(err, "failed to convert into clawback vesting account")
 	}
 
-	// skip localtest account, it's empty on mainnet
-	if acc.GetAddress().String() != "haqq1jh375g33t6l3kd5wjhmscju2kyfezfkjyj5n4p" {
-		r.vestedAmount = r.vestedAmount.Add(coin)
-	}
 	return nil
 }
 
 func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount sdk.Coin, oldDelegations map[*sdk.ValAddress]sdk.Coin) error {
 	restAmount := totalAmount
 
-	r.ctx.Logger().Info("Delegate tokens:")
 	if len(oldDelegations) > 0 {
-		r.ctx.Logger().Info("found old delegations, restaking...")
+		r.ctx.Logger().Info("Delegate tokens:")
 		for valAddr, amt := range oldDelegations {
 			val, found := r.StakingKeeper.GetValidator(r.ctx, valAddr.Bytes())
 			if !found {
@@ -391,20 +370,11 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 			continue
 		}
 
-		// Log balance after revesting
-		balanceBefore := r.BankKeeper.GetBalance(r.ctx, accAddr, r.StakingKeeper.BondDenom(r.ctx))
-		r.ctx.Logger().Info("Balance before migration: " + balanceBefore.String())
-		r.ctx.Logger().Info("Expecting vesting amount: " + amount.String())
-
 		if err := r.implicitConvertIntoVestingAccount(acc, amount, accDeposits); err != nil {
 			return errors.Wrap(err, "error convert into vesting account")
 		}
 
 		r.vestedAmount = r.vestedAmount.Add(amount)
-
-		// Log balance after revesting
-		balanceAfter := r.BankKeeper.GetBalance(r.ctx, accAddr, r.StakingKeeper.BondDenom(r.ctx))
-		r.ctx.Logger().Info("Balance after migration: " + balanceAfter.String())
 	}
 
 	return nil
