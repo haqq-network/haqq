@@ -32,4 +32,7 @@ message ClawbackVestingAccount {
     (gogoproto.nullable) = false,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/x/auth/vesting/types.Periods"
   ];
+
+  // code_hash is the hash calculated from the code contents
+  string code_hash = 6 [(gogoproto.moretags) = "yaml:\"code_hash\""];
 }

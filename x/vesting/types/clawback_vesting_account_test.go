@@ -56,6 +56,7 @@ func (suite *VestingAccountTestSuite) TestClawbackAccountNew() {
 				time.Now(),
 				sdkvesting.Periods{sdkvesting.Period{Length: 101, Amount: initialVesting}},
 				sdkvesting.Periods{sdkvesting.Period{Length: 201, Amount: initialVesting}},
+				nil,
 			),
 			false,
 		},
@@ -148,7 +149,7 @@ func (suite *VestingAccountTestSuite) TestGetVestedVestingLockedCoins() {
 	endTime := now.Add(24 * time.Hour)
 	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 	bacc := authtypes.NewBaseAccountWithAddress(addr)
-	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress([]byte("funder")), origCoins, now, lockupPeriods, vestingPeriods)
+	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress([]byte("funder")), origCoins, now, lockupPeriods, vestingPeriods, nil)
 
 	testCases := []struct {
 		name              string
@@ -232,7 +233,7 @@ func (suite *VestingAccountTestSuite) TestGetVestedUnvestedLockedOnly() {
 	endTime := now.Add(24 * time.Hour)
 	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 	bacc := authtypes.NewBaseAccountWithAddress(addr)
-	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress([]byte("funder")), origCoins, now, lockupPeriods, vestingPeriods)
+	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress([]byte("funder")), origCoins, now, lockupPeriods, vestingPeriods, nil)
 
 	testCases := []struct {
 		name             string
@@ -441,7 +442,7 @@ func (suite *VestingAccountTestSuite) TestTrackDelegationUndelegation() {
 			addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 			bacc := authtypes.NewBaseAccountWithAddress(addr)
 
-			va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress([]byte("funder")), origCoins, now, lockupPeriods, vestingPeriods)
+			va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress([]byte("funder")), origCoins, now, lockupPeriods, vestingPeriods, nil)
 
 			if tc.expDelegationPanic { //nolint:gocritic
 				suite.Require().Panics(func() {
@@ -527,7 +528,7 @@ func (suite *VestingAccountTestSuite) TestComputeClawback() {
 		suite.Run(tc.name, func() {
 			addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 			bacc := authtypes.NewBaseAccountWithAddress(addr)
-			va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress([]byte("funder")), origCoins, now, lockupPeriods, vestingPeriods)
+			va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress([]byte("funder")), origCoins, now, lockupPeriods, vestingPeriods, nil)
 
 			va2, amt := va.ComputeClawback(tc.time)
 

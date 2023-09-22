@@ -18,6 +18,9 @@ jobs:
         name: Git fetch everything
         run: git fetch --prune --unshallow
       -
+        name: Pull LFS files
+        run: git lfs pull
+      -
         name: Get Github tag
         id: meta
         run: |

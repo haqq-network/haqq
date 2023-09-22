@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"errors"
 	"time"
 
@@ -8,12 +9,17 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	evmostypes "github.com/evmos/ethermint/types"
 )
 
 var (
 	_ vestexported.VestingAccount = (*ClawbackVestingAccount)(nil)
 	_ authtypes.GenesisAccount    = (*ClawbackVestingAccount)(nil)
 )
+
+var emptyCodeHash = crypto.Keccak256(nil)
 
 // NewClawbackVestingAccount returns a new ClawbackVestingAccount
 func NewClawbackVestingAccount(
@@ -23,6 +29,7 @@ func NewClawbackVestingAccount(
 	startTime time.Time,
 	lockupPeriods,
 	vestingPeriods sdkvesting.Periods,
+	code *common.Hash,
 ) *ClawbackVestingAccount {
 	// copy and align schedules to the same start time to
 	// avoid mutating inputs
@@ -39,12 +46,17 @@ func NewClawbackVestingAccount(
 		EndTime:         endTime,
 	}
 
+	codeHash := ""
+	if code != nil {
+		codeHash = code.Hex()
+	}
 	return &ClawbackVestingAccount{
 		BaseVestingAccount: baseVestingAcc,
 		FunderAddress:      funder.String(),
 		StartTime:          startTime,
 		LockupPeriods:      lp,
 		VestingPeriods:     vp,
+		CodeHash:           codeHash,
 	}
 }
 
@@ -208,4 +220,28 @@ func (va ClawbackVestingAccount) ComputeClawback(
 // account's lockup periods
 func (va ClawbackVestingAccount) HasLockedCoins(blockTime time.Time) bool {
 	return !va.GetLockedOnly(blockTime).IsZero()
+}
+
+// EthAddress returns the account address ethereum format.
+func (va ClawbackVestingAccount) EthAddress() common.Address {
+	return common.BytesToAddress(va.GetAddress().Bytes())
+}
+
+// GetCodeHash returns the account code hash in byte format
+func (va ClawbackVestingAccount) GetCodeHash() common.Hash {
+	return common.HexToHash(va.CodeHash)
+}
+
+// SetCodeHash sets the account code hash to the EthAccount fields
+func (va *ClawbackVestingAccount) SetCodeHash(codeHash common.Hash) error {
+	va.CodeHash = codeHash.Hex()
+	return nil
+}
+
+// Type returns the type of Ethereum Account (EOA or Contract)
+func (va ClawbackVestingAccount) Type() int8 {
+	if bytes.Equal(emptyCodeHash, common.HexToHash(va.CodeHash).Bytes()) {
+		return evmostypes.AccountTypeEOA
+	}
+	return evmostypes.AccountTypeContract
 }

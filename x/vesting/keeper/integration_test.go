@@ -116,6 +116,7 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 				vestingStart,
 				lockupPeriods,
 				vestingPeriods,
+				nil,
 			)
 
 			err := testutil.FundAccount(s.ctx, s.app.BankKeeper, account.address, vestingAmtTotal)

@@ -147,6 +147,7 @@ import (
 	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
 	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
 	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
+	v150 "github.com/haqq-network/haqq/app/upgrades/v1.5.0"
 )
 
 func init() {
@@ -169,7 +170,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.4.2"
+	UpgradeName    = "v1.5.0"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -214,7 +215,6 @@ var (
 		feemarket.AppModuleBasic{},
 		coinomics.AppModuleBasic{},
 		erc20.AppModuleBasic{},
-		// incentives.AppModuleBasic{},
 		epochs.AppModuleBasic{},
 	)
 
@@ -229,13 +229,12 @@ var (
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		coinomicstypes.ModuleName:      {authtypes.Minter},
-		// incentivestypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
+		vestingtypes.ModuleName:        nil, // Add vesting module account
 	}
 
 	// module accounts that are allowed to receive tokens
 	allowedReceivingModAcc = map[string]bool{
 		distrtypes.ModuleName: true,
-		// incentivestypes.ModuleName: true,
 	}
 )
 
@@ -292,7 +291,6 @@ type Haqq struct {
 	Erc20Keeper   erc20keeper.Keeper
 	EpochsKeeper  epochskeeper.Keeper
 	VestingKeeper vestingkeeper.Keeper
-	// IncentivesKeeper incentiveskeeper.Keeper
 
 	// Haqq keepers
 	CoinomicsKeeper coinomicskeeper.Keeper
@@ -350,7 +348,6 @@ func NewHaqq(
 		// ethermint keys
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		// evmos keys
-		// incentivestypes.StoreKey,
 		erc20types.StoreKey,
 		epochstypes.StoreKey, vestingtypes.StoreKey,
 		// haqq keys
@@ -477,16 +474,10 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
 	)
 
-	// app.IncentivesKeeper = incentiveskeeper.NewKeeper(
-	// keys[incentivestypes.StoreKey], appCodec, app.GetSubspace(incentivestypes.ModuleName),
-	// app.AccountKeeper, app.BankKeeper, app.InflationKeeper, app.StakingKeeper, app.EvmKeeper,
-	// )
-
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
 		epochskeeper.NewMultiEpochHooks(
 		// insert epoch hooks receivers here
-		// app.IncentivesKeeper.Hooks(),
 		// app.InflationKeeper.Hooks(),
 		),
 	)
@@ -496,7 +487,6 @@ func NewHaqq(
 	app.EvmKeeper = app.EvmKeeper.SetHooks(
 		evmkeeper.NewMultiEvmHooks(
 			app.Erc20Keeper.Hooks(),
-			// app.IncentivesKeeper.Hooks(),
 		),
 	)
 
@@ -1017,7 +1007,6 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	// evmos subspaces
 	paramsKeeper.Subspace(erc20types.ModuleName)
-	// paramsKeeper.Subspace(incentivestypes.ModuleName)
 	// haqq subspaces
 	paramsKeeper.Subspace(coinomicstypes.ModuleName)
 
@@ -1098,6 +1087,21 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v142.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
+		),
+	)
+
+	// v1.5.0 update handler (Revesting all the accounts)
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v150.UpgradeName,
+		v150.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.AccountKeeper,
+			app.BankKeeper,
+			app.StakingKeeper,
+			app.EvmKeeper,
+			app.VestingKeeper,
+			app.AppCodec(),
 		),
 	)
 
