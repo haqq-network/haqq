@@ -17,7 +17,7 @@ const (
 	cliffOneYearPeriod   = int64(31104000) // 1 year in seconds
 	unlockPeriod         = int64(86400)    // 24 hours in seconds
 	exp                  = uint64(10e17)   // 1 ISLM base
-	threshold            = 1000000         // 1000000 ISLM for prod
+	threshold            = 500000          // 500000 ISLM for prod
 	vestingContract      = "0x1ba8624B418BFfaA93c369B0841204a9d50fA4D5"
 	longCliffAddress1    = "haqq1497ds93u23varcq32gg635c6tkvslqllgxfy5q"
 	longCliffAddress2    = "haqq1uzleh48vrx26z5mpxdjzzxfp3gv3wwlfzvdkhn"
