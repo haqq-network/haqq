@@ -17,8 +17,8 @@ jobs:
         with:
           go-version: 1.19
           check-latest: true
-      - name: Fetch LFS files
-        run: git lfs fetch --all
+      - name: Pull LFS files
+        run: git lfs pull
       - name: release dry run
         run: make release-dry-run
       - name: setup release environment
