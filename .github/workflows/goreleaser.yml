@@ -24,5 +24,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |-
           echo 'GITHUB_TOKEN=${{secrets.GITHUB_TOKEN}}' > .release-env
+      - name: Pull LFS files
+        run: git lfs pull
       - name: release publish
         run: make release

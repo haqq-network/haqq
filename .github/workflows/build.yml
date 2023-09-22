@@ -28,6 +28,8 @@ jobs:
             .go
             .mod
             .sum
+      - name: Pull LFS files
+        run: git lfs pull
       - run: |
           make build
         if: "env.GIT_DIFF != ''"
