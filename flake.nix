@@ -11,21 +11,41 @@
     };
   };
 
-  outputs = { nixpkgs, flake-utils, ... }:
+  outputs = { self, nixpkgs, flake-utils, ... }:
+
     flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import nixpkgs { inherit system; };
+        rev = self.rev or self.dirtyRev;
       in
       {
-        devShell = pkgs.mkShell {
-          buildInputs =
-            with pkgs; [
-              gh
-              yarn
-              go_1_20
-            ];
-        };
+        packages =
+          rec {
+            haqqd = pkgs.callPackage ./nix/package.nix {
+              rev = rev;
+              # FIXME: figure out why test fail in nix
+              doCheck = true;
+            };
+
+            haqqdNoCheck = pkgs.callPackage ./nix/package.nix {
+              rev = rev;
+              doCheck = false;
+            };
+
+            default = haqqdNoCheck;
+          };
+
+        devShell = pkgs.mkShell
+          {
+            buildInputs =
+              with pkgs;
+              [
+                gh
+                yarn
+                go
+              ];
+          };
       }
     );
 }

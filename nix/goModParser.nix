@@ -1,0 +1,147 @@
+# https://github.com/securityDAO/cosmos.nix/blob/585e444383ddab8bf2abc6a8a333a90b668953f4/resources/goModParser.nix
+# Parse go.mod in Nix
+# Returns a Nix structure with the contents of the go.mod passed in
+# in normalised form.
+let
+  inherit (builtins) elemAt mapAttrs split foldl' match filter typeOf;
+
+  # Strip lines with comments & other junk
+  stripStr = s: elemAt (split "^ *" (elemAt (split " *$" s) 0)) 2;
+  stripLines = initialLines:
+    foldl' (acc: f: f acc) initialLines [
+      # Strip comments
+      (map (l: stripStr (elemAt (splitString "//" l) 0)))
+
+      # Strip leading tabs characters
+      (map (l: elemAt (match "(\t)?(.*)" l) 1))
+
+      # Filter empty lines
+      (filter (l: l != ""))
+    ];
+
+  # Parse lines into a structure
+  parseLines = lines:
+    (
+      foldl'
+        (acc: l:
+          let
+            m = match "([^ )]*) *(.*)" l;
+            directive = elemAt m 0;
+            rest = elemAt m 1;
+
+            # Maintain parser state (inside parens or not)
+            inDirective =
+              if rest == "("
+              then directive
+              else if rest == ")"
+              then null
+              else acc.inDirective;
+          in
+          {
+            data =
+              acc.data
+              // (
+                if directive == "" && rest == ")"
+                then { }
+                else if inDirective != null && rest == "("
+                then {
+                  ${inDirective} = acc.data.${directive} or { };
+                }
+                else if inDirective != null
+                then {
+                  ${inDirective} = acc.data.${inDirective} // { ${directive} = rest; };
+                }
+                else {
+                  ${directive} = rest;
+                }
+              );
+            inherit inDirective;
+          })
+        {
+          inDirective = null;
+          data = { };
+        }
+        lines
+    ).data;
+
+  normaliseDirectives = data: (
+    let
+      normaliseString = s:
+        let
+          m = builtins.match "([^ ]+) (.+)" s;
+        in
+        {
+          ${elemAt m 0} = elemAt m 1;
+        };
+      require = data.require or { };
+      replace = data.replace or { };
+      exclude = data.exclude or { };
+    in
+    data
+    // {
+      require =
+        if typeOf require == "string"
+        then normaliseString require
+        else require;
+      replace =
+        if typeOf replace == "string"
+        then normaliseString replace
+        else replace;
+      exclude =
+        if typeOf exclude == "string"
+        then normaliseString exclude
+        else exclude;
+    }
+  );
+
+  parseVersion = ver:
+    let
+      m = elemAt (match "([^-]+)-?([^-]*)-?([^-]*)" ver);
+      v = elemAt (match "([^+]+)\\+?(.*)" (m 0));
+    in
+    {
+      version = v 0;
+      versionSuffix = v 1;
+      date = m 1;
+      rev = m 2;
+    };
+
+  parseReplace = data: (
+    data
+    // {
+      replace =
+        mapAttrs
+          (_: v:
+            let
+              m = match "=> ([^ ]+) (.+)" v;
+              m2 = match "=> (.*+)" v;
+            in
+            if m != null
+            then {
+              goPackagePath = elemAt m 0;
+              version = parseVersion (elemAt m 1);
+            }
+            else {
+              path = elemAt m2 0;
+            })
+          data.replace;
+    }
+  );
+
+  parseRequire = data: (
+    data
+    // {
+      require = mapAttrs (_: parseVersion) data.require;
+    }
+  );
+
+  splitString = sep: s: filter (t: t != [ ]) (split sep s);
+in
+contents:
+foldl' (acc: f: f acc) (splitString "\n" contents) [
+  stripLines
+  parseLines
+  normaliseDirectives
+  parseReplace
+  parseRequire
+]
