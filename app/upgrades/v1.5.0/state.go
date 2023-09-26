@@ -38,7 +38,7 @@ func (r *RevestingUpgradeHandler) loadHistoricalBalances() error {
 }
 
 func (r *RevestingUpgradeHandler) loadHistoricalDelegations() error {
-	r.ctx.Logger().Info("Loading history balances state")
+	r.ctx.Logger().Info("Loading history staking state")
 
 	var stakingState stakingtypes.GenesisState
 	if err := r.cdc.UnmarshalJSON(stakingStateJSON, &stakingState); err != nil {
