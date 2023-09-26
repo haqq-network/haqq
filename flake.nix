@@ -2,8 +2,7 @@
   description = "A very basic flake";
 
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/22.05;
-    nixpkgs-unstable.url = github:NixOS/nixpkgs/nixpkgs-unstable;
+    nixpkgs.url = "github:NixOS/nixpkgs/23.05";
 
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat = {
@@ -12,25 +11,20 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, ... }:
+  outputs = { nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import nixpkgs { inherit system; };
-        pkgsUnstable = import nixpkgs-unstable { inherit system; };
       in
       {
         devShell = pkgs.mkShell {
-          buildInputs = (
+          buildInputs =
             with pkgs; [
               gh
               yarn
-            ]
-          ) ++ (
-            with pkgsUnstable; [
-              go
-            ]
-          );
+              go_1_20
+            ];
         };
       }
     );
