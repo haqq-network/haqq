@@ -2,6 +2,7 @@ package v150
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"cosmossdk.io/math"
@@ -37,6 +38,11 @@ type RevestingUpgradeHandler struct {
 	oldDelegations map[string][]stakingtypes.Delegation
 	oldValidators  map[string]stakingtypes.Validator
 	vestedAmount   sdk.Coin
+}
+
+type OldDelegation struct {
+	ValAddr *sdk.ValAddress
+	Coin    sdk.Coin
 }
 
 func NewRevestingUpgradeHandler(
@@ -160,7 +166,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 			totalUndelegatedAmount sdk.Coin
 			err                    error
 		)
-		restoreDelegations := make(map[*sdk.ValAddress]sdk.Coin)
+		var restoreDelegations []OldDelegation
 		if !isSmartContract {
 			// Undelegate all coins for account
 			restoreDelegations, totalUndelegatedAmount, err = r.UndelegateAllTokens(acc.GetAddress())
@@ -204,7 +210,7 @@ func (r *RevestingUpgradeHandler) Run() error {
 
 // UndelegateAllTokens undelegates all tokens from the all validators and returns the undelegated amount per validator
 // and the total undelegated amount
-func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (map[*sdk.ValAddress]sdk.Coin, sdk.Coin, error) {
+func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) ([]OldDelegation, sdk.Coin, error) {
 	bondDenom := r.StakingKeeper.BondDenom(r.ctx)
 	totalUndelegatedAmount := sdk.NewCoin(bondDenom, sdk.ZeroInt())
 
@@ -215,7 +221,7 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 
 	// unbond from all validators
 	r.ctx.Logger().Info("Undelegate all tokens before revesting:")
-	undelegatedAmounts := make(map[*sdk.ValAddress]sdk.Coin, len(delegations))
+	var undelegatedAmounts []OldDelegation
 	for _, delegation := range delegations {
 		valAddr, _ := sdk.ValAddressFromBech32(delegation.GetValidatorAddr().String())
 		validator, found := r.StakingKeeper.GetValidator(r.ctx, valAddr)
@@ -272,7 +278,10 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) (m
 		}
 
 		undelegatedCoin := sdk.NewCoin(bondDenom, ubdAmount)
-		undelegatedAmounts[&valAddr] = undelegatedCoin
+		undelegatedAmounts = append(undelegatedAmounts, OldDelegation{
+			ValAddr: &valAddr,
+			Coin:    undelegatedCoin,
+		})
 		totalUndelegatedAmount = totalUndelegatedAmount.Add(undelegatedCoin)
 		r.ctx.Logger().Info(fmt.Sprintf(" - unbonded %s -> %s: %s", valAddr.String(), delAddr.String(), undelegatedCoin.String()))
 	}
@@ -323,24 +332,24 @@ func (r *RevestingUpgradeHandler) Revesting(acc authtypes.AccountI, coin sdk.Coi
 	return nil
 }
 
-func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount sdk.Coin, oldDelegations map[*sdk.ValAddress]sdk.Coin) error {
+func (r *RevestingUpgradeHandler) Restaking(acc authtypes.AccountI, totalAmount sdk.Coin, oldDelegations []OldDelegation) error {
 	restAmount := totalAmount
 
 	if len(oldDelegations) > 0 {
 		r.ctx.Logger().Info("Delegate tokens:")
-		for valAddr, amt := range oldDelegations {
-			val, found := r.StakingKeeper.GetValidator(r.ctx, valAddr.Bytes())
+		for _, od := range oldDelegations {
+			val, found := r.StakingKeeper.GetValidator(r.ctx, od.ValAddr.Bytes())
 			if !found {
 				// Should never happen, but just in case
-				return errors.Wrapf(stakingtypes.ErrNoValidatorFound, "validator %s does not exist", valAddr)
+				return errors.Wrapf(stakingtypes.ErrNoValidatorFound, "validator %s does not exist", od.ValAddr)
 			}
 
-			if _, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), amt.Amount, stakingtypes.Unbonded, val, true); err != nil {
+			if _, err := r.StakingKeeper.Delegate(r.ctx, acc.GetAddress(), od.Coin.Amount, stakingtypes.Unbonded, val, true); err != nil {
 				return errors.Wrap(err, "failed to delegate")
 			}
 
-			restAmount = restAmount.Sub(amt)
-			r.ctx.Logger().Info(fmt.Sprintf(" - restored delegation %s -> %s: %s", acc.GetAddress().String(), valAddr.String(), amt.String()))
+			restAmount = restAmount.Sub(od.Coin)
+			r.ctx.Logger().Info(fmt.Sprintf(" - restored delegation %s -> %s: %s", acc.GetAddress().String(), od.ValAddr.String(), od.Coin.String()))
 		}
 	}
 
@@ -355,7 +364,9 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 		return nil
 	}
 
-	for addr, amount := range withdrawnVestingAmounts {
+	sortedAccounts := r.getSortedAccountsList(withdrawnVestingAmounts)
+
+	for _, addr := range sortedAccounts {
 		r.ctx.Logger().Info("---")
 		r.ctx.Logger().Info(fmt.Sprintf("Account: %s", addr))
 
@@ -372,6 +383,7 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 			continue
 		}
 
+		amount := withdrawnVestingAmounts[addr]
 		if err := r.implicitConvertIntoVestingAccount(acc, amount, accDeposits); err != nil {
 			return errors.Wrap(err, "error convert into vesting account")
 		}
@@ -380,4 +392,16 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 	}
 
 	return nil
+}
+
+func (r *RevestingUpgradeHandler) getSortedAccountsList(withdrawnVestingAmounts map[string]sdk.Coin) []string {
+	var accList []string
+
+	for addr, _ := range withdrawnVestingAmounts {
+		accList = append(accList, addr)
+	}
+
+	sort.Strings(accList)
+
+	return accList
 }
