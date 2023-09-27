@@ -1,0 +1,25 @@
+name: Build docker image
+
+on:
+  push:
+
+  workflow_dispatch:
+
+jobs:
+  docker:
+    runs-on: ubuntu-cpu16-ram64
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Git fetch everything
+        run: git fetch --prune --unshallow
+      -
+        name: Pull LFS files
+        run: git lfs pull
+      -
+        name: Build docker
+        run:
+          docker build . --file docker/build.Dockerfile
+
