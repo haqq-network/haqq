@@ -221,7 +221,7 @@ func (r *RevestingUpgradeHandler) UndelegateAllTokens(delAddr sdk.AccAddress) ([
 
 	// unbond from all validators
 	r.ctx.Logger().Info("Undelegate all tokens before revesting:")
-	var undelegatedAmounts []OldDelegation
+	undelegatedAmounts := make([]OldDelegation, 0, len(delegations))
 	for _, delegation := range delegations {
 		valAddr, _ := sdk.ValAddressFromBech32(delegation.GetValidatorAddr().String())
 		validator, found := r.StakingKeeper.GetValidator(r.ctx, valAddr)
@@ -395,9 +395,9 @@ func (r *RevestingUpgradeHandler) FinalizeContractRevesting(withdrawnVestingAmou
 }
 
 func (r *RevestingUpgradeHandler) getSortedAccountsList(withdrawnVestingAmounts map[string]sdk.Coin) []string {
-	var accList []string
+	accList := make([]string, 0, len(withdrawnVestingAmounts))
 
-	for addr, _ := range withdrawnVestingAmounts {
+	for addr := range withdrawnVestingAmounts {
 		accList = append(accList, addr)
 	}
 
