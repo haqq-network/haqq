@@ -1,16 +1,10 @@
 package cli
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/input"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	rpctypes "github.com/evmos/evmos/v14/rpc/types"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/haqq-network/haqq/x/evm/types"
@@ -36,7 +30,9 @@ func NewRawTxCmd() *cobra.Command {
 		Short: "Build cosmos transaction from raw ethereum transaction",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			data, err := hexutil.Decode(args[0])
+			return fmt.Errorf("not implemented")
+
+			/*data, err := hexutil.Decode(args[0])
 			if err != nil {
 				return errors.Wrap(err, "failed to decode ethereum tx hex bytes")
 			}
@@ -102,7 +98,7 @@ func NewRawTxCmd() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			return clientCtx.PrintProto(res)*/
 		},
 	}
 
