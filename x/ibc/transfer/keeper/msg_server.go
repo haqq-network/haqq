@@ -5,14 +5,13 @@ import (
 	"strings"
 
 	"github.com/armon/go-metrics"
-	"github.com/ethereum/go-ethereum/common"
-
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/ethereum/go-ethereum/common"
+
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 var _ types.MsgServer = Keeper{}

@@ -3,6 +3,7 @@ package transfer
 import (
 	ibctransfer "github.com/cosmos/ibc-go/v7/modules/apps/transfer"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+
 	"github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 )
 

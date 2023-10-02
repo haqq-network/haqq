@@ -5,15 +5,16 @@ import (
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/haqq-network/haqq/utils"
-
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+
+	"github.com/haqq-network/haqq/cmd/config"
+	"github.com/haqq-network/haqq/utils"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.0.2
@@ -48,7 +49,7 @@ func FixTotalSupply(ctx sdk.Context, bk bankkeeper.Keeper, cdc codec.BinaryCodec
 	logger := ctx.Logger()
 
 	// get total supply
-	totalSupply := bk.GetSupply(ctx, "aISLM").Amount.BigInt()
+	totalSupply := bk.GetSupply(ctx, config.AttoDenom).Amount.BigInt()
 
 	// 20*10^9*10^18
 	expectedSupply := new(big.Int)
@@ -60,7 +61,7 @@ func FixTotalSupply(ctx sdk.Context, bk bankkeeper.Keeper, cdc codec.BinaryCodec
 	// if total supply lower then expected by white papper
 	if totalSupply.Cmp(expectedSupply) == -1 {
 		diff := big.NewInt(0).Sub(expectedSupply, totalSupply)
-		mintAmount := sdk.NewCoins(sdk.NewCoin("aISLM", sdk.NewIntFromBigInt(diff)))
+		mintAmount := sdk.NewCoins(sdk.NewCoin(config.AttoDenom, sdk.NewIntFromBigInt(diff)))
 
 		// mint to bank module
 		if err := bk.MintCoins(ctx, erc20types.ModuleName, mintAmount); err != nil {
