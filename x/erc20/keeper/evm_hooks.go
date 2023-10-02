@@ -8,10 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 
-	"github.com/evmos/evmos/v14/contracts"
-	"github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/haqq-network/haqq/contracts"
+	"github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var _ evmtypes.EvmHooks = Hooks{}

@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 
-	"github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // InitGenesis import module genesis

@@ -1,21 +1,21 @@
 {
   "metadata": [
     {
-      "description": "The native staking and governance token of the Evmos chain",
+      "description": "The native staking and governance token of the Haqq Network",
       "denom_units": [
         {
-          "denom": "aevmos",
+          "denom": "aISLM",
           "exponent": 0
         },
         {
-          "denom": "evmos",
+          "denom": "ISLM",
           "exponent": 18
         }
       ],
-      "base": "aevmos",
-      "display": "aevmos",
-      "name": "aevmos",
-      "symbol": "EVMOS"
+      "base": "aISLM",
+      "display": "aISLM",
+      "name": "aISLM",
+      "symbol": "ISLM"
     }
   ]
 }

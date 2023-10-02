@@ -17,9 +17,9 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/x/erc20/client/cli"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // consensusVersion defines the current x/erc20 module consensus version.

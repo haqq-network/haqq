@@ -12,8 +12,8 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/evmos/evmos/v14/contracts"
-	"github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/haqq-network/haqq/contracts"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 var _ types.MsgServer = &Keeper{}

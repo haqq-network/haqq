@@ -7,14 +7,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/evmos/evmos/v14/ibc"
-	"github.com/evmos/evmos/v14/x/erc20/types"
+
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // OnRecvPacket performs the ICS20 middleware receive callback for automatically
@@ -56,14 +55,6 @@ func (k Keeper) OnRecvPacket(
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
-
-	// claimsParams := k.claimsKeeper.GetParams(ctx)
-
-	// // if sender == recipient, and is not from an EVM Channel recovery was executed
-	// if sender.Equals(recipient) && !claimsParams.IsEVMChannel(packet.DestinationChannel) {
-	// 	// Continue to the next IBC middleware by returning the original ACK.
-	// 	return ack
-	// }
 
 	senderAcc := k.accountKeeper.GetAccount(ctx, sender)
 

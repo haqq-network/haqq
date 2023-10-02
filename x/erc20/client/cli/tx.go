@@ -12,12 +12,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-
 	"github.com/ethereum/go-ethereum/common"
-
 	ethermint "github.com/evmos/evmos/v14/types"
 
-	"github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // NewTxCmd returns a root CLI command handler for erc20 transaction commands

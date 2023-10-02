@@ -3,19 +3,18 @@ package v3_test
 import (
 	"testing"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/evmos/evmos/v14/app"
-	"github.com/evmos/evmos/v14/encoding"
-
-	v3types "github.com/evmos/evmos/v14/x/erc20/migrations/v3/types"
-
-	"github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/stretchr/testify/require"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	v3 "github.com/evmos/evmos/v14/x/erc20/migrations/v3"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/evmos/evmos/v14/encoding"
+
+	"github.com/haqq-network/haqq/app"
+	v3 "github.com/haqq-network/haqq/x/erc20/migrations/v3"
+	v3types "github.com/haqq-network/haqq/x/erc20/migrations/v3/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 type mockSubspace struct {

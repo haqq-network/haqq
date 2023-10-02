@@ -3,9 +3,9 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/evmos/evmos/v14/x/erc20/types"
 
 	v3 "github.com/haqq-network/haqq/x/erc20/migrations/v3"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 var _ module.MigrationHandler = Migrator{}.Migrate2to3
