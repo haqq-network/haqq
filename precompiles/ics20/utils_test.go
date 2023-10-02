@@ -207,7 +207,7 @@ func (s *PrecompileTestSuite) DoSetupTest() {
 	// Create 2 Haqq chains
 	chains[cmn.DefaultChainID] = s.NewTestChainWithValSet(s.coordinator, s.valSet, signersByAddress)
 	// TODO: Figure out if we want to make the second chain keepers accessible to the tests to check the state
-	chainID2 := utils.TestEdge2ChainID + "-2"
+	chainID2 := utils.MainNetChainID + "-2"
 	chains[chainID2] = ibctesting.NewTestChain(s.T(), s.coordinator, chainID2)
 	s.coordinator.Chains = chains
 
