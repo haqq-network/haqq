@@ -15,8 +15,9 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/evmos/evmos/v14/types"
-	evmosvestingtypes "github.com/evmos/evmos/v14/x/vesting/types"
+
 	"github.com/haqq-network/haqq/x/vesting/types"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
 var _ types.MsgServer = &Keeper{}
@@ -371,14 +372,15 @@ func (k Keeper) ConvertIntoVestingAccount(
 	var vestingAcc *types.ClawbackVestingAccount
 	var isClawback bool
 
-	_, isEthAccount := targetAccount.(*ethtypes.EthAccount)
+	ethAcc, isEthAccount := targetAccount.(*ethtypes.EthAccount)
 	vestingAcc, isClawback = targetAccount.(*types.ClawbackVestingAccount)
 
-	if !isClawback && !isEthAccount && !createNewAcc {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists but can't be converted into vesting account", msg.ToAddress)
+	if isClawback && !msg.Merge {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists; consider using --merge", msg.ToAddress)
 	}
 
-	if !isClawback || createNewAcc {
+	switch {
+	case createNewAcc:
 		baseAcc := authtypes.NewBaseAccountWithAddress(to)
 		vestingAcc = types.NewClawbackVestingAccount(
 			baseAcc,
@@ -392,11 +394,21 @@ func (k Keeper) ConvertIntoVestingAccount(
 		ak.SetAccount(ctx, acc)
 
 		madeNewAcc = true
-	} else {
-		if !msg.Merge {
-			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists; consider using --merge", msg.ToAddress)
-		}
-
+	case !isClawback && !isEthAccount:
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists but can't be converted into vesting account", msg.ToAddress)
+	case !isClawback && isEthAccount:
+		baseAcc := ethAcc.GetBaseAccount()
+		vestingAcc = types.NewClawbackVestingAccount(
+			baseAcc,
+			from,
+			vestingCoins,
+			msg.StartTime,
+			msg.LockupPeriods,
+			msg.VestingPeriods,
+		)
+		acc := ak.NewAccount(ctx, vestingAcc)
+		ak.SetAccount(ctx, acc)
+	case isClawback && msg.Merge:
 		if msg.FromAddress != vestingAcc.FunderAddress {
 			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s can only accept grants from account %s", msg.ToAddress, vestingAcc.FunderAddress)
 		}
@@ -406,6 +418,8 @@ func (k Keeper) ConvertIntoVestingAccount(
 			return nil, err
 		}
 		ak.SetAccount(ctx, vestingAcc)
+	default:
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to initiate vesting for account %s", msg.ToAddress)
 	}
 
 	if madeNewAcc {
@@ -428,11 +442,11 @@ func (k Keeper) ConvertIntoVestingAccount(
 			sdk.NewAttribute(types.AttributeKeyMerge, strconv.FormatBool(isClawback)),
 			sdk.NewAttribute(types.AttributeKeyAccount, vestingAcc.Address),
 		),
-		//sdk.NewEvent(
+		// sdk.NewEvent(
 		//	sdk.EventTypeMessage,
 		//	sdk.NewAttribute(sdk.AttributeKeyModule, stakingtypes.AttributeValueCategory),
 		//	sdk.NewAttribute(sdk.AttributeKeySender, to.String()),
-		//),
+		// ),
 	}
 
 	if msg.Stake {
@@ -469,7 +483,7 @@ func (k Keeper) addGrant(
 
 	if newLockupStart != newVestingStart {
 		return errorsmod.Wrapf(
-			evmosvestingtypes.ErrVestingLockup,
+			vestingtypes.ErrVestingLockup,
 			"vesting start time calculation should match lockup start (%d ≠ %d)",
 			newVestingStart, newLockupStart,
 		)
