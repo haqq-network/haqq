@@ -11,10 +11,9 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/evmos/evmos/v14/encoding"
-	"github.com/evmos/evmos/v14/testutil/network"
 
 	"github.com/haqq-network/haqq/app"
-	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
+	"github.com/haqq-network/haqq/testutil/network"
 )
 
 type IntegrationTestSuite struct {
@@ -118,9 +117,9 @@ func (s *IntegrationTestSuite) TestCommunityProposals() {
 }
 
 func TestDisabledCommunityProposals(t *testing.T) {
-	cfg := haqqnetwork.HaqqNetworkConfig()
+	cfg := network.HaqqNetworkConfig()
 	encCfg := encoding.MakeConfig(app.ModuleBasics)
-	cfg.AppConstructor = haqqnetwork.NewAppConstructor(encCfg, cfg.ChainID)
+	cfg.AppConstructor = network.NewAppConstructor(encCfg, cfg.ChainID)
 	cfg.NumValidators = 1
 
 	suite.Run(t, NewIntegrationTestSuite(cfg))

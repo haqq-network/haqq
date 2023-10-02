@@ -20,12 +20,10 @@ import (
 	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-
 	"github.com/evmos/evmos/v14/encoding"
-	"github.com/evmos/evmos/v14/testutil/network"
 
 	"github.com/haqq-network/haqq/app"
-	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
+	"github.com/haqq-network/haqq/testutil/network"
 	"github.com/haqq-network/haqq/utils"
 )
 
@@ -546,10 +544,10 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 }
 
 func TestBurnCoins(t *testing.T) {
-	cfg := haqqnetwork.HaqqNetworkConfigCoinomicsDisabled()
+	cfg := network.HaqqNetworkConfigCoinomicsDisabled()
 	encCfg := encoding.MakeConfig(app.ModuleBasics)
 	chainID := utils.MainNetChainID + "-1"
-	cfg.AppConstructor = haqqnetwork.NewAppConstructor(encCfg, chainID)
+	cfg.AppConstructor = network.NewAppConstructor(encCfg, chainID)
 	cfg.NumValidators = 1
 
 	genesisGov := strings.Replace(
