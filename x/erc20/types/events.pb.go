@@ -296,15 +296,16 @@ func (m *EventConvertERC20) GetContractAddress() string {
 	return ""
 }
 
-func init() {
-	proto.RegisterType((*EventRegisterPair)(nil), "evmos.erc20.v1.EventRegisterPair")
-	proto.RegisterType((*EventToggleTokenConversion)(nil), "evmos.erc20.v1.EventToggleTokenConversion")
-	proto.RegisterType((*EventConvertCoin)(nil), "evmos.erc20.v1.EventConvertCoin")
-	proto.RegisterType((*EventConvertERC20)(nil), "evmos.erc20.v1.EventConvertERC20")
-}
+/*
+	func init() {
+		proto.RegisterType((*EventRegisterPair)(nil), "evmos.erc20.v1.EventRegisterPair")
+		proto.RegisterType((*EventToggleTokenConversion)(nil), "evmos.erc20.v1.EventToggleTokenConversion")
+		proto.RegisterType((*EventConvertCoin)(nil), "evmos.erc20.v1.EventConvertCoin")
+		proto.RegisterType((*EventConvertERC20)(nil), "evmos.erc20.v1.EventConvertERC20")
+	}
 
 func init() { proto.RegisterFile("evmos/erc20/v1/events.proto", fileDescriptor_b8091384ab031e64) }
-
+*/
 var fileDescriptor_b8091384ab031e64 = []byte{
 	// 311 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x92, 0xcf, 0x4a, 0xc3, 0x40,

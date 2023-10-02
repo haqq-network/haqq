@@ -134,13 +134,14 @@ func (m *Params) GetEnableEVMHook() bool {
 	return false
 }
 
-func init() {
-	proto.RegisterType((*GenesisState)(nil), "evmos.erc20.v1.GenesisState")
-	proto.RegisterType((*Params)(nil), "evmos.erc20.v1.Params")
-}
+/*
+	func init() {
+		proto.RegisterType((*GenesisState)(nil), "evmos.erc20.v1.GenesisState")
+		proto.RegisterType((*Params)(nil), "evmos.erc20.v1.Params")
+	}
 
 func init() { proto.RegisterFile("evmos/erc20/v1/genesis.proto", fileDescriptor_2f4674601b0d6987) }
-
+*/
 var fileDescriptor_2f4674601b0d6987 = []byte{
 	// 302 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x49, 0x2d, 0xcb, 0xcd,

@@ -332,17 +332,18 @@ func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 
-func init() {
-	proto.RegisterType((*MsgConvertCoin)(nil), "evmos.erc20.v1.MsgConvertCoin")
-	proto.RegisterType((*MsgConvertCoinResponse)(nil), "evmos.erc20.v1.MsgConvertCoinResponse")
-	proto.RegisterType((*MsgConvertERC20)(nil), "evmos.erc20.v1.MsgConvertERC20")
-	proto.RegisterType((*MsgConvertERC20Response)(nil), "evmos.erc20.v1.MsgConvertERC20Response")
-	proto.RegisterType((*MsgUpdateParams)(nil), "evmos.erc20.v1.MsgUpdateParams")
-	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "evmos.erc20.v1.MsgUpdateParamsResponse")
-}
+/*
+	func init() {
+		proto.RegisterType((*MsgConvertCoin)(nil), "evmos.erc20.v1.MsgConvertCoin")
+		proto.RegisterType((*MsgConvertCoinResponse)(nil), "evmos.erc20.v1.MsgConvertCoinResponse")
+		proto.RegisterType((*MsgConvertERC20)(nil), "evmos.erc20.v1.MsgConvertERC20")
+		proto.RegisterType((*MsgConvertERC20Response)(nil), "evmos.erc20.v1.MsgConvertERC20Response")
+		proto.RegisterType((*MsgUpdateParams)(nil), "evmos.erc20.v1.MsgUpdateParams")
+		proto.RegisterType((*MsgUpdateParamsResponse)(nil), "evmos.erc20.v1.MsgUpdateParamsResponse")
+	}
 
 func init() { proto.RegisterFile("evmos/erc20/v1/tx.proto", fileDescriptor_f8926fc6cb676914) }
-
+*/
 var fileDescriptor_f8926fc6cb676914 = []byte{
 	// 576 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x93, 0x4f, 0x8b, 0x13, 0x3f,
