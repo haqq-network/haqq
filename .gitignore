@@ -13,6 +13,7 @@
 *.dll
 *.so
 *.dylib
+.dccache
 
 # Build
 *.test
@@ -24,7 +25,11 @@ tools/bin/*
 docs/_build
 docs/tutorial
 docs/node_modules
+docs/assets
 docs/modules
+docs/cosmos-sdk
+docs/ethermint
+docs/ibc-go
 dist
 tools-stamp
 docs-tools-stamp
@@ -35,6 +40,8 @@ keyring_test_cosmos
 ./**/dist
 secret.yml
 artifacts/*
+tmp-swagger-gen
+github.com/
 # vue/
 
 # Local docker volume mappings
@@ -46,6 +53,7 @@ coverage.txt
 *.out
 sim_log_file
 tests/**/tmp/*
+yarn.lock
 
 # Vagrant
 .vagrant/
@@ -56,6 +64,7 @@ vagrant
 # IDE
 .idea/
 *.iml
+*.code-workspace
 
 # Graphviz
 dependency-graph.png
@@ -73,3 +82,6 @@ dependency-graph.png
 tests/**/node_modules/*
 tests-solidity/**/node_modules/*
 node_modules
+
+# OpenZeppelin contracts
+contracts/@openzeppelin/*

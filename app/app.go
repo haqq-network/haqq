@@ -114,25 +114,19 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
 
-	// unnamed import of statik for swagger UI support
-	_ "github.com/evmos/evmos/v14/client/docs/statik"
-
 	"github.com/evmos/evmos/v14/encoding"
 	"github.com/evmos/evmos/v14/ethereum/eip712"
-	"github.com/evmos/evmos/v14/precompiles/common"
 	srvflags "github.com/evmos/evmos/v14/server/flags"
 	evmostypes "github.com/evmos/evmos/v14/types"
 	"github.com/evmos/evmos/v14/x/epochs"
 	epochskeeper "github.com/evmos/evmos/v14/x/epochs/keeper"
 	epochstypes "github.com/evmos/evmos/v14/x/epochs/types"
-	"github.com/evmos/evmos/v14/x/evm"
-	evmkeeper "github.com/evmos/evmos/v14/x/evm/keeper"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/evmos/evmos/v14/x/feemarket"
 	feemarketkeeper "github.com/evmos/evmos/v14/x/feemarket/keeper"
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
 	"github.com/haqq-network/haqq/app/ante"
+	ethante "github.com/haqq-network/haqq/app/ante/evm"
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 	"github.com/haqq-network/haqq/x/coinomics"
 	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
@@ -141,11 +135,17 @@ import (
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/x/erc20"
 	erc20client "github.com/haqq-network/haqq/x/erc20/client"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 
+	"github.com/haqq-network/haqq/precompiles/common"
+	// unnamed import of statik for swagger UI support
+	_ "github.com/haqq-network/haqq/client/docs/statik"
+	"github.com/haqq-network/haqq/x/evm"
+	evmkeeper "github.com/haqq-network/haqq/x/evm/keeper"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -182,12 +182,8 @@ func init() {
 	stakingtypes.DefaultMinCommissionRate = sdk.NewDecWithPrec(5, 2)
 }
 
-const (
-	// Name defines the application binary name
-	Name           = "haqqd"
-	UpgradeName    = "v1.6.0"
-	MainnetChainID = "haqq_11235"
-)
+// Name defines the application binary name
+const Name = "haqqd"
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
@@ -198,22 +194,19 @@ var (
 	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
 		auth.AppModuleBasic{},
-		genutil.AppModuleBasic{}, //genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
 		staking.AppModuleBasic{},
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
 			[]govclient.ProposalHandler{
-				paramsclient.ProposalHandler /*distrclient.ProposalHandler,*/, upgradeclient.LegacyProposalHandler, upgradeclient.LegacyCancelProposalHandler,
+				paramsclient.ProposalHandler, upgradeclient.LegacyProposalHandler, upgradeclient.LegacyCancelProposalHandler,
 				ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 				// Evmos proposal types
 				erc20client.RegisterCoinProposalHandler,
 				erc20client.RegisterERC20ProposalHandler,
 				erc20client.ToggleTokenConversionProposalHandler,
-
-				// erc20client.ToggleTokenRelayProposalHandler,
-				// erc20client.UpdateTokenPairERC20ProposalHandler,
 			},
 		),
 		params.AppModuleBasic{},
@@ -492,7 +485,9 @@ func NewHaqq(
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
 
-	govConfig := govtypes.DefaultConfig()
+	govConfig := govtypes.Config{
+		MaxMetadataLen: 5000,
+	}
 
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.AccountKeeper, haqqBankKeeper,
@@ -531,10 +526,16 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
 	)
 
-	// app.IncentivesKeeper = incentiveskeeper.NewKeeper(
-	// keys[incentivestypes.StoreKey], appCodec, app.GetSubspace(incentivestypes.ModuleName),
-	// app.AccountKeeper, app.BankKeeper, app.InflationKeeper, app.StakingKeeper, app.EvmKeeper,
-	// )
+	// We call this after setting the hooks to ensure that the hooks are set on the keeper
+	evmKeeper.WithPrecompiles(
+		evmkeeper.AvailablePrecompiles(
+			*stakingKeeper,
+			app.DistrKeeper,
+			app.AuthzKeeper,
+			app.TransferKeeper,
+			app.IBCKeeper.ChannelKeeper,
+		),
+	)
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
@@ -782,7 +783,6 @@ func NewHaqq(
 		consensusparamtypes.ModuleName,
 	)
 
-	//ModuleBasics.RegisterInterfaces(app.interfaceRegistry)
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)

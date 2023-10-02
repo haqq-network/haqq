@@ -15,7 +15,7 @@ builds:
     goarch:
       - amd64
     flags:
-        - -tags=cgo
+      - -tags=cgo
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=haqq -X github.com/cosmos/cosmos-sdk/version.AppName=haqqd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "haqqd-darwin-arm64"
@@ -81,21 +81,21 @@ builds:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=haqq -X github.com/cosmos/cosmos-sdk/version.AppName=haqqd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
 archives:
-- name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
-  replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    amd64: x86_64
-  format_overrides:
-    - goos: windows
-      format: zip
-  builds:
-  - haqqd-darwin
-  - haqqd-darwin-arm64
-  - haqqd-windows
-  - haqqd-linux
-  - haqqd-linux-arm64
+  - name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
+    builds:
+    - haqqd-darwin
+    - haqqd-darwin-arm64
+    - haqqd-windows
+    - haqqd-linux
+    - haqqd-linux-arm64
   
 checksum:
   name_template: 'checksums.txt'
@@ -103,7 +103,7 @@ changelog:
   sort: asc
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
+      - '^docs:'
+      - '^test:'
 snapshot:
   name_template: "{{ .Tag }}-next"

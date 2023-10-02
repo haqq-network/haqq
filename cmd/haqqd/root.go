@@ -43,6 +43,7 @@ import (
 	"github.com/evmos/evmos/v14/client/debug"
 	evmoskr "github.com/evmos/evmos/v14/crypto/keyring"
 	"github.com/evmos/evmos/v14/encoding"
+	"github.com/evmos/evmos/v14/ethereum/eip712"
 	ethermintserver "github.com/evmos/evmos/v14/server"
 	servercfg "github.com/evmos/evmos/v14/server/config"
 	srvflags "github.com/evmos/evmos/v14/server/flags"
@@ -71,6 +72,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithViper(EnvPrefix).
 		WithLedgerHasProtobuf(true)
 
+	eip712.SetEncodingConfig(encodingConfig)
+
 	rootCmd := &cobra.Command{
 		Use:     app.Name,
 		Short:   "HAQQ Daemon",
@@ -98,15 +101,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 			customAppTemplate, customAppConfig := initAppConfig()
 			customTMConfig := initTendermintConfig()
 
-			err = sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customTMConfig)
-			if err != nil {
-				return err
-			}
-
-			serverCtx := sdkserver.GetServerContextFromCmd(cmd)
-			// serverCtx.Config.Consensus.TimeoutCommit = time.Second * 3 // 3 secs
-
-			return sdkserver.SetCmdServerContext(cmd, serverCtx)
+			return sdkserver.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customTMConfig)
 		},
 	}
 
