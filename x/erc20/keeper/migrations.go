@@ -5,7 +5,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	v3 "github.com/haqq-network/haqq/x/erc20/migrations/v3"
-	"github.com/haqq-network/haqq/x/erc20/types"
+	haqqerc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 var _ module.MigrationHandler = Migrator{}.Migrate2to3
@@ -13,11 +13,11 @@ var _ module.MigrationHandler = Migrator{}.Migrate2to3
 // Migrator is a struct for handling in-place store migrations.
 type Migrator struct {
 	keeper         Keeper
-	legacySubspace types.Subspace
+	legacySubspace haqqerc20types.Subspace
 }
 
 // NewMigrator returns a new Migrator.
-func NewMigrator(keeper Keeper, legacySubspace types.Subspace) Migrator {
+func NewMigrator(keeper Keeper, legacySubspace haqqerc20types.Subspace) Migrator {
 	return Migrator{
 		keeper:         keeper,
 		legacySubspace: legacySubspace,

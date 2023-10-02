@@ -11,10 +11,10 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/evmos/evmos/v14/encoding"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/app"
 	v3 "github.com/haqq-network/haqq/x/erc20/migrations/v3"
 	v3types "github.com/haqq-network/haqq/x/erc20/migrations/v3/types"
-	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 type mockSubspace struct {
@@ -27,7 +27,7 @@ func newMockSubspace(ps v3types.V3Params, storeKey, transientKey storetypes.Stor
 	return mockSubspace{ps: ps, storeKey: storeKey, transientKey: transientKey}
 }
 
-func (ms mockSubspace) GetParamSet(_ sdk.Context, ps types.LegacyParams) {
+func (ms mockSubspace) GetParamSet(_ sdk.Context, ps erc20types.LegacyParams) {
 	*ps.(*v3types.V3Params) = ms.ps
 }
 
@@ -38,7 +38,7 @@ func (ms mockSubspace) WithKeyTable(keyTable paramtypes.KeyTable) paramtypes.Sub
 }
 
 func TestMigrate(t *testing.T) {
-	storeKey := sdk.NewKVStoreKey(types.ModuleName)
+	storeKey := sdk.NewKVStoreKey(erc20types.ModuleName)
 	tKey := sdk.NewTransientStoreKey("transient_test")
 	ctx := testutil.DefaultContext(storeKey, tKey)
 	store := ctx.KVStore(storeKey)
@@ -53,8 +53,8 @@ func TestMigrate(t *testing.T) {
 	require.NoError(t, v3.MigrateStore(ctx, storeKey, mockSubspace))
 
 	// Get all the new parameters from the store
-	enableEvmHook := store.Has(types.ParamStoreKeyEnableEVMHook)
-	enableErc20 := store.Has(types.ParamStoreKeyEnableErc20)
+	enableEvmHook := store.Has(erc20types.ParamStoreKeyEnableEVMHook)
+	enableErc20 := store.Has(erc20types.ParamStoreKeyEnableErc20)
 
 	params := v3types.NewParams(enableErc20, enableEvmHook)
 	require.Equal(t, params, outputParams)

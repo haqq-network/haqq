@@ -16,10 +16,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/utils"
-	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 var _ = Describe("Performing EVM transactions", Ordered, func() {
@@ -87,10 +87,10 @@ var _ = Describe("ERC20:", Ordered, func() {
 	addrBz := privKey.PubKey().Address().Bytes()
 	accAddr := sdk.AccAddress(addrBz)
 	addr := common.BytesToAddress(addrBz)
-	moduleAcc := s.app.AccountKeeper.GetModuleAccount(s.ctx, types.ModuleName).GetAddress()
+	moduleAcc := s.app.AccountKeeper.GetModuleAccount(s.ctx, erc20types.ModuleName).GetAddress()
 
 	var (
-		pair      *types.TokenPair
+		pair      *erc20types.TokenPair
 		coin      sdk.Coin
 		contract  common.Address
 		contract2 common.Address
@@ -142,7 +142,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 				It("should create a token pairs owned by the erc20 module", func() {
 					tokenPairs := s.app.Erc20Keeper.GetTokenPairs(s.ctx)
 					s.Require().Equal(1, len(tokenPairs))
-					s.Require().Equal(types.OWNER_MODULE, tokenPairs[0].ContractOwner)
+					s.Require().Equal(erc20types.OWNER_MODULE, tokenPairs[0].ContractOwner)
 				})
 			})
 			Describe("for multiple Cosmos Coins", func() {
@@ -168,7 +168,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 				It("should create a token pairs owned by the erc20 module", func() {
 					tokenPairs := s.app.Erc20Keeper.GetTokenPairs(s.ctx)
 					s.Require().Equal(2, len(tokenPairs))
-					s.Require().Equal(types.OWNER_MODULE, tokenPairs[0].ContractOwner)
+					s.Require().Equal(erc20types.OWNER_MODULE, tokenPairs[0].ContractOwner)
 				})
 			})
 		})
@@ -213,7 +213,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 				It("should create a token pairs owned by the contract deployer", func() {
 					tokenPairs := s.app.Erc20Keeper.GetTokenPairs(s.ctx)
 					s.Require().Equal(1, len(tokenPairs))
-					s.Require().Equal(types.OWNER_EXTERNAL, tokenPairs[0].ContractOwner)
+					s.Require().Equal(erc20types.OWNER_EXTERNAL, tokenPairs[0].ContractOwner)
 				})
 			})
 			Describe("for multiple ERC20 tokens", func() {
@@ -239,7 +239,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 				It("should create a token pairs owned by the contract deployer", func() {
 					tokenPairs := s.app.Erc20Keeper.GetTokenPairs(s.ctx)
 					s.Require().Equal(2, len(tokenPairs))
-					s.Require().Equal(types.OWNER_EXTERNAL, tokenPairs[0].ContractOwner)
+					s.Require().Equal(erc20types.OWNER_EXTERNAL, tokenPairs[0].ContractOwner)
 				})
 			})
 		})
@@ -366,19 +366,19 @@ var _ = Describe("ERC20:", Ordered, func() {
 })
 
 func submitRegisterCoinProposal(ctx sdk.Context, appEvmos *app.Haqq, pk *ethsecp256k1.PrivKey, metadata []banktypes.Metadata) (id uint64, err error) {
-	content := types.NewRegisterCoinProposal("test Coin", "foo", metadata...)
+	content := erc20types.NewRegisterCoinProposal("test Coin", "foo", metadata...)
 	return testutil.SubmitProposal(ctx, appEvmos, pk, content, 8)
 }
 
 func submitRegisterERC20Proposal(ctx sdk.Context, appEvmos *app.Haqq, pk *ethsecp256k1.PrivKey, addrs []string) (id uint64, err error) {
-	content := types.NewRegisterERC20Proposal("test token", "foo", addrs...)
+	content := erc20types.NewRegisterERC20Proposal("test token", "foo", addrs...)
 	return testutil.SubmitProposal(ctx, appEvmos, pk, content, 8)
 }
 
 func convertCoin(ctx sdk.Context, appEvmos *app.Haqq, pk *ethsecp256k1.PrivKey, coin sdk.Coin) {
 	addrBz := pk.PubKey().Address().Bytes()
 
-	convertCoinMsg := types.NewMsgConvertCoin(coin, common.BytesToAddress(addrBz), sdk.AccAddress(addrBz))
+	convertCoinMsg := erc20types.NewMsgConvertCoin(coin, common.BytesToAddress(addrBz), sdk.AccAddress(addrBz))
 	res, err := testutil.DeliverTx(ctx, appEvmos, pk, nil, convertCoinMsg)
 	s.Require().NoError(err)
 
@@ -388,7 +388,7 @@ func convertCoin(ctx sdk.Context, appEvmos *app.Haqq, pk *ethsecp256k1.PrivKey, 
 func convertERC20(ctx sdk.Context, appEvmos *app.Haqq, pk *ethsecp256k1.PrivKey, amt math.Int, contract common.Address) {
 	addrBz := pk.PubKey().Address().Bytes()
 
-	convertERC20Msg := types.NewMsgConvertERC20(amt, sdk.AccAddress(addrBz), contract, common.BytesToAddress(addrBz))
+	convertERC20Msg := erc20types.NewMsgConvertERC20(amt, sdk.AccAddress(addrBz), contract, common.BytesToAddress(addrBz))
 	res, err := testutil.DeliverTx(ctx, appEvmos, pk, nil, convertERC20Msg)
 	s.Require().NoError(err)
 	Expect(res.IsOK()).To(BeTrue(), "failed to convert ERC20: %s", res.Log)

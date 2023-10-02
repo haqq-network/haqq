@@ -12,9 +12,9 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/cmd/config"
 	"github.com/haqq-network/haqq/utils"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.0.2

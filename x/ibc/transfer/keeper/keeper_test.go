@@ -36,13 +36,13 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
-	"github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 )
 
@@ -52,7 +52,7 @@ type KeeperTestSuite struct {
 	ctx              sdk.Context
 	app              *app.Haqq
 	queryClientEvm   evmtypes.QueryClient
-	queryClient      types.QueryClient
+	queryClient      erc20types.QueryClient
 	address          common.Address
 	consAddress      sdk.ConsAddress
 	clientCtx        client.Context //nolint:unused
@@ -102,8 +102,8 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 
 	// query clients
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
-	suite.queryClient = types.NewQueryClient(queryHelper)
+	erc20types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
+	suite.queryClient = erc20types.NewQueryClient(queryHelper)
 
 	queryHelperEvm := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
 	evmtypes.RegisterQueryServer(queryHelperEvm, suite.app.EvmKeeper)
@@ -154,9 +154,9 @@ func (suite *KeeperTestSuite) StateDB() *statedb.StateDB {
 }
 
 func (suite *KeeperTestSuite) MintFeeCollector(coins sdk.Coins) {
-	err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+	err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 	suite.Require().NoError(err)
-	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, types.ModuleName, authtypes.FeeCollectorName, coins)
+	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, erc20types.ModuleName, authtypes.FeeCollectorName, coins)
 	suite.Require().NoError(err)
 }
 

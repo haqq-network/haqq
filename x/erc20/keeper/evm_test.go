@@ -9,11 +9,11 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/contracts"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
-	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 func (suite *KeeperTestSuite) TestQueryERC20() {
@@ -43,7 +43,7 @@ func (suite *KeeperTestSuite) TestQueryERC20() {
 		if tc.res {
 			suite.Require().NoError(err)
 			suite.Require().Equal(
-				types.ERC20Data{Name: "coin", Symbol: "token", Decimals: erc20Decimals},
+				erc20types.ERC20Data{Name: "coin", Symbol: "token", Decimals: erc20Decimals},
 				res,
 			)
 		} else {
@@ -134,7 +134,7 @@ func (suite *KeeperTestSuite) TestCallEVM() {
 		suite.Require().NoError(err)
 		account := utiltx.GenerateAddress()
 
-		res, err := suite.app.Erc20Keeper.CallEVM(suite.ctx, erc20, types.ModuleAddress, contract, true, tc.method, account)
+		res, err := suite.app.Erc20Keeper.CallEVM(suite.ctx, erc20, erc20types.ModuleAddress, contract, true, tc.method, account)
 		if tc.expPass {
 			suite.Require().IsTypef(&evmtypes.MsgEthereumTxResponse{}, res, tc.name)
 			suite.Require().NoError(err)
@@ -154,7 +154,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 	}{
 		{
 			"unknown method",
-			types.ModuleAddress,
+			erc20types.ModuleAddress,
 			func() ([]byte, *common.Address) {
 				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
 				suite.Require().NoError(err)
@@ -166,7 +166,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 		},
 		{
 			"pass",
-			types.ModuleAddress,
+			erc20types.ModuleAddress,
 			func() ([]byte, *common.Address) {
 				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
 				suite.Require().NoError(err)
@@ -178,7 +178,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 		},
 		{
 			"fail empty data",
-			types.ModuleAddress,
+			erc20types.ModuleAddress,
 			func() ([]byte, *common.Address) {
 				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
 				suite.Require().NoError(err)
@@ -199,7 +199,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 		},
 		{
 			"deploy",
-			types.ModuleAddress,
+			erc20types.ModuleAddress,
 			func() ([]byte, *common.Address) {
 				ctorArgs, _ := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
 				data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...) //nolint:gocritic
@@ -209,7 +209,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 		},
 		{
 			"fail deploy",
-			types.ModuleAddress,
+			erc20types.ModuleAddress,
 			func() ([]byte, *common.Address) {
 				params := suite.app.EvmKeeper.GetParams(suite.ctx)
 				params.EnableCreate = false
@@ -292,7 +292,7 @@ func (suite *KeeperTestSuite) TestForceFail() {
 			account := utiltx.GenerateAddress()
 			data, _ := erc20.Pack("balanceOf", account)
 
-			res, err := suite.app.Erc20Keeper.CallEVMWithData(suite.ctx, types.ModuleAddress, &contract, data, tc.commit)
+			res, err := suite.app.Erc20Keeper.CallEVMWithData(suite.ctx, erc20types.ModuleAddress, &contract, data, tc.commit)
 			if tc.expPass {
 				suite.Require().IsTypef(&evmtypes.MsgEthereumTxResponse{}, res, tc.name)
 				suite.Require().NoError(err)
@@ -380,7 +380,7 @@ func (suite *KeeperTestSuite) TestQueryERC20ForceFail() {
 		if tc.res {
 			suite.Require().NoError(err)
 			suite.Require().Equal(
-				types.ERC20Data{Name: "coin", Symbol: "token", Decimals: erc20Decimals},
+				erc20types.ERC20Data{Name: "coin", Symbol: "token", Decimals: erc20Decimals},
 				res,
 			)
 		} else {

@@ -11,24 +11,24 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	ethermint "github.com/evmos/evmos/v14/types"
 
-	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 )
 
-var _ types.QueryServer = Keeper{}
+var _ erc20types.QueryServer = Keeper{}
 
 // TokenPairs returns all registered pairs
-func (k Keeper) TokenPairs(c context.Context, req *types.QueryTokenPairsRequest) (*types.QueryTokenPairsResponse, error) {
+func (k Keeper) TokenPairs(c context.Context, req *erc20types.QueryTokenPairsRequest) (*erc20types.QueryTokenPairsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
 
-	var pairs []types.TokenPair
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixTokenPair)
+	var pairs []erc20types.TokenPair
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), erc20types.KeyPrefixTokenPair)
 
 	pageRes, err := query.Paginate(store, req.Pagination, func(_, value []byte) error {
-		var pair types.TokenPair
+		var pair erc20types.TokenPair
 		if err := k.cdc.Unmarshal(value, &pair); err != nil {
 			return err
 		}
@@ -38,14 +38,14 @@ func (k Keeper) TokenPairs(c context.Context, req *types.QueryTokenPairsRequest)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return &types.QueryTokenPairsResponse{
+	return &erc20types.QueryTokenPairsResponse{
 		TokenPairs: pairs,
 		Pagination: pageRes,
 	}, nil
 }
 
 // TokenPair returns a given registered token pair
-func (k Keeper) TokenPair(c context.Context, req *types.QueryTokenPairRequest) (*types.QueryTokenPairResponse, error) {
+func (k Keeper) TokenPair(c context.Context, req *erc20types.QueryTokenPairRequest) (*erc20types.QueryTokenPairResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -74,12 +74,12 @@ func (k Keeper) TokenPair(c context.Context, req *types.QueryTokenPairRequest) (
 		return nil, status.Errorf(codes.NotFound, "token pair with token '%s'", req.Token)
 	}
 
-	return &types.QueryTokenPairResponse{TokenPair: pair}, nil
+	return &erc20types.QueryTokenPairResponse{TokenPair: pair}, nil
 }
 
 // Params returns the params of the erc20 module
-func (k Keeper) Params(c context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+func (k Keeper) Params(c context.Context, _ *erc20types.QueryParamsRequest) (*erc20types.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	params := k.GetParams(ctx)
-	return &types.QueryParamsResponse{Params: params}, nil
+	return &erc20types.QueryParamsResponse{Params: params}, nil
 }

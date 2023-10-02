@@ -13,18 +13,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/app"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/erc20"
-	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 type GenesisTestSuite struct {
 	suite.Suite
 	ctx     sdk.Context
 	app     *app.Haqq
-	genesis types.GenesisState
+	genesis erc20types.GenesisState
 }
 
 func TestGenesisTestSuite(t *testing.T) {
@@ -62,32 +62,32 @@ func (suite *GenesisTestSuite) SetupTest() {
 		LastResultsHash:    tmhash.Sum([]byte("last_result")),
 	})
 
-	suite.genesis = *types.DefaultGenesisState()
+	suite.genesis = *erc20types.DefaultGenesisState()
 }
 
 func (suite *GenesisTestSuite) TestERC20InitGenesis() {
 	testCases := []struct {
 		name         string
-		genesisState types.GenesisState
+		genesisState erc20types.GenesisState
 	}{
 		{
 			"empty genesis",
-			types.GenesisState{},
+			erc20types.GenesisState{},
 		},
 		{
 			"default genesis",
-			*types.DefaultGenesisState(),
+			*erc20types.DefaultGenesisState(),
 		},
 		{
 			"custom genesis",
-			types.NewGenesisState(
-				types.DefaultParams(),
-				[]types.TokenPair{
+			erc20types.NewGenesisState(
+				erc20types.DefaultParams(),
+				[]erc20types.TokenPair{
 					{
 						Erc20Address:  "0x5dCA2483280D9727c80b5518faC4556617fb19ZZ",
 						Denom:         "coin",
 						Enabled:       true,
-						ContractOwner: types.OWNER_MODULE,
+						ContractOwner: erc20types.OWNER_MODULE,
 					},
 				}),
 		},
@@ -113,26 +113,26 @@ func (suite *GenesisTestSuite) TestERC20InitGenesis() {
 func (suite *GenesisTestSuite) TestErc20ExportGenesis() {
 	testGenCases := []struct {
 		name         string
-		genesisState types.GenesisState
+		genesisState erc20types.GenesisState
 	}{
 		{
 			"empty genesis",
-			types.GenesisState{},
+			erc20types.GenesisState{},
 		},
 		{
 			"default genesis",
-			*types.DefaultGenesisState(),
+			*erc20types.DefaultGenesisState(),
 		},
 		{
 			"custom genesis",
-			types.NewGenesisState(
-				types.DefaultParams(),
-				[]types.TokenPair{
+			erc20types.NewGenesisState(
+				erc20types.DefaultParams(),
+				[]erc20types.TokenPair{
 					{
 						Erc20Address:  "0x5dCA2483280D9727c80b5518faC4556617fb19ZZ",
 						Denom:         "coin",
 						Enabled:       true,
-						ContractOwner: types.OWNER_MODULE,
+						ContractOwner: erc20types.OWNER_MODULE,
 					},
 				}),
 		},

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 type ParamsTestSuite struct {
@@ -19,18 +19,18 @@ func TestParamsTestSuite(t *testing.T) {
 func (suite *ParamsTestSuite) TestParamsValidate() {
 	testCases := []struct {
 		name     string
-		params   types.Params
+		params   erc20types.Params
 		expError bool
 	}{
-		{"default", types.DefaultParams(), false},
+		{"default", erc20types.DefaultParams(), false},
 		{
 			"valid",
-			types.NewParams(true, true),
+			erc20types.NewParams(true, true),
 			false,
 		},
 		{
 			"empty",
-			types.Params{},
+			erc20types.Params{},
 			false,
 		},
 	}
@@ -47,6 +47,6 @@ func (suite *ParamsTestSuite) TestParamsValidate() {
 }
 
 func (suite *ParamsTestSuite) TestParamsValidatePriv() {
-	suite.Require().Error(types.ValidateBool(1))
-	suite.Require().NoError(types.ValidateBool(true))
+	suite.Require().Error(erc20types.ValidateBool(1))
+	suite.Require().NoError(erc20types.ValidateBool(true))
 }

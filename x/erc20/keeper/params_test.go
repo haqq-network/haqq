@@ -3,7 +3,7 @@ package keeper_test
 import (
 	"reflect"
 
-	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 func (suite *KeeperTestSuite) TestParams() {
@@ -19,7 +19,7 @@ func (suite *KeeperTestSuite) TestParams() {
 		{
 			"success - Checks if the default params are set correctly",
 			func() interface{} {
-				return types.DefaultParams()
+				return erc20types.DefaultParams()
 			},
 			func() interface{} {
 				return suite.app.Erc20Keeper.GetParams(suite.ctx)

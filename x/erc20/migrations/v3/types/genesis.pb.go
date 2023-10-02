@@ -12,7 +12,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 
-	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -33,7 +33,7 @@ type V3GenesisState struct {
 	// V3Params are the erc20 module parameters at genesis
 	V3Params V3Params `protobuf:"bytes,1,opt,name=V3Params,proto3" json:"V3Params"`
 	// token_pairs is a slice of the registered token pairs at genesis
-	TokenPairs []types.TokenPair `protobuf:"bytes,2,rep,name=token_pairs,json=tokenPairs,proto3" json:"token_pairs"`
+	TokenPairs []erc20types.TokenPair `protobuf:"bytes,2,rep,name=token_pairs,json=tokenPairs,proto3" json:"token_pairs"`
 }
 
 func (m *V3GenesisState) Reset()         { *m = V3GenesisState{} }
@@ -81,7 +81,7 @@ func (m *V3GenesisState) GetV3Params() V3Params {
 	return V3Params{}
 }
 
-func (m *V3GenesisState) GetTokenPairs() []types.TokenPair {
+func (m *V3GenesisState) GetTokenPairs() []erc20types.TokenPair {
 	if m != nil {
 		return m.TokenPairs
 	}
@@ -412,7 +412,7 @@ func (m *V3GenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TokenPairs = append(m.TokenPairs, types.TokenPair{})
+			m.TokenPairs = append(m.TokenPairs, erc20types.TokenPair{})
 			if err := m.TokenPairs[len(m.TokenPairs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

@@ -30,11 +30,11 @@ import (
 	"github.com/evmos/evmos/v14/server/config"
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 type TransferETHTestSuite struct {

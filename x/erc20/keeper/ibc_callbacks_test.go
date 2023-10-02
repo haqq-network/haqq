@@ -18,12 +18,12 @@ import (
 	ibcgotesting "github.com/cosmos/ibc-go/v7/testing"
 	ibcmock "github.com/cosmos/ibc-go/v7/testing/mock"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
-	"github.com/haqq-network/haqq/x/erc20/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -333,7 +333,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			suite.app.IBCKeeper.ChannelKeeper.SetNextSequenceSend(suite.ctx, transfertypes.PortID, haqqChannel, 1)
 
 			suite.app.Erc20Keeper = keeper.NewKeeper(
-				suite.app.GetKey(types.StoreKey),
+				suite.app.GetKey(erc20types.StoreKey),
 				suite.app.AppCodec(),
 				authtypes.NewModuleAddress(govtypes.ModuleName),
 				suite.app.AccountKeeper,
@@ -480,7 +480,7 @@ func (suite *KeeperTestSuite) TestOnAcknowledgementPacket() {
 	var (
 		data transfertypes.FungibleTokenPacketData
 		ack  channeltypes.Acknowledgement
-		pair *types.TokenPair
+		pair *erc20types.TokenPair
 	)
 
 	// secp256k1 account

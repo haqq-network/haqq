@@ -15,9 +15,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/evmos/evmos/v14/server/config"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/contracts"
-	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // DeployERC20Contract creates and deploys an ERC20 contract on the EVM with the
@@ -38,20 +38,20 @@ func (k Keeper) DeployERC20Contract(
 		decimals,
 	)
 	if err != nil {
-		return common.Address{}, errorsmod.Wrapf(types.ErrABIPack, "coin metadata is invalid %s: %s", coinMetadata.Name, err.Error())
+		return common.Address{}, errorsmod.Wrapf(erc20types.ErrABIPack, "coin metadata is invalid %s: %s", coinMetadata.Name, err.Error())
 	}
 
 	data := make([]byte, len(contracts.ERC20MinterBurnerDecimalsContract.Bin)+len(ctorArgs))
 	copy(data[:len(contracts.ERC20MinterBurnerDecimalsContract.Bin)], contracts.ERC20MinterBurnerDecimalsContract.Bin)
 	copy(data[len(contracts.ERC20MinterBurnerDecimalsContract.Bin):], ctorArgs)
 
-	nonce, err := k.accountKeeper.GetSequence(ctx, types.ModuleAddress.Bytes())
+	nonce, err := k.accountKeeper.GetSequence(ctx, erc20types.ModuleAddress.Bytes())
 	if err != nil {
 		return common.Address{}, err
 	}
 
-	contractAddr := crypto.CreateAddress(types.ModuleAddress, nonce)
-	_, err = k.CallEVMWithData(ctx, types.ModuleAddress, nil, data, true)
+	contractAddr := crypto.CreateAddress(erc20types.ModuleAddress, nonce)
+	_, err = k.CallEVMWithData(ctx, erc20types.ModuleAddress, nil, data, true)
 	if err != nil {
 		return common.Address{}, errorsmod.Wrapf(err, "failed to deploy contract for %s", coinMetadata.Name)
 	}
@@ -63,52 +63,52 @@ func (k Keeper) DeployERC20Contract(
 func (k Keeper) QueryERC20(
 	ctx sdk.Context,
 	contract common.Address,
-) (types.ERC20Data, error) {
+) (erc20types.ERC20Data, error) {
 	var (
-		nameRes    types.ERC20StringResponse
-		symbolRes  types.ERC20StringResponse
-		decimalRes types.ERC20Uint8Response
+		nameRes    erc20types.ERC20StringResponse
+		symbolRes  erc20types.ERC20StringResponse
+		decimalRes erc20types.ERC20Uint8Response
 	)
 
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
 
 	// Name
-	res, err := k.CallEVM(ctx, erc20, types.ModuleAddress, contract, false, "name")
+	res, err := k.CallEVM(ctx, erc20, erc20types.ModuleAddress, contract, false, "name")
 	if err != nil {
-		return types.ERC20Data{}, err
+		return erc20types.ERC20Data{}, err
 	}
 
 	if err := erc20.UnpackIntoInterface(&nameRes, "name", res.Ret); err != nil {
-		return types.ERC20Data{}, errorsmod.Wrapf(
-			types.ErrABIUnpack, "failed to unpack name: %s", err.Error(),
+		return erc20types.ERC20Data{}, errorsmod.Wrapf(
+			erc20types.ErrABIUnpack, "failed to unpack name: %s", err.Error(),
 		)
 	}
 
 	// Symbol
-	res, err = k.CallEVM(ctx, erc20, types.ModuleAddress, contract, false, "symbol")
+	res, err = k.CallEVM(ctx, erc20, erc20types.ModuleAddress, contract, false, "symbol")
 	if err != nil {
-		return types.ERC20Data{}, err
+		return erc20types.ERC20Data{}, err
 	}
 
 	if err := erc20.UnpackIntoInterface(&symbolRes, "symbol", res.Ret); err != nil {
-		return types.ERC20Data{}, errorsmod.Wrapf(
-			types.ErrABIUnpack, "failed to unpack symbol: %s", err.Error(),
+		return erc20types.ERC20Data{}, errorsmod.Wrapf(
+			erc20types.ErrABIUnpack, "failed to unpack symbol: %s", err.Error(),
 		)
 	}
 
 	// Decimals
-	res, err = k.CallEVM(ctx, erc20, types.ModuleAddress, contract, false, "decimals")
+	res, err = k.CallEVM(ctx, erc20, erc20types.ModuleAddress, contract, false, "decimals")
 	if err != nil {
-		return types.ERC20Data{}, err
+		return erc20types.ERC20Data{}, err
 	}
 
 	if err := erc20.UnpackIntoInterface(&decimalRes, "decimals", res.Ret); err != nil {
-		return types.ERC20Data{}, errorsmod.Wrapf(
-			types.ErrABIUnpack, "failed to unpack decimals: %s", err.Error(),
+		return erc20types.ERC20Data{}, errorsmod.Wrapf(
+			erc20types.ErrABIUnpack, "failed to unpack decimals: %s", err.Error(),
 		)
 	}
 
-	return types.NewERC20Data(nameRes.Value, symbolRes.Value, decimalRes.Value), nil
+	return erc20types.NewERC20Data(nameRes.Value, symbolRes.Value, decimalRes.Value), nil
 }
 
 // BalanceOf queries an account's balance for a given ERC20 contract
@@ -117,7 +117,7 @@ func (k Keeper) BalanceOf(
 	abi abi.ABI,
 	contract, account common.Address,
 ) *big.Int {
-	res, err := k.CallEVM(ctx, abi, types.ModuleAddress, contract, false, "balanceOf", account)
+	res, err := k.CallEVM(ctx, abi, erc20types.ModuleAddress, contract, false, "balanceOf", account)
 	if err != nil {
 		return nil
 	}
@@ -147,7 +147,7 @@ func (k Keeper) CallEVM(
 	data, err := abi.Pack(method, args...)
 	if err != nil {
 		return nil, errorsmod.Wrap(
-			types.ErrABIPack,
+			erc20types.ErrABIPack,
 			errorsmod.Wrap(err, "failed to create transaction data").Error(),
 		)
 	}
@@ -232,7 +232,7 @@ func (k Keeper) monitorApprovalEvent(res *evmtypes.MsgEthereumTxResponse) error 
 	for _, log := range res.Logs {
 		if log.Topics[0] == logApprovalSigHash.Hex() {
 			return errorsmod.Wrapf(
-				types.ErrUnexpectedEvent, "unexpected Approval event",
+				erc20types.ErrUnexpectedEvent, "unexpected Approval event",
 			)
 		}
 	}

@@ -138,7 +138,8 @@ import (
 	"github.com/haqq-network/haqq/x/erc20"
 	erc20client "github.com/haqq-network/haqq/x/erc20/client"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	// Temporary use of evmos types
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 
 	"github.com/haqq-network/haqq/precompiles/common"
 	// unnamed import of statik for swagger UI support

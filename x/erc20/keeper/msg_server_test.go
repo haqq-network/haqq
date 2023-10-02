@@ -11,9 +11,9 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
-	"github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 )
 
@@ -73,7 +73,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 			100,
 			10,
 			func(common.Address) {
-				params := types.DefaultParams()
+				params := erc20types.DefaultParams()
 				params.EnableErc20 = false
 				suite.app.Erc20Keeper.SetParams(suite.ctx, params) //nolint:errcheck
 			},
@@ -84,7 +84,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 		{
 			"fail - deleted module account - force fail", 100, 10, func(common.Address) {},
 			func() {
-				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, types.ModuleAddress.Bytes())
+				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, erc20types.ModuleAddress.Bytes())
 				suite.app.AccountKeeper.RemoveAccount(suite.ctx, acc)
 			}, false, false,
 		},
@@ -158,20 +158,20 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 			ctx := sdk.WrapSDKContext(suite.ctx)
 			coins := sdk.NewCoins(sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.mint)))
 			sender := sdk.AccAddress(suite.address.Bytes())
-			msg := types.NewMsgConvertCoin(
+			msg := erc20types.NewMsgConvertCoin(
 				sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.burn)),
 				suite.address,
 				sender,
 			)
 
-			err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 			suite.Require().NoError(err, tc.name)
-			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, sender, coins)
 			suite.Require().NoError(err, tc.name)
 
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
-			expRes := &types.MsgConvertCoinResponse{}
+			expRes := &erc20types.MsgConvertCoinResponse{}
 			suite.Commit()
 			balance := suite.BalanceOf(common.HexToAddress(pair.Erc20Address), suite.address)
 			cosmosBalance := suite.app.BankKeeper.GetBalance(suite.ctx, sender, metadataCoin.Base)
@@ -219,7 +219,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 		{
 			"fail - deleted module account - force fail", 100, 10, 5,
 			func() {
-				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, types.ModuleAddress.Bytes())
+				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, erc20types.ModuleAddress.Bytes())
 				suite.app.AccountKeeper.RemoveAccount(suite.ctx, acc)
 			},
 			false,
@@ -333,11 +333,11 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 			// Precondition: Convert Coin to ERC20
 			coins := sdk.NewCoins(sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.mint)))
 			sender := sdk.AccAddress(suite.address.Bytes())
-			err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 			suite.Require().NoError(err, tc.name)
-			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, sender, coins)
 			suite.Require().NoError(err, tc.name)
-			msg := types.NewMsgConvertCoin(
+			msg := erc20types.NewMsgConvertCoin(
 				sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.burn)),
 				suite.address,
 				sender,
@@ -355,7 +355,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 			// Convert ERC20s back to Coins
 			ctx = sdk.WrapSDKContext(suite.ctx)
 			contractAddr := common.HexToAddress(pair.Erc20Address)
-			msgConvertERC20 := types.NewMsgConvertERC20(
+			msgConvertERC20 := erc20types.NewMsgConvertERC20(
 				sdk.NewInt(tc.reconvert),
 				sender,
 				contractAddr,
@@ -364,7 +364,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 
 			tc.malleate()
 			res, err := suite.app.Erc20Keeper.ConvertERC20(ctx, msgConvertERC20)
-			expRes := &types.MsgConvertERC20Response{}
+			expRes := &erc20types.MsgConvertERC20Response{}
 			suite.Commit()
 			balance = suite.BalanceOf(contractAddr, suite.address)
 			cosmosBalance = suite.app.BankKeeper.GetBalance(suite.ctx, sender, pair.Denom)
@@ -455,7 +455,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			100,
 			10,
 			func(common.Address) {
-				params := types.DefaultParams()
+				params := erc20types.DefaultParams()
 				params.EnableErc20 = false
 				suite.app.Erc20Keeper.SetParams(suite.ctx, params) //nolint:errcheck
 			},
@@ -501,7 +501,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			func(common.Address) {
 			},
 			func() {
-				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, types.ModuleAddress.Bytes())
+				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, erc20types.ModuleAddress.Bytes())
 				suite.app.AccountKeeper.RemoveAccount(suite.ctx, acc)
 			},
 			contractMinterBurner,
@@ -679,9 +679,9 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			suite.Require().NotNil(contractAddr)
 			suite.Commit()
 
-			coinName = types.CreateDenom(contractAddr.String())
+			coinName = erc20types.CreateDenom(contractAddr.String())
 			sender := sdk.AccAddress(suite.address.Bytes())
-			msg := types.NewMsgConvertERC20(
+			msg := erc20types.NewMsgConvertERC20(
 				sdk.NewInt(tc.transfer),
 				sender,
 				contractAddr,
@@ -695,7 +695,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertERC20(ctx, msg)
 
-			expRes := &types.MsgConvertERC20Response{}
+			expRes := &erc20types.MsgConvertERC20Response{}
 			suite.Commit()
 			balance := suite.BalanceOf(contractAddr, suite.address)
 			cosmosBalance := suite.app.BankKeeper.GetBalance(suite.ctx, sender, coinName)
@@ -789,7 +789,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			10,
 			func(common.Address) {},
 			func() {
-				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, types.ModuleAddress.Bytes())
+				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, erc20types.ModuleAddress.Bytes())
 				suite.app.AccountKeeper.RemoveAccount(suite.ctx, acc)
 			},
 			contractMinterBurner,
@@ -894,21 +894,21 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			id := suite.app.Erc20Keeper.GetTokenPairID(suite.ctx, contractAddr.String())
 			pair, _ := suite.app.Erc20Keeper.GetTokenPair(suite.ctx, id)
 			coins := sdk.NewCoins(sdk.NewCoin(pair.Denom, sdk.NewInt(tc.mint)))
-			coinName := types.CreateDenom(contractAddr.String())
+			coinName := erc20types.CreateDenom(contractAddr.String())
 			sender := sdk.AccAddress(suite.address.Bytes())
 
 			// Precondition: Mint Coins to convert on sender account
-			err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 			suite.Require().NoError(err)
-			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, sender, coins)
 			suite.Require().NoError(err)
 			cosmosBalance := suite.app.BankKeeper.GetBalance(suite.ctx, sender, coinName)
 			suite.Require().Equal(sdk.NewInt(tc.mint), cosmosBalance.Amount)
 
 			// Precondition: Mint escrow tokens on module account
-			suite.GrantERC20Token(contractAddr, suite.address, types.ModuleAddress, "MINTER_ROLE")
-			suite.MintERC20Token(contractAddr, types.ModuleAddress, types.ModuleAddress, big.NewInt(tc.mint))
-			tokenBalance := suite.BalanceOf(contractAddr, types.ModuleAddress)
+			suite.GrantERC20Token(contractAddr, suite.address, erc20types.ModuleAddress, "MINTER_ROLE")
+			suite.MintERC20Token(contractAddr, erc20types.ModuleAddress, erc20types.ModuleAddress, big.NewInt(tc.mint))
+			tokenBalance := suite.BalanceOf(contractAddr, erc20types.ModuleAddress)
 			suite.Require().Equal(big.NewInt(tc.mint), tokenBalance)
 
 			tc.malleate(contractAddr)
@@ -917,7 +917,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			// Convert Coins back to ERC20s
 			receiver := suite.address
 			ctx := sdk.WrapSDKContext(suite.ctx)
-			msg := types.NewMsgConvertCoin(
+			msg := erc20types.NewMsgConvertCoin(
 				sdk.NewCoin(coinName, sdk.NewInt(tc.convert)),
 				receiver,
 				sender,
@@ -926,7 +926,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
 
-			expRes := &types.MsgConvertCoinResponse{}
+			expRes := &erc20types.MsgConvertCoinResponse{}
 			suite.Commit()
 			tokenBalance = suite.BalanceOf(contractAddr, suite.address)
 			cosmosBalance = suite.app.BankKeeper.GetBalance(suite.ctx, sender, coinName)
@@ -964,17 +964,17 @@ func (suite *KeeperTestSuite) TestWrongPairOwnerERC20NativeCoin() {
 			// Precondition: Convert Coin to ERC20
 			coins := sdk.NewCoins(sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.mint)))
 			sender := sdk.AccAddress(suite.address.Bytes())
-			err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 			suite.Require().NoError(err)
-			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, sender, coins)
 			suite.Require().NoError(err)
-			msg := types.NewMsgConvertCoin(
+			msg := erc20types.NewMsgConvertCoin(
 				sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.burn)),
 				suite.address,
 				sender,
 			)
 
-			pair.ContractOwner = types.OWNER_UNSPECIFIED
+			pair.ContractOwner = erc20types.OWNER_UNSPECIFIED
 			suite.app.Erc20Keeper.SetTokenPair(suite.ctx, *pair)
 
 			ctx := sdk.WrapSDKContext(suite.ctx)
@@ -984,7 +984,7 @@ func (suite *KeeperTestSuite) TestWrongPairOwnerERC20NativeCoin() {
 			// Convert ERC20s back to Coins
 			ctx = sdk.WrapSDKContext(suite.ctx)
 			contractAddr := common.HexToAddress(pair.Erc20Address)
-			msgConvertERC20 := types.NewMsgConvertERC20(
+			msgConvertERC20 := erc20types.NewMsgConvertERC20(
 				sdk.NewInt(tc.reconvert),
 				sender,
 				contractAddr,
@@ -1053,7 +1053,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 			100,
 			10,
 			func(common.Address) {
-				params := types.DefaultParams()
+				params := erc20types.DefaultParams()
 				params.EnableErc20 = false
 				suite.app.Erc20Keeper.SetParams(suite.ctx, params) //nolint:errcheck
 			},
@@ -1064,7 +1064,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 		{
 			"fail - deleted module account - force fail", 100, 10, func(common.Address) {},
 			func() {
-				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, types.ModuleAddress.Bytes())
+				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, erc20types.ModuleAddress.Bytes())
 				suite.app.AccountKeeper.RemoveAccount(suite.ctx, acc)
 			}, false, false,
 		},
@@ -1138,18 +1138,18 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 			ctx := sdk.WrapSDKContext(suite.ctx)
 			coins := sdk.NewCoins(sdk.NewCoin(ibcBase, sdk.NewInt(tc.mint)))
 			sender := sdk.AccAddress(suite.address.Bytes())
-			msg := types.NewMsgConvertCoin(
+			msg := erc20types.NewMsgConvertCoin(
 				sdk.NewCoin(ibcBase, sdk.NewInt(tc.burn)),
 				suite.address,
 				sender,
 			)
 
-			suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins) //nolint:errcheck
-			suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins) //nolint:errcheck
+			suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, sender, coins)
 
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
-			expRes := &types.MsgConvertCoinResponse{}
+			expRes := &erc20types.MsgConvertCoinResponse{}
 			suite.Commit()
 			balance := suite.BalanceOf(common.HexToAddress(pair.Erc20Address), suite.address)
 			cosmosBalance := suite.app.BankKeeper.GetBalance(suite.ctx, sender, metadataIbc.Base)
@@ -1197,7 +1197,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 		{
 			"fail - deleted module account - force fail", 100, 10, 5,
 			func() {
-				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, types.ModuleAddress.Bytes())
+				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, erc20types.ModuleAddress.Bytes())
 				suite.app.AccountKeeper.RemoveAccount(suite.ctx, acc)
 			},
 			false,
@@ -1312,11 +1312,11 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 			// Precondition: Convert Coin to ERC20
 			coins := sdk.NewCoins(sdk.NewCoin(ibcBase, sdk.NewInt(tc.mint)))
 			sender := sdk.AccAddress(suite.address.Bytes())
-			err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 			suite.Require().NoError(err, tc.name)
-			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, sender, coins)
 			suite.Require().NoError(err, tc.name)
-			msg := types.NewMsgConvertCoin(
+			msg := erc20types.NewMsgConvertCoin(
 				sdk.NewCoin(ibcBase, sdk.NewInt(tc.burn)),
 				suite.address,
 				sender,
@@ -1334,7 +1334,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 			// Convert ERC20s back to Coins
 			ctx = sdk.WrapSDKContext(suite.ctx)
 			contractAddr := common.HexToAddress(pair.Erc20Address)
-			msgConvertERC20 := types.NewMsgConvertERC20(
+			msgConvertERC20 := erc20types.NewMsgConvertERC20(
 				sdk.NewInt(tc.reconvert),
 				sender,
 				contractAddr,
@@ -1343,7 +1343,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 
 			tc.malleate()
 			res, err := suite.app.Erc20Keeper.ConvertERC20(ctx, msgConvertERC20)
-			expRes := &types.MsgConvertERC20Response{}
+			expRes := &erc20types.MsgConvertERC20Response{}
 			suite.Commit()
 			balance = suite.BalanceOf(contractAddr, suite.address)
 			cosmosBalance = suite.app.BankKeeper.GetBalance(suite.ctx, sender, pair.Denom)
@@ -1363,19 +1363,19 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 func (suite *KeeperTestSuite) TestUpdateParams() {
 	testCases := []struct {
 		name      string
-		request   *types.MsgUpdateParams
+		request   *erc20types.MsgUpdateParams
 		expectErr bool
 	}{
 		{
 			name:      "fail - invalid authority",
-			request:   &types.MsgUpdateParams{Authority: "foobar"},
+			request:   &erc20types.MsgUpdateParams{Authority: "foobar"},
 			expectErr: true,
 		},
 		{
 			name: "pass - valid Update msg",
-			request: &types.MsgUpdateParams{
+			request: &erc20types.MsgUpdateParams{
 				Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-				Params:    types.DefaultParams(),
+				Params:    erc20types.DefaultParams(),
 			},
 			expectErr: false,
 		},

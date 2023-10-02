@@ -7,9 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/contracts"
-	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 func (suite *KeeperTestSuite) MintERC20Token(contractAddr, from, to common.Address, amount *big.Int) *evmtypes.MsgEthereumTx {
@@ -19,7 +19,7 @@ func (suite *KeeperTestSuite) MintERC20Token(contractAddr, from, to common.Addre
 }
 
 func (suite *KeeperTestSuite) TransferERC20TokenToModule(contractAddr, from common.Address, amount *big.Int) *evmtypes.MsgEthereumTx {
-	transferData, err := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("transfer", types.ModuleAddress, amount)
+	transferData, err := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("transfer", erc20types.ModuleAddress, amount)
 	suite.Require().NoError(err)
 	return suite.sendTx(contractAddr, from, transferData)
 }
@@ -39,7 +39,7 @@ func (suite *KeeperTestSuite) GrantERC20Token(contractAddr, from, to common.Addr
 func (suite *KeeperTestSuite) BalanceOf(contract, account common.Address) interface{} {
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
 
-	res, err := suite.app.Erc20Keeper.CallEVM(suite.ctx, erc20, types.ModuleAddress, contract, false, "balanceOf", account)
+	res, err := suite.app.Erc20Keeper.CallEVM(suite.ctx, erc20, erc20types.ModuleAddress, contract, false, "balanceOf", account)
 	if err != nil {
 		return nil
 	}
@@ -58,7 +58,7 @@ func (suite *KeeperTestSuite) BalanceOf(contract, account common.Address) interf
 func (suite *KeeperTestSuite) NameOf(contract common.Address) string {
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
 
-	res, err := suite.app.Erc20Keeper.CallEVM(suite.ctx, erc20, types.ModuleAddress, contract, false, "name")
+	res, err := suite.app.Erc20Keeper.CallEVM(suite.ctx, erc20, erc20types.ModuleAddress, contract, false, "name")
 	suite.Require().NoError(err)
 	suite.Require().NotNil(res)
 

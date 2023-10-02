@@ -12,11 +12,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 
 	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
-	"github.com/haqq-network/haqq/x/erc20/types"
+	haqqerc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 )
 
-var _ types.EVMKeeper = &MockEVMKeeper{}
+var _ haqqerc20types.EVMKeeper = &MockEVMKeeper{}
 
 type MockEVMKeeper struct {
 	mock.Mock
@@ -52,7 +52,7 @@ func (m *MockEVMKeeper) ApplyMessage(_ sdk.Context, _ core.Message, _ vm.EVMLogg
 	return args.Get(0).(*evmtypes.MsgEthereumTxResponse), args.Error(1)
 }
 
-var _ types.BankKeeper = &MockBankKeeper{}
+var _ haqqerc20types.BankKeeper = &MockBankKeeper{}
 
 type MockBankKeeper struct {
 	mock.Mock

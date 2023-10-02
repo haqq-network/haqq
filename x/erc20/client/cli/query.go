@@ -7,13 +7,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
 
-	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 // GetQueryCmd returns the parent command for all erc20 CLI query commands
 func GetQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        types.ModuleName,
+		Use:                        erc20types.ModuleName,
 		Short:                      "Querying commands for the erc20 module",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
@@ -41,14 +41,14 @@ func GetTokenPairsCmd() *cobra.Command {
 				return err
 			}
 
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := erc20types.NewQueryClient(clientCtx)
 
 			pageReq, err := client.ReadPageRequest(cmd.Flags())
 			if err != nil {
 				return err
 			}
 
-			req := &types.QueryTokenPairsRequest{
+			req := &erc20types.QueryTokenPairsRequest{
 				Pagination: pageReq,
 			}
 
@@ -78,9 +78,9 @@ func GetTokenPairCmd() *cobra.Command {
 				return err
 			}
 
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := erc20types.NewQueryClient(clientCtx)
 
-			req := &types.QueryTokenPairRequest{
+			req := &erc20types.QueryTokenPairRequest{
 				Token: args[0],
 			}
 
@@ -110,9 +110,9 @@ func GetParamsCmd() *cobra.Command {
 				return err
 			}
 
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := erc20types.NewQueryClient(clientCtx)
 
-			req := &types.QueryParamsRequest{}
+			req := &erc20types.QueryParamsRequest{}
 
 			res, err := queryClient.Params(context.Background(), req)
 			if err != nil {

@@ -28,6 +28,7 @@ import (
 	teststypes "github.com/evmos/evmos/v14/types/tests"
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/contracts"
@@ -35,7 +36,6 @@ import (
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
-	"github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 )
 
@@ -82,8 +82,8 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 
 	// query clients
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
-	suite.queryClient = types.NewQueryClient(queryHelper)
+	erc20types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
+	suite.queryClient = erc20types.NewQueryClient(queryHelper)
 
 	queryHelperEvm := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
 	evmtypes.RegisterQueryServer(queryHelperEvm, suite.app.EvmKeeper)
@@ -177,10 +177,10 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 
 	// we need some coins in the bankkeeper to be able to register the coins later
 	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewInt(100)))
-	err = s.app.BankKeeper.MintCoins(s.EvmosChain.GetContext(), types.ModuleName, coins)
+	err = s.app.BankKeeper.MintCoins(s.EvmosChain.GetContext(), erc20types.ModuleName, coins)
 	s.Require().NoError(err)
 	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UatomIbcdenom, sdk.NewInt(100)))
-	err = s.app.BankKeeper.MintCoins(s.EvmosChain.GetContext(), types.ModuleName, coins)
+	err = s.app.BankKeeper.MintCoins(s.EvmosChain.GetContext(), erc20types.ModuleName, coins)
 	s.Require().NoError(err)
 
 	// Mint coins on the osmosis side which we'll use to unlock our aevmos
@@ -212,7 +212,7 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	err = suite.IBCCosmosChain.GetSimApp().BankKeeper.SendCoinsFromModuleToAccount(suite.IBCCosmosChain.GetContext(), minttypes.ModuleName, suite.IBCCosmosChain.SenderAccount.GetAddress(), stkCoin)
 	suite.Require().NoError(err)
 
-	params := types.DefaultParams()
+	params := erc20types.DefaultParams()
 	params.EnableErc20 = true
 	err = s.app.Erc20Keeper.SetParams(suite.EvmosChain.GetContext(), params)
 	suite.Require().NoError(err)
@@ -229,9 +229,9 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 
 	coinEvmos = sdk.NewCoin(utils.BaseDenom, sdk.NewInt(1000000000000000000))
 	coins = sdk.NewCoins(coinEvmos)
-	err = s.app.BankKeeper.MintCoins(suite.EvmosChain.GetContext(), types.ModuleName, coins)
+	err = s.app.BankKeeper.MintCoins(suite.EvmosChain.GetContext(), erc20types.ModuleName, coins)
 	suite.Require().NoError(err)
-	err = s.app.BankKeeper.SendCoinsFromModuleToModule(suite.EvmosChain.GetContext(), types.ModuleName, authtypes.FeeCollectorName, coins)
+	err = s.app.BankKeeper.SendCoinsFromModuleToModule(suite.EvmosChain.GetContext(), erc20types.ModuleName, authtypes.FeeCollectorName, coins)
 	suite.Require().NoError(err)
 }
 
@@ -242,9 +242,9 @@ func (suite *KeeperTestSuite) StateDB() *statedb.StateDB {
 }
 
 func (suite *KeeperTestSuite) MintFeeCollector(coins sdk.Coins) {
-	err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+	err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 	suite.Require().NoError(err)
-	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, types.ModuleName, authtypes.FeeCollectorName, coins)
+	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, erc20types.ModuleName, authtypes.FeeCollectorName, coins)
 	suite.Require().NoError(err)
 }
 

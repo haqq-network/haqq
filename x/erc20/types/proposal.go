@@ -11,6 +11,7 @@ import (
 	v1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	evmostypes "github.com/evmos/evmos/v14/types"
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 // constants
@@ -73,7 +74,7 @@ func (rtbp *RegisterCoinProposal) ValidateBasic() error {
 		// Prohibit denominations that contain the evm denom
 		if strings.Contains(metadata.Base, "evm") {
 			return errorsmod.Wrapf(
-				ErrEVMDenom, "cannot register the EVM denomination %s", metadata.Base,
+				erc20types.ErrEVMDenom, "cannot register the EVM denomination %s", metadata.Base,
 			)
 		}
 

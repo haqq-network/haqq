@@ -6,7 +6,7 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 // MintingEnabled checks that:
@@ -18,35 +18,35 @@ func (k Keeper) MintingEnabled(
 	ctx sdk.Context,
 	sender, receiver sdk.AccAddress,
 	token string,
-) (types.TokenPair, error) {
+) (erc20types.TokenPair, error) {
 	if !k.IsERC20Enabled(ctx) {
-		return types.TokenPair{}, errorsmod.Wrap(
-			types.ErrERC20Disabled, "module is currently disabled by governance",
+		return erc20types.TokenPair{}, errorsmod.Wrap(
+			erc20types.ErrERC20Disabled, "module is currently disabled by governance",
 		)
 	}
 
 	id := k.GetTokenPairID(ctx, token)
 	if len(id) == 0 {
-		return types.TokenPair{}, errorsmod.Wrapf(
-			types.ErrTokenPairNotFound, "token '%s' not registered by id", token,
+		return erc20types.TokenPair{}, errorsmod.Wrapf(
+			erc20types.ErrTokenPairNotFound, "token '%s' not registered by id", token,
 		)
 	}
 
 	pair, found := k.GetTokenPair(ctx, id)
 	if !found {
-		return types.TokenPair{}, errorsmod.Wrapf(
-			types.ErrTokenPairNotFound, "token '%s' not registered", token,
+		return erc20types.TokenPair{}, errorsmod.Wrapf(
+			erc20types.ErrTokenPairNotFound, "token '%s' not registered", token,
 		)
 	}
 
 	if !pair.Enabled {
-		return types.TokenPair{}, errorsmod.Wrapf(
-			types.ErrERC20TokenPairDisabled, "minting token '%s' is not enabled by governance", token,
+		return erc20types.TokenPair{}, errorsmod.Wrapf(
+			erc20types.ErrERC20TokenPairDisabled, "minting token '%s' is not enabled by governance", token,
 		)
 	}
 
 	if k.bankKeeper.BlockedAddr(receiver.Bytes()) {
-		return types.TokenPair{}, errorsmod.Wrapf(
+		return erc20types.TokenPair{}, errorsmod.Wrapf(
 			errortypes.ErrUnauthorized, "%s is not allowed to receive transactions", receiver,
 		)
 	}
@@ -57,7 +57,7 @@ func (k Keeper) MintingEnabled(
 	// check if minting to a recipient address other than the sender is enabled
 	// for for the given coin denom
 	if !sender.Equals(receiver) && !k.bankKeeper.IsSendEnabledCoin(ctx, coin) {
-		return types.TokenPair{}, errorsmod.Wrapf(
+		return erc20types.TokenPair{}, errorsmod.Wrapf(
 			banktypes.ErrSendDisabled, "minting '%s' coins to an external address is currently disabled", token,
 		)
 	}

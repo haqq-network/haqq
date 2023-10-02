@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 func TestParseMetadata(t *testing.T) {
@@ -41,7 +41,7 @@ func TestParseMetadata(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		metadata, err := ParseMetadata(types.AminoCdc, tc.metadataFile)
+		metadata, err := ParseMetadata(erc20types.AminoCdc, tc.metadataFile)
 		if tc.expPass {
 			require.NoError(t, err)
 			require.Equal(t, tc.expAmtCoins, len(metadata))

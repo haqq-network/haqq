@@ -5,11 +5,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 func TestNewERC20Data(t *testing.T) {
-	data := types.NewERC20Data("test", "ERC20", uint8(18))
-	exp := types.ERC20Data{Name: "test", Symbol: "ERC20", Decimals: 0x12}
+	data := erc20types.NewERC20Data("test", "ERC20", uint8(18))
+	exp := erc20types.ERC20Data{Name: "test", Symbol: "ERC20", Decimals: 0x12}
 	require.Equal(t, exp, data)
 }

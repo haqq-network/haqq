@@ -8,9 +8,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/contracts"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // ensureHooksSet tries to set the hooks on EVMKeeper, this will fail if the erc20 hook is already set
@@ -116,7 +116,7 @@ func (suite *KeeperTestSuite) TestEvmHooksRegisteredERC20() {
 
 			tc.malleate(contractAddr)
 
-			balance := suite.app.BankKeeper.GetBalance(suite.ctx, sdk.AccAddress(suite.address.Bytes()), types.CreateDenom(contractAddr.String()))
+			balance := suite.app.BankKeeper.GetBalance(suite.ctx, sdk.AccAddress(suite.address.Bytes()), erc20types.CreateDenom(contractAddr.String()))
 			suite.Commit()
 			if tc.result {
 				// Check if the execution was successful
@@ -156,12 +156,12 @@ func (suite *KeeperTestSuite) TestEvmHooksRegisteredCoin() {
 			contractAddr := common.HexToAddress(pair.Erc20Address)
 
 			coins := sdk.NewCoins(sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.mint)))
-			err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
+			err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 			suite.Require().NoError(err, tc.name)
-			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, sender, coins)
+			err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, sender, coins)
 			suite.Require().NoError(err, tc.name)
 
-			convertCoin := types.NewMsgConvertCoin(
+			convertCoin := erc20types.NewMsgConvertCoin(
 				sdk.NewCoin(cosmosTokenBase, sdk.NewInt(tc.burn)),
 				suite.address,
 				sender,
@@ -201,11 +201,11 @@ func (suite *KeeperTestSuite) TestEvmHooksRegisteredCoin() {
 func (suite *KeeperTestSuite) TestPostTxProcessing() {
 	var (
 		receipt *ethtypes.Receipt
-		pair    *types.TokenPair
+		pair    *erc20types.TokenPair
 	)
 
 	msg := ethtypes.NewMessage(
-		types.ModuleAddress,
+		erc20types.ModuleAddress,
 		&common.Address{},
 		0,
 		big.NewInt(0), // amount
@@ -244,7 +244,7 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 		{
 			"No log data",
 			func() {
-				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				topics := []common.Hash{transferEvent.ID, account.Hash(), erc20types.ModuleAddress.Hash()}
 				log := ethtypes.Log{
 					Topics: topics,
 				}
@@ -286,7 +286,7 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 		{
 			"No log address",
 			func() {
-				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				topics := []common.Hash{transferEvent.ID, account.Hash(), erc20types.ModuleAddress.Hash()}
 				log := ethtypes.Log{
 					Topics: topics,
 					Data:   transferData,
@@ -341,7 +341,7 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 				pair, err = suite.app.Erc20Keeper.RegisterERC20(suite.ctx, contractAddr)
 				suite.Require().NoError(err)
 
-				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				topics := []common.Hash{transferEvent.ID, account.Hash(), erc20types.ModuleAddress.Hash()}
 				log := ethtypes.Log{
 					Topics:  topics,
 					Data:    transferData,
@@ -362,10 +362,10 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 				pair, err := suite.app.Erc20Keeper.RegisterERC20(suite.ctx, contractAddr)
 				suite.Require().NoError(err)
 
-				pair.ContractOwner = types.OWNER_UNSPECIFIED
+				pair.ContractOwner = erc20types.OWNER_UNSPECIFIED
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, *pair)
 
-				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				topics := []common.Hash{transferEvent.ID, account.Hash(), erc20types.ModuleAddress.Hash()}
 				log := ethtypes.Log{
 					Topics:  topics,
 					Data:    transferData,
@@ -386,10 +386,10 @@ func (suite *KeeperTestSuite) TestPostTxProcessing() {
 				pair, err := suite.app.Erc20Keeper.RegisterERC20(suite.ctx, contractAddr)
 				suite.Require().NoError(err)
 
-				pair.ContractOwner = types.OWNER_MODULE
+				pair.ContractOwner = erc20types.OWNER_MODULE
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, *pair)
 
-				topics := []common.Hash{transferEvent.ID, account.Hash(), types.ModuleAddress.Hash()}
+				topics := []common.Hash{transferEvent.ID, account.Hash(), erc20types.ModuleAddress.Hash()}
 				log := ethtypes.Log{
 					Topics:  topics,
 					Data:    transferData,

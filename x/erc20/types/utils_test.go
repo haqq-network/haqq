@@ -8,7 +8,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 )
 
 func TestSanitizeERC20Name(t *testing.T) {
@@ -40,7 +40,7 @@ func TestSanitizeERC20Name(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		name := types.SanitizeERC20Name(tc.erc20Name)
+		name := erc20types.SanitizeERC20Name(tc.erc20Name)
 		require.Equal(t, tc.expErc20Name, name, tc.name)
 		err := sdk.ValidateDenom(name)
 		if tc.expectPass {
@@ -197,7 +197,7 @@ func TestEqualMetadata(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		err := types.EqualMetadata(tc.metadataA, tc.metadataB)
+		err := erc20types.EqualMetadata(tc.metadataA, tc.metadataB)
 		if tc.expError {
 			require.Error(t, err)
 		} else {
@@ -246,6 +246,6 @@ func TestEqualAliases(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		require.Equal(t, tc.expEqual, types.EqualStringSlice(tc.aliasesA, tc.aliasesB), tc.name)
+		require.Equal(t, tc.expEqual, erc20types.EqualStringSlice(tc.aliasesA, tc.aliasesB), tc.name)
 	}
 }

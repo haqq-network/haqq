@@ -18,6 +18,7 @@ import (
 	evmostesting "github.com/evmos/evmos/v14/ibc/testing"
 	teststypes "github.com/evmos/evmos/v14/types/tests"
 
+	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	haqqcontracts "github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
@@ -27,7 +28,6 @@ import (
 	haqqtestutil "github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // General variables used for integration tests
