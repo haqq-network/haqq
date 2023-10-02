@@ -1,6 +1,7 @@
 package network
 
 import (
+	"github.com/haqq-network/haqq/utils"
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -35,7 +36,7 @@ func NewAppConstructor(encodingCfg params.EncodingConfig, chainID string) networ
 
 func HaqqNetworkConfig() network.Config {
 	defaultConfig := network.DefaultConfig()
-	defaultConfig.BondDenom = "aISLM"
+	defaultConfig.BondDenom = utils.BaseDenom
 	defaultConfig.MinGasPrices = "0.000006aISLM"
 	defaultConfig.TimeoutCommit = time.Nanosecond
 	defaultConfig.ChainID = "haqq_11235-1"
@@ -48,7 +49,7 @@ func HaqqNetworkConfig() network.Config {
 
 func HaqqNetworkConfigCoinomicsDisabled() network.Config {
 	defaultConfig := network.DefaultConfig()
-	defaultConfig.BondDenom = "aISLM"
+	defaultConfig.BondDenom = utils.BaseDenom
 	defaultConfig.MinGasPrices = "0.000006aISLM"
 	defaultConfig.ChainID = "haqq_11235-1"
 

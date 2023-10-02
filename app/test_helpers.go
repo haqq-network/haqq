@@ -25,11 +25,11 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/evmos/evmos/v14/encoding"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
 	"github.com/haqq-network/haqq/cmd/config"
 	"github.com/haqq-network/haqq/utils"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func init() {
@@ -64,6 +64,7 @@ var DefaultConsensusParams = &tmproto.ConsensusParams{
 func Setup(
 	isCheckTx bool,
 	feemarketGenesis *feemarkettypes.GenesisState,
+	chainId string,
 ) (*Haqq, []byte) {
 	privVal := mock.NewPV()
 	pubKey, _ := privVal.GetPubKey()
@@ -80,7 +81,6 @@ func Setup(
 		Coins:   sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdk.NewInt(100000000000000))),
 	}
 
-	chainID := utils.MainNetChainID + "-1"
 	db := dbm.NewMemDB()
 	app := NewHaqq(
 		log.NewNopLogger(),
@@ -88,7 +88,7 @@ func Setup(
 		DefaultNodeHome, 5,
 		encoding.MakeConfig(ModuleBasics),
 		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
-		baseapp.SetChainID(chainID),
+		baseapp.SetChainID(chainId),
 	)
 	if !isCheckTx {
 		// init chain must be called to stop deliverState from being nil
@@ -112,7 +112,7 @@ func Setup(
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         utils.LocalNetChainID + "-1",
+				ChainId:         chainId,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
@@ -175,7 +175,7 @@ func GenesisStateWithValSet(app *Haqq, genesisState simapp.GenesisState,
 
 	for range delegations {
 		// add delegated tokens to total supply
-		totalSupply = totalSupply.Add(sdk.NewCoin("aISLM", bondAmt))
+		totalSupply = totalSupply.Add(sdk.NewCoin(utils.BaseDenom, bondAmt))
 	}
 
 	// add bonded amount to bonded pool module account

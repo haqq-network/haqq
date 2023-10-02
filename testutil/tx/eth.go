@@ -16,16 +16,16 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/evmos/ethermint/server/config"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/evmos/evmos/v14/server/config"
 
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/utils"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // PrepareEthTx creates an ethereum tx and signs it with the provided messages and private key.
 // It returns the signed transaction and an error
 func PrepareEthTx(
-	ctx sdk.Context,
 	txCfg client.TxConfig,
 	appHaqq *app.Haqq,
 	priv cryptotypes.PrivKey,
@@ -54,7 +54,7 @@ func PrepareEthTx(
 		msg.From = ""
 
 		txGasLimit += msg.GetGas()
-		txFee = txFee.Add(sdk.Coin{Denom: appHaqq.StakingKeeper.BondDenom(ctx), Amount: sdkmath.NewIntFromBigInt(msg.GetFee())})
+		txFee = txFee.Add(sdk.Coin{Denom: utils.BaseDenom, Amount: sdkmath.NewIntFromBigInt(msg.GetFee())})
 	}
 
 	if err := txBuilder.SetMsgs(msgs...); err != nil {
@@ -103,7 +103,17 @@ func CreateEthTx(
 
 	// When we send multiple Ethereum Tx's in one Cosmos Tx, we need to increment the nonce for each one.
 	nonce := appHaqq.EvmKeeper.GetNonce(ctx, fromAddr) + uint64(nonceIncrement)
-	msgEthereumTx := evmtypes.NewTx(chainID, nonce, &toAddr, amount, 100000, nil, appHaqq.FeeMarketKeeper.GetBaseFee(ctx), big.NewInt(1), nil, &ethtypes.AccessList{})
+	evmTxParams := &evmtypes.EvmTxArgs{
+		ChainID:   chainID,
+		Nonce:     nonce,
+		To:        &toAddr,
+		Amount:    amount,
+		GasLimit:  100000,
+		GasFeeCap: appHaqq.FeeMarketKeeper.GetBaseFee(ctx),
+		GasTipCap: big.NewInt(1),
+		Accesses:  &ethtypes.AccessList{},
+	}
+	msgEthereumTx := evmtypes.NewTx(evmTxParams)
 	msgEthereumTx.From = fromAddr.String()
 
 	// If we are creating multiple eth Tx's with different senders, we need to sign here rather than later.
