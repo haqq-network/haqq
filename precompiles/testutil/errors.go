@@ -6,7 +6,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 )
 
 // CheckVMError is a helper function used to check if the transaction is reverted with the expected error message

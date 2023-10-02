@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 )
 
 // CheckAuthorizationEvents is a helper function used in the integration tests and checks if the approval event is emitted.

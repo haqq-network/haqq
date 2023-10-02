@@ -27,9 +27,9 @@ import (
 	"github.com/evmos/evmos/v14/encoding"
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/cmd/config"
 	"github.com/haqq-network/haqq/utils"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func init() {
@@ -64,7 +64,7 @@ var DefaultConsensusParams = &tmproto.ConsensusParams{
 func Setup(
 	isCheckTx bool,
 	feemarketGenesis *feemarkettypes.GenesisState,
-	chainId string,
+	chainID string,
 ) (*Haqq, []byte) {
 	privVal := mock.NewPV()
 	pubKey, _ := privVal.GetPubKey()
@@ -88,7 +88,7 @@ func Setup(
 		DefaultNodeHome, 5,
 		encoding.MakeConfig(ModuleBasics),
 		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
-		baseapp.SetChainID(chainId),
+		baseapp.SetChainID(chainID),
 	)
 	if !isCheckTx {
 		// init chain must be called to stop deliverState from being nil
@@ -112,7 +112,7 @@ func Setup(
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         chainId,
+				ChainId:         chainID,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,

@@ -12,14 +12,14 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 )
 
 // CheckSenderBalance validates that the tx cost value is positive and that the
 // sender has enough funds to pay for the fees and value of the transaction.
 func CheckSenderBalance(
 	balance sdkmath.Int,
-	txData types.TxData,
+	txData evmtypes.TxData,
 ) error {
 	cost := txData.Cost()
 
@@ -64,7 +64,7 @@ func (k *Keeper) DeductTxCostsFromUserBalance(
 // gas limit is not reached, the gas limit is higher than the intrinsic gas and that the
 // base fee is higher than the gas fee cap.
 func VerifyFee(
-	txData types.TxData,
+	txData evmtypes.TxData,
 	denom string,
 	baseFee *big.Int,
 	homestead, istanbul, isCheckTx bool,

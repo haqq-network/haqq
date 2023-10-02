@@ -30,11 +30,11 @@ import (
 	"github.com/evmos/evmos/v14/server/config"
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
-	evm "github.com/haqq-network/haqq/x/evm/types"
 )
 
 type TransferETHTestSuite struct {
@@ -45,7 +45,7 @@ type TransferETHTestSuite struct {
 	address        common.Address
 	valAddr1       []byte
 	signer         keyring.Signer
-	queryClientEvm evm.QueryClient
+	queryClientEvm evmtypes.QueryClient
 	queryClient    erc20types.QueryClient
 	consAddress    sdk.ConsAddress
 	validator      stakingtypes.Validator
@@ -170,8 +170,8 @@ func (suite *TransferETHTestSuite) CommitBlock() {
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
-	suite.queryClientEvm = evm.NewQueryClient(queryHelper)
+	evmtypes.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
+	suite.queryClientEvm = evmtypes.NewQueryClient(queryHelper)
 }
 
 func (suite *TransferETHTestSuite) MintFeeCollector(coins sdk.Coins) {
@@ -197,12 +197,12 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	suite.MintToAccount(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(100000))))
 
 	suite.T().Log(suite.address.String())
-	balanceBefore, err := suite.queryClientEvm.Balance(ctx, &evm.QueryBalanceRequest{Address: suite.address.String()})
+	balanceBefore, err := suite.queryClientEvm.Balance(ctx, &evmtypes.QueryBalanceRequest{Address: suite.address.String()})
 	suite.NoError(err)
 	suite.NotEmpty(balanceBefore.Balance)
 	suite.Equal("100000", balanceBefore.Balance)
 
-	account, err := suite.queryClientEvm.Account(ctx, &evm.QueryAccountRequest{Address: suite.address.String()})
+	account, err := suite.queryClientEvm.Account(ctx, &evmtypes.QueryAccountRequest{Address: suite.address.String()})
 	suite.NoError(err)
 
 	nonce := account.Nonce
@@ -210,9 +210,9 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	chainID := suite.app.EvmKeeper.ChainID()
 	var receiveAddr common.Address
 
-	args, err := json.Marshal(&evm.TransactionArgs{To: &receiveAddr, From: &suite.address, Data: nil})
+	args, err := json.Marshal(&evmtypes.TransactionArgs{To: &receiveAddr, From: &suite.address, Data: nil})
 	suite.Require().NoError(err)
-	res, err := suite.queryClientEvm.EstimateGas(ctx, &evm.EthCallRequest{
+	res, err := suite.queryClientEvm.EstimateGas(ctx, &evmtypes.EthCallRequest{
 		Args:   args,
 		GasCap: config.DefaultGasCap,
 	})
@@ -221,7 +221,7 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
 	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 
-	tx := evm.NewTx(&evm.EvmTxArgs{
+	tx := evmtypes.NewTx(&evmtypes.EvmTxArgs{
 		ChainID:   chainID,
 		Nonce:     nonce,
 		To:        &receiveAddr,
@@ -244,7 +244,7 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	// skip some blocks
 	suite.Commit(5)
 
-	balanceAfter, err := suite.queryClientEvm.Balance(ctx, &evm.QueryBalanceRequest{Address: suite.address.String()})
+	balanceAfter, err := suite.queryClientEvm.Balance(ctx, &evmtypes.QueryBalanceRequest{Address: suite.address.String()})
 	suite.NoError(err)
 	suite.T().Log("balance before", balanceBefore.Balance)
 	suite.T().Log("balance after", balanceAfter.Balance)

@@ -685,7 +685,8 @@ func (m *TraceConfig) GetTracerJsonConfig() string {
 	return ""
 }
 
-func init() {
+// NOTE: Temporary used from Evmos
+/*func init() {
 	proto.RegisterType((*Params)(nil), "ethermint.evm.v1.Params")
 	proto.RegisterType((*ChainConfig)(nil), "ethermint.evm.v1.ChainConfig")
 	proto.RegisterType((*State)(nil), "ethermint.evm.v1.State")
@@ -694,9 +695,9 @@ func init() {
 	proto.RegisterType((*TxResult)(nil), "ethermint.evm.v1.TxResult")
 	proto.RegisterType((*AccessTuple)(nil), "ethermint.evm.v1.AccessTuple")
 	proto.RegisterType((*TraceConfig)(nil), "ethermint.evm.v1.TraceConfig")
-}
+}*/
 
-func init() { proto.RegisterFile("ethermint/evm/v1/evm.proto", fileDescriptor_d21ecc92c8c8583e) }
+//func init() { proto.RegisterFile("ethermint/evm/v1/evm.proto", fileDescriptor_d21ecc92c8c8583e) }
 
 var fileDescriptor_d21ecc92c8c8583e = []byte{
 	// 1641 bytes of a gzipped FileDescriptorProto

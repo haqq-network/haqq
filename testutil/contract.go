@@ -15,9 +15,9 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/testutil/tx"
-	evm "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // ContractArgs are the params used for calling a smart contract.
@@ -52,8 +52,8 @@ func DeployContract(
 	ctx sdk.Context,
 	appHaqq *app.Haqq,
 	priv cryptotypes.PrivKey,
-	queryClientEvm evm.QueryClient,
-	contract evm.CompiledContract,
+	queryClientEvm evmtypes.QueryClient,
+	contract evmtypes.CompiledContract,
 	constructorArgs ...interface{},
 ) (common.Address, error) {
 	chainID := appHaqq.EvmKeeper.ChainID()
@@ -71,7 +71,7 @@ func DeployContract(
 		return common.Address{}, err
 	}
 
-	msgEthereumTx := evm.NewTx(&evm.EvmTxArgs{
+	msgEthereumTx := evmtypes.NewTx(&evmtypes.EvmTxArgs{
 		ChainID:   chainID,
 		Nonce:     nonce,
 		GasLimit:  gas,
@@ -107,7 +107,7 @@ func DeployContractWithFactory(
 	factoryNonce := appHaqq.EvmKeeper.GetNonce(ctx, factoryAddress)
 	nonce := appHaqq.EvmKeeper.GetNonce(ctx, from)
 
-	msgEthereumTx := evm.NewTx(&evm.EvmTxArgs{
+	msgEthereumTx := evmtypes.NewTx(&evmtypes.EvmTxArgs{
 		ChainID:  chainID,
 		Nonce:    nonce,
 		To:       &factoryAddress,
@@ -129,7 +129,7 @@ func DeployContractWithFactory(
 }
 
 // CheckEthTxResponse checks that the transaction was executed successfully
-func CheckEthTxResponse(r abci.ResponseDeliverTx, cdc codec.Codec) ([]*evm.MsgEthereumTxResponse, error) {
+func CheckEthTxResponse(r abci.ResponseDeliverTx, cdc codec.Codec) ([]*evmtypes.MsgEthereumTxResponse, error) {
 	if !r.IsOK() {
 		return nil, fmt.Errorf("tx failed. Code: %d, Logs: %s", r.Code, r.Log)
 	}
@@ -143,9 +143,9 @@ func CheckEthTxResponse(r abci.ResponseDeliverTx, cdc codec.Codec) ([]*evm.MsgEt
 		return nil, fmt.Errorf("no message responses found")
 	}
 
-	responses := make([]*evm.MsgEthereumTxResponse, 0, len(txData.MsgResponses))
+	responses := make([]*evmtypes.MsgEthereumTxResponse, 0, len(txData.MsgResponses))
 	for i := range txData.MsgResponses {
-		var res evm.MsgEthereumTxResponse
+		var res evmtypes.MsgEthereumTxResponse
 		if err := proto.Unmarshal(txData.MsgResponses[i].Value, &res); err != nil {
 			return nil, err
 		}

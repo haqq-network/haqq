@@ -22,6 +22,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	evmostypes "github.com/evmos/evmos/v14/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	haqqapp "github.com/haqq-network/haqq/app"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/distribution"
@@ -30,7 +31,6 @@ import (
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // SetupWithGenesisValSet initializes a new HaqqApp with a validator set and genesis accounts

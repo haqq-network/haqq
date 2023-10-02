@@ -18,9 +18,9 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ibctesting "github.com/evmos/evmos/v14/ibc/testing"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/x/erc20/types"
-	evm "github.com/haqq-network/haqq/x/evm/types"
 )
 
 type KeeperTestSuite struct {
@@ -28,7 +28,7 @@ type KeeperTestSuite struct {
 
 	ctx              sdk.Context
 	app              *app.Haqq
-	queryClientEvm   evm.QueryClient
+	queryClientEvm   evmtypes.QueryClient
 	queryClient      types.QueryClient
 	address          common.Address
 	consAddress      sdk.ConsAddress

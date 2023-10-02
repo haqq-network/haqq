@@ -9,11 +9,11 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/evmos/v14/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app/ante/evm"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *AnteTestSuite) TestGasWantedDecorator() {

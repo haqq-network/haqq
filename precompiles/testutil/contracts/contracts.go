@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	haqqapp "github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	haqqtestutil "github.com/haqq-network/haqq/testutil"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // Call is a helper function to call any arbitrary smart contract.

@@ -15,9 +15,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/evmos/evmos/v14/server/config"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/x/erc20/types"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // DeployERC20Contract creates and deploys an ERC20 contract on the EVM with the

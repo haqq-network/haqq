@@ -145,7 +145,8 @@ import (
 	_ "github.com/haqq-network/haqq/client/docs/statik"
 	"github.com/haqq-network/haqq/x/evm"
 	evmkeeper "github.com/haqq-network/haqq/x/evm/keeper"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	// temporary use of evmos types
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
 	"github.com/haqq-network/haqq/x/ibc/transfer"

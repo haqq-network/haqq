@@ -18,10 +18,10 @@ import (
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func TestAuthzLimiterDecorator(t *testing.T) {

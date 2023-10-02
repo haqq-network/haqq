@@ -22,11 +22,11 @@ import (
 	"github.com/evmos/evmos/v14/encoding"
 	"github.com/evmos/evmos/v14/x/feemarket/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var _ = Describe("Feemarket", func() {

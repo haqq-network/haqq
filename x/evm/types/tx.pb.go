@@ -440,7 +440,8 @@ func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 
-func init() {
+// NOTE: Temporary used from Evmos
+/*func init() {
 	proto.RegisterType((*MsgEthereumTx)(nil), "ethermint.evm.v1.MsgEthereumTx")
 	proto.RegisterType((*LegacyTx)(nil), "ethermint.evm.v1.LegacyTx")
 	proto.RegisterType((*AccessListTx)(nil), "ethermint.evm.v1.AccessListTx")
@@ -449,9 +450,9 @@ func init() {
 	proto.RegisterType((*MsgEthereumTxResponse)(nil), "ethermint.evm.v1.MsgEthereumTxResponse")
 	proto.RegisterType((*MsgUpdateParams)(nil), "ethermint.evm.v1.MsgUpdateParams")
 	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "ethermint.evm.v1.MsgUpdateParamsResponse")
-}
+}*/
 
-func init() { proto.RegisterFile("ethermint/evm/v1/tx.proto", fileDescriptor_f75ac0a12d075f21) }
+//func init() { proto.RegisterFile("ethermint/evm/v1/tx.proto", fileDescriptor_f75ac0a12d075f21) }
 
 var fileDescriptor_f75ac0a12d075f21 = []byte{
 	// 977 bytes of a gzipped FileDescriptorProto

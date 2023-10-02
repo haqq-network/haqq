@@ -16,7 +16,7 @@ import (
 	"github.com/evmos/evmos/v14/encoding"
 	"github.com/evmos/evmos/v14/types"
 
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 )
 
 var _ DynamicFeeEVMKeeper = MockEVMKeeper{}

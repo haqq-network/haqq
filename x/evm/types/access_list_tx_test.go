@@ -5,25 +5,25 @@ import (
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 )
 
 func (suite *TxDataTestSuite) TestAccessListTxCopy() {
-	tx := &types.AccessListTx{}
+	tx := &evmtypes.AccessListTx{}
 	txCopy := tx.Copy()
 
-	suite.Require().Equal(&types.AccessListTx{}, txCopy)
+	suite.Require().Equal(&evmtypes.AccessListTx{}, txCopy)
 }
 
 func (suite *TxDataTestSuite) TestAccessListTxGetGasTipCap() {
 	testCases := []struct {
 		name string
-		tx   types.AccessListTx
+		tx   evmtypes.AccessListTx
 		exp  *big.Int
 	}{
 		{
 			"non-empty gasPrice",
-			types.AccessListTx{
+			evmtypes.AccessListTx{
 				GasPrice: &suite.sdkInt,
 			},
 			(&suite.sdkInt).BigInt(),
@@ -40,12 +40,12 @@ func (suite *TxDataTestSuite) TestAccessListTxGetGasTipCap() {
 func (suite *TxDataTestSuite) TestAccessListTxGetGasFeeCap() {
 	testCases := []struct {
 		name string
-		tx   types.AccessListTx
+		tx   evmtypes.AccessListTx
 		exp  *big.Int
 	}{
 		{
 			"non-empty gasPrice",
-			types.AccessListTx{
+			evmtypes.AccessListTx{
 				GasPrice: &suite.sdkInt,
 			},
 			(&suite.sdkInt).BigInt(),
@@ -62,11 +62,11 @@ func (suite *TxDataTestSuite) TestAccessListTxGetGasFeeCap() {
 func (suite *TxDataTestSuite) TestEmptyAccessList() {
 	testCases := []struct {
 		name string
-		tx   types.AccessListTx
+		tx   evmtypes.AccessListTx
 	}{
 		{
 			"empty access list tx",
-			types.AccessListTx{
+			evmtypes.AccessListTx{
 				Accesses: nil,
 			},
 		},
@@ -81,12 +81,12 @@ func (suite *TxDataTestSuite) TestEmptyAccessList() {
 func (suite *TxDataTestSuite) TestAccessListTxCost() {
 	testCases := []struct {
 		name string
-		tx   types.AccessListTx
+		tx   evmtypes.AccessListTx
 		exp  *big.Int
 	}{
 		{
 			"non-empty access list tx",
-			types.AccessListTx{
+			evmtypes.AccessListTx{
 				GasPrice: &suite.sdkInt,
 				GasLimit: uint64(1),
 				Amount:   &suite.sdkZeroInt,
@@ -105,12 +105,12 @@ func (suite *TxDataTestSuite) TestAccessListTxCost() {
 func (suite *TxDataTestSuite) TestAccessListEffectiveGasPrice() {
 	testCases := []struct {
 		name    string
-		tx      types.AccessListTx
+		tx      evmtypes.AccessListTx
 		baseFee *big.Int
 	}{
 		{
 			"non-empty access list tx",
-			types.AccessListTx{
+			evmtypes.AccessListTx{
 				GasPrice: &suite.sdkInt,
 			},
 			(&suite.sdkInt).BigInt(),
@@ -127,13 +127,13 @@ func (suite *TxDataTestSuite) TestAccessListEffectiveGasPrice() {
 func (suite *TxDataTestSuite) TestAccessListTxEffectiveCost() {
 	testCases := []struct {
 		name    string
-		tx      types.AccessListTx
+		tx      evmtypes.AccessListTx
 		baseFee *big.Int
 		exp     *big.Int
 	}{
 		{
 			"non-empty access list tx",
-			types.AccessListTx{
+			evmtypes.AccessListTx{
 				GasPrice: &suite.sdkInt,
 				GasLimit: uint64(1),
 				Amount:   &suite.sdkZeroInt,
@@ -153,11 +153,11 @@ func (suite *TxDataTestSuite) TestAccessListTxEffectiveCost() {
 func (suite *TxDataTestSuite) TestAccessListTxType() {
 	testCases := []struct {
 		name string
-		tx   types.AccessListTx
+		tx   evmtypes.AccessListTx
 	}{
 		{
 			"non-empty access list tx",
-			types.AccessListTx{},
+			evmtypes.AccessListTx{},
 		},
 	}
 

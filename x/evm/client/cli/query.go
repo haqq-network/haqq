@@ -7,13 +7,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 
-	"github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 )
 
 // GetQueryCmd returns the parent command for all x/bank CLi query commands.
 func GetQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        types.ModuleName,
+		Use:                        evmtypes.ModuleName,
 		Short:                      "Querying commands for the evm module",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
@@ -41,7 +41,7 @@ func GetStorageCmd() *cobra.Command {
 				return err
 			}
 
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := evmtypes.NewQueryClient(clientCtx)
 
 			address, err := accountToHex(args[0])
 			if err != nil {
@@ -50,7 +50,7 @@ func GetStorageCmd() *cobra.Command {
 
 			key := formatKeyToHash(args[1])
 
-			req := &types.QueryStorageRequest{
+			req := &evmtypes.QueryStorageRequest{
 				Address: address,
 				Key:     key,
 			}
@@ -81,14 +81,14 @@ func GetCodeCmd() *cobra.Command {
 				return err
 			}
 
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := evmtypes.NewQueryClient(clientCtx)
 
 			address, err := accountToHex(args[0])
 			if err != nil {
 				return err
 			}
 
-			req := &types.QueryCodeRequest{
+			req := &evmtypes.QueryCodeRequest{
 				Address: address,
 			}
 
@@ -118,9 +118,9 @@ func GetParamsCmd() *cobra.Command {
 				return err
 			}
 
-			queryClient := types.NewQueryClient(clientCtx)
+			queryClient := evmtypes.NewQueryClient(clientCtx)
 
-			res, err := queryClient.Params(cmd.Context(), &types.QueryParamsRequest{})
+			res, err := queryClient.Params(cmd.Context(), &evmtypes.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}

@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	evmostypes "github.com/evmos/evmos/v14/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
-	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 var _ statedb.Keeper = &Keeper{}
@@ -34,7 +34,7 @@ func (k *Keeper) GetAccount(ctx sdk.Context, addr common.Address) *statedb.Accou
 
 // GetState loads contract state from database, implements `statedb.Keeper` interface.
 func (k *Keeper) GetState(ctx sdk.Context, addr common.Address, key common.Hash) common.Hash {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AddressStoragePrefix(addr))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), evmtypes.AddressStoragePrefix(addr))
 
 	value := store.Get(key.Bytes())
 	if len(value) == 0 {
@@ -46,14 +46,14 @@ func (k *Keeper) GetState(ctx sdk.Context, addr common.Address, key common.Hash)
 
 // GetCode loads contract code from database, implements `statedb.Keeper` interface.
 func (k *Keeper) GetCode(ctx sdk.Context, codeHash common.Hash) []byte {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixCode)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), evmtypes.KeyPrefixCode)
 	return store.Get(codeHash.Bytes())
 }
 
 // ForEachStorage iterate contract storage, callback return false to break early
 func (k *Keeper) ForEachStorage(ctx sdk.Context, addr common.Address, cb func(key, value common.Hash) bool) {
 	store := ctx.KVStore(k.storeKey)
-	prefix := types.AddressStoragePrefix(addr)
+	prefix := evmtypes.AddressStoragePrefix(addr)
 
 	iterator := sdk.KVStorePrefixIterator(store, prefix)
 	defer iterator.Close()
@@ -81,19 +81,19 @@ func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.In
 	case 1:
 		// mint
 		coins := sdk.NewCoins(sdk.NewCoin(params.EvmDenom, sdkmath.NewIntFromBigInt(delta)))
-		if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, coins); err != nil {
+		if err := k.bankKeeper.MintCoins(ctx, evmtypes.ModuleName, coins); err != nil {
 			return err
 		}
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, cosmosAddr, coins); err != nil {
+		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, evmtypes.ModuleName, cosmosAddr, coins); err != nil {
 			return err
 		}
 	case -1:
 		// burn
 		coins := sdk.NewCoins(sdk.NewCoin(params.EvmDenom, sdkmath.NewIntFromBigInt(new(big.Int).Neg(delta))))
-		if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, cosmosAddr, types.ModuleName, coins); err != nil {
+		if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, cosmosAddr, evmtypes.ModuleName, coins); err != nil {
 			return err
 		}
-		if err := k.bankKeeper.BurnCoins(ctx, types.ModuleName, coins); err != nil {
+		if err := k.bankKeeper.BurnCoins(ctx, evmtypes.ModuleName, coins); err != nil {
 			return err
 		}
 	default:
@@ -141,7 +141,7 @@ func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account stated
 
 // SetState update contract storage, delete if value is empty.
 func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash, value []byte) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AddressStoragePrefix(addr))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), evmtypes.AddressStoragePrefix(addr))
 	action := "updated"
 	if len(value) == 0 {
 		store.Delete(key.Bytes())
@@ -158,7 +158,7 @@ func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash,
 
 // SetCode set contract code, delete if code is empty.
 func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixCode)
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), evmtypes.KeyPrefixCode)
 
 	// store or delete code
 	action := "updated"
@@ -189,7 +189,7 @@ func (k *Keeper) DeleteAccount(ctx sdk.Context, addr common.Address) error {
 	// NOTE: only Ethereum accounts (contracts) can be selfdestructed
 	_, ok := acct.(evmostypes.EthAccountI)
 	if !ok {
-		return errorsmod.Wrapf(types.ErrInvalidAccount, "type %T, address %s", acct, addr)
+		return errorsmod.Wrapf(evmtypes.ErrInvalidAccount, "type %T, address %s", acct, addr)
 	}
 
 	// clear balance

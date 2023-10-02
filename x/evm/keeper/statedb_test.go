@@ -17,9 +17,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/evm/statedb"
-	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *KeeperTestSuite) TestCreateAccount() {
@@ -239,7 +239,7 @@ func (suite *KeeperTestSuite) TestGetCodeHash() {
 		{
 			"account not EthAccount type, EmptyCodeHash",
 			addr,
-			common.BytesToHash(types.EmptyCodeHash),
+			common.BytesToHash(evmtypes.EmptyCodeHash),
 			func(vm.StateDB) {},
 		},
 		{
@@ -343,8 +343,8 @@ func (suite *KeeperTestSuite) TestKeeperSetCode() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			suite.app.EvmKeeper.SetCode(suite.ctx, tc.codeHash, tc.code)
-			key := suite.app.GetKey(types.StoreKey)
-			store := prefix.NewStore(suite.ctx.KVStore(key), types.KeyPrefixCode)
+			key := suite.app.GetKey(evmtypes.StoreKey)
+			store := prefix.NewStore(suite.ctx.KVStore(key), evmtypes.KeyPrefixCode)
 			code := store.Get(tc.codeHash)
 
 			suite.Require().Equal(tc.code, code)
@@ -482,9 +482,9 @@ func (suite *KeeperTestSuite) TestSuicide() {
 	// Check code is deleted
 	suite.Require().Nil(db.GetCode(suite.address))
 	// Check state is deleted
-	var storage types.Storage
+	var storage evmtypes.Storage
 	suite.app.EvmKeeper.ForEachStorage(suite.ctx, suite.address, func(key, value common.Hash) bool {
-		storage = append(storage, types.NewState(key, value))
+		storage = append(storage, evmtypes.NewState(key, value))
 		return true
 	})
 	suite.Require().Equal(0, len(storage))
@@ -606,8 +606,8 @@ func (suite *KeeperTestSuite) TestSnapshot() {
 	}
 }
 
-func (suite *KeeperTestSuite) CreateTestTx(msg *types.MsgEthereumTx, priv cryptotypes.PrivKey) authsigning.Tx {
-	option, err := codectypes.NewAnyWithValue(&types.ExtensionOptionsEthereumTx{})
+func (suite *KeeperTestSuite) CreateTestTx(msg *evmtypes.MsgEthereumTx, priv cryptotypes.PrivKey) authsigning.Tx {
+	option, err := codectypes.NewAnyWithValue(&evmtypes.ExtensionOptionsEthereumTx{})
 	suite.Require().NoError(err)
 
 	txBuilder := suite.clientCtx.TxConfig.NewTxBuilder()
@@ -627,7 +627,7 @@ func (suite *KeeperTestSuite) CreateTestTx(msg *types.MsgEthereumTx, priv crypto
 
 func (suite *KeeperTestSuite) TestAddLog() {
 	addr, privKey := utiltx.NewAddrKey()
-	ethTxParams := &types.EvmTxArgs{
+	ethTxParams := &evmtypes.EvmTxArgs{
 		ChainID:  big.NewInt(1),
 		Nonce:    0,
 		To:       &suite.address,
@@ -636,14 +636,14 @@ func (suite *KeeperTestSuite) TestAddLog() {
 		GasPrice: big.NewInt(1),
 		Input:    []byte("test"),
 	}
-	msg := types.NewTx(ethTxParams)
+	msg := evmtypes.NewTx(ethTxParams)
 	msg.From = addr.Hex()
 
 	tx := suite.CreateTestTx(msg, privKey)
-	msg, _ = tx.GetMsgs()[0].(*types.MsgEthereumTx)
+	msg, _ = tx.GetMsgs()[0].(*evmtypes.MsgEthereumTx)
 	txHash := msg.AsTransaction().Hash()
 
-	ethTx2Params := &types.EvmTxArgs{
+	ethTx2Params := &evmtypes.EvmTxArgs{
 		ChainID:  big.NewInt(1),
 		Nonce:    2,
 		To:       &suite.address,
@@ -652,10 +652,10 @@ func (suite *KeeperTestSuite) TestAddLog() {
 		GasPrice: big.NewInt(1),
 		Input:    []byte("test"),
 	}
-	msg2 := types.NewTx(ethTx2Params)
+	msg2 := evmtypes.NewTx(ethTx2Params)
 	msg2.From = addr.Hex()
 
-	ethTx3Params := &types.EvmTxArgs{
+	ethTx3Params := &evmtypes.EvmTxArgs{
 		ChainID:   big.NewInt(1),
 		Nonce:     0,
 		To:        &suite.address,
@@ -665,14 +665,14 @@ func (suite *KeeperTestSuite) TestAddLog() {
 		GasTipCap: big.NewInt(1),
 		Input:     []byte("test"),
 	}
-	msg3 := types.NewTx(ethTx3Params)
+	msg3 := evmtypes.NewTx(ethTx3Params)
 	msg3.From = addr.Hex()
 
 	tx3 := suite.CreateTestTx(msg3, privKey)
-	msg3, _ = tx3.GetMsgs()[0].(*types.MsgEthereumTx)
+	msg3, _ = tx3.GetMsgs()[0].(*evmtypes.MsgEthereumTx)
 	txHash3 := msg3.AsTransaction().Hash()
 
-	ethTx4Params := &types.EvmTxArgs{
+	ethTx4Params := &evmtypes.EvmTxArgs{
 		ChainID:   big.NewInt(1),
 		Nonce:     1,
 		To:        &suite.address,
@@ -682,7 +682,7 @@ func (suite *KeeperTestSuite) TestAddLog() {
 		GasTipCap: big.NewInt(1),
 		Input:     []byte("test"),
 	}
-	msg4 := types.NewTx(ethTx4Params)
+	msg4 := evmtypes.NewTx(ethTx4Params)
 	msg4.From = addr.Hex()
 
 	testCases := []struct {
@@ -810,7 +810,7 @@ func (suite *KeeperTestSuite) AddSlotToAccessList() {
 
 // FIXME skip for now
 // func (suite *KeeperTestSuite) _TestForEachStorage() {
-// 	var storage types.Storage
+// 	var storage evmtypes.Storage
 //
 // 	testCase := []struct {
 // 		name      string
@@ -826,7 +826,7 @@ func (suite *KeeperTestSuite) AddSlotToAccessList() {
 // 				}
 // 			},
 // 			func(key, value common.Hash) bool {
-// 				storage = append(storage, types.NewState(key, value))
+// 				storage = append(storage, evmtypes.NewState(key, value))
 // 				return true
 // 			},
 // 			[]common.Hash{
@@ -845,7 +845,7 @@ func (suite *KeeperTestSuite) AddSlotToAccessList() {
 // 			},
 // 			func(key, value common.Hash) bool {
 // 				if value == common.BytesToHash([]byte("filtervalue")) {
-// 					storage = append(storage, types.NewState(key, value))
+// 					storage = append(storage, evmtypes.NewState(key, value))
 // 					return false
 // 				}
 // 				return true
@@ -874,7 +874,7 @@ func (suite *KeeperTestSuite) AddSlotToAccessList() {
 // 			// TODO: not sure why Equals fails
 // 			suite.Require().ElementsMatch(tc.expValues, vals)
 // 		})
-// 		storage = types.Storage{}
+// 		storage = evmtypes.Storage{}
 // 	}
 // }
 

@@ -43,10 +43,10 @@ import (
 	srvflags "github.com/evmos/evmos/v14/server/flags"
 	ethermint "github.com/evmos/evmos/v14/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	cmdcfg "github.com/haqq-network/haqq/cmd/config"
 	"github.com/haqq-network/haqq/testutil/network"
 	"github.com/haqq-network/haqq/utils"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var (

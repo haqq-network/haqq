@@ -26,12 +26,12 @@ import (
 	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	haqqapp "github.com/haqq-network/haqq/app"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 	haqqtypes "github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/coinomics/types"
-	evm "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var denomMint = types.DefaultMintDenom
@@ -43,7 +43,7 @@ type KeeperTestSuite struct {
 	app            *haqqapp.Haqq
 	address        common.Address
 	signer         keyring.Signer
-	queryClientEvm evm.QueryClient
+	queryClientEvm evmtypes.QueryClient
 	queryClient    types.QueryClient
 	consAddress    sdk.ConsAddress
 	validator      stakingtypes.Validator
@@ -171,6 +171,6 @@ func (suite *KeeperTestSuite) CommitBlock() {
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
-	suite.queryClientEvm = evm.NewQueryClient(queryHelper)
+	evmtypes.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
+	suite.queryClientEvm = evmtypes.NewQueryClient(queryHelper)
 }

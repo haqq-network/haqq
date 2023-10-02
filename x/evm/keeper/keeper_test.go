@@ -9,9 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	evmostypes "github.com/evmos/evmos/v14/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/x/evm/keeper"
 	"github.com/haqq-network/haqq/x/evm/statedb"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *KeeperTestSuite) TestWithChainID() {

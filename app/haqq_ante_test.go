@@ -99,8 +99,10 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 
 		// generate submit proposal
 		cpsp := distrtypes.CommunityPoolSpendProposal{
-			"Test", "description",
-			recipient.String(), coins,
+			Title:       "Test",
+			Description: "description",
+			Recipient:   recipient.String(),
+			Amount:      coins,
 		}
 		sp, _ := govtypes.NewMsgSubmitProposal(&cpsp, coins, recipient)
 

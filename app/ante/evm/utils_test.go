@@ -37,9 +37,9 @@ import (
 	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
 	"github.com/evmos/evmos/v14/ethereum/eip712"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *AnteTestSuite) BuildTestEthTx(

@@ -20,9 +20,9 @@ import (
 	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
 	"github.com/evmos/evmos/v14/encoding"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 const invalidAddress = "0x0000"
@@ -57,35 +57,35 @@ func (suite *MsgsTestSuite) SetupTest() {
 }
 
 func (suite *MsgsTestSuite) TestMsgEthereumTx_Constructor() {
-	evmTx := &types.EvmTxArgs{
+	evmTx := &evmtypes.EvmTxArgs{
 		Nonce:    0,
 		To:       &suite.to,
 		GasLimit: 100000,
 		Input:    []byte("test"),
 	}
-	msg := types.NewTx(evmTx)
+	msg := evmtypes.NewTx(evmTx)
 
 	// suite.Require().Equal(msg.Data.To, suite.to.Hex())
-	suite.Require().Equal(msg.Route(), types.RouterKey)
-	suite.Require().Equal(msg.Type(), types.TypeMsgEthereumTx)
+	suite.Require().Equal(msg.Route(), evmtypes.RouterKey)
+	suite.Require().Equal(msg.Type(), evmtypes.TypeMsgEthereumTx)
 	// suite.Require().NotNil(msg.To())
 	suite.Require().Equal(msg.GetMsgs(), []sdk.Msg{msg})
 	suite.Require().Panics(func() { msg.GetSigners() })
 	suite.Require().Panics(func() { msg.GetSignBytes() })
 
-	evmTx2 := &types.EvmTxArgs{
+	evmTx2 := &evmtypes.EvmTxArgs{
 		Nonce:    0,
 		GasLimit: 100000,
 		Input:    []byte("test"),
 	}
-	msg = types.NewTx(evmTx2)
+	msg = evmtypes.NewTx(evmTx2)
 	suite.Require().NotNil(msg)
 	// suite.Require().Empty(msg.Data.To)
 	// suite.Require().Nil(msg.To())
 }
 
 func (suite *MsgsTestSuite) TestMsgEthereumTx_BuildTx() {
-	evmTx := &types.EvmTxArgs{
+	evmTx := &evmtypes.EvmTxArgs{
 		Nonce:     0,
 		To:        &suite.to,
 		GasLimit:  100000,
@@ -96,17 +96,17 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_BuildTx() {
 	}
 	testCases := []struct {
 		name     string
-		msg      *types.MsgEthereumTx
+		msg      *evmtypes.MsgEthereumTx
 		expError bool
 	}{
 		{
 			"build tx - pass",
-			types.NewTx(evmTx),
+			evmtypes.NewTx(evmTx),
 			false,
 		},
 		{
 			"build tx - fail: nil data",
-			types.NewTx(evmTx),
+			evmtypes.NewTx(evmTx),
 			true,
 		},
 	}
@@ -116,7 +116,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_BuildTx() {
 			tc.msg.Data = nil
 		}
 
-		tx, err := tc.msg.BuildTx(suite.clientCtx.TxConfig.NewTxBuilder(), types.DefaultEVMDenom)
+		tx, err := tc.msg.BuildTx(suite.clientCtx.TxConfig.NewTxBuilder(), evmtypes.DefaultEVMDenom)
 		if tc.expError {
 			suite.Require().Error(err)
 		} else {
@@ -125,7 +125,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_BuildTx() {
 			suite.Require().Empty(tx.GetMemo())
 			suite.Require().Empty(tx.GetTimeoutHeight())
 			suite.Require().Equal(uint64(100000), tx.GetGas())
-			suite.Require().Equal(sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewInt(100000))), tx.GetFee())
+			suite.Require().Equal(sdk.NewCoins(sdk.NewCoin(evmtypes.DefaultEVMDenom, sdkmath.NewInt(100000))), tx.GetFee())
 		}
 	}
 }
@@ -448,7 +448,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_ValidateBasic() {
 	for _, tc := range testCases {
 		suite.Run(tc.msg, func() {
 			to := common.HexToAddress(tc.to)
-			evmTx := &types.EvmTxArgs{
+			evmTx := &evmtypes.EvmTxArgs{
 				ChainID:   tc.chainID,
 				Nonce:     1,
 				To:        &to,
@@ -458,7 +458,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_ValidateBasic() {
 				GasFeeCap: tc.gasFeeCap,
 				Accesses:  tc.accessList,
 			}
-			tx := types.NewTx(evmTx)
+			tx := evmtypes.NewTx(evmTx)
 			tx.From = tc.from
 
 			// apply nil assignment here to test ValidateBasic function instead of NewTx
@@ -488,7 +488,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_ValidateBasic() {
 
 func (suite *MsgsTestSuite) TestMsgEthereumTx_ValidateBasicAdvanced() {
 	hundredInt := big.NewInt(100)
-	evmTx := &types.EvmTxArgs{
+	evmTx := &evmtypes.EvmTxArgs{
 		ChainID:   hundredInt,
 		Nonce:     1,
 		Amount:    big.NewInt(10),
@@ -499,13 +499,13 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_ValidateBasicAdvanced() {
 
 	testCases := []struct {
 		msg        string
-		msgBuilder func() *types.MsgEthereumTx
+		msgBuilder func() *evmtypes.MsgEthereumTx
 		expectPass bool
 	}{
 		{
 			"fails - invalid tx hash",
-			func() *types.MsgEthereumTx {
-				msg := types.NewTx(evmTx)
+			func() *evmtypes.MsgEthereumTx {
+				msg := evmtypes.NewTx(evmTx)
 				msg.Hash = "0x00"
 				return msg
 			},
@@ -513,8 +513,8 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_ValidateBasicAdvanced() {
 		},
 		{
 			"fails - invalid size",
-			func() *types.MsgEthereumTx {
-				msg := types.NewTx(evmTx)
+			func() *evmtypes.MsgEthereumTx {
+				msg := evmtypes.NewTx(evmTx)
 				msg.Size_ = 1
 				return msg
 			},
@@ -537,14 +537,14 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_ValidateBasicAdvanced() {
 func (suite *MsgsTestSuite) TestMsgEthereumTx_Sign() {
 	testCases := []struct {
 		msg        string
-		txParams   *types.EvmTxArgs
+		txParams   *evmtypes.EvmTxArgs
 		ethSigner  ethtypes.Signer
-		malleate   func(tx *types.MsgEthereumTx)
+		malleate   func(tx *evmtypes.MsgEthereumTx)
 		expectPass bool
 	}{
 		{
 			"pass - EIP2930 signer",
-			&types.EvmTxArgs{
+			&evmtypes.EvmTxArgs{
 				ChainID:  suite.chainID,
 				Nonce:    0,
 				To:       &suite.to,
@@ -553,12 +553,12 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_Sign() {
 				Accesses: &ethtypes.AccessList{},
 			},
 			ethtypes.NewEIP2930Signer(suite.chainID),
-			func(tx *types.MsgEthereumTx) { tx.From = suite.from.Hex() },
+			func(tx *evmtypes.MsgEthereumTx) { tx.From = suite.from.Hex() },
 			true,
 		},
 		{
 			"pass - EIP155 signer",
-			&types.EvmTxArgs{
+			&evmtypes.EvmTxArgs{
 				ChainID:  suite.chainID,
 				Nonce:    0,
 				To:       &suite.to,
@@ -566,12 +566,12 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_Sign() {
 				Input:    []byte("test"),
 			},
 			ethtypes.NewEIP155Signer(suite.chainID),
-			func(tx *types.MsgEthereumTx) { tx.From = suite.from.Hex() },
+			func(tx *evmtypes.MsgEthereumTx) { tx.From = suite.from.Hex() },
 			true,
 		},
 		{
 			"pass - Homestead signer",
-			&types.EvmTxArgs{
+			&evmtypes.EvmTxArgs{
 				ChainID:  suite.chainID,
 				Nonce:    0,
 				To:       &suite.to,
@@ -579,12 +579,12 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_Sign() {
 				Input:    []byte("test"),
 			},
 			ethtypes.HomesteadSigner{},
-			func(tx *types.MsgEthereumTx) { tx.From = suite.from.Hex() },
+			func(tx *evmtypes.MsgEthereumTx) { tx.From = suite.from.Hex() },
 			true,
 		},
 		{
 			"pass - Frontier signer",
-			&types.EvmTxArgs{
+			&evmtypes.EvmTxArgs{
 				ChainID:  suite.chainID,
 				Nonce:    0,
 				To:       &suite.to,
@@ -592,12 +592,12 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_Sign() {
 				Input:    []byte("test"),
 			},
 			ethtypes.FrontierSigner{},
-			func(tx *types.MsgEthereumTx) { tx.From = suite.from.Hex() },
+			func(tx *evmtypes.MsgEthereumTx) { tx.From = suite.from.Hex() },
 			true,
 		},
 		{
 			"no from address ",
-			&types.EvmTxArgs{
+			&evmtypes.EvmTxArgs{
 				ChainID:  suite.chainID,
 				Nonce:    0,
 				To:       &suite.to,
@@ -606,12 +606,12 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_Sign() {
 				Accesses: &ethtypes.AccessList{},
 			},
 			ethtypes.NewEIP2930Signer(suite.chainID),
-			func(tx *types.MsgEthereumTx) { tx.From = "" },
+			func(tx *evmtypes.MsgEthereumTx) { tx.From = "" },
 			false,
 		},
 		{
 			"from address ≠ signer address",
-			&types.EvmTxArgs{
+			&evmtypes.EvmTxArgs{
 				ChainID:  suite.chainID,
 				Nonce:    0,
 				To:       &suite.to,
@@ -620,13 +620,13 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_Sign() {
 				Accesses: &ethtypes.AccessList{},
 			},
 			ethtypes.NewEIP2930Signer(suite.chainID),
-			func(tx *types.MsgEthereumTx) { tx.From = suite.to.Hex() },
+			func(tx *evmtypes.MsgEthereumTx) { tx.From = suite.to.Hex() },
 			false,
 		},
 	}
 
 	for i, tc := range testCases {
-		tx := types.NewTx(tc.txParams)
+		tx := evmtypes.NewTx(tc.txParams)
 		tc.malleate(tx)
 		err := tx.Sign(tc.ethSigner, suite.signer)
 		if tc.expectPass {
@@ -642,7 +642,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_Sign() {
 }
 
 func (suite *MsgsTestSuite) TestMsgEthereumTx_Getters() {
-	evmTx := &types.EvmTxArgs{
+	evmTx := &evmtypes.EvmTxArgs{
 		ChainID:  suite.chainID,
 		Nonce:    0,
 		To:       &suite.to,
@@ -691,7 +691,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_Getters() {
 
 	var fee, effFee *big.Int
 	for _, tc := range testCases {
-		tx := types.NewTx(evmTx)
+		tx := evmtypes.NewTx(evmTx)
 		if strings.Contains(tc.name, "nil data") {
 			tx.Data = nil
 		}
@@ -804,7 +804,7 @@ func (suite *MsgsTestSuite) TestFromEthereumTx() {
 
 	for _, tc := range testCases {
 		ethTx := tc.buildTx()
-		tx := &types.MsgEthereumTx{}
+		tx := &evmtypes.MsgEthereumTx{}
 		err := tx.FromEthereumTx(ethTx)
 		if tc.expectPass {
 			suite.Require().NoError(err)
@@ -895,12 +895,12 @@ func (suite *MsgsTestSuite) TestTransactionCoding() {
 	}
 }
 
-func encodeDecodeBinary(tx *ethtypes.Transaction) (*types.MsgEthereumTx, error) {
+func encodeDecodeBinary(tx *ethtypes.Transaction) (*evmtypes.MsgEthereumTx, error) {
 	data, err := tx.MarshalBinary()
 	if err != nil {
 		return nil, fmt.Errorf("rlp encoding failed: %v", err)
 	}
-	parsedTx := &types.MsgEthereumTx{}
+	parsedTx := &evmtypes.MsgEthereumTx{}
 	if err := parsedTx.UnmarshalBinary(data); err != nil {
 		return nil, fmt.Errorf("rlp decoding failed: %v", err)
 	}

@@ -12,8 +12,8 @@ import (
 
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // EVMKeeper defines the expected keeper interface used on the AnteHandler

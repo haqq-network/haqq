@@ -55,8 +55,8 @@ import (
 	"github.com/evmos/evmos/v14/server/config"
 	evmostypes "github.com/evmos/evmos/v14/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // package-wide network lock to only allow one test network at a time

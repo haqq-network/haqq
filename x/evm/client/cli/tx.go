@@ -1,20 +1,26 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/input"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/haqq-network/haqq/x/evm/types"
+	rpctypes "github.com/evmos/evmos/v14/rpc/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
 func GetTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        types.ModuleName,
-		Short:                      fmt.Sprintf("%s transactions subcommands", types.ModuleName),
+		Use:                        evmtypes.ModuleName,
+		Short:                      fmt.Sprintf("%s transactions subcommands", evmtypes.ModuleName),
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
@@ -30,14 +36,12 @@ func NewRawTxCmd() *cobra.Command {
 		Short: "Build cosmos transaction from raw ethereum transaction",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf("not implemented")
-
-			/*data, err := hexutil.Decode(args[0])
+			data, err := hexutil.Decode(args[0])
 			if err != nil {
 				return errors.Wrap(err, "failed to decode ethereum tx hex bytes")
 			}
 
-			msg := &types.MsgEthereumTx{}
+			msg := &evmtypes.MsgEthereumTx{}
 			if err := msg.UnmarshalBinary(data); err != nil {
 				return err
 			}
@@ -51,7 +55,7 @@ func NewRawTxCmd() *cobra.Command {
 				return err
 			}
 
-			rsp, err := rpctypes.NewQueryClient(clientCtx).Params(cmd.Context(), &types.QueryParamsRequest{})
+			rsp, err := rpctypes.NewQueryClient(clientCtx).Params(cmd.Context(), &evmtypes.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}
@@ -98,7 +102,7 @@ func NewRawTxCmd() *cobra.Command {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)*/
+			return clientCtx.PrintProto(res)
 		},
 	}
 

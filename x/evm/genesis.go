@@ -11,16 +11,17 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	evmostypes "github.com/evmos/evmos/v14/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/x/evm/keeper"
-	"github.com/haqq-network/haqq/x/evm/types"
+	haqqevmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // InitGenesis initializes genesis state based on exported genesis
 func InitGenesis(
 	ctx sdk.Context,
 	k *keeper.Keeper,
-	accountKeeper types.AccountKeeper,
-	data types.GenesisState,
+	accountKeeper haqqevmtypes.AccountKeeper,
+	data evmtypes.GenesisState,
 ) []abci.ValidatorUpdate {
 	k.WithChainID(ctx)
 
@@ -30,7 +31,7 @@ func InitGenesis(
 	}
 
 	// ensure evm module account is set
-	if addr := accountKeeper.GetModuleAddress(types.ModuleName); addr == nil {
+	if addr := accountKeeper.GetModuleAddress(evmtypes.ModuleName); addr == nil {
 		panic("the EVM module account has not been set")
 	}
 
@@ -72,8 +73,8 @@ func InitGenesis(
 }
 
 // ExportGenesis exports genesis state of the EVM module
-func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *types.GenesisState {
-	var ethGenAccounts []types.GenesisAccount
+func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak haqqevmtypes.AccountKeeper) *evmtypes.GenesisState {
+	var ethGenAccounts []evmtypes.GenesisAccount
 	ak.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
 		ethAccount, ok := account.(evmostypes.EthAccountI)
 		if !ok {
@@ -85,7 +86,7 @@ func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *t
 
 		storage := k.GetAccountStorage(ctx, addr)
 
-		genAccount := types.GenesisAccount{
+		genAccount := evmtypes.GenesisAccount{
 			Address: addr.String(),
 			Code:    common.Bytes2Hex(k.GetCode(ctx, ethAccount.GetCodeHash())),
 			Storage: storage,
@@ -95,7 +96,7 @@ func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *t
 		return false
 	})
 
-	return &types.GenesisState{
+	return &evmtypes.GenesisState{
 		Accounts: ethGenAccounts,
 		Params:   k.GetParams(ctx),
 	}

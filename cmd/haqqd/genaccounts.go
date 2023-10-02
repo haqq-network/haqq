@@ -23,7 +23,7 @@ import (
 	evmoskr "github.com/evmos/evmos/v14/crypto/keyring"
 	ethermint "github.com/evmos/evmos/v14/types"
 
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	vestingcli "github.com/haqq-network/haqq/x/vesting/client/cli"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )

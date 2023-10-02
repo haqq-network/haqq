@@ -34,6 +34,7 @@ import (
 	evmostypes "github.com/evmos/evmos/v14/types"
 	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	haqqapp "github.com/haqq-network/haqq/app"
 	haqqcontracts "github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/precompiles/authorization"
@@ -46,7 +47,6 @@ import (
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 type erc20Meta struct {

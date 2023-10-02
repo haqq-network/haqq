@@ -6,16 +6,17 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	haqqevmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
-var _ types.EvmHooks = MultiEvmHooks{}
+var _ haqqevmtypes.EvmHooks = MultiEvmHooks{}
 
 // MultiEvmHooks combine multiple evm hooks, all hook functions are run in array sequence
-type MultiEvmHooks []types.EvmHooks
+type MultiEvmHooks []evmtypes.EvmHooks
 
 // NewMultiEvmHooks combine multiple evm hooks
-func NewMultiEvmHooks(hooks ...types.EvmHooks) MultiEvmHooks {
+func NewMultiEvmHooks(hooks ...evmtypes.EvmHooks) MultiEvmHooks {
 	return hooks
 }
 

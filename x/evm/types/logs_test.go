@@ -7,8 +7,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 func TestTransactionLogsValidate(t *testing.T) {
@@ -16,14 +16,14 @@ func TestTransactionLogsValidate(t *testing.T) {
 
 	testCases := []struct {
 		name    string
-		txLogs  types.TransactionLogs
+		txLogs  evmtypes.TransactionLogs
 		expPass bool
 	}{
 		{
 			"valid log",
-			types.TransactionLogs{
+			evmtypes.TransactionLogs{
 				Hash: common.BytesToHash([]byte("tx_hash")).String(),
-				Logs: []*types.Log{
+				Logs: []*evmtypes.Log{
 					{
 						Address:     addr,
 						Topics:      []string{common.BytesToHash([]byte("topic")).String()},
@@ -41,32 +41,32 @@ func TestTransactionLogsValidate(t *testing.T) {
 		},
 		{
 			"empty hash",
-			types.TransactionLogs{
+			evmtypes.TransactionLogs{
 				Hash: common.Hash{}.String(),
 			},
 			false,
 		},
 		{
 			"nil log",
-			types.TransactionLogs{
+			evmtypes.TransactionLogs{
 				Hash: common.BytesToHash([]byte("tx_hash")).String(),
-				Logs: []*types.Log{nil},
+				Logs: []*evmtypes.Log{nil},
 			},
 			false,
 		},
 		{
 			"invalid log",
-			types.TransactionLogs{
+			evmtypes.TransactionLogs{
 				Hash: common.BytesToHash([]byte("tx_hash")).String(),
-				Logs: []*types.Log{{}},
+				Logs: []*evmtypes.Log{{}},
 			},
 			false,
 		},
 		{
 			"hash mismatch log",
-			types.TransactionLogs{
+			evmtypes.TransactionLogs{
 				Hash: common.BytesToHash([]byte("tx_hash")).String(),
-				Logs: []*types.Log{
+				Logs: []*evmtypes.Log{
 					{
 						Address:     addr,
 						Topics:      []string{common.BytesToHash([]byte("topic")).String()},
@@ -100,12 +100,12 @@ func TestValidateLog(t *testing.T) {
 
 	testCases := []struct {
 		name    string
-		log     *types.Log
+		log     *evmtypes.Log
 		expPass bool
 	}{
 		{
 			"valid log",
-			&types.Log{
+			&evmtypes.Log{
 				Address:     addr,
 				Topics:      []string{common.BytesToHash([]byte("topic")).String()},
 				Data:        []byte("data"),
@@ -119,18 +119,18 @@ func TestValidateLog(t *testing.T) {
 			true,
 		},
 		{
-			"empty log", &types.Log{}, false,
+			"empty log", &evmtypes.Log{}, false,
 		},
 		{
 			"zero address",
-			&types.Log{
+			&evmtypes.Log{
 				Address: common.Address{}.String(),
 			},
 			false,
 		},
 		{
 			"empty block hash",
-			&types.Log{
+			&evmtypes.Log{
 				Address:   addr,
 				BlockHash: common.Hash{}.String(),
 			},
@@ -138,7 +138,7 @@ func TestValidateLog(t *testing.T) {
 		},
 		{
 			"zero block number",
-			&types.Log{
+			&evmtypes.Log{
 				Address:     addr,
 				BlockHash:   common.BytesToHash([]byte("block_hash")).String(),
 				BlockNumber: 0,
@@ -147,7 +147,7 @@ func TestValidateLog(t *testing.T) {
 		},
 		{
 			"empty tx hash",
-			&types.Log{
+			&evmtypes.Log{
 				Address:     addr,
 				BlockHash:   common.BytesToHash([]byte("block_hash")).String(),
 				BlockNumber: 1,
@@ -171,9 +171,9 @@ func TestValidateLog(t *testing.T) {
 func TestConversionFunctions(t *testing.T) {
 	addr := utiltx.GenerateAddress().String()
 
-	txLogs := types.TransactionLogs{
+	txLogs := evmtypes.TransactionLogs{
 		Hash: common.BytesToHash([]byte("tx_hash")).String(),
-		Logs: []*types.Log{
+		Logs: []*evmtypes.Log{
 			{
 				Address:     addr,
 				Topics:      []string{common.BytesToHash([]byte("topic")).String()},
@@ -189,11 +189,11 @@ func TestConversionFunctions(t *testing.T) {
 	}
 
 	// convert valid log to eth logs and back (and validate)
-	conversionLogs := types.NewTransactionLogsFromEth(common.BytesToHash([]byte("tx_hash")), txLogs.EthLogs())
+	conversionLogs := evmtypes.NewTransactionLogsFromEth(common.BytesToHash([]byte("tx_hash")), txLogs.EthLogs())
 	conversionErr := conversionLogs.Validate()
 
 	// create new transaction logs as copy of old valid one (and validate)
-	copyLogs := types.NewTransactionLogs(common.BytesToHash([]byte("tx_hash")), txLogs.Logs)
+	copyLogs := evmtypes.NewTransactionLogs(common.BytesToHash([]byte("tx_hash")), txLogs.Logs)
 	copyErr := copyLogs.Validate()
 
 	require.Nil(t, conversionErr)

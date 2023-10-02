@@ -29,8 +29,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/evmos/evmos/v14/server"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func startInProcess(cfg Config, val *Validator) error {

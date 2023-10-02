@@ -10,11 +10,11 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/evmos/evmos/v14/server/config"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	ethante "github.com/haqq-network/haqq/app/ante/evm"
 	"github.com/haqq-network/haqq/testutil"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/evm/statedb"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func BenchmarkEthGasConsumeDecorator(b *testing.B) {

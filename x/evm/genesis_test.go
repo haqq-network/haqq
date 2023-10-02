@@ -8,9 +8,9 @@ import (
 	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
 	evmostypes "github.com/evmos/evmos/v14/types"
 
+	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/x/evm"
 	"github.com/haqq-network/haqq/x/evm/statedb"
-	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *EvmTestSuite) TestInitGenesis() {
@@ -24,13 +24,13 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 	testCases := []struct {
 		name     string
 		malleate func()
-		genState *types.GenesisState
+		genState *evmtypes.GenesisState
 		expPanic bool
 	}{
 		{
 			"default",
 			func() {},
-			types.DefaultGenesisState(),
+			evmtypes.DefaultGenesisState(),
 			false,
 		},
 		{
@@ -38,12 +38,12 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 			func() {
 				vmdb.AddBalance(address, big.NewInt(1))
 			},
-			&types.GenesisState{
-				Params: types.DefaultParams(),
-				Accounts: []types.GenesisAccount{
+			&evmtypes.GenesisState{
+				Params: evmtypes.DefaultParams(),
+				Accounts: []evmtypes.GenesisAccount{
 					{
 						Address: address.String(),
-						Storage: types.Storage{
+						Storage: evmtypes.Storage{
 							{Key: common.BytesToHash([]byte("key")).String(), Value: common.BytesToHash([]byte("value")).String()},
 						},
 					},
@@ -54,9 +54,9 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 		{
 			"account not found",
 			func() {},
-			&types.GenesisState{
-				Params: types.DefaultParams(),
-				Accounts: []types.GenesisAccount{
+			&evmtypes.GenesisState{
+				Params: evmtypes.DefaultParams(),
+				Accounts: []evmtypes.GenesisAccount{
 					{
 						Address: address.String(),
 					},
@@ -70,9 +70,9 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 				acc := authtypes.NewBaseAccountWithAddress(address.Bytes())
 				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 			},
-			&types.GenesisState{
-				Params: types.DefaultParams(),
-				Accounts: []types.GenesisAccount{
+			&evmtypes.GenesisState{
+				Params: evmtypes.DefaultParams(),
+				Accounts: []evmtypes.GenesisAccount{
 					{
 						Address: address.String(),
 					},
@@ -86,9 +86,9 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, address.Bytes())
 				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 			},
-			&types.GenesisState{
-				Params: types.DefaultParams(),
-				Accounts: []types.GenesisAccount{
+			&evmtypes.GenesisState{
+				Params: evmtypes.DefaultParams(),
+				Accounts: []evmtypes.GenesisAccount{
 					{
 						Address: address.String(),
 						Code:    "ffffffff",
@@ -104,9 +104,9 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 
 				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 			},
-			&types.GenesisState{
-				Params: types.DefaultParams(),
-				Accounts: []types.GenesisAccount{
+			&evmtypes.GenesisState{
+				Params: evmtypes.DefaultParams(),
+				Accounts: []evmtypes.GenesisAccount{
 					{
 						Address: address.String(),
 						Code:    "",
@@ -125,9 +125,9 @@ func (suite *EvmTestSuite) TestInitGenesis() {
 
 				suite.app.AccountKeeper.SetAccount(suite.ctx, ethAcc)
 			},
-			&types.GenesisState{
-				Params: types.DefaultParams(),
-				Accounts: []types.GenesisAccount{
+			&evmtypes.GenesisState{
+				Params: evmtypes.DefaultParams(),
+				Accounts: []evmtypes.GenesisAccount{
 					{
 						Address: address.String(),
 						Code:    "",
