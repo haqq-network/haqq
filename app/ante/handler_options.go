@@ -13,13 +13,10 @@ import (
 	ibcante "github.com/cosmos/ibc-go/v7/modules/core/ante"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 
-	evmoscosmosante "github.com/evmos/evmos/v14/app/ante/cosmos"
-	evmosevmante "github.com/evmos/evmos/v14/app/ante/evm"
-	evmosanteutils "github.com/evmos/evmos/v14/app/ante/utils"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
-
-	haqqcosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
-	haqqevmante "github.com/haqq-network/haqq/app/ante/evm"
+	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
+	evmante "github.com/haqq-network/haqq/app/ante/evm"
+	anteutils "github.com/haqq-network/haqq/app/ante/utils"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -29,17 +26,17 @@ type HandlerOptions struct {
 	Cdc                    codec.BinaryCodec
 	AccountKeeper          evmtypes.AccountKeeper
 	BankKeeper             evmtypes.BankKeeper
-	DistributionKeeper     evmosanteutils.DistributionKeeper
+	DistributionKeeper     anteutils.DistributionKeeper
 	IBCKeeper              *ibckeeper.Keeper
 	StakingKeeper          vestingtypes.StakingKeeper
-	FeeMarketKeeper        evmosevmante.FeeMarketKeeper
-	EvmKeeper              evmosevmante.EVMKeeper
+	FeeMarketKeeper        evmante.FeeMarketKeeper
+	EvmKeeper              evmante.EVMKeeper
 	FeegrantKeeper         ante.FeegrantKeeper
 	ExtensionOptionChecker ante.ExtensionOptionChecker
 	SignModeHandler        authsigning.SignModeHandler
 	SigGasConsumer         func(meter sdk.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
 	MaxTxGasWanted         uint64
-	TxFeeChecker           evmosanteutils.TxFeeChecker
+	TxFeeChecker           anteutils.TxFeeChecker
 }
 
 // Validate checks if the keepers are defined
@@ -84,29 +81,29 @@ func (options HandlerOptions) Validate() error {
 func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		// outermost AnteDecorator. SetUpContext must be called first
-		evmosevmante.NewEthSetUpContextDecorator(options.EvmKeeper),
+		evmante.NewEthSetUpContextDecorator(options.EvmKeeper),
 		// Check eth effective gas price against the node's minimal-gas-prices config
-		evmosevmante.NewEthMempoolFeeDecorator(options.EvmKeeper),
+		evmante.NewEthMempoolFeeDecorator(options.EvmKeeper),
 		// Check eth effective gas price against the global MinGasPrice
-		evmosevmante.NewEthMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
-		evmosevmante.NewEthValidateBasicDecorator(options.EvmKeeper),
-		evmosevmante.NewEthSigVerificationDecorator(options.EvmKeeper),
-		evmosevmante.NewEthAccountVerificationDecorator(options.AccountKeeper, options.EvmKeeper),
-		evmosevmante.NewCanTransferDecorator(options.EvmKeeper),
-		haqqevmante.NewEthVestingTransactionDecorator(options.AccountKeeper, options.BankKeeper, options.EvmKeeper),
-		evmosevmante.NewEthGasConsumeDecorator(options.BankKeeper, options.DistributionKeeper, options.EvmKeeper, options.StakingKeeper, options.MaxTxGasWanted),
-		evmosevmante.NewEthIncrementSenderSequenceDecorator(options.AccountKeeper),
-		evmosevmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
+		evmante.NewEthMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
+		evmante.NewEthValidateBasicDecorator(options.EvmKeeper),
+		evmante.NewEthSigVerificationDecorator(options.EvmKeeper),
+		evmante.NewEthAccountVerificationDecorator(options.AccountKeeper, options.EvmKeeper),
+		evmante.NewCanTransferDecorator(options.EvmKeeper),
+		evmante.NewEthVestingTransactionDecorator(options.AccountKeeper, options.BankKeeper, options.EvmKeeper),
+		evmante.NewEthGasConsumeDecorator(options.BankKeeper, options.DistributionKeeper, options.EvmKeeper, options.StakingKeeper, options.MaxTxGasWanted),
+		evmante.NewEthIncrementSenderSequenceDecorator(options.AccountKeeper),
+		evmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
 		// emit eth tx hash and index at the very last ante handler.
-		evmosevmante.NewEthEmitEventDecorator(options.EvmKeeper),
+		evmante.NewEthEmitEventDecorator(options.EvmKeeper),
 	)
 }
 
 // newCosmosAnteHandler creates the default ante handler for Cosmos transactions
 func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
-		evmoscosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
-		evmoscosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
+		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
+		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
 			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
@@ -115,10 +112,10 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
-		evmoscosmosante.NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
+		cosmosante.NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-		evmoscosmosante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.DistributionKeeper, options.FeegrantKeeper, options.StakingKeeper, options.TxFeeChecker),
-		haqqcosmosante.NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.BankKeeper, options.Cdc),
+		cosmosante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.DistributionKeeper, options.FeegrantKeeper, options.StakingKeeper, options.TxFeeChecker),
+		cosmosante.NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.BankKeeper, options.Cdc),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
@@ -126,35 +123,35 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
-		evmosevmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
+		evmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
 	)
 }
 
 // newCosmosAnteHandlerEip712 creates the ante handler for transactions signed with EIP712
 func newLegacyCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
-		evmoscosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
-		evmoscosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
+		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
+		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
 			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
 		),
 		ante.NewSetUpContextDecorator(),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
-		evmoscosmosante.NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
+		cosmosante.NewMinGasPriceDecorator(options.FeeMarketKeeper, options.EvmKeeper),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
-		evmoscosmosante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.DistributionKeeper, options.FeegrantKeeper, options.StakingKeeper, options.TxFeeChecker),
-		haqqcosmosante.NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.BankKeeper, options.Cdc),
+		cosmosante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.DistributionKeeper, options.FeegrantKeeper, options.StakingKeeper, options.TxFeeChecker),
+		cosmosante.NewVestingDelegationDecorator(options.AccountKeeper, options.StakingKeeper, options.BankKeeper, options.Cdc),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(options.AccountKeeper),
 		ante.NewValidateSigCountDecorator(options.AccountKeeper),
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
 		// Note: signature verification uses EIP instead of the cosmos signature validator
 		//nolint: staticcheck
-		evmoscosmosante.NewLegacyEip712SigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
+		cosmosante.NewLegacyEip712SigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
-		evmosevmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
+		evmante.NewGasWantedDecorator(options.EvmKeeper, options.FeeMarketKeeper),
 	)
 }
