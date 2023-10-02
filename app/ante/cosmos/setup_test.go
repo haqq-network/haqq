@@ -49,7 +49,7 @@ type AnteTestSuite struct {
 
 const TestGasLimit uint64 = 100000
 
-var chainID = utils.TestEdge2ChainID + "-1"
+var chainID = utils.MainNetChainID + "-1"
 
 func (suite *AnteTestSuite) StateDB() *statedb.StateDB {
 	return statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(suite.ctx.HeaderHash().Bytes())))

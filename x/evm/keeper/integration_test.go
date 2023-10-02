@@ -175,7 +175,7 @@ func setupChain(localMinGasPricesStr string) {
 	// Initialize the app, so we can use SetMinGasPrices to set the
 	// validator-specific min-gas-prices setting
 	db := dbm.NewMemDB()
-	chainID := utils.TestEdge2ChainID + "-1"
+	chainID := utils.MainNetChainID + "-1"
 	newapp := app.NewHaqq(
 		log.NewNopLogger(),
 		db,

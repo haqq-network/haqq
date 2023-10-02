@@ -7,6 +7,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/stretchr/testify/require"
+
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -14,26 +16,23 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	"github.com/evmos/ethermint/encoding"
-	evmostypes "github.com/evmos/ethermint/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	"github.com/evmos/evmos/v10/contracts"
-	epochstypes "github.com/evmos/evmos/v10/x/epochs/types"
+	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
+	"github.com/evmos/evmos/v14/encoding"
+	evmostypes "github.com/evmos/evmos/v14/types"
+	epochstypes "github.com/evmos/evmos/v14/x/epochs/types"
 
 	"github.com/haqq-network/haqq/app"
 	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
 	evmante "github.com/haqq-network/haqq/app/ante/evm"
+	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/utils"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
-
-	"github.com/stretchr/testify/require"
 )
 
 func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
@@ -52,7 +51,8 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
 
 	// Init app
-	suite.app, _ = app.Setup(checkTx, nil)
+	chainID := utils.MainNetChainID + "-1"
+	suite.app, _ = app.Setup(checkTx, nil, chainID)
 
 	// Set Context
 	header := testutil.NewHeader(
@@ -101,9 +101,9 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	valAddr := sdk.ValAddress(suite.address.Bytes())
 	validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
-	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
-	err = suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
-	require.NoError(t, err)
+	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
+	//err = suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	//require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 	validators := s.app.StakingKeeper.GetValidators(s.ctx, 1)
@@ -173,7 +173,7 @@ func assertEthFails(msgs ...sdk.Msg) {
 	Expect(strings.Contains(err.Error(), insufficientUnlocked))
 
 	// Sanity check that delivery fails as well
-	_, err = testutil.DeliverEthTx(s.ctx, s.app, nil, msgs...)
+	_, err = testutil.DeliverEthTx(s.app, nil, msgs...)
 	Expect(err).ToNot(BeNil())
 	Expect(strings.Contains(err.Error(), insufficientUnlocked))
 }
@@ -197,7 +197,7 @@ func assertEthSucceeds(testAccounts []TestClawbackAccount, funder sdk.AccAddress
 	Expect(err).To(BeNil())
 
 	// Expect delivery to succeed, then compare balances
-	_, err = testutil.DeliverEthTx(s.ctx, s.app, nil, msgs...)
+	_, err = testutil.DeliverEthTx(s.app, nil, msgs...)
 	Expect(err).To(BeNil())
 
 	fb := s.app.BankKeeper.GetBalance(s.ctx, funder, denom)
@@ -223,7 +223,7 @@ func delegate(clawbackAccount *types.ClawbackVestingAccount, amount sdkmath.Int,
 	s.Require().NoError(err)
 	delegateMsg := stakingtypes.NewMsgDelegate(addr, val, sdk.NewCoin(s.app.StakingKeeper.BondDenom(s.ctx), amount))
 
-	dec := cosmosante.NewVestingDelegationDecorator(s.app.AccountKeeper, s.app.StakingKeeper, types.ModuleCdc)
+	dec := cosmosante.NewVestingDelegationDecorator(s.app.AccountKeeper, s.app.StakingKeeper, s.app.BankKeeper, types.ModuleCdc)
 	err = testutil.ValidateAnteForMsgs(s.ctx, dec, delegateMsg)
 	return err
 }

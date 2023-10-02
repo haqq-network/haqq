@@ -77,15 +77,15 @@ func TestKeeperTestSuite(t *testing.T) {
 
 func (suite *KeeperTestSuite) SetupTest() {
 	checkTx := false
-	chainID := utils.TestEdge2ChainID + "-1"
-	suite.app = app.Setup(checkTx, nil, chainID)
+	chainID := utils.MainNetChainID + "-1"
+	suite.app, _ = app.Setup(checkTx, nil, chainID)
 	suite.SetupApp(checkTx, chainID)
 }
 
 func (suite *KeeperTestSuite) SetupTestWithT(t require.TestingT) {
 	checkTx := false
-	chainID := utils.TestEdge2ChainID + "-1"
-	suite.app = app.Setup(checkTx, nil, chainID)
+	chainID := utils.MainNetChainID + "-1"
+	suite.app, _ = app.Setup(checkTx, nil, chainID)
 	suite.SetupAppWithT(checkTx, t, chainID)
 }
 

@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/haqq-network/haqq/utils"
 )
 
 type GenesisTestSuite struct {
@@ -28,9 +30,9 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		sdk.NewDec(100),
 		1,
 		100,
-		sdk.NewCoin("aISLM", sdk.NewInt(10_000_000)),
-		sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_0)),
-		sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
+		sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000)),
+		sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000_0)),
+		sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000_000)),
 	)
 
 	testCases := []struct {
@@ -60,9 +62,9 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Inflation:         sdk.NewDec(100),
 				Era:               1,
 				EraStartedAtBlock: 100,
-				EraTargetMint:     sdk.NewCoin("aISLM", sdk.NewInt(10_000_000)),
-				EraClosingSupply:  sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_00)),
-				MaxSupply:         sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
+				EraTargetMint:     sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000)),
+				EraClosingSupply:  sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000_00)),
+				MaxSupply:         sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000_000)),
 			},
 			true,
 		},
@@ -80,8 +82,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Inflation:         sdk.NewDec(100),
 				Era:               1,
 				EraStartedAtBlock: 100,
-				EraClosingSupply:  sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_00)),
-				MaxSupply:         sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
+				EraClosingSupply:  sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000_00)),
+				MaxSupply:         sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000_000)),
 			},
 			false,
 		},
@@ -92,8 +94,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Inflation:         sdk.NewDec(100),
 				Era:               1,
 				EraStartedAtBlock: 100,
-				EraTargetMint:     sdk.NewCoin("aISLM", sdk.NewInt(10_000_000)),
-				MaxSupply:         sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
+				EraTargetMint:     sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000)),
+				MaxSupply:         sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000_000)),
 			},
 			false,
 		},
@@ -104,8 +106,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 				Inflation:         sdk.NewDec(100),
 				Era:               1,
 				EraStartedAtBlock: 100,
-				EraTargetMint:     sdk.NewCoin("aISLM", sdk.NewInt(10_000_000)),
-				MaxSupply:         sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_00)),
+				EraTargetMint:     sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000)),
+				MaxSupply:         sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10_000_000_00)),
 			},
 			false,
 		},

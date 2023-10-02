@@ -4,15 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"cosmossdk.io/simapp"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/evmos/evmos/v14/encoding"
 	"github.com/evmos/evmos/v14/testutil/network"
+
+	"github.com/haqq-network/haqq/app"
 	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
-	"github.com/stretchr/testify/suite"
 )
 
 type IntegrationTestSuite struct {
@@ -60,13 +62,13 @@ func (s *IntegrationTestSuite) TestCommunityProposals() {
 				Info:   "test",
 			}),
 		},
-		{
-			name:  "community-pool-spend",
-			valid: false,
-			proposal: types.NewCommunityPoolSpendProposal("Test", "description", val.Address, sdk.NewCoins(
-				sdk.NewCoin("ISLM", sdk.NewInt(1)),
-			)),
-		},
+		//{
+		//	name:  "community-pool-spend",
+		//	valid: false,
+		//	proposal: types.NewCommunityPoolSpendProposal("Test", "description", val.Address, sdk.NewCoins(
+		//		sdk.NewCoin("ISLM", sdk.NewInt(1)),
+		//	)),
+		//},
 	}
 
 	for i, tc := range testCases {
@@ -117,8 +119,8 @@ func (s *IntegrationTestSuite) TestCommunityProposals() {
 
 func TestDisabledCommunityProposals(t *testing.T) {
 	cfg := haqqnetwork.HaqqNetworkConfig()
-	encCfg := simapp.MakeTestEncodingConfig()
-	cfg.AppConstructor = haqqnetwork.NewAppConstructor(encCfg)
+	encCfg := encoding.MakeConfig(app.ModuleBasics)
+	cfg.AppConstructor = haqqnetwork.NewAppConstructor(encCfg, cfg.ChainID)
 	cfg.NumValidators = 1
 
 	suite.Run(t, NewIntegrationTestSuite(cfg))

@@ -8,9 +8,11 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	"github.com/haqq-network/haqq/utils"
 )
 
-var DefaultMintDenom = "aISLM"
+var DefaultMintDenom = utils.BaseDenom
 
 // Parameter store keys
 var (

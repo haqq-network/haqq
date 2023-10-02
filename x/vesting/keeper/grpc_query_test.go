@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/evmos/ethermint/tests"
 	"github.com/haqq-network/haqq/testutil"
+	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -16,7 +16,7 @@ func (suite *KeeperTestSuite) TestBalances() {
 		req    *types.QueryBalancesRequest
 		expRes *types.QueryBalancesResponse
 	)
-	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
+	addr := sdk.AccAddress(testutiltx.GenerateAddress().Bytes())
 
 	testCases := []struct {
 		name     string

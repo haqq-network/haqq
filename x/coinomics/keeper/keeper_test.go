@@ -4,33 +4,34 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	"github.com/evmos/ethermint/tests"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	"github.com/cometbft/cometbft/version"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	"github.com/tendermint/tendermint/version"
+	"github.com/ethereum/go-ethereum/common"
 
-	evm "github.com/evmos/ethermint/x/evm/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
+	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
-	"github.com/haqq-network/haqq/app"
-	haqqtypes "github.com/haqq-network/haqq/types"
+	haqqapp "github.com/haqq-network/haqq/app"
+	testutiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/utils"
+	haqqtypes "github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/coinomics/types"
+	evm "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var denomMint = types.DefaultMintDenom
@@ -39,7 +40,7 @@ type KeeperTestSuite struct {
 	suite.Suite
 
 	ctx            sdk.Context
-	app            *app.Haqq
+	app            *haqqapp.Haqq
 	address        common.Address
 	signer         keyring.Signer
 	queryClientEvm evm.QueryClient
@@ -71,7 +72,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	require.NoError(t, err)
 	suite.privKey = priv
 	suite.address = common.BytesToAddress(priv.PubKey().Address().Bytes())
-	suite.signer = tests.NewSigner(priv)
+	suite.signer = testutiltx.NewSigner(priv)
 
 	// consensus key
 	privCons, err := ethsecp256k1.GenerateKey()
@@ -83,12 +84,13 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.denom = types.DefaultMintDenom
 
 	// setup context
-	app, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState())
+	chainID := utils.MainNetChainID + "-1"
+	app, valAddr1 := haqqapp.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
 
 	suite.app = app
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
-		ChainID:         haqqtypes.LocalNetChainID + "-1",
+		ChainID:         haqqtypes.MainNetChainID + "-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: valAddr1,
 
@@ -126,9 +128,9 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 
-	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
-	err = suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
-	require.NoError(t, err)
+	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
+	//err = suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	//require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 

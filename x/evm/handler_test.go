@@ -110,7 +110,7 @@ func (suite *EvmTestSuite) DoSetupTest(t require.TestingT) {
 
 	// Initialize the chain
 	req := abci.RequestInitChain{
-		ChainId:         utils.TestEdge2ChainID + "-1",
+		ChainId:         utils.MainNetChainID + "-1",
 		Validators:      []abci.ValidatorUpdate{},
 		ConsensusParams: app.DefaultConsensusParams,
 		AppStateBytes:   stateBytes,
