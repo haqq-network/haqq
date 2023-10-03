@@ -2,6 +2,7 @@ package types_test
 
 import (
 	"fmt"
+	"github.com/haqq-network/haqq/utils"
 	"math"
 	"math/big"
 	"reflect"
@@ -116,7 +117,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_BuildTx() {
 			tc.msg.Data = nil
 		}
 
-		tx, err := tc.msg.BuildTx(suite.clientCtx.TxConfig.NewTxBuilder(), evmtypes.DefaultEVMDenom)
+		tx, err := tc.msg.BuildTx(suite.clientCtx.TxConfig.NewTxBuilder(), utils.BaseDenom)
 		if tc.expError {
 			suite.Require().Error(err)
 		} else {
@@ -125,7 +126,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_BuildTx() {
 			suite.Require().Empty(tx.GetMemo())
 			suite.Require().Empty(tx.GetTimeoutHeight())
 			suite.Require().Equal(uint64(100000), tx.GetGas())
-			suite.Require().Equal(sdk.NewCoins(sdk.NewCoin(evmtypes.DefaultEVMDenom, sdkmath.NewInt(100000))), tx.GetFee())
+			suite.Require().Equal(sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(100000))), tx.GetFee())
 		}
 	}
 }

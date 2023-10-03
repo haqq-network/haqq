@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"fmt"
+	"github.com/haqq-network/haqq/utils"
 	"math/big"
 
 	"github.com/stretchr/testify/mock"
@@ -32,9 +33,9 @@ func (suite *KeeperTestSuite) TestTransfer() {
 			"pass - no token pair",
 			func() *types.MsgTransfer {
 				senderAcc := sdk.AccAddress(suite.address.Bytes())
-				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin("aevmos", sdk.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
+				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
 
-				coins := sdk.NewCoins(sdk.NewCoin("aevmos", sdk.NewInt(10)))
+				coins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdk.NewInt(10)))
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 				suite.Require().NoError(err)
 				err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, senderAcc, coins)

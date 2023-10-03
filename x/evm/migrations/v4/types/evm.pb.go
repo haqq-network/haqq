@@ -769,20 +769,21 @@ func (m *V4TraceConfig) GetTracerJsonConfig() string {
 	return ""
 }
 
-func init() {
-	proto.RegisterType((*V4Params)(nil), "ethermint.evm.v1.V4Params")
-	proto.RegisterType((*ExtraEIPs)(nil), "ethermint.evm.v1.ExtraEIPs")
-	proto.RegisterType((*V4ChainConfig)(nil), "ethermint.evm.v1.V4ChainConfig")
-	proto.RegisterType((*V4State)(nil), "ethermint.evm.v1.V4State")
-	proto.RegisterType((*TransactionV4Logs)(nil), "ethermint.evm.v1.TransactionV4Logs")
-	proto.RegisterType((*V4Log)(nil), "ethermint.evm.v1.V4Log")
-	proto.RegisterType((*V4TxResult)(nil), "ethermint.evm.v1.V4TxResult")
-	proto.RegisterType((*V4AccessTuple)(nil), "ethermint.evm.v1.V4AccessTuple")
-	proto.RegisterType((*V4TraceConfig)(nil), "ethermint.evm.v1.V4TraceConfig")
-}
+/*
+	func init() {
+		proto.RegisterType((*V4Params)(nil), "ethermint.evm.v1.V4Params")
+		proto.RegisterType((*ExtraEIPs)(nil), "ethermint.evm.v1.ExtraEIPs")
+		proto.RegisterType((*V4ChainConfig)(nil), "ethermint.evm.v1.V4ChainConfig")
+		proto.RegisterType((*V4State)(nil), "ethermint.evm.v1.V4State")
+		proto.RegisterType((*TransactionV4Logs)(nil), "ethermint.evm.v1.TransactionV4Logs")
+		proto.RegisterType((*V4Log)(nil), "ethermint.evm.v1.V4Log")
+		proto.RegisterType((*V4TxResult)(nil), "ethermint.evm.v1.V4TxResult")
+		proto.RegisterType((*V4AccessTuple)(nil), "ethermint.evm.v1.V4AccessTuple")
+		proto.RegisterType((*V4TraceConfig)(nil), "ethermint.evm.v1.V4TraceConfig")
+	}
 
 func init() { proto.RegisterFile("ethermint/evm/v1/evm.proto", fileDescriptor_d21ecc92c8c8583e) }
-
+*/
 var fileDescriptor_d21ecc92c8c8583e = []byte{
 	// 1644 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x58, 0x4f, 0x6f, 0xe3, 0xc6,

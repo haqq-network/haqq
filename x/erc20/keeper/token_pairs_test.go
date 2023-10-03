@@ -2,11 +2,11 @@ package keeper_test
 
 import (
 	"fmt"
+	"github.com/haqq-network/haqq/utils"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 )
 
@@ -54,7 +54,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 }
 
 func (suite *KeeperTestSuite) TestGetTokenPairID() {
-	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), evmtypes.DefaultEVMDenom, erc20types.OWNER_MODULE)
+	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), utils.BaseDenom, erc20types.OWNER_MODULE)
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
 	testCases := []struct {
@@ -77,7 +77,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairID() {
 }
 
 func (suite *KeeperTestSuite) TestGetTokenPair() {
-	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), evmtypes.DefaultEVMDenom, erc20types.OWNER_MODULE)
+	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), utils.BaseDenom, erc20types.OWNER_MODULE)
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
 	testCases := []struct {
@@ -101,7 +101,7 @@ func (suite *KeeperTestSuite) TestGetTokenPair() {
 }
 
 func (suite *KeeperTestSuite) TestDeleteTokenPair() {
-	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), evmtypes.DefaultEVMDenom, erc20types.OWNER_MODULE)
+	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), utils.BaseDenom, erc20types.OWNER_MODULE)
 	id := pair.GetID()
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 	suite.app.Erc20Keeper.SetERC20Map(suite.ctx, pair.GetERC20Contract(), id)
@@ -138,7 +138,7 @@ func (suite *KeeperTestSuite) TestDeleteTokenPair() {
 }
 
 func (suite *KeeperTestSuite) TestIsTokenPairRegistered() {
-	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), evmtypes.DefaultEVMDenom, erc20types.OWNER_MODULE)
+	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), utils.BaseDenom, erc20types.OWNER_MODULE)
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
 	testCases := []struct {

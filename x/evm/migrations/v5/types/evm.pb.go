@@ -77,12 +77,13 @@ func (m *V5ExtraEIPs) GetEIPs() []int64 {
 	return nil
 }
 
-func init() {
-	proto.RegisterType((*V5ExtraEIPs)(nil), "ethermint.evm.v1.V5ExtraEIPs")
-}
+/*
+	func init() {
+		proto.RegisterType((*V5ExtraEIPs)(nil), "ethermint.evm.v1.V5ExtraEIPs")
+	}
 
 func init() { proto.RegisterFile("ethermint/evm/v1/evm.proto", fileDescriptor_d21ecc92c8c8583e) }
-
+*/
 var fileDescriptor_d21ecc92c8c8583e = []byte{
 	// 1644 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x58, 0x4f, 0x6f, 0xe3, 0xc6,

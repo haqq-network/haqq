@@ -1,6 +1,7 @@
 package evm_test
 
 import (
+	"github.com/haqq-network/haqq/utils"
 	"math"
 	"math/big"
 
@@ -9,7 +10,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	evmante "github.com/haqq-network/haqq/app/ante/evm"
 	"github.com/haqq-network/haqq/testutil"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
@@ -25,7 +25,7 @@ var execTypes = []struct {
 }
 
 func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
-	denom := evmtypes.DefaultEVMDenom
+	denom := utils.BaseDenom
 	from, privKey := testutiltx.NewAddrKey()
 	to := testutiltx.GenerateAddress()
 	emptyAccessList := ethtypes.AccessList{}

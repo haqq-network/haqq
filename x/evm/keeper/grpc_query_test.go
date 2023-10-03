@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/haqq-network/haqq/utils"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
@@ -59,7 +60,7 @@ func (suite *KeeperTestSuite) TestQueryAccount() {
 		{
 			"success",
 			func() {
-				amt := sdk.Coins{sdk.NewInt64Coin(evmtypes.DefaultEVMDenom, 100)}
+				amt := sdk.Coins{sdk.NewInt64Coin(utils.BaseDenom, 100)}
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, evmtypes.ModuleName, amt)
 				suite.Require().NoError(err)
 				err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, evmtypes.ModuleName, suite.address.Bytes(), amt)
@@ -200,7 +201,7 @@ func (suite *KeeperTestSuite) TestQueryBalance() {
 		{
 			"success",
 			func() {
-				amt := sdk.Coins{sdk.NewInt64Coin(evmtypes.DefaultEVMDenom, 100)}
+				amt := sdk.Coins{sdk.NewInt64Coin(utils.BaseDenom, 100)}
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, evmtypes.ModuleName, amt)
 				suite.Require().NoError(err)
 				err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, evmtypes.ModuleName, suite.address.Bytes(), amt)

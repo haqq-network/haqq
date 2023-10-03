@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"fmt"
+	"github.com/haqq-network/haqq/utils"
 	"math"
 	"math/big"
 
@@ -447,7 +448,7 @@ func (suite *KeeperTestSuite) TestRefundGas() {
 			refund := keeper.GasToRefund(vmdb.GetRefund(), gasUsed, tc.refundQuotient)
 			suite.Require().Equal(tc.expGasRefund, refund)
 
-			err = suite.app.EvmKeeper.RefundGas(suite.ctx, m, refund, evmtypes.DefaultEVMDenom)
+			err = suite.app.EvmKeeper.RefundGas(suite.ctx, m, refund, utils.BaseDenom)
 			if tc.noError {
 				suite.Require().NoError(err)
 			} else {

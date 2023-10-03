@@ -1,6 +1,7 @@
 package v5_test
 
 import (
+	"github.com/haqq-network/haqq/utils"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,7 @@ func TestMigrate(t *testing.T) {
 	chainConfigBz := cdc.MustMarshal(&chainConfig)
 
 	// Set the params in the store
-	kvStore.Set(evmtypes.ParamStoreKeyEVMDenom, []byte(evmtypes.DefaultEVMDenom))
+	kvStore.Set(evmtypes.ParamStoreKeyEVMDenom, []byte(utils.BaseDenom))
 	kvStore.Set(evmtypes.ParamStoreKeyEnableCreate, []byte{0x01})
 	kvStore.Set(evmtypes.ParamStoreKeyEnableCall, []byte{0x01})
 	kvStore.Set(evmtypes.ParamStoreKeyAllowUnprotectedTxs, []byte{0x01})
@@ -45,7 +46,7 @@ func TestMigrate(t *testing.T) {
 	cdc.MustUnmarshal(paramsBz, &params)
 
 	// test that the params have been migrated correctly
-	require.Equal(t, evmtypes.DefaultEVMDenom, params.EvmDenom)
+	require.Equal(t, utils.BaseDenom, params.EvmDenom)
 	require.True(t, params.EnableCreate)
 	require.True(t, params.EnableCall)
 	require.True(t, params.AllowUnprotectedTxs)
