@@ -1261,6 +1261,13 @@ func (app *Haqq) setupUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{vestingtypes.ModuleName},
 		}
+	case v160.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{
+				consensusparamtypes.StoreKey,
+				crisistypes.ModuleName,
+			},
+		}
 	}
 
 	if storeUpgrades != nil {
