@@ -138,6 +138,7 @@ import (
 	"github.com/haqq-network/haqq/x/erc20"
 	erc20client "github.com/haqq-network/haqq/x/erc20/client"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
+
 	// Temporary use of evmos types
 	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 
@@ -146,6 +147,7 @@ import (
 	_ "github.com/haqq-network/haqq/client/docs/statik"
 	"github.com/haqq-network/haqq/x/evm"
 	evmkeeper "github.com/haqq-network/haqq/x/evm/keeper"
+
 	// temporary use of evmos types
 	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
@@ -161,6 +163,7 @@ import (
 	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
 	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
 	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
+	v160 "github.com/haqq-network/haqq/app/upgrades/v1.6.0"
 
 	// Force-load the tracer engines to trigger registration due to Go-Ethereum v1.10.15 changes
 	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
@@ -1221,6 +1224,15 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v142.UpgradeName,
 		v142.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+		),
+	)
+
+	// v1.6.0 Cosmos, EVM, IBC, Cometbft
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v160.UpgradeName,
+		v160.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
 		),
