@@ -1264,6 +1264,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	case v160.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{
+				icahosttypes.SubModuleName,
 				consensusparamtypes.StoreKey,
 				crisistypes.ModuleName,
 			},
