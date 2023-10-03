@@ -214,8 +214,10 @@ require (
 replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+	// replace cometbft with 4gb+ genesis fix
+	github.com/cometbft/cometbft => github.com/haqq-network/cometbft v0.37.2-haqq.0
 	// use Cosmos-SDK fork to enable Ledger functionality
-	github.com/cosmos/cosmos-sdk => github.com/evmos/cosmos-sdk v0.47.4-evmos.2
+	github.com/cosmos/cosmos-sdk => github.com/haqq-network/cosmos-sdk v0.47.4-haqq.3
 	// use Evmos geth fork
 	github.com/ethereum/go-ethereum => github.com/evmos/go-ethereum v1.10.26-evmos-rc2
 	// use cosmos flavored protobufs
