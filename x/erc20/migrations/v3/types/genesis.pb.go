@@ -150,8 +150,8 @@ func (m *V3Params) GetEnableEVMHook() bool {
 }
 
 func init() {
-	proto.RegisterType((*V3GenesisState)(nil), "evmos.erc20.v1.V3GenesisState")
-	proto.RegisterType((*V3Params)(nil), "evmos.erc20.v1.V3Params")
+	// proto.RegisterType((*V3GenesisState)(nil), "evmos.erc20.v1.V3GenesisState")
+	// proto.RegisterType((*V3Params)(nil), "evmos.erc20.v1.V3Params")
 }
 
 func init() { proto.RegisterFile("evmos/erc20/v1/genesis.proto", fileDescriptor_2f4674601b0d6987) }
