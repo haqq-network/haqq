@@ -40,7 +40,7 @@ type EthAccountI interface {
 }
 
 // ----------------------------------------------------------------------------
-// Main Evmos account
+// Main Haqq account
 // ----------------------------------------------------------------------------
 
 // ProtoAccount defines the prototype function for BaseAccount used for an

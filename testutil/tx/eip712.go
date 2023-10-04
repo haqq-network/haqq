@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
@@ -13,12 +14,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	cryptocodec "github.com/evmos/evmos/v14/crypto/codec"
-	"github.com/evmos/evmos/v14/ethereum/eip712"
-	"github.com/evmos/evmos/v14/types"
-
 	"github.com/haqq-network/haqq/app"
+	cryptocodec "github.com/haqq-network/haqq/crypto/codec"
+	"github.com/haqq-network/haqq/ethereum/eip712"
+	"github.com/haqq-network/haqq/types"
 )
 
 type EIP712TxArgs struct {

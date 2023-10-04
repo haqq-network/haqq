@@ -11,9 +11,9 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/evmos/evmos/v14/encoding"
 
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/testutil/tx"
 )
 

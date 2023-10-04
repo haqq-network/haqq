@@ -4,20 +4,19 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/cosmos/gogoproto/proto"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/testutil/tx"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // ContractArgs are the params used for calling a smart contract.

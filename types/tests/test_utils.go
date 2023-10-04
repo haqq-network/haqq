@@ -19,7 +19,7 @@ var (
 
 	UislmDenomtrace = transfertypes.DenomTrace{
 		Path:      "transfer/channel-0",
-		BaseDenom: "aevmos",
+		BaseDenom: "aISLM",
 	}
 	UislmIbcdenom = UislmDenomtrace.IBCDenom()
 
@@ -31,7 +31,7 @@ var (
 
 	AislmDenomtrace = transfertypes.DenomTrace{
 		Path:      "transfer/channel-0",
-		BaseDenom: "aevmos",
+		BaseDenom: "aISLM",
 	}
 	AislmIbcdenom = AislmDenomtrace.IBCDenom()
 )

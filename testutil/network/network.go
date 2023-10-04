@@ -50,13 +50,13 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/evmos/evmos/v14/crypto/hd"
-	"github.com/evmos/evmos/v14/encoding"
-	"github.com/evmos/evmos/v14/server/config"
-	evmostypes "github.com/evmos/evmos/v14/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/crypto/hd"
+	"github.com/haqq-network/haqq/encoding"
+	"github.com/haqq-network/haqq/server/config"
+	haqqtypes "github.com/haqq-network/haqq/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // package-wide network lock to only allow one test network at a time
@@ -114,9 +114,9 @@ func DefaultConfig() Config {
 		NumValidators:     4,
 		BondDenom:         utils.BaseDenom,
 		MinGasPrices:      fmt.Sprintf("0.000006%s", utils.BaseDenom),
-		AccountTokens:     sdk.TokensFromConsensusPower(1000000000000000000, evmostypes.PowerReduction),
-		StakingTokens:     sdk.TokensFromConsensusPower(500000000000000000, evmostypes.PowerReduction),
-		BondedTokens:      sdk.TokensFromConsensusPower(100000000000000000, evmostypes.PowerReduction),
+		AccountTokens:     sdk.TokensFromConsensusPower(1000000000000000000, haqqtypes.PowerReduction),
+		StakingTokens:     sdk.TokensFromConsensusPower(500000000000000000, haqqtypes.PowerReduction),
+		BondedTokens:      sdk.TokensFromConsensusPower(100000000000000000, haqqtypes.PowerReduction),
 		PruningStrategy:   pruningtypes.PruningOptionNothing,
 		CleanupDir:        true,
 		SigningAlgo:       string(hd.EthSecp256k1Type),
@@ -220,7 +220,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 	l.Log("acquiring test network lock")
 	lock.Lock()
 
-	if !evmostypes.IsValidChainID(cfg.ChainID) {
+	if !haqqtypes.IsValidChainID(cfg.ChainID) {
 		return nil, fmt.Errorf("invalid chain-id: %s", cfg.ChainID)
 	}
 
@@ -415,7 +415,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 
 		genFiles = append(genFiles, tmCfg.GenesisFile())
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: balances.Sort()})
-		genAccounts = append(genAccounts, &evmostypes.EthAccount{
+		genAccounts = append(genAccounts, &haqqtypes.EthAccount{
 			BaseAccount: authtypes.NewBaseAccount(addr, nil, 0, 0),
 			CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
 		})

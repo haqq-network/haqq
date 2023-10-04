@@ -3,14 +3,13 @@ package tx
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 )
 
 // NewAddrKey generates an Ethereum address and its corresponding private key.
