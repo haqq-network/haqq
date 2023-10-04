@@ -39,17 +39,16 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
-	ethermintclient "github.com/evmos/evmos/v14/client"
-	"github.com/evmos/evmos/v14/client/debug"
-	evmoskr "github.com/evmos/evmos/v14/crypto/keyring"
-	"github.com/evmos/evmos/v14/encoding"
-	"github.com/evmos/evmos/v14/ethereum/eip712"
-	ethermintserver "github.com/evmos/evmos/v14/server"
-	servercfg "github.com/evmos/evmos/v14/server/config"
-	srvflags "github.com/evmos/evmos/v14/server/flags"
-
 	"github.com/haqq-network/haqq/app"
+	ethermintclient "github.com/haqq-network/haqq/client"
+	"github.com/haqq-network/haqq/client/debug"
 	cmdcfg "github.com/haqq-network/haqq/cmd/config"
+	haqqkr "github.com/haqq-network/haqq/crypto/keyring"
+	"github.com/haqq-network/haqq/encoding"
+	"github.com/haqq-network/haqq/ethereum/eip712"
+	ethermintserver "github.com/haqq-network/haqq/server"
+	servercfg "github.com/haqq-network/haqq/server/config"
+	srvflags "github.com/haqq-network/haqq/server/flags"
 )
 
 const (
@@ -68,7 +67,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithBroadcastMode(flags.FlagBroadcastMode).
 		WithHomeDir(app.DefaultNodeHome).
-		WithKeyringOptions(evmoskr.Option()).
+		WithKeyringOptions(haqqkr.Option()).
 		WithViper(EnvPrefix).
 		WithLedgerHasProtobuf(true)
 
