@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/haqq-network/haqq/utils"
 	"math/big"
 
 	"github.com/stretchr/testify/mock"
@@ -12,8 +11,9 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/testutil"
+	"github.com/haqq-network/haqq/utils"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 )
 

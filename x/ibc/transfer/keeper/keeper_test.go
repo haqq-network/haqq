@@ -25,9 +25,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
-	"github.com/evmos/evmos/v14/server/config"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
@@ -36,14 +33,17 @@ import (
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/contracts"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/server/config"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
+	"github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evm "github.com/haqq-network/haqq/x/evm/types"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
 type KeeperTestSuite struct {
@@ -51,8 +51,8 @@ type KeeperTestSuite struct {
 
 	ctx              sdk.Context
 	app              *app.Haqq
-	queryClientEvm   evmtypes.QueryClient
-	queryClient      erc20types.QueryClient
+	queryClientEvm   evm.QueryClient
+	queryClient      types.QueryClient
 	address          common.Address
 	consAddress      sdk.ConsAddress
 	clientCtx        client.Context //nolint:unused
@@ -93,7 +93,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.consAddress = consAddress
 
 	// init app
-	chainID := utils.MainNetChainID + "-1"
+	chainID := utils.TestEdge2ChainID + "-1"
 	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
 	header := testutil.NewHeader(
 		1, time.Now().UTC(), chainID, suite.consAddress, nil, nil,
@@ -102,12 +102,12 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 
 	// query clients
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	erc20types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
-	suite.queryClient = erc20types.NewQueryClient(queryHelper)
+	types.RegisterQueryServer(queryHelper, suite.app.Erc20Keeper)
+	suite.queryClient = types.NewQueryClient(queryHelper)
 
 	queryHelperEvm := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	evmtypes.RegisterQueryServer(queryHelperEvm, suite.app.EvmKeeper)
-	suite.queryClientEvm = evmtypes.NewQueryClient(queryHelperEvm)
+	evm.RegisterQueryServer(queryHelperEvm, suite.app.EvmKeeper)
+	suite.queryClientEvm = evm.NewQueryClient(queryHelperEvm)
 
 	// bond denom
 	stakingParams := suite.app.StakingKeeper.GetParams(suite.ctx)
@@ -154,9 +154,9 @@ func (suite *KeeperTestSuite) StateDB() *statedb.StateDB {
 }
 
 func (suite *KeeperTestSuite) MintFeeCollector(coins sdk.Coins) {
-	err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
+	err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, coins)
 	suite.Require().NoError(err)
-	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, erc20types.ModuleName, authtypes.FeeCollectorName, coins)
+	err = suite.app.BankKeeper.SendCoinsFromModuleToModule(suite.ctx, types.ModuleName, authtypes.FeeCollectorName, coins)
 	suite.Require().NoError(err)
 }
 
@@ -176,8 +176,8 @@ func (suite *KeeperTestSuite) CommitAndBeginBlockAfter(t time.Duration) {
 	suite.ctx, err = testutil.CommitAndCreateNewCtx(suite.ctx, suite.app, t, nil)
 	suite.Require().NoError(err)
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
-	evmtypes.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
-	suite.queryClientEvm = evmtypes.NewQueryClient(queryHelper)
+	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
+	suite.queryClientEvm = evm.NewQueryClient(queryHelper)
 }
 
 var _ transfertypes.ChannelKeeper = &MockChannelKeeper{}
@@ -247,19 +247,19 @@ func (suite *KeeperTestSuite) DeployContract(name, symbol string, decimals uint8
 	return addr, err
 }
 
-func (suite *KeeperTestSuite) MintERC20Token(contractAddr, from, to common.Address, amount *big.Int) *evmtypes.MsgEthereumTx {
+func (suite *KeeperTestSuite) MintERC20Token(contractAddr, from, to common.Address, amount *big.Int) *evm.MsgEthereumTx {
 	transferData, err := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("mint", to, amount)
 	suite.Require().NoError(err)
 	return suite.sendTx(contractAddr, from, transferData)
 }
 
-func (suite *KeeperTestSuite) sendTx(contractAddr, from common.Address, transferData []byte) *evmtypes.MsgEthereumTx {
+func (suite *KeeperTestSuite) sendTx(contractAddr, from common.Address, transferData []byte) *evm.MsgEthereumTx {
 	ctx := sdk.WrapSDKContext(suite.ctx)
 	chainID := suite.app.EvmKeeper.ChainID()
 
-	args, err := json.Marshal(&evmtypes.TransactionArgs{To: &contractAddr, From: &from, Data: (*hexutil.Bytes)(&transferData)})
+	args, err := json.Marshal(&evm.TransactionArgs{To: &contractAddr, From: &from, Data: (*hexutil.Bytes)(&transferData)})
 	suite.Require().NoError(err)
-	res, err := suite.queryClientEvm.EstimateGas(ctx, &evmtypes.EthCallRequest{
+	res, err := suite.queryClientEvm.EstimateGas(ctx, &evm.EthCallRequest{
 		Args:   args,
 		GasCap: config.DefaultGasCap,
 	})
@@ -268,9 +268,9 @@ func (suite *KeeperTestSuite) sendTx(contractAddr, from common.Address, transfer
 	nonce := suite.app.EvmKeeper.GetNonce(suite.ctx, suite.address)
 
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
-	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
+	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evm.DefaultEVMDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 
-	ethTxParams := evmtypes.EvmTxArgs{
+	ethTxParams := evm.EvmTxArgs{
 		ChainID:   chainID,
 		Nonce:     nonce,
 		To:        &contractAddr,
@@ -280,7 +280,7 @@ func (suite *KeeperTestSuite) sendTx(contractAddr, from common.Address, transfer
 		Input:     transferData,
 		Accesses:  &ethtypes.AccessList{},
 	}
-	ercTransferTx := evmtypes.NewTx(&ethTxParams)
+	ercTransferTx := evm.NewTx(&ethTxParams)
 
 	ercTransferTx.From = suite.address.Hex()
 	err = ercTransferTx.Sign(ethtypes.LatestSignerForChainID(chainID), suite.signer)
