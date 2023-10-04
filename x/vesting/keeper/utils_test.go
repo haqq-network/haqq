@@ -19,19 +19,19 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
-	"github.com/evmos/evmos/v14/encoding"
-	evmostypes "github.com/evmos/evmos/v14/types"
-	epochstypes "github.com/evmos/evmos/v14/x/epochs/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
 	evmante "github.com/haqq-network/haqq/app/ante/evm"
 	"github.com/haqq-network/haqq/contracts"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
+	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -56,7 +56,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 
 	// Set Context
 	header := testutil.NewHeader(
-		1, time.Now().UTC(), "haqq_121799-1", suite.consAddress, nil, nil,
+		1, time.Now().UTC(), chainID, suite.consAddress, nil, nil,
 	)
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
 
@@ -80,7 +80,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 		suite.app.EpochsKeeper.SetEpochInfo(suite.ctx, epoch)
 	}
 
-	acc := &evmostypes.EthAccount{
+	acc := &haqqtypes.EthAccount{
 		BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.address.Bytes()), nil, 0, 0),
 		CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 	}

@@ -8,10 +8,10 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	ethtypes "github.com/evmos/evmos/v14/types"
 
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
@@ -578,7 +578,7 @@ func (suite *KeeperTestSuite) TestConvertVestingAccount() {
 			_, ok := account.(vestingtypes.VestingAccount)
 			suite.Require().False(ok)
 
-			_, ok = account.(ethtypes.EthAccountI)
+			_, ok = account.(haqqtypes.EthAccountI)
 			suite.Require().True(ok)
 
 		} else {
@@ -693,7 +693,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			"ok - account exists - no clawback - convert without staking",
 			func() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr3)
-				ethAccount := ethtypes.ProtoAccount().(*ethtypes.EthAccount)
+				ethAccount := haqqtypes.ProtoAccount().(*haqqtypes.EthAccount)
 				ethAccount.BaseAccount = baseAccount
 				s.app.AccountKeeper.SetAccount(s.ctx, ethAccount)
 			},
@@ -712,7 +712,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			"ok - account exists - no clawback - convert with staking",
 			func() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr3)
-				ethAccount := ethtypes.ProtoAccount().(*ethtypes.EthAccount)
+				ethAccount := haqqtypes.ProtoAccount().(*haqqtypes.EthAccount)
 				ethAccount.BaseAccount = baseAccount
 				s.app.AccountKeeper.SetAccount(s.ctx, ethAccount)
 			},

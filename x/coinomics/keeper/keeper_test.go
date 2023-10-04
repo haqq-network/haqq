@@ -23,15 +23,13 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
-
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	haqqapp "github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
-	haqqtypes "github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/coinomics/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
 var denomMint = types.DefaultMintDenom
@@ -90,7 +88,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.app = app
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
-		ChainID:         haqqtypes.MainNetChainID + "-1",
+		ChainID:         utils.MainNetChainID + "-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: valAddr1,
 

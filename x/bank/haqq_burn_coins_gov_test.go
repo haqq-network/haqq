@@ -20,9 +20,9 @@ import (
 	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/evmos/evmos/v14/encoding"
 
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/testutil/network"
 	"github.com/haqq-network/haqq/utils"
 )

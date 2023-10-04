@@ -14,8 +14,8 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/evmos/evmos/v14/types"
 
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
@@ -292,7 +292,7 @@ func (k Keeper) ConvertVestingAccount(
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "vesting coins still left in account: %s", msg.VestingAddress)
 	}
 
-	ethAccount := ethtypes.ProtoAccount().(*ethtypes.EthAccount)
+	ethAccount := haqqtypes.ProtoAccount().(*haqqtypes.EthAccount)
 	ethAccount.BaseAccount = vestingAcc.BaseAccount
 	k.accountKeeper.SetAccount(ctx, ethAccount)
 
@@ -372,7 +372,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 	var vestingAcc *types.ClawbackVestingAccount
 	var isClawback bool
 
-	ethAcc, isEthAccount := targetAccount.(*ethtypes.EthAccount)
+	ethAcc, isEthAccount := targetAccount.(*haqqtypes.EthAccount)
 	vestingAcc, isClawback = targetAccount.(*types.ClawbackVestingAccount)
 
 	if isClawback && !msg.Merge {

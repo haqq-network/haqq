@@ -10,9 +10,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/evmos/evmos/v14/encoding"
 
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/testutil/network"
 )
 

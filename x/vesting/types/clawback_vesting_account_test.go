@@ -218,11 +218,11 @@ func (suite *VestingAccountTestSuite) TestGetVestedVestingLockedCoins() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			vestedCoins := va.GetVestedCoins(tc.time)
-			suite.Require().Equal(tc.expVestedCoins, vestedCoins)
+			suite.Require().Equal(tc.expVestedCoins.String(), vestedCoins.String())
 			unvestedCoins := va.GetVestingCoins(tc.time)
-			suite.Require().Equal(tc.expUnvestedCoins, unvestedCoins)
+			suite.Require().Equal(tc.expUnvestedCoins.String(), unvestedCoins.String())
 			spendableCoins := va.LockedCoins(tc.time)
-			suite.Require().Equal(tc.expSpendableCoins, spendableCoins)
+			suite.Require().Equal(tc.expSpendableCoins.String(), spendableCoins.String())
 		})
 	}
 }
@@ -454,13 +454,13 @@ func (suite *VestingAccountTestSuite) TestTrackDelegationUndelegation() {
 			} else {
 				// Track Delegation
 				tc.delegate(va)
-				suite.Require().Equal(tc.expDelegatedUnvested, va.DelegatedVesting)
-				suite.Require().Equal(tc.expDelegatedFree, va.DelegatedFree)
+				suite.Require().Equal(tc.expDelegatedUnvested.String(), va.DelegatedVesting.String())
+				suite.Require().Equal(tc.expDelegatedFree.String(), va.DelegatedFree.String())
 
 				// Track Undelegation
 				tc.undelegate(va)
-				suite.Require().Equal(tc.expUndelegatedUnvested, va.DelegatedVesting)
-				suite.Require().Equal(tc.expUndelegatedFree, va.DelegatedFree)
+				suite.Require().Equal(tc.expUndelegatedUnvested.String(), va.DelegatedVesting.String())
+				suite.Require().Equal(tc.expUndelegatedFree.String(), va.DelegatedFree.String())
 			}
 		})
 	}
