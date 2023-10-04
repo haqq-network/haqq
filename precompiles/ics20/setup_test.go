@@ -17,12 +17,12 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	evmosibc "github.com/evmos/evmos/v14/ibc/testing"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	haqqapp "github.com/haqq-network/haqq/app"
+	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/ics20"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var s *PrecompileTestSuite
@@ -47,7 +47,7 @@ type PrecompileTestSuite struct {
 	coordinator    *ibctesting.Coordinator
 	chainA         *ibctesting.TestChain
 	chainB         *ibctesting.TestChain
-	transferPath   *evmosibc.Path
+	transferPath   *haqqibctesting.Path
 	queryClientEVM evmtypes.QueryClient
 
 	defaultExpirationDuration time.Time

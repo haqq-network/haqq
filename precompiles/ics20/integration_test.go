@@ -15,19 +15,19 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	evmostesting "github.com/evmos/evmos/v14/ibc/testing"
-	teststypes "github.com/evmos/evmos/v14/types/tests"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	haqqcontracts "github.com/haqq-network/haqq/contracts"
+	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/ics20"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	"github.com/haqq-network/haqq/precompiles/testutil/contracts"
 	haqqtestutil "github.com/haqq-network/haqq/testutil"
+	teststypes "github.com/haqq-network/haqq/types/tests"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // General variables used for integration tests
@@ -484,7 +484,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 
 				// To submit a timeoutMsg, the TimeoutPacket function
 				// uses a default fee amount
-				timeoutMsgFee := math.NewInt(evmostesting.DefaultFeeAmt * 2)
+				timeoutMsgFee := math.NewInt(haqqibctesting.DefaultFeeAmt * 2)
 				fees = fees.Add(timeoutMsgFee)
 
 				finalBalance = s.app.BankKeeper.GetBalance(s.chainA.GetContext(), s.address.Bytes(), s.bondDenom)
@@ -1332,7 +1332,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 				})
 
 				It("should transfer IBC coin", func() {
-					initialEvmosBalance := s.app.BankKeeper.GetBalance(s.chainA.GetContext(), s.address.Bytes(), s.bondDenom)
+					initialBalance := s.app.BankKeeper.GetBalance(s.chainA.GetContext(), s.address.Bytes(), s.bondDenom)
 
 					logCheckArgs := passCheck.WithExpEvents(ics20.EventTypeIBCTransfer)
 
@@ -1356,7 +1356,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 					// check only fees were deducted from sending account
 					fees := sdk.NewIntFromBigInt(gasPrice).MulRaw(res.GasUsed)
 					finalBalance := s.app.BankKeeper.GetBalance(s.chainA.GetContext(), s.address.Bytes(), s.bondDenom)
-					Expect(finalBalance.Amount).To(Equal(initialEvmosBalance.Amount.Sub(fees)))
+					Expect(finalBalance.Amount).To(Equal(initialBalance.Amount.Sub(fees)))
 
 					// check sent tokens were deducted from sending account
 					finalOsmoBalance := s.app.BankKeeper.GetBalance(s.chainA.GetContext(), s.address.Bytes(), ibcDenom)
@@ -1505,7 +1505,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 		})
 
 		Context("transfer 'aISLM", func() {
-			var defaultTransferEvmosArgs contracts.CallArgs
+			var defaultTransferCallArgs contracts.CallArgs
 			BeforeEach(func() {
 				// send some funds to the contract from which the funds will be sent
 				err = haqqtestutil.FundAccountWithBaseDenom(s.chainA.GetContext(), s.app.BankKeeper, contractAddr.Bytes(), amt)
@@ -1513,7 +1513,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 				senderInitialBalance := s.app.BankKeeper.GetBalance(s.chainA.GetContext(), contractAddr.Bytes(), s.bondDenom)
 				Expect(senderInitialBalance.Amount).To(Equal(math.NewInt(amt)))
 
-				defaultTransferEvmosArgs = defaultTransferArgs.WithArgs(
+				defaultTransferCallArgs = defaultTransferArgs.WithArgs(
 					s.transferPath.EndpointA.ChannelConfig.PortID,
 					s.transferPath.EndpointA.ChannelID,
 					s.bondDenom,
@@ -1529,7 +1529,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 				It("should not transfer funds", func() {
 					initialBalance := s.app.BankKeeper.GetBalance(s.chainA.GetContext(), contractAddr.Bytes(), s.bondDenom)
 
-					_, _, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.app, defaultTransferEvmosArgs, execRevertedCheck)
+					_, _, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.app, defaultTransferCallArgs, execRevertedCheck)
 					Expect(err).To(HaveOccurred(), "error while calling the smart contract: %v", err)
 
 					// check sent tokens remained unchanged from sending account (contract)
@@ -1549,7 +1549,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 
 					logCheckArgs := passCheck.WithExpEvents(ics20.EventTypeIBCTransfer)
 
-					res, ethRes, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.app, defaultTransferEvmosArgs, logCheckArgs)
+					res, ethRes, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.app, defaultTransferCallArgs, logCheckArgs)
 					Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
 
 					out, err := s.precompile.Unpack(ics20.TransferMethod, ethRes.Ret)

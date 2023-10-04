@@ -11,7 +11,6 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -30,13 +29,10 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
-	evmosibc "github.com/evmos/evmos/v14/ibc/testing"
-	evmostypes "github.com/evmos/evmos/v14/types"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	haqqapp "github.com/haqq-network/haqq/app"
 	haqqcontracts "github.com/haqq-network/haqq/contracts"
+	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/ics20"
@@ -44,9 +40,12 @@ import (
 	"github.com/haqq-network/haqq/precompiles/testutil/contracts"
 	haqqtestutil "github.com/haqq-network/haqq/testutil"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
 type erc20Meta struct {
@@ -89,7 +88,7 @@ func (s *PrecompileTestSuite) SetupWithGenesisValSet(valSet *tmtypes.ValidatorSe
 	validators := make([]stakingtypes.Validator, 0, len(valSet.Validators))
 	delegations := make([]stakingtypes.Delegation, 0, len(valSet.Validators))
 
-	bondAmt := sdk.TokensFromConsensusPower(1, evmostypes.PowerReduction)
+	bondAmt := sdk.TokensFromConsensusPower(1, haqqtypes.PowerReduction)
 
 	for _, val := range valSet.Validators {
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
@@ -231,12 +230,12 @@ func (s *PrecompileTestSuite) NewTestChainWithValSet(coord *ibctesting.Coordinat
 
 	baseAcc := authtypes.NewBaseAccount(priv.PubKey().Address().Bytes(), priv.PubKey(), 0, 0)
 
-	acc := &evmostypes.EthAccount{
+	acc := &haqqtypes.EthAccount{
 		BaseAccount: baseAcc,
 		CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
 	}
 
-	amount := sdk.TokensFromConsensusPower(5, evmostypes.PowerReduction)
+	amount := sdk.TokensFromConsensusPower(5, haqqtypes.PowerReduction)
 
 	balance := banktypes.Balance{
 		Address: acc.GetAddress().String(),
@@ -419,8 +418,8 @@ func (s *PrecompileTestSuite) setupIBCTest() {
 	err = s.app.BankKeeper.SendCoinsFromModuleToAccount(s.chainA.GetContext(), coinomicstypes.ModuleName, s.chainA.SenderAccount.GetAddress(), coins)
 	s.Require().NoError(err)
 
-	s.transferPath = evmosibc.NewTransferPath(s.chainA, s.chainB) // clientID, connectionID, channelID empty
-	evmosibc.SetupPath(s.coordinator, s.transferPath)             // clientID, connectionID, channelID filled
+	s.transferPath = haqqibctesting.NewTransferPath(s.chainA, s.chainB) // clientID, connectionID, channelID empty
+	haqqibctesting.SetupPath(s.coordinator, s.transferPath)             // clientID, connectionID, channelID filled
 	s.Require().Equal("07-tendermint-0", s.transferPath.EndpointA.ClientID)
 	s.Require().Equal("connection-0", s.transferPath.EndpointA.ConnectionID)
 	s.Require().Equal("channel-0", s.transferPath.EndpointA.ChannelID)
@@ -512,16 +511,16 @@ func (s *PrecompileTestSuite) setupAllocationsForTesting() {
 // compiled contract data and constructor arguments
 func DeployContract(
 	ctx sdk.Context,
-	haqqApp *haqqapp.Haqq,
+	app *haqqapp.Haqq,
 	priv cryptotypes.PrivKey,
 	gasPrice *big.Int,
 	queryClientEvm evmtypes.QueryClient,
 	contract evmtypes.CompiledContract,
 	constructorArgs ...interface{},
 ) (common.Address, error) {
-	chainID := haqqApp.EvmKeeper.ChainID()
+	chainID := app.EvmKeeper.ChainID()
 	from := common.BytesToAddress(priv.PubKey().Address().Bytes())
-	nonce := haqqApp.EvmKeeper.GetNonce(ctx, from)
+	nonce := app.EvmKeeper.GetNonce(ctx, from)
 
 	ctorArgs, err := contract.ABI.Pack("", constructorArgs...)
 	if err != nil {
@@ -538,7 +537,7 @@ func DeployContract(
 		ChainID:   chainID,
 		Nonce:     nonce,
 		GasLimit:  gas,
-		GasFeeCap: haqqApp.FeeMarketKeeper.GetBaseFee(ctx),
+		GasFeeCap: app.FeeMarketKeeper.GetBaseFee(ctx),
 		GasTipCap: big.NewInt(1),
 		GasPrice:  gasPrice,
 		Input:     data,
@@ -546,12 +545,12 @@ func DeployContract(
 	})
 	msgEthereumTx.From = from.String()
 
-	res, err := haqqtestutil.DeliverEthTx(haqqApp, priv, msgEthereumTx)
+	res, err := haqqtestutil.DeliverEthTx(app, priv, msgEthereumTx)
 	if err != nil {
 		return common.Address{}, err
 	}
 
-	if _, err := haqqtestutil.CheckEthTxResponse(res, haqqApp.AppCodec()); err != nil {
+	if _, err := haqqtestutil.CheckEthTxResponse(res, app.AppCodec()); err != nil {
 		return common.Address{}, err
 	}
 

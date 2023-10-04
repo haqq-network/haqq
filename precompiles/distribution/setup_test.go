@@ -16,10 +16,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	haqqapp "github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/precompiles/distribution"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var s *PrecompileTestSuite

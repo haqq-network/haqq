@@ -5,13 +5,13 @@ import (
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
+
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 )
@@ -135,7 +135,7 @@ func (p Precompile) DecreaseAllowance(
 
 			stakeAuthz, ok := authzGrant.(*stakingtypes.StakeAuthorization)
 			if !ok {
-				return nil, errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *utils.StakeAuthorization, received: %T", authzGrant)
+				return nil, errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *stakingtypes.StakeAuthorization, received: %T", authzGrant)
 			}
 
 			if err = p.decreaseAllowance(ctx, grantee, origin, coin, stakeAuthz, expiration); err != nil {
@@ -294,7 +294,7 @@ func (p Precompile) increaseAllowance(
 	// Cast the authorization to a staking authorization
 	stakeAuthz, ok := existingAuthz.(*stakingtypes.StakeAuthorization)
 	if !ok {
-		return errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *utils.StakeAuthorization, received: %T", existingAuthz)
+		return errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *stakingtypes.StakeAuthorization, received: %T", existingAuthz)
 	}
 
 	// If the authorization has no limit, no operation is performed

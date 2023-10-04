@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strings"
 
 	//nolint:stylecheck,revive // it's common practice to use the global imports for Ginkgo and Gomega
 	. "github.com/onsi/gomega"
@@ -12,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // CheckAuthorizationEvents is a helper function used in the integration tests and checks if the approval event is emitted.
@@ -43,7 +44,7 @@ func CheckAuthorizationEvents(event abi.Event, precompileAddr, granter, grantee 
 	unpackedData, err := arguments.Unpack(log.Data)
 	Expect(err).To(BeNil(), "failed to unpack log data")
 
-	Expect(unpackedData[0]).To(Equal(msgTypes), "expected different message utils in event")
+	Expect(unpackedData[0]).To(Equal(msgTypes), "expected different message types in event")
 	if amount != nil {
 		Expect(len(unpackedData)).To(Equal(2), "expected different number of arguments in event")
 		Expect(unpackedData[1]).To(Equal(amount), "expected different amount in event")
@@ -56,7 +57,12 @@ func validateEvents(contractEvents map[string]abi.Event, events []string) ([]abi
 	for _, eventStr := range events {
 		event, found := contractEvents[eventStr]
 		if !found {
-			return nil, fmt.Errorf("unknown event for precompile: %s", eventStr)
+			availableABIEvents := make([]string, 0, len(contractEvents))
+			for event := range contractEvents {
+				availableABIEvents = append(availableABIEvents, event)
+			}
+			availableABIEventsStr := strings.Join(availableABIEvents, ", ")
+			return nil, fmt.Errorf("unknown event %q is not contained in given ABI events:\n%s", eventStr, availableABIEventsStr)
 		}
 		expEvents = append(expEvents, event)
 	}

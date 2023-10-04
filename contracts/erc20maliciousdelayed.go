@@ -6,8 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // This is an evil token. Whenever an A -> B transfer is called,
@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	ERC20MaliciousDelayedAddress = erc20types.ModuleAddress
+	ERC20MaliciousDelayedAddress = types.ModuleAddress
 
 	err := json.Unmarshal(ERC20MaliciousDelayedJSON, &ERC20MaliciousDelayedContract)
 	if err != nil {

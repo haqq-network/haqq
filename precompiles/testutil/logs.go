@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"golang.org/x/exp/slices"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // CheckLogs checks the logs for the given events and whether the transaction was successful or not.

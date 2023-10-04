@@ -17,7 +17,7 @@ import (
 func MakeTopic(rule interface{}) (common.Hash, error) {
 	var topic common.Hash
 
-	// Try to generate the topic based on simple utils
+	// Try to generate the topic based on simple types
 	switch rule := rule.(type) {
 	case common.Hash:
 		copy(topic[:], rule[:])
@@ -59,13 +59,13 @@ func MakeTopic(rule interface{}) (common.Hash, error) {
 
 	default:
 		// todo(rjl493456442) according solidity documentation, indexed event
-		// parameters that are not value utils i.e. arrays and structs are not
+		// parameters that are not value types i.e. arrays and structs are not
 		// stored directly but instead a keccak256-hash of an encoding is stored.
 		//
 		// We only convert stringS and bytes to hash, still need to deal with
 		// array(both fixed-size and dynamic-size) and struct.
 
-		// Attempt to generate the topic from funky utils
+		// Attempt to generate the topic from funky types
 		val := reflect.ValueOf(rule)
 		switch {
 		// static byte array
