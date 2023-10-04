@@ -22,7 +22,6 @@ type Keeper struct {
 	bankKeeper    types.BankKeeper
 	evmKeeper     types.EVMKeeper
 	stakingKeeper types.StakingKeeper
-	claimsKeeper  types.ClaimsKeeper
 }
 
 // NewKeeper creates new instances of the erc20 Keeper
