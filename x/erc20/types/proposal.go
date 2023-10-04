@@ -7,10 +7,11 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govcdc "github.com/cosmos/cosmos-sdk/x/gov/codec"
 	v1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	evmostypes "github.com/evmos/evmos/v14/types"
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+
+	haqqtypes "github.com/haqq-network/haqq/types"
 )
 
 // constants
@@ -27,7 +28,6 @@ var (
 	_ v1beta1.Content = &ToggleTokenConversionProposal{}
 )
 
-/*
 func init() {
 	v1beta1.RegisterProposalType(ProposalTypeRegisterCoin)
 	v1beta1.RegisterProposalType(ProposalTypeRegisterERC20)
@@ -35,7 +35,7 @@ func init() {
 	govcdc.ModuleCdc.Amino.RegisterConcrete(&RegisterCoinProposal{}, "erc20/RegisterCoinProposal", nil)
 	govcdc.ModuleCdc.Amino.RegisterConcrete(&RegisterERC20Proposal{}, "erc20/RegisterERC20Proposal", nil)
 	govcdc.ModuleCdc.Amino.RegisterConcrete(&ToggleTokenConversionProposal{}, "erc20/ToggleTokenConversionProposal", nil)
-}*/
+}
 
 // CreateDenomDescription generates a string with the coin description
 func CreateDenomDescription(address string) string {
@@ -74,7 +74,7 @@ func (rtbp *RegisterCoinProposal) ValidateBasic() error {
 		// Prohibit denominations that contain the evm denom
 		if strings.Contains(metadata.Base, "evm") {
 			return errorsmod.Wrapf(
-				erc20types.ErrEVMDenom, "cannot register the EVM denomination %s", metadata.Base,
+				ErrEVMDenom, "cannot register the EVM denomination %s", metadata.Base,
 			)
 		}
 
@@ -118,7 +118,7 @@ func ValidateErc20Denom(denom string) error {
 		return fmt.Errorf("invalid denom. %s denomination should be prefixed with the format 'erc20/", denom)
 	}
 
-	return evmostypes.ValidateAddress(denomSplit[1])
+	return haqqtypes.ValidateAddress(denomSplit[1])
 }
 
 // NewRegisterERC20Proposal returns new instance of RegisterERC20Proposal
@@ -141,7 +141,7 @@ func (*RegisterERC20Proposal) ProposalType() string {
 // ValidateBasic performs a stateless check of the proposal fields
 func (rtbp *RegisterERC20Proposal) ValidateBasic() error {
 	for _, address := range rtbp.Erc20Addresses {
-		if err := evmostypes.ValidateAddress(address); err != nil {
+		if err := haqqtypes.ValidateAddress(address); err != nil {
 			return errorsmod.Wrap(err, "ERC20 address")
 		}
 	}
@@ -170,7 +170,7 @@ func (*ToggleTokenConversionProposal) ProposalType() string {
 func (ttcp *ToggleTokenConversionProposal) ValidateBasic() error {
 	// check if the token is a hex address, if not, check if it is a valid SDK
 	// denom
-	if err := evmostypes.ValidateAddress(ttcp.Token); err != nil {
+	if err := haqqtypes.ValidateAddress(ttcp.Token); err != nil {
 		if err := sdk.ValidateDenom(ttcp.Token); err != nil {
 			return err
 		}

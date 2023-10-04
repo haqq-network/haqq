@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 type GenesisTestSuite struct {
@@ -20,11 +20,11 @@ func TestGenesisTestSuite(t *testing.T) {
 }
 
 func (suite *GenesisTestSuite) TestValidateGenesis() {
-	newGen := erc20types.NewGenesisState(erc20types.DefaultParams(), []erc20types.TokenPair{})
+	newGen := types.NewGenesisState(types.DefaultParams(), []types.TokenPair{})
 
 	testCases := []struct {
 		name     string
-		genState *erc20types.GenesisState
+		genState *types.GenesisState
 		expPass  bool
 	}{
 		{
@@ -34,22 +34,22 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name:     "default",
-			genState: erc20types.DefaultGenesisState(),
+			genState: types.DefaultGenesisState(),
 			expPass:  true,
 		},
 		{
 			name: "valid genesis",
-			genState: &erc20types.GenesisState{
-				Params:     erc20types.DefaultParams(),
-				TokenPairs: []erc20types.TokenPair{},
+			genState: &types.GenesisState{
+				Params:     types.DefaultParams(),
+				TokenPairs: []types.TokenPair{},
 			},
 			expPass: true,
 		},
 		{
 			name: "valid genesis - with tokens pairs",
-			genState: &erc20types.GenesisState{
-				Params: erc20types.DefaultParams(),
-				TokenPairs: []erc20types.TokenPair{
+			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
+				TokenPairs: []types.TokenPair{
 					{
 						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
 						Denom:        "usdt",
@@ -61,9 +61,9 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name: "invalid genesis - duplicated token pair",
-			genState: &erc20types.GenesisState{
-				Params: erc20types.DefaultParams(),
-				TokenPairs: []erc20types.TokenPair{
+			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
+				TokenPairs: []types.TokenPair{
 					{
 						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
 						Denom:        "usdt",
@@ -80,9 +80,9 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name: "invalid genesis - duplicated token pair",
-			genState: &erc20types.GenesisState{
-				Params: erc20types.DefaultParams(),
-				TokenPairs: []erc20types.TokenPair{
+			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
+				TokenPairs: []types.TokenPair{
 					{
 						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
 						Denom:        "usdt",
@@ -99,9 +99,9 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name: "invalid genesis - duplicated token pair",
-			genState: &erc20types.GenesisState{
-				Params: erc20types.DefaultParams(),
-				TokenPairs: []erc20types.TokenPair{
+			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
+				TokenPairs: []types.TokenPair{
 					{
 						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
 						Denom:        "usdt",
@@ -118,9 +118,9 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		},
 		{
 			name: "invalid genesis - invalid token pair",
-			genState: &erc20types.GenesisState{
-				Params: erc20types.DefaultParams(),
-				TokenPairs: []erc20types.TokenPair{
+			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
+				TokenPairs: []types.TokenPair{
 					{
 						Erc20Address: "0xinvalidaddress",
 						Denom:        "bad",
@@ -133,7 +133,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		{
 			// Voting period cant be zero
 			name:     "empty genesis",
-			genState: &erc20types.GenesisState{},
+			genState: &types.GenesisState{},
 			expPass:  true,
 		},
 	}

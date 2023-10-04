@@ -2,42 +2,42 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/haqq-network/haqq/utils"
 
 	"github.com/ethereum/go-ethereum/common"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *KeeperTestSuite) TestGetTokenPairs() {
-	var expRes []erc20types.TokenPair
+	var expRes []types.TokenPair
 
 	testCases := []struct {
 		name     string
 		malleate func()
 	}{
 		{
-			"no pair registered", func() { expRes = []erc20types.TokenPair{} },
+			"no pair registered", func() { expRes = []types.TokenPair{} },
 		},
 		{
 			"1 pair registered",
 			func() {
-				pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), "coin", erc20types.OWNER_MODULE)
+				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
-				expRes = []erc20types.TokenPair{pair}
+				expRes = []types.TokenPair{pair}
 			},
 		},
 		{
 			"2 pairs registered",
 			func() {
-				pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), "coin", erc20types.OWNER_MODULE)
-				pair2 := erc20types.NewTokenPair(utiltx.GenerateAddress(), "coin2", erc20types.OWNER_MODULE)
+				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
+				pair2 := types.NewTokenPair(utiltx.GenerateAddress(), "coin2", types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair2)
 
-				expRes = []erc20types.TokenPair{pair, pair2}
+				expRes = []types.TokenPair{pair, pair2}
 			},
 		},
 	}
@@ -54,7 +54,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 }
 
 func (suite *KeeperTestSuite) TestGetTokenPairID() {
-	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), utils.BaseDenom, erc20types.OWNER_MODULE)
+	pair := types.NewTokenPair(utiltx.GenerateAddress(), evmtypes.DefaultEVMDenom, types.OWNER_MODULE)
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
 	testCases := []struct {
@@ -77,7 +77,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairID() {
 }
 
 func (suite *KeeperTestSuite) TestGetTokenPair() {
-	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), utils.BaseDenom, erc20types.OWNER_MODULE)
+	pair := types.NewTokenPair(utiltx.GenerateAddress(), evmtypes.DefaultEVMDenom, types.OWNER_MODULE)
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
 	testCases := []struct {
@@ -101,7 +101,7 @@ func (suite *KeeperTestSuite) TestGetTokenPair() {
 }
 
 func (suite *KeeperTestSuite) TestDeleteTokenPair() {
-	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), utils.BaseDenom, erc20types.OWNER_MODULE)
+	pair := types.NewTokenPair(utiltx.GenerateAddress(), evmtypes.DefaultEVMDenom, types.OWNER_MODULE)
 	id := pair.GetID()
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 	suite.app.Erc20Keeper.SetERC20Map(suite.ctx, pair.GetERC20Contract(), id)
@@ -138,7 +138,7 @@ func (suite *KeeperTestSuite) TestDeleteTokenPair() {
 }
 
 func (suite *KeeperTestSuite) TestIsTokenPairRegistered() {
-	pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), utils.BaseDenom, erc20types.OWNER_MODULE)
+	pair := types.NewTokenPair(utiltx.GenerateAddress(), evmtypes.DefaultEVMDenom, types.OWNER_MODULE)
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
 	testCases := []struct {
@@ -161,7 +161,7 @@ func (suite *KeeperTestSuite) TestIsTokenPairRegistered() {
 
 func (suite *KeeperTestSuite) TestIsERC20Registered() {
 	addr := utiltx.GenerateAddress()
-	pair := erc20types.NewTokenPair(addr, "coin", erc20types.OWNER_MODULE)
+	pair := types.NewTokenPair(addr, "coin", types.OWNER_MODULE)
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 	suite.app.Erc20Keeper.SetERC20Map(suite.ctx, addr, pair.GetID())
 	suite.app.Erc20Keeper.SetDenomMap(suite.ctx, pair.Denom, pair.GetID())
@@ -198,7 +198,7 @@ func (suite *KeeperTestSuite) TestIsERC20Registered() {
 
 func (suite *KeeperTestSuite) TestIsDenomRegistered() {
 	addr := utiltx.GenerateAddress()
-	pair := erc20types.NewTokenPair(addr, "coin", erc20types.OWNER_MODULE)
+	pair := types.NewTokenPair(addr, "coin", types.OWNER_MODULE)
 	suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 	suite.app.Erc20Keeper.SetERC20Map(suite.ctx, addr, pair.GetID())
 	suite.app.Erc20Keeper.SetDenomMap(suite.ctx, pair.Denom, pair.GetID())

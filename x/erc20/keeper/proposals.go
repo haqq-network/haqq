@@ -7,7 +7,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // RegisterCoin deploys an erc20 contract and creates the token pair for the
@@ -15,11 +15,11 @@ import (
 func (k Keeper) RegisterCoin(
 	ctx sdk.Context,
 	coinMetadata banktypes.Metadata,
-) (*erc20types.TokenPair, error) {
+) (*types.TokenPair, error) {
 	// Check if denomination is already registered
 	if k.IsDenomRegistered(ctx, coinMetadata.Name) {
 		return nil, errorsmod.Wrapf(
-			erc20types.ErrTokenPairAlreadyExists, "coin denomination already registered: %s", coinMetadata.Name,
+			types.ErrTokenPairAlreadyExists, "coin denomination already registered: %s", coinMetadata.Name,
 		)
 	}
 
@@ -32,7 +32,7 @@ func (k Keeper) RegisterCoin(
 
 	if err := k.verifyMetadata(ctx, coinMetadata); err != nil {
 		return nil, errorsmod.Wrapf(
-			erc20types.ErrInternalTokenPair, "coin metadata is invalid %s", coinMetadata.Name,
+			types.ErrInternalTokenPair, "coin metadata is invalid %s", coinMetadata.Name,
 		)
 	}
 
@@ -43,7 +43,7 @@ func (k Keeper) RegisterCoin(
 		)
 	}
 
-	pair := erc20types.NewTokenPair(addr, coinMetadata.Base, erc20types.OWNER_MODULE)
+	pair := types.NewTokenPair(addr, coinMetadata.Base, types.OWNER_MODULE)
 	k.SetTokenPair(ctx, pair)
 	k.SetDenomMap(ctx, pair.Denom, pair.GetID())
 	k.SetERC20Map(ctx, common.HexToAddress(pair.Erc20Address), pair.GetID())
@@ -56,11 +56,11 @@ func (k Keeper) RegisterCoin(
 func (k Keeper) RegisterERC20(
 	ctx sdk.Context,
 	contract common.Address,
-) (*erc20types.TokenPair, error) {
+) (*types.TokenPair, error) {
 	// Check if ERC20 is already registered
 	if k.IsERC20Registered(ctx, contract) {
 		return nil, errorsmod.Wrapf(
-			erc20types.ErrTokenPairAlreadyExists, "token ERC20 contract already registered: %s", contract.String(),
+			types.ErrTokenPairAlreadyExists, "token ERC20 contract already registered: %s", contract.String(),
 		)
 	}
 
@@ -71,15 +71,14 @@ func (k Keeper) RegisterERC20(
 		)
 	}
 
-	pair := erc20types.NewTokenPair(contract, metadata.Name, erc20types.OWNER_EXTERNAL)
+	pair := types.NewTokenPair(contract, metadata.Name, types.OWNER_EXTERNAL)
 	k.SetTokenPair(ctx, pair)
 	k.SetDenomMap(ctx, pair.Denom, pair.GetID())
 	k.SetERC20Map(ctx, common.HexToAddress(pair.Erc20Address), pair.GetID())
 	return &pair, nil
 }
 
-// CreateCoinMetadata generates the metadata to represent the ERC20 token on
-// evmos.
+// CreateCoinMetadata generates the metadata to represent the ERC20 token on Haqq Network.
 func (k Keeper) CreateCoinMetadata(
 	ctx sdk.Context,
 	contract common.Address,
@@ -92,27 +91,27 @@ func (k Keeper) CreateCoinMetadata(
 	}
 
 	// Check if metadata already exists
-	_, found := k.bankKeeper.GetDenomMetaData(ctx, erc20types.CreateDenom(strContract))
+	_, found := k.bankKeeper.GetDenomMetaData(ctx, types.CreateDenom(strContract))
 	if found {
 		return nil, errorsmod.Wrap(
-			erc20types.ErrInternalTokenPair, "denom metadata already registered",
+			types.ErrInternalTokenPair, "denom metadata already registered",
 		)
 	}
 
-	if k.IsDenomRegistered(ctx, erc20types.CreateDenom(strContract)) {
+	if k.IsDenomRegistered(ctx, types.CreateDenom(strContract)) {
 		return nil, errorsmod.Wrapf(
-			erc20types.ErrInternalTokenPair, "coin denomination already registered: %s", erc20Data.Name,
+			types.ErrInternalTokenPair, "coin denomination already registered: %s", erc20Data.Name,
 		)
 	}
 
 	// base denomination
-	base := erc20types.CreateDenom(strContract)
+	base := types.CreateDenom(strContract)
 
 	// create a bank denom metadata based on the ERC20 token ABI details
 	// metadata name is should always be the contract since it's the key
 	// to the bank store
 	metadata := banktypes.Metadata{
-		Description: erc20types.CreateDenomDescription(strContract),
+		Description: types.CreateDenomDescription(strContract),
 		Base:        base,
 		// NOTE: Denom units MUST be increasing
 		DenomUnits: []*banktypes.DenomUnit{
@@ -121,14 +120,14 @@ func (k Keeper) CreateCoinMetadata(
 				Exponent: 0,
 			},
 		},
-		Name:    erc20types.CreateDenom(strContract),
+		Name:    types.CreateDenom(strContract),
 		Symbol:  erc20Data.Symbol,
 		Display: base,
 	}
 
 	// only append metadata if decimals > 0, otherwise validation fails
 	if erc20Data.Decimals > 0 {
-		nameSanitized := erc20types.SanitizeERC20Name(erc20Data.Name)
+		nameSanitized := types.SanitizeERC20Name(erc20Data.Name)
 		metadata.DenomUnits = append(
 			metadata.DenomUnits,
 			&banktypes.DenomUnit{
@@ -154,18 +153,18 @@ func (k Keeper) CreateCoinMetadata(
 func (k Keeper) ToggleConversion(
 	ctx sdk.Context,
 	token string,
-) (erc20types.TokenPair, error) {
+) (types.TokenPair, error) {
 	id := k.GetTokenPairID(ctx, token)
 	if len(id) == 0 {
-		return erc20types.TokenPair{}, errorsmod.Wrapf(
-			erc20types.ErrTokenPairNotFound, "token '%s' not registered by id", token,
+		return types.TokenPair{}, errorsmod.Wrapf(
+			types.ErrTokenPairNotFound, "token '%s' not registered by id", token,
 		)
 	}
 
 	pair, found := k.GetTokenPair(ctx, id)
 	if !found {
-		return erc20types.TokenPair{}, errorsmod.Wrapf(
-			erc20types.ErrTokenPairNotFound, "token '%s' not registered", token,
+		return types.TokenPair{}, errorsmod.Wrapf(
+			types.ErrTokenPairNotFound, "token '%s' not registered", token,
 		)
 	}
 
@@ -188,5 +187,5 @@ func (k Keeper) verifyMetadata(
 	}
 
 	// If it already existed, check that is equal to what is stored
-	return erc20types.EqualMetadata(meta, coinMetadata)
+	return types.EqualMetadata(meta, coinMetadata)
 }

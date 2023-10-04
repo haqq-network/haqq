@@ -373,18 +373,17 @@ func (m *ProposalMetadata) GetMetadata() []types.Metadata {
 	return nil
 }
 
-/*
-	func init() {
-		proto.RegisterEnum("evmos.erc20.v1.Owner", Owner_name, Owner_value)
-		proto.RegisterType((*TokenPair)(nil), "evmos.erc20.v1.TokenPair")
-		proto.RegisterType((*RegisterCoinProposal)(nil), "evmos.erc20.v1.RegisterCoinProposal")
-		proto.RegisterType((*RegisterERC20Proposal)(nil), "evmos.erc20.v1.RegisterERC20Proposal")
-		proto.RegisterType((*ToggleTokenConversionProposal)(nil), "evmos.erc20.v1.ToggleTokenConversionProposal")
-		proto.RegisterType((*ProposalMetadata)(nil), "evmos.erc20.v1.ProposalMetadata")
-	}
+func init() {
+	proto.RegisterEnum("evmos.erc20.v1.Owner", Owner_name, Owner_value)
+	proto.RegisterType((*TokenPair)(nil), "evmos.erc20.v1.TokenPair")
+	proto.RegisterType((*RegisterCoinProposal)(nil), "evmos.erc20.v1.RegisterCoinProposal")
+	proto.RegisterType((*RegisterERC20Proposal)(nil), "evmos.erc20.v1.RegisterERC20Proposal")
+	proto.RegisterType((*ToggleTokenConversionProposal)(nil), "evmos.erc20.v1.ToggleTokenConversionProposal")
+	proto.RegisterType((*ProposalMetadata)(nil), "evmos.erc20.v1.ProposalMetadata")
+}
 
 func init() { proto.RegisterFile("evmos/erc20/v1/erc20.proto", fileDescriptor_668d5dc537f45142) }
-*/
+
 var fileDescriptor_668d5dc537f45142 = []byte{
 	// 504 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0xcf, 0x6b, 0xd4, 0x40,

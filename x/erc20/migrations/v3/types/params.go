@@ -5,10 +5,10 @@ import (
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
-var _ erc20types.LegacyParams = &V3Params{}
+var _ types.LegacyParams = &V3Params{}
 
 var (
 	DefaultErc20   = true

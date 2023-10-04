@@ -13,15 +13,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/ethereum/go-ethereum/common"
-	ethermint "github.com/evmos/evmos/v14/types"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	haqqtypes "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // NewTxCmd returns a root CLI command handler for erc20 transaction commands
 func NewTxCmd() *cobra.Command {
 	txCmd := &cobra.Command{
-		Use:                        erc20types.ModuleName,
+		Use:                        types.ModuleName,
 		Short:                      "erc20 subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
@@ -57,14 +57,14 @@ func NewConvertCoinCmd() *cobra.Command {
 
 			if len(args) == 2 {
 				receiver = args[1]
-				if err := ethermint.ValidateAddress(receiver); err != nil {
+				if err := haqqtypes.ValidateAddress(receiver); err != nil {
 					return fmt.Errorf("invalid receiver hex address %w", err)
 				}
 			} else {
 				receiver = common.BytesToAddress(sender).Hex()
 			}
 
-			msg := &erc20types.MsgConvertCoin{
+			msg := &types.MsgConvertCoin{
 				Coin:     coin,
 				Receiver: receiver,
 				Sender:   sender.String(),
@@ -95,7 +95,7 @@ func NewConvertERC20Cmd() *cobra.Command {
 			}
 
 			contract := args[0]
-			if err := ethermint.ValidateAddress(contract); err != nil {
+			if err := haqqtypes.ValidateAddress(contract); err != nil {
 				return fmt.Errorf("invalid ERC20 contract address %w", err)
 			}
 
@@ -114,7 +114,7 @@ func NewConvertERC20Cmd() *cobra.Command {
 				}
 			}
 
-			msg := &erc20types.MsgConvertERC20{
+			msg := &types.MsgConvertERC20{
 				ContractAddress: contract,
 				Amount:          amount,
 				Receiver:        receiver.String(),
@@ -200,7 +200,7 @@ Where metadata.json contains (example):
 
 			from := clientCtx.GetFromAddress()
 
-			content := erc20types.NewRegisterCoinProposal(title, description, metadata...)
+			content := types.NewRegisterCoinProposal(title, description, metadata...)
 
 			msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
@@ -266,7 +266,7 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 
 			erc20Addresses := args
 			from := clientCtx.GetFromAddress()
-			content := erc20types.NewRegisterERC20Proposal(title, description, erc20Addresses...)
+			content := types.NewRegisterERC20Proposal(title, description, erc20Addresses...)
 
 			msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
@@ -332,7 +332,7 @@ func NewToggleTokenConversionProposalCmd() *cobra.Command {
 
 			from := clientCtx.GetFromAddress()
 			token := args[0]
-			content := erc20types.NewToggleTokenConversionProposal(title, description, token)
+			content := types.NewToggleTokenConversionProposal(title, description, token)
 
 			msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {

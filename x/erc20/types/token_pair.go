@@ -4,7 +4,8 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	evmostypes "github.com/evmos/evmos/v14/types"
+
+	haqqtypes "github.com/haqq-network/haqq/types"
 )
 
 // NewTokenPair returns an instance of TokenPair
@@ -23,7 +24,7 @@ func (tp TokenPair) GetID() []byte {
 	return tmhash.Sum([]byte(id))
 }
 
-// GetErc20Contract casts the hex string address of the ERC20 to common.Address
+// GetERC20Contract casts the hex string address of the ERC20 to common.Address
 func (tp TokenPair) GetERC20Contract() common.Address {
 	return common.HexToAddress(tp.Erc20Address)
 }
@@ -34,7 +35,7 @@ func (tp TokenPair) Validate() error {
 		return err
 	}
 
-	return evmostypes.ValidateAddress(tp.Erc20Address)
+	return haqqtypes.ValidateAddress(tp.Erc20Address)
 }
 
 // IsNativeCoin returns true if the owner of the ERC20 contract is the

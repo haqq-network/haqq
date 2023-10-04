@@ -8,8 +8,8 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	"github.com/evmos/evmos/v14/ibc"
 
+	"github.com/haqq-network/haqq/ibc"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
 )
 

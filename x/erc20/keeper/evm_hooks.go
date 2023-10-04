@@ -9,9 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/contracts"
+	"github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var _ evmtypes.EvmHooks = Hooks{}
@@ -71,7 +71,7 @@ func (k Keeper) PostTxProcessing(
 		}
 
 		// Check if event is a `Transfer` event.
-		if event.Name != erc20types.ERC20EventTransfer {
+		if event.Name != types.ERC20EventTransfer {
 			k.Logger(ctx).Info("emitted event", "name", event.Name, "signature", event.Sig)
 			continue
 		}
@@ -106,7 +106,7 @@ func (k Keeper) PostTxProcessing(
 
 		// Check if tokens are sent to module address
 		to := common.BytesToAddress(log.Topics[2].Bytes())
-		if !bytes.Equal(to.Bytes(), erc20types.ModuleAddress.Bytes()) {
+		if !bytes.Equal(to.Bytes(), types.ModuleAddress.Bytes()) {
 			continue
 		}
 
@@ -127,12 +127,12 @@ func (k Keeper) PostTxProcessing(
 		// Perform token conversion. We can now assume that the sender of a
 		// registered token wants to mint a Cosmos coin.
 		switch pair.ContractOwner {
-		case erc20types.OWNER_MODULE:
-			_, err = k.CallEVM(ctx, erc20, erc20types.ModuleAddress, contractAddr, true, "burn", tokens)
-		case erc20types.OWNER_EXTERNAL:
-			err = k.bankKeeper.MintCoins(ctx, erc20types.ModuleName, coins)
+		case types.OWNER_MODULE:
+			_, err = k.CallEVM(ctx, erc20, types.ModuleAddress, contractAddr, true, "burn", tokens)
+		case types.OWNER_EXTERNAL:
+			err = k.bankKeeper.MintCoins(ctx, types.ModuleName, coins)
 		default:
-			err = erc20types.ErrUndefinedOwner
+			err = types.ErrUndefinedOwner
 		}
 
 		if err != nil {
@@ -148,7 +148,7 @@ func (k Keeper) PostTxProcessing(
 		recipient := sdk.AccAddress(from.Bytes())
 
 		// transfer the tokens from ModuleAccount to sender address
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, erc20types.ModuleName, recipient, coins); err != nil {
+		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, coins); err != nil {
 			k.Logger(ctx).Debug(
 				"failed to process EVM hook for ER20 -> coin conversion",
 				"tx-hash", receipt.TxHash.Hex(), "log-idx", i,

@@ -311,18 +311,17 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
-/*
-	func init() {
-		proto.RegisterType((*QueryTokenPairsRequest)(nil), "evmos.erc20.v1.QueryTokenPairsRequest")
-		proto.RegisterType((*QueryTokenPairsResponse)(nil), "evmos.erc20.v1.QueryTokenPairsResponse")
-		proto.RegisterType((*QueryTokenPairRequest)(nil), "evmos.erc20.v1.QueryTokenPairRequest")
-		proto.RegisterType((*QueryTokenPairResponse)(nil), "evmos.erc20.v1.QueryTokenPairResponse")
-		proto.RegisterType((*QueryParamsRequest)(nil), "evmos.erc20.v1.QueryParamsRequest")
-		proto.RegisterType((*QueryParamsResponse)(nil), "evmos.erc20.v1.QueryParamsResponse")
-	}
+func init() {
+	proto.RegisterType((*QueryTokenPairsRequest)(nil), "evmos.erc20.v1.QueryTokenPairsRequest")
+	proto.RegisterType((*QueryTokenPairsResponse)(nil), "evmos.erc20.v1.QueryTokenPairsResponse")
+	proto.RegisterType((*QueryTokenPairRequest)(nil), "evmos.erc20.v1.QueryTokenPairRequest")
+	proto.RegisterType((*QueryTokenPairResponse)(nil), "evmos.erc20.v1.QueryTokenPairResponse")
+	proto.RegisterType((*QueryParamsRequest)(nil), "evmos.erc20.v1.QueryParamsRequest")
+	proto.RegisterType((*QueryParamsResponse)(nil), "evmos.erc20.v1.QueryParamsResponse")
+}
 
 func init() { proto.RegisterFile("evmos/erc20/v1/query.proto", fileDescriptor_fba814bce17cabdf) }
-*/
+
 var fileDescriptor_fba814bce17cabdf = []byte{
 	// 501 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x53, 0x4f, 0x8b, 0xd3, 0x40,

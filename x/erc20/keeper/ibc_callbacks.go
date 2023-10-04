@@ -11,9 +11,9 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/evmos/evmos/v14/ibc"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/haqq-network/haqq/ibc"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // OnRecvPacket performs the ICS20 middleware receive callback for automatically
@@ -50,16 +50,24 @@ func (k Keeper) OnRecvPacket(
 		return ack
 	}
 
-	// Get addresses in `evmos1` and the original bech32 format
+	// Get addresses in `haqq1` and the original bech32 format
 	sender, recipient, _, _, err := ibc.GetTransferSenderRecipient(packet)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
+	claimsParams := k.claimsKeeper.GetParams(ctx)
+
+	// if sender == recipient, and is not from an EVM Channel recovery was executed
+	if sender.Equals(recipient) && !claimsParams.IsEVMChannel(packet.DestinationChannel) {
+		// Continue to the next IBC middleware by returning the original ACK.
+		return ack
+	}
+
 	senderAcc := k.accountKeeper.GetAccount(ctx, sender)
 
 	// return acknoledgement without conversion if sender is a module account
-	if erc20types.IsModuleAccount(senderAcc) {
+	if types.IsModuleAccount(senderAcc) {
 		return ack
 	}
 
@@ -95,7 +103,7 @@ func (k Keeper) OnRecvPacket(
 	balance := k.bankKeeper.GetBalance(ctx, recipient, coin.Denom)
 
 	// Build MsgConvertCoin, from recipient to recipient since IBC transfer already occurred
-	msg := erc20types.NewMsgConvertCoin(balance, common.BytesToAddress(recipient.Bytes()), recipient)
+	msg := types.NewMsgConvertCoin(balance, common.BytesToAddress(recipient.Bytes()), recipient)
 
 	// NOTE: we don't use ValidateBasic the msg since we've already validated
 	// the ICS20 packet data
@@ -107,7 +115,7 @@ func (k Keeper) OnRecvPacket(
 
 	defer func() {
 		telemetry.IncrCounterWithLabels(
-			[]string{erc20types.ModuleName, "ibc", "on_recv", "total"},
+			[]string{types.ModuleName, "ibc", "on_recv", "total"},
 			1,
 			[]metrics.Label{
 				telemetry.NewLabel("denom", coin.Denom),
@@ -158,10 +166,10 @@ func (k Keeper) ConvertCoinToERC20FromPacket(ctx sdk.Context, data transfertypes
 		WithKVGasConfig(storetypes.GasConfig{}).
 		WithTransientKVGasConfig(storetypes.GasConfig{})
 
-	// assume that all module accounts on Evmos need to have their tokens in the
+	// assume that all module accounts on Haqq Network need to have their tokens in the
 	// IBC representation as opposed to ERC20
 	senderAcc := k.accountKeeper.GetAccount(ctx, sender)
-	if erc20types.IsModuleAccount(senderAcc) {
+	if types.IsModuleAccount(senderAcc) {
 		return nil
 	}
 
@@ -180,7 +188,7 @@ func (k Keeper) ConvertCoinToERC20FromPacket(ctx sdk.Context, data transfertypes
 		return nil
 	}
 
-	msg := erc20types.NewMsgConvertCoin(coin, common.BytesToAddress(sender), sender)
+	msg := types.NewMsgConvertCoin(coin, common.BytesToAddress(sender), sender)
 
 	// NOTE: we don't use ValidateBasic the msg since we've already validated the
 	// fields from the packet data
@@ -191,7 +199,7 @@ func (k Keeper) ConvertCoinToERC20FromPacket(ctx sdk.Context, data transfertypes
 	}
 
 	defer func() {
-		telemetry.IncrCounter(1, erc20types.ModuleName, "ibc", "error", "total")
+		telemetry.IncrCounter(1, types.ModuleName, "ibc", "error", "total")
 	}()
 
 	return nil

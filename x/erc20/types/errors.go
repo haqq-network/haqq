@@ -1,7 +1,11 @@
 package types
 
-// NOTE: Temporary used from Evmos
-/*var (
+import (
+	errorsmod "cosmossdk.io/errors"
+)
+
+// errors
+var (
 	ErrERC20Disabled          = errorsmod.Register(ModuleName, 2, "erc20 module is disabled")
 	ErrInternalTokenPair      = errorsmod.Register(ModuleName, 3, "internal ethereum token mapping error")
 	ErrTokenPairNotFound      = errorsmod.Register(ModuleName, 4, "token pair not found")
@@ -15,4 +19,3 @@ package types
 	ErrEVMCall                = errorsmod.Register(ModuleName, 12, "EVM call unexpected error")
 	ErrERC20TokenPairDisabled = errorsmod.Register(ModuleName, 13, "erc20 token pair is disabled")
 )
-*/

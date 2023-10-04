@@ -11,20 +11,20 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
-	haqqerc20types "github.com/haqq-network/haqq/x/erc20/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evm "github.com/haqq-network/haqq/x/evm/types"
 )
 
-var _ haqqerc20types.EVMKeeper = &MockEVMKeeper{}
+var _ types.EVMKeeper = &MockEVMKeeper{}
 
 type MockEVMKeeper struct {
 	mock.Mock
 }
 
-func (m *MockEVMKeeper) GetParams(_ sdk.Context) evmtypes.Params {
+func (m *MockEVMKeeper) GetParams(_ sdk.Context) evm.Params {
 	args := m.Called(mock.Anything)
-	return args.Get(0).(evmtypes.Params)
+	return args.Get(0).(evm.Params)
 }
 
 func (m *MockEVMKeeper) GetAccountWithoutBalance(_ sdk.Context, _ common.Address) *statedb.Account {
@@ -35,24 +35,24 @@ func (m *MockEVMKeeper) GetAccountWithoutBalance(_ sdk.Context, _ common.Address
 	return args.Get(0).(*statedb.Account)
 }
 
-func (m *MockEVMKeeper) EstimateGas(_ context.Context, _ *evmtypes.EthCallRequest) (*evmtypes.EstimateGasResponse, error) {
+func (m *MockEVMKeeper) EstimateGas(_ context.Context, _ *evm.EthCallRequest) (*evm.EstimateGasResponse, error) {
 	args := m.Called(mock.Anything, mock.Anything)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*evmtypes.EstimateGasResponse), args.Error(1)
+	return args.Get(0).(*evm.EstimateGasResponse), args.Error(1)
 }
 
-func (m *MockEVMKeeper) ApplyMessage(_ sdk.Context, _ core.Message, _ vm.EVMLogger, _ bool) (*evmtypes.MsgEthereumTxResponse, error) {
+func (m *MockEVMKeeper) ApplyMessage(_ sdk.Context, _ core.Message, _ vm.EVMLogger, _ bool) (*evm.MsgEthereumTxResponse, error) {
 	args := m.Called(mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*evmtypes.MsgEthereumTxResponse), args.Error(1)
+	return args.Get(0).(*evm.MsgEthereumTxResponse), args.Error(1)
 }
 
-var _ haqqerc20types.BankKeeper = &MockBankKeeper{}
+var _ types.BankKeeper = &MockBankKeeper{}
 
 type MockBankKeeper struct {
 	mock.Mock

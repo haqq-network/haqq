@@ -11,8 +11,8 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 type MsgsTestSuite struct {
@@ -24,14 +24,14 @@ func TestMsgsTestSuite(t *testing.T) {
 }
 
 func (suite *MsgsTestSuite) TestMsgConvertCoinGetters() {
-	msgInvalid := erc20types.MsgConvertCoin{}
-	msg := erc20types.NewMsgConvertCoin(
+	msgInvalid := types.MsgConvertCoin{}
+	msg := types.NewMsgConvertCoin(
 		sdk.NewCoin("test", sdk.NewInt(100)),
 		utiltx.GenerateAddress(),
 		sdk.AccAddress(utiltx.GenerateAddress().Bytes()),
 	)
-	suite.Require().Equal(erc20types.RouterKey, msg.Route())
-	suite.Require().Equal(erc20types.TypeMsgConvertCoin, msg.Type())
+	suite.Require().Equal(types.RouterKey, msg.Route())
+	suite.Require().Equal(types.TypeMsgConvertCoin, msg.Type())
 	suite.Require().NotNil(msgInvalid.GetSignBytes())
 	suite.Require().NotNil(msg.GetSigners())
 }
@@ -54,7 +54,7 @@ func (suite *MsgsTestSuite) TestMsgConvertCoinNew() {
 	}
 
 	for i, tc := range testCases {
-		tx := erc20types.NewMsgConvertCoin(tc.coin, tc.receiver, tc.sender)
+		tx := types.NewMsgConvertCoin(tc.coin, tc.receiver, tc.sender)
 		err := tx.ValidateBasic()
 
 		if tc.expectPass {
@@ -97,7 +97,7 @@ func (suite *MsgsTestSuite) TestMsgConvertCoin() {
 			"msg convert coin - invalid sender",
 			sdk.NewCoin("coin", sdk.NewInt(100)),
 			utiltx.GenerateAddress().String(),
-			"evmosinvalid",
+			"haqqinvalid",
 			false,
 		},
 		{
@@ -131,7 +131,7 @@ func (suite *MsgsTestSuite) TestMsgConvertCoin() {
 	}
 
 	for i, tc := range testCases {
-		tx := erc20types.MsgConvertCoin{tc.coin, tc.receiver, tc.sender}
+		tx := types.MsgConvertCoin{tc.coin, tc.receiver, tc.sender}
 		err := tx.ValidateBasic()
 
 		if tc.expectPass {
@@ -143,15 +143,15 @@ func (suite *MsgsTestSuite) TestMsgConvertCoin() {
 }
 
 func (suite *MsgsTestSuite) TestMsgConvertERC20Getters() {
-	msgInvalid := erc20types.MsgConvertERC20{}
-	msg := erc20types.NewMsgConvertERC20(
+	msgInvalid := types.MsgConvertERC20{}
+	msg := types.NewMsgConvertERC20(
 		sdk.NewInt(100),
 		sdk.AccAddress(utiltx.GenerateAddress().Bytes()),
 		utiltx.GenerateAddress(),
 		utiltx.GenerateAddress(),
 	)
-	suite.Require().Equal(erc20types.RouterKey, msg.Route())
-	suite.Require().Equal(erc20types.TypeMsgConvertERC20, msg.Type())
+	suite.Require().Equal(types.RouterKey, msg.Route())
+	suite.Require().Equal(types.TypeMsgConvertERC20, msg.Type())
 	suite.Require().NotNil(msgInvalid.GetSignBytes())
 	suite.Require().NotNil(msg.GetSigners())
 }
@@ -176,7 +176,7 @@ func (suite *MsgsTestSuite) TestMsgConvertERC20New() {
 	}
 
 	for i, tc := range testCases {
-		tx := erc20types.NewMsgConvertERC20(tc.amount, tc.receiver, tc.contract, tc.sender)
+		tx := types.NewMsgConvertERC20(tc.amount, tc.receiver, tc.contract, tc.sender)
 		err := tx.ValidateBasic()
 
 		if tc.expectPass {
@@ -239,7 +239,7 @@ func (suite *MsgsTestSuite) TestMsgConvertERC20() {
 	}
 
 	for i, tc := range testCases {
-		tx := erc20types.MsgConvertERC20{tc.contract, tc.amount, tc.receiver, tc.sender}
+		tx := types.MsgConvertERC20{tc.contract, tc.amount, tc.receiver, tc.sender}
 		err := tx.ValidateBasic()
 
 		if tc.expectPass {
@@ -253,22 +253,22 @@ func (suite *MsgsTestSuite) TestMsgConvertERC20() {
 func (suite *MsgsTestSuite) TestMsgUpdateValidateBasic() {
 	testCases := []struct {
 		name      string
-		msgUpdate *erc20types.MsgUpdateParams
+		msgUpdate *types.MsgUpdateParams
 		expPass   bool
 	}{
 		{
 			"fail - invalid authority address",
-			&erc20types.MsgUpdateParams{
+			&types.MsgUpdateParams{
 				Authority: "invalid",
-				Params:    erc20types.DefaultParams(),
+				Params:    types.DefaultParams(),
 			},
 			false,
 		},
 		{
 			"pass - valid msg",
-			&erc20types.MsgUpdateParams{
+			&types.MsgUpdateParams{
 				Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-				Params:    erc20types.DefaultParams(),
+				Params:    types.DefaultParams(),
 			},
 			true,
 		},

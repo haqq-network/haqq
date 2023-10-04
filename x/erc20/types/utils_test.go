@@ -4,11 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 func TestSanitizeERC20Name(t *testing.T) {
@@ -40,7 +41,7 @@ func TestSanitizeERC20Name(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		name := erc20types.SanitizeERC20Name(tc.erc20Name)
+		name := types.SanitizeERC20Name(tc.erc20Name)
 		require.Equal(t, tc.expErc20Name, name, tc.name)
 		err := sdk.ValidateDenom(name)
 		if tc.expectPass {
@@ -61,37 +62,37 @@ func TestEqualMetadata(t *testing.T) {
 		{
 			"equal metadata",
 			banktypes.Metadata{
-				Base:        "aevmos",
-				Display:     "evmos",
-				Name:        "Evmos",
-				Symbol:      "EVMOS",
-				Description: "EVM, staking and governance denom of Evmos",
+				Base:        "aISLM",
+				Display:     "ISLM",
+				Name:        "Islamic Coin",
+				Symbol:      "ISLM",
+				Description: "EVM, staking and governance denom of Haqq Network",
 				DenomUnits: []*banktypes.DenomUnit{
 					{
-						Denom:    "aevmos",
+						Denom:    "aISLM",
 						Exponent: 0,
-						Aliases:  []string{"atto evmos"},
+						Aliases:  []string{"atto islm"},
 					},
 					{
-						Denom:    "evmos",
+						Denom:    "ISLM",
 						Exponent: 18,
 					},
 				},
 			},
 			banktypes.Metadata{
-				Base:        "aevmos",
-				Display:     "evmos",
-				Name:        "Evmos",
-				Symbol:      "EVMOS",
-				Description: "EVM, staking and governance denom of Evmos",
+				Base:        "aISLM",
+				Display:     "ISLM",
+				Name:        "Islamic Coin",
+				Symbol:      "ISLM",
+				Description: "EVM, staking and governance denom of Haqq Network",
 				DenomUnits: []*banktypes.DenomUnit{
 					{
-						Denom:    "aevmos",
+						Denom:    "aISLM",
 						Exponent: 0,
-						Aliases:  []string{"atto evmos"},
+						Aliases:  []string{"atto islm"},
 					},
 					{
-						Denom:    "evmos",
+						Denom:    "ISLM",
 						Exponent: 18,
 					},
 				},
@@ -101,44 +102,44 @@ func TestEqualMetadata(t *testing.T) {
 		{
 			"different base field",
 			banktypes.Metadata{
-				Base: "aevmos",
+				Base: "aISLM",
 			},
 			banktypes.Metadata{
-				Base: "taevmos",
+				Base: "taISLM",
 			},
 			true,
 		},
 		{
 			"different denom units length",
 			banktypes.Metadata{
-				Base:        "aevmos",
-				Display:     "evmos",
-				Name:        "Evmos",
-				Symbol:      "EVMOS",
-				Description: "EVM, staking and governance denom of Evmos",
+				Base:        "aISLM",
+				Display:     "ISLM",
+				Name:        "Islamic Coin",
+				Symbol:      "ISLM",
+				Description: "EVM, staking and governance denom of Haqq Network",
 				DenomUnits: []*banktypes.DenomUnit{
 					{
-						Denom:    "aevmos",
+						Denom:    "aISLM",
 						Exponent: 0,
-						Aliases:  []string{"atto evmos"},
+						Aliases:  []string{"atto islm"},
 					},
 					{
-						Denom:    "evmos",
+						Denom:    "ISLM",
 						Exponent: 18,
 					},
 				},
 			},
 			banktypes.Metadata{
-				Base:        "aevmos",
-				Display:     "evmos",
-				Name:        "Evmos",
-				Symbol:      "EVMOS",
-				Description: "EVM, staking and governance denom of Evmos",
+				Base:        "aISLM",
+				Display:     "ISLM",
+				Name:        "Islamic Coin",
+				Symbol:      "ISLM",
+				Description: "EVM, staking and governance denom of Haqq Network",
 				DenomUnits: []*banktypes.DenomUnit{
 					{
-						Denom:    "aevmos",
+						Denom:    "aISLM",
 						Exponent: 0,
-						Aliases:  []string{"atto evmos"},
+						Aliases:  []string{"atto islm"},
 					},
 				},
 			},
@@ -147,47 +148,47 @@ func TestEqualMetadata(t *testing.T) {
 		{
 			"different denom units",
 			banktypes.Metadata{
-				Base:        "aevmos",
-				Display:     "evmos",
-				Name:        "Evmos",
-				Symbol:      "EVMOS",
-				Description: "EVM, staking and governance denom of Evmos",
+				Base:        "aISLM",
+				Display:     "ISLM",
+				Name:        "Islamic Coin",
+				Symbol:      "ISLM",
+				Description: "EVM, staking and governance denom of Haqq Network",
 				DenomUnits: []*banktypes.DenomUnit{
 					{
-						Denom:    "aevmos",
+						Denom:    "aISLM",
 						Exponent: 0,
-						Aliases:  []string{"atto evmos"},
+						Aliases:  []string{"atto islm"},
 					},
 					{
-						Denom:    "uevmos",
+						Denom:    "uISLM",
 						Exponent: 12,
-						Aliases:  []string{"micro evmos"},
+						Aliases:  []string{"micro islm"},
 					},
 					{
-						Denom:    "evmos",
+						Denom:    "ISLM",
 						Exponent: 18,
 					},
 				},
 			},
 			banktypes.Metadata{
-				Base:        "aevmos",
-				Display:     "evmos",
-				Name:        "Evmos",
-				Symbol:      "EVMOS",
-				Description: "EVM, staking and governance denom of Evmos",
+				Base:        "aISLM",
+				Display:     "ISLM",
+				Name:        "Islamic Coin",
+				Symbol:      "ISLM",
+				Description: "EVM, staking and governance denom of Haqq Network",
 				DenomUnits: []*banktypes.DenomUnit{
 					{
-						Denom:    "aevmos",
+						Denom:    "aISLM",
 						Exponent: 0,
-						Aliases:  []string{"atto evmos"},
+						Aliases:  []string{"atto islm"},
 					},
 					{
-						Denom:    "Uevmos",
+						Denom:    "uISLM",
 						Exponent: 12,
-						Aliases:  []string{"micro evmos"},
+						Aliases:  []string{"micro islm"},
 					},
 					{
-						Denom:    "evmos",
+						Denom:    "ISLM",
 						Exponent: 18,
 					},
 				},
@@ -197,7 +198,7 @@ func TestEqualMetadata(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		err := erc20types.EqualMetadata(tc.metadataA, tc.metadataB)
+		err := types.EqualMetadata(tc.metadataA, tc.metadataB)
 		if tc.expError {
 			require.Error(t, err)
 		} else {
@@ -222,30 +223,30 @@ func TestEqualAliases(t *testing.T) {
 		{
 			"different lengths",
 			[]string{},
-			[]string{"atto evmos"},
+			[]string{"atto ISLM"},
 			false,
 		},
 		{
 			"different values",
-			[]string{"attoevmos"},
-			[]string{"atto evmos"},
+			[]string{"attoISLM"},
+			[]string{"atto ISLM"},
 			false,
 		},
 		{
 			"same values, unsorted",
-			[]string{"atto evmos", "aevmos"},
-			[]string{"aevmos", "atto evmos"},
+			[]string{"atto islm", "aISLM"},
+			[]string{"aISLM", "atto islm"},
 			false,
 		},
 		{
 			"same values, sorted",
-			[]string{"aevmos", "atto evmos"},
-			[]string{"aevmos", "atto evmos"},
+			[]string{"aISLM", "atto islm"},
+			[]string{"aISLM", "atto islm"},
 			true,
 		},
 	}
 
 	for _, tc := range testCases {
-		require.Equal(t, tc.expEqual, erc20types.EqualStringSlice(tc.aliasesA, tc.aliasesB), tc.name)
+		require.Equal(t, tc.expEqual, types.EqualStringSlice(tc.aliasesA, tc.aliasesB), tc.name)
 	}
 }

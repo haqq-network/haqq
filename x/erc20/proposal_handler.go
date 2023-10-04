@@ -7,8 +7,8 @@ import (
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/ethereum/go-ethereum/common"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // NewErc20ProposalHandler creates a governance handler to manage new proposal types.
@@ -17,20 +17,20 @@ func NewErc20ProposalHandler(k *keeper.Keeper) govv1beta1.Handler {
 		// Check if the conversion is globally enabled
 		if !k.IsERC20Enabled(ctx) {
 			return errorsmod.Wrap(
-				erc20types.ErrERC20Disabled, "registration is currently disabled by governance",
+				types.ErrERC20Disabled, "registration is currently disabled by governance",
 			)
 		}
 
 		switch c := content.(type) {
-		case *erc20types.RegisterCoinProposal:
+		case *types.RegisterCoinProposal:
 			return handleRegisterCoinProposal(ctx, k, c)
-		case *erc20types.RegisterERC20Proposal:
+		case *types.RegisterERC20Proposal:
 			return handleRegisterERC20Proposal(ctx, k, c)
-		case *erc20types.ToggleTokenConversionProposal:
+		case *types.ToggleTokenConversionProposal:
 			return handleToggleConversionProposal(ctx, k, c)
 
 		default:
-			return errorsmod.Wrapf(errortypes.ErrUnknownRequest, "unrecognized %s proposal content type: %T", erc20types.ModuleName, c)
+			return errorsmod.Wrapf(errortypes.ErrUnknownRequest, "unrecognized %s proposal content type: %T", types.ModuleName, c)
 		}
 	}
 }
@@ -40,7 +40,7 @@ func NewErc20ProposalHandler(k *keeper.Keeper) govv1beta1.Handler {
 func handleRegisterCoinProposal(
 	ctx sdk.Context,
 	k *keeper.Keeper,
-	p *erc20types.RegisterCoinProposal,
+	p *types.RegisterCoinProposal,
 ) error {
 	for _, metadata := range p.Metadata {
 		pair, err := k.RegisterCoin(ctx, metadata)
@@ -50,9 +50,9 @@ func handleRegisterCoinProposal(
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				erc20types.EventTypeRegisterCoin,
-				sdk.NewAttribute(erc20types.AttributeKeyCosmosCoin, pair.Denom),
-				sdk.NewAttribute(erc20types.AttributeKeyERC20Token, pair.Erc20Address),
+				types.EventTypeRegisterCoin,
+				sdk.NewAttribute(types.AttributeKeyCosmosCoin, pair.Denom),
+				sdk.NewAttribute(types.AttributeKeyERC20Token, pair.Erc20Address),
 			),
 		)
 	}
@@ -65,7 +65,7 @@ func handleRegisterCoinProposal(
 func handleRegisterERC20Proposal(
 	ctx sdk.Context,
 	k *keeper.Keeper,
-	p *erc20types.RegisterERC20Proposal,
+	p *types.RegisterERC20Proposal,
 ) error {
 	for _, address := range p.Erc20Addresses {
 		pair, err := k.RegisterERC20(ctx, common.HexToAddress(address))
@@ -75,9 +75,9 @@ func handleRegisterERC20Proposal(
 
 		ctx.EventManager().EmitEvent(
 			sdk.NewEvent(
-				erc20types.EventTypeRegisterERC20,
-				sdk.NewAttribute(erc20types.AttributeKeyCosmosCoin, pair.Denom),
-				sdk.NewAttribute(erc20types.AttributeKeyERC20Token, pair.Erc20Address),
+				types.EventTypeRegisterERC20,
+				sdk.NewAttribute(types.AttributeKeyCosmosCoin, pair.Denom),
+				sdk.NewAttribute(types.AttributeKeyERC20Token, pair.Erc20Address),
 			),
 		)
 	}
@@ -89,7 +89,7 @@ func handleRegisterERC20Proposal(
 func handleToggleConversionProposal(
 	ctx sdk.Context,
 	k *keeper.Keeper,
-	p *erc20types.ToggleTokenConversionProposal,
+	p *types.ToggleTokenConversionProposal,
 ) error {
 	pair, err := k.ToggleConversion(ctx, p.Token)
 	if err != nil {
@@ -98,9 +98,9 @@ func handleToggleConversionProposal(
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
-			erc20types.EventTypeToggleTokenConversion,
-			sdk.NewAttribute(erc20types.AttributeKeyCosmosCoin, pair.Denom),
-			sdk.NewAttribute(erc20types.AttributeKeyERC20Token, pair.Erc20Address),
+			types.EventTypeToggleTokenConversion,
+			sdk.NewAttribute(types.AttributeKeyCosmosCoin, pair.Denom),
+			sdk.NewAttribute(types.AttributeKeyERC20Token, pair.Erc20Address),
 		),
 	)
 

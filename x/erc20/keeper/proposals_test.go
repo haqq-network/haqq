@@ -11,11 +11,11 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
+	"github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 const (
@@ -94,11 +94,11 @@ func (suite *KeeperTestSuite) setupRegisterERC20Pair(contractType int) common.Ad
 	return contract
 }
 
-func (suite *KeeperTestSuite) setupRegisterCoin(metadata banktypes.Metadata) *erc20types.TokenPair {
+func (suite *KeeperTestSuite) setupRegisterCoin(metadata banktypes.Metadata) *types.TokenPair {
 	err := suite.app.BankKeeper.MintCoins(suite.ctx, coinomicstypes.ModuleName, sdk.Coins{sdk.NewInt64Coin(metadata.Base, 1)})
 	suite.Require().NoError(err)
 
-	// pair := erc20types.NewTokenPair(contractAddr, cosmosTokenBase, true, erc20types.OWNER_MODULE)
+	// pair := types.NewTokenPair(contractAddr, cosmosTokenBase, true, types.OWNER_MODULE)
 	pair, err := suite.app.Erc20Keeper.RegisterCoin(suite.ctx, metadata)
 	suite.Require().NoError(err)
 	suite.Commit()
@@ -133,7 +133,7 @@ func (suite KeeperTestSuite) TestRegisterCoin() { //nolint:govet // we can copy 
 		{
 			"conversion is disabled globally",
 			func() {
-				params := erc20types.DefaultParams()
+				params := types.DefaultParams()
 				params.EnableErc20 = false
 				suite.app.Erc20Keeper.SetParams(suite.ctx, params) //nolint:errcheck
 			},
@@ -142,7 +142,7 @@ func (suite KeeperTestSuite) TestRegisterCoin() { //nolint:govet // we can copy 
 		{
 			"denom already registered",
 			func() {
-				regPair := erc20types.NewTokenPair(utiltx.GenerateAddress(), metadata.Base, erc20types.OWNER_MODULE)
+				regPair := types.NewTokenPair(utiltx.GenerateAddress(), metadata.Base, types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetDenomMap(suite.ctx, regPair.Denom, regPair.GetID())
 				suite.Commit()
 			},
@@ -218,7 +218,7 @@ func (suite KeeperTestSuite) TestRegisterCoin() { //nolint:govet // we can copy 
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, coinomicstypes.ModuleName, sdk.Coins{sdk.NewInt64Coin(metadata.Base, 1)})
 				suite.Require().NoError(err)
 
-				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, erc20types.ModuleAddress.Bytes())
+				acc := suite.app.AccountKeeper.GetAccount(suite.ctx, types.ModuleAddress.Bytes())
 				suite.app.AccountKeeper.RemoveAccount(suite.ctx, acc)
 			},
 			false,
@@ -233,7 +233,7 @@ func (suite KeeperTestSuite) TestRegisterCoin() { //nolint:govet // we can copy 
 			pair, err := suite.app.Erc20Keeper.RegisterCoin(suite.ctx, metadata)
 			suite.Commit()
 
-			expPair := &erc20types.TokenPair{
+			expPair := &types.TokenPair{
 				Erc20Address:  "0x80b5a32E4F032B2a058b4F29EC95EEfEEB87aDcd",
 				Denom:         "acoin",
 				Enabled:       true,
@@ -253,7 +253,7 @@ func (suite KeeperTestSuite) TestRegisterCoin() { //nolint:govet // we can copy 
 func (suite KeeperTestSuite) TestRegisterERC20() { //nolint:govet // we can copy locks here because it is a test
 	var (
 		contractAddr common.Address
-		pair         erc20types.TokenPair
+		pair         types.TokenPair
 	)
 	testCases := []struct {
 		name     string
@@ -310,8 +310,8 @@ func (suite KeeperTestSuite) TestRegisterERC20() { //nolint:govet // we can copy
 			contractAddr, err = suite.DeployContract(erc20Name, erc20Symbol, cosmosDecimals)
 			suite.Require().NoError(err)
 
-			coinName := erc20types.CreateDenom(contractAddr.String())
-			pair = erc20types.NewTokenPair(contractAddr, coinName, erc20types.OWNER_EXTERNAL)
+			coinName := types.CreateDenom(contractAddr.String())
+			pair = types.NewTokenPair(contractAddr, coinName, types.OWNER_EXTERNAL)
 
 			tc.malleate()
 
@@ -323,13 +323,13 @@ func (suite KeeperTestSuite) TestRegisterERC20() { //nolint:govet // we can copy
 				suite.Require().True(found)
 				suite.Require().Equal(coinName, metadata.Base)
 				suite.Require().Equal(coinName, metadata.Name)
-				suite.Require().Equal(erc20types.SanitizeERC20Name(erc20Name), metadata.Display)
+				suite.Require().Equal(types.SanitizeERC20Name(erc20Name), metadata.Display)
 				suite.Require().Equal(erc20Symbol, metadata.Symbol)
 				// Denom units
 				suite.Require().Equal(len(metadata.DenomUnits), 2)
 				suite.Require().Equal(coinName, metadata.DenomUnits[0].Denom)
 				suite.Require().Equal(zeroExponent, metadata.DenomUnits[0].Exponent)
-				suite.Require().Equal(erc20types.SanitizeERC20Name(erc20Name), metadata.DenomUnits[1].Denom)
+				suite.Require().Equal(types.SanitizeERC20Name(erc20Name), metadata.DenomUnits[1].Denom)
 				// Custom exponent at contract creation matches coin with token
 				suite.Require().Equal(metadata.DenomUnits[1].Exponent, uint32(cosmosDecimals))
 			} else {
@@ -343,7 +343,7 @@ func (suite KeeperTestSuite) TestToggleConverision() { //nolint:govet // we can 
 	var (
 		contractAddr common.Address
 		id           []byte
-		pair         erc20types.TokenPair
+		pair         types.TokenPair
 	)
 
 	testCases := []struct {
@@ -358,7 +358,7 @@ func (suite KeeperTestSuite) TestToggleConverision() { //nolint:govet // we can 
 				contractAddr, err := suite.DeployContract(erc20Name, erc20Symbol, erc20Decimals)
 				suite.Require().NoError(err)
 				suite.Commit()
-				pair = erc20types.NewTokenPair(contractAddr, cosmosTokenBase, erc20types.OWNER_MODULE)
+				pair = types.NewTokenPair(contractAddr, cosmosTokenBase, types.OWNER_MODULE)
 			},
 			false,
 			false,
@@ -369,7 +369,7 @@ func (suite KeeperTestSuite) TestToggleConverision() { //nolint:govet // we can 
 				contractAddr, err := suite.DeployContract(erc20Name, erc20Symbol, erc20Decimals)
 				suite.Require().NoError(err)
 				suite.Commit()
-				pair = erc20types.NewTokenPair(contractAddr, cosmosTokenBase, erc20types.OWNER_MODULE)
+				pair = types.NewTokenPair(contractAddr, cosmosTokenBase, types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetERC20Map(suite.ctx, common.HexToAddress(pair.Erc20Address), pair.GetID())
 			},
 			false,

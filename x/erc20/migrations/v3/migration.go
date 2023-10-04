@@ -5,7 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	v3types "github.com/haqq-network/haqq/x/erc20/migrations/v3/types"
-	haqqerc20types "github.com/haqq-network/haqq/x/erc20/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 var isTrue = []byte{0x01}
@@ -16,7 +16,7 @@ var isTrue = []byte{0x01}
 func MigrateStore(
 	ctx sdk.Context,
 	storeKey storetypes.StoreKey,
-	legacySubspace haqqerc20types.Subspace,
+	legacySubspace types.Subspace,
 ) error {
 	store := ctx.KVStore(storeKey)
 	var params v3types.V3Params

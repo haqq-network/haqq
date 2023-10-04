@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // InitGenesis import module genesis
@@ -15,7 +15,7 @@ func InitGenesis(
 	ctx sdk.Context,
 	k keeper.Keeper,
 	accountKeeper authkeeper.AccountKeeper,
-	data erc20types.GenesisState,
+	data types.GenesisState,
 ) {
 	err := k.SetParams(ctx, data.Params)
 	if err != nil {
@@ -23,7 +23,7 @@ func InitGenesis(
 	}
 
 	// ensure erc20 module account is set on genesis
-	if acc := accountKeeper.GetModuleAccount(ctx, erc20types.ModuleName); acc == nil {
+	if acc := accountKeeper.GetModuleAccount(ctx, types.ModuleName); acc == nil {
 		// NOTE: shouldn't occur
 		panic("the erc20 module account has not been set")
 	}
@@ -37,8 +37,8 @@ func InitGenesis(
 }
 
 // ExportGenesis export module status
-func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *erc20types.GenesisState {
-	return &erc20types.GenesisState{
+func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
+	return &types.GenesisState{
 		Params:     k.GetParams(ctx),
 		TokenPairs: k.GetTokenPairs(ctx),
 	}

@@ -30,10 +30,10 @@ const (
 )
 
 // NOTE: This is required for the GetSignBytes function
-/*func init() {
+func init() {
 	RegisterLegacyAminoCodec(amino)
 	amino.Seal()
-}*/
+}
 
 // RegisterInterfaces register implementations
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {

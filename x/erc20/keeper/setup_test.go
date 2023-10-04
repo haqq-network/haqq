@@ -16,11 +16,11 @@ import (
 	ibcgotesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	ibctesting "github.com/evmos/evmos/v14/ibc/testing"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
+	ibctesting "github.com/haqq-network/haqq/ibc/testing"
+	"github.com/haqq-network/haqq/x/erc20/types"
+	evm "github.com/haqq-network/haqq/x/evm/types"
 )
 
 type KeeperTestSuite struct {
@@ -28,8 +28,8 @@ type KeeperTestSuite struct {
 
 	ctx              sdk.Context
 	app              *app.Haqq
-	queryClientEvm   evmtypes.QueryClient
-	queryClient      erc20types.QueryClient
+	queryClientEvm   evm.QueryClient
+	queryClient      types.QueryClient
 	address          common.Address
 	consAddress      sdk.ConsAddress
 	clientCtx        client.Context //nolint:unused
@@ -55,11 +55,11 @@ type KeeperTestSuite struct {
 
 var (
 	s *KeeperTestSuite
-	// sendAndReceiveMsgFee corresponds to the fees paid on Evmos chain when calling the SendAndReceive function
+	// sendAndReceiveMsgFee corresponds to the fees paid on Haqq Network when calling the SendAndReceive function
 	// This function makes 3 cosmos txs under the hood
 	sendAndReceiveMsgFee = sdk.NewInt(ibctesting.DefaultFeeAmt * 3)
-	// sendBackCoinsFee corresponds to the fees paid on Evmos chain when calling the SendBackCoins function
-	// or calling the SendAndReceive from another chain to Evmos
+	// sendBackCoinsFee corresponds to the fees paid on Haqq Network when calling the SendBackCoins function
+	// or calling the SendAndReceive from another chain to Haqq Network
 	// This function makes 2 cosmos txs under the hood
 	sendBackCoinsFee = sdk.NewInt(ibctesting.DefaultFeeAmt * 2)
 )

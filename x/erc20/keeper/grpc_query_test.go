@@ -6,14 +6,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 func (suite *KeeperTestSuite) TestTokenPairs() {
 	var (
-		req    *erc20types.QueryTokenPairsRequest
-		expRes *erc20types.QueryTokenPairsResponse
+		req    *types.QueryTokenPairsRequest
+		expRes *types.QueryTokenPairsResponse
 	)
 
 	testCases := []struct {
@@ -24,23 +24,23 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 		{
 			"no pairs registered",
 			func() {
-				req = &erc20types.QueryTokenPairsRequest{}
-				expRes = &erc20types.QueryTokenPairsResponse{Pagination: &query.PageResponse{}}
+				req = &types.QueryTokenPairsRequest{}
+				expRes = &types.QueryTokenPairsResponse{Pagination: &query.PageResponse{}}
 			},
 			true,
 		},
 		{
 			"1 pair registered w/pagination",
 			func() {
-				req = &erc20types.QueryTokenPairsRequest{
+				req = &types.QueryTokenPairsRequest{
 					Pagination: &query.PageRequest{Limit: 10, CountTotal: true},
 				}
-				pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), "coin", erc20types.OWNER_MODULE)
+				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
-				expRes = &erc20types.QueryTokenPairsResponse{
+				expRes = &types.QueryTokenPairsResponse{
 					Pagination: &query.PageResponse{Total: 1},
-					TokenPairs: []erc20types.TokenPair{pair},
+					TokenPairs: []types.TokenPair{pair},
 				}
 			},
 			true,
@@ -48,15 +48,15 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 		{
 			"2 pairs registered wo/pagination",
 			func() {
-				req = &erc20types.QueryTokenPairsRequest{}
-				pair := erc20types.NewTokenPair(utiltx.GenerateAddress(), "coin", erc20types.OWNER_MODULE)
-				pair2 := erc20types.NewTokenPair(utiltx.GenerateAddress(), "coin2", erc20types.OWNER_MODULE)
+				req = &types.QueryTokenPairsRequest{}
+				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
+				pair2 := types.NewTokenPair(utiltx.GenerateAddress(), "coin2", types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair2)
 
-				expRes = &erc20types.QueryTokenPairsResponse{
+				expRes = &types.QueryTokenPairsResponse{
 					Pagination: &query.PageResponse{Total: 2},
-					TokenPairs: []erc20types.TokenPair{pair, pair2},
+					TokenPairs: []types.TokenPair{pair, pair2},
 				}
 			},
 			true,
@@ -83,8 +83,8 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 
 func (suite *KeeperTestSuite) TestTokenPair() {
 	var (
-		req    *erc20types.QueryTokenPairRequest
-		expRes *erc20types.QueryTokenPairResponse
+		req    *types.QueryTokenPairRequest
+		expRes *types.QueryTokenPairResponse
 	)
 
 	testCases := []struct {
@@ -95,18 +95,18 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 		{
 			"invalid token address",
 			func() {
-				req = &erc20types.QueryTokenPairRequest{}
-				expRes = &erc20types.QueryTokenPairResponse{}
+				req = &types.QueryTokenPairRequest{}
+				expRes = &types.QueryTokenPairResponse{}
 			},
 			false,
 		},
 		{
 			"token pair not found",
 			func() {
-				req = &erc20types.QueryTokenPairRequest{
+				req = &types.QueryTokenPairRequest{
 					Token: utiltx.GenerateAddress().Hex(),
 				}
-				expRes = &erc20types.QueryTokenPairResponse{}
+				expRes = &types.QueryTokenPairResponse{}
 			},
 			false,
 		},
@@ -114,15 +114,15 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 			"token pair found",
 			func() {
 				addr := utiltx.GenerateAddress()
-				pair := erc20types.NewTokenPair(addr, "coin", erc20types.OWNER_MODULE)
+				pair := types.NewTokenPair(addr, "coin", types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 				suite.app.Erc20Keeper.SetERC20Map(suite.ctx, addr, pair.GetID())
 				suite.app.Erc20Keeper.SetDenomMap(suite.ctx, pair.Denom, pair.GetID())
 
-				req = &erc20types.QueryTokenPairRequest{
+				req = &types.QueryTokenPairRequest{
 					Token: pair.Erc20Address,
 				}
-				expRes = &erc20types.QueryTokenPairResponse{TokenPair: pair}
+				expRes = &types.QueryTokenPairResponse{TokenPair: pair}
 			},
 			true,
 		},
@@ -130,14 +130,14 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 			"token pair not found - with erc20 existent",
 			func() {
 				addr := utiltx.GenerateAddress()
-				pair := erc20types.NewTokenPair(addr, "coin", erc20types.OWNER_MODULE)
+				pair := types.NewTokenPair(addr, "coin", types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetERC20Map(suite.ctx, addr, pair.GetID())
 				suite.app.Erc20Keeper.SetDenomMap(suite.ctx, pair.Denom, pair.GetID())
 
-				req = &erc20types.QueryTokenPairRequest{
+				req = &types.QueryTokenPairRequest{
 					Token: pair.Erc20Address,
 				}
-				expRes = &erc20types.QueryTokenPairResponse{TokenPair: pair}
+				expRes = &types.QueryTokenPairResponse{TokenPair: pair}
 			},
 			false,
 		},
@@ -162,9 +162,9 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 
 func (suite *KeeperTestSuite) TestQueryParams() {
 	ctx := sdk.WrapSDKContext(suite.ctx)
-	expParams := erc20types.DefaultParams()
+	expParams := types.DefaultParams()
 
-	res, err := suite.queryClient.Params(ctx, &erc20types.QueryParamsRequest{})
+	res, err := suite.queryClient.Params(ctx, &types.QueryParamsRequest{})
 	suite.Require().NoError(err)
 	suite.Require().Equal(expParams, res.Params)
 }

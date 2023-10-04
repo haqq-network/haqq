@@ -12,7 +12,7 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -33,7 +33,7 @@ type V3GenesisState struct {
 	// V3Params are the erc20 module parameters at genesis
 	V3Params V3Params `protobuf:"bytes,1,opt,name=V3Params,proto3" json:"V3Params"`
 	// token_pairs is a slice of the registered token pairs at genesis
-	TokenPairs []erc20types.TokenPair `protobuf:"bytes,2,rep,name=token_pairs,json=tokenPairs,proto3" json:"token_pairs"`
+	TokenPairs []types.TokenPair `protobuf:"bytes,2,rep,name=token_pairs,json=tokenPairs,proto3" json:"token_pairs"`
 }
 
 func (m *V3GenesisState) Reset()         { *m = V3GenesisState{} }
@@ -81,7 +81,7 @@ func (m *V3GenesisState) GetV3Params() V3Params {
 	return V3Params{}
 }
 
-func (m *V3GenesisState) GetTokenPairs() []erc20types.TokenPair {
+func (m *V3GenesisState) GetTokenPairs() []types.TokenPair {
 	if m != nil {
 		return m.TokenPairs
 	}
@@ -150,11 +150,11 @@ func (m *V3Params) GetEnableEVMHook() bool {
 }
 
 func init() {
-	// proto.RegisterType((*V3GenesisState)(nil), "evmos.erc20.v1.V3GenesisState")
-	// proto.RegisterType((*V3Params)(nil), "evmos.erc20.v1.V3Params")
+	proto.RegisterType((*V3GenesisState)(nil), "evmos.erc20.v1.V3GenesisState")
+	proto.RegisterType((*V3Params)(nil), "evmos.erc20.v1.V3Params")
 }
 
-func init() { proto.RegisterFile("evmos/erc20/v1/genesis.proto", fileDescriptor_2f4674601b0d6987) }
+func init() { proto.RegisterFile("haqq/erc20/v1/genesis.proto", fileDescriptor_2f4674601b0d6987) }
 
 var fileDescriptor_2f4674601b0d6987 = []byte{
 	// 302 bytes of a gzipped FileDescriptorProto
@@ -412,7 +412,7 @@ func (m *V3GenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TokenPairs = append(m.TokenPairs, erc20types.TokenPair{})
+			m.TokenPairs = append(m.TokenPairs, types.TokenPair{})
 			if err := m.TokenPairs[len(m.TokenPairs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
