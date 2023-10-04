@@ -24,7 +24,7 @@ var (
 		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqq4q8tzj", // Staking precompile = 0x0000000000000000000000000000000000000800
 		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqpgkn7lq", // Distribution precompile = 0x0000000000000000000000000000000000000801
 		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqzx9xg3l", // ICS20 transfer precompile = 0x0000000000000000000000000000000000000802
-		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrmnjavd", // Vesting precompile = 0x0000000000000000000000000000000000000803
+		// "haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrmnjavd", // Vesting precompile = 0x0000000000000000000000000000000000000803
 	}
 )
 
