@@ -7,23 +7,23 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *TxDataTestSuite) TestTxArgsString() {
 	testCases := []struct {
 		name           string
-		txArgs         evmtypes.TransactionArgs
+		txArgs         types.TransactionArgs
 		expectedString string
 	}{
 		{
 			"empty tx args",
-			evmtypes.TransactionArgs{},
+			types.TransactionArgs{},
 			"TransactionArgs{From:<nil>, To:<nil>, Gas:<nil>, Nonce:<nil>, Data:<nil>, Input:<nil>, AccessList:<nil>}",
 		},
 		{
 			"tx args with fields",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				From:       &suite.addr,
 				To:         &suite.addr,
 				Gas:        &suite.hexUint64,
@@ -51,15 +51,15 @@ func (suite *TxDataTestSuite) TestTxArgsString() {
 func (suite *TxDataTestSuite) TestConvertTxArgsEthTx() {
 	testCases := []struct {
 		name   string
-		txArgs evmtypes.TransactionArgs
+		txArgs types.TransactionArgs
 	}{
 		{
 			"empty tx args",
-			evmtypes.TransactionArgs{},
+			types.TransactionArgs{},
 		},
 		{
 			"no nil args",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				From:                 &suite.addr,
 				To:                   &suite.addr,
 				Gas:                  &suite.hexUint64,
@@ -76,7 +76,7 @@ func (suite *TxDataTestSuite) TestConvertTxArgsEthTx() {
 		},
 		{
 			"max fee per gas nil, but access list not nil",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				From:                 &suite.addr,
 				To:                   &suite.addr,
 				Gas:                  &suite.hexUint64,
@@ -101,21 +101,21 @@ func (suite *TxDataTestSuite) TestConvertTxArgsEthTx() {
 func (suite *TxDataTestSuite) TestToMessageEVM() {
 	testCases := []struct {
 		name         string
-		txArgs       evmtypes.TransactionArgs
+		txArgs       types.TransactionArgs
 		globalGasCap uint64
 		baseFee      *big.Int
 		expError     bool
 	}{
 		{
 			"empty tx args",
-			evmtypes.TransactionArgs{},
+			types.TransactionArgs{},
 			uint64(0),
 			nil,
 			false,
 		},
 		{
 			"specify gasPrice and (maxFeePerGas or maxPriorityFeePerGas)",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				From:                 &suite.addr,
 				To:                   &suite.addr,
 				Gas:                  &suite.hexUint64,
@@ -135,7 +135,7 @@ func (suite *TxDataTestSuite) TestToMessageEVM() {
 		},
 		{
 			"non-1559 execution, zero gas cap",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				From:                 &suite.addr,
 				To:                   &suite.addr,
 				Gas:                  &suite.hexUint64,
@@ -155,7 +155,7 @@ func (suite *TxDataTestSuite) TestToMessageEVM() {
 		},
 		{
 			"non-1559 execution, nonzero gas cap",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				From:                 &suite.addr,
 				To:                   &suite.addr,
 				Gas:                  &suite.hexUint64,
@@ -175,7 +175,7 @@ func (suite *TxDataTestSuite) TestToMessageEVM() {
 		},
 		{
 			"1559-type execution, nil gas price",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				From:                 &suite.addr,
 				To:                   &suite.addr,
 				Gas:                  &suite.hexUint64,
@@ -195,7 +195,7 @@ func (suite *TxDataTestSuite) TestToMessageEVM() {
 		},
 		{
 			"1559-type execution, non-nil gas price",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				From:                 &suite.addr,
 				To:                   &suite.addr,
 				Gas:                  &suite.hexUint64,
@@ -229,17 +229,17 @@ func (suite *TxDataTestSuite) TestToMessageEVM() {
 func (suite *TxDataTestSuite) TestGetFrom() {
 	testCases := []struct {
 		name       string
-		txArgs     evmtypes.TransactionArgs
+		txArgs     types.TransactionArgs
 		expAddress common.Address
 	}{
 		{
 			"empty from field",
-			evmtypes.TransactionArgs{},
+			types.TransactionArgs{},
 			common.Address{},
 		},
 		{
 			"non-empty from field",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				From: &suite.addr,
 			},
 			suite.addr,
@@ -254,12 +254,12 @@ func (suite *TxDataTestSuite) TestGetFrom() {
 func (suite *TxDataTestSuite) TestGetData() {
 	testCases := []struct {
 		name           string
-		txArgs         evmtypes.TransactionArgs
+		txArgs         types.TransactionArgs
 		expectedOutput []byte
 	}{
 		{
 			"empty input and data fields",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				Data:  nil,
 				Input: nil,
 			},
@@ -267,7 +267,7 @@ func (suite *TxDataTestSuite) TestGetData() {
 		},
 		{
 			"empty input field, non-empty data field",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				Data:  &suite.hexDataBytes,
 				Input: nil,
 			},
@@ -275,7 +275,7 @@ func (suite *TxDataTestSuite) TestGetData() {
 		},
 		{
 			"non-empty input and data fields",
-			evmtypes.TransactionArgs{
+			types.TransactionArgs{
 				Data:  &suite.hexDataBytes,
 				Input: &suite.hexInputBytes,
 			},

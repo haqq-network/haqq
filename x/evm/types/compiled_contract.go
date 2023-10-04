@@ -87,8 +87,7 @@ var (
 	TestMessageCall CompiledContract
 )
 
-// NOTE: Temporary used from Evmos
-/*func init() {
+func init() {
 	err := json.Unmarshal(erc20JSON, &ERC20Contract)
 	if err != nil {
 		panic(err)
@@ -116,4 +115,3 @@ var (
 		panic("load contract failed")
 	}
 }
-*/

@@ -11,7 +11,7 @@ import (
 
 	"github.com/haqq-network/haqq/x/evm/keeper"
 	"github.com/haqq-network/haqq/x/evm/statedb"
-	haqqevmtypes "github.com/haqq-network/haqq/x/evm/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 // LogRecordHook records all the logs
@@ -34,25 +34,25 @@ func (dh FailureHook) PostTxProcessing(_ sdk.Context, _ core.Message, _ *ethtype
 func (suite *KeeperTestSuite) TestEvmHooks() {
 	testCases := []struct {
 		msg       string
-		setupHook func() haqqevmtypes.EvmHooks
-		expFunc   func(hook haqqevmtypes.EvmHooks, result error)
+		setupHook func() types.EvmHooks
+		expFunc   func(hook types.EvmHooks, result error)
 	}{
 		{
 			"log collect hook",
-			func() haqqevmtypes.EvmHooks {
+			func() types.EvmHooks {
 				return &LogRecordHook{}
 			},
-			func(hook haqqevmtypes.EvmHooks, result error) {
+			func(hook types.EvmHooks, result error) {
 				suite.Require().NoError(result)
 				suite.Require().Equal(1, len((hook.(*LogRecordHook).Logs)))
 			},
 		},
 		{
 			"always fail hook",
-			func() haqqevmtypes.EvmHooks {
+			func() types.EvmHooks {
 				return &FailureHook{}
 			},
-			func(hook haqqevmtypes.EvmHooks, result error) {
+			func(hook types.EvmHooks, result error) {
 				suite.Require().Error(result)
 			},
 		},

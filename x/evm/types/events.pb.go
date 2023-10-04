@@ -278,15 +278,14 @@ func (m *EventBlockBloom) GetBloom() string {
 	return ""
 }
 
-// NOTE: Temporary used from Evmos
-/*func init() {
+func init() {
 	proto.RegisterType((*EventEthereumTx)(nil), "ethermint.evm.v1.EventEthereumTx")
 	proto.RegisterType((*EventTxLog)(nil), "ethermint.evm.v1.EventTxLog")
 	proto.RegisterType((*EventMessage)(nil), "ethermint.evm.v1.EventMessage")
 	proto.RegisterType((*EventBlockBloom)(nil), "ethermint.evm.v1.EventBlockBloom")
-}*/
+}
 
-//func init() { proto.RegisterFile("ethermint/evm/v1/events.proto", fileDescriptor_432e0d592184bde3) }
+func init() { proto.RegisterFile("ethermint/evm/v1/events.proto", fileDescriptor_432e0d592184bde3) }
 
 var fileDescriptor_432e0d592184bde3 = []byte{
 	// 365 bytes of a gzipped FileDescriptorProto

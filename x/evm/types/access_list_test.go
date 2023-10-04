@@ -3,14 +3,15 @@ package types_test
 import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *TxDataTestSuite) TestTestNewAccessList() {
 	testCases := []struct {
 		name          string
 		ethAccessList *ethtypes.AccessList
-		expAl         evmtypes.AccessList
+		expAl         types.AccessList
 	}{
 		{
 			"ethAccessList is nil",
@@ -20,11 +21,11 @@ func (suite *TxDataTestSuite) TestTestNewAccessList() {
 		{
 			"non-empty ethAccessList",
 			&ethtypes.AccessList{{Address: suite.addr, StorageKeys: []common.Hash{{0}}}},
-			evmtypes.AccessList{{Address: suite.hexAddr, StorageKeys: []string{common.Hash{}.Hex()}}},
+			types.AccessList{{Address: suite.hexAddr, StorageKeys: []string{common.Hash{}.Hex()}}},
 		},
 	}
 	for _, tc := range testCases {
-		al := evmtypes.NewAccessList(tc.ethAccessList)
+		al := types.NewAccessList(tc.ethAccessList)
 
 		suite.Require().Equal(tc.expAl, al)
 	}
@@ -32,7 +33,7 @@ func (suite *TxDataTestSuite) TestTestNewAccessList() {
 
 func (suite *TxDataTestSuite) TestAccessListToEthAccessList() {
 	ethAccessList := ethtypes.AccessList{{Address: suite.addr, StorageKeys: []common.Hash{{0}}}}
-	al := evmtypes.NewAccessList(&ethAccessList)
+	al := types.NewAccessList(&ethAccessList)
 	actual := al.ToEthAccessList()
 
 	suite.Require().Equal(&ethAccessList, actual)

@@ -26,12 +26,11 @@ const (
 	updateParamsName = "ethermint/MsgUpdateParams"
 )
 
-// NOTE: Temporary used from Evmos
 // NOTE: This is required for the GetSignBytes function
-//func init() {
-//	RegisterLegacyAminoCodec(amino)
-//	amino.Seal()
-//}
+func init() {
+	RegisterLegacyAminoCodec(amino)
+	amino.Seal()
+}
 
 // RegisterInterfaces registers the client interfaces to protobuf Any.
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {

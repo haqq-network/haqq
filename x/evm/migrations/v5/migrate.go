@@ -5,8 +5,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	v5types "github.com/haqq-network/haqq/x/evm/migrations/v5/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 // MigrateStore migrates the x/evm module state from the consensus version 4 to
@@ -20,33 +20,38 @@ func MigrateStore(
 ) error {
 	var (
 		extraEIPs   v5types.V5ExtraEIPs
-		chainConfig evmtypes.ChainConfig
-		params      evmtypes.Params
+		chainConfig types.ChainConfig
+		params      types.Params
 	)
 
 	store := ctx.KVStore(storeKey)
 
-	denom := string(store.Get(evmtypes.ParamStoreKeyEVMDenom))
+	denom := string(store.Get(types.ParamStoreKeyEVMDenom))
 
-	extraEIPsBz := store.Get(evmtypes.ParamStoreKeyExtraEIPs)
+	extraEIPsBz := store.Get(types.ParamStoreKeyExtraEIPs)
 	cdc.MustUnmarshal(extraEIPsBz, &extraEIPs)
 
-	chainCfgBz := store.Get(evmtypes.ParamStoreKeyChainConfig)
+	// revert ExtraEIP change for Evmos testnet
+	if ctx.ChainID() == "evmos_9000-4" {
+		extraEIPs.EIPs = []int64{}
+	}
+
+	chainCfgBz := store.Get(types.ParamStoreKeyChainConfig)
 	cdc.MustUnmarshal(chainCfgBz, &chainConfig)
 
 	params.EvmDenom = denom
 	params.ExtraEIPs = extraEIPs.EIPs
 	params.ChainConfig = chainConfig
-	params.EnableCreate = store.Has(evmtypes.ParamStoreKeyEnableCreate)
-	params.EnableCall = store.Has(evmtypes.ParamStoreKeyEnableCall)
-	params.AllowUnprotectedTxs = store.Has(evmtypes.ParamStoreKeyAllowUnprotectedTxs)
+	params.EnableCreate = store.Has(types.ParamStoreKeyEnableCreate)
+	params.EnableCall = store.Has(types.ParamStoreKeyEnableCall)
+	params.AllowUnprotectedTxs = store.Has(types.ParamStoreKeyAllowUnprotectedTxs)
 
-	store.Delete(evmtypes.ParamStoreKeyChainConfig)
-	store.Delete(evmtypes.ParamStoreKeyExtraEIPs)
-	store.Delete(evmtypes.ParamStoreKeyEVMDenom)
-	store.Delete(evmtypes.ParamStoreKeyEnableCreate)
-	store.Delete(evmtypes.ParamStoreKeyEnableCall)
-	store.Delete(evmtypes.ParamStoreKeyAllowUnprotectedTxs)
+	store.Delete(types.ParamStoreKeyChainConfig)
+	store.Delete(types.ParamStoreKeyExtraEIPs)
+	store.Delete(types.ParamStoreKeyEVMDenom)
+	store.Delete(types.ParamStoreKeyEnableCreate)
+	store.Delete(types.ParamStoreKeyEnableCall)
+	store.Delete(types.ParamStoreKeyAllowUnprotectedTxs)
 
 	if err := params.Validate(); err != nil {
 		return err
@@ -54,6 +59,6 @@ func MigrateStore(
 
 	bz := cdc.MustMarshal(&params)
 
-	store.Set(evmtypes.KeyPrefixParams, bz)
+	store.Set(types.KeyPrefixParams, bz)
 	return nil
 }

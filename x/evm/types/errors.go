@@ -4,13 +4,12 @@ import (
 	"errors"
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// NOTE: Temporary used from Evmos
-/*
 const (
 	codeErrInvalidState = uint32(iota) + 2 // NOTE: code 1 is reserved for internal errors
 	codeErrInvalidChainConfig
@@ -80,7 +79,7 @@ var (
 
 	// ErrInactivePrecompile returns an error if a call is made to an inactive precompile
 	ErrInactivePrecompile = errorsmod.Register(ModuleName, codeErrInactivePrecompile, "precompile not enabled")
-)*/
+)
 
 // NewExecErrorWithReason unpacks the revert return bytes and returns a wrapped error
 // with the return reason.

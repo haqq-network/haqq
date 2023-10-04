@@ -14,10 +14,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
-	evmostypes "github.com/evmos/evmos/v14/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 // NewEVM generates a go-ethereum VM from the provided Message fields and the chain parameters
@@ -41,7 +41,7 @@ func (k *Keeper) NewEVM(
 		Transfer:    core.Transfer,
 		GetHash:     k.GetHashFn(ctx),
 		Coinbase:    cfg.CoinBase,
-		GasLimit:    evmostypes.BlockGasLimit(ctx),
+		GasLimit:    haqqtypes.BlockGasLimit(ctx),
 		BlockNumber: big.NewInt(ctx.BlockHeight()),
 		Time:        big.NewInt(ctx.BlockHeader().Time.Unix()),
 		Difficulty:  big.NewInt(0), // unused. Only required in PoW context
@@ -63,7 +63,7 @@ func (k *Keeper) NewEVM(
 //  3. The requested height is from a height greater than the latest one
 func (k Keeper) GetHashFn(ctx sdk.Context) vm.GetHashFunc {
 	return func(height uint64) common.Hash {
-		h, err := evmostypes.SafeInt64(height)
+		h, err := haqqtypes.SafeInt64(height)
 		if err != nil {
 			k.Logger(ctx).Error("failed to cast height to int64", "error", err)
 			return common.Hash{}
@@ -130,7 +130,7 @@ func (k Keeper) GetHashFn(ctx sdk.Context) vm.GetHashFunc {
 // returning.
 //
 // For relevant discussion see: https://github.com/cosmos/cosmos-sdk/discussions/9072
-func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethtypes.Transaction) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethtypes.Transaction) (*types.MsgEthereumTxResponse, error) {
 	var (
 		bloom        *big.Int
 		bloomReceipt ethtypes.Bloom
@@ -166,7 +166,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethtypes.Transaction) (*e
 		return nil, errorsmod.Wrap(err, "failed to apply ethereum core message")
 	}
 
-	logs := evmtypes.LogsToEthereum(res.Logs)
+	logs := types.LogsToEthereum(res.Logs)
 
 	// Compute block bloom filter
 	if len(logs) > 0 {
@@ -208,7 +208,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethtypes.Transaction) (*e
 		// Only call hooks if tx executed successfully.
 		if err = k.PostTxProcessing(tmpCtx, msg, receipt); err != nil {
 			// If hooks return error, revert the whole tx.
-			res.VmError = evmtypes.ErrPostTxProcessing.Error()
+			res.VmError = types.ErrPostTxProcessing.Error()
 			k.Logger(ctx).Error("tx post processing failed", "error", err)
 
 			// If the tx failed in post processing hooks, we should clear the logs
@@ -217,7 +217,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethtypes.Transaction) (*e
 			// PostTxProcessing is successful, commit the tmpCtx
 			commit()
 			// Since the post-processing can alter the log, we need to update the result
-			res.Logs = evmtypes.NewLogsFromEth(receipt.Logs)
+			res.Logs = types.NewLogsFromEth(receipt.Logs)
 			ctx.EventManager().EmitEvents(tmpCtx.EventManager().Events())
 		}
 	}
@@ -246,7 +246,7 @@ func (k *Keeper) ApplyTransaction(ctx sdk.Context, tx *ethtypes.Transaction) (*e
 }
 
 // ApplyMessage calls ApplyMessageWithConfig with an empty TxConfig.
-func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k *Keeper) ApplyMessage(ctx sdk.Context, msg core.Message, tracer vm.EVMLogger, commit bool) (*types.MsgEthereumTxResponse, error) {
 	cfg, err := k.EVMConfig(ctx, sdk.ConsAddress(ctx.BlockHeader().ProposerAddress), k.eip155ChainID)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to load evm config")
@@ -300,7 +300,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 	commit bool,
 	cfg *statedb.EVMConfig,
 	txConfig statedb.TxConfig,
-) (*evmtypes.MsgEthereumTxResponse, error) {
+) (*types.MsgEthereumTxResponse, error) {
 	var (
 		ret   []byte // return bytes from evm execution
 		vmErr error  // vm errors do not effect consensus and are therefore not assigned to err
@@ -308,9 +308,9 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 
 	// return error if contract creation or call are disabled through governance
 	if !cfg.Params.EnableCreate && msg.To() == nil {
-		return nil, errorsmod.Wrap(evmtypes.ErrCreateDisabled, "failed to create new contract")
+		return nil, errorsmod.Wrap(types.ErrCreateDisabled, "failed to create new contract")
 	} else if !cfg.Params.EnableCall && msg.To() != nil {
-		return nil, errorsmod.Wrap(evmtypes.ErrCallDisabled, "failed to call contract")
+		return nil, errorsmod.Wrap(types.ErrCallDisabled, "failed to call contract")
 	}
 
 	stateDB := statedb.New(ctx, k, txConfig)
@@ -331,9 +331,9 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 		// so there's no telling if the To address is an inactive precompile further down the call stack.
 		toAddr := msg.To()
 		if toAddr != nil &&
-			slices.Contains(evmtypes.AvailableEVMExtensions, toAddr.String()) &&
+			slices.Contains(types.AvailableEVMExtensions, toAddr.String()) &&
 			!slices.Contains(activePrecompiles, *toAddr) {
-			return nil, errorsmod.Wrap(evmtypes.ErrInactivePrecompile, "failed to call precompile")
+			return nil, errorsmod.Wrap(types.ErrInactivePrecompile, "failed to call precompile")
 		}
 
 		// NOTE: this only adds active precompiles to the EVM.
@@ -397,7 +397,7 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 
 	// calculate gas refund
 	if msg.Gas() < leftoverGas {
-		return nil, errorsmod.Wrap(evmtypes.ErrGasOverflow, "apply message")
+		return nil, errorsmod.Wrap(types.ErrGasOverflow, "apply message")
 	}
 	// refund gas
 	temporaryGasUsed := msg.Gas() - leftoverGas
@@ -428,22 +428,22 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 	minimumGasUsed := gasLimit.Mul(minGasMultiplier)
 
 	if !minimumGasUsed.TruncateInt().IsUint64() {
-		return nil, errorsmod.Wrapf(evmtypes.ErrGasOverflow, "minimumGasUsed(%s) is not a uint64", minimumGasUsed.TruncateInt().String())
+		return nil, errorsmod.Wrapf(types.ErrGasOverflow, "minimumGasUsed(%s) is not a uint64", minimumGasUsed.TruncateInt().String())
 	}
 
 	if msg.Gas() < leftoverGas {
-		return nil, errorsmod.Wrapf(evmtypes.ErrGasOverflow, "message gas limit < leftover gas (%d < %d)", msg.Gas(), leftoverGas)
+		return nil, errorsmod.Wrapf(types.ErrGasOverflow, "message gas limit < leftover gas (%d < %d)", msg.Gas(), leftoverGas)
 	}
 
 	gasUsed := sdk.MaxDec(minimumGasUsed, sdk.NewDec(int64(temporaryGasUsed))).TruncateInt().Uint64()
 	// reset leftoverGas, to be used by the tracer
 	leftoverGas = msg.Gas() - gasUsed
 
-	return &evmtypes.MsgEthereumTxResponse{
+	return &types.MsgEthereumTxResponse{
 		GasUsed: gasUsed,
 		VmError: vmError,
 		Ret:     ret,
-		Logs:    evmtypes.NewLogsFromEth(stateDB.Logs()),
+		Logs:    types.NewLogsFromEth(stateDB.Logs()),
 		Hash:    txConfig.TxHash.Hex(),
 	}, nil
 }

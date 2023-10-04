@@ -8,14 +8,14 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *KeeperTestSuite) TestEthereumTx() {
 	var (
 		err             error
-		msg             *evmtypes.MsgEthereumTx
+		msg             *types.MsgEthereumTx
 		signer          ethtypes.Signer
 		vmdb            *statedb.StateDB
 		expectedGasUsed uint64
@@ -79,19 +79,19 @@ func (suite *KeeperTestSuite) TestEthereumTx() {
 func (suite *KeeperTestSuite) TestUpdateParams() {
 	testCases := []struct {
 		name      string
-		request   *evmtypes.MsgUpdateParams
+		request   *types.MsgUpdateParams
 		expectErr bool
 	}{
 		{
 			name:      "fail - invalid authority",
-			request:   &evmtypes.MsgUpdateParams{Authority: "foobar"},
+			request:   &types.MsgUpdateParams{Authority: "foobar"},
 			expectErr: true,
 		},
 		{
 			name: "pass - valid Update msg",
-			request: &evmtypes.MsgUpdateParams{
+			request: &types.MsgUpdateParams{
 				Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-				Params:    evmtypes.DefaultParams(),
+				Params:    types.DefaultParams(),
 			},
 			expectErr: false,
 		},

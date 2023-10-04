@@ -9,8 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/evmos/evmos/v14/types"
-
+	"github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 )
 
@@ -28,7 +27,7 @@ var (
 		"0x0000000000000000000000000000000000000800", // Staking precompile
 		"0x0000000000000000000000000000000000000801", // Distribution precompile
 		"0x0000000000000000000000000000000000000802", // ICS20 transfer precompile
-		// "0x0000000000000000000000000000000000000803", // Vesting precompile // TODO Coming later
+		// "0x0000000000000000000000000000000000000803", // Vesting precompile
 	}
 )
 

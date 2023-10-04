@@ -12,13 +12,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/cosmos/gogoproto/proto"
-
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/evmos/evmos/v14/encoding"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/encoding"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func TestEvmDataEncoding(t *testing.T) {

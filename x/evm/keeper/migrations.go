@@ -5,17 +5,17 @@ import (
 
 	v4 "github.com/haqq-network/haqq/x/evm/migrations/v4"
 	v5 "github.com/haqq-network/haqq/x/evm/migrations/v5"
-	haqqevmtypes "github.com/haqq-network/haqq/x/evm/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 // Migrator is a struct for handling in-place store migrations.
 type Migrator struct {
 	keeper         Keeper
-	legacySubspace haqqevmtypes.Subspace
+	legacySubspace types.Subspace
 }
 
 // NewMigrator returns a new Migrator.
-func NewMigrator(keeper Keeper, legacySubspace haqqevmtypes.Subspace) Migrator {
+func NewMigrator(keeper Keeper, legacySubspace types.Subspace) Migrator {
 	return Migrator{
 		keeper:         keeper,
 		legacySubspace: legacySubspace,

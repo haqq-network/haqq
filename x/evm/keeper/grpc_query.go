@@ -8,41 +8,39 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	sdkmath "cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/eth/tracers"
+	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	ethparams "github.com/ethereum/go-ethereum/params"
-	evmostypes "github.com/evmos/evmos/v14/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
-var _ evmtypes.QueryServer = Keeper{}
+var _ types.QueryServer = Keeper{}
 
 const (
 	defaultTraceTimeout = 5 * time.Second
 )
 
 // Account implements the Query/Account gRPC method
-func (k Keeper) Account(c context.Context, req *evmtypes.QueryAccountRequest) (*evmtypes.QueryAccountResponse, error) {
+func (k Keeper) Account(c context.Context, req *types.QueryAccountRequest) (*types.QueryAccountResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := evmostypes.ValidateAddress(req.Address); err != nil {
+	if err := haqqtypes.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
@@ -53,19 +51,19 @@ func (k Keeper) Account(c context.Context, req *evmtypes.QueryAccountRequest) (*
 	ctx := sdk.UnwrapSDKContext(c)
 	acct := k.GetAccountOrEmpty(ctx, addr)
 
-	return &evmtypes.QueryAccountResponse{
+	return &types.QueryAccountResponse{
 		Balance:  acct.Balance.String(),
 		CodeHash: common.BytesToHash(acct.CodeHash).Hex(),
 		Nonce:    acct.Nonce,
 	}, nil
 }
 
-func (k Keeper) CosmosAccount(c context.Context, req *evmtypes.QueryCosmosAccountRequest) (*evmtypes.QueryCosmosAccountResponse, error) {
+func (k Keeper) CosmosAccount(c context.Context, req *types.QueryCosmosAccountRequest) (*types.QueryCosmosAccountResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := evmostypes.ValidateAddress(req.Address); err != nil {
+	if err := haqqtypes.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument, err.Error(),
 		)
@@ -77,7 +75,7 @@ func (k Keeper) CosmosAccount(c context.Context, req *evmtypes.QueryCosmosAccoun
 	cosmosAddr := sdk.AccAddress(ethAddr.Bytes())
 
 	account := k.accountKeeper.GetAccount(ctx, cosmosAddr)
-	res := evmtypes.QueryCosmosAccountResponse{
+	res := types.QueryCosmosAccountResponse{
 		CosmosAddress: cosmosAddr.String(),
 	}
 
@@ -90,7 +88,7 @@ func (k Keeper) CosmosAccount(c context.Context, req *evmtypes.QueryCosmosAccoun
 }
 
 // ValidatorAccount implements the Query/Balance gRPC method
-func (k Keeper) ValidatorAccount(c context.Context, req *evmtypes.QueryValidatorAccountRequest) (*evmtypes.QueryValidatorAccountResponse, error) {
+func (k Keeper) ValidatorAccount(c context.Context, req *types.QueryValidatorAccountRequest) (*types.QueryValidatorAccountResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -111,7 +109,7 @@ func (k Keeper) ValidatorAccount(c context.Context, req *evmtypes.QueryValidator
 
 	accAddr := sdk.AccAddress(validator.GetOperator())
 
-	res := evmtypes.QueryValidatorAccountResponse{
+	res := types.QueryValidatorAccountResponse{
 		AccountAddress: accAddr.String(),
 	}
 
@@ -125,15 +123,15 @@ func (k Keeper) ValidatorAccount(c context.Context, req *evmtypes.QueryValidator
 }
 
 // Balance implements the Query/Balance gRPC method
-func (k Keeper) Balance(c context.Context, req *evmtypes.QueryBalanceRequest) (*evmtypes.QueryBalanceResponse, error) {
+func (k Keeper) Balance(c context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := evmostypes.ValidateAddress(req.Address); err != nil {
+	if err := haqqtypes.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
-			evmtypes.ErrZeroAddress.Error(),
+			types.ErrZeroAddress.Error(),
 		)
 	}
 
@@ -141,21 +139,21 @@ func (k Keeper) Balance(c context.Context, req *evmtypes.QueryBalanceRequest) (*
 
 	balanceInt := k.GetBalance(ctx, common.HexToAddress(req.Address))
 
-	return &evmtypes.QueryBalanceResponse{
+	return &types.QueryBalanceResponse{
 		Balance: balanceInt.String(),
 	}, nil
 }
 
 // Storage implements the Query/Storage gRPC method
-func (k Keeper) Storage(c context.Context, req *evmtypes.QueryStorageRequest) (*evmtypes.QueryStorageResponse, error) {
+func (k Keeper) Storage(c context.Context, req *types.QueryStorageRequest) (*types.QueryStorageResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := evmostypes.ValidateAddress(req.Address); err != nil {
+	if err := haqqtypes.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
-			evmtypes.ErrZeroAddress.Error(),
+			types.ErrZeroAddress.Error(),
 		)
 	}
 
@@ -167,21 +165,21 @@ func (k Keeper) Storage(c context.Context, req *evmtypes.QueryStorageRequest) (*
 	state := k.GetState(ctx, address, key)
 	stateHex := state.Hex()
 
-	return &evmtypes.QueryStorageResponse{
+	return &types.QueryStorageResponse{
 		Value: stateHex,
 	}, nil
 }
 
 // Code implements the Query/Code gRPC method
-func (k Keeper) Code(c context.Context, req *evmtypes.QueryCodeRequest) (*evmtypes.QueryCodeResponse, error) {
+func (k Keeper) Code(c context.Context, req *types.QueryCodeRequest) (*types.QueryCodeResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if err := evmostypes.ValidateAddress(req.Address); err != nil {
+	if err := haqqtypes.ValidateAddress(req.Address); err != nil {
 		return nil, status.Error(
 			codes.InvalidArgument,
-			evmtypes.ErrZeroAddress.Error(),
+			types.ErrZeroAddress.Error(),
 		)
 	}
 
@@ -195,30 +193,30 @@ func (k Keeper) Code(c context.Context, req *evmtypes.QueryCodeRequest) (*evmtyp
 		code = k.GetCode(ctx, common.BytesToHash(acct.CodeHash))
 	}
 
-	return &evmtypes.QueryCodeResponse{
+	return &types.QueryCodeResponse{
 		Code: code,
 	}, nil
 }
 
 // Params implements the Query/Params gRPC method
-func (k Keeper) Params(c context.Context, _ *evmtypes.QueryParamsRequest) (*evmtypes.QueryParamsResponse, error) {
+func (k Keeper) Params(c context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	params := k.GetParams(ctx)
 
-	return &evmtypes.QueryParamsResponse{
+	return &types.QueryParamsResponse{
 		Params: params,
 	}, nil
 }
 
 // EthCall implements eth_call rpc api.
-func (k Keeper) EthCall(c context.Context, req *evmtypes.EthCallRequest) (*evmtypes.MsgEthereumTxResponse, error) {
+func (k Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.MsgEthereumTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
 
-	var args evmtypes.TransactionArgs
+	var args types.TransactionArgs
 	err := json.Unmarshal(req.Args, &args)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -253,7 +251,7 @@ func (k Keeper) EthCall(c context.Context, req *evmtypes.EthCallRequest) (*evmty
 }
 
 // EstimateGas implements eth_estimateGas rpc api.
-func (k Keeper) EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*evmtypes.EstimateGasResponse, error) {
+func (k Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*types.EstimateGasResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -268,7 +266,7 @@ func (k Keeper) EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*e
 		return nil, status.Error(codes.InvalidArgument, "gas cap cannot be lower than 21,000")
 	}
 
-	var args evmtypes.TransactionArgs
+	var args types.TransactionArgs
 	err = json.Unmarshal(req.Args, &args)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -323,7 +321,7 @@ func (k Keeper) EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*e
 	// so we don't wrap them with the gRPC status code
 
 	// Create a helper to check if a gas allowance results in an executable transaction
-	executable := func(gas uint64) (vmError bool, rsp *evmtypes.MsgEthereumTxResponse, err error) {
+	executable := func(gas uint64) (vmError bool, rsp *types.MsgEthereumTxResponse, err error) {
 		// update the message with the new gas value
 		msg = ethtypes.NewMessage(
 			msg.From(),
@@ -351,7 +349,7 @@ func (k Keeper) EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*e
 	}
 
 	// Execute the binary search and hone in on an executable gas limit
-	hi, err = evmtypes.BinSearch(lo, hi, executable)
+	hi, err = types.BinSearch(lo, hi, executable)
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +364,7 @@ func (k Keeper) EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*e
 		if failed {
 			if result != nil && result.VmError != vm.ErrOutOfGas.Error() {
 				if result.VmError == vm.ErrExecutionReverted.Error() {
-					return nil, evmtypes.NewExecErrorWithReason(result.Ret)
+					return nil, types.NewExecErrorWithReason(result.Ret)
 				}
 				return nil, errors.New(result.VmError)
 			}
@@ -374,13 +372,13 @@ func (k Keeper) EstimateGas(c context.Context, req *evmtypes.EthCallRequest) (*e
 			return nil, fmt.Errorf("gas required exceeds allowance (%d)", gasCap)
 		}
 	}
-	return &evmtypes.EstimateGasResponse{Gas: hi}, nil
+	return &types.EstimateGasResponse{Gas: hi}, nil
 }
 
 // TraceTx configures a new tracer according to the provided configuration, and
 // executes the given message in the provided environment. The return value will
 // be tracer dependent.
-func (k Keeper) TraceTx(c context.Context, req *evmtypes.QueryTraceTxRequest) (*evmtypes.QueryTraceTxResponse, error) {
+func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*types.QueryTraceTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -438,8 +436,8 @@ func (k Keeper) TraceTx(c context.Context, req *evmtypes.QueryTraceTxRequest) (*
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
 		// reset gas meter for each transaction
-		ctx = ctx.WithGasMeter(evmostypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
-		rsp, err := k.ApplyMessageWithConfig(ctx, msg, evmtypes.NewNoOpTracer(), true, cfg, txConfig)
+		ctx = ctx.WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
+		rsp, err := k.ApplyMessageWithConfig(ctx, msg, types.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
 			continue
 		}
@@ -469,7 +467,7 @@ func (k Keeper) TraceTx(c context.Context, req *evmtypes.QueryTraceTxRequest) (*
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &evmtypes.QueryTraceTxResponse{
+	return &types.QueryTraceTxResponse{
 		Data: resultData,
 	}, nil
 }
@@ -477,7 +475,7 @@ func (k Keeper) TraceTx(c context.Context, req *evmtypes.QueryTraceTxRequest) (*
 // TraceBlock configures a new tracer according to the provided configuration, and
 // executes the given message in the provided environment for all the transactions in the queried block.
 // The return value will be tracer dependent.
-func (k Keeper) TraceBlock(c context.Context, req *evmtypes.QueryTraceBlockRequest) (*evmtypes.QueryTraceBlockResponse, error) {
+func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest) (*types.QueryTraceBlockResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -521,12 +519,12 @@ func (k Keeper) TraceBlock(c context.Context, req *evmtypes.QueryTraceBlockReque
 
 	signer := ethtypes.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()))
 	txsLength := len(req.Txs)
-	results := make([]*evmtypes.TxTraceResult, 0, txsLength)
+	results := make([]*types.TxTraceResult, 0, txsLength)
 
 	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
 
 	for i, tx := range req.Txs {
-		result := evmtypes.TxTraceResult{}
+		result := types.TxTraceResult{}
 		ethTx := tx.AsTransaction()
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
@@ -545,7 +543,7 @@ func (k Keeper) TraceBlock(c context.Context, req *evmtypes.QueryTraceBlockReque
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &evmtypes.QueryTraceBlockResponse{
+	return &types.QueryTraceBlockResponse{
 		Data: resultData,
 	}, nil
 }
@@ -557,7 +555,7 @@ func (k *Keeper) traceTx(
 	txConfig statedb.TxConfig,
 	signer ethtypes.Signer,
 	tx *ethtypes.Transaction,
-	traceConfig *evmtypes.TraceConfig,
+	traceConfig *types.TraceConfig,
 	commitMessage bool,
 	tracerJSONConfig json.RawMessage,
 ) (*interface{}, uint, error) {
@@ -574,7 +572,7 @@ func (k *Keeper) traceTx(
 	}
 
 	if traceConfig == nil {
-		traceConfig = &evmtypes.TraceConfig{}
+		traceConfig = &types.TraceConfig{}
 	}
 
 	if traceConfig.Overrides != nil {
@@ -625,7 +623,7 @@ func (k *Keeper) traceTx(
 
 	// reset gas meter for tx
 	// to be consistent with tx execution gas meter
-	ctx = ctx.WithGasMeter(evmostypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
+	ctx = ctx.WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
 	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())
@@ -641,14 +639,14 @@ func (k *Keeper) traceTx(
 }
 
 // BaseFee implements the Query/BaseFee gRPC method
-func (k Keeper) BaseFee(c context.Context, _ *evmtypes.QueryBaseFeeRequest) (*evmtypes.QueryBaseFeeResponse, error) {
+func (k Keeper) BaseFee(c context.Context, _ *types.QueryBaseFeeRequest) (*types.QueryBaseFeeResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
 	params := k.GetParams(ctx)
 	ethCfg := params.ChainConfig.EthereumConfig(k.eip155ChainID)
 	baseFee := k.GetBaseFee(ctx, ethCfg)
 
-	res := &evmtypes.QueryBaseFeeResponse{}
+	res := &types.QueryBaseFeeResponse{}
 	if baseFee != nil {
 		aux := sdkmath.NewIntFromBigInt(baseFee)
 		res.BaseFee = &aux
@@ -660,7 +658,7 @@ func (k Keeper) BaseFee(c context.Context, _ *evmtypes.QueryBaseFeeRequest) (*ev
 // getChainID parse chainID from current context if not provided
 func getChainID(ctx sdk.Context, chainID int64) (*big.Int, error) {
 	if chainID == 0 {
-		return evmostypes.ParseChainID(ctx.ChainID())
+		return haqqtypes.ParseChainID(ctx.ChainID())
 	}
 	return big.NewInt(chainID), nil
 }

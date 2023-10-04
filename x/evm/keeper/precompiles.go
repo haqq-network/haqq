@@ -5,19 +5,18 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	channelkeeper "github.com/cosmos/ibc-go/v7/modules/core/04-channel/keeper"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/vm"
 
 	distprecompile "github.com/haqq-network/haqq/precompiles/distribution"
 	ics20precompile "github.com/haqq-network/haqq/precompiles/ics20"
 	stakingprecompile "github.com/haqq-network/haqq/precompiles/staking"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
-	//vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
+	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 )
 
 // AvailablePrecompiles returns the list of all available precompiled contracts.
@@ -25,7 +24,7 @@ import (
 func AvailablePrecompiles(
 	stakingKeeper stakingkeeper.Keeper,
 	distributionKeeper distributionkeeper.Keeper,
-	//vestingKeeper vestingkeeper.Keeper, //nolint:unused,revive
+	vestingKeeper vestingkeeper.Keeper,
 	authzKeeper authzkeeper.Keeper,
 	transferKeeper transferkeeper.Keeper,
 	channelKeeper channelkeeper.Keeper,
@@ -48,17 +47,8 @@ func AvailablePrecompiles(
 		panic(fmt.Errorf("failed to load ICS20 precompile: %w", err))
 	}
 
-	/*
-		// TODO Revise vesting precompile
-		vestingPrecompile, err := vestingprecompile.NewPrecompile(vestingKeeper, authzKeeper)
-		if err != nil {
-			panic(fmt.Errorf("failed to load vesting precompile: %w", err))
-		}
-	*/
-
 	precompiles[stakingPrecompile.Address()] = stakingPrecompile
 	precompiles[distributionPrecompile.Address()] = distributionPrecompile
-	// precompiles[vestingPrecompile.Address()] = vestingPrecompile
 	precompiles[ibcTransferPrecompile.Address()] = ibcTransferPrecompile
 	return precompiles
 }

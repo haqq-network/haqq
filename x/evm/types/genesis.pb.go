@@ -144,13 +144,12 @@ func (m *GenesisAccount) GetStorage() Storage {
 	return nil
 }
 
-// NOTE: Temporary used from Evmos
-/*func init() {
+func init() {
 	proto.RegisterType((*GenesisState)(nil), "ethermint.evm.v1.GenesisState")
 	proto.RegisterType((*GenesisAccount)(nil), "ethermint.evm.v1.GenesisAccount")
-}*/
+}
 
-//func init() { proto.RegisterFile("ethermint/evm/v1/genesis.proto", fileDescriptor_9bcdec50cc9d156d) }
+func init() { proto.RegisterFile("ethermint/evm/v1/genesis.proto", fileDescriptor_9bcdec50cc9d156d) }
 
 var fileDescriptor_9bcdec50cc9d156d = []byte{
 	// 300 bytes of a gzipped FileDescriptorProto

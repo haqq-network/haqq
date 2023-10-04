@@ -4,15 +4,11 @@ import (
 	"math/big"
 	"strings"
 
-	sdkmath "cosmossdk.io/math"
-
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
-
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 )
 
 // EthereumConfig returns an Ethereum ChainConfig for EVM state transitions.
@@ -162,7 +158,7 @@ func (cc ChainConfig) Validate() error {
 
 func validateHash(hex string) error {
 	if hex != "" && strings.TrimSpace(hex) == "" {
-		return errorsmod.Wrap(evmtypes.ErrInvalidChainConfig, "hash cannot be blank")
+		return errorsmod.Wrap(ErrInvalidChainConfig, "hash cannot be blank")
 	}
 
 	return nil
@@ -176,7 +172,7 @@ func validateBlock(block *sdkmath.Int) error {
 
 	if block.IsNegative() {
 		return errorsmod.Wrapf(
-			evmtypes.ErrInvalidChainConfig, "block value cannot be negative: %s", block,
+			ErrInvalidChainConfig, "block value cannot be negative: %s", block,
 		)
 	}
 

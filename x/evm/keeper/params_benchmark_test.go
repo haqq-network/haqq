@@ -3,13 +3,13 @@ package keeper_test
 import (
 	"testing"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 func BenchmarkSetParams(b *testing.B) {
 	suite := KeeperTestSuite{}
 	suite.SetupTestWithT(b)
-	params := evmtypes.DefaultParams()
+	params := types.DefaultParams()
 
 	b.ReportAllocs()
 	b.ResetTimer()

@@ -12,15 +12,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	rpctypes "github.com/evmos/evmos/v14/rpc/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	rpctypes "github.com/haqq-network/haqq/rpc/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
 func GetTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                        evmtypes.ModuleName,
-		Short:                      fmt.Sprintf("%s transactions subcommands", evmtypes.ModuleName),
+		Use:                        types.ModuleName,
+		Short:                      fmt.Sprintf("%s transactions subcommands", types.ModuleName),
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
@@ -41,7 +41,7 @@ func NewRawTxCmd() *cobra.Command {
 				return errors.Wrap(err, "failed to decode ethereum tx hex bytes")
 			}
 
-			msg := &evmtypes.MsgEthereumTx{}
+			msg := &types.MsgEthereumTx{}
 			if err := msg.UnmarshalBinary(data); err != nil {
 				return err
 			}
@@ -55,7 +55,7 @@ func NewRawTxCmd() *cobra.Command {
 				return err
 			}
 
-			rsp, err := rpctypes.NewQueryClient(clientCtx).Params(cmd.Context(), &evmtypes.QueryParamsRequest{})
+			rsp, err := rpctypes.NewQueryClient(clientCtx).Params(cmd.Context(), &types.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}

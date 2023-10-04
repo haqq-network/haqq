@@ -1302,8 +1302,7 @@ func (m *QueryBaseFeeResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryBaseFeeResponse proto.InternalMessageInfo
 
-// NOTE: Temporary used from Evmos
-/*func init() {
+func init() {
 	proto.RegisterType((*QueryAccountRequest)(nil), "ethermint.evm.v1.QueryAccountRequest")
 	proto.RegisterType((*QueryAccountResponse)(nil), "ethermint.evm.v1.QueryAccountResponse")
 	proto.RegisterType((*QueryCosmosAccountRequest)(nil), "ethermint.evm.v1.QueryCosmosAccountRequest")
@@ -1328,9 +1327,9 @@ var xxx_messageInfo_QueryBaseFeeResponse proto.InternalMessageInfo
 	proto.RegisterType((*QueryTraceBlockResponse)(nil), "ethermint.evm.v1.QueryTraceBlockResponse")
 	proto.RegisterType((*QueryBaseFeeRequest)(nil), "ethermint.evm.v1.QueryBaseFeeRequest")
 	proto.RegisterType((*QueryBaseFeeResponse)(nil), "ethermint.evm.v1.QueryBaseFeeResponse")
-}*/
+}
 
-//func init() { proto.RegisterFile("ethermint/evm/v1/query.proto", fileDescriptor_e15a877459347994) }
+func init() { proto.RegisterFile("ethermint/evm/v1/query.proto", fileDescriptor_e15a877459347994) }
 
 var fileDescriptor_e15a877459347994 = []byte{
 	// 1457 bytes of a gzipped FileDescriptorProto

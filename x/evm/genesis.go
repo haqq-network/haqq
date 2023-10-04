@@ -9,19 +9,18 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	evmostypes "github.com/evmos/evmos/v14/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/evm/keeper"
-	haqqevmtypes "github.com/haqq-network/haqq/x/evm/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 // InitGenesis initializes genesis state based on exported genesis
 func InitGenesis(
 	ctx sdk.Context,
 	k *keeper.Keeper,
-	accountKeeper haqqevmtypes.AccountKeeper,
-	data evmtypes.GenesisState,
+	accountKeeper types.AccountKeeper,
+	data types.GenesisState,
 ) []abci.ValidatorUpdate {
 	k.WithChainID(ctx)
 
@@ -31,7 +30,7 @@ func InitGenesis(
 	}
 
 	// ensure evm module account is set
-	if addr := accountKeeper.GetModuleAddress(evmtypes.ModuleName); addr == nil {
+	if addr := accountKeeper.GetModuleAddress(types.ModuleName); addr == nil {
 		panic("the EVM module account has not been set")
 	}
 
@@ -44,7 +43,7 @@ func InitGenesis(
 			panic(fmt.Errorf("account not found for address %s", account.Address))
 		}
 
-		ethAcct, ok := acc.(evmostypes.EthAccountI)
+		ethAcct, ok := acc.(haqqtypes.EthAccountI)
 		if !ok {
 			panic(
 				fmt.Errorf("account %s must be an EthAccount interface, got %T",
@@ -73,10 +72,10 @@ func InitGenesis(
 }
 
 // ExportGenesis exports genesis state of the EVM module
-func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak haqqevmtypes.AccountKeeper) *evmtypes.GenesisState {
-	var ethGenAccounts []evmtypes.GenesisAccount
+func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak types.AccountKeeper) *types.GenesisState {
+	var ethGenAccounts []types.GenesisAccount
 	ak.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
-		ethAccount, ok := account.(evmostypes.EthAccountI)
+		ethAccount, ok := account.(haqqtypes.EthAccountI)
 		if !ok {
 			// ignore non EthAccounts
 			return false
@@ -86,7 +85,7 @@ func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak haqqevmtypes.AccountKee
 
 		storage := k.GetAccountStorage(ctx, addr)
 
-		genAccount := evmtypes.GenesisAccount{
+		genAccount := types.GenesisAccount{
 			Address: addr.String(),
 			Code:    common.Bytes2Hex(k.GetCode(ctx, ethAccount.GetCodeHash())),
 			Storage: storage,
@@ -96,7 +95,7 @@ func ExportGenesis(ctx sdk.Context, k *keeper.Keeper, ak haqqevmtypes.AccountKee
 		return false
 	})
 
-	return &evmtypes.GenesisState{
+	return &types.GenesisState{
 		Accounts: ethGenAccounts,
 		Params:   k.GetParams(ctx),
 	}

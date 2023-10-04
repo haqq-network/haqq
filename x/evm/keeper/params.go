@@ -3,13 +3,13 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 // GetParams returns the total set of evm parameters.
-func (k Keeper) GetParams(ctx sdk.Context) (params evmtypes.Params) {
+func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(evmtypes.KeyPrefixParams)
+	bz := store.Get(types.KeyPrefixParams)
 	if len(bz) == 0 {
 		return k.GetLegacyParams(ctx)
 	}
@@ -18,7 +18,7 @@ func (k Keeper) GetParams(ctx sdk.Context) (params evmtypes.Params) {
 }
 
 // SetParams sets the EVM params each in their individual key for better get performance
-func (k Keeper) SetParams(ctx sdk.Context, params evmtypes.Params) error {
+func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	if err := params.Validate(); err != nil {
 		return err
 	}
@@ -29,13 +29,13 @@ func (k Keeper) SetParams(ctx sdk.Context, params evmtypes.Params) error {
 		return err
 	}
 
-	store.Set(evmtypes.KeyPrefixParams, bz)
+	store.Set(types.KeyPrefixParams, bz)
 	return nil
 }
 
 // GetLegacyParams returns param set for version before migrate
-func (k Keeper) GetLegacyParams(ctx sdk.Context) evmtypes.Params {
-	var params evmtypes.Params
+func (k Keeper) GetLegacyParams(ctx sdk.Context) types.Params {
+	var params types.Params
 	k.ss.GetParamSetIfExists(ctx, &params)
 	return params
 }

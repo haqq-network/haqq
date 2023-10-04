@@ -5,9 +5,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	v4types "github.com/haqq-network/haqq/x/evm/migrations/v4/types"
-	haqqevmtypes "github.com/haqq-network/haqq/x/evm/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 // MigrateStore migrates the x/evm module state from the consensus version 3 to
@@ -16,10 +15,10 @@ import (
 func MigrateStore(
 	ctx sdk.Context,
 	storeKey storetypes.StoreKey,
-	legacySubspace haqqevmtypes.Subspace,
+	legacySubspace types.Subspace,
 	cdc codec.BinaryCodec,
 ) error {
-	var params evmtypes.Params
+	var params types.Params
 
 	legacySubspace.GetParamSetIfExists(ctx, &params)
 
@@ -32,20 +31,20 @@ func MigrateStore(
 
 	store := ctx.KVStore(storeKey)
 
-	store.Set(evmtypes.ParamStoreKeyEVMDenom, []byte(params.EvmDenom))
-	store.Set(evmtypes.ParamStoreKeyExtraEIPs, extraEIPsBz)
-	store.Set(evmtypes.ParamStoreKeyChainConfig, chainCfgBz)
+	store.Set(types.ParamStoreKeyEVMDenom, []byte(params.EvmDenom))
+	store.Set(types.ParamStoreKeyExtraEIPs, extraEIPsBz)
+	store.Set(types.ParamStoreKeyChainConfig, chainCfgBz)
 
 	if params.AllowUnprotectedTxs {
-		store.Set(evmtypes.ParamStoreKeyAllowUnprotectedTxs, []byte{0x01})
+		store.Set(types.ParamStoreKeyAllowUnprotectedTxs, []byte{0x01})
 	}
 
 	if params.EnableCall {
-		store.Set(evmtypes.ParamStoreKeyEnableCall, []byte{0x01})
+		store.Set(types.ParamStoreKeyEnableCall, []byte{0x01})
 	}
 
 	if params.EnableCreate {
-		store.Set(evmtypes.ParamStoreKeyEnableCreate, []byte{0x01})
+		store.Set(types.ParamStoreKeyEnableCreate, []byte{0x01})
 	}
 
 	return nil

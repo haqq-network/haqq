@@ -7,53 +7,53 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/evmos/evmos/v14/encoding"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/encoding"
 	v4 "github.com/haqq-network/haqq/x/evm/migrations/v4"
 	v4types "github.com/haqq-network/haqq/x/evm/migrations/v4/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 type mockSubspace struct {
-	ps evmtypes.Params
+	ps types.Params
 }
 
-func newMockSubspace(ps evmtypes.Params) mockSubspace {
+func newMockSubspace(ps types.Params) mockSubspace {
 	return mockSubspace{ps: ps}
 }
 
-func (ms mockSubspace) GetParamSetIfExists(_ sdk.Context, ps evmtypes.LegacyParams) {
-	*ps.(*evmtypes.Params) = ms.ps
+func (ms mockSubspace) GetParamSetIfExists(_ sdk.Context, ps types.LegacyParams) {
+	*ps.(*types.Params) = ms.ps
 }
 
 func TestMigrate(t *testing.T) {
 	encCfg := encoding.MakeConfig(app.ModuleBasics)
 	cdc := encCfg.Codec
 
-	storeKey := sdk.NewKVStoreKey(evmtypes.ModuleName)
-	tKey := sdk.NewTransientStoreKey(evmtypes.TransientKey)
+	storeKey := sdk.NewKVStoreKey(types.ModuleName)
+	tKey := sdk.NewTransientStoreKey(types.TransientKey)
 	ctx := testutil.DefaultContext(storeKey, tKey)
 	kvStore := ctx.KVStore(storeKey)
 
-	legacySubspace := newMockSubspace(evmtypes.DefaultParams())
+	legacySubspace := newMockSubspace(types.DefaultParams())
 	require.NoError(t, v4.MigrateStore(ctx, storeKey, legacySubspace, cdc))
 
 	// Get all the new parameters from the kvStore
 	var evmDenom string
-	bz := kvStore.Get(evmtypes.ParamStoreKeyEVMDenom)
+	bz := kvStore.Get(types.ParamStoreKeyEVMDenom)
 	evmDenom = string(bz)
 
-	allowUnprotectedTx := kvStore.Has(evmtypes.ParamStoreKeyAllowUnprotectedTxs)
-	enableCreate := kvStore.Has(evmtypes.ParamStoreKeyEnableCreate)
-	enableCall := kvStore.Has(evmtypes.ParamStoreKeyEnableCall)
+	allowUnprotectedTx := kvStore.Has(types.ParamStoreKeyAllowUnprotectedTxs)
+	enableCreate := kvStore.Has(types.ParamStoreKeyEnableCreate)
+	enableCall := kvStore.Has(types.ParamStoreKeyEnableCall)
 
 	var chainCfg v4types.V4ChainConfig
-	bz = kvStore.Get(evmtypes.ParamStoreKeyChainConfig)
+	bz = kvStore.Get(types.ParamStoreKeyChainConfig)
 	cdc.MustUnmarshal(bz, &chainCfg)
 
 	var extraEIPs v4types.ExtraEIPs
-	bz = kvStore.Get(evmtypes.ParamStoreKeyExtraEIPs)
+	bz = kvStore.Get(types.ParamStoreKeyExtraEIPs)
 	cdc.MustUnmarshal(bz, &extraEIPs)
 	require.Equal(t, []int64(nil), extraEIPs.EIPs)
 

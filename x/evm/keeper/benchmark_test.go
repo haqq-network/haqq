@@ -11,19 +11,19 @@ import (
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	evmostypes "github.com/evmos/evmos/v14/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	haqqtypes "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 func SetupContract(b *testing.B) (*KeeperTestSuite, common.Address) {
 	suite := KeeperTestSuite{}
 	suite.SetupTestWithT(b)
 
-	amt := sdk.Coins{evmostypes.NewEvmosCoinInt64(1000000000000000000)}
-	err := suite.app.BankKeeper.MintCoins(suite.ctx, evmtypes.ModuleName, amt)
+	amt := sdk.Coins{haqqtypes.NewIslmCoinInt64(1000000000000000000)}
+	err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, amt)
 	require.NoError(b, err)
-	err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, evmtypes.ModuleName, suite.address.Bytes(), amt)
+	err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, suite.address.Bytes(), amt)
 	require.NoError(b, err)
 
 	contractAddr := suite.DeployTestContract(b, suite.address, sdkmath.NewIntWithDecimal(1000, 18).BigInt())
@@ -36,10 +36,10 @@ func SetupTestMessageCall(b *testing.B) (*KeeperTestSuite, common.Address) {
 	suite := KeeperTestSuite{}
 	suite.SetupTestWithT(b)
 
-	amt := sdk.Coins{evmostypes.NewEvmosCoinInt64(1000000000000000000)}
-	err := suite.app.BankKeeper.MintCoins(suite.ctx, evmtypes.ModuleName, amt)
+	amt := sdk.Coins{haqqtypes.NewIslmCoinInt64(1000000000000000000)}
+	err := suite.app.BankKeeper.MintCoins(suite.ctx, types.ModuleName, amt)
 	require.NoError(b, err)
-	err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, evmtypes.ModuleName, suite.address.Bytes(), amt)
+	err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, suite.address.Bytes(), amt)
 	require.NoError(b, err)
 
 	contractAddr := suite.DeployTestMessageCall(b)
@@ -48,7 +48,7 @@ func SetupTestMessageCall(b *testing.B) (*KeeperTestSuite, common.Address) {
 	return &suite, contractAddr
 }
 
-type TxBuilder func(suite *KeeperTestSuite, contract common.Address) *evmtypes.MsgEthereumTx
+type TxBuilder func(suite *KeeperTestSuite, contract common.Address) *types.MsgEthereumTx
 
 func DoBenchmark(b *testing.B, txBuilder TxBuilder) {
 	suite, contractAddr := SetupContract(b)
@@ -64,7 +64,7 @@ func DoBenchmark(b *testing.B, txBuilder TxBuilder) {
 		ctx, _ := suite.ctx.CacheContext()
 
 		// deduct fee first
-		txData, err := evmtypes.UnpackTxData(msg.Data)
+		txData, err := types.UnpackTxData(msg.Data)
 		require.NoError(b, err)
 
 		fees := sdk.Coins{sdk.NewCoin(suite.EvmDenom(), sdkmath.NewIntFromBigInt(txData.Fee()))}
@@ -78,11 +78,11 @@ func DoBenchmark(b *testing.B, txBuilder TxBuilder) {
 }
 
 func BenchmarkTokenTransfer(b *testing.B) {
-	DoBenchmark(b, func(suite *KeeperTestSuite, contract common.Address) *evmtypes.MsgEthereumTx {
-		input, err := evmtypes.ERC20Contract.ABI.Pack("transfer", common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(1000))
+	DoBenchmark(b, func(suite *KeeperTestSuite, contract common.Address) *types.MsgEthereumTx {
+		input, err := types.ERC20Contract.ABI.Pack("transfer", common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(1000))
 		require.NoError(b, err)
 		nonce := suite.app.EvmKeeper.GetNonce(suite.ctx, suite.address)
-		ethTxParams := &evmtypes.EvmTxArgs{
+		ethTxParams := &types.EvmTxArgs{
 			ChainID:  suite.app.EvmKeeper.ChainID(),
 			Nonce:    nonce,
 			To:       &contract,
@@ -91,16 +91,16 @@ func BenchmarkTokenTransfer(b *testing.B) {
 			GasPrice: big.NewInt(1),
 			Input:    input,
 		}
-		return evmtypes.NewTx(ethTxParams)
+		return types.NewTx(ethTxParams)
 	})
 }
 
 func BenchmarkEmitLogs(b *testing.B) {
-	DoBenchmark(b, func(suite *KeeperTestSuite, contract common.Address) *evmtypes.MsgEthereumTx {
-		input, err := evmtypes.ERC20Contract.ABI.Pack("benchmarkLogs", big.NewInt(1000))
+	DoBenchmark(b, func(suite *KeeperTestSuite, contract common.Address) *types.MsgEthereumTx {
+		input, err := types.ERC20Contract.ABI.Pack("benchmarkLogs", big.NewInt(1000))
 		require.NoError(b, err)
 		nonce := suite.app.EvmKeeper.GetNonce(suite.ctx, suite.address)
-		ethTxParams := &evmtypes.EvmTxArgs{
+		ethTxParams := &types.EvmTxArgs{
 			ChainID:  suite.app.EvmKeeper.ChainID(),
 			Nonce:    nonce,
 			To:       &contract,
@@ -109,16 +109,16 @@ func BenchmarkEmitLogs(b *testing.B) {
 			GasPrice: big.NewInt(1),
 			Input:    input,
 		}
-		return evmtypes.NewTx(ethTxParams)
+		return types.NewTx(ethTxParams)
 	})
 }
 
 func BenchmarkTokenTransferFrom(b *testing.B) {
-	DoBenchmark(b, func(suite *KeeperTestSuite, contract common.Address) *evmtypes.MsgEthereumTx {
-		input, err := evmtypes.ERC20Contract.ABI.Pack("transferFrom", suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(0))
+	DoBenchmark(b, func(suite *KeeperTestSuite, contract common.Address) *types.MsgEthereumTx {
+		input, err := types.ERC20Contract.ABI.Pack("transferFrom", suite.address, common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(0))
 		require.NoError(b, err)
 		nonce := suite.app.EvmKeeper.GetNonce(suite.ctx, suite.address)
-		ethTxParams := &evmtypes.EvmTxArgs{
+		ethTxParams := &types.EvmTxArgs{
 			ChainID:  suite.app.EvmKeeper.ChainID(),
 			Nonce:    nonce,
 			To:       &contract,
@@ -127,16 +127,16 @@ func BenchmarkTokenTransferFrom(b *testing.B) {
 			GasPrice: big.NewInt(1),
 			Input:    input,
 		}
-		return evmtypes.NewTx(ethTxParams)
+		return types.NewTx(ethTxParams)
 	})
 }
 
 func BenchmarkTokenMint(b *testing.B) {
-	DoBenchmark(b, func(suite *KeeperTestSuite, contract common.Address) *evmtypes.MsgEthereumTx {
-		input, err := evmtypes.ERC20Contract.ABI.Pack("mint", common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(1000))
+	DoBenchmark(b, func(suite *KeeperTestSuite, contract common.Address) *types.MsgEthereumTx {
+		input, err := types.ERC20Contract.ABI.Pack("mint", common.HexToAddress("0x378c50D9264C63F3F92B806d4ee56E9D86FfB3Ec"), big.NewInt(1000))
 		require.NoError(b, err)
 		nonce := suite.app.EvmKeeper.GetNonce(suite.ctx, suite.address)
-		ethTxParams := &evmtypes.EvmTxArgs{
+		ethTxParams := &types.EvmTxArgs{
 			ChainID:  suite.app.EvmKeeper.ChainID(),
 			Nonce:    nonce,
 			To:       &contract,
@@ -145,17 +145,17 @@ func BenchmarkTokenMint(b *testing.B) {
 			GasPrice: big.NewInt(1),
 			Input:    input,
 		}
-		return evmtypes.NewTx(ethTxParams)
+		return types.NewTx(ethTxParams)
 	})
 }
 
 func BenchmarkMessageCall(b *testing.B) {
 	suite, contract := SetupTestMessageCall(b)
 
-	input, err := evmtypes.TestMessageCall.ABI.Pack("benchmarkMessageCall", big.NewInt(10000))
+	input, err := types.TestMessageCall.ABI.Pack("benchmarkMessageCall", big.NewInt(10000))
 	require.NoError(b, err)
 	nonce := suite.app.EvmKeeper.GetNonce(suite.ctx, suite.address)
-	ethTxParams := &evmtypes.EvmTxArgs{
+	ethTxParams := &types.EvmTxArgs{
 		ChainID:  suite.app.EvmKeeper.ChainID(),
 		Nonce:    nonce,
 		To:       &contract,
@@ -164,7 +164,7 @@ func BenchmarkMessageCall(b *testing.B) {
 		GasPrice: big.NewInt(1),
 		Input:    input,
 	}
-	msg := evmtypes.NewTx(ethTxParams)
+	msg := types.NewTx(ethTxParams)
 
 	msg.From = suite.address.Hex()
 	err = msg.Sign(ethtypes.LatestSignerForChainID(suite.app.EvmKeeper.ChainID()), suite.signer)
@@ -176,7 +176,7 @@ func BenchmarkMessageCall(b *testing.B) {
 		ctx, _ := suite.ctx.CacheContext()
 
 		// deduct fee first
-		txData, err := evmtypes.UnpackTxData(msg.Data)
+		txData, err := types.UnpackTxData(msg.Data)
 		require.NoError(b, err)
 
 		fees := sdk.Coins{sdk.NewCoin(suite.EvmDenom(), sdkmath.NewIntFromBigInt(txData.Fee()))}

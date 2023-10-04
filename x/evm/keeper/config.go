@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	"github.com/haqq-network/haqq/x/evm/types"
 )
 
 // EVMConfig creates the EVMConfig based on current state
@@ -47,12 +47,12 @@ func (k *Keeper) TxConfig(ctx sdk.Context, txHash common.Hash) statedb.TxConfig 
 // module parameters. The config generated uses the default JumpTable from the EVM.
 func (k Keeper) VMConfig(ctx sdk.Context, _ core.Message, cfg *statedb.EVMConfig, tracer vm.EVMLogger) vm.Config {
 	noBaseFee := true
-	if evmtypes.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
+	if types.IsLondon(cfg.ChainConfig, ctx.BlockHeight()) {
 		noBaseFee = k.feeMarketKeeper.GetParams(ctx).NoBaseFee
 	}
 
 	var debug bool
-	if _, ok := tracer.(evmtypes.NoOpTracer); !ok {
+	if _, ok := tracer.(types.NoOpTracer); !ok {
 		debug = true
 	}
 
