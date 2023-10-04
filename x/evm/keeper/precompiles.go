@@ -16,7 +16,6 @@ import (
 	ics20precompile "github.com/haqq-network/haqq/precompiles/ics20"
 	stakingprecompile "github.com/haqq-network/haqq/precompiles/staking"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
-	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 )
 
 // AvailablePrecompiles returns the list of all available precompiled contracts.
@@ -24,7 +23,6 @@ import (
 func AvailablePrecompiles(
 	stakingKeeper stakingkeeper.Keeper,
 	distributionKeeper distributionkeeper.Keeper,
-	vestingKeeper vestingkeeper.Keeper,
 	authzKeeper authzkeeper.Keeper,
 	transferKeeper transferkeeper.Keeper,
 	channelKeeper channelkeeper.Keeper,
