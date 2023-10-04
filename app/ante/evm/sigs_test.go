@@ -3,9 +3,9 @@ package evm_test
 import (
 	"math/big"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *AnteTestSuite) TestSignatures() {

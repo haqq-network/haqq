@@ -3,7 +3,6 @@ package evm_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/haqq-network/haqq/utils"
 	"math/big"
 	"time"
 
@@ -35,12 +34,13 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
-	"github.com/evmos/evmos/v14/ethereum/eip712"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/ethereum/eip712"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/utils"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *AnteTestSuite) BuildTestEthTx(

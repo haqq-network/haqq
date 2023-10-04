@@ -6,15 +6,15 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/evmos/evmos/v14/server/config"
-	"github.com/evmos/evmos/v14/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	ethante "github.com/haqq-network/haqq/app/ante/evm"
+	"github.com/haqq-network/haqq/server/config"
 	"github.com/haqq-network/haqq/testutil"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *AnteTestSuite) TestNewEthAccountVerificationDecorator() {

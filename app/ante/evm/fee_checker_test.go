@@ -1,7 +1,6 @@
 package evm
 
 import (
-	"github.com/haqq-network/haqq/utils"
 	"math/big"
 	"testing"
 
@@ -14,10 +13,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/evmos/evmos/v14/encoding"
-	"github.com/evmos/evmos/v14/types"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	"github.com/haqq-network/haqq/encoding"
+	"github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var _ DynamicFeeEVMKeeper = MockEVMKeeper{}

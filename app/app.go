@@ -114,42 +114,35 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
 
-	"github.com/evmos/evmos/v14/encoding"
-	"github.com/evmos/evmos/v14/ethereum/eip712"
-	srvflags "github.com/evmos/evmos/v14/server/flags"
-	evmostypes "github.com/evmos/evmos/v14/types"
-	"github.com/evmos/evmos/v14/x/epochs"
-	epochskeeper "github.com/evmos/evmos/v14/x/epochs/keeper"
-	epochstypes "github.com/evmos/evmos/v14/x/epochs/types"
-	"github.com/evmos/evmos/v14/x/feemarket"
-	feemarketkeeper "github.com/evmos/evmos/v14/x/feemarket/keeper"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
-
 	"github.com/haqq-network/haqq/app/ante"
 	ethante "github.com/haqq-network/haqq/app/ante/evm"
+	"github.com/haqq-network/haqq/encoding"
+	"github.com/haqq-network/haqq/ethereum/eip712"
+	"github.com/haqq-network/haqq/precompiles/common"
+	srvflags "github.com/haqq-network/haqq/server/flags"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 	"github.com/haqq-network/haqq/x/coinomics"
 	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
-	"github.com/haqq-network/haqq/x/vesting"
-	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
-	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
-
+	"github.com/haqq-network/haqq/x/epochs"
+	epochskeeper "github.com/haqq-network/haqq/x/epochs/keeper"
+	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	"github.com/haqq-network/haqq/x/erc20"
 	erc20client "github.com/haqq-network/haqq/x/erc20/client"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
-
-	// Temporary use of evmos types
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
-
-	"github.com/haqq-network/haqq/precompiles/common"
-	// unnamed import of statik for swagger UI support
-	_ "github.com/haqq-network/haqq/client/docs/statik"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm"
 	evmkeeper "github.com/haqq-network/haqq/x/evm/keeper"
-
-	// temporary use of evmos types
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	"github.com/haqq-network/haqq/x/feemarket"
+	feemarketkeeper "github.com/haqq-network/haqq/x/feemarket/keeper"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
+	"github.com/haqq-network/haqq/x/vesting"
+	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+	// unnamed import of statik for swagger UI support
+	_ "github.com/haqq-network/haqq/client/docs/statik"
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -179,7 +172,7 @@ func init() {
 	DefaultNodeHome = filepath.Join(userHomeDir, ".haqqd")
 
 	// manually update the power reduction by replacing micro (u) -> atto (a) haqq/evm
-	sdk.DefaultPowerReduction = evmostypes.PowerReduction
+	sdk.DefaultPowerReduction = haqqtypes.PowerReduction
 	// modify fee market parameter defaults through global
 	feemarkettypes.DefaultMinGasPrice = MinGasPrices
 	feemarkettypes.DefaultMinGasMultiplier = MinGasMultiplier
@@ -431,7 +424,7 @@ func NewHaqq(
 	// use custom Ethermint account for contracts
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec, keys[authtypes.StoreKey],
-		evmostypes.ProtoAccount, maccPerms,
+		haqqtypes.ProtoAccount, maccPerms,
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		authAddr,
 	)
@@ -859,7 +852,7 @@ func (app *Haqq) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
 		Cdc:                    app.appCodec,
 		AccountKeeper:          app.AccountKeeper,
 		BankKeeper:             app.BankKeeper,
-		ExtensionOptionChecker: evmostypes.HasDynamicFeeExtensionOption,
+		ExtensionOptionChecker: haqqtypes.HasDynamicFeeExtensionOption,
 		EvmKeeper:              app.EvmKeeper,
 		StakingKeeper:          app.StakingKeeper,
 		FeegrantKeeper:         app.FeeGrantKeeper,

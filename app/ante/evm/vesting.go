@@ -7,16 +7,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
-	haqqevmtypes "github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
 // EthVestingTransactionDecorator validates if clawback vesting accounts are
 // permitted to perform Ethereum Tx.
 type EthVestingTransactionDecorator struct {
-	ak haqqevmtypes.AccountKeeper
-	bk haqqevmtypes.BankKeeper
+	ak evmtypes.AccountKeeper
+	bk evmtypes.BankKeeper
 	ek EVMKeeper
 }
 
@@ -30,7 +29,7 @@ type ethVestingExpenseTracker struct {
 }
 
 // NewEthVestingTransactionDecorator returns a new EthVestingTransactionDecorator.
-func NewEthVestingTransactionDecorator(ak haqqevmtypes.AccountKeeper, bk haqqevmtypes.BankKeeper, ek EVMKeeper) EthVestingTransactionDecorator {
+func NewEthVestingTransactionDecorator(ak evmtypes.AccountKeeper, bk evmtypes.BankKeeper, ek EVMKeeper) EthVestingTransactionDecorator {
 	return EthVestingTransactionDecorator{
 		ak: ak,
 		bk: bk,
