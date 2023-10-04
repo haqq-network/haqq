@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 
-set -eo pipefail
-
 # --------------
 # Commands to run locally
-# docker run --network host --rm -v $(CURDIR):/workspace --workdir /workspace tendermintdev/sdk-proto-gen:v0.7 sh ./protocgen.sh
+# docker run --network host --rm -v $(CURDIR):/workspace --workdir /workspace ghcr.io/cosmos/proto-builder:v0.11.6 sh ./protocgen.sh
 #
 set -eo pipefail
 
@@ -13,7 +11,7 @@ proto_dirs=$(find ./proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1
 for dir in $proto_dirs; do
   proto_files=$(find "${dir}" -maxdepth 1 -name '*.proto')
   for file in $proto_files; do
-    # Check if the go_package in the file is pointing to haqq
+    # Check if the go_package in the file is pointing to evmos
     if grep -q "option go_package.*haqq" "$file"; then
       buf generate --template proto/buf.gen.gogo.yaml "$file"
     fi
@@ -21,5 +19,5 @@ for dir in $proto_dirs; do
 done
 
 # move proto files to the right places
-cp -r github.com/haqq-network/haqq/* ./
+cp -r github.com/haqq-network/haqq/v*/* ./
 rm -rf github.com

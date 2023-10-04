@@ -15,7 +15,7 @@ IP_ADDR="0.0.0.0"
 MODE="rpc"
 
 KEY="mykey"
-CHAINID="evmos_9000-1"
+CHAINID="haqq_121799-1"
 MONIKER="mymoniker"
 
 ## default port prefixes for haqqd
@@ -54,16 +54,16 @@ if [[ ! "$DATA_DIR" ]]; then
     exit 1
 fi
 
-DATA_CLI_DIR=$(mktemp -d -t evmos-cli-datadir.XXXXX)
+DATA_CLI_DIR=$(mktemp -d -t haqq-cli-datadir.XXXXX)
 
 if [[ ! "$DATA_CLI_DIR" ]]; then
     echo "Could not create $DATA_CLI_DIR"
     exit 1
 fi
 
-# Compile evmos
-echo "compiling evmos"
-make build-evmos
+# Compile haqq
+echo "compiling haqq"
+make build-haqq
 
 # PID array declaration
 arr=()
@@ -73,33 +73,33 @@ arrcli=()
 
 init_func() {
     echo "create and add new keys"
-    "$PWD"/build/evmosd keys add $KEY"$i" --home "$DATA_DIR$i" --no-backup --chain-id $CHAINID --algo "eth_secp256k1" --keyring-backend test
-    echo "init Evmos with moniker=$MONIKER and chain-id=$CHAINID"
-    "$PWD"/build/evmosd init $MONIKER --chain-id $CHAINID --home "$DATA_DIR$i"
+    "$PWD"/build/haqqd keys add $KEY"$i" --home "$DATA_DIR$i" --no-backup --chain-id $CHAINID --algo "eth_secp256k1" --keyring-backend test
+    echo "init Haqq with moniker=$MONIKER and chain-id=$CHAINID"
+    "$PWD"/build/haqqd init $MONIKER --chain-id $CHAINID --home "$DATA_DIR$i"
     echo "prepare genesis: Allocate genesis accounts"
-    "$PWD"/build/evmosd add-genesis-account \
-    "$("$PWD"/build/evmosd keys show "$KEY$i" -a --home "$DATA_DIR$i" --keyring-backend test)" 1000000000000000000aphoton,1000000000000000000stake \
+    "$PWD"/build/haqqd add-genesis-account \
+    "$("$PWD"/build/haqqd keys show "$KEY$i" -a --home "$DATA_DIR$i" --keyring-backend test)" 1000000000000000000aphoton,1000000000000000000stake \
     --home "$DATA_DIR$i" --keyring-backend test
     echo "prepare genesis: Sign genesis transaction"
-    "$PWD"/build/evmosd gentx $KEY"$i" 1000000000000000000stake --keyring-backend test --home "$DATA_DIR$i" --keyring-backend test --chain-id $CHAINID
+    "$PWD"/build/haqqd gentx $KEY"$i" 1000000000000000000stake --keyring-backend test --home "$DATA_DIR$i" --keyring-backend test --chain-id $CHAINID
     echo "prepare genesis: Collect genesis tx"
-    "$PWD"/build/evmosd collect-gentxs --home "$DATA_DIR$i"
+    "$PWD"/build/haqqd collect-gentxs --home "$DATA_DIR$i"
     echo "prepare genesis: Run validate-genesis to ensure everything worked and that the genesis file is setup correctly"
-    "$PWD"/build/evmosd validate-genesis --home "$DATA_DIR$i"
+    "$PWD"/build/haqqd validate-genesis --home "$DATA_DIR$i"
 }
 
 start_func() {
-    echo "starting evmos node $i in background ..."
-    "$PWD"/build/evmosd start --pruning=nothing --rpc.unsafe \
+    echo "starting haqq node $i in background ..."
+    "$PWD"/build/haqqd start --pruning=nothing --rpc.unsafe \
     --p2p.laddr tcp://$IP_ADDR:$NODE_P2P_PORT"$i" --address tcp://$IP_ADDR:$NODE_PORT"$i" --rpc.laddr tcp://$IP_ADDR:$NODE_RPC_PORT"$i" \
     --json-rpc.address=$IP_ADDR:$RPC_PORT"$i" \
     --keyring-backend test --home "$DATA_DIR$i" \
     >"$DATA_DIR"/node"$i".log 2>&1 & disown
     
-    EVMOS_PID=$!
-    echo "started evmos node, pid=$EVMOS_PID"
+    HAQQ_PID=$!
+    echo "started haqq node, pid=$HAQQ_PID"
     # add PID to array
-    arr+=("$EVMOS_PID")
+    arr+=("$HAQQ_PID")
 }
 
 # Run node with static blockchain database
@@ -123,7 +123,7 @@ if [[ -z $TEST || $TEST == "rpc" ]]; then
     
     for i in $(seq 1 "$TEST_QTD"); do
         HOST_RPC=http://$IP_ADDR:$RPC_PORT"$i"
-        echo "going to test evmos node $HOST_RPC ..."
+        echo "going to test haqq node $HOST_RPC ..."
         MODE=$MODE HOST=$HOST_RPC go test ./tests/... -timeout=300s -v -short
         
         RPC_FAIL=$?
@@ -132,12 +132,12 @@ if [[ -z $TEST || $TEST == "rpc" ]]; then
 fi
 
 stop_func() {
-    EVMOS_PID=$i
-    echo "shutting down node, pid=$EVMOS_PID ..."
+    HAQQ_PID=$i
+    echo "shutting down node, pid=$HAQQ_PID ..."
     
-    # Shutdown evmos node
-    kill -9 "$EVMOS_PID"
-    wait "$EVMOS_PID"
+    # Shutdown haqq node
+    kill -9 "$HAQQ_PID"
+    wait "$HAQQ_PID"
 }
 
 
