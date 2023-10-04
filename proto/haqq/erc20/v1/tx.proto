@@ -1,12 +1,10 @@
-// Copyright Tharsis Labs Ltd.(Evmos)
-// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 syntax = "proto3";
 package evmos.erc20.v1;
 
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/msg/v1/msg.proto";
 import "cosmos_proto/cosmos.proto";
-import "haqq/erc20/v1/genesis.proto";
+import "evmos/erc20/v1/genesis.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 

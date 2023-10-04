@@ -1,12 +1,9 @@
 version: v1
-name: buf.build/evmos/evmos
+name: buf.build/haqq-network/haqq
 deps:
   - buf.build/cosmos/cosmos-sdk
   - buf.build/cosmos/cosmos-proto
   - buf.build/cosmos/gogo-proto
-  - buf.build/evmos/ethermint/feemarket
-  - buf.build/evmos/ethermint/types
-  - buf.build/evmos/ethermint/crypto
   - buf.build/googleapis/googleapis
 lint:
   use:
