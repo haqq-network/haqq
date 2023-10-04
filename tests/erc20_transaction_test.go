@@ -26,15 +26,15 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/evmos/evmos/v14/crypto/ethsecp256k1"
-	"github.com/evmos/evmos/v14/server/config"
-	feemarkettypes "github.com/evmos/evmos/v14/x/feemarket/types"
 
-	erc20types "github.com/evmos/evmos/v14/x/erc20/types"
-	evmtypes "github.com/evmos/evmos/v14/x/evm/types"
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/server/config"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
 type TransferETHTestSuite struct {
