@@ -21,7 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	haqqkr "github.com/haqq-network/haqq/crypto/keyring"
-	ethermint "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	vestingcli "github.com/haqq-network/haqq/x/vesting/client/cli"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -34,7 +34,7 @@ const (
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
 func AddGenesisAccountCmd(defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "add-genesis-account [address_or_key_name] [coin][,[coin]]",
+		Use:   "add-genesis-account ADDRESS_OR_KEY_NAME COIN...",
 		Short: "Add a genesis account to genesis.json",
 		Long: `Add a genesis account to genesis.json. The provided account must specify
 the account address or key name and a list of initial coins. If a key name is given,
@@ -200,7 +200,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				)
 
 			default:
-				genAccount = &ethermint.EthAccount{
+				genAccount = &types.EthAccount{
 					BaseAccount: baseAccount,
 					CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
 				}

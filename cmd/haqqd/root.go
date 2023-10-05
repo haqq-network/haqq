@@ -31,7 +31,6 @@ import (
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -41,6 +40,7 @@ import (
 
 	"github.com/haqq-network/haqq/app"
 	ethermintclient "github.com/haqq-network/haqq/client"
+	"github.com/haqq-network/haqq/client/block"
 	"github.com/haqq-network/haqq/client/debug"
 	cmdcfg "github.com/haqq-network/haqq/cmd/config"
 	haqqkr "github.com/haqq-network/haqq/crypto/keyring"
@@ -74,9 +74,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	eip712.SetEncodingConfig(encodingConfig)
 
 	rootCmd := &cobra.Command{
-		Use:     app.Name,
-		Short:   "HAQQ Daemon",
-		Version: fmt.Sprintf("%s %s", version.Version, version.Commit),
+		Use:   app.Name,
+		Short: "HAQQ Daemon",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
@@ -110,10 +109,10 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	a := appCreator{encodingConfig}
 	rootCmd.AddCommand(
 		ethermintclient.ValidateChainID(
-			genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
+			InitCmd(app.ModuleBasics, app.DefaultNodeHome),
 		),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome, genutiltypes.DefaultMessageValidator),
-		genutilcli.MigrateGenesisCmd(),
+		MigrateGenesisCmd(),
 		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
 		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
 		AddGenesisAccountCmd(app.DefaultNodeHome),
@@ -121,8 +120,9 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		NewTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		config.Cmd(),
-		pruning.Cmd(a.newApp, app.DefaultNodeHome),
+		pruning.PruningCmd(a.newApp),
 		snapshot.Cmd(a.newApp),
+		block.Cmd(),
 	)
 
 	ethermintserver.AddCommands(
@@ -218,7 +218,7 @@ func initAppConfig() (string, interface{}) {
 		panic(fmt.Errorf("unknown app config type %T", customAppConfig))
 	}
 
-	srvCfg.StateSync.SnapshotInterval = 1500
+	srvCfg.StateSync.SnapshotInterval = 5000
 	srvCfg.StateSync.SnapshotKeepRecent = 2
 	srvCfg.IAVLDisableFastNode = false
 
@@ -283,7 +283,7 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 
 	haqqApp := app.NewHaqq(
 		logger, db, traceStore, true, skipUpgradeHeights,
-		home,
+		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(sdkserver.FlagInvCheckPeriod)),
 		a.encCfg,
 		appOpts,
@@ -335,9 +335,11 @@ func (a appCreator) appExport(
 	return haqqApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
 }
 
+// initTendermintConfig helps to override default Tendermint Config values.
+// return tmcfg.DefaultConfig if no custom configuration is required for the application.
 func initTendermintConfig() *tmcfg.Config {
 	cfg := tmcfg.DefaultConfig()
-	// cfg.Consensus.TimeoutCommit = time.Second * 5
+	// cfg.Consensus.TimeoutCommit = time.Second * 3
 	// use v0 since v1 severely impacts the node's performance
 	cfg.Mempool.Version = tmcfg.MempoolV0
 

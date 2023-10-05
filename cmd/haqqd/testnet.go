@@ -41,8 +41,7 @@ import (
 	"github.com/haqq-network/haqq/server/config"
 	srvflags "github.com/haqq-network/haqq/server/flags"
 	"github.com/haqq-network/haqq/testutil/network"
-	ethermint "github.com/haqq-network/haqq/types"
-	"github.com/haqq-network/haqq/utils"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -88,7 +87,7 @@ func addTestnetFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().Int(flagNumValidators, 4, "Number of validators to initialize the testnet with")
 	cmd.Flags().StringP(flagOutputDir, "o", "./.testnets", "Directory to store initialization data for the testnet")
 	cmd.Flags().String(flags.FlagChainID, "", "genesis file chain-id, if left blank will be randomly created")
-	cmd.Flags().String(sdkserver.FlagMinGasPrices, fmt.Sprintf("0.000006%s", utils.BaseDenom), "Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.01photino,0.001stake)")
+	cmd.Flags().String(sdkserver.FlagMinGasPrices, fmt.Sprintf("0.000006%s", cmdcfg.AttoDenom), "Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.01photino,0.001stake)")
 	cmd.Flags().String(flags.FlagKeyType, string(hd.EthSecp256k1Type), "Key signing algorithm to generate keys for")
 }
 
@@ -290,18 +289,18 @@ func initTestnetFiles(
 			return err
 		}
 
-		accStakingTokens := sdk.TokensFromConsensusPower(5000, ethermint.PowerReduction)
+		accStakingTokens := sdk.TokensFromConsensusPower(5000, haqqtypes.PowerReduction)
 		coins := sdk.Coins{
 			sdk.NewCoin(cmdcfg.AttoDenom, accStakingTokens),
 		}
 
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
-		genAccounts = append(genAccounts, &ethermint.EthAccount{
+		genAccounts = append(genAccounts, &haqqtypes.EthAccount{
 			BaseAccount: authtypes.NewBaseAccount(addr, nil, 0, 0),
 			CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
 		})
 
-		valTokens := sdk.TokensFromConsensusPower(100, ethermint.PowerReduction)
+		valTokens := sdk.TokensFromConsensusPower(100, haqqtypes.PowerReduction)
 		createValMsg, err := stakingtypes.NewMsgCreateValidator(
 			sdk.ValAddress(addr),
 			valPubKeys[i],
@@ -352,7 +351,7 @@ func initTestnetFiles(
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
 
-	if err := initGenFiles(clientCtx, mbm, args.chainID, utils.BaseDenom, genAccounts, genBalances, genFiles, args.numValidators); err != nil {
+	if err := initGenFiles(clientCtx, mbm, args.chainID, cmdcfg.AttoDenom, genAccounts, genBalances, genFiles, args.numValidators); err != nil {
 		return err
 	}
 
