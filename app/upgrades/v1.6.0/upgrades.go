@@ -122,9 +122,9 @@ func CreateUpgradeHandler(
 
 		baseapp.MigrateParams(ctx, baseAppLegacySS, &ck)
 
-		if _, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, cdc, clientKeeper); err != nil {
-			return nil, err
-		}
+		// if _, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, cdc, clientKeeper); err != nil {
+		// 	return nil, err
+		// }
 
 		//
 
