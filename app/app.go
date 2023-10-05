@@ -141,6 +141,7 @@ import (
 	"github.com/haqq-network/haqq/x/vesting"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+
 	// unnamed import of statik for swagger UI support
 	_ "github.com/haqq-network/haqq/client/docs/statik"
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
@@ -1228,6 +1229,10 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v160.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
+			app.ConsensusParamsKeeper,
+			app.IBCKeeper.ClientKeeper,
+			app.ParamsKeeper,
+			app.appCodec,
 		),
 	)
 
