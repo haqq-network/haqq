@@ -73,7 +73,6 @@ func (suite *AnteTestSuite) SetupTest() {
 		}
 		evmGenesis := evmtypes.DefaultGenesisState()
 		evmGenesis.Params.AllowUnprotectedTxs = false
-		evmGenesis.Params.EvmDenom = utils.BaseDenom
 		if !suite.enableLondonHF {
 			maxInt := sdkmath.NewInt(math.MaxInt64)
 			evmGenesis.Params.ChainConfig.LondonBlock = &maxInt

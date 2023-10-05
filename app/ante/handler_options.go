@@ -17,15 +17,14 @@ import (
 	evmante "github.com/haqq-network/haqq/app/ante/evm"
 	anteutils "github.com/haqq-network/haqq/app/ante/utils"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
-	haqqevmtypes "github.com/haqq-network/haqq/x/evm/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
 // HandlerOptions defines the list of module keepers required to run the Haqq AnteHandler decorators.
 type HandlerOptions struct {
 	Cdc                    codec.BinaryCodec
-	AccountKeeper          haqqevmtypes.AccountKeeper
-	BankKeeper             haqqevmtypes.BankKeeper
+	AccountKeeper          evmtypes.AccountKeeper
+	BankKeeper             evmtypes.BankKeeper
 	DistributionKeeper     anteutils.DistributionKeeper
 	IBCKeeper              *ibckeeper.Keeper
 	StakingKeeper          vestingtypes.StakingKeeper
@@ -77,8 +76,8 @@ func (options HandlerOptions) Validate() error {
 	return nil
 }
 
-// newCosmosAnteHandler creates the default ante handler for Ethereum transactions
-func newEthAnteHandler(options HandlerOptions) sdk.AnteHandler {
+// newEVMAnteHandler creates the default ante handler for Ethereum transactions
+func newEVMAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
 		// outermost AnteDecorator. SetUpContext must be called first
 		evmante.NewEthSetUpContextDecorator(options.EvmKeeper),

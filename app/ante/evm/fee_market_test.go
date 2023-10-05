@@ -13,6 +13,7 @@ import (
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *AnteTestSuite) TestGasWantedDecorator() {
@@ -32,7 +33,7 @@ func (suite *AnteTestSuite) TestGasWantedDecorator() {
 			"Cosmos Tx",
 			TestGasLimit,
 			func() sdk.Tx {
-				denom := utils.BaseDenom
+				denom := evmtypes.DefaultEVMDenom
 				testMsg := banktypes.MsgSend{
 					FromAddress: "haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92",
 					ToAddress:   "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
@@ -76,7 +77,7 @@ func (suite *AnteTestSuite) TestGasWantedDecorator() {
 			"EIP712 message",
 			200000,
 			func() sdk.Tx {
-				amount := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(20)))
+				amount := sdk.NewCoins(sdk.NewCoin(evmtypes.DefaultEVMDenom, sdkmath.NewInt(20)))
 				gas := uint64(200000)
 				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, from.Bytes())
 				suite.Require().NoError(acc.SetSequence(1))
@@ -91,7 +92,7 @@ func (suite *AnteTestSuite) TestGasWantedDecorator() {
 			"Cosmos Tx - gasWanted > max block gas",
 			TestGasLimit,
 			func() sdk.Tx {
-				denom := utils.BaseDenom
+				denom := evmtypes.DefaultEVMDenom
 				testMsg := banktypes.MsgSend{
 					FromAddress: "haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92",
 					ToAddress:   "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
