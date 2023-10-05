@@ -196,6 +196,7 @@ func (s *PrecompileTestSuite) TestTransfer() {
 				}
 			},
 			func(sender, receiver sdk.AccAddress, data []byte, inputArgs []interface{}) {
+				return // TODO: Remove this after removing the IBC Firewall
 				// Check allowance was deleted
 				authz, _ := s.app.AuthzKeeper.GetAuthorization(s.ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsg)
 				s.Require().Nil(authz)
@@ -205,8 +206,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 				s.Require().Equal(balance.Denom, utils.BaseDenom)
 			},
 			200000,
-			false,
-			"",
+			true,           // TODO: Change to false after removing the IBC Firewall
+			"unauthorized", // TODO: Empty this value after removing the IBC Firewall
 		},
 		//nolint:dupl
 		{
@@ -239,8 +240,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 				s.Require().Equal(balance.Denom, utils.BaseDenom)
 			},
 			200000,
-			false,
-			"",
+			true,           // TODO: Change to false after removing the IBC Firewall
+			"unauthorized", // TODO: Empty this value after removing the IBC Firewall
 		},
 		//nolint:dupl
 		{
@@ -263,6 +264,7 @@ func (s *PrecompileTestSuite) TestTransfer() {
 				}
 			},
 			func(sender, receiver sdk.AccAddress, data []byte, inputArgs []interface{}) {
+				return // TODO: Remove this after removing the IBC Firewall
 				// The allowance is spent after the transfer thus the authorization is deleted
 				authz, _ := s.app.AuthzKeeper.GetAuthorization(s.ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsg)
 				transferAuthz := authz.(*transfertypes.TransferAuthorization)
@@ -273,8 +275,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 				s.Require().Equal(balance.Denom, utils.BaseDenom)
 			},
 			200000,
-			false,
-			"",
+			true,           // TODO: Change to false after removing the IBC Firewall
+			"unauthorized", // TODO: Empty this value after removing the IBC Firewall
 		},
 		{
 			"pass - transfer 1 ISLM from chainA to chainB and only change 1 spend limit for the associated allocation",
@@ -320,8 +322,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 				s.Require().Equal(balance.Denom, utils.BaseDenom)
 			},
 			200000,
-			false,
-			"",
+			true,           // TODO: Change to false after removing the IBC Firewall
+			"unauthorized", // TODO: Empty this value after removing the IBC Firewall
 		},
 	}
 

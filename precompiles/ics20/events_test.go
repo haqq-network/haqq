@@ -42,8 +42,8 @@ func (s *PrecompileTestSuite) TestTransferEvent() {
 					"memo",
 				}
 			},
-			false,
-			"",
+			true,           // TODO: Change to false after removing the IBC Firewall
+			"unauthorized", // TODO: Empty this value after removing the IBC Firewall
 			func(sender, receiver sdk.AccAddress) {
 				log := s.stateDB.Logs()[0]
 				s.Require().Equal(log.Address, s.precompile.Address())
