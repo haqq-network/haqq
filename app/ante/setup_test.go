@@ -39,7 +39,7 @@ func (suite *AnteTestSuite) SetupTest() {
 	consAddress := sdk.ConsAddress(privCons.PubKey().Address())
 
 	isCheckTx := false
-	suite.app = app.Setup(isCheckTx, feemarkettypes.DefaultGenesisState())
+	suite.app, _ = app.Setup(isCheckTx, feemarkettypes.DefaultGenesisState())
 	suite.Require().NotNil(suite.app.AppCodec())
 
 	header := testutil.NewHeader(

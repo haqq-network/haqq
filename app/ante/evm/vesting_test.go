@@ -7,6 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	ethante "github.com/haqq-network/haqq/app/ante/evm"
 	"github.com/haqq-network/haqq/testutil"
@@ -80,8 +82,9 @@ func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
 			tx,
 			func() {
 				baseAcc := authtypes.NewBaseAccountWithAddress(addr.Bytes())
+				codeHash := common.BytesToHash(crypto.Keccak256(nil))
 				vestingAcc := vestingtypes.NewClawbackVestingAccount(
-					baseAcc, addr.Bytes(), vestingCoins, time.Now(), lockupPeriods, vestingPeriods,
+					baseAcc, addr.Bytes(), vestingCoins, time.Now(), lockupPeriods, vestingPeriods, &codeHash,
 				)
 				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, vestingAcc)
 				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
@@ -99,8 +102,9 @@ func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
 			tx,
 			func() {
 				baseAcc := authtypes.NewBaseAccountWithAddress(addr.Bytes())
+				codeHash := common.BytesToHash(crypto.Keccak256(nil))
 				vestingAcc := vestingtypes.NewClawbackVestingAccount(
-					baseAcc, addr.Bytes(), vestingCoins, time.Now(), lockupPeriods, vestingPeriods,
+					baseAcc, addr.Bytes(), vestingCoins, time.Now(), lockupPeriods, vestingPeriods, &codeHash,
 				)
 				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, vestingAcc)
 				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)

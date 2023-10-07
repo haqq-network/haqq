@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
-	haqqtypes "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/types"
 )
 
 // GasWantedDecorator keeps track of the gasWanted amount on the current block in transient store
@@ -44,7 +44,7 @@ func (gwd GasWantedDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 
 	gasWanted := feeTx.GetGas()
 	// return error if the tx gas is greater than the block limit (max gas)
-	blockGasLimit := haqqtypes.BlockGasLimit(ctx)
+	blockGasLimit := types.BlockGasLimit(ctx)
 	if gasWanted > blockGasLimit {
 		return ctx, errorsmod.Wrapf(
 			errortypes.ErrOutOfGas,

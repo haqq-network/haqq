@@ -3,10 +3,11 @@ package ante
 import (
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -17,10 +18,10 @@ import (
 var _ authante.SignatureVerificationGasConsumer = SigVerificationGasConsumer
 
 const (
-	secp256k1VerifyCost uint64 = 21000
+	Secp256k1VerifyCost uint64 = 21000
 )
 
-// SigVerificationGasConsumer is the Haqq Network implementation of SignatureVerificationGasConsumer. It consumes gas
+// SigVerificationGasConsumer is the Evmos implementation of SignatureVerificationGasConsumer. It consumes gas
 // for signature verification based upon the public key type. The cost is fetched from the given params and is matched
 // by the concrete type.
 // The types of keys supported are:
@@ -38,12 +39,12 @@ func SigVerificationGasConsumer(
 
 	case *ethsecp256k1.PubKey:
 		// Ethereum keys
-		meter.ConsumeGas(secp256k1VerifyCost, "ante verify: eth_secp256k1")
+		meter.ConsumeGas(Secp256k1VerifyCost, "ante verify: eth_secp256k1")
 		return nil
 	case *ed25519.PubKey:
 		// Validator keys
 		meter.ConsumeGas(params.SigVerifyCostED25519, "ante verify: ed25519")
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidPubKey, "ED25519 public keys are unsupported")
+		return errorsmod.Wrap(errortypes.ErrInvalidPubKey, "ED25519 public keys are unsupported")
 
 	case multisig.PubKey:
 		// Multisig keys
@@ -54,7 +55,7 @@ func SigVerificationGasConsumer(
 		return ConsumeMultisignatureVerificationGas(meter, multisignature, pubkey, params, sig.Sequence)
 
 	default:
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidPubKey, "unrecognized/unsupported public key type: %T", pubkey)
+		return errorsmod.Wrapf(errortypes.ErrInvalidPubKey, "unrecognized/unsupported public key type: %T", pubkey)
 	}
 }
 
