@@ -7,20 +7,19 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-
-	transfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v5/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/evmos/evmos/v10/ibc"
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/haqq-network/haqq/ibc"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // OnRecvPacket performs the ICS20 middleware receive callback for automatically
 // converting an IBC Coin to their ERC20 representation.
 // For the conversion to succeed, the IBC denomination must have previously been
-// registered via governance. Note that the native staking denomination (e.g. "aevmos"),
+// registered via governance. Note that the native staking denomination (e.g. "aISLM"),
 // is excluded from the conversion.
 //
 // CONTRACT: This middleware MUST be executed transfer after the ICS20 OnRecvPacket
@@ -51,19 +50,19 @@ func (k Keeper) OnRecvPacket(
 		return ack
 	}
 
-	// Get addresses in `evmos1` and the original bech32 format
+	// Get addresses in `haqq1` and the original bech32 format
 	sender, recipient, _, _, err := ibc.GetTransferSenderRecipient(packet)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
-	// claimsParams := k.claimsKeeper.GetParams(ctx)
+	claimsParams := k.claimsKeeper.GetParams(ctx)
 
-	// // if sender == recipient, and is not from an EVM Channel recovery was executed
-	// if sender.Equals(recipient) && !claimsParams.IsEVMChannel(packet.DestinationChannel) {
-	// 	// Continue to the next IBC middleware by returning the original ACK.
-	// 	return ack
-	// }
+	// if sender == recipient, and is not from an EVM Channel recovery was executed
+	if sender.Equals(recipient) && !claimsParams.IsEVMChannel(packet.DestinationChannel) {
+		// Continue to the next IBC middleware by returning the original ACK.
+		return ack
+	}
 
 	senderAcc := k.accountKeeper.GetAccount(ctx, sender)
 
@@ -167,7 +166,7 @@ func (k Keeper) ConvertCoinToERC20FromPacket(ctx sdk.Context, data transfertypes
 		WithKVGasConfig(storetypes.GasConfig{}).
 		WithTransientKVGasConfig(storetypes.GasConfig{})
 
-	// assume that all module accounts on Evmos need to have their tokens in the
+	// assume that all module accounts on Haqq Network need to have their tokens in the
 	// IBC representation as opposed to ERC20
 	senderAcc := k.accountKeeper.GetAccount(ctx, sender)
 	if types.IsModuleAccount(senderAcc) {

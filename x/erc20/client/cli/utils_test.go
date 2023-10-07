@@ -3,8 +3,9 @@ package cli
 import (
 	"testing"
 
-	"github.com/evmos/evmos/v10/x/erc20/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 func TestParseMetadata(t *testing.T) {
