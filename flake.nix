@@ -28,7 +28,7 @@
             ]
           ) ++ (
             with pkgsUnstable; [
-              go
+              go_1_21
             ]
           );
         };
