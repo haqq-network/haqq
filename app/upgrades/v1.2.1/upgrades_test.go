@@ -6,17 +6,15 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
 type UpgradeTestSuite struct {
