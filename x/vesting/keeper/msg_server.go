@@ -18,7 +18,6 @@ import (
 
 	ethtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
-	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
 var _ types.MsgServer = &Keeper{}
@@ -478,7 +477,7 @@ func (k Keeper) addGrant(
 
 	if newLockupStart != newVestingStart {
 		return errorsmod.Wrapf(
-			vestingtypes.ErrVestingLockup,
+			types.ErrVestingLockup,
 			"vesting start time calculation should match lockup start (%d ≠ %d)",
 			newVestingStart, newLockupStart,
 		)
