@@ -147,6 +147,7 @@ import (
 	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
 	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
 	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
+	v160 "github.com/haqq-network/haqq/app/upgrades/v1.6.0"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -1205,6 +1206,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 	case v140.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{vestingtypes.ModuleName},
+		}
+	case v160.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{
+				icahosttypes.SubModuleName,
+			},
 		}
 	}
 
