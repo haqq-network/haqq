@@ -9,8 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
-
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -28,7 +26,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
-
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
@@ -86,58 +83,52 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	ibctransfer "github.com/cosmos/ibc-go/v6/modules/apps/transfer"
+	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v6/modules/core"
+	ibcclient "github.com/cosmos/ibc-go/v6/modules/core/02-client"
+	ibcclientclient "github.com/cosmos/ibc-go/v6/modules/core/02-client/client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
+	ibctesting "github.com/cosmos/ibc-go/v6/testing"
+	ibctestingtypes "github.com/cosmos/ibc-go/v6/testing/types"
 
-	ibctransfer "github.com/cosmos/ibc-go/v5/modules/apps/transfer"
-	ibctransfertypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v5/modules/core"
-	ibcclient "github.com/cosmos/ibc-go/v5/modules/core/02-client"
-	ibcclientclient "github.com/cosmos/ibc-go/v5/modules/core/02-client/client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
-	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
-	ibchost "github.com/cosmos/ibc-go/v5/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v5/modules/core/keeper"
-	ibctesting "github.com/cosmos/ibc-go/v5/testing"
-	ibctestingtypes "github.com/cosmos/ibc-go/v5/testing/types"
-
-	"github.com/evmos/ethermint/encoding"
-	enccodec "github.com/evmos/ethermint/encoding/codec"
-	srvflags "github.com/evmos/ethermint/server/flags"
-	ethermint "github.com/evmos/ethermint/types"
-	"github.com/evmos/ethermint/x/evm"
-	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	"github.com/evmos/ethermint/x/evm/vm/geth"
-	"github.com/evmos/ethermint/x/feemarket"
-	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	"github.com/haqq-network/haqq/encoding"
+	enccodec "github.com/haqq-network/haqq/encoding/codec"
+	srvflags "github.com/haqq-network/haqq/server/flags"
+	ethermint "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/x/evm"
+	evmkeeper "github.com/haqq-network/haqq/x/evm/keeper"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	"github.com/haqq-network/haqq/x/feemarket"
+	feemarketkeeper "github.com/haqq-network/haqq/x/feemarket/keeper"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
+	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
 
 	// unnamed import of statik for swagger UI support
-	_ "github.com/evmos/ethermint/client/docs/statik"
-
-	"github.com/evmos/evmos/v10/x/epochs"
-	epochskeeper "github.com/evmos/evmos/v10/x/epochs/keeper"
-	epochstypes "github.com/evmos/evmos/v10/x/epochs/types"
+	_ "github.com/haqq-network/haqq/client/docs/statik"
 
 	"github.com/haqq-network/haqq/app/ante"
-
+	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
+	"github.com/haqq-network/haqq/x/coinomics"
+	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	"github.com/haqq-network/haqq/x/epochs"
+	epochskeeper "github.com/haqq-network/haqq/x/epochs/keeper"
+	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
+	"github.com/haqq-network/haqq/x/erc20"
+	erc20client "github.com/haqq-network/haqq/x/erc20/client"
+	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 	"github.com/haqq-network/haqq/x/vesting"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
-	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
-
-	"github.com/haqq-network/haqq/x/coinomics"
-	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
-	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
-
-	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
-	"github.com/haqq-network/haqq/x/erc20"
-	erc20client "github.com/haqq-network/haqq/x/erc20/client"
-	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
-
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
-	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 
 	v102 "github.com/haqq-network/haqq/app/upgrades/v1.0.2"
 	v120 "github.com/haqq-network/haqq/app/upgrades/v1.2.0"
@@ -147,7 +138,6 @@ import (
 	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
 	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
 	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
-	v150 "github.com/haqq-network/haqq/app/upgrades/v1.5.0"
 )
 
 func init() {
@@ -417,13 +407,16 @@ func NewHaqq(
 
 	// Create Ethermint keepers
 	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
-		appCodec, app.GetSubspace(feemarkettypes.ModuleName), keys[feemarkettypes.StoreKey], tkeys[feemarkettypes.TransientKey],
+		appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
+		keys[feemarkettypes.StoreKey],
+		tkeys[feemarkettypes.TransientKey],
+		app.GetSubspace(feemarkettypes.ModuleName),
 	)
 
 	app.EvmKeeper = evmkeeper.NewKeeper(
-		appCodec, keys[evmtypes.StoreKey], tkeys[evmtypes.TransientKey], app.GetSubspace(evmtypes.ModuleName),
+		appCodec, keys[evmtypes.StoreKey], tkeys[evmtypes.TransientKey], authtypes.NewModuleAddress(govtypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, &stakingKeeper, app.FeeMarketKeeper,
-		nil, geth.NewEVM, tracer,
+		tracer, app.GetSubspace(evmtypes.ModuleName),
 	)
 
 	// Create IBC Keeper
@@ -470,7 +463,7 @@ func NewHaqq(
 	)
 
 	app.Erc20Keeper = erc20keeper.NewKeeper(
-		keys[erc20types.StoreKey], appCodec, app.GetSubspace(erc20types.ModuleName),
+		keys[erc20types.StoreKey], appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
 	)
 
@@ -478,7 +471,6 @@ func NewHaqq(
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
 		epochskeeper.NewMultiEpochHooks(
 		// insert epoch hooks receivers here
-		// app.InflationKeeper.Hooks(),
 		),
 	)
 
@@ -570,11 +562,11 @@ func NewHaqq(
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
 		// Ethermint app modules
-		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
-		feemarket.NewAppModule(app.FeeMarketKeeper),
+		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmtypes.ModuleName)),
+		feemarket.NewAppModule(app.FeeMarketKeeper, app.GetSubspace(feemarkettypes.ModuleName)),
 
 		// Evmos app modules
-		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper),
+		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 
@@ -717,9 +709,9 @@ func NewHaqq(
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
-		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
+		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmtypes.ModuleName)),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
-		feemarket.NewAppModule(app.FeeMarketKeeper),
+		feemarket.NewAppModule(app.FeeMarketKeeper, app.GetSubspace(feemarkettypes.ModuleName)),
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
 	)
@@ -745,7 +737,7 @@ func NewHaqq(
 		IBCKeeper:       app.IBCKeeper,
 		FeeMarketKeeper: app.FeeMarketKeeper,
 		SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
-		SigGasConsumer:  SigVerificationGasConsumer,
+		SigGasConsumer:  ante.SigVerificationGasConsumer,
 		Cdc:             appCodec,
 		MaxTxGasWanted:  maxGasWanted,
 	}
@@ -1087,21 +1079,6 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v142.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
-		),
-	)
-
-	// v1.5.0 update handler (Revesting all the accounts)
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v150.UpgradeName,
-		v150.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-			app.AccountKeeper,
-			app.BankKeeper,
-			app.StakingKeeper,
-			app.EvmKeeper,
-			app.VestingKeeper,
-			app.AppCodec(),
 		),
 	)
 

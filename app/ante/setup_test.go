@@ -28,7 +28,7 @@ type AnteTestSuite struct {
 
 	ctx       sdk.Context
 	clientCtx client.Context
-	app       *app.Evmos
+	app       *app.Haqq
 	denom     string
 }
 
@@ -43,7 +43,7 @@ func (suite *AnteTestSuite) SetupTest() {
 	suite.Require().NotNil(suite.app.AppCodec())
 
 	header := testutil.NewHeader(
-		1, time.Now().UTC(), utils.MainnetChainID+"-1", consAddress, nil, nil)
+		1, time.Now().UTC(), utils.MainNetChainID+"-1", consAddress, nil, nil)
 	suite.ctx = suite.app.BaseApp.NewContext(isCheckTx, header)
 
 	suite.denom = utils.BaseDenom
