@@ -4,11 +4,12 @@ import (
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/haqq-network/haqq/x/coinomics/types"
 	"github.com/pkg/errors"
+
+	"github.com/haqq-network/haqq/x/coinomics/types"
 )
 
-// NextPhase calculus
+// CountEraForBlock NextPhase calculus
 func (k Keeper) CountEraForBlock(ctx sdk.Context, params types.Params, currentEra uint64, currentBlock uint64) uint64 {
 	if currentEra == 0 {
 		return 1

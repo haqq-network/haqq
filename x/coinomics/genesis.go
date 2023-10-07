@@ -2,7 +2,8 @@ package coinomics
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	haqqtypes "github.com/haqq-network/haqq/types"
+
+	haqqtypes "github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/coinomics/keeper"
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
