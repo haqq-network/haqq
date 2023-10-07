@@ -18,10 +18,8 @@ import (
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/contracts"
 	ibctesting "github.com/haqq-network/haqq/ibc/testing"
-	"github.com/haqq-network/haqq/testutil"
 	teststypes "github.com/haqq-network/haqq/types/tests"
 	"github.com/haqq-network/haqq/utils"
-	claimstypes "github.com/haqq-network/haqq/x/claims/types"
 	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
@@ -285,48 +283,6 @@ var _ = Describe("Convert receiving IBC to Erc20", Ordered, func() {
 				"channel-0",
 			}
 			s.app.ClaimsKeeper.SetParams(s.HaqqChain.GetContext(), params) //nolint:errcheck
-		})
-		It("it should perform the claim and convert the received tokens", func() {
-			// Register claims record
-			initialClaimAmount := sdk.NewInt(100)
-			claimableAmount := sdk.NewInt(25)
-			s.app.ClaimsKeeper.SetClaimsRecord(s.HaqqChain.GetContext(), senderAcc, claimstypes.ClaimsRecord{
-				InitialClaimableAmount: initialClaimAmount,
-				ActionsCompleted:       []bool{true, true, true, false},
-			})
-
-			// escrow coins in module
-			coins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, claimableAmount))
-			err := testutil.FundModuleAccount(s.HaqqChain.GetContext(), s.app.BankKeeper, claimstypes.ModuleName, coins)
-			s.Require().NoError(err)
-
-			receiverInitialAislmBalance := s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, utils.BaseDenom)
-
-			uosmoInitialBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), senderAcc, "uosmo")
-
-			// Send 'uosmo' from Osmosis address with claims to Haqq address
-			// send the corresponding amount to trigger the claim
-			amount, _ := strconv.ParseInt(claimstypes.IBCTriggerAmt, 10, 64)
-			s.SendAndReceiveMessage(s.pathOsmosisHaqq, s.IBCOsmosisChain, "uosmo", amount, sender, receiver, 1, "")
-
-			// should trigger claims logic and send aISLM coins from claims to receiver
-
-			// ERC-20 balance should be the transferred amount
-			balanceTokenAfter := s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(receiverAcc.Bytes()))
-			s.Require().Equal(amount, balanceTokenAfter.Int64())
-
-			// IBC coin balance should be zero
-			ibcCoinsBalance := s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
-			s.Require().Equal(int64(0), ibcCoinsBalance.Amount.Int64())
-
-			// validate that Osmosis address balance is correct
-			uosmoFinalBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), senderAcc, "uosmo")
-			s.Require().Equal(uosmoInitialBalance.Amount.Int64()-amount, uosmoFinalBalance.Amount.Int64())
-
-			// validate that Receiver address on Haqq got the claims tokens
-			receiverFinalAislmBalance := s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, utils.BaseDenom)
-
-			s.Require().Equal(receiverInitialAislmBalance.Amount.Add(claimableAmount).Sub(sendBackCoinsFee), receiverFinalAislmBalance.Amount)
 		})
 	})
 	Describe("registered erc20", func() {

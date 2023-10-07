@@ -15,10 +15,10 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	ethtypes "github.com/evmos/ethermint/types"
-	evmosvestingtypes "github.com/evmos/evmos/v10/x/vesting/types"
 
+	ethtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
 var _ types.MsgServer = &Keeper{}
@@ -478,7 +478,7 @@ func (k Keeper) addGrant(
 
 	if newLockupStart != newVestingStart {
 		return errorsmod.Wrapf(
-			evmosvestingtypes.ErrVestingLockup,
+			vestingtypes.ErrVestingLockup,
 			"vesting start time calculation should match lockup start (%d ≠ %d)",
 			newVestingStart, newLockupStart,
 		)

@@ -20,9 +20,9 @@ import (
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/utils"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
 	"github.com/haqq-network/haqq/x/erc20/types"
-	inflationtypes "github.com/haqq-network/haqq/x/inflation/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -443,9 +443,9 @@ func (suite *KeeperTestSuite) TestConvertCoinToERC20FromPacket() {
 				// Mint coins on account to simulate receiving ibc transfer
 				coinIslm := sdk.NewCoin(pair.Denom, sdk.NewInt(10))
 				coins := sdk.NewCoins(coinIslm)
-				err := suite.app.BankKeeper.MintCoins(suite.ctx, inflationtypes.ModuleName, coins)
+				err := suite.app.BankKeeper.MintCoins(suite.ctx, coinomicstypes.ModuleName, coins)
 				suite.Require().NoError(err)
-				err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, inflationtypes.ModuleName, sender, coins)
+				err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, coinomicstypes.ModuleName, sender, coins)
 				suite.Require().NoError(err)
 
 				return transfertypes.NewFungibleTokenPacketData(pair.Denom, "10", senderAddr, "", "")
@@ -638,9 +638,9 @@ func (suite *KeeperTestSuite) TestOnTimeoutPacket() {
 				// Mint coins on account to simulate receiving ibc transfer
 				coinIslm := sdk.NewCoin(pair.Denom, sdk.NewInt(10))
 				coins := sdk.NewCoins(coinIslm)
-				err := suite.app.BankKeeper.MintCoins(suite.ctx, inflationtypes.ModuleName, coins)
+				err := suite.app.BankKeeper.MintCoins(suite.ctx, coinomicstypes.ModuleName, coins)
 				suite.Require().NoError(err)
-				err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, inflationtypes.ModuleName, sender, coins)
+				err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, coinomicstypes.ModuleName, sender, coins)
 				suite.Require().NoError(err)
 
 				return transfertypes.NewFungibleTokenPacketData(pair.Denom, "10", senderAddr, "", "")

@@ -11,7 +11,8 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	evmostypes "github.com/evmos/ethermint/types"
+
+	haqqtypes "github.com/haqq-network/haqq/types"
 )
 
 var (
@@ -241,7 +242,7 @@ func (va *ClawbackVestingAccount) SetCodeHash(codeHash common.Hash) error {
 // Type returns the type of Ethereum Account (EOA or Contract)
 func (va ClawbackVestingAccount) Type() int8 {
 	if bytes.Equal(emptyCodeHash, common.HexToHash(va.CodeHash).Bytes()) {
-		return evmostypes.AccountTypeEOA
+		return haqqtypes.AccountTypeEOA
 	}
-	return evmostypes.AccountTypeContract
+	return haqqtypes.AccountTypeContract
 }

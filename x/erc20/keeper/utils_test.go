@@ -33,12 +33,11 @@ import (
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	teststypes "github.com/haqq-network/haqq/types/tests"
 	"github.com/haqq-network/haqq/utils"
-	claimstypes "github.com/haqq-network/haqq/x/claims/types"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	"github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 	evm "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
-	inflationtypes "github.com/haqq-network/haqq/x/inflation/types"
 )
 
 func CreatePacket(amount, denom, sender, receiver, srcPort, srcChannel, dstPort, dstChannel string, seq, timeout uint64) channeltypes.Packet {
@@ -173,9 +172,9 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	suite.Require().True(ok)
 	coinIslm := sdk.NewCoin(utils.BaseDenom, amt)
 	coins := sdk.NewCoins(coinIslm)
-	err = s.app.BankKeeper.MintCoins(suite.HaqqChain.GetContext(), inflationtypes.ModuleName, coins)
+	err = s.app.BankKeeper.MintCoins(suite.HaqqChain.GetContext(), coinomicstypes.ModuleName, coins)
 	suite.Require().NoError(err)
-	err = s.app.BankKeeper.SendCoinsFromModuleToAccount(suite.HaqqChain.GetContext(), inflationtypes.ModuleName, suite.HaqqChain.SenderAccount.GetAddress(), coins)
+	err = s.app.BankKeeper.SendCoinsFromModuleToAccount(suite.HaqqChain.GetContext(), coinomicstypes.ModuleName, suite.HaqqChain.SenderAccount.GetAddress(), coins)
 	suite.Require().NoError(err)
 
 	// we need some coins in the bankkeeper to be able to register the coins later
@@ -213,12 +212,6 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	err = suite.IBCCosmosChain.GetSimApp().BankKeeper.MintCoins(suite.IBCCosmosChain.GetContext(), minttypes.ModuleName, stkCoin)
 	suite.Require().NoError(err)
 	err = suite.IBCCosmosChain.GetSimApp().BankKeeper.SendCoinsFromModuleToAccount(suite.IBCCosmosChain.GetContext(), minttypes.ModuleName, suite.IBCCosmosChain.SenderAccount.GetAddress(), stkCoin)
-	suite.Require().NoError(err)
-
-	claimparams := claimstypes.DefaultParams()
-	claimparams.AirdropStartTime = suite.HaqqChain.GetContext().BlockTime()
-	claimparams.EnableClaims = true
-	err = s.app.ClaimsKeeper.SetParams(suite.HaqqChain.GetContext(), claimparams)
 	suite.Require().NoError(err)
 
 	params := types.DefaultParams()

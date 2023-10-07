@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	tmtime "github.com/tendermint/tendermint/types/time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	tmtime "github.com/tendermint/tendermint/types/time"
 
-	"github.com/evmos/ethermint/tests"
+	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
