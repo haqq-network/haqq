@@ -585,8 +585,6 @@ func NewHaqq(
 	// we prefer to be more strict in what arguments the modules expect.
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
-	//enccodec.RegisterInterfaces(interfaceRegistry)
-
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.mm = module.NewManager(
@@ -733,7 +731,6 @@ func NewHaqq(
 		crisistypes.ModuleName,
 	)
 
-	//ModuleBasics.RegisterInterfaces(app.interfaceRegistry)
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
@@ -1181,6 +1178,16 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v142.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
+		),
+	)
+
+	// v1.6.0 Security upgrade
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v160.UpgradeName,
+		v160.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.AccountKeeper,
 		),
 	)
 

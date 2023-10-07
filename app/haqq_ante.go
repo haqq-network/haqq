@@ -2,15 +2,15 @@ package app
 
 import (
 	"errors"
-	haqqtypes "github.com/haqq-network/haqq/utils"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	haqqtypes "github.com/haqq-network/haqq/utils"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
