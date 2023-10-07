@@ -8,7 +8,8 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v5/modules/core/exported"
-	utils "github.com/haqq-network/haqq/types"
+
+	"github.com/haqq-network/haqq/utils"
 )
 
 var _ porttypes.Middleware = &IBCMiddleware{}
