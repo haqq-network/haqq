@@ -1,0 +1,22 @@
+# argument to provide specific version of haqq node
+ARG INITIAL_VERSION
+FROM haqq/haqq:$INITIAL_VERSION
+
+# jq needs to perform changes of node parameters
+RUN apt-get update \ 
+&& apt-get install ca-certificates=20210119 jq=1.6-2.1 -y \ 
+--no-install-recommends \ 
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/*
+
+WORKDIR /go/src/github.com/haqq-network/haqq
+
+COPY ./init-node.sh .
+
+# perms to make init-node.sh executable
+RUN chmod +x init-node.sh
+
+# JSON-RPC server
+EXPOSE 8545
+
+CMD ["sh", "./init-node.sh"]
