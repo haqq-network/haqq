@@ -1,8 +1,6 @@
-package app
+package ante_test
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,42 +16,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	"github.com/evmos/ethermint/encoding"
+	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/app/ante"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/encoding"
 )
-
-func generatePubKeysAndSignatures(n int, msg []byte, _ bool) (pubkeys []cryptotypes.PubKey, signatures [][]byte) {
-	pubkeys = make([]cryptotypes.PubKey, n)
-	signatures = make([][]byte, n)
-	for i := 0; i < n; i++ {
-		privkey, _ := ethsecp256k1.GenerateKey()
-		pubkeys[i] = privkey.PubKey()
-		signatures[i], _ = privkey.Sign(msg)
-	}
-	return
-}
-
-func expectedGasCostByKeys(pubkeys []cryptotypes.PubKey) uint64 {
-	cost := uint64(0)
-	for _, pubkey := range pubkeys {
-		pubkeyType := strings.ToLower(fmt.Sprintf("%T", pubkey))
-		switch {
-		case strings.Contains(pubkeyType, "ed25519"):
-			cost += authtypes.DefaultSigVerifyCostED25519
-		case strings.Contains(pubkeyType, "ethsecp256k1"):
-			cost += secp256k1VerifyCost
-		default:
-			panic("unexpected key type")
-		}
-	}
-	return cost
-}
 
 func TestConsumeSignatureVerificationGas(t *testing.T) {
 	params := authtypes.DefaultParams()
 	msg := []byte{1, 2, 3, 4}
 
-	encodingConfig := encoding.MakeConfig(ModuleBasics)
+	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	cdc := encodingConfig.Amino
 
 	p := authtypes.DefaultParams()
@@ -63,7 +36,7 @@ func TestConsumeSignatureVerificationGas(t *testing.T) {
 	expectedCost1 := expectedGasCostByKeys(pkSet1)
 
 	for i := 0; i < len(pkSet1); i++ {
-		stdSig := legacytx.StdSignature{PubKey: pkSet1[i], Signature: sigSet1[i]}
+		stdSig := legacytx.StdSignature{PubKey: pkSet1[i], Signature: sigSet1[i]} //nolint:staticcheck
 		sigV2, err := legacytx.StdSignatureToSignatureV2(cdc, stdSig)
 		require.NoError(t, err)
 		err = multisig.AddSignatureV2(multisignature1, sigV2, pkSet1)
@@ -94,7 +67,7 @@ func TestConsumeSignatureVerificationGas(t *testing.T) {
 		{
 			"PubKeyEthsecp256k1",
 			args{sdk.NewInfiniteGasMeter(), nil, ethsecKey.PubKey(), params},
-			secp256k1VerifyCost,
+			ante.Secp256k1VerifyCost,
 			false,
 		},
 		{
@@ -128,7 +101,7 @@ func TestConsumeSignatureVerificationGas(t *testing.T) {
 			Data:     tt.args.sig,
 			Sequence: 0, // Arbitrary account sequence
 		}
-		err := SigVerificationGasConsumer(tt.args.meter, sigV2, tt.args.params)
+		err := ante.SigVerificationGasConsumer(tt.args.meter, sigV2, tt.args.params)
 
 		if tt.shouldErr {
 			require.Error(t, err)

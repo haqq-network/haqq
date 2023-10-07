@@ -7,8 +7,8 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	vestingerrors "github.com/evmos/evmos/v10/x/vesting/types"
+
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -94,7 +94,7 @@ func (vdd VestingDelegationDecorator) validateMsg(ctx sdk.Context, msg sdk.Msg) 
 		coins := clawbackAccount.GetVestedOnly(ctx.BlockTime())
 		if coins == nil || coins.Empty() {
 			return errorsmod.Wrap(
-				vestingerrors.ErrInsufficientVestedCoins,
+				vestingtypes.ErrInsufficientVestedCoins,
 				"account has no vested coins",
 			)
 		}
@@ -102,9 +102,9 @@ func (vdd VestingDelegationDecorator) validateMsg(ctx sdk.Context, msg sdk.Msg) 
 		vested := coins.AmountOf(bondDenom)
 		if vested.LT(delegateMsg.Amount.Amount) {
 			return errorsmod.Wrapf(
-				vestingerrors.ErrInsufficientVestedCoins,
-				"cannot delegate unvested coins. coins vested < delegation amount (%s %s < %s %s)",
-				vested, bondDenom, delegateMsg.Amount.Amount, delegateMsg.Amount.Denom,
+				vestingtypes.ErrInsufficientVestedCoins,
+				"cannot delegate unvested coins. coins vested < delegation amount (%s < %s)",
+				vested, delegateMsg.Amount.Amount,
 			)
 		}
 	}
