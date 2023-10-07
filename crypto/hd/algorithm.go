@@ -19,11 +19,11 @@ const (
 )
 
 var (
-	// SupportedAlgorithms defines the list of signing algorithms used on Evmos:
+	// SupportedAlgorithms defines the list of signing algorithms used on Haqq Network:
 	//  - eth_secp256k1 (Ethereum)
 	//  - secp256k1 (Tendermint)
 	SupportedAlgorithms = keyring.SigningAlgoList{EthSecp256k1, hd.Secp256k1}
-	// SupportedAlgorithmsLedger defines the list of signing algorithms used on Evmos for the Ledger device:
+	// SupportedAlgorithmsLedger defines the list of signing algorithms used on Haqq Network for the Ledger device:
 	//  - eth_secp256k1 (Ethereum)
 	//  - secp256k1 (Tendermint)
 	SupportedAlgorithmsLedger = keyring.SigningAlgoList{EthSecp256k1, hd.Secp256k1}

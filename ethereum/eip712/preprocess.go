@@ -64,7 +64,7 @@ func PreprocessLedgerTx(chainID string, keyType cosmoskr.KeyType, txBuilder clie
 	extensionBuilder.SetExtensionOptions(option)
 
 	// Set blank signature with Amino Sign Type
-	// (Regardless of input signMode, Evmos requires Amino signature type for Ledger)
+	// (Regardless of input signMode, Haqq Network requires Amino signature type for Ledger)
 	blankSig := signing.SingleSignatureData{
 		SignMode:  signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON,
 		Signature: nil,

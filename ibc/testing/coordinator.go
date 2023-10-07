@@ -16,11 +16,11 @@ import (
 	"github.com/haqq-network/haqq/app"
 )
 
-const DefaultFeeAmt = int64(150_000_000_000_000_000) // 0.15 EVMOS
+const DefaultFeeAmt = int64(150_000_000_000_000_000) // 0.15 ISLM
 
 var globalStartTime = time.Date(2020, 1, 2, 0, 0, 0, 0, time.UTC)
 
-// NewCoordinator initializes Coordinator with N EVM TestChain's (Evmos apps) and M Cosmos chains (Simulation Apps)
+// NewCoordinator initializes Coordinator with N EVM TestChain's (Haqq apps) and M Cosmos chains (Simulation Apps)
 func NewCoordinator(t *testing.T, nEVMChains, mCosmosChains int) *ibctesting.Coordinator {
 	chains := make(map[string]*ibctesting.TestChain)
 	coord := &ibctesting.Coordinator{
@@ -126,7 +126,7 @@ func SendMsgs(chain *ibctesting.TestChain, feeAmt int64, msgs ...sdk.Msg) (*sdk.
 	// ensure the chain has the latest time
 	chain.Coordinator.UpdateTimeForChain(chain)
 
-	if haqqChain, ok := chain.App.(*app.Evmos); ok {
+	if haqqChain, ok := chain.App.(*app.Haqq); ok {
 		bondDenom = haqqChain.StakingKeeper.BondDenom(chain.GetContext())
 	} else {
 		bondDenom = chain.GetSimApp().StakingKeeper.BondDenom(chain.GetContext())

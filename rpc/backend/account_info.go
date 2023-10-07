@@ -114,7 +114,7 @@ func (b *Backend) GetProof(address common.Address, storageKeys []string, blockNr
 		Balance:      (*hexutil.Big)(balance.BigInt()),
 		CodeHash:     common.HexToHash(res.CodeHash),
 		Nonce:        hexutil.Uint64(res.Nonce),
-		StorageHash:  common.Hash{}, // NOTE: Evmos doesn't have a storage hash. TODO: implement?
+		StorageHash:  common.Hash{}, // NOTE: Haqq doesn't have a storage hash. TODO: implement?
 		StorageProof: storageProofs,
 	}, nil
 }

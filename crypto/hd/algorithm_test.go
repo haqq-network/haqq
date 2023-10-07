@@ -116,15 +116,15 @@ func TestDerivation(t *testing.T) {
 	require.Equal(t, badAccount.Address.String(), "0xF8D6FDf2B8b488ea37e54903750dcd13F67E71cb")
 	// Inequality of wrong derivation path address
 	require.NotEqual(t, account.Address.String(), badAccount.Address.String())
-	// Equality of Evmos implementation
+	// Equality of Haqq Network implementation
 	require.Equal(t, common.BytesToAddress(privkey.PubKey().Address().Bytes()).String(), "0xA588C66983a81e800Db4dF74564F09f91c026351")
 	require.Equal(t, common.BytesToAddress(badPrivKey.PubKey().Address().Bytes()).String(), "0xF8D6FDf2B8b488ea37e54903750dcd13F67E71cb")
 
-	// Equality of Eth and Evmos implementation
+	// Equality of Eth and Haqq Network implementation
 	require.Equal(t, common.BytesToAddress(privkey.PubKey().Address()).String(), account.Address.String())
 	require.Equal(t, common.BytesToAddress(badPrivKey.PubKey().Address()).String(), badAccount.Address.String())
 
-	// Inequality of wrong derivation path of Eth and Evmos implementation
+	// Inequality of wrong derivation path of Eth and Haqq Network implementation
 	require.NotEqual(t, common.BytesToAddress(privkey.PubKey().Address()).String(), badAccount.Address.String())
 	require.NotEqual(t, common.BytesToAddress(badPrivKey.PubKey().Address()).String(), account.Address.Hex())
 }

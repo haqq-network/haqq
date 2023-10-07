@@ -10,18 +10,18 @@ import (
 	"github.com/haqq-network/haqq/crypto/hd"
 )
 
-// AppName defines the Ledger app used for signing. Evmos uses the Ethereum app
+// AppName defines the Ledger app used for signing. Haqq Network uses the Ethereum app
 const AppName = "Ethereum"
 
 var (
-	// SupportedAlgorithms defines the list of signing algorithms used on Evmos:
+	// SupportedAlgorithms defines the list of signing algorithms used on Haqq Network:
 	//  - eth_secp256k1 (Ethereum)
 	SupportedAlgorithms = keyring.SigningAlgoList{hd.EthSecp256k1}
-	// SupportedAlgorithmsLedger defines the list of signing algorithms used on Evmos for the Ledger device:
+	// SupportedAlgorithmsLedger defines the list of signing algorithms used on Haqq Network for the Ledger device:
 	//  - secp256k1 (in order to comply with Cosmos SDK)
 	// The Ledger derivation function is responsible for all signing and address generation.
 	SupportedAlgorithmsLedger = keyring.SigningAlgoList{hd.EthSecp256k1}
-	// LedgerDerivation defines the Evmos Ledger Go derivation (Ethereum app with EIP-712 signing)
+	// LedgerDerivation defines the Haqq Network Ledger Go derivation (Ethereum app with EIP-712 signing)
 	LedgerDerivation = ledger.EvmosLedgerDerivation()
 	// CreatePubkey uses the ethsecp256k1 pubkey with Ethereum address generation and keccak hashing
 	CreatePubkey = func(key []byte) types.PubKey { return &ethsecp256k1.PubKey{Key: key} }

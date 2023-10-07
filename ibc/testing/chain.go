@@ -21,7 +21,7 @@ import (
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
-// ChainIDPrefix defines the default chain ID prefix for Evmos test chains
+// ChainIDPrefix defines the default chain ID prefix for Haqq Network test chains
 var ChainIDPrefix = "haqq_11235-"
 
 func init() {
