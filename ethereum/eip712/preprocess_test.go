@@ -27,7 +27,7 @@ import (
 
 // Testing Constants
 var (
-	chainID = utils.TestnetChainID + "-1"
+	chainID = utils.TestEdge2ChainID + "-3"
 	ctx     = client.Context{}.WithTxConfig(
 		encoding.MakeConfig(app.ModuleBasics).TxConfig,
 	)

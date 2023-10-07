@@ -14,7 +14,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
 	"github.com/cosmos/ibc-go/v6/testing/mock"
-	"github.com/haqq-network/haqq/utils"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -23,7 +22,7 @@ import (
 
 	"github.com/haqq-network/haqq/cmd/config"
 	"github.com/haqq-network/haqq/encoding"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	"github.com/haqq-network/haqq/utils"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
@@ -113,7 +112,7 @@ func Setup(
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         utils.LocalNetChainID + "-1",
+				ChainId:         utils.MainNetChainID + "-1",
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
@@ -158,15 +157,10 @@ func GenesisStateWithValSet(app *Haqq, genesisState simapp.GenesisState,
 
 	}
 	// set validators and delegations
-	stakingparams := stakingtypes.DefaultParams()
-	stakingparams.BondDenom = "aISLM"
-	stakingGenesis := stakingtypes.NewGenesisState(stakingparams, validators, delegations)
+	stakingParams := stakingtypes.DefaultParams()
+	stakingParams.BondDenom = utils.BaseDenom
+	stakingGenesis := stakingtypes.NewGenesisState(stakingParams, validators, delegations)
 	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(stakingGenesis)
-
-	evmparams := evmtypes.DefaultParams()
-	evmparams.EvmDenom = "aISLM"
-	evmGenesis := evmtypes.NewGenesisState(evmparams, []evmtypes.GenesisAccount{})
-	genesisState[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
 
 	totalSupply := sdk.NewCoins()
 	for _, b := range balances {
@@ -176,13 +170,13 @@ func GenesisStateWithValSet(app *Haqq, genesisState simapp.GenesisState,
 
 	for range delegations {
 		// add delegated tokens to total supply
-		totalSupply = totalSupply.Add(sdk.NewCoin("aISLM", bondAmt))
+		totalSupply = totalSupply.Add(sdk.NewCoin(utils.BaseDenom, bondAmt))
 	}
 
 	// add bonded amount to bonded pool module account
 	balances = append(balances, banktypes.Balance{
 		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
-		Coins:   sdk.Coins{sdk.NewCoin("aISLM", bondAmt)},
+		Coins:   sdk.Coins{sdk.NewCoin(utils.BaseDenom, bondAmt)},
 	})
 
 	// update total supply

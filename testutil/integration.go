@@ -4,18 +4,13 @@ import (
 	"strconv"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
-	"github.com/haqq-network/haqq/encoding"
 )
 
 // SubmitProposal delivers a submit proposal tx for a given gov content.
@@ -25,18 +20,18 @@ func SubmitProposal(
 	ctx sdk.Context,
 	appHaqq *app.Haqq,
 	pk *ethsecp256k1.PrivKey,
-	content govtypes.Content,
+	content govv1beta1.Content,
 	eventNum int,
 ) (id uint64, err error) {
 	accountAddress := sdk.AccAddress(pk.PubKey().Address().Bytes())
 	stakeDenom := stakingtypes.DefaultParams().BondDenom
 
 	deposit := sdk.NewCoins(sdk.NewCoin(stakeDenom, sdk.NewInt(100000000)))
-	msg, err := govtypes.NewMsgSubmitProposal(content, deposit, accountAddress)
+	msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, accountAddress)
 	if err != nil {
 		return id, err
 	}
-	res, err := DeliverTx(ctx, appHaqq, pk, msg)
+	res, err := DeliverTx(ctx, appHaqq, pk, nil, msg)
 	if err != nil {
 		return id, err
 	}
@@ -65,7 +60,7 @@ func Delegate(
 	}
 
 	delegateMsg := stakingtypes.NewMsgDelegate(accountAddress, val, delegateAmount)
-	return DeliverTx(ctx, appHaqq, priv, delegateMsg)
+	return DeliverTx(ctx, appHaqq, priv, nil, delegateMsg)
 }
 
 // Vote delivers a vote tx with the VoteOption "yes"
@@ -74,87 +69,10 @@ func Vote(
 	appHaqq *app.Haqq,
 	priv *ethsecp256k1.PrivKey,
 	proposalID uint64,
-	voteOption govtypes.VoteOption,
+	voteOption govv1beta1.VoteOption,
 ) (abci.ResponseDeliverTx, error) {
 	accountAddress := sdk.AccAddress(priv.PubKey().Address().Bytes())
 
-	voteMsg := govtypes.NewMsgVote(accountAddress, proposalID, voteOption)
-	return DeliverTx(ctx, appHaqq, priv, voteMsg)
-}
-
-// DeliverTx delivers a tx for a given set of msgs
-func DeliverTx(
-	ctx sdk.Context,
-	appHaqq *app.Haqq,
-	priv *ethsecp256k1.PrivKey,
-	msgs ...sdk.Msg,
-) (abci.ResponseDeliverTx, error) {
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
-	accountAddress := sdk.AccAddress(priv.PubKey().Address().Bytes())
-	denom := appHaqq.StakingKeeper.GetParams(ctx).BondDenom
-
-	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
-
-	txBuilder.SetGasLimit(100_000_000)
-	txBuilder.SetFeeAmount(sdk.Coins{{Denom: denom, Amount: sdk.NewInt(1)}})
-	if err := txBuilder.SetMsgs(msgs...); err != nil {
-		return abci.ResponseDeliverTx{}, err
-	}
-
-	seq, err := appHaqq.AccountKeeper.GetSequence(ctx, accountAddress)
-	if err != nil {
-		return abci.ResponseDeliverTx{}, err
-	}
-
-	// First round: we gather all the signer infos. We use the "set empty
-	// signature" hack to do that.
-	sigV2 := signing.SignatureV2{
-		PubKey: priv.PubKey(),
-		Data: &signing.SingleSignatureData{
-			SignMode:  encodingConfig.TxConfig.SignModeHandler().DefaultMode(),
-			Signature: nil,
-		},
-		Sequence: seq,
-	}
-
-	sigsV2 := []signing.SignatureV2{sigV2}
-
-	if err := txBuilder.SetSignatures(sigsV2...); err != nil {
-		return abci.ResponseDeliverTx{}, err
-	}
-
-	// Second round: all signer infos are set, so each signer can sign.
-	accNumber := appHaqq.AccountKeeper.GetAccount(ctx, accountAddress).GetAccountNumber()
-	signerData := authsigning.SignerData{
-		ChainID:       ctx.ChainID(),
-		AccountNumber: accNumber,
-		Sequence:      seq,
-	}
-	sigV2, err = tx.SignWithPrivKey(
-		encodingConfig.TxConfig.SignModeHandler().DefaultMode(), signerData,
-		txBuilder, priv, encodingConfig.TxConfig,
-		seq,
-	)
-	if err != nil {
-		return abci.ResponseDeliverTx{}, err
-	}
-
-	sigsV2 = []signing.SignatureV2{sigV2}
-	if err = txBuilder.SetSignatures(sigsV2...); err != nil {
-		return abci.ResponseDeliverTx{}, err
-	}
-
-	// bz are bytes to be broadcasted over the network
-	bz, err := encodingConfig.TxConfig.TxEncoder()(txBuilder.GetTx())
-	if err != nil {
-		return abci.ResponseDeliverTx{}, err
-	}
-
-	req := abci.RequestDeliverTx{Tx: bz}
-	res := appHaqq.BaseApp.DeliverTx(req)
-	if res.Code != 0 {
-		return abci.ResponseDeliverTx{}, errorsmod.Wrapf(errortypes.ErrInvalidRequest, res.Log)
-	}
-
-	return res, nil
+	voteMsg := govv1beta1.NewMsgVote(accountAddress, proposalID, voteOption)
+	return DeliverTx(ctx, appHaqq, priv, nil, voteMsg)
 }

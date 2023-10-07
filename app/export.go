@@ -125,7 +125,10 @@ func (app *Haqq) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []st
 		feePool.CommunityPool = feePool.CommunityPool.Add(scraps...)
 		app.DistrKeeper.SetFeePool(ctx, feePool)
 
-		app.DistrKeeper.Hooks().AfterValidatorCreated(ctx, val.GetOperator()) // nolint: errcheck
+		err := app.DistrKeeper.Hooks().AfterValidatorCreated(ctx, val.GetOperator())
+		if err != nil { //nolint:gosimple // this lets us stop in case there's an error
+			return true
+		}
 		return false
 	})
 
@@ -139,8 +142,14 @@ func (app *Haqq) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []st
 		if err != nil {
 			return err
 		}
-		app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, delAddr, valAddr) // nolint: errcheck
-		app.DistrKeeper.Hooks().AfterDelegationModified(ctx, delAddr, valAddr) // nolint: errcheck
+		err = app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, delAddr, valAddr)
+		if err != nil {
+			return err
+		}
+		err = app.DistrKeeper.Hooks().AfterDelegationModified(ctx, delAddr, valAddr)
+		if err != nil {
+			return err
+		}
 	}
 
 	// reset context height
