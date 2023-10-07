@@ -147,10 +147,12 @@ import (
 	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
 	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
 	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
+	v160 "github.com/haqq-network/haqq/app/upgrades/v1.6.0"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
+
 	// Force-load the tracer engines to trigger registration due to Go-Ethereum v1.10.15 changes
 	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
 	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
@@ -1177,6 +1179,15 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v142.UpgradeName,
 		v142.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+		),
+	)
+
+	// v1.6.0 SDK Upgrade
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v160.UpgradeName,
+		v160.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
 		),
