@@ -28,20 +28,20 @@ const (
 // PowerReduction defines the default power reduction value for staking
 var PowerReduction = sdkmath.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(BaseDenomUnit), nil))
 
-// NewHaqqCoin is a utility function that returns an "aISLM" coin with the given sdkmath.Int amount.
+// NewIslmCoin is a utility function that returns an "aISLM" coin with the given sdkmath.Int amount.
 // The function will panic if the provided amount is negative.
-func NewHaqqCoin(amount sdkmath.Int) sdk.Coin {
+func NewIslmCoin(amount sdkmath.Int) sdk.Coin {
 	return sdk.NewCoin(AttoDenom, amount)
 }
 
-// NewHaqqDecCoin is a utility function that returns an "aISLM" decimal coin with the given sdkmath.Int amount.
+// NewIslmDecCoin is a utility function that returns an "aISLM" decimal coin with the given sdkmath.Int amount.
 // The function will panic if the provided amount is negative.
-func NewHaqqDecCoin(amount sdkmath.Int) sdk.DecCoin {
+func NewIslmDecCoin(amount sdkmath.Int) sdk.DecCoin {
 	return sdk.NewDecCoin(AttoDenom, amount)
 }
 
-// NewHaqqCoinInt64 is a utility function that returns an "aISLM" coin with the given int64 amount.
+// NewIslmCoinInt64 is a utility function that returns an "aISLM" coin with the given int64 amount.
 // The function will panic if the provided amount is negative.
-func NewHaqqCoinInt64(amount int64) sdk.Coin {
+func NewIslmCoinInt64(amount int64) sdk.Coin {
 	return sdk.NewInt64Coin(AttoDenom, amount)
 }
