@@ -4,18 +4,13 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
-
+	pruningtypes "github.com/cosmos/cosmos-sdk/pruning/types"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/simapp/params"
-
-	"github.com/evmos/ethermint/testutil/network"
-	"github.com/haqq-network/haqq/app"
-
 	dbm "github.com/tendermint/tm-db"
 
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-
-	pruningtypes "github.com/cosmos/cosmos-sdk/pruning/types"
+	"github.com/haqq-network/haqq/app"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 

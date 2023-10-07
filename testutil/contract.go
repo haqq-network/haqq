@@ -4,35 +4,33 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/gogo/protobuf/proto"
-
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/gogo/protobuf/proto"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	evm "github.com/evmos/ethermint/x/evm/types"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/testutil/tx"
+	evm "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // DeployContract deploys a contract with the provided private key,
 // compiled contract data and constructor arguments
 func DeployContract(
 	ctx sdk.Context,
-	evmosApp *app.Haqq,
+	appHaqq *app.Haqq,
 	priv cryptotypes.PrivKey,
 	queryClientEvm evm.QueryClient,
 	contract evm.CompiledContract,
 	constructorArgs ...interface{},
 ) (common.Address, error) {
-	chainID := evmosApp.EvmKeeper.ChainID()
+	chainID := appHaqq.EvmKeeper.ChainID()
 	from := common.BytesToAddress(priv.PubKey().Address().Bytes())
-	nonce := evmosApp.EvmKeeper.GetNonce(ctx, from)
+	nonce := appHaqq.EvmKeeper.GetNonce(ctx, from)
 
 	ctorArgs, err := contract.ABI.Pack("", constructorArgs...)
 	if err != nil {
@@ -52,19 +50,19 @@ func DeployContract(
 		nil,
 		gas,
 		nil,
-		evmosApp.FeeMarketKeeper.GetBaseFee(ctx),
+		appHaqq.FeeMarketKeeper.GetBaseFee(ctx),
 		big.NewInt(1),
 		data,
 		&ethtypes.AccessList{},
 	)
 	msgEthereumTx.From = from.String()
 
-	res, err := DeliverEthTx(ctx, evmosApp, priv, msgEthereumTx)
+	res, err := DeliverEthTx(ctx, appHaqq, priv, msgEthereumTx)
 	if err != nil {
 		return common.Address{}, err
 	}
 
-	if _, err := CheckEthTxResponse(res, evmosApp.AppCodec()); err != nil {
+	if _, err := CheckEthTxResponse(res, appHaqq.AppCodec()); err != nil {
 		return common.Address{}, err
 	}
 
@@ -75,15 +73,15 @@ func DeployContract(
 // with the provided factoryAddress
 func DeployContractWithFactory(
 	ctx sdk.Context,
-	evmosApp *app.Haqq,
+	appHaqq *app.Haqq,
 	priv cryptotypes.PrivKey,
 	factoryAddress common.Address,
 	_ evm.QueryClient,
 ) (common.Address, abci.ResponseDeliverTx, error) {
-	chainID := evmosApp.EvmKeeper.ChainID()
+	chainID := appHaqq.EvmKeeper.ChainID()
 	from := common.BytesToAddress(priv.PubKey().Address().Bytes())
-	factoryNonce := evmosApp.EvmKeeper.GetNonce(ctx, factoryAddress)
-	nonce := evmosApp.EvmKeeper.GetNonce(ctx, from)
+	factoryNonce := appHaqq.EvmKeeper.GetNonce(ctx, factoryAddress)
+	nonce := appHaqq.EvmKeeper.GetNonce(ctx, from)
 
 	msgEthereumTx := evm.NewTx(
 		chainID,
@@ -99,12 +97,12 @@ func DeployContractWithFactory(
 	)
 	msgEthereumTx.From = from.String()
 
-	res, err := DeliverEthTx(ctx, evmosApp, priv, msgEthereumTx)
+	res, err := DeliverEthTx(ctx, appHaqq, priv, msgEthereumTx)
 	if err != nil {
 		return common.Address{}, abci.ResponseDeliverTx{}, err
 	}
 
-	if _, err := CheckEthTxResponse(res, evmosApp.AppCodec()); err != nil {
+	if _, err := CheckEthTxResponse(res, appHaqq.AppCodec()); err != nil {
 		return common.Address{}, abci.ResponseDeliverTx{}, err
 	}
 

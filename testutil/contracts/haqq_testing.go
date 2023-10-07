@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var (

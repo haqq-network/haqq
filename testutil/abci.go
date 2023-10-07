@@ -7,11 +7,11 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/evmos/ethermint/encoding"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/testutil/tx"
 )
 
@@ -20,17 +20,17 @@ import (
 // otherwise, it will assume the messages have already been signed.
 func DeliverEthTx(
 	ctx sdk.Context,
-	appEvmos *app.Haqq,
+	appHaqq *app.Haqq,
 	priv cryptotypes.PrivKey,
 	msgs ...sdk.Msg,
 ) (abci.ResponseDeliverTx, error) {
 	txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
 
-	ethTx, err := tx.PrepareEthTx(ctx, txConfig, appEvmos, priv, msgs...)
+	ethTx, err := tx.PrepareEthTx(ctx, txConfig, appHaqq, priv, msgs...)
 	if err != nil {
 		return abci.ResponseDeliverTx{}, err
 	}
-	return BroadcastTxBytes(appEvmos, txConfig.TxEncoder(), ethTx)
+	return BroadcastTxBytes(appHaqq, txConfig.TxEncoder(), ethTx)
 }
 
 // BroadcastTxBytes encodes a transaction and calls DeliverTx on the app.

@@ -16,10 +16,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/evmos/ethermint/server/config"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/server/config"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // PrepareEthTx creates an ethereum tx and signs it with the provided messages and private key.
