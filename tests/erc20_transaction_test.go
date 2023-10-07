@@ -190,7 +190,7 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	suite.Commit(3)
 	ctx := sdk.WrapSDKContext(suite.ctx)
 
-	evmDenom := suite.app.EvmKeeper.GetEVMDenom(suite.ctx)
+	evmDenom := haqqtypes.BaseDenom
 	suite.MintToAccount(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(100000))))
 
 	suite.T().Log(suite.address.String())
@@ -218,18 +218,18 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
 	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 
-	tx := evm.NewTx(
-		chainID,
-		nonce,
-		&receiveAddr,
-		big.NewInt(50000),
-		uint64(22012),
-		nil,
-		suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx),
-		big.NewInt(1),
-		nil,
-		&types.AccessList{},
-	)
+	ercTransferTxParams := &evm.EvmTxArgs{
+		ChainID:   chainID,
+		Nonce:     nonce,
+		To:        &receiveAddr,
+		GasLimit:  50000,
+		GasFeeCap: suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx),
+		GasPrice:  big.NewInt(22012),
+		GasTipCap: big.NewInt(1),
+		Input:     nil,
+		Accesses:  &types.AccessList{},
+	}
+	tx := evm.NewTx(ercTransferTxParams)
 
 	tx.From = suite.address.Hex()
 	err = tx.Sign(types.LatestSignerForChainID(chainID), suite.signer)

@@ -92,7 +92,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.consAddress = consAddress
 
 	// init app
-	suite.app = app.Setup(false, feemarkettypes.DefaultGenesisState())
+	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState())
 	header := testutil.NewHeader(
 		1, time.Now().UTC(), "haqq_11235-1", suite.consAddress, nil, nil,
 	)

@@ -261,30 +261,6 @@ var _ = Describe("Convert receiving IBC to Erc20", Ordered, func() {
 		})
 	})
 
-	Describe("Performing claims with registered coin", func() {
-		BeforeEach(func() {
-			s.app.Erc20Keeper.SetParams(s.HaqqChain.GetContext(), types.DefaultParams()) //nolint:errcheck
-
-			sender = s.IBCOsmosisChain.SenderAccount.GetAddress().String()
-			// receiver address is on Osmosis Chain also,
-			// but funds are transferred to this address in Haqq chain
-			receiver = s.HaqqChain.SenderAccount.GetAddress().String()
-			senderAcc = sdk.MustAccAddressFromBech32(sender)
-			receiverAcc = sdk.MustAccAddressFromBech32(receiver)
-
-			// Register uosmo pair
-			var err error
-			pair, err = s.app.Erc20Keeper.RegisterCoin(s.HaqqChain.GetContext(), osmoMeta)
-			s.Require().NoError(err)
-
-			// Authorize channel-0 for claims (Haqq-Osmosis)
-			params := s.app.ClaimsKeeper.GetParams(s.HaqqChain.GetContext())
-			params.AuthorizedChannels = []string{
-				"channel-0",
-			}
-			s.app.ClaimsKeeper.SetParams(s.HaqqChain.GetContext(), params) //nolint:errcheck
-		})
-	})
 	Describe("registered erc20", func() {
 		BeforeEach(func() { //nolint:dupl
 			erc20params := types.DefaultParams()
