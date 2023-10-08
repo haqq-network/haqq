@@ -21,10 +21,11 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	"github.com/haqq-network/haqq/encoding"
+	"github.com/haqq-network/haqq/utils"
 )
 
 // EthDefaultConsensusParams defines the default Tendermint consensus params used in
-// EvmosApp testing.
+// HaqqApp testing.
 var EthDefaultConsensusParams = &abci.ConsensusParams{
 	Block: &abci.BlockParams{
 		MaxBytes: 200000,
@@ -42,12 +43,12 @@ var EthDefaultConsensusParams = &abci.ConsensusParams{
 	},
 }
 
-// EthSetup initializes a new EvmosApp. A Nop logger is set in EvmosApp.
+// EthSetup initializes a new HaqqApp. A Nop logger is set in HaqqApp.
 func EthSetup(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState) simapp.GenesisState) *Haqq {
 	return EthSetupWithDB(isCheckTx, patchGenesis, dbm.NewMemDB())
 }
 
-// EthSetupWithDB initializes a new EvmosApp. A Nop logger is set in EvmosApp.
+// EthSetupWithDB initializes a new HaqqApp. A Nop logger is set in HaqqApp.
 func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState) simapp.GenesisState, db dbm.DB) *Haqq {
 	app := NewHaqq(log.NewNopLogger(),
 		db,
@@ -73,7 +74,7 @@ func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         "evmos_9000-1",
+				ChainId:         utils.TestEdge2ChainID + "-3",
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
