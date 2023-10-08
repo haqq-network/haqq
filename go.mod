@@ -249,5 +249,3 @@ replace (
 	// use cometbft
 	github.com/tendermint/tendermint => github.com/haqq-network/cometbft v0.34.29-haqq.0
 )
-
-replace github.com/tendermint/tm-db => github.com/baabeetaa/tm-db v0.6.7-0.20220827003937-31989c12be6f

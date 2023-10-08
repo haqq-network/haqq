@@ -57,9 +57,6 @@ ifeq ($(LEDGER_ENABLED),true)
   endif
 endif
 
-BUILD_TAGS += pebbledb
-ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=pebbledb
-
 ifeq (cleveldb,$(findstring cleveldb,$(COSMOS_BUILD_OPTIONS)))
   build_tags += gcc
 endif
