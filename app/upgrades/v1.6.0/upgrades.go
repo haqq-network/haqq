@@ -8,6 +8,7 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/haqq-network/haqq/utils"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -36,12 +37,14 @@ func CreateUpgradeHandler(
 		logger := ctx.Logger()
 		logger.Info("run migration v1.6.0")
 
-		if err := restoreAccounts(ctx, ak); err != nil {
-			return nil, errorsmod.Wrap(err, "failed to restore accounts data")
-		}
+		if utils.IsMainNetwork(ctx.ChainID()) {
+			if err := restoreAccounts(ctx, ak); err != nil {
+				return nil, errorsmod.Wrap(err, "failed to restore accounts data")
+			}
 
-		if err := RevertTombstone(ctx, stk, slk, bk); err != nil {
-			return nil, errorsmod.Wrap(err, "failed to revert tombstone")
+			if err := RevertTombstone(ctx, stk, slk, bk); err != nil {
+				return nil, errorsmod.Wrap(err, "failed to revert tombstone")
+			}
 		}
 
 		// create ICS27 Controller submodule params, with the controller module NOT enabled
