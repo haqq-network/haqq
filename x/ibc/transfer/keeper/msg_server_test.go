@@ -184,7 +184,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				suite.Commit()
 
 				// module account needs permission to send funds (perms set in allowedReceivingModAcc)
-				senderAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, "incentives")
+				senderAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, "distribution")
 
 				err = testutil.FundModuleAccount(suite.ctx, suite.app.BankKeeper, senderAcc.GetName(), sdk.NewCoins(sdk.NewCoin(pair.Denom, sdk.NewInt(10))))
 				suite.Require().NoError(err)
