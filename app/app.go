@@ -118,8 +118,6 @@ import (
 	"github.com/haqq-network/haqq/x/feemarket"
 	feemarketkeeper "github.com/haqq-network/haqq/x/feemarket/keeper"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
-	"github.com/haqq-network/haqq/x/ibc/apps/firewall"
-
 	// unnamed import of statik for swagger UI support
 	_ "github.com/haqq-network/haqq/client/docs/statik"
 
@@ -520,15 +518,14 @@ func NewHaqq(
 	// Create Transfer Stack
 
 	// SendPacket, since it is originating from the application to core IBC:
-	// transferKeeper.SendPacket -> ibcFirewall.SendPacket -> channel.SendPacket
+	// transferKeeper.SendPacket -> channel.SendPacket
 
 	// RecvPacket, message that originates from core IBC and goes down to app, the flow is the otherway
-	// channel.RecvPacket -> ibcFirewall.OnRecvPacket -> transfer.OnRecvPacket
+	// channel.RecvPacket -> transfer.OnRecvPacket
 
-	ics4Wrapper := firewall.NewICS4Wrapper(app.IBCKeeper.ChannelKeeper)
 	app.TransferKeeper = transferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		ics4Wrapper, // ICS4 Wrapper
+		nil, // ICS4 Wrapper
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
@@ -561,9 +558,6 @@ func NewHaqq(
 
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
 	transferStack = erc20.NewIBCMiddleware(app.Erc20Keeper, transferStack)
-
-	// Add IBC Firewall Middleware
-	transferStack = firewall.NewIBCMiddleware(app.IBCKeeper.ChannelKeeper, transferStack)
 
 	// // Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
