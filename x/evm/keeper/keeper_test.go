@@ -29,20 +29,20 @@ func (suite *KeeperTestSuite) TestWithChainID() {
 		},
 		{
 			"fail - other chainID",
-			"chain_7701-1",
+			"chain7701-1",
 			0,
 			true,
 		},
 		{
 			"success - Haqq mainnet chain ID",
 			"haqq_11235-1",
-			9001,
+			11235,
 			false,
 		},
 		{
 			"success - Haqq testnet chain ID",
 			"haqq_54211-3",
-			9000,
+			54211,
 			false,
 		},
 	}

@@ -616,7 +616,7 @@ func (suite *KeeperTestSuite) TestOnTimeoutPacket() {
 			name: "no-op - sender is module account",
 			malleate: func() transfertypes.FungibleTokenPacketData {
 				// any module account can be passed here
-				moduleAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, "claims")
+				moduleAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, "distribution")
 
 				return transfertypes.NewFungibleTokenPacketData("", "10", moduleAcc.GetAddress().String(), "", "")
 			},

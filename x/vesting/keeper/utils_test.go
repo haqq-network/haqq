@@ -29,6 +29,7 @@ import (
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	haqqtypes "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
@@ -54,7 +55,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 
 	// Set Context
 	header := testutil.NewHeader(
-		1, time.Now().UTC(), "haqq_121799-1", suite.consAddress, nil, nil,
+		1, time.Now().UTC(), utils.MainNetChainID+"-1", suite.consAddress, nil, nil,
 	)
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
 
