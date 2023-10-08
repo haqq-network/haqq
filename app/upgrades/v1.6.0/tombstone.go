@@ -14,11 +14,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-type CosMints struct {
-	Address     string `json:"address"`
-	AmountUscrt string `json:"amount"`
-}
-
 var validators = map[string]string{
 	"haqqvaloper1p02zk5ecdanap637e2wtt82cucjlxtkrhus623": "5704902600000000000000000",
 	"haqqvaloper1xp597fjhgu6dx3a525htulkn36fqqntjaqvhct": "400003650000000000000000",
