@@ -377,15 +377,17 @@ func (k Keeper) ConvertIntoVestingAccount(
 	ethAcc, isEthAccount := targetAccount.(*ethtypes.EthAccount)
 	vestingAcc, isClawback = targetAccount.(*types.ClawbackVestingAccount)
 
-	if !isClawback && !isEthAccount && !createNewAcc {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists but can't be converted into vesting account", msg.ToAddress)
+	if isClawback && !msg.Merge {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists; consider using --merge", msg.ToAddress)
 	}
 
-	if !isClawback || createNewAcc {
-		codeHash := common.BytesToHash(crypto.Keccak256(nil))
-		if ethAcc != nil {
-			codeHash = ethAcc.GetCodeHash()
-		}
+	codeHash := common.BytesToHash(crypto.Keccak256(nil))
+	if isEthAccount {
+		codeHash = ethAcc.GetCodeHash()
+	}
+
+	switch {
+	case createNewAcc:
 		baseAcc := authtypes.NewBaseAccountWithAddress(to)
 		vestingAcc = types.NewClawbackVestingAccount(
 			baseAcc,
@@ -400,11 +402,22 @@ func (k Keeper) ConvertIntoVestingAccount(
 		ak.SetAccount(ctx, acc)
 
 		madeNewAcc = true
-	} else {
-		if !msg.Merge {
-			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists; consider using --merge", msg.ToAddress)
-		}
-
+	case !isClawback && !isEthAccount:
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists but can't be converted into vesting account", msg.ToAddress)
+	case !isClawback && isEthAccount:
+		baseAcc := ethAcc.GetBaseAccount()
+		vestingAcc = types.NewClawbackVestingAccount(
+			baseAcc,
+			from,
+			vestingCoins,
+			msg.StartTime,
+			msg.LockupPeriods,
+			msg.VestingPeriods,
+			&codeHash,
+		)
+		acc := ak.NewAccount(ctx, vestingAcc)
+		ak.SetAccount(ctx, acc)
+	case isClawback && msg.Merge:
 		if msg.FromAddress != vestingAcc.FunderAddress {
 			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s can only accept grants from account %s", msg.ToAddress, vestingAcc.FunderAddress)
 		}
@@ -414,6 +427,8 @@ func (k Keeper) ConvertIntoVestingAccount(
 			return nil, err
 		}
 		ak.SetAccount(ctx, vestingAcc)
+	default:
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to initiate vesting for account %s", msg.ToAddress)
 	}
 
 	if madeNewAcc {
@@ -436,11 +451,11 @@ func (k Keeper) ConvertIntoVestingAccount(
 			sdk.NewAttribute(types.AttributeKeyMerge, strconv.FormatBool(isClawback)),
 			sdk.NewAttribute(types.AttributeKeyAccount, vestingAcc.Address),
 		),
-		sdk.NewEvent(
-			sdk.EventTypeMessage,
-			sdk.NewAttribute(sdk.AttributeKeyModule, stakingtypes.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeySender, to.String()),
-		),
+		// sdk.NewEvent(
+		//	sdk.EventTypeMessage,
+		//	sdk.NewAttribute(sdk.AttributeKeyModule, stakingtypes.AttributeValueCategory),
+		//	sdk.NewAttribute(sdk.AttributeKeySender, to.String()),
+		// ),
 	}
 
 	if msg.Stake {
