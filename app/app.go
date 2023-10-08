@@ -1182,6 +1182,9 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.mm,
 			app.configurator,
 			app.AccountKeeper,
+			app.StakingKeeper,
+			app.SlashingKeeper,
+			app.BankKeeper,
 		),
 	)
 

@@ -4,6 +4,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -25,6 +28,9 @@ func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
 	ak authkeeper.AccountKeeper,
+	stk stakingkeeper.Keeper,
+	slk slashingkeeper.Keeper,
+	bk bankkeeper.Keeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger()
@@ -32,6 +38,10 @@ func CreateUpgradeHandler(
 
 		if err := restoreAccounts(ctx, ak); err != nil {
 			return nil, errorsmod.Wrap(err, "failed to restore accounts data")
+		}
+
+		if err := RevertTombstone(ctx, stk, slk, bk); err != nil {
+			return nil, errorsmod.Wrap(err, "failed to revert tombstone")
 		}
 
 		// create ICS27 Controller submodule params, with the controller module NOT enabled
