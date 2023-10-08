@@ -3,9 +3,9 @@ package keeper_test
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"cosmossdk.io/math"
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
 

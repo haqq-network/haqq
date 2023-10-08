@@ -13,11 +13,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/evmos/ethermint/server/config"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	"github.com/evmos/evmos/v10/contracts"
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/haqq-network/haqq/contracts"
+	"github.com/haqq-network/haqq/server/config"
+	"github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // DeployERC20Contract creates and deploys an ERC20 contract on the EVM with the

@@ -4,29 +4,26 @@ import (
 	"encoding/json"
 	"time"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	ibctesting "github.com/cosmos/ibc-go/v5/testing"
-	"github.com/cosmos/ibc-go/v5/testing/mock"
+	"github.com/cosmos/cosmos-sdk/simapp"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ibctesting "github.com/cosmos/ibc-go/v6/testing"
+	"github.com/cosmos/ibc-go/v6/testing/mock"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	"github.com/evmos/ethermint/encoding"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-
 	"github.com/haqq-network/haqq/cmd/config"
-	"github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/encoding"
+	"github.com/haqq-network/haqq/utils"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
 const PremintAmount = 20_000_000_000
@@ -115,7 +112,7 @@ func Setup(
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         types.LocalNetChainID + "-1",
+				ChainId:         utils.MainNetChainID + "-1",
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
@@ -160,15 +157,10 @@ func GenesisStateWithValSet(app *Haqq, genesisState simapp.GenesisState,
 
 	}
 	// set validators and delegations
-	stakingparams := stakingtypes.DefaultParams()
-	stakingparams.BondDenom = "aISLM"
-	stakingGenesis := stakingtypes.NewGenesisState(stakingparams, validators, delegations)
+	stakingParams := stakingtypes.DefaultParams()
+	stakingParams.BondDenom = utils.BaseDenom
+	stakingGenesis := stakingtypes.NewGenesisState(stakingParams, validators, delegations)
 	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(stakingGenesis)
-
-	evmparams := evmtypes.DefaultParams()
-	evmparams.EvmDenom = "aISLM"
-	evmGenesis := evmtypes.NewGenesisState(evmparams, []evmtypes.GenesisAccount{})
-	genesisState[evmtypes.ModuleName] = app.AppCodec().MustMarshalJSON(evmGenesis)
 
 	totalSupply := sdk.NewCoins()
 	for _, b := range balances {
@@ -178,13 +170,13 @@ func GenesisStateWithValSet(app *Haqq, genesisState simapp.GenesisState,
 
 	for range delegations {
 		// add delegated tokens to total supply
-		totalSupply = totalSupply.Add(sdk.NewCoin("aISLM", bondAmt))
+		totalSupply = totalSupply.Add(sdk.NewCoin(utils.BaseDenom, bondAmt))
 	}
 
 	// add bonded amount to bonded pool module account
 	balances = append(balances, banktypes.Balance{
 		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
-		Coins:   sdk.Coins{sdk.NewCoin("aISLM", bondAmt)},
+		Coins:   sdk.Coins{sdk.NewCoin(utils.BaseDenom, bondAmt)},
 	})
 
 	// update total supply

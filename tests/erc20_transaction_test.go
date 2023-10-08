@@ -9,6 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,21 +20,19 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/evmos/ethermint/crypto/ethsecp256k1"
-	"github.com/evmos/ethermint/server/config"
-	"github.com/evmos/ethermint/tests"
-	evm "github.com/evmos/ethermint/x/evm/types"
-	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
-	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
-	"github.com/haqq-network/haqq/app"
-	haqqtypes "github.com/haqq-network/haqq/types"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 	"github.com/tendermint/tendermint/version"
+
+	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/server/config"
+	haqqtypes "github.com/haqq-network/haqq/utils"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	evm "github.com/haqq-network/haqq/x/evm/types"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
 type TransferETHTestSuite struct {
@@ -69,7 +70,7 @@ func (suite *TransferETHTestSuite) DoSetupTest(t require.TestingT) {
 	require.NoError(t, err)
 	suite.privKey = priv
 	suite.address = common.BytesToAddress(priv.PubKey().Address().Bytes())
-	suite.signer = tests.NewSigner(priv)
+	suite.signer = NewSigner(priv)
 
 	// consensus key
 	privCons, err := ethsecp256k1.GenerateKey()
@@ -86,7 +87,7 @@ func (suite *TransferETHTestSuite) DoSetupTest(t require.TestingT) {
 	suite.app = haqqApp
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
-		ChainID:         haqqtypes.LocalNetChainID + "-1",
+		ChainID:         haqqtypes.MainNetChainID + "-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: consAddress.Bytes(),
 
@@ -189,7 +190,7 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	suite.Commit(3)
 	ctx := sdk.WrapSDKContext(suite.ctx)
 
-	evmDenom := suite.app.EvmKeeper.GetEVMDenom(suite.ctx)
+	evmDenom := haqqtypes.BaseDenom
 	suite.MintToAccount(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(100000))))
 
 	suite.T().Log(suite.address.String())
@@ -217,18 +218,18 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
 	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 
-	tx := evm.NewTx(
-		chainID,
-		nonce,
-		&receiveAddr,
-		big.NewInt(50000),
-		uint64(22012),
-		nil,
-		suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx),
-		big.NewInt(1),
-		nil,
-		&types.AccessList{},
-	)
+	ercTransferTxParams := &evm.EvmTxArgs{
+		ChainID:   chainID,
+		Nonce:     nonce,
+		To:        &receiveAddr,
+		GasLimit:  50000,
+		GasFeeCap: suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx),
+		GasPrice:  big.NewInt(22012),
+		GasTipCap: big.NewInt(1),
+		Input:     nil,
+		Accesses:  &types.AccessList{},
+	}
+	tx := evm.NewTx(ercTransferTxParams)
 
 	tx.From = suite.address.Hex()
 	err = tx.Sign(types.LatestSignerForChainID(chainID), suite.signer)

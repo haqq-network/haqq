@@ -4,18 +4,15 @@ import (
 	"fmt"
 	"time"
 
-	vestingexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
-	ethtypes "github.com/evmos/ethermint/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
-	"github.com/evmos/ethermint/tests"
-
+	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	ethtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 

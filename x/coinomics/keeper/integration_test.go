@@ -3,14 +3,14 @@ package keeper_test
 import (
 	"math/big"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	// "github.com/cosmos/cosmos-sdk/x/staking/types"
-	// "github.com/evmos/ethermint/crypto/ethsecp256k1"
-	// "github.com/haqq-network/haqq/testutil"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	// "github.com/cosmos/cosmos-sdk/x/staking/types"
+	// "github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	// "github.com/haqq-network/haqq/testutil"
 )
 
 var _ = Describe("Coinomics", Ordered, func() {

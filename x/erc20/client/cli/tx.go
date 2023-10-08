@@ -12,12 +12,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-
 	"github.com/ethereum/go-ethereum/common"
 
-	ethermint "github.com/evmos/ethermint/types"
-
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	haqqtypes "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // NewTxCmd returns a root CLI command handler for erc20 transaction commands
@@ -59,7 +57,7 @@ func NewConvertCoinCmd() *cobra.Command {
 
 			if len(args) == 2 {
 				receiver = args[1]
-				if err := ethermint.ValidateAddress(receiver); err != nil {
+				if err := haqqtypes.ValidateAddress(receiver); err != nil {
 					return fmt.Errorf("invalid receiver hex address %w", err)
 				}
 			} else {
@@ -97,7 +95,7 @@ func NewConvertERC20Cmd() *cobra.Command {
 			}
 
 			contract := args[0]
-			if err := ethermint.ValidateAddress(contract); err != nil {
+			if err := haqqtypes.ValidateAddress(contract); err != nil {
 				return fmt.Errorf("invalid ERC20 contract address %w", err)
 			}
 
@@ -136,14 +134,15 @@ func NewConvertERC20Cmd() *cobra.Command {
 }
 
 // NewRegisterCoinProposalCmd implements the command to submit a community-pool-spend proposal
-// nolint:staticcheck
+//
+//nolint:staticcheck
 func NewRegisterCoinProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register-coin METADATA_FILE",
 		Args:  cobra.ExactArgs(1),
 		Short: "Submit a register coin proposal",
 		Long:  `Submit a proposal to register a Cosmos coin to the erc20 along with an initial deposit. The proposal details must be supplied via a JSON file.`,
-		Example: fmt.Sprintf(`$ %s tx gov submit-proposal register-coin metadata.json --from=<key_or_address>
+		Example: fmt.Sprintf(`$ %s tx gov submit-legacy-proposal register-coin metadata.json --from=<key_or_address>
 
 Where metadata.json contains (example):
 
@@ -220,7 +219,7 @@ Where metadata.json contains (example):
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
-	cmd.Flags().String(cli.FlagDeposit, "1aevmos", "deposit of proposal")
+	cmd.Flags().String(cli.FlagDeposit, "1aISLM", "deposit of proposal")
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
@@ -234,14 +233,15 @@ Where metadata.json contains (example):
 }
 
 // NewRegisterERC20ProposalCmd implements the command to submit a community-pool-spend proposal
-// nolint:staticcheck
+//
+//nolint:staticcheck
 func NewRegisterERC20ProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "register-erc20 ERC20_ADDRESS...",
 		Args:    cobra.MinimumNArgs(1),
 		Short:   "Submit a proposal to register ERC20 token",
 		Long:    "Submit a proposal to register ERC20 tokens along with an initial deposit. To register multiple tokens in one proposal pass them after each other e.g. `register-erc20 <contract-address1> <contract-address2>` ",
-		Example: fmt.Sprintf("$ %s tx gov submit-proposal register-erc20 <contract-address> --from=<key_or_address>", version.AppName),
+		Example: fmt.Sprintf("$ %s tx gov submit-legacy-proposal register-erc20 <contract-address> --from=<key_or_address>", version.AppName),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -287,7 +287,7 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
-	cmd.Flags().String(cli.FlagDeposit, "1aevmos", "deposit of proposal")
+	cmd.Flags().String(cli.FlagDeposit, "1aISLM", "deposit of proposal")
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
@@ -301,14 +301,15 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 }
 
 // NewToggleTokenConversionProposalCmd implements the command to submit a community-pool-spend proposal
-// nolint:staticcheck
+//
+//nolint:staticcheck
 func NewToggleTokenConversionProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "toggle-token-conversion TOKEN",
 		Args:    cobra.ExactArgs(1),
 		Short:   "Submit a toggle token conversion proposal",
 		Long:    "Submit a proposal to toggle the conversion of a token pair along with an initial deposit.",
-		Example: fmt.Sprintf("$ %s tx gov submit-proposal toggle-token-conversion DENOM_OR_CONTRACT --from=<key_or_address>", version.AppName),
+		Example: fmt.Sprintf("$ %s tx gov submit-legacy-proposal toggle-token-conversion DENOM_OR_CONTRACT --from=<key_or_address>", version.AppName),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -354,7 +355,7 @@ func NewToggleTokenConversionProposalCmd() *cobra.Command {
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
 	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
-	cmd.Flags().String(cli.FlagDeposit, "1aevmos", "deposit of proposal")
+	cmd.Flags().String(cli.FlagDeposit, "1aISLM", "deposit of proposal")
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}

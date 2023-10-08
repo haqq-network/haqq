@@ -4,11 +4,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	"github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
-	"github.com/cosmos/ibc-go/v5/modules/core/exported"
-	utils "github.com/haqq-network/haqq/types"
+	"github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	"github.com/cosmos/ibc-go/v6/modules/core/exported"
+
+	"github.com/haqq-network/haqq/utils"
 )
 
 var _ porttypes.Middleware = &IBCMiddleware{}
@@ -21,7 +23,7 @@ type IBCMiddleware struct {
 }
 
 // NewIBCMiddleware creates new IBCMiddleware with given ICS4 wrapper and underlying application
-func NewIBCMiddleware(app porttypes.IBCModule, w porttypes.ICS4Wrapper) IBCMiddleware {
+func NewIBCMiddleware(w porttypes.ICS4Wrapper, app porttypes.IBCModule) IBCMiddleware {
 	return IBCMiddleware{
 		app:         app,
 		ics4Wrapper: w,
@@ -82,7 +84,6 @@ func (im IBCMiddleware) OnChanOpenInit(
 	version string,
 ) (string, error) {
 	// call underlying app's OnChanOpenInit callback with the counterparty app version.
-
 	return im.app.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, channelCap, counterparty, version)
 }
 
@@ -205,31 +206,35 @@ func (im IBCMiddleware) OnTimeoutPacket(
 func (im IBCMiddleware) SendPacket(
 	ctx sdk.Context,
 	chanCap *capabilitytypes.Capability,
-	packet exported.PacketI,
-) error {
+	sourcePort string,
+	sourceChannel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+	data []byte,
+) (uint64, error) {
 	logger := ctx.Logger()
 	logger.Debug("run SendPacket from IBC Firewall Middleware")
 
 	// Allow all IBC packets by default, restrict for MainNet and TestEdge
 	if !utils.IsMainNetwork(ctx.ChainID()) && !utils.IsTestEdge1Network(ctx.ChainID()) {
-		return im.ics4Wrapper.SendPacket(ctx, chanCap, packet)
+		return im.ics4Wrapper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 	}
 
 	// Decode packet data and check if receiver is eligible to use IBC transfer
-	var data types.FungibleTokenPacketData
-	if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "cannot unmarshal ICS-20 transfer packet data")
+	var packet types.FungibleTokenPacketData
+	if err := types.ModuleCdc.UnmarshalJSON(data, &packet); err != nil {
+		return 0, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "cannot unmarshal ICS-20 transfer packet data")
 	}
 
-	logger.Debug("SendPacket -> check allowance of sender address ", data.Receiver)
-	if !im.IsAllowedAddress(ctx.ChainID(), data.Sender) {
-		logger.Debug("SendPacket -> address NOT ALLOWED to send IBC Transfers", data.Sender)
-		return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to send funds", data.Sender)
+	logger.Debug("SendPacket -> check allowance of sender address ", packet.Receiver)
+	if !im.IsAllowedAddress(ctx.ChainID(), packet.Sender) {
+		logger.Debug("SendPacket -> address NOT ALLOWED to send IBC Transfers", packet.Sender)
+		return 0, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "%s is not allowed to send funds", packet.Sender)
 	}
 
-	logger.Debug("SendPacket -> address ALLOWED to send IBC Transfers. Proceed!", data.Sender)
+	logger.Debug("SendPacket -> address ALLOWED to send IBC Transfers. Proceed!", packet.Sender)
 	// call underlying ICS4 Wrapper's SendPacket callback.
-	return im.ics4Wrapper.SendPacket(ctx, chanCap, packet)
+	return im.ics4Wrapper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 // WriteAcknowledgement implements the ICS4 Wrapper interface

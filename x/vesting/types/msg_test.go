@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/evmos/ethermint/tests"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+
+	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 

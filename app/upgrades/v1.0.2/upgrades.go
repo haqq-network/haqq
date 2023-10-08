@@ -11,9 +11,9 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	erc20types "github.com/evmos/evmos/v10/x/erc20/types"
 
-	"github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.0.2
@@ -30,9 +30,9 @@ func CreateUpgradeHandler(
 		// - https://docs.cosmos.network/master/building-modules/upgrade.html#registering-migrations
 		// - https://docs.cosmos.network/master/migrations/chain-upgrade-guide-044.html#chain-upgrade
 
-		if types.IsMainNetwork(ctx.ChainID()) ||
-			types.IsTestEdge1Network(ctx.ChainID()) ||
-			types.IsLocalNetwork(ctx.ChainID()) {
+		if utils.IsMainNetwork(ctx.ChainID()) ||
+			utils.IsTestEdge1Network(ctx.ChainID()) ||
+			utils.IsLocalNetwork(ctx.ChainID()) {
 			logger.Debug("run migration v1.0.2")
 
 			FixTotalSupply(ctx, bk, cdc, distrStoreKey)

@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/evmos/ethermint/tests"
+	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
@@ -34,7 +34,7 @@ func (suite *KeeperTestSuite) TestBalances() {
 			"invalid address",
 			func() {
 				req = &types.QueryBalancesRequest{
-					Address: "evmos1",
+					Address: "haqq1",
 				}
 			},
 			false,

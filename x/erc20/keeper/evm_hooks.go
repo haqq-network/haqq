@@ -2,17 +2,16 @@ package keeper
 
 import (
 	"bytes"
-	// nolint: typecheck
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
-	"github.com/evmos/evmos/v10/contracts"
-	"github.com/evmos/evmos/v10/x/erc20/types"
+	"github.com/haqq-network/haqq/contracts"
+	"github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var _ evmtypes.EvmHooks = Hooks{}

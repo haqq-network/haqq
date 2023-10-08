@@ -1,11 +1,13 @@
 package erc20
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 
-	"github.com/evmos/evmos/v10/x/erc20/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // InitGenesis import module genesis
@@ -15,7 +17,10 @@ func InitGenesis(
 	accountKeeper authkeeper.AccountKeeper,
 	data types.GenesisState,
 ) {
-	k.SetParams(ctx, data.Params)
+	err := k.SetParams(ctx, data.Params)
+	if err != nil {
+		panic(fmt.Errorf("error setting params %s", err))
+	}
 
 	// ensure erc20 module account is set on genesis
 	if acc := accountKeeper.GetModuleAccount(ctx, types.ModuleName); acc == nil {
