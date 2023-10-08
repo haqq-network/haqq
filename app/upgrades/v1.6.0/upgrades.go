@@ -31,7 +31,7 @@ func CreateUpgradeHandler(
 		logger.Info("run migration v1.6.0")
 
 		if err := restoreAccounts(ctx, ak); err != nil {
-			panic(err)
+			return nil, errorsmod.Wrap(err, "failed to restore accounts data")
 		}
 
 		// create ICS27 Controller submodule params, with the controller module NOT enabled
