@@ -69,6 +69,7 @@ if [[ $1 == "pending" ]]; then
       sed -i '' 's/timeout_precommit_delta = "500ms"/timeout_precommit_delta = "5s"/g' $HOME/.haqqd/config/config.toml
       sed -i '' 's/timeout_commit = "5s"/timeout_commit = "150s"/g' $HOME/.haqqd/config/config.toml
       sed -i '' 's/timeout_broadcast_tx_commit = "10s"/timeout_broadcast_tx_commit = "150s"/g' $HOME/.haqqd/config/config.toml
+      sed -i '' 's/db_backend = "goleveldb"/db_backend = "pebbledb"/g' $HOME/.haqqd/config/config.toml
   else
       sed -i 's/create_empty_blocks_interval = "0s"/create_empty_blocks_interval = "30s"/g' $HOME/.haqqd/config/config.toml
       sed -i 's/timeout_propose = "3s"/timeout_propose = "30s"/g' $HOME/.haqqd/config/config.toml
@@ -79,6 +80,7 @@ if [[ $1 == "pending" ]]; then
       sed -i 's/timeout_precommit_delta = "500ms"/timeout_precommit_delta = "5s"/g' $HOME/.haqqd/config/config.toml
       sed -i 's/timeout_commit = "5s"/timeout_commit = "150s"/g' $HOME/.haqqd/config/config.toml
       sed -i 's/timeout_broadcast_tx_commit = "10s"/timeout_broadcast_tx_commit = "150s"/g' $HOME/.haqqd/config/config.toml
+      sed -i 's/db_backend = "goleveldb"/db_backend = "pebbledb"/g' $HOME/.haqqd/config/config.toml
   fi
 fi
 
