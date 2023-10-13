@@ -206,6 +206,7 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 
 	chainID := suite.app.EvmKeeper.ChainID()
 	var receiveAddr common.Address
+	receiveAddr = common.HexToAddress("0xBB46FFdd9Ea333062E6DfDFc7c5Ab8c8B59808FC")
 
 	args, err := json.Marshal(&evm.TransactionArgs{To: &receiveAddr, From: &suite.address, Data: nil})
 	suite.Require().NoError(err)
@@ -222,9 +223,10 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 		ChainID:   chainID,
 		Nonce:     nonce,
 		To:        &receiveAddr,
-		GasLimit:  50000,
+		Amount:    big.NewInt(50000),
+		GasLimit:  22012,
+		GasPrice:  nil,
 		GasFeeCap: suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx),
-		GasPrice:  big.NewInt(22012),
 		GasTipCap: big.NewInt(1),
 		Input:     nil,
 		Accesses:  &types.AccessList{},
