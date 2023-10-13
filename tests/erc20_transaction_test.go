@@ -185,6 +185,7 @@ func (suite *TransferETHTestSuite) MintToAccount(coins sdk.Coins) {
 	suite.Require().NoError(err)
 }
 
+//nolint:all
 func (suite *TransferETHTestSuite) TestTransferETH() {
 	// skip some blocks
 	suite.Commit(3)

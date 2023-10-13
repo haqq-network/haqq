@@ -634,6 +634,7 @@ func (suite *BackendTestSuite) TestTendermintBlockByNumber() {
 	}
 }
 
+//nolint:all
 func (suite *BackendTestSuite) TestTendermintBlockResultByNumber() {
 	var expBlockRes *tmrpctypes.ResultBlockResults
 

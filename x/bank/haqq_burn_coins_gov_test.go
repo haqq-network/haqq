@@ -23,7 +23,7 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	"github.com/haqq-network/haqq/testutil/network"
-	haqqnetwork "github.com/haqq-network/haqq/testutil/network"
+	// haqqnetwork "github.com/haqq-network/haqq/testutil/network"
 )
 
 type BurnCoinsTestSuite struct {
@@ -543,9 +543,9 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 }
 
 func TestBurnCoins(t *testing.T) {
-	cfg := haqqnetwork.HaqqNetworkConfigCoinomicsDisabled()
+	cfg := network.HaqqNetworkConfigCoinomicsDisabled()
 	encCfg := simapp.MakeTestEncodingConfig()
-	cfg.AppConstructor = haqqnetwork.NewAppConstructor(encCfg)
+	cfg.AppConstructor = network.NewAppConstructor(encCfg)
 	cfg.NumValidators = 1
 
 	genesisGov := strings.Replace(
