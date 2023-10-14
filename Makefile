@@ -6,7 +6,7 @@ DIFF_TAG=$(shell git rev-list --tags="v*" --max-count=1 --not $(shell git rev-li
 DEFAULT_TAG=$(shell git rev-list --tags="v*" --max-count=1)
 # VERSION ?= $(shell echo $(shell git describe --tags $(or $(DIFF_TAG), $(DEFAULT_TAG))) | sed 's/^v//')
 
-VERSION := "1.6.1"
+VERSION := "1.6.1-pebble"
 TMVERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
@@ -56,6 +56,9 @@ ifeq ($(LEDGER_ENABLED),true)
     endif
   endif
 endif
+
+BUILD_TAGS += pebbledb
+ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=pebbledb
 
 ifeq (cleveldb,$(findstring cleveldb,$(COSMOS_BUILD_OPTIONS)))
   build_tags += gcc
