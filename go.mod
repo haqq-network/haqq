@@ -241,6 +241,8 @@ replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	// use Cosmos-SDK fork to enable Ledger functionality
 	github.com/cosmos/cosmos-sdk => github.com/evmos/cosmos-sdk v0.47.5-evmos
+	// haqq gogoproto
+	github.com/cosmos/gogoproto => github.com/haqq-network/gogoproto v1.4.10-haqq.0
 	// use Evmos geth fork
 	github.com/ethereum/go-ethereum => github.com/evmos/go-ethereum v1.10.26-evmos-rc2
 	// use cosmos flavored protobufs
