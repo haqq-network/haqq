@@ -221,7 +221,8 @@ endif
 
 ifeq (, $(shell which protoc-gen-go))
 	@echo "Installing protoc-gen-go..."
-	@go get github.com/fjl/gencodec github.com/golang/protobuf/protoc-gen-go
+	@go install github.com/fjl/gencodec@latest
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 else
 	@echo "protoc-gen-go already installed; skipping..."
 endif
@@ -450,25 +451,25 @@ format:
 # NOTE: Link to the tendermintdev/sdk-proto-gen docker images:
 #       https://hub.docker.com/r/tendermintdev/sdk-proto-gen/tags
 #
-protoVer=v0.7
-protoImageName=tendermintdev/sdk-proto-gen:$(protoVer)
-protoImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
+protoVer=0.11.6
+protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace --user 0 $(protoImageName)
 # ------
 # NOTE: cosmos/proto-builder image is needed because clang-format is not installed
 #       on the tendermintdev/sdk-proto-gen docker image.
 #		Link to the cosmos/proto-builder docker images:
 #       https://github.com/cosmos/cosmos-sdk/pkgs/container/proto-builder
 #
-protoCosmosVer=0.11.2
-protoCosmosName=ghcr.io/cosmos/proto-builder:$(protoCosmosVer)
-protoCosmosImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protoCosmosName)
+# protoCosmosVer=0.11.2
+# protoCosmosName=ghcr.io/cosmos/proto-builder:$(protoCosmosVer)
+# protoCosmosImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protoCosmosName)
 # ------
 # NOTE: Link to the yoheimuta/protolint docker images:
 #       https://hub.docker.com/r/yoheimuta/protolint/tags
 #
-protolintVer=0.42.2
-protolintName=yoheimuta/protolint:$(protolintVer)
-protolintImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protolintName)
+# protolintVer=0.42.2
+# protolintName=yoheimuta/protolint:$(protolintVer)
+# protolintImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protolintName)
 
 proto-all: proto-format proto-lint proto-gen
 
@@ -495,7 +496,7 @@ TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0
 GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
 COSMOS_SDK_URL      = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.45.1
 ETHERMINT_URL      	= https://raw.githubusercontent.com/evmos/ethermint/v0.18.0
-IBC_GO_URL      	= https://raw.githubusercontent.com/cosmos/ibc-go/v3.0.0-rc0
+IBC_GO_URL      		= https://raw.githubusercontent.com/cosmos/ibc-go/v3.0.0-rc0
 COSMOS_PROTO_URL    = https://raw.githubusercontent.com/cosmos/cosmos-proto/main
 
 TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
@@ -590,7 +591,7 @@ localnet-show-logstream:
 ###############################################################################
 
 PACKAGE_NAME:=github.com/haqq-network/haqq
-GOLANG_CROSS_VERSION  = v1.19
+GOLANG_CROSS_VERSION  = v1.20
 GOPATH ?= '$(HOME)/go'
 release-dry-run:
 	docker run \
