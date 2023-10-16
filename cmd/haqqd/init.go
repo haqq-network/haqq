@@ -79,12 +79,21 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 			config.P2P.MaxNumInboundPeers = 240
 			config.P2P.MaxNumOutboundPeers = 30
 
-			// Set default seeds
-			seeds := []string{
-				"0533e20e65912f72f2ad88a4c91eefbc634212d7@haqq-sync.rpc.p2p.world:26656",  // P2P.org
-				"977ee99c89207677f116801a595c97979a0c0cd1@80.240.20.106:26656",            // kioqq
-				"731f27fe9cd05257fcfc68b96147aec79035f920@seed1.haqq.network:26656",       // Haqq
-				"e1b058e5cfa2b836ddaa496b10911da62dcf182e@haqq-seed-de.allnodes.me:26656", // Allnodes.com
+			chainID, _ := cmd.Flags().GetString(flags.FlagChainID)
+			if chainID == "" {
+				chainID = fmt.Sprintf("haqq_11235-%v", tmrand.Str(6))
+			}
+
+			seeds := []string{}
+
+			if chainID == "haqq_11235-1" {
+				seeds = []string{
+					"731f27fe9cd05257fcfc68b96147aec79035f920@seed1.haqq.network:26656",       // Haqq # Seed1
+					"681da1f78742b2a0f8e0e7dac6e6f72166d82a8c@seed2.haqq.network:26656",       // Haqq # Seed2
+					"0533e20e65912f72f2ad88a4c91eefbc634212d7@haqq-sync.rpc.p2p.world:26656",  // P2P.org
+					"e726816f42831689eab9378d5d577f1d06d25716@haqq-seed-us.allnodes.me:26656", // Allnodes # US
+					"e1b058e5cfa2b836ddaa496b10911da62dcf182e@haqq-seed-de.allnodes.me:26656", // Allnodes # DE
+				}
 			}
 			config.P2P.Seeds = strings.Join(seeds, ",")
 
@@ -92,11 +101,6 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 			config.StateSync.TrustPeriod = 112 * time.Hour
 
 			config.SetRoot(clientCtx.HomeDir)
-
-			chainID, _ := cmd.Flags().GetString(flags.FlagChainID)
-			if chainID == "" {
-				chainID = fmt.Sprintf("haqq_11235-%v", tmrand.Str(6))
-			}
 
 			// Get bip39 mnemonic
 			var mnemonic string

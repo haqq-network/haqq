@@ -104,6 +104,7 @@ echo "\n\n\n"
 
 # Start the node (remove the --pruning=nothing flag if historical queries are not needed)
 $BINARY start \
+--chain-id $CHAINID \
 --pruning=nothing $TRACE \
 --log_level $LOGLEVEL \
 --minimum-gas-prices=0.0001aISLM \
