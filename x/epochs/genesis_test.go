@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	simapp "github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/x/epochs"

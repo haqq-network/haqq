@@ -1,6 +1,8 @@
 package ibctesting
 
 import (
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -10,9 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctesting "github.com/cosmos/ibc-go/v6/testing"
-	ibchelpers "github.com/cosmos/ibc-go/v6/testing/simapp/helpers"
-
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/haqq-network/haqq/app"
 )
 
@@ -173,11 +173,12 @@ func SignAndDeliver(
 	fee sdk.Coins,
 	chainID string, accNums, accSeqs []uint64, expPass bool, priv ...cryptotypes.PrivKey,
 ) (sdk.GasInfo, *sdk.Result, error) {
-	tx, err := ibchelpers.GenTx(
+	tx, err := sims.GenSignedMockTx(
+		rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 		txCfg,
 		msgs,
 		fee,
-		ibchelpers.DefaultGenTxGas,
+		sims.DefaultGenTxGas,
 		chainID,
 		accNums,
 		accSeqs,

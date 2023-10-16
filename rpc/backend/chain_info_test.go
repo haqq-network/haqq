@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/cometbft/cometbft/abci/types"
+	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethrpc "github.com/ethereum/go-ethereum/rpc"
-	"github.com/tendermint/tendermint/abci/types"
-	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/haqq-network/haqq/rpc/backend/mocks"
@@ -80,7 +80,7 @@ func (suite *BackendTestSuite) TestBaseFee() {
 					{
 						Type: feemarkettypes.EventTypeFeeMarket,
 						Attributes: []types.EventAttribute{
-							{Value: []byte{0x1}},
+							{Value: "/1"},
 						},
 					},
 				},
@@ -100,7 +100,7 @@ func (suite *BackendTestSuite) TestBaseFee() {
 					{
 						Type: feemarkettypes.EventTypeFeeMarket,
 						Attributes: []types.EventAttribute{
-							{Value: []byte(baseFee.String())},
+							{Value: baseFee.String()},
 						},
 					},
 				},

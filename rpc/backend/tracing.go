@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"math"
 
+	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	rpctypes "github.com/haqq-network/haqq/rpc/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"

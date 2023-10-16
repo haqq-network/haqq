@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/armon/go-metrics"
+	metrics "github.com/armon/go-metrics"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"

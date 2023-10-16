@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	simappparams "cosmossdk.io/simapp/params"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
@@ -23,7 +23,6 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	"github.com/haqq-network/haqq/testutil/network"
-	// haqqnetwork "github.com/haqq-network/haqq/testutil/network"
 )
 
 type BurnCoinsTestSuite struct {
@@ -544,7 +543,7 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 
 func TestBurnCoins(t *testing.T) {
 	cfg := network.HaqqNetworkConfigCoinomicsDisabled()
-	encCfg := simapp.MakeTestEncodingConfig()
+	encCfg := simappparams.MakeTestEncodingConfig()
 	cfg.AppConstructor = network.NewAppConstructor(encCfg)
 	cfg.NumValidators = 1
 

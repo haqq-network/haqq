@@ -6,10 +6,9 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	simappparams "cosmossdk.io/simapp/params"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
@@ -62,13 +61,14 @@ func (s *IntegrationTestSuite) TestCommunityProposals() {
 				Info:   "test",
 			}),
 		},
-		{
-			name:  "community-pool-spend",
-			valid: false,
-			proposal: types.NewCommunityPoolSpendProposal("Test", "description", val.Address, sdk.NewCoins(
-				sdk.NewCoin("ISLM", sdk.NewInt(1)),
-			)),
-		},
+		// TODO Fix this. Distribution module doesn't have a proposal handler now
+		// {
+		//	name:  "community-pool-spend",
+		//	valid: false,
+		//	proposal: types.NewCommunityPoolSpendProposal("Test", "description", val.Address, sdk.NewCoins(
+		//		sdk.NewCoin("ISLM", sdk.NewInt(1)),
+		//	)),
+		// },
 	}
 
 	for i, tc := range testCases {
@@ -119,7 +119,7 @@ func (s *IntegrationTestSuite) TestCommunityProposals() {
 
 func TestDisabledCommunityProposals(t *testing.T) {
 	cfg := network.HaqqNetworkConfig()
-	encCfg := simapp.MakeTestEncodingConfig()
+	encCfg := simappparams.MakeTestEncodingConfig()
 	cfg.AppConstructor = network.NewAppConstructor(encCfg)
 	cfg.NumValidators = 1
 
