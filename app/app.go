@@ -62,6 +62,7 @@ import (
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
+
 	//distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -151,6 +152,7 @@ import (
 
 	v160 "github.com/haqq-network/haqq/app/upgrades/v1.6.0"
 	v161 "github.com/haqq-network/haqq/app/upgrades/v1.6.1"
+	v170 "github.com/haqq-network/haqq/app/upgrades/v1.7.0"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -181,7 +183,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.6.1"
+	UpgradeName    = "v1.7.0"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -1138,6 +1140,21 @@ func (app *Haqq) setupUpgradeHandlers() {
 		),
 	)
 
+	// v1.6.1 Security upgrade
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v170.UpgradeName,
+		v170.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.BankKeeper,
+			app.EvmKeeper,
+			app.ConsensusParamsKeeper,
+			app.IBCKeeper.ClientKeeper,
+			app.ParamsKeeper,
+			app.appCodec,
+		),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1157,6 +1174,13 @@ func (app *Haqq) setupUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{
 				icahosttypes.SubModuleName,
+			},
+		}
+	case v170.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{
+				consensusparamtypes.StoreKey,
+				crisistypes.ModuleName,
 			},
 		}
 	}
