@@ -173,6 +173,7 @@ func setupTest(localMinGasPrices string) (*ethsecp256k1.PrivKey, banktypes.MsgSe
 func setupChain(localMinGasPricesStr string) {
 	// Initialize the app, so we can use SetMinGasPrices to set the
 	// validator-specific min-gas-prices setting
+	chainID := utils.TestEdge2ChainID + "-3"
 	db := dbm.NewMemDB()
 	newapp := app.NewHaqq(
 		log.NewNopLogger(),
@@ -185,6 +186,7 @@ func setupChain(localMinGasPricesStr string) {
 		encoding.MakeConfig(app.ModuleBasics),
 		simutils.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
 		baseapp.SetMinGasPrices(localMinGasPricesStr),
+		baseapp.SetChainID(chainID),
 	)
 
 	genesisState := app.NewTestGenesisState(newapp.AppCodec())
@@ -196,7 +198,7 @@ func setupChain(localMinGasPricesStr string) {
 	// Initialize the chain
 	newapp.InitChain(
 		abci.RequestInitChain{
-			ChainId:         utils.TestEdge2ChainID + "-3",
+			ChainId:         chainID,
 			Validators:      []abci.ValidatorUpdate{},
 			AppStateBytes:   stateBytes,
 			ConsensusParams: app.DefaultConsensusParams,

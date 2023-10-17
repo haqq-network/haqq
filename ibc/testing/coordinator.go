@@ -1,7 +1,6 @@
 package ibctesting
 
 import (
-	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"math/rand"
 	"testing"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/v7/testing"
 	"github.com/haqq-network/haqq/app"
@@ -28,11 +28,10 @@ func NewCoordinator(t *testing.T, nEVMChains, mCosmosChains int) *ibctesting.Coo
 		CurrentTime: globalStartTime,
 	}
 
-	// setup EVM chains
-	ibctesting.DefaultTestingAppInit = DefaultTestingAppInit
-
 	for i := 1; i <= nEVMChains; i++ {
 		chainID := ibctesting.GetChainID(i)
+		// setup EVM chains
+		ibctesting.DefaultTestingAppInit = DefaultTestingAppInit(chainID)
 		chains[chainID] = NewTestChain(t, coord, chainID)
 	}
 

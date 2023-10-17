@@ -11,6 +11,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
@@ -43,8 +44,16 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 		Coins:   sdk.NewCoins(sdk.NewCoin("aISLM", sdk.NewInt(100000000000000))),
 	}
 
+	chainID := MainnetChainID + "-1"
 	db := dbm.NewMemDB()
-	app := NewHaqq(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, encoding.MakeConfig(ModuleBasics), simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome))
+	app := NewHaqq(
+		log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
+		db, nil, true,
+		map[int64]bool{}, DefaultNodeHome, 0,
+		encoding.MakeConfig(ModuleBasics),
+		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
+		baseapp.SetChainID(chainID),
+	)
 
 	genesisState := NewDefaultGenesisState()
 	genesisState = GenesisStateWithValSet(app, genesisState, valSet, []authtypes.GenesisAccount{acc}, balance)
@@ -53,7 +62,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 
 	app.InitChain(
 		abci.RequestInitChain{
-			ChainId:       MainnetChainID + "-1",
+			ChainId:       chainID,
 			Validators:    []abci.ValidatorUpdate{},
 			AppStateBytes: stateBytes,
 		},

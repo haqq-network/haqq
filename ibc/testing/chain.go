@@ -22,7 +22,7 @@ import (
 )
 
 // ChainIDPrefix defines the default chain ID prefix for Haqq Network test chains
-var ChainIDPrefix = "haqq_11235-"
+var ChainIDPrefix = "haqq_"
 
 func init() {
 	ibcgotesting.ChainIDPrefix = ChainIDPrefix

@@ -10,6 +10,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -51,6 +52,7 @@ func EthSetup(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState) sima
 
 // EthSetupWithDB initializes a new HaqqApp. A Nop logger is set in HaqqApp.
 func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState) simapp.GenesisState, db dbm.DB) *Haqq {
+	chainID := utils.TestEdge2ChainID + "-3"
 	app := NewHaqq(log.NewNopLogger(),
 		db,
 		nil,
@@ -59,7 +61,9 @@ func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState
 		DefaultNodeHome,
 		5,
 		encoding.MakeConfig(ModuleBasics),
-		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome))
+		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
+		baseapp.SetChainID(chainID),
+	)
 	if !isCheckTx {
 		// init chain must be called to stop deliverState from being nil
 		genesisState := NewTestGenesisState(app.AppCodec())
@@ -75,7 +79,7 @@ func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         utils.TestEdge2ChainID + "-3",
+				ChainId:         chainID,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
