@@ -96,6 +96,7 @@ func (k Keeper) CreateClawbackVestingAccount(
 		}
 		ak.SetAccount(ctx, vestingAcc)
 	} else {
+		codeHash := common.BytesToHash(crypto.Keccak256(nil))
 		baseAcc := authtypes.NewBaseAccountWithAddress(to)
 		vestingAcc = types.NewClawbackVestingAccount(
 			baseAcc,
@@ -104,7 +105,7 @@ func (k Keeper) CreateClawbackVestingAccount(
 			msg.StartTime,
 			msg.LockupPeriods,
 			msg.VestingPeriods,
-			nil,
+			&codeHash,
 		)
 		acc := ak.NewAccount(ctx, vestingAcc)
 		ak.SetAccount(ctx, acc)
