@@ -1,14 +1,15 @@
 package v162
 
 import (
-	errorsmod "cosmossdk.io/errors"
-	"errors"
 	"fmt"
+
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -29,7 +30,7 @@ func fixVestingAccounts(ctx sdk.Context, ak authkeeper.AccountKeeper) error {
 
 		vestingAcc, ok := acc.(*types.ClawbackVestingAccount)
 		if !ok {
-			return errors.New(fmt.Sprintf("account %s is not a vesting account", addr))
+			return fmt.Errorf("account %s is not a vesting account", addr)
 		}
 
 		codeHash := common.BytesToHash(crypto.Keccak256(nil))
