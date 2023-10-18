@@ -148,6 +148,7 @@ import (
 	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
 	v160 "github.com/haqq-network/haqq/app/upgrades/v1.6.0"
 	v161 "github.com/haqq-network/haqq/app/upgrades/v1.6.1"
+	v162 "github.com/haqq-network/haqq/app/upgrades/v1.6.2"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -178,7 +179,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.6.1"
+	UpgradeName    = "v1.6.2"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -1199,6 +1200,18 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.mm,
 			app.configurator,
 			app.AccountKeeper,
+		),
+	)
+
+	// v1.6.2 Evergreen fix
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v162.UpgradeName,
+		v162.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.AccountKeeper,
+			app.BankKeeper,
+			app.DistrKeeper,
 		),
 	)
 
