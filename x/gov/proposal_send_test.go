@@ -1,3 +1,5 @@
+//go:build norace
+
 package gov
 
 import (
