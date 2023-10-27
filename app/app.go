@@ -593,7 +593,6 @@ func NewHaqq(
 			encodingConfig.TxConfig,
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
-		// bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		haqqbank.NewAppModule(bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper), app.BankKeeper, app.Erc20Keeper),
 		// haqqbank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
@@ -750,7 +749,6 @@ func NewHaqq(
 	// transactions
 	app.sm = module.NewSimulationManager(
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
-		// bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		haqqbank.NewAppModule(bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper), app.BankKeeper, app.Erc20Keeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
