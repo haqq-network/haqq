@@ -150,6 +150,7 @@ import (
 	v160 "github.com/haqq-network/haqq/app/upgrades/v1.6.0"
 	v161 "github.com/haqq-network/haqq/app/upgrades/v1.6.1"
 	v162 "github.com/haqq-network/haqq/app/upgrades/v1.6.2"
+	v163 "github.com/haqq-network/haqq/app/upgrades/v1.6.3"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -180,7 +181,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.6.2"
+	UpgradeName    = "v1.6.3"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -1214,6 +1215,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.BankKeeper,
 			app.DistrKeeper,
 		),
+	)
+
+	// v1.6.3 RPC Balances fix
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v163.UpgradeName,
+		v163.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
 	// When a planned update height is reached, the old binary will panic
