@@ -67,7 +67,7 @@ func GetTotalLockedCmd() *cobra.Command {
 		Use:   "total",
 		Short: "Gets total summary of locked, unvested and vested tokens for all acounts",
 		Long:  "Gets total summary of locked, unvested and vested tokens for all acounts",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
