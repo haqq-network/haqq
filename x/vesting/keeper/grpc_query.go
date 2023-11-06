@@ -4,6 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -68,31 +69,24 @@ func (k Keeper) TotalLocked(
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	// Get vesting account
-	accounts := k.accountKeeper.GetAllAccounts(ctx)
-	if len(accounts) == 0 {
-		return nil, status.Errorf(codes.NotFound, "no accounts found")
-	}
-
 	totalLocked := sdk.NewCoins()
 	totalUnvested := sdk.NewCoins()
 	totalVested := sdk.NewCoins()
 
-	for _, acc := range accounts {
+	k.accountKeeper.IterateAccounts(ctx, func(acc authtypes.AccountI) bool {
 		// Check if clawback vesting account
 		clawbackAccount, isClawback := acc.(*types.ClawbackVestingAccount)
-		if !isClawback {
-			continue
+		if isClawback {
+			locked := clawbackAccount.GetLockedOnly(ctx.BlockTime())
+			unvested := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
+			vested := clawbackAccount.GetVestedOnly(ctx.BlockTime())
+
+			totalLocked = totalLocked.Add(locked...)
+			totalUnvested = totalUnvested.Add(unvested...)
+			totalVested = totalVested.Add(vested...)
 		}
-
-		locked := clawbackAccount.GetLockedOnly(ctx.BlockTime())
-		unvested := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
-		vested := clawbackAccount.GetVestedOnly(ctx.BlockTime())
-
-		totalLocked = totalLocked.Add(locked...)
-		totalUnvested = totalUnvested.Add(unvested...)
-		totalVested = totalVested.Add(vested...)
-	}
+		return false
+	})
 
 	return &types.QueryTotalLockedResponse{
 		Locked:   totalLocked,
