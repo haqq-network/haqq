@@ -13,6 +13,11 @@ service Query {
   rpc Balances(QueryBalancesRequest) returns (QueryBalancesResponse) {
     option (google.api.http).get = "/haqq/vesting/v1/balances/{address}";
   }
+
+  // TotalLocked retrieves the total summary of all unvested, vested and locked tokens
+  rpc TotalLocked(QueryTotalLockedRequest) returns (QueryTotalLockedResponse) {
+    option (google.api.http).get = "/haqq/vesting/v1/total_locked";
+  }
 }
 
 // QueryBalancesRequest is the request type for the Query/Balances RPC method.
@@ -33,4 +38,23 @@ message QueryBalancesResponse {
   // vested defines the current amount of vested tokens
   repeated cosmos.base.v1beta1.Coin vested = 3
       [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+// QueryTotalLockedRequest is the request type for the Query/TotalLocked RPC method.
+message QueryTotalLockedRequest {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+}
+
+// QueryTotalLockedResponse is the response type for the Query/TotalLocked RPC method.
+message QueryTotalLockedResponse {
+  // locked defines the current amount of locked tokens
+  repeated cosmos.base.v1beta1.Coin locked = 1
+  [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  // unvested defines the current amount of unvested tokens
+  repeated cosmos.base.v1beta1.Coin unvested = 2
+  [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  // vested defines the current amount of vested tokens
+  repeated cosmos.base.v1beta1.Coin vested = 3
+  [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
 }

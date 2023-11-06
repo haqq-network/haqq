@@ -1,7 +1,7 @@
 syntax = "proto3";
 package evmos.erc20.v1;
 
-import "haqq/erc20/v1/erc20.proto";
+import "evmos/erc20/v1/erc20.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/erc20/types";

@@ -2,7 +2,7 @@ syntax = "proto3";
 package evmos.epochs.v1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
-import "haqq/epochs/v1/genesis.proto";
+import "evmos/epochs/v1/genesis.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 
