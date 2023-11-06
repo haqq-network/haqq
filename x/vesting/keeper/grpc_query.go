@@ -57,3 +57,46 @@ func (k Keeper) Balances(
 		Vested:   vested,
 	}, nil
 }
+
+func (k Keeper) TotalLocked(
+	goCtx context.Context,
+	req *types.QueryTotalLockedRequest,
+) (*types.QueryTotalLockedResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	// Get vesting account
+	accounts := k.accountKeeper.GetAllAccounts(ctx)
+	if len(accounts) == 0 {
+		return nil, status.Errorf(codes.NotFound, "no accounts found")
+	}
+
+	totalLocked := sdk.NewCoins()
+	totalUnvested := sdk.NewCoins()
+	totalVested := sdk.NewCoins()
+
+	for _, acc := range accounts {
+		// Check if clawback vesting account
+		clawbackAccount, isClawback := acc.(*types.ClawbackVestingAccount)
+		if !isClawback {
+			continue
+		}
+
+		locked := clawbackAccount.GetLockedOnly(ctx.BlockTime())
+		unvested := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
+		vested := clawbackAccount.GetVestedOnly(ctx.BlockTime())
+
+		totalLocked = totalLocked.Add(locked...)
+		totalUnvested = totalUnvested.Add(unvested...)
+		totalVested = totalVested.Add(vested...)
+	}
+
+	return &types.QueryTotalLockedResponse{
+		Locked:   totalLocked,
+		Unvested: totalUnvested,
+		Vested:   totalVested,
+	}, nil
+}

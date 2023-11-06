@@ -12,6 +12,7 @@ import (
 // AccountKeeper defines the expected interface contract the vesting module
 // requires for storing accounts.
 type AccountKeeper interface {
+	GetAllAccounts(ctx sdk.Context) (accounts []authtypes.AccountI)
 	GetAccount(sdk.Context, sdk.AccAddress) authtypes.AccountI
 	SetAccount(sdk.Context, authtypes.AccountI)
 	NewAccount(ctx sdk.Context, acc authtypes.AccountI) authtypes.AccountI
