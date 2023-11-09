@@ -8,14 +8,14 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/haqq-network/haqq/contracts"
-	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/haqq-network/haqq/contracts"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 // NewQuerier returns a new sdk.Keeper instance.
-func NewQuerier(k bankkeeper.Keeper, erc20 erc20keeper.Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
+func NewQuerier(k bankkeeper.Keeper, erc20 ERC20Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) ([]byte, error) {
 		switch path[0] {
 		case types.QueryBalance:
@@ -36,7 +36,7 @@ func NewQuerier(k bankkeeper.Keeper, erc20 erc20keeper.Keeper, legacyQuerierCdc 
 	}
 }
 
-func queryBalance(ctx sdk.Context, req abci.RequestQuery, bk bankkeeper.Keeper, ek erc20keeper.Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+func queryBalance(ctx sdk.Context, req abci.RequestQuery, bk bankkeeper.Keeper, ek ERC20Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryBalanceRequest
 
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
@@ -83,7 +83,7 @@ func queryBalance(ctx sdk.Context, req abci.RequestQuery, bk bankkeeper.Keeper, 
 	return bz, nil
 }
 
-func queryAllBalance(ctx sdk.Context, req abci.RequestQuery, bk bankkeeper.Keeper, ek erc20keeper.Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+func queryAllBalance(ctx sdk.Context, req abci.RequestQuery, bk bankkeeper.Keeper, ek ERC20Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryAllBalancesRequest
 
 	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
