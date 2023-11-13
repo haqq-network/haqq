@@ -2,9 +2,12 @@ package keeper
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/spf13/cast"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -68,6 +71,13 @@ func (k Keeper) TotalLocked(
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	isEnabled, isSet := os.LookupEnv("HAQQ_ENABLE_VESTING_STATS")
+	if !isSet {
+		isEnabled = "false"
+	}
+	if !cast.ToBool(isEnabled) {
+		return nil, fmt.Errorf("vesting stats is disabled")
+	}
 
 	totalLocked := sdk.NewCoins()
 	totalUnvested := sdk.NewCoins()

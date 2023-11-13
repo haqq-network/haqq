@@ -84,7 +84,7 @@ func GetTotalLockedCmd() *cobra.Command {
 			}
 
 			return clientCtx.PrintString(
-				fmt.Sprintf("Total locked: %s\n Total unvested: %s\nTotal vested: %s\n", res.Locked, res.Unvested, res.Vested))
+				fmt.Sprintf("Total locked: %s\nTotal unvested: %s\nTotal vested: %s\n", res.Locked, res.Unvested, res.Vested))
 		},
 	}
 
