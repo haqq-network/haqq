@@ -16,7 +16,8 @@ service Query {
   }
 
   // EraTargetSupply retrieves current era target supply.
-  rpc EraClosingSupply(QueryEraClosingSupplyRequest) returns (QueryEraClosingSupplyResponse) {
+  rpc EraClosingSupply(QueryEraClosingSupplyRequest)
+      returns (QueryEraClosingSupplyResponse) {
     option (google.api.http).get = "/haqqd/coinomics/v1/era_closing_supply";
   }
 
@@ -38,9 +39,7 @@ service Query {
 }
 
 message QueryEraRequest {}
-message QueryEraResponse {
-  uint64 era = 1;
-}
+message QueryEraResponse { uint64 era = 1; }
 
 message QueryEraClosingSupplyRequest {}
 message QueryEraClosingSupplyResponse {
