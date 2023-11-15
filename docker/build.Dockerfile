@@ -1,11 +1,9 @@
 ### build stage
-FROM golang:1.20.6-alpine3.18 AS build-env
+FROM golang:1-bookworm AS build-env
 
 WORKDIR /go/src/github.com/haqq-network/haqq
 
 COPY go.mod go.sum ./
-
-RUN set -eux; apk add --no-cache ca-certificates=20230506-r0 build-base=0.5-r3 git=2.40.1-r0 linux-headers=6.3-r0
 
 RUN go mod download
 
@@ -29,7 +27,8 @@ RUN apk add --no-cache \
     ca-certificates=20230506-r0 jq=~1.6 \
     curl=~8.4 bash=~5.2 \
     vim=~9.0 lz4=~1.9 \
-    tini=~0.19
+    tini=~0.19 \
+    gcompat=~1.1
     
 RUN addgroup -g 1000 haqq \
     && adduser -S -h /home/haqq -D haqq -u 1000 -G haqq
