@@ -35,12 +35,13 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // MsgConvertCoin defines a Msg to convert a native Cosmos coin to a ERC20 token
 type MsgConvertCoin struct {
-	// coin is a Cosmos coin whose denomination is registered in a token pair. The coin
-	// amount defines the amount of coins to convert.
+	// coin is a Cosmos coin whose denomination is registered in a token pair. The
+	// coin amount defines the amount of coins to convert.
 	Coin types.Coin `protobuf:"bytes,1,opt,name=coin,proto3" json:"coin"`
 	// receiver is the hex address to receive ERC20 token
 	Receiver string `protobuf:"bytes,2,opt,name=receiver,proto3" json:"receiver,omitempty"`
-	// sender is the cosmos bech32 address from the owner of the given Cosmos coins
+	// sender is the cosmos bech32 address from the owner of the given Cosmos
+	// coins
 	Sender string `protobuf:"bytes,3,opt,name=sender,proto3" json:"sender,omitempty"`
 }
 
@@ -138,7 +139,8 @@ var xxx_messageInfo_MsgConvertCoinResponse proto.InternalMessageInfo
 // MsgConvertERC20 defines a Msg to convert a ERC20 token to a native Cosmos
 // coin.
 type MsgConvertERC20 struct {
-	// contract_address of an ERC20 token contract, that is registered in a token pair
+	// contract_address of an ERC20 token contract, that is registered in a token
+	// pair
 	ContractAddress string `protobuf:"bytes,1,opt,name=contract_address,json=contractAddress,proto3" json:"contract_address,omitempty"`
 	// amount of ERC20 tokens to convert
 	Amount github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,2,opt,name=amount,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"amount"`
@@ -405,8 +407,9 @@ type MsgClient interface {
 	// ConvertERC20 mints a native Cosmos coin representation of the ERC20 token
 	// contract that is registered on the token mapping.
 	ConvertERC20(ctx context.Context, in *MsgConvertERC20, opts ...grpc.CallOption) (*MsgConvertERC20Response, error)
-	// UpdateParams defined a governance operation for updating the x/erc20 module parameters.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateParams defined a governance operation for updating the x/erc20 module
+	// parameters. The authority is hard-coded to the Cosmos SDK x/gov module
+	// account
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
 
@@ -453,8 +456,9 @@ type MsgServer interface {
 	// ConvertERC20 mints a native Cosmos coin representation of the ERC20 token
 	// contract that is registered on the token mapping.
 	ConvertERC20(context.Context, *MsgConvertERC20) (*MsgConvertERC20Response, error)
-	// UpdateParams defined a governance operation for updating the x/erc20 module parameters.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateParams defined a governance operation for updating the x/erc20 module
+	// parameters. The authority is hard-coded to the Cosmos SDK x/gov module
+	// account
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 }
 

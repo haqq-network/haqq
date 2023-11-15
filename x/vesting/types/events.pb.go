@@ -169,7 +169,8 @@ func (m *EventClawback) GetDestination() string {
 	return ""
 }
 
-// EventUpdateVestingFunder defines the event type for updating the vesting funder
+// EventUpdateVestingFunder defines the event type for updating the vesting
+// funder
 type EventUpdateVestingFunder struct {
 	// funder is the address of the funder
 	Funder string `protobuf:"bytes,1,opt,name=funder,proto3" json:"funder,omitempty"`

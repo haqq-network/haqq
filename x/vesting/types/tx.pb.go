@@ -283,7 +283,8 @@ var xxx_messageInfo_MsgClawbackResponse proto.InternalMessageInfo
 type MsgUpdateVestingFunder struct {
 	// funder_address is the current funder address of the ClawbackVestingAccount
 	FunderAddress string `protobuf:"bytes,1,opt,name=funder_address,json=funderAddress,proto3" json:"funder_address,omitempty"`
-	// new_funder_address is the new address to replace the existing funder_address
+	// new_funder_address is the new address to replace the existing
+	// funder_address
 	NewFunderAddress string `protobuf:"bytes,2,opt,name=new_funder_address,json=newFunderAddress,proto3" json:"new_funder_address,omitempty"`
 	// vesting_address is the address of the ClawbackVestingAccount being updated
 	VestingAddress string `protobuf:"bytes,3,opt,name=vesting_address,json=vestingAddress,proto3" json:"vesting_address,omitempty"`
@@ -381,7 +382,8 @@ func (m *MsgUpdateVestingFunderResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgUpdateVestingFunderResponse proto.InternalMessageInfo
 
-// MsgConvertVestingAccount defines a message that enables converting a vesting account to a eth account
+// MsgConvertVestingAccount defines a message that enables converting a vesting
+// account to a eth account
 type MsgConvertVestingAccount struct {
 	// vesting_address is the address of the vesting account to convert
 	VestingAddress string `protobuf:"bytes,1,opt,name=vesting_address,json=vestingAddress,proto3" json:"vesting_address,omitempty"`
@@ -427,7 +429,8 @@ func (m *MsgConvertVestingAccount) GetVestingAddress() string {
 	return ""
 }
 
-// MsgConvertVestingAccountResponse defines the MsgConvertVestingAccount response type.
+// MsgConvertVestingAccountResponse defines the MsgConvertVestingAccount
+// response type.
 type MsgConvertVestingAccountResponse struct {
 }
 
@@ -464,7 +467,8 @@ func (m *MsgConvertVestingAccountResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgConvertVestingAccountResponse proto.InternalMessageInfo
 
-// MsgConvertIntoVestingAccount defines a message that enables converting a eth account to a vesting account
+// MsgConvertIntoVestingAccount defines a message that enables converting a eth
+// account to a vesting account
 type MsgConvertIntoVestingAccount struct {
 	// from_address specifies the account to provide the funds and sign the
 	// clawback request
@@ -483,8 +487,8 @@ type MsgConvertIntoVestingAccount struct {
 	// creates a new account. New grants to an existing account must be from the
 	// same from_address.
 	Merge bool `protobuf:"varint,6,opt,name=merge,proto3" json:"merge,omitempty"`
-	// stake specifies a the post-creation flow. If true, delegate the total amount to a specified
-	// validator. If false, do nothing.
+	// stake specifies a the post-creation flow. If true, delegate the total
+	// amount to a specified validator. If false, do nothing.
 	Stake bool `protobuf:"varint,7,opt,name=stake,proto3" json:"stake,omitempty"`
 	// validator_address specifies the validator to delegate tokens to.
 	ValidatorAddress string `protobuf:"bytes,8,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
@@ -579,7 +583,8 @@ func (m *MsgConvertIntoVestingAccount) GetValidatorAddress() string {
 	return ""
 }
 
-// MsgConvertIntoVestingAccountResponse defines the MsgConvertIntoVestingAccount response type.
+// MsgConvertIntoVestingAccountResponse defines the MsgConvertIntoVestingAccount
+// response type.
 type MsgConvertIntoVestingAccountResponse struct {
 }
 
@@ -710,7 +715,8 @@ type MsgClient interface {
 	UpdateVestingFunder(ctx context.Context, in *MsgUpdateVestingFunder, opts ...grpc.CallOption) (*MsgUpdateVestingFunderResponse, error)
 	// ConvertVestingAccount converts a ClawbackVestingAccount to a Eth account
 	ConvertVestingAccount(ctx context.Context, in *MsgConvertVestingAccount, opts ...grpc.CallOption) (*MsgConvertVestingAccountResponse, error)
-	// ConvertIntoVestingAccount converts a Eth account to a ClawbackVestingAccount
+	// ConvertIntoVestingAccount converts a Eth account to a
+	// ClawbackVestingAccount
 	ConvertIntoVestingAccount(ctx context.Context, in *MsgConvertIntoVestingAccount, opts ...grpc.CallOption) (*MsgConvertIntoVestingAccountResponse, error)
 }
 
@@ -779,7 +785,8 @@ type MsgServer interface {
 	UpdateVestingFunder(context.Context, *MsgUpdateVestingFunder) (*MsgUpdateVestingFunderResponse, error)
 	// ConvertVestingAccount converts a ClawbackVestingAccount to a Eth account
 	ConvertVestingAccount(context.Context, *MsgConvertVestingAccount) (*MsgConvertVestingAccountResponse, error)
-	// ConvertIntoVestingAccount converts a Eth account to a ClawbackVestingAccount
+	// ConvertIntoVestingAccount converts a Eth account to a
+	// ClawbackVestingAccount
 	ConvertIntoVestingAccount(context.Context, *MsgConvertIntoVestingAccount) (*MsgConvertIntoVestingAccountResponse, error)
 }
 

@@ -183,7 +183,8 @@ func (m *QueryTokenPairRequest) GetToken() string {
 // QueryTokenPairResponse is the response type for the Query/TokenPair RPC
 // method.
 type QueryTokenPairResponse struct {
-	// token_pairs returns the info about a registered token pair for the erc20 module
+	// token_pairs returns the info about a registered token pair for the erc20
+	// module
 	TokenPair TokenPair `protobuf:"bytes,1,opt,name=token_pair,json=tokenPair,proto3" json:"token_pair"`
 }
 

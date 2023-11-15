@@ -42,8 +42,8 @@ type MsgEthereumTx struct {
 	Size_ float64 `protobuf:"fixed64,2,opt,name=size,proto3" json:"-"`
 	// hash of the transaction in hex format
 	Hash string `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty" rlp:"-"`
-	// from is the ethereum signer address in hex format. This address value is checked
-	// against the address derived from the signature (V, R, S) using the
+	// from is the ethereum signer address in hex format. This address value is
+	// checked against the address derived from the signature (V, R, S) using the
 	// secp256k1 elliptic curve
 	From string `protobuf:"bytes,4,opt,name=from,proto3" json:"from,omitempty"`
 }
@@ -304,8 +304,8 @@ type MsgEthereumTxResponse struct {
 	// logs contains the transaction hash and the proto-compatible ethereum
 	// logs.
 	Logs []*Log `protobuf:"bytes,2,rep,name=logs,proto3" json:"logs,omitempty"`
-	// ret is the returned data from evm function (result or data supplied with revert
-	// opcode)
+	// ret is the returned data from evm function (result or data supplied with
+	// revert opcode)
 	Ret []byte `protobuf:"bytes,3,opt,name=ret,proto3" json:"ret,omitempty"`
 	// vm_error is the error returned by vm execution
 	VmError string `protobuf:"bytes,4,opt,name=vm_error,json=vmError,proto3" json:"vm_error,omitempty"`
@@ -533,8 +533,9 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	// EthereumTx defines a method submitting Ethereum transactions.
 	EthereumTx(ctx context.Context, in *MsgEthereumTx, opts ...grpc.CallOption) (*MsgEthereumTxResponse, error)
-	// UpdateParams defined a governance operation for updating the x/evm module parameters.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateParams defined a governance operation for updating the x/evm module
+	// parameters. The authority is hard-coded to the Cosmos SDK x/gov module
+	// account
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
 
@@ -568,8 +569,9 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 type MsgServer interface {
 	// EthereumTx defines a method submitting Ethereum transactions.
 	EthereumTx(context.Context, *MsgEthereumTx) (*MsgEthereumTxResponse, error)
-	// UpdateParams defined a governance operation for updating the x/evm module parameters.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateParams defined a governance operation for updating the x/evm module
+	// parameters. The authority is hard-coded to the Cosmos SDK x/gov module
+	// account
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 }
 

@@ -142,7 +142,8 @@ func (m *QueryBalancesResponse) GetVested() github_com_cosmos_cosmos_sdk_types.C
 	return nil
 }
 
-// QueryTotalLockedRequest is the request type for the Query/TotalLocked RPC method.
+// QueryTotalLockedRequest is the request type for the Query/TotalLocked RPC
+// method.
 type QueryTotalLockedRequest struct {
 }
 
@@ -179,7 +180,8 @@ func (m *QueryTotalLockedRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryTotalLockedRequest proto.InternalMessageInfo
 
-// QueryTotalLockedResponse is the response type for the Query/TotalLocked RPC method.
+// QueryTotalLockedResponse is the response type for the Query/TotalLocked RPC
+// method.
 type QueryTotalLockedResponse struct {
 	// locked defines the current amount of locked tokens
 	Locked github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,1,rep,name=locked,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"locked"`
@@ -298,9 +300,11 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// Balances retrieves the unvested, vested and locked tokens for a vesting account
+	// Balances retrieves the unvested, vested and locked tokens for a vesting
+	// account
 	Balances(ctx context.Context, in *QueryBalancesRequest, opts ...grpc.CallOption) (*QueryBalancesResponse, error)
-	// TotalLocked retrieves the total summary of all unvested, vested and locked tokens
+	// TotalLocked retrieves the total summary of all unvested, vested and locked
+	// tokens
 	TotalLocked(ctx context.Context, in *QueryTotalLockedRequest, opts ...grpc.CallOption) (*QueryTotalLockedResponse, error)
 }
 
@@ -332,9 +336,11 @@ func (c *queryClient) TotalLocked(ctx context.Context, in *QueryTotalLockedReque
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// Balances retrieves the unvested, vested and locked tokens for a vesting account
+	// Balances retrieves the unvested, vested and locked tokens for a vesting
+	// account
 	Balances(context.Context, *QueryBalancesRequest) (*QueryBalancesResponse, error)
-	// TotalLocked retrieves the total summary of all unvested, vested and locked tokens
+	// TotalLocked retrieves the total summary of all unvested, vested and locked
+	// tokens
 	TotalLocked(context.Context, *QueryTotalLockedRequest) (*QueryTotalLockedResponse, error)
 }
 

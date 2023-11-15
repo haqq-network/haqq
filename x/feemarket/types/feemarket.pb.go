@@ -34,11 +34,13 @@ type Params struct {
 	// elasticity_multiplier bounds the maximum gas limit an EIP-1559 block may
 	// have.
 	ElasticityMultiplier uint32 `protobuf:"varint,3,opt,name=elasticity_multiplier,json=elasticityMultiplier,proto3" json:"elasticity_multiplier,omitempty"`
-	// enable_height defines at which block height the base fee calculation is enabled.
+	// enable_height defines at which block height the base fee calculation is
+	// enabled.
 	EnableHeight int64 `protobuf:"varint,5,opt,name=enable_height,json=enableHeight,proto3" json:"enable_height,omitempty"`
 	// base_fee for EIP-1559 blocks.
 	BaseFee github_com_cosmos_cosmos_sdk_types.Int `protobuf:"bytes,6,opt,name=base_fee,json=baseFee,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Int" json:"base_fee"`
-	// min_gas_price defines the minimum gas price value for cosmos and eth transactions
+	// min_gas_price defines the minimum gas price value for cosmos and eth
+	// transactions
 	MinGasPrice github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,7,opt,name=min_gas_price,json=minGasPrice,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"min_gas_price"`
 	// min_gas_multiplier bounds the minimum gas used to be charged
 	// to senders based on gas limit
