@@ -23,6 +23,7 @@ func GetQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		GetBalancesCmd(),
+		GetTotalLockedCmd(),
 	)
 	return cmd
 }
@@ -53,6 +54,37 @@ func GetBalancesCmd() *cobra.Command {
 
 			return clientCtx.PrintString(
 				fmt.Sprintf("Locked: %s\nUnvested: %s\nVested: %s\n", res.Locked, res.Unvested, res.Vested))
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+// GetTotalLockedCmd queries summary of the locked, vested and unvested tokens for all accounts
+func GetTotalLockedCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "total",
+		Short: "Gets total summary of locked, unvested and vested tokens for all acounts",
+		Long:  "Gets total summary of locked, unvested and vested tokens for all acounts",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+
+			req := &types.QueryTotalLockedRequest{}
+
+			res, err := queryClient.TotalLocked(context.Background(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintString(
+				fmt.Sprintf("Total locked: %s\nTotal unvested: %s\nTotal vested: %s\n", res.Locked, res.Unvested, res.Vested))
 		},
 	}
 
