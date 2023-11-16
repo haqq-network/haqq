@@ -39,7 +39,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 		malleate           func()
 		from               sdk.AccAddress
 		to                 sdk.AccAddress
-		startTime          time.Time
 		lockup             sdkvesting.Periods
 		vesting            sdkvesting.Periods
 		merge              bool
@@ -51,7 +50,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			false,
@@ -63,7 +61,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			nil,
 			vestingPeriods,
 			false,
@@ -75,7 +72,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			nil,
 			false,
@@ -87,7 +83,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			sdkvesting.Periods{
 				{Length: 5000, Amount: quarter},
 			},
@@ -109,7 +104,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			false,
@@ -121,7 +115,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			func() {},
 			addr,
 			addr,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			false,
@@ -133,7 +126,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			func() {},
 			addr,
 			addr,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			true,
@@ -153,7 +145,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			},
 			addr2,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			true,
@@ -173,7 +164,6 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			true,
@@ -194,7 +184,7 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			msg := types.NewMsgCreateClawbackVestingAccount(
 				tc.from,
 				tc.to,
-				tc.startTime,
+				suite.ctx.BlockTime().Add(-1*time.Second),
 				tc.lockup,
 				tc.vesting,
 				tc.merge,
@@ -594,7 +584,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 		malleate           func()
 		from               sdk.AccAddress
 		to                 sdk.AccAddress
-		startTime          time.Time
 		lockup             sdkvesting.Periods
 		vesting            sdkvesting.Periods
 		merge              bool
@@ -608,7 +597,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			false,
@@ -622,7 +610,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			nil,
 			vestingPeriods,
 			false,
@@ -636,7 +623,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			nil,
 			false,
@@ -650,7 +636,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			nil,
 			false,
@@ -664,7 +649,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			false,
@@ -680,7 +664,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			},
 			addr,
 			addr2,
-			time.Now(),
 			sdkvesting.Periods{{Length: 5000, Amount: sdk.NewCoins(sdk.NewInt64Coin("NBND", 500))}},
 			nil,
 			false,
@@ -699,7 +682,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			},
 			addr,
 			addr3,
-			time.Now(),
 			lockupPeriods,
 			nil,
 			false,
@@ -718,7 +700,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			},
 			addr,
 			addr3,
-			time.Now(),
 			lockupPeriods,
 			nil,
 			false,
@@ -732,7 +713,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			func() {},
 			addr,
 			addr2,
-			time.Now(),
 			sdkvesting.Periods{
 				{Length: 5000, Amount: quarter},
 			},
@@ -756,7 +736,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			false,
@@ -778,7 +757,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			},
 			addr2,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			true,
@@ -800,7 +778,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			vestingPeriods,
 			true,
@@ -822,7 +799,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			nil,
 			true,
@@ -844,7 +820,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			},
 			addr,
 			addr2,
-			time.Now(),
 			lockupPeriods,
 			sdkvesting.Periods{
 				{Length: 0, Amount: quarter},
@@ -867,7 +842,6 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			},
 			addr,
 			addr5,
-			time.Now(),
 			lockupPeriods,
 			nil,
 			true,
@@ -902,7 +876,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			msg := types.NewMsgConvertIntoVestingAccount(
 				tc.from,
 				tc.to,
-				tc.startTime,
+				suite.ctx.BlockTime().Add(-1*time.Second),
 				tc.lockup,
 				tc.vesting,
 				tc.merge,

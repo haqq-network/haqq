@@ -45,5 +45,5 @@ jobs:
           context: .
           file: docker/build.Dockerfile
           push: true
-          platforms: linux/amd64, linux/386, linux/arm64
+          platforms: linux/amd64, linux/arm64
           tags: ${{ secrets.DOCKERHUB_USER }}/${{ secrets.DOCKERHUB_IMAGE }}:latest, ${{ secrets.DOCKERHUB_USER }}/${{ secrets.DOCKERHUB_IMAGE }}:${{ steps.meta.outputs.tag }}

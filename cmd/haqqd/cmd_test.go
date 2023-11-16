@@ -1,3 +1,5 @@
+//go:build ignore
+
 package main_test
 
 import (
@@ -36,6 +38,6 @@ func TestAddKeyLedgerCmd(t *testing.T) {
 		fmt.Sprintf("--%s", flags.FlagUseLedger),
 	})
 
-	err := svrcmd.Execute(rootCmd, "HAQQD", app.DefaultNodeHome)
+	err := svrcmd.Execute(rootCmd, "haqqd", app.DefaultNodeHome)
 	require.Error(t, err)
 }

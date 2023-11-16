@@ -118,10 +118,12 @@ import (
 	"github.com/haqq-network/haqq/x/feemarket"
 	feemarketkeeper "github.com/haqq-network/haqq/x/feemarket/keeper"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
+
 	// unnamed import of statik for swagger UI support
 	_ "github.com/haqq-network/haqq/client/docs/statik"
 
 	"github.com/haqq-network/haqq/app/ante"
+	haqqbank "github.com/haqq-network/haqq/x/bank"
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 	"github.com/haqq-network/haqq/x/coinomics"
 	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
@@ -146,10 +148,14 @@ import (
 	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
 	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
 	v160 "github.com/haqq-network/haqq/app/upgrades/v1.6.0"
+	v161 "github.com/haqq-network/haqq/app/upgrades/v1.6.1"
+	v162 "github.com/haqq-network/haqq/app/upgrades/v1.6.2"
+	v163 "github.com/haqq-network/haqq/app/upgrades/v1.6.3"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
+
 	// Force-load the tracer engines to trigger registration due to Go-Ethereum v1.10.15 changes
 	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
 	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
@@ -175,7 +181,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.6.0"
+	UpgradeName    = "v1.6.3"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -525,7 +531,7 @@ func NewHaqq(
 
 	app.TransferKeeper = transferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		nil, // ICS4 Wrapper
+		app.IBCKeeper.ChannelKeeper, // ICS4 Wrapper
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
@@ -537,7 +543,7 @@ func NewHaqq(
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, app.keys[icahosttypes.StoreKey],
 		app.GetSubspace(icahosttypes.SubModuleName),
-		nil,
+		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
@@ -588,7 +594,7 @@ func NewHaqq(
 			encodingConfig.TxConfig,
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
+		haqqbank.NewAppModule(bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper), app.BankKeeper, app.Erc20Keeper),
 		// haqqbank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
@@ -744,7 +750,7 @@ func NewHaqq(
 	// transactions
 	app.sm = module.NewSimulationManager(
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
+		haqqbank.NewAppModule(bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper), app.BankKeeper, app.Erc20Keeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
 		// mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
@@ -1187,6 +1193,34 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.SlashingKeeper,
 			app.BankKeeper,
 		),
+	)
+
+	// v1.6.1 Security upgrade
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v161.UpgradeName,
+		v161.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.AccountKeeper,
+		),
+	)
+
+	// v1.6.2 Evergreen fix
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v162.UpgradeName,
+		v162.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.AccountKeeper,
+			app.BankKeeper,
+			app.DistrKeeper,
+		),
+	)
+
+	// v1.6.3 RPC Balances fix
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v163.UpgradeName,
+		v163.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
 	// When a planned update height is reached, the old binary will panic
