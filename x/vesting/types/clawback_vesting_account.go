@@ -47,7 +47,7 @@ func NewClawbackVestingAccount(
 		EndTime:         endTime,
 	}
 
-	codeHash := ""
+	codeHash := common.BytesToHash(crypto.Keccak256(nil)).Hex()
 	if code != nil {
 		codeHash = code.Hex()
 	}

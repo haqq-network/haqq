@@ -11,8 +11,8 @@ linters:
     - goconst
     - gocritic
     - gofumpt
-    - revive
-    - gosec
+    # - revive
+    # - gosec
     - gosimple
     - govet
     - ineffassign

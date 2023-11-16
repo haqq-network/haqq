@@ -28,7 +28,8 @@ message EventClawback {
   string destination = 3;
 }
 
-// EventUpdateVestingFunder defines the event type for updating the vesting funder
+// EventUpdateVestingFunder defines the event type for updating the vesting
+// funder
 message EventUpdateVestingFunder {
   // funder is the address of the funder
   string funder = 1;

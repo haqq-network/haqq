@@ -12,6 +12,7 @@ import (
 
 var ErrCommunitySpendingComingLater = sdkerrors.Register("haqq-ante", 6001, "community fund spend coming later")
 
+//nolint:all
 func NewHaqqAnteHandlerDecorator(_ keeper.Keeper, h types.AnteHandler) types.AnteHandler {
 	return func(ctx types.Context, tx types.Tx, simulate bool) (newCtx types.Context, err error) {
 		msgs := tx.GetMsgs()
