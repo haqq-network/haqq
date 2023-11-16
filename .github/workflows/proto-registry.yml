@@ -5,8 +5,8 @@ on:
   push:
     # branches:
     #   - master
-    paths:
-      - "proto/**"
+    # paths:
+    #   - "proto/**"
 
 jobs:
   push:
