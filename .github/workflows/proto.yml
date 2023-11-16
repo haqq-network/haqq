@@ -3,28 +3,42 @@ name: Protobuf
 # This workflow is only run when a .proto file has been changed
 on:
   pull_request:
+    paths:
+      - "proto/**"
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: technote-space/get-diff-action@v6.1.2
+        id: git_diff
+        with:
+          PATTERNS: |
+            **/**.proto
+            **/buf.yaml
+            buf.work.yaml
+            buf.gen.yaml
+      - run: |
+          make proto-gen
+        if: env.GIT_DIFF
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v2.4.0
-      - uses: technote-space/get-diff-action@v5
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1.28.1
+      - uses: bufbuild/buf-lint-action@v1
         with:
-          PATTERNS: |
-            **/**.proto
-      - name: lint
-        run: make proto-lint
-        if: env.GIT_DIFF
-  breakage:
+          input: "proto"
+
+  break-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.4.0
-      - uses: technote-space/get-diff-action@v5
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1.28.1
+      - uses: bufbuild/buf-breaking-action@v1
         with:
-          PATTERNS: |
-            **/**.proto
-      - name: check-breakage
-        run: make proto-check-breaking
-        if: env.GIT_DIFF
+          input: "proto"
+          against: "https://github.com/${{ github.repository }}.git#branch=${{ github.event.pull_request.base.ref }},ref=HEAD~1,subdir=proto"
