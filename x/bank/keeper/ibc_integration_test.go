@@ -658,7 +658,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						})
 						s.Require().NoError(err)
 						s.Require().True(aislmSenderGrpcBalanceBefore.Balance.Sub(fee).IsGTE(*aislmSenderGrpcBalanceAfter.Balance))
-						s.Require().True(aislmSenderGrpcBalanceAfter.Balance.IsGTE((*aislmSenderGrpcBalanceBefore.Balance).Sub(fee)))
+						s.Require().True(aislmSenderGrpcBalanceAfter.Balance.IsGTE(aislmSenderGrpcBalanceBefore.Balance.Sub(fee)))
 
 						// Receiver must have the same uosmo balance on both SDK and EVM layers as before
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
@@ -694,7 +694,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 						s.HaqqChain.Coordinator.CommitBlock()
 
-						// Get the initial balances after convertion
+						// Get the initial balances after conversion
 						uosmoSenderBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
 						s.Require().Equal(sixUosmo.Amount.Int64(), uosmoSenderBalanceBefore.Amount.Int64())
 						aislmSenderBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
@@ -837,7 +837,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						})
 						s.Require().NoError(err)
 						s.Require().True(aislmSenderGrpcBalanceBefore.Balance.Sub(fee).IsGTE(*aislmSenderGrpcBalanceAfter.Balance))
-						s.Require().True(aislmSenderGrpcBalanceAfter.Balance.IsGTE((*aislmSenderGrpcBalanceBefore.Balance).Sub(fee)))
+						s.Require().True(aislmSenderGrpcBalanceAfter.Balance.IsGTE(aislmSenderGrpcBalanceBefore.Balance.Sub(fee)))
 
 						// Receiver must have the same uosmo balance on both SDK and EVM layers as before
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
@@ -873,7 +873,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 						s.HaqqChain.Coordinator.CommitBlock()
 
-						// Get the initial balances after convertion
+						// Get the initial balances after conversion
 						uosmoSenderBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoSenderBalanceBefore.IsZero())
 						aislmSenderBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
@@ -1016,7 +1016,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						})
 						s.Require().NoError(err)
 						s.Require().True(aislmSenderGrpcBalanceBefore.Balance.Sub(fee).IsGTE(*aislmSenderGrpcBalanceAfter.Balance))
-						s.Require().True(aislmSenderGrpcBalanceAfter.Balance.IsGTE((*aislmSenderGrpcBalanceBefore.Balance).Sub(fee)))
+						s.Require().True(aislmSenderGrpcBalanceAfter.Balance.IsGTE(aislmSenderGrpcBalanceBefore.Balance.Sub(fee)))
 
 						// Receiver must have the same uosmo balance on both SDK and EVM layers as before
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)

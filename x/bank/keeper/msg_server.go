@@ -2,19 +2,20 @@ package keeper
 
 import (
 	"context"
-	errorsmod "cosmossdk.io/errors"
-	"github.com/armon/go-metrics"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/haqq-network/haqq/contracts"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
+	"github.com/armon/go-metrics"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/haqq-network/haqq/contracts"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 type msgServer struct {
