@@ -2,17 +2,19 @@
   description = "A very basic flake";
 
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/22.05;
-    nixpkgs-unstable.url = github:NixOS/nixpkgs/nixpkgs-unstable;
+    nixpkgs.url = "github:NixOS/nixpkgs/23.05";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
     };
+
+    devenv.url = "github:cachix/devenv";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -20,18 +22,15 @@
         pkgsUnstable = import nixpkgs-unstable { inherit system; };
       in
       {
-        devShell = pkgs.mkShell {
-          buildInputs = (
-            with pkgs; [
-              gh
-              yarn
-            ]
-          ) ++ (
-            with pkgsUnstable; [
-              go
-            ]
-          );
+        devShells = {
+          default = devenv.lib.mkShell {
+            inherit inputs pkgs;
+            modules = [
+              (import ./nix/devshell.nix { inherit pkgs; })
+            ];
+          };
         };
       }
     );
 }
+

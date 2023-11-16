@@ -7,3 +7,4 @@ x/**/spec/* linguist-documentation
 **/*.pb.go linguist-generated
 **/*.pb.gw.go linguist-generated
 *.gz filter=lfs diff=lfs merge=lfs -text
+flake.lock linguist-generated

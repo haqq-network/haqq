@@ -1,30 +1,44 @@
 #!/usr/bin/env bash
+set -euxo pipefail
 
-set -eo pipefail
+SWAGGER_PROTO_DIR=swagger-proto
+SWAGGER_TMP_DIR=tmp-swagger-gen
 
-mkdir -p ./tmp-swagger-gen
-proto_dirs=$(find ./proto ./third_party/proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
+mkdir -p "${SWAGGER_PROTO_DIR}/proto"
+
+printf "version: v1\ndirectories:\n  - proto\n  - third_party" > "${SWAGGER_PROTO_DIR}/buf.work.yaml"
+printf "version: v1\nname: buf.build/haqq-network/haqq\n" > "$SWAGGER_PROTO_DIR/proto/buf.yaml"
+
+ln -snf ../../proto/buf.gen.swagger.yaml ${SWAGGER_PROTO_DIR}/proto/buf.gen.swagger.yaml
+
+ln -snf ../../proto/haqq "${SWAGGER_PROTO_DIR}/proto/haqq"
+ln -snf ../../proto/evmos "${SWAGGER_PROTO_DIR}/proto/evmos"
+ln -snf ../../proto/ethermint "${SWAGGER_PROTO_DIR}/proto/ethermint"
+
+# intermediate results of buf generate
+mkdir -p $SWAGGER_TMP_DIR
+
+cd $SWAGGER_PROTO_DIR
+
+PATHS=""
+proto_dirs=$(find -L ./proto ./third_party -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 for dir in $proto_dirs; do
     
     # generate swagger files (filter query files)
-    query_file=$(find "${dir}" -maxdepth 1 -name 'query.proto')
-    if [[ ! -z "$query_file" ]]; then
-        protoc  \
-        -I "proto" \
-        -I "third_party/proto" \
-        "$query_file" \
-        --swagger_out ./tmp-swagger-gen \
-        --swagger_opt logtostderr=true --swagger_opt fqn_for_swagger_name=true --swagger_opt simple_operation_ids=true
+    query_file=$(find "${dir}" -maxdepth 1 \( -name 'query.proto' -o -name 'service.proto' \))
+    if [[ -n "$query_file" ]]; then
+	PATHS="$PATHS --path $query_file"
     fi
 done
 
-# combine swagger files
-# uses nodejs package `swagger-combine`.
-# all the individual swagger files need to be configured in `config.json` for merging
-swagger-combine ./client/docs/config.json -o ./client/docs/swagger-ui/swagger.yaml -f yaml --continueOnConflictingPaths true --includeDefinitions true
+eval "buf generate --template proto/buf.gen.swagger.yaml $PATHS"
 
-# clean swagger files
-rm -rf ./tmp-swagger-gen
+cd ..
+
+cat tmp-swagger-gen/apidocs.swagger.json | jq '.info.title |= "Haqq gRPC Gateway API"' | jq '.info.version |= "0.1.0"' > client/docs/swagger-ui/swagger.json
+# cp tmp-swagger-gen/apidocs.swagger.yaml client/docs/swagger-ui/swagger.yaml
 
 # generate binary for static server
 statik -src=./client/docs/swagger-ui -dest=./client/docs
+
+rm -rf $SWAGGER_TMP_DIR $SWAGGER_PROTO_DIR

@@ -166,7 +166,8 @@ clean:
 	rm -rf \
     $(BUILDDIR)/ \
     artifacts/ \
-    tmp-swagger-gen/
+    tmp-swagger-gen/ \
+    swagger-proto/
 
 all: build
 
@@ -207,7 +208,7 @@ endif
 
 ifeq (, $(shell which go-bindata))
 	@echo "Installing go-bindata..."
-	@go get github.com/kevinburke/go-bindata/go-bindata
+	@go install github.com/kevinburke/go-bindata/v4/...@latest
 else
 	@echo "go-bindata already installed; skipping..."
 endif
@@ -476,8 +477,15 @@ proto-gen:
 	@echo "Generating Protobuf files"
 	$(protoImage) sh ./scripts/protocgen.sh
 
+SWAGGER_DIR=$(realpath .)/swagger-proto
+export THIRD_PARTY_DIR=$(SWAGGER_DIR)/third_party
+
+proto-swagger-download-deps:
+	@./scripts/proto-swagger-download-deps.sh
+
 proto-swagger-gen:
 	@echo "Generating Protobuf Swagger"
+	@make proto-swagger-download-deps
 	@./scripts/protoc-swagger-gen.sh
 
 proto-format:
@@ -489,7 +497,6 @@ proto-lint:
 
 proto-check-breaking:
 	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=master
-
 
 TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.15/proto/tendermint
 GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos

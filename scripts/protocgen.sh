@@ -23,3 +23,6 @@ done
 # move proto files to the right places
 cp -r github.com/haqq-network/haqq/* ./
 rm -rf github.com
+
+go mod tidy
+
