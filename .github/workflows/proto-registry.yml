@@ -3,8 +3,8 @@ name: Buf-Push
 # This workflow is only run when a .proto file has been changed
 on:
   push:
-    branches:
-      - master
+    # branches:
+    #   - master
     paths:
       - "proto/**"
 
