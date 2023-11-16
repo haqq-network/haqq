@@ -7201,8 +7201,7 @@
             "description": "The denomination trace ([port_id]/[channel_id])+/[denom]",
             "in": "path",
             "required": true,
-            "type": "string",
-            "pattern": ".+"
+            "type": "string"
           }
         ],
         "tags": [
@@ -7297,40 +7296,7 @@
             "description": "hash (in hex format) or denom (full denom with ibc prefix) of the denomination trace information.",
             "in": "path",
             "required": true,
-            "type": "string",
-            "pattern": ".+"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/transfer/v1/denoms/{denom}/total_escrow": {
-      "get": {
-        "summary": "TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.",
-        "operationId": "TotalEscrowForDenom",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "denom",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "pattern": ".+"
+            "type": "string"
           }
         ],
         "tags": [
@@ -7566,45 +7532,6 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/ibc.core.channel.v1.QueryNextSequenceReceiveResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "channelId",
-            "description": "channel unique identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "portId",
-            "description": "port unique identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/next_sequence_send": {
-      "get": {
-        "summary": "NextSequenceSend returns the next send sequence for a given channel.",
-        "operationId": "NextSequenceSend",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.core.channel.v1.QueryNextSequenceSendResponse"
             }
           },
           "default": {
@@ -8730,101 +8657,6 @@
             }
           }
         },
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/lightclients/wasm/v1/checksums": {
-      "get": {
-        "summary": "Get all Wasm checksums",
-        "operationId": "Checksums",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.lightclients.wasm.v1.QueryChecksumsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "pagination.key",
-            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "pagination.offset",
-            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "pagination.limit",
-            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "pagination.countTotal",
-            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "pagination.reverse",
-            "description": "reverse is set to true if results are to be returned in the descending order.\n\nSince: cosmos-sdk 0.43",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/lightclients/wasm/v1/checksums/{checksum}/code": {
-      "get": {
-        "summary": "Get Wasm code for given code hash",
-        "operationId": "Code",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.lightclients.wasm.v1.QueryCodeResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "checksum",
-            "description": "checksum is a hex encoded string of the code stored.",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
         "tags": [
           "Query"
         ]
@@ -12484,7 +12316,7 @@
         "height": {
           "type": "string",
           "format": "int64",
-          "description": "The height at which the upgrade must be performed."
+          "description": "The height at which the upgrade must be performed.\nOnly used if Time is not set."
         },
         "info": {
           "type": "string",
@@ -13452,10 +13284,6 @@
             "$ref": "#/definitions/ibc.applications.fee.v1.FeeEnabledChannel"
           },
           "title": "list of fee enabled channels"
-        },
-        "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
-          "description": "pagination defines the pagination in the response."
         }
       },
       "title": "QueryFeeEnabledChannelsResponse defines the response type for the FeeEnabledChannels rpc"
@@ -13480,10 +13308,6 @@
             "$ref": "#/definitions/ibc.applications.fee.v1.IdentifiedPacketFees"
           },
           "title": "Map of all incentivized_packets"
-        },
-        "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
-          "description": "pagination defines the pagination in the response."
         }
       },
       "title": "QueryIncentivizedPacketsResponse defines the response type for the incentivized packets RPC"
@@ -13498,10 +13322,6 @@
             "$ref": "#/definitions/ibc.applications.fee.v1.IdentifiedPacketFees"
           },
           "title": "list of identified fees for incentivized packets"
-        },
-        "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
-          "description": "pagination defines the pagination in the response."
         }
       },
       "title": "QueryIncentivizedPacketsResponse defines the response type for the IncentivizedPackets rpc"
@@ -13699,15 +13519,6 @@
         }
       },
       "description": "QueryParamsResponse is the response type for the Query/Params RPC method."
-    },
-    "ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse": {
-      "type": "object",
-      "properties": {
-        "amount": {
-          "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-        }
-      },
-      "description": "QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method."
     },
     "ibc.core.channel.v1.Channel": {
       "type": "object",
@@ -13968,26 +13779,6 @@
       },
       "title": "QuerySequenceResponse is the request type for the\nQuery/QueryNextSequenceReceiveResponse RPC method"
     },
-    "ibc.core.channel.v1.QueryNextSequenceSendResponse": {
-      "type": "object",
-      "properties": {
-        "nextSequenceSend": {
-          "type": "string",
-          "format": "uint64",
-          "title": "next sequence send number"
-        },
-        "proof": {
-          "type": "string",
-          "format": "byte",
-          "title": "merkle proof of existence"
-        },
-        "proofHeight": {
-          "$ref": "#/definitions/ibc.core.client.v1.Height",
-          "title": "height at which the proof was retrieved"
-        }
-      },
-      "title": "QueryNextSequenceSendResponse is the request type for the\nQuery/QueryNextSequenceSend RPC method"
-    },
     "ibc.core.channel.v1.QueryPacketAcknowledgementResponse": {
       "type": "object",
       "properties": {
@@ -14190,7 +13981,7 @@
           "items": {
             "type": "string"
           },
-          "description": "allowed_clients defines the list of allowed client state types which can be created\nand interacted with. If a client type is removed from the allowed clients list, usage\nof this client will be disabled until it is added again to the list."
+          "description": "allowed_clients defines the list of allowed client state types."
         }
       },
       "description": "Params defines the set of IBC light client parameters."
@@ -14574,33 +14365,6 @@
       },
       "description": "Version defines the versioning scheme used to negotiate the IBC verison in\nthe connection handshake."
     },
-    "ibc.lightclients.wasm.v1.QueryChecksumsResponse": {
-      "type": "object",
-      "properties": {
-        "checksums": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "checksums is a list of the hex encoded checksums of all wasm codes stored."
-        },
-        "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
-          "description": "pagination defines the pagination in the response."
-        }
-      },
-      "description": "QueryChecksumsResponse is the response type for the Query/Checksums RPC method."
-    },
-    "ibc.lightclients.wasm.v1.QueryCodeResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "string",
-          "format": "byte"
-        }
-      },
-      "description": "QueryCodeResponse is the response type for the Query/Code RPC method."
-    },
     "tendermint.abci.Event": {
       "type": "object",
       "properties": {
@@ -14647,7 +14411,7 @@
           "format": "byte"
         }
       },
-      "title": "PublicKey defines the keys available for use with Validators"
+      "title": "PublicKey defines the keys available for use with Tendermint Validators"
     },
     "tendermint.p2p.DefaultNodeInfo": {
       "type": "object",
@@ -14746,8 +14510,7 @@
         "BLOCK_ID_FLAG_NIL"
       ],
       "default": "BLOCK_ID_FLAG_UNKNOWN",
-      "description": "- BLOCK_ID_FLAG_UNKNOWN: indicates an error condition\n - BLOCK_ID_FLAG_ABSENT: the vote was not received\n - BLOCK_ID_FLAG_COMMIT: voted for the block that received the majority\n - BLOCK_ID_FLAG_NIL: voted for nil",
-      "title": "BlockIdFlag indicates which BlockID the signature is for"
+      "title": "BlockIdFlag indicates which BlcokID the signature is for"
     },
     "tendermint.types.Commit": {
       "type": "object",
@@ -14926,7 +14689,7 @@
           "title": "original proposer of the block"
         }
       },
-      "description": "Header defines the structure of a block header."
+      "description": "Header defines the structure of a Tendermint block header."
     },
     "tendermint.types.LightBlock": {
       "type": "object",
@@ -15074,21 +14837,10 @@
         },
         "signature": {
           "type": "string",
-          "format": "byte",
-          "description": "Vote signature by the validator if they participated in consensus for the\nassociated block."
-        },
-        "extension": {
-          "type": "string",
-          "format": "byte",
-          "description": "Vote extension provided by the application. Only valid for precommit\nmessages."
-        },
-        "extensionSignature": {
-          "type": "string",
-          "format": "byte",
-          "description": "Vote extension signature by the validator if they participated in\nconsensus for the associated block.\nOnly valid for precommit messages."
+          "format": "byte"
         }
       },
-      "description": "Vote represents a prevote or precommit vote from validators for\nconsensus."
+      "description": "Vote represents a prevote, precommit, or commit vote from validators for\nconsensus."
     },
     "tendermint.version.Consensus": {
       "type": "object",
