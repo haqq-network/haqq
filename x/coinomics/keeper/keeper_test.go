@@ -87,7 +87,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.app = app
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
-		ChainID:         haqqtypes.LocalNetChainID + "-1",
+		ChainID:         haqqtypes.MainNetChainID + "-1",
 		Time:            time.Now().UTC(),
 		ProposerAddress: valAddr1,
 
