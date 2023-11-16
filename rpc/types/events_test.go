@@ -12,6 +12,7 @@ import (
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
+//nolint:all
 func TestParseTxResult(t *testing.T) {
 	address := "0x57f96e6B86CdeFdB3d412547816a82E3E0EbF9D2"
 	txHash := common.BigToHash(big.NewInt(1))

@@ -13,7 +13,7 @@ message GenesisState {
 
   // current inflation rate
   string inflation = 2 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", 
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable) = false
   ];
 
@@ -26,22 +26,22 @@ message GenesisState {
   // target mint for current era
   cosmos.base.v1beta1.Coin era_target_mint = 5 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
-    (gogoproto.moretags)   = "yaml:\"era_target_mint\"",
-    (gogoproto.nullable)   = false
+    (gogoproto.moretags) = "yaml:\"era_target_mint\"",
+    (gogoproto.nullable) = false
   ];
 
   // closing supply for current era
   cosmos.base.v1beta1.Coin era_closing_supply = 6 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
-    (gogoproto.moretags)   = "yaml:\"era_closing_supply\"",
-    (gogoproto.nullable)   = false
+    (gogoproto.moretags) = "yaml:\"era_closing_supply\"",
+    (gogoproto.nullable) = false
   ];
 
   // max supply
   cosmos.base.v1beta1.Coin max_supply = 7 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
-    (gogoproto.moretags)   = "yaml:\"max_supply\"",
-    (gogoproto.nullable)   = false
+    (gogoproto.moretags) = "yaml:\"max_supply\"",
+    (gogoproto.nullable) = false
   ];
 }
 
