@@ -447,9 +447,9 @@ format:
 ###                                Protobuf                                 ###
 ###############################################################################
 
-protoVer=0.14.0
-protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
-protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace --user 0 $(protoImageName)
+protoVer=v0.7
+protoImageName=tendermintdev/sdk-proto-gen:$(protoVer)
+protoImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 # ------
 # NOTE: Link to the yoheimuta/protolint docker images:
 #       https://hub.docker.com/r/yoheimuta/protolint/tags
@@ -477,7 +477,7 @@ proto-swagger-gen:
 
 proto-format:
 	@echo "Formatting Protobuf files"
-	find ./ -not -path "./third_party/*" -name *.proto -exec clang-format -i {} \;
+	find ./ -not -path ".//.devenv/*" -not -path "./third_party/*" -name *.proto -exec clang-format -i {} \;
 
 proto-lint:
 	@$(DOCKER_BUF) lint --error-format=json
@@ -500,30 +500,30 @@ GOGO_PROTO_TYPES    = third_party/proto/gogoproto
 
 COSMOS_PROTO_TYPES  = third_party/proto/cosmos_proto
 
-proto-update-deps:
-	@mkdir -p $(GOGO_PROTO_TYPES)
-	@curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
+# proto-update-deps:
+# 	@mkdir -p $(GOGO_PROTO_TYPES)
+# 	@curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
 
-	@mkdir -p $(COSMOS_PROTO_TYPES)
-	@curl -sSL $(COSMOS_PROTO_URL)/proto/cosmos_proto/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
+# 	@mkdir -p $(COSMOS_PROTO_TYPES)
+# 	@curl -sSL $(COSMOS_PROTO_URL)/proto/cosmos_proto/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
 
-## Importing of tendermint protobuf definitions currently requires the
-## use of `sed` in order to build properly with cosmos-sdk's proto file layout
-## (which is the standard Buf.build FILE_LAYOUT)
-## Issue link: https://github.com/tendermint/tendermint/issues/5021
-	@mkdir -p $(TM_ABCI_TYPES)
-	@curl -sSL $(TM_URL)/abci/types.proto > $(TM_ABCI_TYPES)/types.proto
+# ## Importing of tendermint protobuf definitions currently requires the
+# ## use of `sed` in order to build properly with cosmos-sdk's proto file layout
+# ## (which is the standard Buf.build FILE_LAYOUT)
+# ## Issue link: https://github.com/tendermint/tendermint/issues/5021
+# 	@mkdir -p $(TM_ABCI_TYPES)
+# 	@curl -sSL $(TM_URL)/abci/types.proto > $(TM_ABCI_TYPES)/types.proto
 
-	@mkdir -p $(TM_TYPES)
-	@curl -sSL $(TM_URL)/types/types.proto > $(TM_TYPES)/types.proto
+# 	@mkdir -p $(TM_TYPES)
+# 	@curl -sSL $(TM_URL)/types/types.proto > $(TM_TYPES)/types.proto
 
-	@mkdir -p $(TM_CRYPTO_TYPES)
-	@curl -sSL $(TM_URL)/crypto/proof.proto > $(TM_CRYPTO_TYPES)/proof.proto
-	@curl -sSL $(TM_URL)/crypto/keys.proto > $(TM_CRYPTO_TYPES)/keys.proto
+# 	@mkdir -p $(TM_CRYPTO_TYPES)
+# 	@curl -sSL $(TM_URL)/crypto/proof.proto > $(TM_CRYPTO_TYPES)/proof.proto
+# 	@curl -sSL $(TM_URL)/crypto/keys.proto > $(TM_CRYPTO_TYPES)/keys.proto
 
 
 
-.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking
 
 ###############################################################################
 ###                                Localnet                                 ###

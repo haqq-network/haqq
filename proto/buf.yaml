@@ -4,6 +4,7 @@ deps:
   - buf.build/cosmos/cosmos-sdk:bbcf2f1fde6e841e2de55447bcb17f153c3212e3
   - buf.build/cosmos/cosmos-proto:1935555c206d4afb9e94615dfd0fad31
   - buf.build/cosmos/gogo-proto
+  # - buf.build/gogo/protobuf
   # Add it here after upgrade to go.mod to version which is hosted on buf
   # - buf.build/cosmos/ibc
   # - buf.build/cosmos/ics23

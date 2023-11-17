@@ -6,8 +6,8 @@ package types
 import (
 	fmt "fmt"
 	types "github.com/cosmos/cosmos-sdk/x/bank/types"
-	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/cosmos/gogoproto/proto"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -57,8 +57,7 @@ func (Owner) EnumDescriptor() ([]byte, []int) {
 }
 
 // TokenPair defines an instance that records a pairing consisting of a native
-//
-//	Cosmos Coin and an ERC20 token address.
+//  Cosmos Coin and an ERC20 token address.
 type TokenPair struct {
 	// erc20_address is the hex address of ERC20 contract token
 	Erc20Address string `protobuf:"bytes,1,opt,name=erc20_address,json=erc20Address,proto3" json:"erc20_address,omitempty"`

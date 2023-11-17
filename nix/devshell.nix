@@ -15,6 +15,7 @@
 
       protobuf
       buf
+      clang-tools
 
       (callPackage ./grpc-gateway.nix { inherit pkgs; })
     ];
@@ -26,7 +27,7 @@
   languages.go =
     {
       enable = true;
-      package = pkgs.go_1_20;
+      package = pkgs.go_1_19;
     };
 
   scripts.ci-proto.exec = ''
