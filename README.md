@@ -16,7 +16,7 @@ Ethereum compatibility allows developers to build applications on Haqq using the
 without rewriting smart contracts that already work on Ethereum or other Ethereum-compatible networks.
 Ethereum compatibility is done using modules built by [Tharsis](https://thars.is) for their [Evmos](https://evmos.org) network.
 
-Haqq Network’s Shariah-compliant native currency is ISLM – [Fatwa](https://islamiccoin.net/fatwa).
+Haqq Network’s Shariah-compliant native currency is ISLM – [Fatwa]([https://islamiccoin.net/fatwa](https://islamiccoin.net/shariah)).
 
 **Note**: Requires [Go 1.19+](https://golang.org/dl)
 
