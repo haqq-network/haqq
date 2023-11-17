@@ -26,7 +26,7 @@
           default = devenv.lib.mkShell {
             inherit inputs pkgs;
             modules = [
-              (import ./nix/devshell.nix { inherit pkgs; })
+              (import ./nix/devshell.nix { inherit pkgs pkgsUnstable; })
             ];
           };
         };

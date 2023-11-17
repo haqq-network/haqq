@@ -39,6 +39,6 @@ cat tmp-swagger-gen/apidocs.swagger.json | jq '.info.title |= "Haqq gRPC Gateway
 # cp tmp-swagger-gen/apidocs.swagger.yaml client/docs/swagger-ui/swagger.yaml
 
 # generate binary for static server
-statik -src=./client/docs/swagger-ui -dest=./client/docs
+statik -src=./client/docs/swagger-ui -dest=./client/docs -f
 
 # rm -rf $SWAGGER_TMP_DIR $SWAGGER_PROTO_DIR
