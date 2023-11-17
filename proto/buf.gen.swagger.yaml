@@ -1,0 +1,20 @@
+version: v1
+
+plugins:
+  - name: openapiv2
+    out: ../tmp-swagger-gen
+    opt:
+      - logtostderr=true
+      
+      - fqn_for_openapi_name=true
+      - simple_operation_ids=true
+
+      - allow_merge=true
+
+      # - output_format=yaml
+      
+      - Mcosmos/app/v1alpha1/query.proto=cosmossdk.io/api/cosmos/app/v1alpha1
+      - Mcosmos/app/v1alpha1/config.proto=cosmossdk.io/api/cosmos/app/v1alpha1
+      - Mcosmos/orm/query/v1alpha1/query.proto=cosmossdk.io/api/cosmos/orm/query/v1alpha1
+      - Mproofs.proto=github.com/confio/ics23/go
+    strategy: all

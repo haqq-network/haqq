@@ -73,3 +73,7 @@ dependency-graph.png
 tests/**/node_modules/*
 tests-solidity/**/node_modules/*
 node_modules
+
+swagger-proto
+tmp-swagger-gen
+.devenv
