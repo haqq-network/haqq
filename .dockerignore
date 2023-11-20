@@ -1,5 +1,7 @@
 .direnv
 .devenv
+.env
+.secrets
 build
 localnet-setup
 docker
