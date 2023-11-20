@@ -7,6 +7,16 @@ on:
     #   - "proto/**"
 
 jobs:
+  proto-pass:
+    name: Proto Pass
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - lint
+      - break-check
+    steps:
+      - run: exit 0
+  
   build:
     name: Check that proto builds and commited
     runs-on: ubuntu-latest
