@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: Check that proto builds and commited
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +19,7 @@ jobs:
           nix develop --impure --command ci-proto
 
   lint:
+    name: Proto lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -28,6 +30,7 @@ jobs:
           input: "proto"
 
   break-check:
+    name: Proto break-check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
