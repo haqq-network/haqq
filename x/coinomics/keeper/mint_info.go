@@ -12,8 +12,7 @@ func (k Keeper) GetPrevBlockTS(ctx sdk.Context) sdk.Int {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.KeyPrefixPrevBlockTS)
 	if len(bz) == 0 {
-		currentTS := ctx.BlockTime().UnixMilli() - 6000
-		return sdk.NewInt(currentTS)
+		return sdk.ZeroInt()
 	}
 
 	var prevBlockTSValue sdk.Int
