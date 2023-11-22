@@ -144,20 +144,29 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 
 func (suite *KeeperTestSuite) Commit(numBlocks uint64) {
 	for i := uint64(0); i < numBlocks; i++ {
-		suite.CommitBlock()
+		suite.CommitBlock(6)
 	}
 }
 
-func (suite *KeeperTestSuite) CommitBlock() {
+func (suite *KeeperTestSuite) CommitWithShift(numBlocks uint64, shift uint64) {
+	for i := uint64(0); i < numBlocks; i++ {
+		suite.CommitBlock(shift)
+	}
+}
+
+func (suite *KeeperTestSuite) CommitBlock(shift uint64) {
 	header := suite.ctx.BlockHeader()
 	_ = suite.app.Commit()
 
 	header.Height++
+	header.Time = header.Time.Add(time.Second * time.Duration(shift))
 
 	// run begin block
 	suite.app.BeginBlock(abci.RequestBeginBlock{
 		Header: header,
 	})
+
+	// 20000000000000000000000000000
 
 	// run end block
 	suite.app.EndBlock(abci.RequestEndBlock{

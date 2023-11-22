@@ -5,7 +5,7 @@ var ParamsKey = []byte{0x00}
 // constants
 const (
 	// module name
-	ModuleName = "coinomics"
+	ModuleName = "coinomicsv2"
 
 	// StoreKey to be used when creating the KVStore
 	StoreKey = ModuleName
@@ -16,20 +16,12 @@ const (
 
 // prefix bytes for the inflation persistent store
 const (
-	prefixInflation = iota + 1
-	prefixEra
-	prefixEraStartedAtBlock
-	prefixEraTargetMint
-	prefixEraClosingSupply
+	prefixPrevBlockTS = iota + 1
 	prefixMaxSupply
 )
 
 // KVStore key prefixes
 var (
-	KeyPrefixInflation         = []byte{prefixInflation}
-	KeyPrefixEra               = []byte{prefixEra}
-	KeyPrefixEraStartedAtBlock = []byte{prefixEraStartedAtBlock}
-	KetPrefixEraTargetMint     = []byte{prefixEraTargetMint}
-	KeyPrefixEraClosingSupply  = []byte{prefixEraClosingSupply}
-	KeyPrefixMaxSupply         = []byte{prefixMaxSupply}
+	KeyPrefixPrevBlockTS = []byte{prefixPrevBlockTS}
+	KeyPrefixMaxSupply   = []byte{prefixMaxSupply}
 )

@@ -9,10 +9,10 @@ import (
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
 
-func (suite *KeeperTestSuite) TestEra() {
+func (suite *KeeperTestSuite) TestRewardCoefficient() {
 	var (
-		req    *types.QueryEraRequest
-		expRes *types.QueryEraResponse
+		req    *types.QueryRewardCoefficientRequest
+		expRes *types.QueryRewardCoefficientResponse
 	)
 
 	testCases := []struct {
@@ -21,21 +21,22 @@ func (suite *KeeperTestSuite) TestEra() {
 		expPass  bool
 	}{
 		{
-			"default era",
+			"default reward coefficient",
 			func() {
-				req = &types.QueryEraRequest{}
-				expRes = &types.QueryEraResponse{}
+				req = &types.QueryRewardCoefficientRequest{}
+				expRes = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(78, 1)}
 			},
 			true,
 		},
 		{
-			"set era",
+			"set reward coefficient",
 			func() {
-				era := uint64(2)
-				suite.app.CoinomicsKeeper.SetEra(suite.ctx, era)
+				coinomicsParams := suite.app.CoinomicsKeeper.GetParams(s.ctx)
+				coinomicsParams.RewardCoefficient = sdk.NewDecWithPrec(10, 0)
+				s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
 
-				req = &types.QueryEraRequest{}
-				expRes = &types.QueryEraResponse{Era: era}
+				req = &types.QueryRewardCoefficientRequest{}
+				expRes = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(10, 0)}
 			},
 			true,
 		},
@@ -47,108 +48,7 @@ func (suite *KeeperTestSuite) TestEra() {
 			ctx := sdk.WrapSDKContext(suite.ctx)
 			tc.malleate()
 
-			res, err := suite.queryClient.Era(ctx, req)
-			if tc.expPass {
-				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
-			} else {
-				suite.Require().Error(err)
-			}
-		})
-	}
-}
-
-func (suite *KeeperTestSuite) TestEraClosingSupply() {
-	var (
-		req    *types.QueryEraClosingSupplyRequest
-		expRes *types.QueryEraClosingSupplyResponse
-	)
-
-	testCases := []struct {
-		name     string
-		malleate func()
-		expPass  bool
-	}{
-		{
-			"default era closing supply",
-			func() {
-				req = &types.QueryEraClosingSupplyRequest{}
-				expRes = &types.QueryEraClosingSupplyResponse{EraClosingSupply: sdk.NewCoin("aISLM", sdk.NewInt(0))}
-			},
-			true,
-		},
-		{
-			"set era closing supply",
-			func() {
-				eraClosingSupply := sdk.NewCoin("aISLM", math.NewIntWithDecimal(1337, 18))
-				suite.app.CoinomicsKeeper.SetEraClosingSupply(suite.ctx, eraClosingSupply)
-
-				req = &types.QueryEraClosingSupplyRequest{}
-				expRes = &types.QueryEraClosingSupplyResponse{EraClosingSupply: eraClosingSupply}
-			},
-			true,
-		},
-	}
-	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
-
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			tc.malleate()
-
-			res, err := suite.queryClient.EraClosingSupply(ctx, req)
-
-			println("EraClosingSupply: ", res.EraClosingSupply.Amount.String())
-
-			if tc.expPass {
-				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
-			} else {
-				suite.Require().Error(err)
-			}
-		})
-	}
-}
-
-func (suite *KeeperTestSuite) TestInflationRate() {
-	var (
-		req    *types.QueryInflationRateRequest
-		expRes *types.QueryInflationRateResponse
-	)
-
-	testCases := []struct {
-		name     string
-		malleate func()
-		expPass  bool
-	}{
-		{
-			"default inflation rate",
-			func() {
-				req = &types.QueryInflationRateRequest{}
-				expRes = &types.QueryInflationRateResponse{InflationRate: sdk.ZeroDec()}
-			},
-			true,
-		},
-		{
-			"set inflation rate",
-			func() {
-				rate := sdk.NewDec(10)
-				suite.app.CoinomicsKeeper.SetInflation(suite.ctx, rate)
-
-				req = &types.QueryInflationRateRequest{}
-				expRes = &types.QueryInflationRateResponse{InflationRate: rate}
-			},
-			true,
-		},
-	}
-	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
-
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			tc.malleate()
-
-			res, err := suite.queryClient.InflationRate(ctx, req)
+			res, err := suite.queryClient.RewardCoefficient(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
 				suite.Require().Equal(expRes, res)
