@@ -1,8 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -106,8 +104,6 @@ var _ = Describe("Coinomics", Ordered, func() {
 				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(10_000_001, 18))
 				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
 
-				fmt.Printf("Total bonded tokens: %s", s.app.StakingKeeper.TotalBondedTokens(s.ctx))
-
 				totalSupplyBeforeMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				heightBeforeMint := s.ctx.BlockHeight()
 				PrevTSBeforeMint := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
@@ -145,6 +141,67 @@ var _ = Describe("Coinomics", Ordered, func() {
 				totalSupplyAfterMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				diff10_0Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
 				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(sdk.NewInt(190258770928875190)))
+			})
+
+			It("check max supply limit", func() {
+				setupCoinomicsParams(s, sdk.NewDecWithPrec(15_000_000_000, 0)) // 15_000_000_000 %
+
+				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
+
+				Expect(startExpectedSupply.Amount).To(Equal(totalSupplyOnStart.Amount))
+
+				accKey, err := ethsecp256k1.GenerateKey()
+				s.Require().NoError(err)
+				addr := sdk.AccAddress(accKey.PubKey().Address())
+
+				fundAmount := sdk.TokensFromConsensusPower(100_000_000, sdk.DefaultPowerReduction)
+
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(denomMint, fundAmount)))
+				s.Require().NoError(err)
+
+				totalSupplyAfterFund := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_100_000_000, 18))
+
+				Expect(totalSupplyAfterFund.Amount).To(Equal(expectedSupply.Amount))
+
+				s.Commit(1)
+
+				// delegation
+				delAmount := sdk.TokensFromConsensusPower(90_000_000, sdk.DefaultPowerReduction)
+				delCoin := sdk.NewCoin(denomMint, delAmount)
+
+				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
+				s.Require().NoError(err)
+
+				totalBonded := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(90_000_001, 18))
+				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
+
+				// mint blocks
+				s.Commit(10)
+
+				maxSupply := s.app.CoinomicsKeeper.GetMaxSupply(s.ctx)
+				paramsAfterCommits := s.app.CoinomicsKeeper.GetParams(s.ctx)
+				totalSupplyAfterCommits := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+
+				Expect(maxSupply.Amount).To(Not(Equal(totalSupplyAfterCommits.Amount)))
+				Expect(paramsAfterCommits.EnableCoinomics).To(Equal(true))
+
+				// mint blocks
+				s.Commit(60)
+
+				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				paramsAfterCommits = s.app.CoinomicsKeeper.GetParams(s.ctx)
+
+				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
+				Expect(paramsAfterCommits.EnableCoinomics).To(Equal(false))
+
+				// double check
+				s.Commit(10)
+
+				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
 			})
 		})
 	})
