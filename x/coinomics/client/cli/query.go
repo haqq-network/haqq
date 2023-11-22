@@ -23,66 +23,10 @@ func GetQueryCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		GetEra(),
-		GetEraClosingSupply(),
-		GetMaxSupply(),
-		GetInflationRate(),
 		GetParams(),
+		GetMaxSupply(),
+		GetRewardCoefficient(),
 	)
-
-	return cmd
-}
-
-func GetEra() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "era",
-		Short: "Query the current era",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-			queryClient := types.NewQueryClient(clientCtx)
-
-			params := &types.QueryEraRequest{}
-			res, err := queryClient.Era(context.Background(), params)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintString(fmt.Sprintf("%v\n", res.Era))
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-
-	return cmd
-}
-
-func GetEraClosingSupply() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "era-closing-supply",
-		Short: "Query era closing supply",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-			queryClient := types.NewQueryClient(clientCtx)
-
-			params := &types.QueryEraClosingSupplyRequest{}
-			res, err := queryClient.EraClosingSupply(context.Background(), params)
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintString(fmt.Sprintf("%v\n", res.EraClosingSupply))
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
 }
@@ -114,10 +58,10 @@ func GetMaxSupply() *cobra.Command {
 	return cmd
 }
 
-func GetInflationRate() *cobra.Command {
+func GetRewardCoefficient() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "inflation-rate",
-		Short: "Query current era inflation rate",
+		Use:   "reward-coefficient",
+		Short: "Query current reward coefficient",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -126,13 +70,13 @@ func GetInflationRate() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryInflationRateRequest{}
-			res, err := queryClient.InflationRate(context.Background(), params)
+			params := &types.QueryRewardCoefficientRequest{}
+			res, err := queryClient.RewardCoefficient(context.Background(), params)
 			if err != nil {
 				return err
 			}
 
-			return clientCtx.PrintString(fmt.Sprintf("%v\n", res.InflationRate))
+			return clientCtx.PrintString(fmt.Sprintf("%v\n", res.RewardCoefficient))
 		},
 	}
 

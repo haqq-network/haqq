@@ -24,13 +24,8 @@ func InitGenesis(
 	// Set genesis state
 	params := data.Params
 
-	switch {
-	case haqqtypes.IsMainNetwork(ctx.ChainID()):
+	if haqqtypes.IsMainNetwork(ctx.ChainID()) {
 		params.EnableCoinomics = false
-	case haqqtypes.IsTestEdge1Network(ctx.ChainID()):
-		params.BlocksPerEra = 8640 // 30 days until max supply minted
-	case haqqtypes.IsTestEdge2Network(ctx.ChainID()):
-		params.BlocksPerEra = 17280 // 60 days until max supply minted
 	}
 
 	k.SetParams(ctx, params)
@@ -43,12 +38,8 @@ func InitGenesis(
 // ExportGenesis returns a GenesisState for a given context and keeper.
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	return &types.GenesisState{
-		Params:            k.GetParams(ctx),
-		Era:               k.GetEra(ctx),
-		Inflation:         k.GetInflation(ctx),
-		EraClosingSupply:  k.GetEraClosingSupply(ctx),
-		EraStartedAtBlock: k.GetEraStartedAtBlock(ctx),
-		EraTargetMint:     k.GetEraTargetMint(ctx),
-		MaxSupply:         k.GetMaxSupply(ctx),
+		Params:      k.GetParams(ctx),
+		PrevBlockTs: k.GetPrevBlockTS(ctx),
+		MaxSupply:   k.GetMaxSupply(ctx),
 	}
 }
