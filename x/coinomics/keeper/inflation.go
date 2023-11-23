@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"time"
+
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
@@ -18,13 +20,23 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 		return nil
 	}
 
+	// Determine if the current year is a leap year
+	currentYear := time.Unix(ctx.BlockTime().Unix(), 0).Year()
+	isLeapYear := (currentYear%4 == 0 && currentYear%100 != 0) || currentYear%400 == 0
+
+	// Define milliseconds in a year, considering leap year
+	var yearInMillis sdk.Dec
+	if isLeapYear {
+		yearInMillis, _ = sdk.NewDecFromStr("31622400000") // 366 days in milliseconds
+	} else {
+		yearInMillis, _ = sdk.NewDecFromStr("31536000000") // 365 days in milliseconds
+	}
+
 	// Calculate the mint amount based on total bonded tokens and time elapsed since the last block.
 	params := k.GetParams(ctx)
 	rewardCoefficient := params.RewardCoefficient.Quo(sdk.NewDec(100))
 	prevBlockTS, _ := sdk.NewDecFromStr(k.GetPrevBlockTS(ctx).String())
 	totalBonded, _ := sdk.NewDecFromStr(k.stakingKeeper.TotalBondedTokens(ctx).String())
-
-	yearInMillis, _ := sdk.NewDecFromStr("31536000000")
 
 	// totalBonded * rewardCoefficient * ((currentBlockTS - prevBlockTS) / yearInMillis)
 	blockMint := totalBonded.Mul(rewardCoefficient).Mul((currentBlockTS.Sub(prevBlockTS)).Quo(yearInMillis))
