@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"time"
-
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
@@ -21,7 +19,7 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	}
 
 	// Determine if the current year is a leap year
-	currentYear := time.Unix(ctx.BlockTime().Unix(), 0).Year()
+	currentYear := ctx.BlockTime().Year()
 	isLeapYear := (currentYear%4 == 0 && currentYear%100 != 0) || currentYear%400 == 0
 
 	// Define milliseconds in a year, considering leap year

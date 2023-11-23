@@ -74,8 +74,6 @@ func (suite *KeeperTestSuite) TestSetGetMaxSupply() {
 
 			maxSupply := suite.app.CoinomicsKeeper.GetMaxSupply(suite.ctx)
 
-			fmt.Printf("maxSupply: %v\n testname: %v\n", maxSupply, tc.name)
-
 			if tc.ok {
 				suite.Require().Equal(expMaxSupply, maxSupply, tc.name)
 			} else {

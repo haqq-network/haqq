@@ -84,11 +84,13 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	// setup context
 	app, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState())
 
+	startTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
+
 	suite.app = app
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
 		ChainID:         haqqtypes.MainNetChainID + "-1",
-		Time:            time.Now().UTC(),
+		Time:            startTime,
 		ProposerAddress: valAddr1,
 
 		Version: tmversion.Consensus{
@@ -166,7 +168,32 @@ func (suite *KeeperTestSuite) CommitBlock(shift uint64) {
 		Header: header,
 	})
 
-	// 20000000000000000000000000000
+	// run end block
+	suite.app.EndBlock(abci.RequestEndBlock{
+		Height: header.Height,
+	})
+
+	// update ctx
+	suite.ctx = suite.app.BaseApp.NewContext(false, header)
+
+	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
+	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
+	suite.queryClientEvm = evm.NewQueryClient(queryHelper)
+}
+
+func (suite *KeeperTestSuite) CommitLeapYear() {
+	header := suite.ctx.BlockHeader()
+	_ = suite.app.Commit()
+
+	leapYearTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	header.Height++
+	header.Time = leapYearTime
+
+	// run begin block
+	suite.app.BeginBlock(abci.RequestBeginBlock{
+		Header: header,
+	})
 
 	// run end block
 	suite.app.EndBlock(abci.RequestEndBlock{

@@ -16,6 +16,11 @@ func setupCoinomicsParams(s *KeeperTestSuite, rewardCoefficient sdk.Dec) {
 	s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
 }
 
+func isLeapYear(ctx sdk.Context) bool {
+	year := ctx.BlockTime().Year()
+	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
+}
+
 var _ = Describe("Coinomics", Ordered, func() {
 	BeforeEach(func() {
 		s.SetupTest()
@@ -34,7 +39,7 @@ var _ = Describe("Coinomics", Ordered, func() {
 		s.app.DistrKeeper.SetParams(s.ctx, distributionParams)
 	})
 
-	Describe("Committing a block", func() {
+	Describe("Check coinomics on regular year", func() {
 		Context("with coinomics disabled", func() {
 			BeforeEach(func() {
 				params := s.app.CoinomicsKeeper.GetParams(s.ctx)
@@ -71,7 +76,7 @@ var _ = Describe("Coinomics", Ordered, func() {
 				s.app.CoinomicsKeeper.SetParams(s.ctx, params)
 			})
 
-			It("check mint calculations", func() {
+			It("check mint calculations on regular year", func() {
 				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
 
@@ -92,6 +97,9 @@ var _ = Describe("Coinomics", Ordered, func() {
 				Expect(totalSupplyAfterFund.Amount).To(Equal(expectedSupply.Amount))
 
 				s.Commit(1)
+
+				isLeapYear := isLeapYear(s.ctx)
+				Expect(isLeapYear).To(Equal(false))
 
 				// delegation
 				delAmount := sdk.TokensFromConsensusPower(10_000_000, sdk.DefaultPowerReduction)
@@ -141,6 +149,81 @@ var _ = Describe("Coinomics", Ordered, func() {
 				totalSupplyAfterMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				diff10_0Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
 				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(sdk.NewInt(190258770928875190)))
+			})
+
+			It("check mint calculations for leap year", func() {
+				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
+
+				Expect(startExpectedSupply.Amount).To(Equal(totalSupplyOnStart.Amount))
+
+				accKey, err := ethsecp256k1.GenerateKey()
+				s.Require().NoError(err)
+				addr := sdk.AccAddress(accKey.PubKey().Address())
+
+				fundAmount := sdk.TokensFromConsensusPower(100_000_000, sdk.DefaultPowerReduction)
+
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(denomMint, fundAmount)))
+				s.Require().NoError(err)
+
+				totalSupplyAfterFund := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_100_000_000, 18))
+
+				Expect(totalSupplyAfterFund.Amount).To(Equal(expectedSupply.Amount))
+
+				s.CommitLeapYear()
+
+				isLeapYear := isLeapYear(s.ctx)
+				Expect(isLeapYear).To(Equal(true))
+
+				// delegation
+				delAmount := sdk.TokensFromConsensusPower(10_000_000, sdk.DefaultPowerReduction)
+				delCoin := sdk.NewCoin(denomMint, delAmount)
+
+				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
+				s.Require().NoError(err)
+
+				totalBonded := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(10_000_001, 18))
+				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
+
+				totalSupplyBeforeMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				heightBeforeMint := s.ctx.BlockHeight()
+				PrevTSBeforeMint := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+
+				// mint blocks
+				s.Commit(10)
+
+				PrevTSAfter10Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+
+				// check commit height is changed and prev block ts is changed
+				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 10))
+				Expect(PrevTSAfter10Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(10 * 6 * 1000))))
+
+				// check mint amount with 7.8% coefficient
+				totalSupplyAfterMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				diff7_8Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
+				Expect(diff7_8Coefficient10blocks.Amount).To(Equal(sdk.NewInt(1479963718122957010)))
+
+				// change params
+				rewardCoefficient := sdk.NewDecWithPrec(10, 1) // 10%
+				setupCoinomicsParams(s, rewardCoefficient)
+
+				totalSupplyBeforeMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+
+				// mint blocks
+				s.Commit(10)
+
+				PrevTSAfter20Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+
+				// check commit height is changed and prev block ts is changed
+				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 20))
+				Expect(PrevTSAfter20Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(20 * 6 * 1000))))
+
+				// check mint amount with 10.0% coefficient
+				totalSupplyAfterMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				diff10_0Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
+				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(sdk.NewInt(189738938220891920)))
 			})
 
 			It("check max supply limit", func() {
