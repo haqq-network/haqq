@@ -285,6 +285,20 @@ var _ = Describe("Coinomics", Ordered, func() {
 
 				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
+
+				// check: not mint if coinomics enables back
+				params := s.app.CoinomicsKeeper.GetParams(s.ctx)
+				params.EnableCoinomics = true
+
+				s.app.CoinomicsKeeper.SetParams(s.ctx, params)
+
+				s.Commit(10)
+
+				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				paramsAfterCommits = s.app.CoinomicsKeeper.GetParams(s.ctx)
+
+				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
+				Expect(paramsAfterCommits.EnableCoinomics).To(Equal(false))
 			})
 		})
 	})
