@@ -11,13 +11,13 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"cosmossdk.io/simapp"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	distcli "github.com/cosmos/cosmos-sdk/x/distribution/client/cli"
+	// distcli "github.com/cosmos/cosmos-sdk/x/distribution/client/cli"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	paramsproposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
@@ -577,7 +577,7 @@ type StackingModuleParams struct {
 }
 
 func getCommunityPoolState(val *network.Validator) CommunityPool {
-	communityPoolStateJSON, _ := clitestutil.ExecTestCLICmd(val.ClientCtx, distcli.GetCmdQueryCommunityPool(), []string{"--output", "json"})
+	communityPoolStateJSON, _ := clitestutil.ExecTestCLICmd(val.ClientCtx /*distcli.GetCmdQueryCommunityPool(), */, []string{"--output", "json"})
 
 	var communityPoolState CommunityPool
 	_ = json.Unmarshal(communityPoolStateJSON.Bytes(), &communityPoolState)

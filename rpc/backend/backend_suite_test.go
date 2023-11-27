@@ -9,14 +9,14 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	dbm "github.com/cometbft/cometbft-db"
+	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/crypto/hd"

@@ -13,6 +13,12 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"cosmossdk.io/simapp/params"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	rpcclientmock "github.com/cometbft/cometbft/rpc/client/mock"
+	"github.com/cometbft/cometbft/version"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
@@ -20,15 +26,9 @@ import (
 	cosmosledger "github.com/cosmos/cosmos-sdk/crypto/ledger"
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
-	rpcclientmock "github.com/tendermint/tendermint/rpc/client/mock"
-	"github.com/tendermint/tendermint/version"
 
 	"github.com/haqq-network/haqq/app"
 	clientkeys "github.com/haqq-network/haqq/client/keys"
@@ -146,7 +146,7 @@ func (suite *LedgerTestSuite) NewKeyringAndCtxs(krHome string, input io.Reader, 
 func (suite *LedgerTestSuite) haqqAddKeyCmd() *cobra.Command {
 	cmd := keys.AddKeyCommand()
 
-	algoFlag := cmd.Flag(flags.FlagKeyAlgorithm)
+	algoFlag := cmd.Flag(flags.FlagKeyType)
 	algoFlag.DefValue = string(hd.EthSecp256k1Type)
 
 	err := algoFlag.Value.Set(string(hd.EthSecp256k1Type))

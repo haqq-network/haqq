@@ -10,7 +10,6 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -29,11 +28,11 @@ func NewBaseKeeper(
 	distrStoreKey storetypes.StoreKey,
 	ak banktypes.AccountKeeper,
 	dk distrkeeper.Keeper,
-	paramSpace paramtypes.Subspace,
 	blockedAddrs map[string]bool,
+	authority string,
 ) BaseKeeper {
 	return BaseKeeper{
-		BaseKeeper:    bankkeeper.NewBaseKeeper(cdc, storeKey, ak, paramSpace, blockedAddrs),
+		BaseKeeper:    bankkeeper.NewBaseKeeper(cdc, storeKey, ak, blockedAddrs, authority),
 		ak:            ak,
 		dk:            dk,
 		distrStoreKey: distrStoreKey,

@@ -2,18 +2,20 @@ package cosmos_test
 
 import (
 	"fmt"
+	"math/big"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	abci "github.com/tendermint/tendermint/abci/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
 	"github.com/haqq-network/haqq/testutil"
@@ -25,7 +27,7 @@ func TestAuthzLimiterDecorator(t *testing.T) {
 	testPrivKeys, testAddresses, err := generatePrivKeyAddressPairs(5)
 	require.NoError(t, err)
 
-	distantFuture := time.Date(9000, 1, 1, 0, 0, 0, 0, time.UTC)
+	distantFuture := time.Date(5321, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	validator := sdk.ValAddress(testAddresses[4])
 	stakingAuthDelegate, err := stakingtypes.NewStakeAuthorization([]sdk.ValAddress{validator}, nil, stakingtypes.AuthorizationType_AUTHORIZATION_TYPE_DELEGATE, nil)
@@ -278,7 +280,19 @@ func (suite *AnteTestSuite) TestRejectMsgsInAuthz() {
 	_, testAddresses, err := generatePrivKeyAddressPairs(10)
 	suite.Require().NoError(err)
 
-	distantFuture := time.Date(9000, 1, 1, 0, 0, 0, 0, time.UTC)
+	distantFuture := time.Date(5321, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// create a dummy MsgEthereumTx for the test
+	// otherwise throws error that cannot unpack tx data
+	msgEthereumTx := evmtypes.NewTx(&evmtypes.EvmTxArgs{
+		ChainID:   big.NewInt(54211),
+		Nonce:     0,
+		GasLimit:  1000000,
+		GasFeeCap: suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx),
+		GasTipCap: big.NewInt(1),
+		Input:     nil,
+		Accesses:  &ethtypes.AccessList{},
+	})
 
 	newMsgGrant := func(msgTypeUrl string) *authz.MsgGrant {
 		msg, err := authz.NewMsgGrant(
@@ -326,7 +340,7 @@ func (suite *AnteTestSuite) TestRejectMsgsInAuthz() {
 							testAddresses[3],
 							sdk.NewCoins(sdk.NewInt64Coin(evmtypes.DefaultEVMDenom, 100e6)),
 						),
-						&evmtypes.MsgEthereumTx{},
+						msgEthereumTx,
 					},
 				),
 			},
@@ -339,7 +353,7 @@ func (suite *AnteTestSuite) TestRejectMsgsInAuthz() {
 					testAddresses[1],
 					2,
 					[]sdk.Msg{
-						&evmtypes.MsgEthereumTx{},
+						msgEthereumTx,
 					},
 				),
 			},

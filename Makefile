@@ -6,8 +6,8 @@ DIFF_TAG=$(shell git rev-list --tags="v*" --max-count=1 --not $(shell git rev-li
 DEFAULT_TAG=$(shell git rev-list --tags="v*" --max-count=1)
 # VERSION ?= $(shell echo $(shell git describe --tags $(or $(DIFF_TAG), $(DEFAULT_TAG))) | sed 's/^v//')
 
-VERSION := "1.6.4"
-TMVERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::')
+VERSION := "1.7.0"
+CBFTVERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
 BINDIR ?= $(GOPATH)/bin
@@ -75,7 +75,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=haqq \
           -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
           -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
           -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
-          -X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TMVERSION)
+          -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(CBFTVERSION)
 
 # DB backend selection
 ifeq (cleveldb,$(findstring cleveldb,$(COSMOS_BUILD_OPTIONS)))
@@ -184,24 +184,24 @@ STATIK         = $(TOOLS_DESTDIR)/statik
 RUNSIM         = $(TOOLS_DESTDIR)/runsim
 
 # Install the runsim binary with a temporary workaround of entering an outside
-# directory as the "go get" command ignores the -mod option and will polute the
+# directory as the "go install" command ignores the -mod option and will polute the
 # go.{mod, sum} files.
 #
 # ref: https://github.com/golang/go/issues/30515
 runsim: $(RUNSIM)
 $(RUNSIM):
 	@echo "Installing runsim..."
-	@(cd /tmp && ${GO_MOD} go get github.com/cosmos/tools/cmd/runsim@master)
+	@(cd /tmp && ${GO_MOD} go install github.com/cosmos/tools/cmd/runsim@master)
 
 statik: $(STATIK)
 $(STATIK):
 	@echo "Installing statik..."
-	@(cd /tmp && go get github.com/rakyll/statik@v0.1.6)
+	@(cd /tmp && go install github.com/rakyll/statik@v0.1.6)
 
 contract-tools:
 ifeq (, $(shell which stringer))
 	@echo "Installing stringer..."
-	@go get golang.org/x/tools/cmd/stringer
+	@go install golang.org/x/tools/cmd/stringer
 else
 	@echo "stringer already installed; skipping..."
 endif
@@ -215,14 +215,14 @@ endif
 
 ifeq (, $(shell which gencodec))
 	@echo "Installing gencodec..."
-	@go get github.com/fjl/gencodec
+	@go install github.com/fjl/gencodec
 else
 	@echo "gencodec already installed; skipping..."
 endif
 
 ifeq (, $(shell which protoc-gen-go))
 	@echo "Installing protoc-gen-go..."
-	@go get github.com/fjl/gencodec github.com/golang/protobuf/protoc-gen-go
+	@go install github.com/fjl/gencodec github.com/golang/protobuf/protoc-gen-go
 else
 	@echo "protoc-gen-go already installed; skipping..."
 endif
@@ -447,9 +447,9 @@ format:
 ###                                Protobuf                                 ###
 ###############################################################################
 
-protoVer=v0.7
-protoImageName=tendermintdev/sdk-proto-gen:$(protoVer)
-protoImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
+protoVer=0.14.0
+protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace --user 0 $(protoImageName)
 # ------
 # NOTE: Link to the yoheimuta/protolint docker images:
 #       https://hub.docker.com/r/yoheimuta/protolint/tags
@@ -485,20 +485,20 @@ proto-lint:
 proto-check-breaking:
 	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=master
 
-TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.15/proto/tendermint
-GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-COSMOS_SDK_URL      = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.45.1
-ETHERMINT_URL      	= https://raw.githubusercontent.com/evmos/ethermint/v0.18.0
-IBC_GO_URL      	= https://raw.githubusercontent.com/cosmos/ibc-go/v3.0.0-rc0
-COSMOS_PROTO_URL    = https://raw.githubusercontent.com/cosmos/cosmos-proto/main
-
-TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
-TM_ABCI_TYPES       = third_party/proto/tendermint/abci
-TM_TYPES            = third_party/proto/tendermint/types
-
-GOGO_PROTO_TYPES    = third_party/proto/gogoproto
-
-COSMOS_PROTO_TYPES  = third_party/proto/cosmos_proto
+# TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.15/proto/tendermint
+# GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
+# COSMOS_SDK_URL      = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.45.1
+# ETHERMINT_URL       = https://raw.githubusercontent.com/evmos/ethermint/v0.18.0
+# IBC_GO_URL      	  = https://raw.githubusercontent.com/cosmos/ibc-go/v3.0.0-rc0
+# COSMOS_PROTO_URL    = https://raw.githubusercontent.com/cosmos/cosmos-proto/main
+#
+# TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
+# TM_ABCI_TYPES       = third_party/proto/tendermint/abci
+# TM_TYPES            = third_party/proto/tendermint/types
+#
+# GOGO_PROTO_TYPES    = third_party/proto/gogoproto
+#
+# COSMOS_PROTO_TYPES  = third_party/proto/cosmos_proto
 
 # proto-update-deps:
 # 	@mkdir -p $(GOGO_PROTO_TYPES)

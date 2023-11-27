@@ -57,7 +57,7 @@ func (suite *KeeperTestSuite) TestMintingEnabled() {
 				params.SendEnabled = []*banktypes.SendEnabled{
 					{Denom: expPair.Denom, Enabled: false},
 				}
-				suite.app.BankKeeper.SetParams(suite.ctx, params)
+				suite.app.BankKeeper.SetParams(suite.ctx, params) //nolint:errcheck
 			},
 			false,
 		},

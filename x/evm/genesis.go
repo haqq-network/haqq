@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/evm/keeper"

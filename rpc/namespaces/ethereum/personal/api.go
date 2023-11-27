@@ -6,13 +6,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/haqq-network/haqq/crypto/hd"
 	"github.com/haqq-network/haqq/rpc/backend"

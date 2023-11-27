@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +20,6 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/rlp"
 	stderrors "github.com/pkg/errors"
-	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/haqq-network/haqq/rpc/backend"
 	rpctypes "github.com/haqq-network/haqq/rpc/types"

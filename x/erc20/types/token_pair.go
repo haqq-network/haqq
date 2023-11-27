@@ -1,9 +1,9 @@
 package types
 
 import (
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tendermint/tendermint/crypto/tmhash"
 
 	haqqtypes "github.com/haqq-network/haqq/types"
 )

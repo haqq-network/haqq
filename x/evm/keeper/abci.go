@@ -1,9 +1,9 @@
 package keeper
 
 import (
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // BeginBlock sets the sdk Context and EIP155 chain id to the Keeper.
