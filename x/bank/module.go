@@ -11,7 +11,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
-	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 )
 
 type AppModule struct {
@@ -19,12 +18,12 @@ type AppModule struct {
 
 	keeper      bankkeeper.Keeper
 	wKeeper     haqqbankkeeper.WrappedBaseKeeper
-	erc20keeper erc20keeper.Keeper
+	erc20keeper haqqbankkeeper.ERC20Keeper
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(module bank.AppModule, keeper bankkeeper.Keeper, erc20keeper erc20keeper.Keeper) AppModule {
-	wrappedBankKeeper := haqqbankkeeper.NewWrappedBaseKeeper(keeper, erc20keeper)
+func NewAppModule(module bank.AppModule, keeper bankkeeper.Keeper, erc20keeper haqqbankkeeper.ERC20Keeper, accountKeeper haqqbankkeeper.AccountKeeper) AppModule {
+	wrappedBankKeeper := haqqbankkeeper.NewWrappedBaseKeeper(keeper, erc20keeper, accountKeeper)
 	return AppModule{
 		AppModule:   module,
 		keeper:      keeper,
@@ -40,7 +39,7 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	banktypes.RegisterMsgServer(cfg.MsgServer(), bankkeeper.NewMsgServerImpl(am.keeper))
+	banktypes.RegisterMsgServer(cfg.MsgServer(), haqqbankkeeper.NewMsgServerImpl(am.wKeeper))
 	banktypes.RegisterQueryServer(cfg.QueryServer(), am.wKeeper)
 
 	m := bankkeeper.NewMigrator(am.keeper.(bankkeeper.BaseKeeper))
