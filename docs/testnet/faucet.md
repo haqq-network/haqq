@@ -16,7 +16,7 @@ Follow the [Metamask](./../../guides/keys-wallets/metamask.md) guide for more in
 
 <!-- markdown-link-check-disable-next-line -->
 1. Join to our `TestEdge2` faucet channel at [https://t.me/haqq_faucet](https://t.me/haqq_faucet)
-2. Simply write `!faucet <your hex address>` to receive `10 ISLM`
+2. Simply write `!faucet main <your hex address>` or `!faucet test <your hex address>` to receive `10 ISLM`
 
 ## Request Tokens on Discord
 
@@ -24,7 +24,7 @@ Follow the [Metamask](./../../guides/keys-wallets/metamask.md) guide for more in
 1. Join our Discord at [https://discord.gg/islamic-coin](https://discord.gg/islamic-coin)
 2. Verify your account.
 4. Go to the HAQQERS category and click on the #faucet channel at [#faucet](https://discord.com/channels/989535240882114581/1075694966183043083).
-3. Simply write `!faucet <your hex address>` to receive 10 ISLM.
+3. Simply write `!faucet main <your hex address>` or `!faucet test <your hex address>` to receive 10 ISLM.
 
 ## Request Tokens on Web
 
