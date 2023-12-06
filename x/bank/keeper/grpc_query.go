@@ -127,7 +127,7 @@ func (k WrappedBaseKeeper) SpendableBalances(ctx context.Context, req *types.Que
 }
 
 func (k WrappedBaseKeeper) SpendableBalanceByDenom(ctx context.Context, req *types.QuerySpendableBalanceByDenomRequest) (*types.QuerySpendableBalanceByDenomResponse, error) {
-	res, err := k.wbk.SpendableBalanceByDenom(ctx, req)
+	res, err := k.Keeper.SpendableBalanceByDenom(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -170,5 +170,5 @@ func (k WrappedBaseKeeper) DenomOwners(
 }
 
 func (k WrappedBaseKeeper) SendEnabled(c context.Context, req *types.QuerySendEnabledRequest) (*types.QuerySendEnabledResponse, error) {
-	return k.wbk.SendEnabled(c, req)
+	return k.Keeper.SendEnabled(c, req)
 }
