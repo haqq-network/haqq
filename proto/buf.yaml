@@ -4,9 +4,8 @@ deps:
   - buf.build/cosmos/cosmos-sdk:v0.47.0
   - buf.build/cosmos/cosmos-proto
   - buf.build/cosmos/gogo-proto
-  # Add it here after upgrade to go.mod to version which is hosted on buf
-  # - buf.build/cosmos/ibc
-  # - buf.build/cosmos/ics23
+  - buf.build/cosmos/ibc:6c29d2ebf17002929c986fb45e83c2fecc76e6d3
+  - buf.build/cosmos/ics23
   - buf.build/googleapis/googleapis
 lint:
   use:
