@@ -717,7 +717,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 							sdk.Coins{fee},
 							s.HaqqChain.ChainID,
 							[]uint64{s.HaqqChain.SenderAccount.GetAccountNumber()},
-							[]uint64{s.HaqqChain.SenderAccount.GetSequence()},
+							[]uint64{s.HaqqChain.SenderAccount.GetSequence() + 1},
 							false,
 							s.HaqqChain.SenderPrivKey,
 						)
