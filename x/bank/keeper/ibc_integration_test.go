@@ -679,6 +679,95 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						s.Require().NoError(err)
 						s.Require().True(aislmReceiverGrpcBalanceAfter.Balance.IsZero())
 					})
+
+					It("should convert all coins and transfer on EVM layer on TX1, and skip conversion and fail on TX2", func() {
+						// At this point
+						// sender has 10 uosmo (all on SDK layer) and some aislm tokens
+						// receiver has zero balance for both uosmo and aislm
+
+						// Transfer Coins
+						transferCoins := sdk.NewCoins(sixUosmo, fiveIslm)
+						bankTransferMsg := banktypes.NewMsgSend(senderAcc, receiverAcc, transferCoins)
+
+						s.HaqqChain.Coordinator.UpdateTimeForChain(s.HaqqChain)
+						fee := sdk.NewInt64Coin(haqqDenom, ibctesting.DefaultFeeAmt)
+
+						// ensure the chain has the latest time
+						s.HaqqChain.Coordinator.UpdateTimeForChain(s.HaqqChain)
+
+						_, _, err = ibctesting.SignAndDeliver(
+							s.HaqqChain.T,
+							s.HaqqChain.TxConfig,
+							s.HaqqChain.App.GetBaseApp(),
+							[]sdk.Msg{bankTransferMsg},
+							sdk.Coins{fee},
+							s.HaqqChain.ChainID,
+							[]uint64{s.HaqqChain.SenderAccount.GetAccountNumber()},
+							[]uint64{s.HaqqChain.SenderAccount.GetSequence()},
+							true,
+							s.HaqqChain.SenderPrivKey,
+						)
+						s.Require().NoError(err)
+
+						_, _, err = ibctesting.SignAndDeliver(
+							s.HaqqChain.T,
+							s.HaqqChain.TxConfig,
+							s.HaqqChain.App.GetBaseApp(),
+							[]sdk.Msg{bankTransferMsg},
+							sdk.Coins{fee},
+							s.HaqqChain.ChainID,
+							[]uint64{s.HaqqChain.SenderAccount.GetAccountNumber()},
+							[]uint64{s.HaqqChain.SenderAccount.GetSequence()},
+							false,
+							s.HaqqChain.SenderPrivKey,
+						)
+						s.Require().Error(err)
+
+						// NextBlock calls app.Commit()
+						s.HaqqChain.NextBlock()
+
+						// Check the results
+
+						// Sender must have zero uosmo on SDK layer and 5 uosmo on EVM
+						uosmoSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
+						s.Require().True(uosmoSenderBalanceAfter.IsZero())
+						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+							Address: senderAcc.String(),
+							Denom:   teststypes.UosmoIbcdenom,
+						})
+						s.Require().NoError(err)
+						s.Require().Equal(uosmoSenderGrpcBalanceBefore.Balance.Sub(sixUosmo).Amount.Int64(), uosmoSenderGrpcBalanceAfter.Balance.Amount.Int64())
+						// Sender must have less aislm tokens than before on transfer amount and fee
+						aislmSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
+						s.Require().True(aislmSenderBalanceBefore.Sub(fiveIslm).IsGTE(aislmSenderBalanceAfter))
+						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+							Address: senderAcc.String(),
+							Denom:   haqqDenom,
+						})
+						s.Require().NoError(err)
+						s.Require().True(aislmSenderGrpcBalanceBefore.Balance.Sub(fiveIslm).IsGTE(*aislmSenderGrpcBalanceAfter.Balance))
+
+						// Receiver must have zero uosmo on SDK layer and 5 uosmo on EVM
+						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
+						s.Require().True(uosmoReceiverBalanceAfter.IsZero())
+						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+							Address: receiverAcc.String(),
+							Denom:   teststypes.UosmoIbcdenom,
+						})
+						s.Require().NoError(err)
+						s.Require().Equal(uosmoReceiverGrpcBalanceBefore.Balance.Add(sixUosmo).Amount.Int64(), uosmoReceiverGrpcBalanceAfter.Balance.Amount.Int64())
+						// Receiver must have 5 ISLM
+						aislmReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
+						s.Require().True(aislmReceiverBalanceBefore.Add(fiveIslm).IsGTE(aislmReceiverBalanceAfter))
+						s.Require().True(aislmReceiverBalanceAfter.IsGTE(aislmReceiverBalanceBefore.Add(fiveIslm)))
+						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+							Address: receiverAcc.String(),
+							Denom:   haqqDenom,
+						})
+						s.Require().NoError(err)
+						s.Require().True(aislmReceiverGrpcBalanceBefore.Balance.Add(fiveIslm).IsGTE(*aislmReceiverGrpcBalanceAfter.Balance))
+						s.Require().True(aislmReceiverGrpcBalanceAfter.Balance.IsGTE(aislmReceiverGrpcBalanceBefore.Balance.Add(fiveIslm)))
+					})
 				})
 
 				Describe("part of coins is on native layer", func() {
