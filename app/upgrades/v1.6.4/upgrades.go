@@ -36,8 +36,18 @@ func CreateUpgradeHandler(
 
 		logger.Info("start cleaning params for module")
 
-		paramsSubspace.SetParamSet(ctx, nil)
-		paramsSubspace.Set(ctx, []byte(ModuleName), nil) // Получаем пространство параметров для модуля
+		if paramsSubspace.HasKeyTable() {
+			paramsSubspace.IterateKeys(ctx, func(key []byte) bool {
+				paramsSubspace.Update(ctx, key, nil)
+				return false
+			})
+		}
+
+		// if !ps.HasKeyTable() {
+		// 	ps = ps.WithKeyTable(types.ParamKeyTable())
+		// }
+
+		// paramsSubspace.Set(ctx, []byte(ModuleName), nil) // Получаем пространство параметров для модуля
 		// iter := storeParams.Iterator(nil, nil)           // Создаем итератор для всех ключей
 		// defer iter.Close()
 
