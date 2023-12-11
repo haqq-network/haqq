@@ -1148,8 +1148,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.configurator,
 			app.GetKey(coinomicstypes.StoreKey),
 			app.GetKey(paramstypes.StoreKey),
-			app.ParamsKeeper.Subspace(coinomicstypes.ModuleName),
-		),
+			app.GetSubspace(coinomicstypes.ModuleName)),
 	)
 
 	// When a planned update height is reached, the old binary will panic

@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 
 const ModuleName = "coinomics"
@@ -40,21 +41,21 @@ func CreateUpgradeHandler(
 
 		logger.Info("start cleaning params for module")
 
-		if paramsSubspace.HasKeyTable() {
-			paramsSubspace.IterateKeys(ctx, func(key []byte) bool {
-				println("params store key for delete")
-				println(string(key))
-				return false
-			})
+		keyTable := coinomicstypes.ParamKeyTable()
+		paramsSubspace = paramsSubspace.WithKeyTable(keyTable)
 
-			// 	paramsSubspace.WithKeyTable(paramtypes.NewKeyTable())
-			// 	// paramsSubspace.IterateKeys(ctx, func(key []byte) bool {
-			// 	// 	println(string(key))
+		paramsSubspace.SetParamSet(ctx, &coinomicstypes.Params{})
 
-			// 	// 	paramsSubspace.Update(ctx, key, nil)
-			// 	// 	return false
-			// 	// })
-		}
+		// if paramsSubspace.HasKeyTable() {
+
+		// 	paramsSubspace.WithKeyTable(paramtypes.NewKeyTable())
+		// 	// paramsSubspace.IterateKeys(ctx, func(key []byte) bool {
+		// 	// 	println(string(key))
+
+		// 	// 	paramsSubspace.Update(ctx, key, nil)
+		// 	// 	return false
+		// 	// })
+		// }
 
 		// if !ps.HasKeyTable() {
 		// 	ps = ps.WithKeyTable(types.ParamKeyTable())
