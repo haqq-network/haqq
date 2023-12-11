@@ -5,7 +5,7 @@ var ParamsKey = []byte{0x00}
 // constants
 const (
 	// module name
-	ModuleName = "coinomicsv2"
+	ModuleName = "coinomics"
 
 	// StoreKey to be used when creating the KVStore
 	StoreKey = ModuleName
