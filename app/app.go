@@ -1175,7 +1175,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 		}
 	case v164.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
-			Deleted: []string{coinomicstypes.ModuleName},
+			Added: []string{coinomicstypes.ModuleName},
 		}
 	default:
 		// no-op

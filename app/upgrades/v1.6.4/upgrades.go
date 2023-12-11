@@ -6,6 +6,8 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
+const ModuleName = "coinomics"
+
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.6.4
 func CreateUpgradeHandler(
 	mm *module.Manager,
@@ -14,6 +16,16 @@ func CreateUpgradeHandler(
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger()
 		logger.Info("run migration v1.6.4")
+
+		storeKey := sdk.NewKVStoreKey(ModuleName)
+		store := ctx.KVStore(storeKey)
+
+		iterator := sdk.KVStorePrefixIterator(store, nil)
+		defer iterator.Close()
+
+		for ; iterator.Valid(); iterator.Next() {
+			store.Delete(iterator.Key())
+		}
 
 		return mm.RunMigrations(ctx, configurator, vm)
 	}
