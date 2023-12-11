@@ -41,15 +41,11 @@ func CreateUpgradeHandler(
 		logger.Info("start cleaning params for module")
 
 		if paramsSubspace.HasKeyTable() {
-			paramStore := ctx.KVStore(paramsStoreKey)
-			iteratorParams := sdk.KVStorePrefixIterator(paramStore, nil)
-
-			for ; iteratorParams.Valid(); iteratorParams.Next() {
+			paramsSubspace.IterateKeys(ctx, func(key []byte) bool {
 				println("params store key for delete")
-				println(string(iterator.Key()))
-			}
-
-			iterator.Close()
+				println(string(key))
+				return false
+			})
 
 			// 	paramsSubspace.WithKeyTable(paramtypes.NewKeyTable())
 			// 	// paramsSubspace.IterateKeys(ctx, func(key []byte) bool {
