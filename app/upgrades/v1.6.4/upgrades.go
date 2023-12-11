@@ -38,6 +38,8 @@ func CreateUpgradeHandler(
 
 		if paramsSubspace.HasKeyTable() {
 			paramsSubspace.IterateKeys(ctx, func(key []byte) bool {
+				println(string(key))
+
 				paramsSubspace.Update(ctx, key, nil)
 				return false
 			})
