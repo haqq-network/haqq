@@ -4,6 +4,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
@@ -14,6 +15,7 @@ func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
 	storeKey storetypes.StoreKey,
+	paramsSubspace paramtypes.Subspace,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger()
@@ -31,6 +33,19 @@ func CreateUpgradeHandler(
 
 		iterator.Close() // Не забудьте закрыть итератор
 		logger.Info("cleared coinomics store")
+
+		logger.Info("start cleaning params for module")
+
+		paramsSubspace.SetParamSet(ctx, nil)
+		paramsSubspace.Set(ctx, []byte(ModuleName), nil) // Получаем пространство параметров для модуля
+		// iter := storeParams.Iterator(nil, nil)           // Создаем итератор для всех ключей
+		// defer iter.Close()
+
+		// for ; iter.Valid(); iter.Next() {
+		// 	storeParams.Delete(iter.Key()) // Удаляем каждый ключ
+		// }
+
+		logger.Info("cleared params for module")
 
 		logger.Info("start default sdk migration for v1.6.4")
 
