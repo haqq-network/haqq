@@ -1160,12 +1160,26 @@ func (app *Haqq) setupUpgradeHandlers() {
 
 	var storeUpgrades *storetypes.StoreUpgrades
 
-	if upgradeInfo.Name == v160.UpgradeName {
+	// if upgradeInfo.Name == v160.UpgradeName {
+	// 	storeUpgrades = &storetypes.StoreUpgrades{
+	// 		Added: []string{
+	// 			icahosttypes.SubModuleName,
+	// 		},
+	// 	}
+	// }
+
+	switch upgradeInfo.Name {
+	case v160.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{
-				icahosttypes.SubModuleName,
-			},
+			Added: []string{icahosttypes.SubModuleName},
 		}
+	case v164.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Deleted: []string{coinomicstypes.ModuleName},
+			Added:   []string{coinomicstypes.ModuleName},
+		}
+	default:
+		// no-op
 	}
 
 	if storeUpgrades != nil {
