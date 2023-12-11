@@ -1143,7 +1143,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 	// v1.6.4 Coinomics v2
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v164.UpgradeName,
-		v164.CreateUpgradeHandler(app.mm, app.configurator, app.GetKey(coinomicstypes.StoreKey), app.GetSubspace(coinomicstypes.ModuleName)),
+		v164.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.GetKey(coinomicstypes.StoreKey),
+			app.GetKey(paramstypes.StoreKey),
+			app.GetSubspace(coinomicstypes.ModuleName)),
 	)
 
 	// When a planned update height is reached, the old binary will panic

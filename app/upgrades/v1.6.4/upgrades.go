@@ -15,6 +15,7 @@ func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
 	storeKey storetypes.StoreKey,
+	paramsStoreKey storetypes.StoreKey,
 	paramsSubspace paramtypes.Subspace,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
@@ -28,6 +29,9 @@ func CreateUpgradeHandler(
 		iterator := sdk.KVStorePrefixIterator(store, nil)
 
 		for ; iterator.Valid(); iterator.Next() {
+			println("coinomics store key for delete")
+			println(string(iterator.Key()))
+
 			store.Delete(iterator.Key())
 		}
 
@@ -37,12 +41,23 @@ func CreateUpgradeHandler(
 		logger.Info("start cleaning params for module")
 
 		if paramsSubspace.HasKeyTable() {
-			paramsSubspace.IterateKeys(ctx, func(key []byte) bool {
-				println(string(key))
+			paramStore := ctx.KVStore(paramsStoreKey)
+			iteratorParams := sdk.KVStorePrefixIterator(paramStore, nil)
 
-				paramsSubspace.Update(ctx, key, nil)
-				return false
-			})
+			for ; iteratorParams.Valid(); iteratorParams.Next() {
+				println("params store key for delete")
+				println(string(iterator.Key()))
+			}
+
+			iterator.Close()
+
+			// 	paramsSubspace.WithKeyTable(paramtypes.NewKeyTable())
+			// 	// paramsSubspace.IterateKeys(ctx, func(key []byte) bool {
+			// 	// 	println(string(key))
+
+			// 	// 	paramsSubspace.Update(ctx, key, nil)
+			// 	// 	return false
+			// 	// })
 		}
 
 		// if !ps.HasKeyTable() {
