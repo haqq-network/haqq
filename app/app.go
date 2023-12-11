@@ -1173,10 +1173,10 @@ func (app *Haqq) setupUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{icahosttypes.SubModuleName},
 		}
-	case v164.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{coinomicstypes.ModuleName},
-		}
+	// case v164.UpgradeName:
+	// 	storeUpgrades = &storetypes.StoreUpgrades{
+	// 		Added: []string{coinomicstypes.ModuleName},
+	// 	}
 	default:
 		// no-op
 	}

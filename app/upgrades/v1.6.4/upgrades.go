@@ -15,17 +15,22 @@ func CreateUpgradeHandler(
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger()
-		logger.Info("run migration v1.6.4")
+
+		logger.Info("start clean coinomics store")
 
 		storeKey := sdk.NewKVStoreKey(ModuleName)
 		store := ctx.KVStore(storeKey)
 
 		iterator := sdk.KVStorePrefixIterator(store, nil)
-		defer iterator.Close()
+		// defer iterator.Close()
 
 		for ; iterator.Valid(); iterator.Next() {
 			store.Delete(iterator.Key())
 		}
+
+		logger.Info("cleared coinomics store")
+
+		logger.Info("start default sdk migration for v1.6.4")
 
 		return mm.RunMigrations(ctx, configurator, vm)
 	}
