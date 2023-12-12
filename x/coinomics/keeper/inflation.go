@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"log"
+
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
@@ -13,7 +15,7 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	currentBlockTS, _ := sdk.NewDecFromStr(math.NewInt(ctx.BlockTime().UnixMilli()).String())
 
 	// Skip minting for the first block after activation, waiting for previous block timestamp to be set
-	if k.GetPrevBlockTS(ctx) == sdk.ZeroInt() {
+	if k.GetPrevBlockTS(ctx).Equal(sdk.ZeroInt()) {
 		k.SetPrevBlockTS(ctx, currentBlockTS.RoundInt())
 		return nil
 	}
@@ -39,8 +41,18 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	// totalBonded * rewardCoefficient * ((currentBlockTS - prevBlockTS) / yearInMillis)
 	blockMint := totalBonded.Mul(rewardCoefficient).Mul((currentBlockTS.Sub(prevBlockTS)).Quo(yearInMillis))
 
+	log.Printf("totalBonded: %s", totalBonded.String())
+	log.Printf("rewardCoefficient: %s", rewardCoefficient.String())
+	log.Printf("currentBlockTS: %s", currentBlockTS.String())
+	log.Printf("prevBlockTS: %s", prevBlockTS.String())
+	log.Printf("yearInMillis: %s", yearInMillis.String())
+	log.Printf("blockMint #1: %s", blockMint.String())
+
 	bankTotalSupply, _ := sdk.NewDecFromStr(k.bankKeeper.GetSupply(ctx, params.MintDenom).Amount.String())
 	maxSupply, _ := sdk.NewDecFromStr(k.GetMaxSupply(ctx).Amount.String())
+
+	log.Printf("bankTotalSupply: %s", bankTotalSupply.String())
+	log.Printf("maxSupply: %s", maxSupply.String())
 
 	// Ensure minting does not exceed the maximum supply
 	if bankTotalSupply.Add(blockMint).GT(maxSupply) {
@@ -48,6 +60,12 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 		params.EnableCoinomics = false
 		k.SetParams(ctx, params)
 	}
+
+	if blockMint.IsNegative() {
+		return nil
+	}
+
+	log.Printf("blockMint #2: %s", blockMint.String())
 
 	// Mint and allocate the calculated coin amount
 	totalMintOnBlockCoin := sdk.NewCoin(params.MintDenom, blockMint.RoundInt())

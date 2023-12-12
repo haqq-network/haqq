@@ -1146,8 +1146,10 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v164.CreateUpgradeHandler(
 			app.mm,
 			app.configurator,
-			// app.GetKey(coinomicstypes.StoreKey),
-			// app.GetKey(paramstypes.StoreKey),
+			app.GetKey(coinomicstypes.StoreKey),
+			app.GetKey(paramstypes.StoreKey),
+			app.DistrKeeper,
+			app.CoinomicsKeeper,
 			// app.GetSubspace(coinomicstypes.ModuleName)
 		),
 	)
@@ -1166,23 +1168,11 @@ func (app *Haqq) setupUpgradeHandlers() {
 
 	var storeUpgrades *storetypes.StoreUpgrades
 
-	// if upgradeInfo.Name == v160.UpgradeName {
-	// 	storeUpgrades = &storetypes.StoreUpgrades{
-	// 		Added: []string{
-	// 			icahosttypes.SubModuleName,
-	// 		},
-	// 	}
-	// }
-
 	switch upgradeInfo.Name {
 	case v160.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{icahosttypes.SubModuleName},
 		}
-	// case v164.UpgradeName:
-	// 	storeUpgrades = &storetypes.StoreUpgrades{
-	// 		Added: []string{coinomicstypes.ModuleName},
-	// 	}
 	default:
 		// no-op
 	}
