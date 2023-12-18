@@ -19,10 +19,43 @@
     "application/json"
   ],
   "paths": {
+    "/cosmos/auth/v1beta1/account_info/{address}": {
+      "get": {
+        "summary": "AccountInfo queries account info which is common to all account types.",
+        "description": "Since: cosmos-sdk 0.47",
+        "operationId": "AccountInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.auth.v1beta1.QueryAccountInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the account address string.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/cosmos/auth/v1beta1/accounts": {
       "get": {
-        "summary": "Accounts returns all the existing accounts",
-        "description": "Since: cosmos-sdk 0.43",
+        "summary": "Accounts returns all the existing accounts.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.\n\nSince: cosmos-sdk 0.43",
         "operationId": "Accounts",
         "responses": {
           "200": {
@@ -117,7 +150,8 @@
     },
     "/cosmos/auth/v1beta1/address_by_id/{id}": {
       "get": {
-        "summary": "AccountAddressByID returns account address based on account id",
+        "summary": "AccountAddressByID returns account address based on account number.",
+        "description": "Since: cosmos-sdk 0.46.2",
         "operationId": "AccountAddressByID",
         "responses": {
           "200": {
@@ -136,10 +170,19 @@
         "parameters": [
           {
             "name": "id",
+            "description": "Deprecated, use account_id instead\n\nid is the account number of the address to be queried. This field\nshould have been an uint64 (like all account numbers), and will be\nupdated to uint64 in a future version of the auth query.",
             "in": "path",
             "required": true,
             "type": "string",
             "format": "int64"
+          },
+          {
+            "name": "accountId",
+            "description": "account_id is the account number of the address to be queried.\n\nSince: cosmos-sdk 0.47",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
           }
         ],
         "tags": [
@@ -255,6 +298,37 @@
             }
           }
         },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/cosmos/auth/v1beta1/module_accounts/{name}": {
+      "get": {
+        "summary": "ModuleAccountByName returns the module account info by module name",
+        "operationId": "ModuleAccountByName",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.auth.v1beta1.QueryModuleAccountByNameResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
         "tags": [
           "Query"
         ]
@@ -508,6 +582,7 @@
     "/cosmos/bank/v1beta1/balances/{address}": {
       "get": {
         "summary": "AllBalances queries the balance of all coins for a single account.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "AllBalances",
         "responses": {
           "200": {
@@ -617,7 +692,7 @@
     "/cosmos/bank/v1beta1/denom_owners/{denom}": {
       "get": {
         "summary": "DenomOwners queries for all account addresses that own a particular token\ndenomination.",
-        "description": "Since: cosmos-sdk 0.46",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.\n\nSince: cosmos-sdk 0.46",
         "operationId": "DenomOwners",
         "responses": {
           "200": {
@@ -803,10 +878,85 @@
         ]
       }
     },
+    "/cosmos/bank/v1beta1/send_enabled": {
+      "get": {
+        "summary": "SendEnabled queries for SendEnabled entries.",
+        "description": "This query only returns denominations that have specific SendEnabled settings.\nAny denomination that does not have a specific setting will use the default\nparams.default_send_enabled, and will not be returned by this query.\n\nSince: cosmos-sdk 0.47",
+        "operationId": "SendEnabled",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.bank.v1beta1.QuerySendEnabledResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "denoms",
+            "description": "denoms is the specific denoms you want look up. Leave empty to get all entries.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\nSince: cosmos-sdk 0.43",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/cosmos/bank/v1beta1/spendable_balances/{address}": {
       "get": {
-        "summary": "SpendableBalances queries the spenable balance of all coins for a single\naccount.",
-        "description": "Since: cosmos-sdk 0.46",
+        "summary": "SpendableBalances queries the spendable balance of all coins for a single\naccount.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.\n\nSince: cosmos-sdk 0.46",
         "operationId": "SpendableBalances",
         "responses": {
           "200": {
@@ -874,9 +1024,50 @@
         ]
       }
     },
+    "/cosmos/bank/v1beta1/spendable_balances/{address}/by_denom": {
+      "get": {
+        "summary": "SpendableBalanceByDenom queries the spendable balance of a single denom for\na single account.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.\n\nSince: cosmos-sdk 0.47",
+        "operationId": "SpendableBalanceByDenom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.bank.v1beta1.QuerySpendableBalanceByDenomResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the address to query balances for.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "denom",
+            "description": "denom is the coin denom to query balances for.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/cosmos/bank/v1beta1/supply": {
       "get": {
         "summary": "TotalSupply queries the total supply of all coins.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "TotalSupply",
         "responses": {
           "200": {
@@ -940,6 +1131,7 @@
     "/cosmos/bank/v1beta1/supply/by_denom": {
       "get": {
         "summary": "SupplyOf queries the supply of a single coin.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "SupplyOf",
         "responses": {
           "200": {
@@ -969,9 +1161,32 @@
         ]
       }
     },
+    "/cosmos/base/node/v1beta1/config": {
+      "get": {
+        "summary": "Config queries for the operator configuration.",
+        "operationId": "Config",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.base.node.v1beta1.ConfigResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Service"
+        ]
+      }
+    },
     "/cosmos/base/tendermint/v1beta1/abci_query": {
       "get": {
-        "summary": "ABCIQuery defines a query handler that supports ABCI queries directly to\nthe application, bypassing Tendermint completely. The ABCI query must\ncontain a valid and supported path, including app, custom, p2p, and store.",
+        "summary": "ABCIQuery defines a query handler that supports ABCI queries directly to the\napplication, bypassing Tendermint completely. The ABCI query must contain\na valid and supported path, including app, custom, p2p, and store.",
         "description": "Since: cosmos-sdk 0.46",
         "operationId": "ABCIQuery",
         "responses": {
@@ -1255,6 +1470,29 @@
         ]
       }
     },
+    "/cosmos/consensus/v1/params": {
+      "get": {
+        "summary": "Params queries the parameters of x/consensus_param module.",
+        "operationId": "Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.consensus.v1.QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/cosmos/distribution/v1beta1/community_pool": {
       "get": {
         "summary": "CommunityPool queries the community pool coins.",
@@ -1431,6 +1669,38 @@
             }
           }
         },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/cosmos/distribution/v1beta1/validators/{validatorAddress}": {
+      "get": {
+        "summary": "ValidatorDistributionInfo queries validator commission and self-delegation rewards for validator",
+        "operationId": "ValidatorDistributionInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "validatorAddress",
+            "description": "validator_address defines the validator address to query for.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
         "tags": [
           "Query"
         ]
@@ -1649,7 +1919,7 @@
         ]
       }
     },
-    "/cosmos/evidence/v1beta1/evidence/{evidenceHash}": {
+    "/cosmos/evidence/v1beta1/evidence/{hash}": {
       "get": {
         "summary": "Evidence queries evidence based on evidence hash.",
         "operationId": "Evidence",
@@ -1669,10 +1939,17 @@
         },
         "parameters": [
           {
-            "name": "evidenceHash",
-            "description": "evidence_hash defines the hash of the requested evidence.",
+            "name": "hash",
+            "description": "hash defines the evidence hash of the requested evidence.\n\nSince: cosmos-sdk 0.47",
             "in": "path",
             "required": true,
+            "type": "string"
+          },
+          {
+            "name": "evidenceHash",
+            "description": "evidence_hash defines the hash of the requested evidence.\nDeprecated: Use hash, a HEX encoded string, instead.",
+            "in": "query",
+            "required": false,
             "type": "string",
             "format": "byte"
           }
@@ -2721,7 +2998,7 @@
     },
     "/cosmos/group/v1/group_members/{groupId}": {
       "get": {
-        "summary": "GroupMembers queries members of a group",
+        "summary": "GroupMembers queries members of a group by group id.",
         "operationId": "GroupMembers",
         "responses": {
           "200": {
@@ -2792,7 +3069,7 @@
     },
     "/cosmos/group/v1/group_policies_by_admin/{admin}": {
       "get": {
-        "summary": "GroupsByAdmin queries group policies by admin address.",
+        "summary": "GroupPoliciesByAdmin queries group policies by admin address.",
         "operationId": "GroupPoliciesByAdmin",
         "responses": {
           "200": {
@@ -3281,7 +3558,7 @@
     },
     "/cosmos/group/v1/votes_by_proposal/{proposalId}": {
       "get": {
-        "summary": "VotesByProposal queries a vote by proposal.",
+        "summary": "VotesByProposal queries a vote by proposal id.",
         "operationId": "VotesByProposal",
         "responses": {
           "200": {
@@ -3510,12 +3787,14 @@
         "parameters": [
           {
             "name": "owner",
+            "description": "owner is the owner address of the nft",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
             "name": "classId",
+            "description": "class_id associated with the nft",
             "in": "path",
             "required": true,
             "type": "string"
@@ -3610,6 +3889,7 @@
         "parameters": [
           {
             "name": "classId",
+            "description": "class_id associated with the nft",
             "in": "path",
             "required": true,
             "type": "string"
@@ -3641,12 +3921,14 @@
         "parameters": [
           {
             "name": "classId",
+            "description": "class_id associated with the nft",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "owner",
+            "description": "owner is the owner address of the nft",
             "in": "query",
             "required": false,
             "type": "string"
@@ -3716,12 +3998,14 @@
         "parameters": [
           {
             "name": "classId",
+            "description": "class_id associated with the nft",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
             "name": "id",
+            "description": "id is a unique identifier of the NFT",
             "in": "path",
             "required": true,
             "type": "string"
@@ -3753,12 +4037,14 @@
         "parameters": [
           {
             "name": "classId",
+            "description": "class_id associated with the nft",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
             "name": "id",
+            "description": "id is a unique identifier of the NFT",
             "in": "path",
             "required": true,
             "type": "string"
@@ -3790,6 +4076,7 @@
         "parameters": [
           {
             "name": "classId",
+            "description": "class_id associated with the nft",
             "in": "path",
             "required": true,
             "type": "string"
@@ -3984,6 +4271,7 @@
     "/cosmos/staking/v1beta1/delegations/{delegatorAddr}": {
       "get": {
         "summary": "DelegatorDelegations queries all delegations of a given delegator address.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "DelegatorDelegations",
         "responses": {
           "200": {
@@ -4054,6 +4342,7 @@
     "/cosmos/staking/v1beta1/delegators/{delegatorAddr}/redelegations": {
       "get": {
         "summary": "Redelegations queries redelegations of given address.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "Redelegations",
         "responses": {
           "200": {
@@ -4138,6 +4427,7 @@
     "/cosmos/staking/v1beta1/delegators/{delegatorAddr}/unbonding_delegations": {
       "get": {
         "summary": "DelegatorUnbondingDelegations queries all unbonding delegations of a given\ndelegator address.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "DelegatorUnbondingDelegations",
         "responses": {
           "200": {
@@ -4208,6 +4498,7 @@
     "/cosmos/staking/v1beta1/delegators/{delegatorAddr}/validators": {
       "get": {
         "summary": "DelegatorValidators queries all validators info for given delegator\naddress.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "DelegatorValidators",
         "responses": {
           "200": {
@@ -4396,6 +4687,7 @@
     "/cosmos/staking/v1beta1/validators": {
       "get": {
         "summary": "Validators queries all validators that match the given status.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "Validators",
         "responses": {
           "200": {
@@ -4498,6 +4790,7 @@
     "/cosmos/staking/v1beta1/validators/{validatorAddr}/delegations": {
       "get": {
         "summary": "ValidatorDelegations queries delegate info for given validator.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "ValidatorDelegations",
         "responses": {
           "200": {
@@ -4646,6 +4939,7 @@
     "/cosmos/staking/v1beta1/validators/{validatorAddr}/unbonding_delegations": {
       "get": {
         "summary": "ValidatorUnbondingDelegations queries unbonding delegations of a validator.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
         "operationId": "ValidatorUnbondingDelegations",
         "responses": {
           "200": {
@@ -4710,6 +5004,146 @@
         ],
         "tags": [
           "Query"
+        ]
+      }
+    },
+    "/cosmos/tx/v1beta1/decode": {
+      "post": {
+        "summary": "TxDecode decodes the transaction.",
+        "description": "Since: cosmos-sdk 0.47",
+        "operationId": "TxDecode",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.tx.v1beta1.TxDecodeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "TxDecodeRequest is the request type for the Service.TxDecode\nRPC method.\n\nSince: cosmos-sdk 0.47",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/cosmos.tx.v1beta1.TxDecodeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Service"
+        ]
+      }
+    },
+    "/cosmos/tx/v1beta1/decode/amino": {
+      "post": {
+        "summary": "TxDecodeAmino decodes an Amino transaction from encoded bytes to JSON.",
+        "description": "Since: cosmos-sdk 0.47",
+        "operationId": "TxDecodeAmino",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.tx.v1beta1.TxDecodeAminoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "TxDecodeAminoRequest is the request type for the Service.TxDecodeAmino\nRPC method.\n\nSince: cosmos-sdk 0.47",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/cosmos.tx.v1beta1.TxDecodeAminoRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Service"
+        ]
+      }
+    },
+    "/cosmos/tx/v1beta1/encode": {
+      "post": {
+        "summary": "TxEncode encodes the transaction.",
+        "description": "Since: cosmos-sdk 0.47",
+        "operationId": "TxEncode",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.tx.v1beta1.TxEncodeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "TxEncodeRequest is the request type for the Service.TxEncode\nRPC method.\n\nSince: cosmos-sdk 0.47",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/cosmos.tx.v1beta1.TxEncodeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Service"
+        ]
+      }
+    },
+    "/cosmos/tx/v1beta1/encode/amino": {
+      "post": {
+        "summary": "TxEncodeAmino encodes an Amino transaction from JSON to encoded bytes.",
+        "description": "Since: cosmos-sdk 0.47",
+        "operationId": "TxEncodeAmino",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cosmos.tx.v1beta1.TxEncodeAminoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "TxEncodeAminoRequest is the request type for the Service.TxEncodeAmino\nRPC method.\n\nSince: cosmos-sdk 0.47",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/cosmos.tx.v1beta1.TxEncodeAminoRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Service"
         ]
       }
     },
@@ -7155,7 +7589,8 @@
             "description": "The denomination trace ([port_id]/[channel_id])+/[denom]",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "pattern": ".+"
           }
         ],
         "tags": [
@@ -7250,7 +7685,40 @@
             "description": "hash (in hex format) or denom (full denom with ibc prefix) of the denomination trace information.",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "pattern": ".+"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/transfer/v1/denoms/{denom}/total_escrow": {
+      "get": {
+        "summary": "TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.",
+        "operationId": "TotalEscrowForDenom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "denom",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": ".+"
           }
         ],
         "tags": [
@@ -7486,6 +7954,45 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/ibc.core.channel.v1.QueryNextSequenceReceiveResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/next_sequence_send": {
+      "get": {
+        "summary": "NextSequenceSend returns the next send sequence for a given channel.",
+        "operationId": "NextSequenceSend",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryNextSequenceSendResponse"
             }
           },
           "default": {
@@ -8628,9 +9135,31 @@
             "$ref": "#/definitions/cosmos.app.v1alpha1.ModuleConfig"
           },
           "description": "modules are the module configurations for the app."
+        },
+        "golangBindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.app.v1alpha1.GolangBinding"
+          },
+          "description": "golang_bindings specifies explicit interface to implementation type bindings which\ndepinject uses to resolve interface inputs to provider functions.  The scope of this\nfield's configuration is global (not module specific)."
         }
       },
       "description": "Config represents the configuration for a Cosmos SDK ABCI app.\nIt is intended that all state machine logic including the version of\nbaseapp and tx handlers (and possibly even Tendermint) that an app needs\ncan be described in a config object. For compatibility, the framework should\nallow a mixture of declarative and imperative app wiring, however, apps\nthat strive for the maximum ease of maintainability should be able to describe\ntheir state machine with a config object alone."
+    },
+    "cosmos.app.v1alpha1.GolangBinding": {
+      "type": "object",
+      "properties": {
+        "interfaceType": {
+          "type": "string",
+          "title": "interface_type is the interface type which will be bound to a specific implementation type"
+        },
+        "implementation": {
+          "type": "string",
+          "title": "implementation is the implementing type which will be supplied when an input of type interface is requested"
+        }
+      },
+      "description": "GolangBinding is an explicit interface type to implementing type binding for dependency injection."
     },
     "cosmos.app.v1alpha1.ModuleConfig": {
       "type": "object",
@@ -8642,6 +9171,14 @@
         "config": {
           "$ref": "#/definitions/google.protobuf.Any",
           "description": "config is the config object for the module. Module config messages should\ndefine a ModuleDescriptor using the cosmos.app.v1alpha1.is_module extension."
+        },
+        "golangBindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.app.v1alpha1.GolangBinding"
+          },
+          "description": "golang_bindings specifies explicit interface to implementation type bindings which\ndepinject uses to resolve interface inputs to provider functions.  The scope of this\nfield's configuration is module specific."
         }
       },
       "description": "ModuleConfig is a module configuration for an app."
@@ -8674,6 +9211,26 @@
         }
       },
       "description": "AddressStringToBytesResponse is the response type for AddressBytes rpc method.\n\nSince: cosmos-sdk 0.46"
+    },
+    "cosmos.auth.v1beta1.BaseAccount": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "pubKey": {
+          "$ref": "#/definitions/google.protobuf.Any"
+        },
+        "accountNumber": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "sequence": {
+          "type": "string",
+          "format": "uint64"
+        }
+      },
+      "description": "BaseAccount defines a base account type. It contains all the necessary fields\nfor basic account functionality. Any custom account type should extend this\ntype for additional functionality (e.g. vesting)."
     },
     "cosmos.auth.v1beta1.Bech32PrefixResponse": {
       "type": "object",
@@ -8717,7 +9274,18 @@
           "type": "string"
         }
       },
+      "description": "Since: cosmos-sdk 0.46.2",
       "title": "QueryAccountAddressByIDResponse is the response type for AccountAddressByID rpc method"
+    },
+    "cosmos.auth.v1beta1.QueryAccountInfoResponse": {
+      "type": "object",
+      "properties": {
+        "info": {
+          "$ref": "#/definitions/cosmos.auth.v1beta1.BaseAccount",
+          "description": "info is the account info which is represented by BaseAccount."
+        }
+      },
+      "description": "QueryAccountInfoResponse is the Query/AccountInfo response type.\n\nSince: cosmos-sdk 0.47"
     },
     "cosmos.auth.v1beta1.QueryAccountResponse": {
       "type": "object",
@@ -8746,6 +9314,15 @@
         }
       },
       "description": "QueryAccountsResponse is the response type for the Query/Accounts RPC method.\n\nSince: cosmos-sdk 0.43"
+    },
+    "cosmos.auth.v1beta1.QueryModuleAccountByNameResponse": {
+      "type": "object",
+      "properties": {
+        "account": {
+          "$ref": "#/definitions/google.protobuf.Any"
+        }
+      },
+      "description": "QueryModuleAccountByNameResponse is the response type for the Query/ModuleAccountByName RPC method."
     },
     "cosmos.auth.v1beta1.QueryModuleAccountsResponse": {
       "type": "object",
@@ -8857,6 +9434,177 @@
       },
       "description": "QueryGrantsResponse is the response type for the Query/Authorizations RPC method."
     },
+    "cosmos.autocli.v1.AppOptionsResponse": {
+      "type": "object",
+      "properties": {
+        "moduleOptions": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/cosmos.autocli.v1.ModuleOptions"
+          },
+          "description": "module_options is a map of module name to autocli module options."
+        }
+      },
+      "description": "AppOptionsResponse is the RemoteInfoService/AppOptions response type."
+    },
+    "cosmos.autocli.v1.FlagOptions": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "name is an alternate name to use for the field flag."
+        },
+        "shorthand": {
+          "type": "string",
+          "description": "shorthand is a one-letter abbreviated flag."
+        },
+        "usage": {
+          "type": "string",
+          "description": "usage is the help message."
+        },
+        "defaultValue": {
+          "type": "string",
+          "description": "default_value is the default value as text."
+        },
+        "noOptDefaultValue": {
+          "type": "string",
+          "description": "default value is the default value as text if the flag is used without any value."
+        },
+        "deprecated": {
+          "type": "string",
+          "description": "deprecated is the usage text to show if this flag is deprecated."
+        },
+        "shorthandDeprecated": {
+          "type": "string",
+          "description": "shorthand_deprecated is the usage text to show if the shorthand of this flag is deprecated."
+        },
+        "hidden": {
+          "type": "boolean",
+          "title": "hidden hides the flag from help/usage text"
+        }
+      },
+      "description": "FlagOptions are options for flags generated from rpc request fields.\nBy default, all request fields are configured as flags based on the\nkebab-case name of the field. Fields can be turned into positional arguments\ninstead by using RpcCommandOptions.positional_args."
+    },
+    "cosmos.autocli.v1.ModuleOptions": {
+      "type": "object",
+      "properties": {
+        "tx": {
+          "$ref": "#/definitions/cosmos.autocli.v1.ServiceCommandDescriptor",
+          "description": "tx describes the tx command for the module."
+        },
+        "query": {
+          "$ref": "#/definitions/cosmos.autocli.v1.ServiceCommandDescriptor",
+          "description": "query describes the tx command for the module."
+        }
+      },
+      "description": "ModuleOptions describes the CLI options for a Cosmos SDK module."
+    },
+    "cosmos.autocli.v1.PositionalArgDescriptor": {
+      "type": "object",
+      "properties": {
+        "protoField": {
+          "type": "string",
+          "description": "proto_field specifies the proto field to use as the positional arg. Any\nfields used as positional args will not have a flag generated."
+        },
+        "varargs": {
+          "type": "boolean",
+          "description": "varargs makes a positional parameter a varargs parameter. This can only be\napplied to last positional parameter and the proto_field must a repeated\nfield."
+        }
+      },
+      "description": "PositionalArgDescriptor describes a positional argument."
+    },
+    "cosmos.autocli.v1.RpcCommandOptions": {
+      "type": "object",
+      "properties": {
+        "rpcMethod": {
+          "type": "string",
+          "description": "rpc_method is short name of the protobuf rpc method that this command is\ngenerated from."
+        },
+        "use": {
+          "type": "string",
+          "description": "use is the one-line usage method. It also allows specifying an alternate\nname for the command as the first word of the usage text.\n\nBy default the name of an rpc command is the kebab-case short name of the\nrpc method."
+        },
+        "long": {
+          "type": "string",
+          "description": "long is the long message shown in the 'help <this-command>' output."
+        },
+        "short": {
+          "type": "string",
+          "description": "short is the short description shown in the 'help' output."
+        },
+        "example": {
+          "type": "string",
+          "description": "example is examples of how to use the command."
+        },
+        "alias": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "alias is an array of aliases that can be used instead of the first word in Use."
+        },
+        "suggestFor": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "suggest_for is an array of command names for which this command will be suggested -\nsimilar to aliases but only suggests."
+        },
+        "deprecated": {
+          "type": "string",
+          "description": "deprecated defines, if this command is deprecated and should print this string when used."
+        },
+        "version": {
+          "type": "string",
+          "description": "version defines the version for this command. If this value is non-empty and the command does not\ndefine a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\nwill print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the\ncommand does not define one."
+        },
+        "flagOptions": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/cosmos.autocli.v1.FlagOptions"
+          },
+          "description": "flag_options are options for flags generated from rpc request fields.\nBy default all request fields are configured as flags. They can\nalso be configured as positional args instead using positional_args."
+        },
+        "positionalArgs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.autocli.v1.PositionalArgDescriptor"
+          },
+          "description": "positional_args specifies positional arguments for the command."
+        },
+        "skip": {
+          "type": "boolean",
+          "description": "skip specifies whether to skip this rpc method when generating commands."
+        }
+      },
+      "description": "RpcCommandOptions specifies options for commands generated from protobuf\nrpc methods."
+    },
+    "cosmos.autocli.v1.ServiceCommandDescriptor": {
+      "type": "object",
+      "properties": {
+        "service": {
+          "type": "string",
+          "description": "service is the fully qualified name of the protobuf service to build\nthe command from. It can be left empty if sub_commands are used instead\nwhich may be the case if a module provides multiple tx and/or query services."
+        },
+        "rpcCommandOptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.autocli.v1.RpcCommandOptions"
+          },
+          "description": "rpc_command_options are options for commands generated from rpc methods.\nIf no options are specified for a given rpc method on the service, a\ncommand will be generated for that method with the default options."
+        },
+        "subCommands": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/cosmos.autocli.v1.ServiceCommandDescriptor"
+          },
+          "description": "sub_commands is a map of optional sub-commands for this command based on\ndifferent protobuf services. The map key is used as the name of the\nsub-command."
+        }
+      },
+      "description": "ServiceCommandDescriptor describes a CLI command based on a protobuf service."
+    },
     "cosmos.bank.v1beta1.DenomOwner": {
       "type": "object",
       "properties": {
@@ -8943,7 +9691,8 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.bank.v1beta1.SendEnabled"
-          }
+          },
+          "description": "Deprecated: Use of SendEnabled in params is deprecated.\nFor genesis, use the newly added send_enabled field in the genesis object.\nStorage, lookup, and manipulation of this information is now in the keeper.\n\nAs of cosmos-sdk 0.47, this only exists for backwards compatibility of genesis files."
         },
         "defaultSendEnabled": {
           "type": "boolean"
@@ -9032,6 +9781,33 @@
         }
       },
       "description": "QueryParamsResponse defines the response type for querying x/bank parameters."
+    },
+    "cosmos.bank.v1beta1.QuerySendEnabledResponse": {
+      "type": "object",
+      "properties": {
+        "sendEnabled": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.bank.v1beta1.SendEnabled"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response. This field is only\npopulated if the denoms field in the request is empty."
+        }
+      },
+      "description": "QuerySendEnabledResponse defines the RPC response of a SendEnable query.\n\nSince: cosmos-sdk 0.47"
+    },
+    "cosmos.bank.v1beta1.QuerySpendableBalanceByDenomResponse": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "$ref": "#/definitions/cosmos.base.v1beta1.Coin",
+          "description": "balance is the balance of the coin."
+        }
+      },
+      "description": "QuerySpendableBalanceByDenomResponse defines the gRPC response structure for\nquerying an account's spendable balance for a specific denom.\n\nSince: cosmos-sdk 0.47"
     },
     "cosmos.bank.v1beta1.QuerySpendableBalancesResponse": {
       "type": "object",
@@ -9257,6 +10033,15 @@
       },
       "description": "TxResponse defines a structure containing relevant tx data and metadata. The\ntags are stringified and the log is JSON decoded."
     },
+    "cosmos.base.node.v1beta1.ConfigResponse": {
+      "type": "object",
+      "properties": {
+        "minimumGasPrice": {
+          "type": "string"
+        }
+      },
+      "description": "ConfigResponse defines the response structure for the Config gRPC query."
+    },
     "cosmos.base.query.v1beta1.PageRequest": {
       "type": "object",
       "properties": {
@@ -9341,7 +10126,7 @@
           "type": "string"
         }
       },
-      "description": "ABCIQueryResponse defines the response structure for the ABCIQuery gRPC\nquery.\n\nNote: This type is a duplicate of the ResponseQuery proto type defined in\nTendermint."
+      "description": "ABCIQueryResponse defines the response structure for the ABCIQuery gRPC query.\n\nNote: This type is a duplicate of the ResponseQuery proto type defined in\nTendermint."
     },
     "cosmos.base.tendermint.v1beta1.Block": {
       "type": "object",
@@ -9376,7 +10161,7 @@
           "title": "Since: cosmos-sdk 0.47"
         }
       },
-      "description": "GetBlockByHeightResponse is the response type for the Query/GetBlockByHeight\nRPC method."
+      "description": "GetBlockByHeightResponse is the response type for the Query/GetBlockByHeight RPC method."
     },
     "cosmos.base.tendermint.v1beta1.GetLatestBlockResponse": {
       "type": "object",
@@ -9393,7 +10178,7 @@
           "title": "Since: cosmos-sdk 0.47"
         }
       },
-      "description": "GetLatestBlockResponse is the response type for the Query/GetLatestBlock RPC\nmethod."
+      "description": "GetLatestBlockResponse is the response type for the Query/GetLatestBlock RPC method."
     },
     "cosmos.base.tendermint.v1beta1.GetLatestValidatorSetResponse": {
       "type": "object",
@@ -9414,7 +10199,7 @@
           "description": "pagination defines an pagination for the response."
         }
       },
-      "description": "GetLatestValidatorSetResponse is the response type for the\nQuery/GetValidatorSetByHeight RPC method."
+      "description": "GetLatestValidatorSetResponse is the response type for the Query/GetValidatorSetByHeight RPC method."
     },
     "cosmos.base.tendermint.v1beta1.GetNodeInfoResponse": {
       "type": "object",
@@ -9426,7 +10211,7 @@
           "$ref": "#/definitions/cosmos.base.tendermint.v1beta1.VersionInfo"
         }
       },
-      "description": "GetNodeInfoResponse is the response type for the Query/GetNodeInfo RPC\nmethod."
+      "description": "GetNodeInfoResponse is the response type for the Query/GetNodeInfo RPC method."
     },
     "cosmos.base.tendermint.v1beta1.GetSyncingResponse": {
       "type": "object",
@@ -9456,7 +10241,7 @@
           "description": "pagination defines an pagination for the response."
         }
       },
-      "description": "GetValidatorSetByHeightResponse is the response type for the\nQuery/GetValidatorSetByHeight RPC method."
+      "description": "GetValidatorSetByHeightResponse is the response type for the Query/GetValidatorSetByHeight RPC method."
     },
     "cosmos.base.tendermint.v1beta1.Header": {
       "type": "object",
@@ -9563,7 +10348,7 @@
           "format": "byte"
         }
       },
-      "description": "ProofOp defines an operation used for calculating Merkle root. The data could\nbe arbitrary format, providing nessecary data for example neighbouring node\nhash.\n\nNote: This type is a duplicate of the ProofOp proto type defined in\nTendermint."
+      "description": "ProofOp defines an operation used for calculating Merkle root. The data could\nbe arbitrary format, providing necessary data for example neighbouring node\nhash.\n\nNote: This type is a duplicate of the ProofOp proto type defined in Tendermint."
     },
     "cosmos.base.tendermint.v1beta1.ProofOps": {
       "type": "object",
@@ -9576,7 +10361,7 @@
           }
         }
       },
-      "description": "ProofOps is Merkle proof defined by the list of ProofOps.\n\nNote: This type is a duplicate of the ProofOps proto type defined in\nTendermint."
+      "description": "ProofOps is Merkle proof defined by the list of ProofOps.\n\nNote: This type is a duplicate of the ProofOps proto type defined in Tendermint."
     },
     "cosmos.base.tendermint.v1beta1.Validator": {
       "type": "object",
@@ -9657,6 +10442,16 @@
       },
       "description": "DecCoin defines a token with a denomination and a decimal amount.\n\nNOTE: The amount field is an Dec which implements the custom method\nsignatures required by gogoproto."
     },
+    "cosmos.consensus.v1.QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/tendermint.types.ConsensusParams",
+          "description": "params are the tendermint consensus params stored in the consensus module.\nPlease note that `params.version` is not populated in this response, it is\ntracked separately in the x/upgrade module."
+        }
+      },
+      "description": "QueryParamsResponse defines the response type for querying x/consensus parameters."
+    },
     "cosmos.crypto.multisig.v1beta1.CompactBitArray": {
       "type": "object",
       "properties": {
@@ -9694,10 +10489,12 @@
           "type": "string"
         },
         "baseProposerReward": {
-          "type": "string"
+          "type": "string",
+          "description": "Deprecated: The base_proposer_reward field is deprecated and is no longer used\nin the x/distribution module's reward mechanism."
         },
         "bonusProposerReward": {
-          "type": "string"
+          "type": "string",
+          "description": "Deprecated: The bonus_proposer_reward field is deprecated and is no longer used\nin the x/distribution module's reward mechanism."
         },
         "withdrawAddrEnabled": {
           "type": "boolean"
@@ -9793,10 +10590,36 @@
       "properties": {
         "commission": {
           "$ref": "#/definitions/cosmos.distribution.v1beta1.ValidatorAccumulatedCommission",
-          "description": "commission defines the commision the validator received."
+          "description": "commission defines the commission the validator received."
         }
       },
       "title": "QueryValidatorCommissionResponse is the response type for the\nQuery/ValidatorCommission RPC method"
+    },
+    "cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse": {
+      "type": "object",
+      "properties": {
+        "operatorAddress": {
+          "type": "string",
+          "description": "operator_address defines the validator operator address."
+        },
+        "selfBondRewards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.base.v1beta1.DecCoin"
+          },
+          "description": "self_bond_rewards defines the self delegations rewards."
+        },
+        "commission": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.base.v1beta1.DecCoin"
+          },
+          "description": "commission defines the commission the validator received."
+        }
+      },
+      "description": "QueryValidatorDistributionInfoResponse is the response type for the Query/ValidatorDistributionInfo RPC method."
     },
     "cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse": {
       "type": "object",
@@ -9961,17 +10784,20 @@
       "properties": {
         "proposalId": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "description": "proposal_id defines the unique id of the proposal."
         },
         "depositor": {
-          "type": "string"
+          "type": "string",
+          "description": "depositor defines the deposit addresses from the proposals."
         },
         "amount": {
           "type": "array",
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          }
+          },
+          "description": "amount to be deposited by depositor."
         }
       },
       "description": "Deposit defines an amount deposited by an account address to an active\nproposal."
@@ -9989,27 +10815,80 @@
         },
         "maxDepositPeriod": {
           "type": "string",
-          "description": "Maximum period for Atom holders to deposit on a proposal. Initial value: 2\n months."
+          "description": "Maximum period for Atom holders to deposit on a proposal. Initial value: 2\nmonths."
         }
       },
       "description": "DepositParams defines the params for deposits on governance proposals."
+    },
+    "cosmos.gov.v1.Params": {
+      "type": "object",
+      "properties": {
+        "minDeposit": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
+          },
+          "description": "Minimum deposit for a proposal to enter voting period."
+        },
+        "maxDepositPeriod": {
+          "type": "string",
+          "description": "Maximum period for Atom holders to deposit on a proposal. Initial value: 2\nmonths."
+        },
+        "votingPeriod": {
+          "type": "string",
+          "description": "Duration of the voting period."
+        },
+        "quorum": {
+          "type": "string",
+          "description": "Minimum percentage of total stake needed to vote for a result to be\n considered valid."
+        },
+        "threshold": {
+          "type": "string",
+          "description": "Minimum proportion of Yes votes for proposal to pass. Default value: 0.5."
+        },
+        "vetoThreshold": {
+          "type": "string",
+          "description": "Minimum value of Veto votes to Total votes ratio for proposal to be\n vetoed. Default value: 1/3."
+        },
+        "minInitialDepositRatio": {
+          "type": "string",
+          "description": "The ratio representing the proportion of the deposit value that must be paid at proposal submission."
+        },
+        "burnVoteQuorum": {
+          "type": "boolean",
+          "title": "burn deposits if a proposal does not meet quorum"
+        },
+        "burnProposalDepositPrevote": {
+          "type": "boolean",
+          "title": "burn deposits if the proposal does not enter voting period"
+        },
+        "burnVoteVeto": {
+          "type": "boolean",
+          "title": "burn deposits if quorum with vote type no_veto is met"
+        }
+      },
+      "description": "Params defines the parameters for the x/gov module.\n\nSince: cosmos-sdk 0.47"
     },
     "cosmos.gov.v1.Proposal": {
       "type": "object",
       "properties": {
         "id": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "description": "id defines the unique id of the proposal."
         },
         "messages": {
           "type": "array",
           "items": {
             "type": "object",
             "$ref": "#/definitions/google.protobuf.Any"
-          }
+          },
+          "description": "messages are the arbitrary messages to be executed if the proposal passes."
         },
         "status": {
-          "$ref": "#/definitions/cosmos.gov.v1.ProposalStatus"
+          "$ref": "#/definitions/cosmos.gov.v1.ProposalStatus",
+          "description": "status defines the proposal status."
         },
         "finalTallyResult": {
           "$ref": "#/definitions/cosmos.gov.v1.TallyResult",
@@ -10017,30 +10896,50 @@
         },
         "submitTime": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "submit_time is the time of proposal submission."
         },
         "depositEndTime": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "deposit_end_time is the end time for deposition."
         },
         "totalDeposit": {
           "type": "array",
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          }
+          },
+          "description": "total_deposit is the total deposit on the proposal."
         },
         "votingStartTime": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "voting_start_time is the starting time to vote on a proposal."
         },
         "votingEndTime": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "voting_end_time is the end time of voting on a proposal."
         },
         "metadata": {
           "type": "string",
           "description": "metadata is any arbitrary metadata attached to the proposal."
+        },
+        "title": {
+          "type": "string",
+          "description": "Since: cosmos-sdk 0.47",
+          "title": "title is the title of the proposal"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Since: cosmos-sdk 0.47",
+          "title": "summary is a short summary of the proposal"
+        },
+        "proposer": {
+          "type": "string",
+          "description": "Since: cosmos-sdk 0.47",
+          "title": "Proposer is the address of the proposal sumbitter"
         }
       },
       "description": "Proposal defines the core field members of a governance proposal."
@@ -10076,7 +10975,8 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.gov.v1.Deposit"
-          }
+          },
+          "description": "deposits defines the requested deposits."
         },
         "pagination": {
           "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
@@ -10090,15 +10990,19 @@
       "properties": {
         "votingParams": {
           "$ref": "#/definitions/cosmos.gov.v1.VotingParams",
-          "description": "voting_params defines the parameters related to voting."
+          "description": "Deprecated: Prefer to use `params` instead.\nvoting_params defines the parameters related to voting."
         },
         "depositParams": {
           "$ref": "#/definitions/cosmos.gov.v1.DepositParams",
-          "description": "deposit_params defines the parameters related to deposit."
+          "description": "Deprecated: Prefer to use `params` instead.\ndeposit_params defines the parameters related to deposit."
         },
         "tallyParams": {
           "$ref": "#/definitions/cosmos.gov.v1.TallyParams",
-          "description": "tally_params defines the parameters related to tally."
+          "description": "Deprecated: Prefer to use `params` instead.\ntally_params defines the parameters related to tally."
+        },
+        "params": {
+          "$ref": "#/definitions/cosmos.gov.v1.Params",
+          "description": "params defines all the paramaters of x/gov module.\n\nSince: cosmos-sdk 0.47"
         }
       },
       "description": "QueryParamsResponse is the response type for the Query/Params RPC method."
@@ -10107,7 +11011,8 @@
       "type": "object",
       "properties": {
         "proposal": {
-          "$ref": "#/definitions/cosmos.gov.v1.Proposal"
+          "$ref": "#/definitions/cosmos.gov.v1.Proposal",
+          "description": "proposal is the requested governance proposal."
         }
       },
       "description": "QueryProposalResponse is the response type for the Query/Proposal RPC method."
@@ -10120,7 +11025,8 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.gov.v1.Proposal"
-          }
+          },
+          "description": "proposals defines all the requested governance proposals."
         },
         "pagination": {
           "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
@@ -10144,7 +11050,7 @@
       "properties": {
         "vote": {
           "$ref": "#/definitions/cosmos.gov.v1.Vote",
-          "description": "vote defined the queried vote."
+          "description": "vote defines the queried vote."
         }
       },
       "description": "QueryVoteResponse is the response type for the Query/Vote RPC method."
@@ -10158,7 +11064,7 @@
             "type": "object",
             "$ref": "#/definitions/cosmos.gov.v1.Vote"
           },
-          "description": "votes defined the queried votes."
+          "description": "votes defines the queried votes."
         },
         "pagination": {
           "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
@@ -10172,7 +11078,7 @@
       "properties": {
         "quorum": {
           "type": "string",
-          "description": "Minimum percentage of total stake needed to vote for a result to be\n considered valid."
+          "description": "Minimum percentage of total stake needed to vote for a result to be\nconsidered valid."
         },
         "threshold": {
           "type": "string",
@@ -10180,7 +11086,7 @@
         },
         "vetoThreshold": {
           "type": "string",
-          "description": "Minimum value of Veto votes to Total votes ratio for proposal to be\n vetoed. Default value: 1/3."
+          "description": "Minimum value of Veto votes to Total votes ratio for proposal to be\nvetoed. Default value: 1/3."
         }
       },
       "description": "TallyParams defines the params for tallying votes on governance proposals."
@@ -10189,16 +11095,20 @@
       "type": "object",
       "properties": {
         "yesCount": {
-          "type": "string"
+          "type": "string",
+          "description": "yes_count is the number of yes votes on a proposal."
         },
         "abstainCount": {
-          "type": "string"
+          "type": "string",
+          "description": "abstain_count is the number of abstain votes on a proposal."
         },
         "noCount": {
-          "type": "string"
+          "type": "string",
+          "description": "no_count is the number of no votes on a proposal."
         },
         "noWithVetoCount": {
-          "type": "string"
+          "type": "string",
+          "description": "no_with_veto_count is the number of no with veto votes on a proposal."
         }
       },
       "description": "TallyResult defines a standard tally for a governance proposal."
@@ -10208,17 +11118,20 @@
       "properties": {
         "proposalId": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "description": "proposal_id defines the unique id of the proposal."
         },
         "voter": {
-          "type": "string"
+          "type": "string",
+          "description": "voter is the voter address of the proposal."
         },
         "options": {
           "type": "array",
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.gov.v1.WeightedVoteOption"
-          }
+          },
+          "description": "options is the weighted vote options."
         },
         "metadata": {
           "type": "string",
@@ -10244,7 +11157,7 @@
       "properties": {
         "votingPeriod": {
           "type": "string",
-          "description": "Length of the voting period."
+          "description": "Duration of the voting period."
         }
       },
       "description": "VotingParams defines the params for voting on governance proposals."
@@ -10253,10 +11166,12 @@
       "type": "object",
       "properties": {
         "option": {
-          "$ref": "#/definitions/cosmos.gov.v1.VoteOption"
+          "$ref": "#/definitions/cosmos.gov.v1.VoteOption",
+          "description": "option defines the valid vote options, it must not contain duplicate vote options."
         },
         "weight": {
-          "type": "string"
+          "type": "string",
+          "description": "weight is the vote weight associated with the vote option."
         }
       },
       "description": "WeightedVoteOption defines a unit of vote for vote split."
@@ -10266,17 +11181,20 @@
       "properties": {
         "proposalId": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "description": "proposal_id defines the unique id of the proposal."
         },
         "depositor": {
-          "type": "string"
+          "type": "string",
+          "description": "depositor defines the deposit addresses from the proposals."
         },
         "amount": {
           "type": "array",
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          }
+          },
+          "description": "amount to be deposited by depositor."
         }
       },
       "description": "Deposit defines an amount deposited by an account address to an active\nproposal."
@@ -10294,7 +11212,7 @@
         },
         "maxDepositPeriod": {
           "type": "string",
-          "description": "Maximum period for Atom holders to deposit on a proposal. Initial value: 2\n months."
+          "description": "Maximum period for Atom holders to deposit on a proposal. Initial value: 2\nmonths."
         }
       },
       "description": "DepositParams defines the params for deposits on governance proposals."
@@ -10304,13 +11222,16 @@
       "properties": {
         "proposalId": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "description": "proposal_id defines the unique id of the proposal."
         },
         "content": {
-          "$ref": "#/definitions/google.protobuf.Any"
+          "$ref": "#/definitions/google.protobuf.Any",
+          "description": "content is the proposal's content."
         },
         "status": {
-          "$ref": "#/definitions/cosmos.gov.v1beta1.ProposalStatus"
+          "$ref": "#/definitions/cosmos.gov.v1beta1.ProposalStatus",
+          "description": "status defines the proposal status."
         },
         "finalTallyResult": {
           "$ref": "#/definitions/cosmos.gov.v1beta1.TallyResult",
@@ -10318,26 +11239,31 @@
         },
         "submitTime": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "submit_time is the time of proposal submission."
         },
         "depositEndTime": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "deposit_end_time is the end time for deposition."
         },
         "totalDeposit": {
           "type": "array",
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          }
+          },
+          "description": "total_deposit is the total deposit on the proposal."
         },
         "votingStartTime": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "voting_start_time is the starting time to vote on a proposal."
         },
         "votingEndTime": {
           "type": "string",
-          "format": "date-time"
+          "format": "date-time",
+          "description": "voting_end_time is the end time of voting on a proposal."
         }
       },
       "description": "Proposal defines the core field members of a governance proposal."
@@ -10373,7 +11299,8 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.gov.v1beta1.Deposit"
-          }
+          },
+          "description": "deposits defines the requested deposits."
         },
         "pagination": {
           "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
@@ -10417,7 +11344,8 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.gov.v1beta1.Proposal"
-          }
+          },
+          "description": "proposals defines all the requested governance proposals."
         },
         "pagination": {
           "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
@@ -10441,7 +11369,7 @@
       "properties": {
         "vote": {
           "$ref": "#/definitions/cosmos.gov.v1beta1.Vote",
-          "description": "vote defined the queried vote."
+          "description": "vote defines the queried vote."
         }
       },
       "description": "QueryVoteResponse is the response type for the Query/Vote RPC method."
@@ -10455,7 +11383,7 @@
             "type": "object",
             "$ref": "#/definitions/cosmos.gov.v1beta1.Vote"
           },
-          "description": "votes defined the queried votes."
+          "description": "votes defines the queried votes."
         },
         "pagination": {
           "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
@@ -10470,7 +11398,7 @@
         "quorum": {
           "type": "string",
           "format": "byte",
-          "description": "Minimum percentage of total stake needed to vote for a result to be\n considered valid."
+          "description": "Minimum percentage of total stake needed to vote for a result to be\nconsidered valid."
         },
         "threshold": {
           "type": "string",
@@ -10480,7 +11408,7 @@
         "vetoThreshold": {
           "type": "string",
           "format": "byte",
-          "description": "Minimum value of Veto votes to Total votes ratio for proposal to be\n vetoed. Default value: 1/3."
+          "description": "Minimum value of Veto votes to Total votes ratio for proposal to be\nvetoed. Default value: 1/3."
         }
       },
       "description": "TallyParams defines the params for tallying votes on governance proposals."
@@ -10489,16 +11417,20 @@
       "type": "object",
       "properties": {
         "yes": {
-          "type": "string"
+          "type": "string",
+          "description": "yes is the number of yes votes on a proposal."
         },
         "abstain": {
-          "type": "string"
+          "type": "string",
+          "description": "abstain is the number of abstain votes on a proposal."
         },
         "no": {
-          "type": "string"
+          "type": "string",
+          "description": "no is the number of no votes on a proposal."
         },
         "noWithVeto": {
-          "type": "string"
+          "type": "string",
+          "description": "no_with_veto is the number of no with veto votes on a proposal."
         }
       },
       "description": "TallyResult defines a standard tally for a governance proposal."
@@ -10508,10 +11440,12 @@
       "properties": {
         "proposalId": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "description": "proposal_id defines the unique id of the proposal."
         },
         "voter": {
-          "type": "string"
+          "type": "string",
+          "description": "voter is the voter address of the proposal."
         },
         "option": {
           "$ref": "#/definitions/cosmos.gov.v1beta1.VoteOption",
@@ -10523,7 +11457,7 @@
             "type": "object",
             "$ref": "#/definitions/cosmos.gov.v1beta1.WeightedVoteOption"
           },
-          "title": "Since: cosmos-sdk 0.43"
+          "description": "options is the weighted vote options.\n\nSince: cosmos-sdk 0.43"
         }
       },
       "description": "Vote defines a vote on a governance proposal.\nA Vote consists of a proposal ID, the voter, and the vote option."
@@ -10545,7 +11479,7 @@
       "properties": {
         "votingPeriod": {
           "type": "string",
-          "description": "Length of the voting period."
+          "description": "Duration of the voting period."
         }
       },
       "description": "VotingParams defines the params for voting on governance proposals."
@@ -10554,10 +11488,12 @@
       "type": "object",
       "properties": {
         "option": {
-          "$ref": "#/definitions/cosmos.gov.v1beta1.VoteOption"
+          "$ref": "#/definitions/cosmos.gov.v1beta1.VoteOption",
+          "description": "option defines the valid vote options, it must not contain duplicate vote options."
         },
         "weight": {
-          "type": "string"
+          "type": "string",
+          "description": "weight is the vote weight associated with the vote option."
         }
       },
       "description": "WeightedVoteOption defines a unit of vote for vote split.\n\nSince: cosmos-sdk 0.43"
@@ -10628,7 +11564,7 @@
         },
         "metadata": {
           "type": "string",
-          "description": "metadata is any arbitrary metadata to attached to the group policy."
+          "description": "metadata is any arbitrary metadata attached to the group policy."
         },
         "version": {
           "type": "string",
@@ -10684,7 +11620,7 @@
         },
         "metadata": {
           "type": "string",
-          "description": "metadata is any arbitrary metadata to attached to the proposal."
+          "description": "metadata is any arbitrary metadata attached to the proposal."
         },
         "proposers": {
           "type": "array",
@@ -10719,7 +11655,7 @@
         "votingPeriodEnd": {
           "type": "string",
           "format": "date-time",
-          "description": "voting_period_end is the timestamp before which voting must be done.\nUnless a successfull MsgExec is called before (to execute a proposal whose\ntally is successful before the voting period ends), tallying will be done\nat this point, and the `final_tally_result`and `status` fields will be\naccordingly updated."
+          "description": "voting_period_end is the timestamp before which voting must be done.\nUnless a successful MsgExec is called before (to execute a proposal whose\ntally is successful before the voting period ends), tallying will be done\nat this point, and the `final_tally_result`and `status` fields will be\naccordingly updated."
         },
         "executorResult": {
           "$ref": "#/definitions/cosmos.group.v1.ProposalExecutorResult",
@@ -10732,6 +11668,16 @@
             "$ref": "#/definitions/google.protobuf.Any"
           },
           "description": "messages is a list of `sdk.Msg`s that will be executed if the proposal passes."
+        },
+        "title": {
+          "type": "string",
+          "description": "Since: cosmos-sdk 0.47",
+          "title": "title is the title of the proposal"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Since: cosmos-sdk 0.47",
+          "title": "summary is a short summary of the proposal"
         }
       },
       "description": "Proposal defines a group proposal. Any member of a group can submit a proposal\nfor a group policy to decide upon.\nA proposal consists of a set of `sdk.Msg`s that will be executed if the proposal\npasses as well as some optional metadata associated with the proposal."
@@ -10765,7 +11711,7 @@
       "properties": {
         "info": {
           "$ref": "#/definitions/cosmos.group.v1.GroupInfo",
-          "description": "info is the GroupInfo for the group."
+          "description": "info is the GroupInfo of the group."
         }
       },
       "description": "QueryGroupInfoResponse is the Query/GroupInfo response type."
@@ -10829,7 +11775,7 @@
       "properties": {
         "info": {
           "$ref": "#/definitions/cosmos.group.v1.GroupPolicyInfo",
-          "description": "info is the GroupPolicyInfo for the group policy."
+          "description": "info is the GroupPolicyInfo of the group policy."
         }
       },
       "description": "QueryGroupPolicyInfoResponse is the Query/GroupPolicyInfo response type."
@@ -10994,7 +11940,7 @@
         },
         "metadata": {
           "type": "string",
-          "description": "metadata is any arbitrary metadata to attached to the vote."
+          "description": "metadata is any arbitrary metadata attached to the vote."
         },
         "submitTime": {
           "type": "string",
@@ -11045,7 +11991,7 @@
           "title": "expected blocks per year"
         }
       },
-      "description": "Params holds parameters for the mint module."
+      "description": "Params defines the parameters for the x/mint module."
     },
     "cosmos.mint.v1beta1.QueryAnnualProvisionsResponse": {
       "type": "object",
@@ -11144,7 +12090,8 @@
       "properties": {
         "amount": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "title": "amount is the number of all NFTs of a given class owned by the owner"
         }
       },
       "title": "QueryBalanceResponse is the response type for the Query/Balance RPC method"
@@ -11153,7 +12100,8 @@
       "type": "object",
       "properties": {
         "class": {
-          "$ref": "#/definitions/cosmos.nft.v1beta1.Class"
+          "$ref": "#/definitions/cosmos.nft.v1beta1.Class",
+          "description": "class defines the class of the nft type."
         }
       },
       "title": "QueryClassResponse is the response type for the Query/Class RPC method"
@@ -11166,10 +12114,12 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.nft.v1beta1.Class"
-          }
+          },
+          "description": "class defines the class of the nft type."
         },
         "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse"
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response."
         }
       },
       "title": "QueryClassesResponse is the response type for the Query/Classes RPC method"
@@ -11178,7 +12128,8 @@
       "type": "object",
       "properties": {
         "nft": {
-          "$ref": "#/definitions/cosmos.nft.v1beta1.NFT"
+          "$ref": "#/definitions/cosmos.nft.v1beta1.NFT",
+          "title": "owner is the owner address of the nft"
         }
       },
       "title": "QueryNFTResponse is the response type for the Query/NFT RPC method"
@@ -11191,10 +12142,12 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/cosmos.nft.v1beta1.NFT"
-          }
+          },
+          "title": "NFT defines the NFT"
         },
         "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse"
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response."
         }
       },
       "title": "QueryNFTsResponse is the response type for the Query/NFTs RPC methods"
@@ -11203,7 +12156,8 @@
       "type": "object",
       "properties": {
         "owner": {
-          "type": "string"
+          "type": "string",
+          "title": "owner is the owner address of the nft"
         }
       },
       "title": "QueryOwnerResponse is the response type for the Query/Owner RPC method"
@@ -11213,10 +12167,117 @@
       "properties": {
         "amount": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "title": "amount is the number of all NFTs from the given class"
         }
       },
       "title": "QuerySupplyResponse is the response type for the Query/Supply RPC method"
+    },
+    "cosmos.orm.query.v1alpha1.GetResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/google.protobuf.Any",
+          "description": "result is the result of the get query. If no value is found, the gRPC\nstatus code NOT_FOUND will be returned."
+        }
+      },
+      "description": "GetResponse is the Query/Get response type."
+    },
+    "cosmos.orm.query.v1alpha1.IndexValue": {
+      "type": "object",
+      "properties": {
+        "uint": {
+          "type": "string",
+          "format": "uint64",
+          "description": "uint specifies a value for an uint32, fixed32, uint64, or fixed64\nindex field."
+        },
+        "int": {
+          "type": "string",
+          "format": "int64",
+          "description": "int64 specifies a value for an int32, sfixed32, int64, or sfixed64\nindex field."
+        },
+        "str": {
+          "type": "string",
+          "description": "str specifies a value for a string index field."
+        },
+        "bytes": {
+          "type": "string",
+          "format": "byte",
+          "description": "bytes specifies a value for a bytes index field."
+        },
+        "enum": {
+          "type": "string",
+          "description": "enum specifies a value for an enum index field."
+        },
+        "bool": {
+          "type": "boolean",
+          "description": "bool specifies a value for a bool index field."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "timestamp specifies a value for a timestamp index field."
+        },
+        "duration": {
+          "type": "string",
+          "description": "duration specifies a value for a duration index field."
+        }
+      },
+      "description": "IndexValue represents the value of a field in an ORM index expression."
+    },
+    "cosmos.orm.query.v1alpha1.ListRequest.Prefix": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.orm.query.v1alpha1.IndexValue"
+          },
+          "description": "values specifies the index values for the prefix query.\nIt is valid to special a partial prefix with fewer values than\nthe number of fields in the index."
+        }
+      },
+      "description": "Prefix specifies the arguments to a prefix query."
+    },
+    "cosmos.orm.query.v1alpha1.ListRequest.Range": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.orm.query.v1alpha1.IndexValue"
+          },
+          "description": "start specifies the starting index values for the range query.\nIt is valid to provide fewer values than the number of fields in the\nindex."
+        },
+        "end": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.orm.query.v1alpha1.IndexValue"
+          },
+          "description": "end specifies the inclusive ending index values for the range query.\nIt is valid to provide fewer values than the number of fields in the\nindex."
+        }
+      },
+      "description": "Range specifies the arguments to a range query."
+    },
+    "cosmos.orm.query.v1alpha1.ListResponse": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/google.protobuf.Any"
+          },
+          "description": "results are the results of the query."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination is the pagination response."
+        }
+      },
+      "description": "ListResponse is the Query/List response type."
     },
     "cosmos.params.v1beta1.ParamChange": {
       "type": "object",
@@ -11512,7 +12573,7 @@
           "title": "min_commission_rate is the chain-wide minimum commission rate that a validator can charge their delegators"
         }
       },
-      "description": "Params defines the parameters for the staking module."
+      "description": "Params defines the parameters for the x/staking module."
     },
     "cosmos.staking.v1beta1.Pool": {
       "type": "object",
@@ -11764,6 +12825,16 @@
         "sharesDst": {
           "type": "string",
           "description": "shares_dst is the amount of destination-validator shares created by redelegation."
+        },
+        "unbondingId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Incrementing id that uniquely identifies this entry"
+        },
+        "unbondingOnHoldRefCount": {
+          "type": "string",
+          "format": "int64",
+          "title": "Strictly positive if this entry's unbonding has been stopped by external modules"
         }
       },
       "description": "RedelegationEntry defines a redelegation object with relevant metadata."
@@ -11838,6 +12909,16 @@
         "balance": {
           "type": "string",
           "description": "balance defines the tokens to receive at completion."
+        },
+        "unbondingId": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Incrementing id that uniquely identifies this entry"
+        },
+        "unbondingOnHoldRefCount": {
+          "type": "string",
+          "format": "int64",
+          "title": "Strictly positive if this entry's unbonding has been stopped by external modules"
         }
       },
       "description": "UnbondingDelegationEntry defines an unbonding object with relevant metadata."
@@ -11890,6 +12971,19 @@
         "minSelfDelegation": {
           "type": "string",
           "description": "min_self_delegation is the validator's self declared minimum self delegation.\n\nSince: cosmos-sdk 0.46"
+        },
+        "unbondingOnHoldRefCount": {
+          "type": "string",
+          "format": "int64",
+          "title": "strictly positive if this validator's unbonding has been stopped by external modules"
+        },
+        "unbondingIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "list of unbonding ids, each uniquely identifing an unbonding of this validator"
         }
       },
       "description": "Validator defines a validator, together with the total amount of the\nValidator's bond shares and their exchange rate to coins. Slashing results in\na decrease in the exchange rate, allowing correct calculation of future\nundelegations without iterating over delegators. When coins are delegated to\nthis validator, the validator is credited with a delegation whose number of\nbond shares is based on the amount of coins delegated divided by the current\nexchange rate. Voting power can be calculated as total bonded shares\nmultiplied by exchange rate."
@@ -11938,7 +13032,7 @@
         "BROADCAST_MODE_ASYNC"
       ],
       "default": "BROADCAST_MODE_UNSPECIFIED",
-      "description": "BroadcastMode specifies the broadcast mode for the TxService.Broadcast RPC method.\n\n - BROADCAST_MODE_UNSPECIFIED: zero-value for mode ordering\n - BROADCAST_MODE_BLOCK: BROADCAST_MODE_BLOCK defines a tx broadcasting mode where the client waits for\nthe tx to be committed in a block.\n - BROADCAST_MODE_SYNC: BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits for\na CheckTx execution response only.\n - BROADCAST_MODE_ASYNC: BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client returns\nimmediately."
+      "description": "BroadcastMode specifies the broadcast mode for the TxService.Broadcast RPC method.\n\n - BROADCAST_MODE_UNSPECIFIED: zero-value for mode ordering\n - BROADCAST_MODE_BLOCK: DEPRECATED: use BROADCAST_MODE_SYNC instead,\nBROADCAST_MODE_BLOCK is not supported by the SDK from v0.47.x onwards.\n - BROADCAST_MODE_SYNC: BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits for\na CheckTx execution response only.\n - BROADCAST_MODE_ASYNC: BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client returns\nimmediately."
     },
     "cosmos.tx.v1beta1.BroadcastTxRequest": {
       "type": "object",
@@ -12240,6 +13334,86 @@
       },
       "description": "TxBody is the body of a transaction that all signers sign over."
     },
+    "cosmos.tx.v1beta1.TxDecodeAminoRequest": {
+      "type": "object",
+      "properties": {
+        "aminoBinary": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "description": "TxDecodeAminoRequest is the request type for the Service.TxDecodeAmino\nRPC method.\n\nSince: cosmos-sdk 0.47"
+    },
+    "cosmos.tx.v1beta1.TxDecodeAminoResponse": {
+      "type": "object",
+      "properties": {
+        "aminoJson": {
+          "type": "string"
+        }
+      },
+      "description": "TxDecodeAminoResponse is the response type for the Service.TxDecodeAmino\nRPC method.\n\nSince: cosmos-sdk 0.47"
+    },
+    "cosmos.tx.v1beta1.TxDecodeRequest": {
+      "type": "object",
+      "properties": {
+        "txBytes": {
+          "type": "string",
+          "format": "byte",
+          "description": "tx_bytes is the raw transaction."
+        }
+      },
+      "description": "TxDecodeRequest is the request type for the Service.TxDecode\nRPC method.\n\nSince: cosmos-sdk 0.47"
+    },
+    "cosmos.tx.v1beta1.TxDecodeResponse": {
+      "type": "object",
+      "properties": {
+        "tx": {
+          "$ref": "#/definitions/cosmos.tx.v1beta1.Tx",
+          "description": "tx is the decoded transaction."
+        }
+      },
+      "description": "TxDecodeResponse is the response type for the\nService.TxDecode method.\n\nSince: cosmos-sdk 0.47"
+    },
+    "cosmos.tx.v1beta1.TxEncodeAminoRequest": {
+      "type": "object",
+      "properties": {
+        "aminoJson": {
+          "type": "string"
+        }
+      },
+      "description": "TxEncodeAminoRequest is the request type for the Service.TxEncodeAmino\nRPC method.\n\nSince: cosmos-sdk 0.47"
+    },
+    "cosmos.tx.v1beta1.TxEncodeAminoResponse": {
+      "type": "object",
+      "properties": {
+        "aminoBinary": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "description": "TxEncodeAminoResponse is the response type for the Service.TxEncodeAmino\nRPC method.\n\nSince: cosmos-sdk 0.47"
+    },
+    "cosmos.tx.v1beta1.TxEncodeRequest": {
+      "type": "object",
+      "properties": {
+        "tx": {
+          "$ref": "#/definitions/cosmos.tx.v1beta1.Tx",
+          "description": "tx is the transaction to encode."
+        }
+      },
+      "description": "TxEncodeRequest is the request type for the Service.TxEncode\nRPC method.\n\nSince: cosmos-sdk 0.47"
+    },
+    "cosmos.tx.v1beta1.TxEncodeResponse": {
+      "type": "object",
+      "properties": {
+        "txBytes": {
+          "type": "string",
+          "format": "byte",
+          "description": "tx_bytes is the encoded transaction bytes."
+        }
+      },
+      "description": "TxEncodeResponse is the response type for the\nService.TxEncode method.\n\nSince: cosmos-sdk 0.47"
+    },
     "cosmos.upgrade.v1beta1.ModuleVersion": {
       "type": "object",
       "properties": {
@@ -12270,7 +13444,7 @@
         "height": {
           "type": "string",
           "format": "int64",
-          "description": "The height at which the upgrade must be performed.\nOnly used if Time is not set."
+          "description": "The height at which the upgrade must be performed."
         },
         "info": {
           "type": "string",
@@ -13220,6 +14394,10 @@
             "$ref": "#/definitions/ibc.applications.fee.v1.FeeEnabledChannel"
           },
           "title": "list of fee enabled channels"
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response."
         }
       },
       "title": "QueryFeeEnabledChannelsResponse defines the response type for the FeeEnabledChannels rpc"
@@ -13244,6 +14422,10 @@
             "$ref": "#/definitions/ibc.applications.fee.v1.IdentifiedPacketFees"
           },
           "title": "Map of all incentivized_packets"
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response."
         }
       },
       "title": "QueryIncentivizedPacketsResponse defines the response type for the incentivized packets RPC"
@@ -13258,6 +14440,10 @@
             "$ref": "#/definitions/ibc.applications.fee.v1.IdentifiedPacketFees"
           },
           "title": "list of identified fees for incentivized packets"
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response."
         }
       },
       "title": "QueryIncentivizedPacketsResponse defines the response type for the IncentivizedPackets rpc"
@@ -13455,6 +14641,15 @@
         }
       },
       "description": "QueryParamsResponse is the response type for the Query/Params RPC method."
+    },
+    "ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
+        }
+      },
+      "description": "QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method."
     },
     "ibc.core.channel.v1.Channel": {
       "type": "object",
@@ -13715,6 +14910,26 @@
       },
       "title": "QuerySequenceResponse is the request type for the\nQuery/QueryNextSequenceReceiveResponse RPC method"
     },
+    "ibc.core.channel.v1.QueryNextSequenceSendResponse": {
+      "type": "object",
+      "properties": {
+        "nextSequenceSend": {
+          "type": "string",
+          "format": "uint64",
+          "title": "next sequence send number"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryNextSequenceSendResponse is the request type for the\nQuery/QueryNextSequenceSend RPC method"
+    },
     "ibc.core.channel.v1.QueryPacketAcknowledgementResponse": {
       "type": "object",
       "properties": {
@@ -13917,7 +15132,7 @@
           "items": {
             "type": "string"
           },
-          "description": "allowed_clients defines the list of allowed client state types."
+          "description": "allowed_clients defines the list of allowed client state types which can be created\nand interacted with. If a client type is removed from the allowed clients list, usage\nof this client will be disabled until it is added again to the list."
         }
       },
       "description": "Params defines the set of IBC light client parameters."
@@ -14321,12 +15536,10 @@
       "type": "object",
       "properties": {
         "key": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "value": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         },
         "index": {
           "type": "boolean",
@@ -14347,7 +15560,7 @@
           "format": "byte"
         }
       },
-      "title": "PublicKey defines the keys available for use with Tendermint Validators"
+      "title": "PublicKey defines the keys available for use with Validators"
     },
     "tendermint.p2p.DefaultNodeInfo": {
       "type": "object",
@@ -14446,7 +15659,24 @@
         "BLOCK_ID_FLAG_NIL"
       ],
       "default": "BLOCK_ID_FLAG_UNKNOWN",
-      "title": "BlockIdFlag indicates which BlcokID the signature is for"
+      "description": "- BLOCK_ID_FLAG_UNKNOWN: indicates an error condition\n - BLOCK_ID_FLAG_ABSENT: the vote was not received\n - BLOCK_ID_FLAG_COMMIT: voted for the block that received the majority\n - BLOCK_ID_FLAG_NIL: voted for nil",
+      "title": "BlockIdFlag indicates which BlockID the signature is for"
+    },
+    "tendermint.types.BlockParams": {
+      "type": "object",
+      "properties": {
+        "maxBytes": {
+          "type": "string",
+          "format": "int64",
+          "title": "Max block size, in bytes.\nNote: must be greater than 0"
+        },
+        "maxGas": {
+          "type": "string",
+          "format": "int64",
+          "title": "Max gas per block.\nNote: must be greater or equal to -1"
+        }
+      },
+      "description": "BlockParams contains limits on the block size."
     },
     "tendermint.types.Commit": {
       "type": "object",
@@ -14492,6 +15722,24 @@
         }
       },
       "description": "CommitSig is a part of the Vote included in a Commit."
+    },
+    "tendermint.types.ConsensusParams": {
+      "type": "object",
+      "properties": {
+        "block": {
+          "$ref": "#/definitions/tendermint.types.BlockParams"
+        },
+        "evidence": {
+          "$ref": "#/definitions/tendermint.types.EvidenceParams"
+        },
+        "validator": {
+          "$ref": "#/definitions/tendermint.types.ValidatorParams"
+        },
+        "version": {
+          "$ref": "#/definitions/tendermint.types.VersionParams"
+        }
+      },
+      "description": "ConsensusParams contains consensus critical parameters that determine the\nvalidity of blocks."
     },
     "tendermint.types.Data": {
       "type": "object",
@@ -14553,6 +15801,26 @@
           }
         }
       }
+    },
+    "tendermint.types.EvidenceParams": {
+      "type": "object",
+      "properties": {
+        "maxAgeNumBlocks": {
+          "type": "string",
+          "format": "int64",
+          "description": "Max age of evidence, in blocks.\n\nThe basic formula for calculating this is: MaxAgeDuration / {average block\ntime}."
+        },
+        "maxAgeDuration": {
+          "type": "string",
+          "description": "Max age of evidence, in time.\n\nIt should correspond with an app's \"unbonding period\" or other similar\nmechanism for handling [Nothing-At-Stake\nattacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed)."
+        },
+        "maxBytes": {
+          "type": "string",
+          "format": "int64",
+          "title": "This sets the maximum size of total evidence in bytes that can be committed in a single block.\nand should fall comfortably under the max block bytes.\nDefault is 1048576 or 1MB"
+        }
+      },
+      "description": "EvidenceParams determine how we handle evidence of malfeasance."
     },
     "tendermint.types.Header": {
       "type": "object",
@@ -14625,7 +15893,7 @@
           "title": "original proposer of the block"
         }
       },
-      "description": "Header defines the structure of a Tendermint block header."
+      "description": "Header defines the structure of a block header."
     },
     "tendermint.types.LightBlock": {
       "type": "object",
@@ -14722,6 +15990,18 @@
         }
       }
     },
+    "tendermint.types.ValidatorParams": {
+      "type": "object",
+      "properties": {
+        "pubKeyTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "ValidatorParams restrict the public key types validators can use.\nNOTE: uses ABCI pubkey naming, not Amino names."
+    },
     "tendermint.types.ValidatorSet": {
       "type": "object",
       "properties": {
@@ -14740,6 +16020,16 @@
           "format": "int64"
         }
       }
+    },
+    "tendermint.types.VersionParams": {
+      "type": "object",
+      "properties": {
+        "app": {
+          "type": "string",
+          "format": "uint64"
+        }
+      },
+      "description": "VersionParams contains the ABCI application version."
     },
     "tendermint.types.Vote": {
       "type": "object",
@@ -14773,10 +16063,21 @@
         },
         "signature": {
           "type": "string",
-          "format": "byte"
+          "format": "byte",
+          "description": "Vote signature by the validator if they participated in consensus for the\nassociated block."
+        },
+        "extension": {
+          "type": "string",
+          "format": "byte",
+          "description": "Vote extension provided by the application. Only valid for precommit\nmessages."
+        },
+        "extensionSignature": {
+          "type": "string",
+          "format": "byte",
+          "description": "Vote extension signature by the validator if they participated in\nconsensus for the associated block.\nOnly valid for precommit messages."
         }
       },
-      "description": "Vote represents a prevote, precommit, or commit vote from validators for\nconsensus."
+      "description": "Vote represents a prevote or precommit vote from validators for\nconsensus."
     },
     "tendermint.version.Consensus": {
       "type": "object",
