@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	amino "github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/ethereum/go-ethereum/common"
-	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 
 	cryptocodec "github.com/haqq-network/haqq/crypto/codec"
 	enccodec "github.com/haqq-network/haqq/encoding/codec"
@@ -73,11 +73,11 @@ func TestKeyring(t *testing.T) {
 	addr := common.BytesToAddress(privkey.PubKey().Address().Bytes())
 
 	os.Setenv(hdWalletFixEnv, "true")
-	wallet, err := hdwallet.NewFromMnemonic(mnemonic)
+	wallet, err := NewFromMnemonic(mnemonic)
 	os.Setenv(hdWalletFixEnv, "")
 	require.NoError(t, err)
 
-	path := hdwallet.MustParseDerivationPath(hdPath)
+	path := MustParseDerivationPath(hdPath)
 
 	account, err := wallet.Derive(path, false)
 	require.NoError(t, err)
@@ -100,14 +100,14 @@ func TestDerivation(t *testing.T) {
 
 	require.False(t, privkey.Equals(badPrivKey))
 
-	wallet, err := hdwallet.NewFromMnemonic(mnemonic)
+	wallet, err := NewFromMnemonic(mnemonic)
 	require.NoError(t, err)
 
-	path := hdwallet.MustParseDerivationPath(haqqtypes.BIP44HDPath)
+	path := MustParseDerivationPath(haqqtypes.BIP44HDPath)
 	account, err := wallet.Derive(path, false)
 	require.NoError(t, err)
 
-	badPath := hdwallet.MustParseDerivationPath("44'/60'/0'/0/0")
+	badPath := MustParseDerivationPath("44'/60'/0'/0/0")
 	badAccount, err := wallet.Derive(badPath, false)
 	require.NoError(t, err)
 
@@ -116,15 +116,15 @@ func TestDerivation(t *testing.T) {
 	require.Equal(t, badAccount.Address.String(), "0xF8D6FDf2B8b488ea37e54903750dcd13F67E71cb")
 	// Inequality of wrong derivation path address
 	require.NotEqual(t, account.Address.String(), badAccount.Address.String())
-	// Equality of Haqq Network implementation
+	// Equality of Haqq implementation
 	require.Equal(t, common.BytesToAddress(privkey.PubKey().Address().Bytes()).String(), "0xA588C66983a81e800Db4dF74564F09f91c026351")
 	require.Equal(t, common.BytesToAddress(badPrivKey.PubKey().Address().Bytes()).String(), "0xF8D6FDf2B8b488ea37e54903750dcd13F67E71cb")
 
-	// Equality of Eth and Haqq Network implementation
+	// Equality of Eth and Haqq implementation
 	require.Equal(t, common.BytesToAddress(privkey.PubKey().Address()).String(), account.Address.String())
 	require.Equal(t, common.BytesToAddress(badPrivKey.PubKey().Address()).String(), badAccount.Address.String())
 
-	// Inequality of wrong derivation path of Eth and Haqq Network implementation
+	// Inequality of wrong derivation path of Eth and Haqq implementation
 	require.NotEqual(t, common.BytesToAddress(privkey.PubKey().Address()).String(), badAccount.Address.String())
 	require.NotEqual(t, common.BytesToAddress(badPrivKey.PubKey().Address()).String(), account.Address.Hex())
 }

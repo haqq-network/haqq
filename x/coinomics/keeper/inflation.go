@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
@@ -47,6 +49,15 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 		blockMint = maxSupply.Sub(bankTotalSupply)
 		params.EnableCoinomics = false
 		k.SetParams(ctx, params)
+	}
+
+	if blockMint.IsNegative() {
+		// state is corrupted
+		errStr := fmt.Sprintf("MintAndAllocate # blockMint is negative # blockMint: %s, totalBonded: %s, rewardCoefficient: %s, currentBlockTS: %s, prevBlockTS: %s, yearInMillis: %s", blockMint.String(), totalBonded.String(), rewardCoefficient.String(), currentBlockTS.String(), prevBlockTS.String(), yearInMillis.String())
+
+		ctx.Logger().Error(errStr)
+
+		return nil
 	}
 
 	// Mint and allocate the calculated coin amount

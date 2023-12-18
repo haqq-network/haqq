@@ -27,9 +27,10 @@ func (m *Manager) CreateExec(cmd []string, containerID string) (string, error) {
 		Context:      ctx,
 		AttachStdout: true,
 		AttachStderr: true,
-		User:         "root",
-		Container:    containerID,
-		Cmd:          cmd,
+		// deepcode ignore NoHardcodedCredentials/test: <tests>
+		User:      "root",
+		Container: containerID,
+		Cmd:       cmd,
 	})
 	if err != nil {
 		return "", err
