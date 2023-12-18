@@ -12,7 +12,7 @@ message GenesisState {
   Params params = 1 [ (gogoproto.nullable) = false ];
 
   // prev block block ts
-  string prev_block_ts = 2 [ 
+  string prev_block_ts = 2 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];

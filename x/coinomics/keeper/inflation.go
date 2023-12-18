@@ -15,7 +15,7 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	currentBlockTS, _ := sdk.NewDecFromStr(math.NewInt(ctx.BlockTime().UnixMilli()).String())
 
 	// Skip minting for the first block after activation, waiting for previous block timestamp to be set
-	if k.GetPrevBlockTS(ctx) == sdk.ZeroInt() {
+	if k.GetPrevBlockTS(ctx).Equal(sdk.ZeroInt()) {
 		k.SetPrevBlockTS(ctx, currentBlockTS.RoundInt())
 		return nil
 	}

@@ -24,11 +24,11 @@ COPY --from=build-env /go/bin/cosmovisor /usr/bin/cosmovisor
 COPY --from=build-env /go/src/github.com/haqq-network/haqq/build/haqqd /usr/bin/haqqd
 
 RUN apk add --no-cache \
-    ca-certificates=20230506-r0 jq=~1.6 \
-    curl=~8.4 bash=~5.2 \
-    vim=~9.0 lz4=~1.9 \
-    tini=~0.19 \
-    gcompat=~1.1
+    ca-certificates jq \
+    curl bash \
+    vim lz4 \
+    tini \
+    gcompat
     
 RUN addgroup -g 1000 haqq \
     && adduser -S -h /home/haqq -D haqq -u 1000 -G haqq

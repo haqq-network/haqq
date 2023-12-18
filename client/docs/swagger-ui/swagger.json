@@ -6347,15 +6347,15 @@
         ]
       }
     },
-    "/haqq/coinomics/v1/inflation_rate": {
+    "/haqq/coinomics/v1/params": {
       "get": {
-        "summary": "InflationRate retrieves current era inflation rate.",
-        "operationId": "InflationRate",
+        "summary": "Params retrieves coinomics moudle params.",
+        "operationId": "Params",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/haqq.coinomics.v1.QueryInflationRateResponse"
+              "$ref": "#/definitions/haqq.coinomics.v1.QueryParamsResponse"
             }
           },
           "default": {
@@ -6370,15 +6370,15 @@
         ]
       }
     },
-    "/haqq/coinomics/v1/params": {
+    "/haqq/coinomics/v1/reward_coefficient": {
       "get": {
-        "summary": "Params retrieves coinomics moudle params.",
-        "operationId": "Params",
+        "summary": "InflationRewardCoefficientRate APY rate for staking rewards",
+        "operationId": "RewardCoefficient",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/haqq.coinomics.v1.QueryParamsResponse"
+              "$ref": "#/definitions/haqq.coinomics.v1.QueryRewardCoefficientResponse"
             }
           },
           "default": {
@@ -6434,52 +6434,6 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/haqq.vesting.v1.QueryTotalLockedResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/haqqd/coinomics/v1/era": {
-      "get": {
-        "summary": "Era retrieves current era.",
-        "operationId": "Era",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/haqq.coinomics.v1.QueryEraResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/haqqd/coinomics/v1/era_closing_supply": {
-      "get": {
-        "summary": "EraTargetSupply retrieves current era target supply.",
-        "operationId": "EraClosingSupply",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/haqq.coinomics.v1.QueryEraClosingSupplyResponse"
             }
           },
           "default": {
@@ -13056,43 +13010,16 @@
           "type": "string",
           "title": "type of coin to mint"
         },
-        "blocksPerEra": {
-          "type": "string",
-          "format": "uint64",
-          "title": "number of blocks per era"
-        },
         "enableCoinomics": {
           "type": "boolean",
           "title": "parameter to enable coinmoics"
+        },
+        "rewardCoefficient": {
+          "type": "string",
+          "title": "current staking reward coefficient"
         }
       },
       "description": "Params holds parameters for the coinomics module."
-    },
-    "haqq.coinomics.v1.QueryEraClosingSupplyResponse": {
-      "type": "object",
-      "properties": {
-        "eraClosingSupply": {
-          "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-        }
-      }
-    },
-    "haqq.coinomics.v1.QueryEraResponse": {
-      "type": "object",
-      "properties": {
-        "era": {
-          "type": "string",
-          "format": "uint64"
-        }
-      }
-    },
-    "haqq.coinomics.v1.QueryInflationRateResponse": {
-      "type": "object",
-      "properties": {
-        "inflationRate": {
-          "type": "string",
-          "title": "rate by which the total supply increases within one era"
-        }
-      }
     },
     "haqq.coinomics.v1.QueryMaxSupplyResponse": {
       "type": "object",
@@ -13108,6 +13035,15 @@
         "params": {
           "$ref": "#/definitions/haqq.coinomics.v1.Params",
           "description": "params defines the parameters of the module."
+        }
+      }
+    },
+    "haqq.coinomics.v1.QueryRewardCoefficientResponse": {
+      "type": "object",
+      "properties": {
+        "rewardCoefficient": {
+          "type": "string",
+          "title": "rate by which the total supply increases within one era"
         }
       }
     },
