@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -61,6 +62,6 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
-func (k Keeper) TokenSupply(ctx sdk.Context, denom string) sdk.Int {
+func (k Keeper) TokenSupply(ctx sdk.Context, denom string) sdkmath.Int {
 	return k.bankKeeper.GetSupply(ctx, denom).Amount
 }

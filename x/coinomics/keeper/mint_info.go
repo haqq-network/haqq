@@ -3,19 +3,20 @@ package keeper
 import (
 	"fmt"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
 
-func (k Keeper) GetPrevBlockTS(ctx sdk.Context) sdk.Int {
+func (k Keeper) GetPrevBlockTS(ctx sdk.Context) sdkmath.Int {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.KeyPrefixPrevBlockTS)
 	if len(bz) == 0 {
-		return sdk.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
 
-	var prevBlockTSValue sdk.Int
+	var prevBlockTSValue sdkmath.Int
 	err := prevBlockTSValue.Unmarshal(bz)
 	if err != nil {
 		panic(fmt.Errorf("unable to unmarshal prevBlockTSValue value: %w", err))
@@ -24,7 +25,7 @@ func (k Keeper) GetPrevBlockTS(ctx sdk.Context) sdk.Int {
 	return prevBlockTSValue
 }
 
-func (k Keeper) SetPrevBlockTS(ctx sdk.Context, prevBlockTS sdk.Int) {
+func (k Keeper) SetPrevBlockTS(ctx sdk.Context, prevBlockTS sdkmath.Int) {
 	binaryInfValue, err := prevBlockTS.Marshal()
 	if err != nil {
 		panic(fmt.Errorf("unable to marshal amount value: %w", err))

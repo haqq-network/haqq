@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"log"
 
 	"cosmossdk.io/math"
@@ -41,13 +42,6 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	// totalBonded * rewardCoefficient * ((currentBlockTS - prevBlockTS) / yearInMillis)
 	blockMint := totalBonded.Mul(rewardCoefficient).Mul((currentBlockTS.Sub(prevBlockTS)).Quo(yearInMillis))
 
-	log.Printf("totalBonded: %s", totalBonded.String())
-	log.Printf("rewardCoefficient: %s", rewardCoefficient.String())
-	log.Printf("currentBlockTS: %s", currentBlockTS.String())
-	log.Printf("prevBlockTS: %s", prevBlockTS.String())
-	log.Printf("yearInMillis: %s", yearInMillis.String())
-	log.Printf("blockMint #1: %s", blockMint.String())
-
 	bankTotalSupply, _ := sdk.NewDecFromStr(k.bankKeeper.GetSupply(ctx, params.MintDenom).Amount.String())
 	maxSupply, _ := sdk.NewDecFromStr(k.GetMaxSupply(ctx).Amount.String())
 
@@ -62,10 +56,13 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	}
 
 	if blockMint.IsNegative() {
+		// state is corrupted
+		errStr := fmt.Sprintf("MintAndAllocate # blockMint is negative # blockMint: %s, totalBonded: %s, rewardCoefficient: %s, currentBlockTS: %s, prevBlockTS: %s, yearInMillis: %s", blockMint.String(), totalBonded.String(), rewardCoefficient.String(), currentBlockTS.String(), prevBlockTS.String(), yearInMillis.String())
+
+		ctx.Logger().Error(errStr)
+
 		return nil
 	}
-
-	log.Printf("blockMint #2: %s", blockMint.String())
 
 	// Mint and allocate the calculated coin amount
 	totalMintOnBlockCoin := sdk.NewCoin(params.MintDenom, blockMint.RoundInt())
