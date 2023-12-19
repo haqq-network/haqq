@@ -25,11 +25,6 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 
 	newGen := NewGenesisState(
 		validParams,
-		sdk.NewDec(100),
-		1,
-		100,
-		sdk.NewCoin("aISLM", sdk.NewInt(10_000_000)),
-		sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_0)),
 		sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
 	)
 
@@ -56,13 +51,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		{
 			"valid genesis",
 			&GenesisState{
-				Params:            validParams,
-				Inflation:         sdk.NewDec(100),
-				Era:               1,
-				EraStartedAtBlock: 100,
-				EraTargetMint:     sdk.NewCoin("aISLM", sdk.NewInt(10_000_000)),
-				EraClosingSupply:  sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_00)),
-				MaxSupply:         sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
+				Params:    validParams,
+				MaxSupply: sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
 			},
 			true,
 		},
@@ -74,38 +64,10 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 			false,
 		},
 		{
-			"invalid genesis - EraTargetMint is nil",
-			&GenesisState{
-				Params:            validParams,
-				Inflation:         sdk.NewDec(100),
-				Era:               1,
-				EraStartedAtBlock: 100,
-				EraClosingSupply:  sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_00)),
-				MaxSupply:         sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
-			},
-			false,
-		},
-		{
-			"invalid genesis - EraClosingSupply is nil",
-			&GenesisState{
-				Params:            validParams,
-				Inflation:         sdk.NewDec(100),
-				Era:               1,
-				EraStartedAtBlock: 100,
-				EraTargetMint:     sdk.NewCoin("aISLM", sdk.NewInt(10_000_000)),
-				MaxSupply:         sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
-			},
-			false,
-		},
-		{
 			"invalid genesis - MaxSupply is nil",
 			&GenesisState{
-				Params:            validParams,
-				Inflation:         sdk.NewDec(100),
-				Era:               1,
-				EraStartedAtBlock: 100,
-				EraTargetMint:     sdk.NewCoin("aISLM", sdk.NewInt(10_000_000)),
-				MaxSupply:         sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_00)),
+				Params:    validParams,
+				MaxSupply: sdk.Coin{},
 			},
 			false,
 		},
@@ -114,6 +76,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 	for _, tc := range testCases {
 		tc := tc
 		err := tc.genState.Validate()
+
 		if tc.expPass {
 			suite.Require().NoError(err, tc.name)
 		} else {

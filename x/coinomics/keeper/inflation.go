@@ -1,102 +1,67 @@
 package keeper
 
 import (
-	"math"
+	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
 
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
 
-// CountEraForBlock NextPhase calculus
-func (k Keeper) CountEraForBlock(ctx sdk.Context, params types.Params, currentEra uint64, currentBlock uint64) uint64 {
-	if currentEra == 0 {
-		return 1
+func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
+	// Convert current block timestamp to Dec type for calculations
+	currentBlockTS, _ := sdk.NewDecFromStr(math.NewInt(ctx.BlockTime().UnixMilli()).String())
+
+	// Skip minting for the first block after activation, waiting for previous block timestamp to be set
+	if k.GetPrevBlockTS(ctx).Equal(sdk.ZeroInt()) {
+		k.SetPrevBlockTS(ctx, currentBlockTS.RoundInt())
+		return nil
 	}
 
-	params = k.GetParams(ctx)
+	// Determine if the current year is a leap year
+	currentYear := ctx.BlockTime().Year()
+	isLeapYear := (currentYear%4 == 0 && currentYear%100 != 0) || currentYear%400 == 0
 
-	startedBlock := k.GetEraStartedAtBlock(ctx)
-	nextEraBlock := params.BlocksPerEra + startedBlock
-
-	if currentBlock < nextEraBlock {
-		return currentEra
+	// Define milliseconds in a year, considering leap year
+	var yearInMillis sdk.Dec
+	if isLeapYear {
+		yearInMillis, _ = sdk.NewDecFromStr("31622400000") // 366 days in milliseconds
+	} else {
+		yearInMillis, _ = sdk.NewDecFromStr("31536000000") // 365 days in milliseconds
 	}
 
-	return currentEra + 1
-}
-
-func (k Keeper) CalcTargetMintForEra(ctx sdk.Context, eraNumber uint64) sdk.Coin {
+	// Calculate the mint amount based on total bonded tokens and time elapsed since the last block.
 	params := k.GetParams(ctx)
+	rewardCoefficient := params.RewardCoefficient.Quo(sdk.NewDec(100))
+	prevBlockTS, _ := sdk.NewDecFromStr(k.GetPrevBlockTS(ctx).String())
+	totalBonded, _ := sdk.NewDecFromStr(k.stakingKeeper.TotalBondedTokens(ctx).String())
 
-	// eraCoef can't be declared as constant because it's a sdk.Dec with a dynamic constructor
-	eraCoef := sdk.NewDecWithPrec(95, 2) // 0.95
+	// totalBonded * rewardCoefficient * ((currentBlockTS - prevBlockTS) / yearInMillis)
+	blockMint := totalBonded.Mul(rewardCoefficient).Mul((currentBlockTS.Sub(prevBlockTS)).Quo(yearInMillis))
 
-	switch {
-	case eraNumber == 1:
-		currentTotalSupply := k.bankKeeper.GetSupply(ctx, types.DefaultMintDenom)
-		maxSupply := k.GetMaxSupply(ctx)
+	bankTotalSupply, _ := sdk.NewDecFromStr(k.bankKeeper.GetSupply(ctx, params.MintDenom).Amount.String())
+	maxSupply, _ := sdk.NewDecFromStr(k.GetMaxSupply(ctx).Amount.String())
 
-		totalMintNeeded := maxSupply.SubAmount(currentTotalSupply.Amount)
-		// -----------  NUM ------------- / ---------- DEN -------------
-		// era_period = 2 years
-		// (1-era_coef)*total_mint_needed / (1-era_coef^(100/era_period))
-		num := sdk.NewDecWithPrec(5, 2).Mul(sdk.NewDecFromInt(totalMintNeeded.Amount))
-		den := sdk.OneDec().Sub(eraCoef.Power(50))
-		target := num.Quo(den)
-
-		return sdk.NewCoin(params.MintDenom, target.RoundInt())
-	case eraNumber > 1 && eraNumber < 50:
-		prevTargetMint := k.GetEraTargetMint(ctx)
-		currTargetMint := sdk.NewDecFromInt(prevTargetMint.Amount).Mul(eraCoef)
-
-		return sdk.NewCoin(types.DefaultMintDenom, currTargetMint.RoundInt())
-	case eraNumber == 50:
-		currentTotalSupply := k.bankKeeper.GetSupply(ctx, types.DefaultMintDenom)
-		maxSupply := k.GetMaxSupply(ctx)
-
-		return maxSupply.SubAmount(currentTotalSupply.Amount)
-	default:
-		return sdk.NewCoin(params.MintDenom, sdk.NewInt(0))
-	}
-}
-
-func (k Keeper) CalcInflation(_ sdk.Context, era uint64, eraTargetSupply sdk.Coin, eraTargetMint sdk.Coin) sdk.Dec {
-	if era > 50 {
-		return sdk.NewDec(0)
+	// Ensure minting does not exceed the maximum supply
+	if bankTotalSupply.Add(blockMint).GT(maxSupply) {
+		blockMint = maxSupply.Sub(bankTotalSupply)
+		params.EnableCoinomics = false
+		k.SetParams(ctx, params)
 	}
 
-	if eraTargetSupply.IsZero() {
-		return sdk.NewDec(0)
+	if blockMint.IsNegative() {
+		// state is corrupted
+		errStr := fmt.Sprintf("MintAndAllocate # blockMint is negative # blockMint: %s, totalBonded: %s, rewardCoefficient: %s, currentBlockTS: %s, prevBlockTS: %s, yearInMillis: %s", blockMint.String(), totalBonded.String(), rewardCoefficient.String(), currentBlockTS.String(), prevBlockTS.String(), yearInMillis.String())
+
+		ctx.Logger().Error(errStr)
+
+		return nil
 	}
 
-	quoAmount := sdk.NewDecFromInt(eraTargetSupply.SubAmount(eraTargetMint.Amount).Amount)
-	if quoAmount.IsZero() {
-		return sdk.NewDec(0)
-	}
-
-	return sdk.NewDecFromInt(eraTargetMint.Amount).Quo(quoAmount).Mul(sdk.NewDec(100))
-}
-
-func (k Keeper) MintAndAllocateInflation(ctx sdk.Context) error {
-	params := k.GetParams(ctx)
-	eraTargetMint := k.GetEraTargetMint(ctx)
-
-	// BlocksPerEra is unsigned and can't be negative, so check only for zero value
-	if params.BlocksPerEra == 0 {
-		return errors.New("BlocksPerEra is zero")
-	}
-
-	// Check if BlocksPerEra is within the uint64 range
-	if params.BlocksPerEra > math.MaxUint64 {
-		return errors.New("BlocksPerEra is out of uint64 range")
-	}
-
-	totalMintOnBlockInt := eraTargetMint.Amount.Quo(sdk.NewIntFromUint64(params.BlocksPerEra))
-	totalMintOnBlockCoin := sdk.NewCoin(params.MintDenom, totalMintOnBlockInt)
-
-	// Mint coins to coinomics module
+	// Mint and allocate the calculated coin amount
+	totalMintOnBlockCoin := sdk.NewCoin(params.MintDenom, blockMint.RoundInt())
 	if err := k.MintCoins(ctx, totalMintOnBlockCoin); err != nil {
 		return errors.Wrap(err, "failed mint coins")
 	}
@@ -112,16 +77,20 @@ func (k Keeper) MintAndAllocateInflation(ctx sdk.Context) error {
 		return errors.Wrap(err, "failed send coins from coinomics to distribution")
 	}
 
+	// Update the previous block timestamp for the next cycle.
+	k.SetPrevBlockTS(ctx, currentBlockTS.RoundInt())
+
 	return nil
 }
 
 func (k Keeper) MintCoins(ctx sdk.Context, coin sdk.Coin) error {
 	coins := sdk.NewCoins(coin)
 
-	// skip as no coins need to be minted
+	// Skip minting if no coins are specified
 	if coins.Empty() {
 		return nil
 	}
 
+	// Perform the minting action
 	return k.bankKeeper.MintCoins(ctx, types.ModuleName, coins)
 }

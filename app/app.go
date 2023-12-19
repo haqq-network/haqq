@@ -139,18 +139,11 @@ import (
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
-	v102 "github.com/haqq-network/haqq/app/upgrades/v1.0.2"
-	v120 "github.com/haqq-network/haqq/app/upgrades/v1.2.0"
-	v121 "github.com/haqq-network/haqq/app/upgrades/v1.2.1"
-	v130 "github.com/haqq-network/haqq/app/upgrades/v1.3.0"
-	v131 "github.com/haqq-network/haqq/app/upgrades/v1.3.1"
-	v140 "github.com/haqq-network/haqq/app/upgrades/v1.4.0"
-	v141 "github.com/haqq-network/haqq/app/upgrades/v1.4.1"
-	v142 "github.com/haqq-network/haqq/app/upgrades/v1.4.2"
 	v160 "github.com/haqq-network/haqq/app/upgrades/v1.6.0"
 	v161 "github.com/haqq-network/haqq/app/upgrades/v1.6.1"
 	v162 "github.com/haqq-network/haqq/app/upgrades/v1.6.2"
 	v163 "github.com/haqq-network/haqq/app/upgrades/v1.6.3"
+	v164 "github.com/haqq-network/haqq/app/upgrades/v1.6.4"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -181,7 +174,7 @@ func init() {
 const (
 	// Name defines the application binary name
 	Name           = "haqqd"
-	UpgradeName    = "v1.6.3"
+	UpgradeName    = "v1.6.4"
 	MainnetChainID = "haqq_11235"
 )
 
@@ -1106,82 +1099,6 @@ func initParamsKeeper(
 }
 
 func (app *Haqq) setupUpgradeHandlers() {
-	// v1.0.2 update handler
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v102.UpgradeName,
-		v102.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-			app.BankKeeper,
-			app.appCodec,
-			app.keys[distrtypes.StoreKey],
-		),
-	)
-	// v1.2.0 update handler (IBC Enable)
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v120.UpgradeName,
-		v120.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-		),
-	)
-	// v1.2.1 update handler (IBC Upgrade)
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v121.UpgradeName,
-		v121.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-		),
-	)
-	// v1.3.0 update handler (Coinomics)
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v130.UpgradeName,
-		v130.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-			app.DistrKeeper,
-		),
-	)
-	// v1.3.1 update handler (Coinomics)
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v131.UpgradeName,
-		v131.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-		),
-	)
-
-	// v1.4.0 update handler (Reset Coinomics for TestEdge2)
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v140.UpgradeName,
-		v140.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-			app.StakingKeeper,
-			app.CoinomicsKeeper,
-			app.SlashingKeeper,
-			app.GovKeeper,
-		),
-	)
-
-	// v1.4.1 Fix handle ERC20 fro IBC Channels
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v141.UpgradeName,
-		v141.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-		),
-	)
-
-	// v1.4.2 Security upgrade
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v142.UpgradeName,
-		v142.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-		),
-	)
-
 	// v1.6.0 Security upgrade
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v160.UpgradeName,
@@ -1223,6 +1140,19 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v163.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
+	// v1.6.4 Coinomics v2
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v164.UpgradeName,
+		v164.CreateUpgradeHandler(
+			app.mm,
+			app.configurator,
+			app.GetKey(coinomicstypes.StoreKey),
+			app.GetKey(paramstypes.StoreKey),
+			app.DistrKeeper,
+			app.CoinomicsKeeper,
+		),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1237,16 +1167,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 
 	var storeUpgrades *storetypes.StoreUpgrades
 
-	switch upgradeInfo.Name {
-	case v130.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{coinomicstypes.ModuleName},
-		}
-	case v140.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{vestingtypes.ModuleName},
-		}
-	case v160.UpgradeName:
+	if upgradeInfo.Name == v160.UpgradeName {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{
 				icahosttypes.SubModuleName,

@@ -1,28 +1,35 @@
 package keeper_test
 
 import (
-	"math/big"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	// "github.com/cosmos/cosmos-sdk/x/staking/types"
-	// "github.com/haqq-network/haqq/crypto/ethsecp256k1"
-	// "github.com/haqq-network/haqq/testutil"
+	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/testutil"
 )
+
+func setupCoinomicsParams(s *KeeperTestSuite, rewardCoefficient sdk.Dec) {
+	coinomicsParams := s.app.CoinomicsKeeper.GetParams(s.ctx)
+	coinomicsParams.RewardCoefficient = rewardCoefficient
+	s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
+}
+
+func isLeapYear(ctx sdk.Context) bool {
+	year := ctx.BlockTime().Year()
+	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
+}
 
 var _ = Describe("Coinomics", Ordered, func() {
 	BeforeEach(func() {
 		s.SetupTest()
 
-		// make eras shorter
-		coinomicsParams := s.app.CoinomicsKeeper.GetParams(s.ctx)
-		coinomicsParams.BlocksPerEra = 100
-		s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
+		// set coinomics params
+		rewardCoefficient := sdk.NewDecWithPrec(78, 1) // 7.8%
+		setupCoinomicsParams(s, rewardCoefficient)
 
-		// change distribution module params
+		// set distribution module params
 		distributionParams := s.app.DistrKeeper.GetParams(s.ctx)
 		distributionParams.CommunityTax = sdk.NewDecWithPrec(10, 2)
 		distributionParams.BaseProposerReward = sdk.NewDecWithPrec(1, 2)
@@ -32,7 +39,7 @@ var _ = Describe("Coinomics", Ordered, func() {
 		s.app.DistrKeeper.SetParams(s.ctx, distributionParams)
 	})
 
-	Describe("Committing a block", func() {
+	Describe("Check coinomics on regular year", func() {
 		Context("with coinomics disabled", func() {
 			BeforeEach(func() {
 				params := s.app.CoinomicsKeeper.GetParams(s.ctx)
@@ -41,24 +48,23 @@ var _ = Describe("Coinomics", Ordered, func() {
 				s.app.CoinomicsKeeper.SetParams(s.ctx, params)
 			})
 
-			It("check totals in all eras", func() {
+			It("should not mint coins when coinomics is disabled", func() {
 				currentSupply := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				currentEra := s.app.CoinomicsKeeper.GetEra(s.ctx)
+				currentBlock := s.ctx.BlockHeight()
 
 				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
 
 				Expect(startExpectedSupply.Amount).To(Equal(currentSupply.Amount))
-				Expect(currentEra).To(Equal(uint64(0)))
 
-				for era := 1; era <= 50; era++ {
-					s.Commit(100)
+				s.Commit(100)
 
-					currentSupply = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-					currentEra = s.app.CoinomicsKeeper.GetEra(s.ctx)
+				currentBlockAfterCommins := s.ctx.BlockHeight()
 
-					Expect(startExpectedSupply.Amount).To(Equal(currentSupply.Amount))
-					Expect(currentEra).To(Equal(uint64(0)))
-				}
+				Expect(currentBlock + 100).To(Equal(currentBlockAfterCommins))
+
+				currentSupply = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+
+				Expect(startExpectedSupply.Amount).To(Equal(currentSupply.Amount))
 			})
 		})
 
@@ -70,150 +76,229 @@ var _ = Describe("Coinomics", Ordered, func() {
 				s.app.CoinomicsKeeper.SetParams(s.ctx, params)
 			})
 
-			Context("check all eras mint", func() {
-				It("should allocate all eras correct", func() {
-					currentSupply := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-					currentEra := s.app.CoinomicsKeeper.GetEra(s.ctx)
+			It("check mint calculations on regular year", func() {
+				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
 
-					startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
+				Expect(startExpectedSupply.Amount).To(Equal(totalSupplyOnStart.Amount))
 
-					Expect(startExpectedSupply.Amount).To(Equal(currentSupply.Amount))
-					Expect(currentEra).To(Equal(uint64(0)))
+				accKey, err := ethsecp256k1.GenerateKey()
+				s.Require().NoError(err)
+				addr := sdk.AccAddress(accKey.PubKey().Address())
 
-					expectedSupplys := []string{
-						"24333436136376723087884929700",
-						"28450200465934610021375612900",
-						"32361126579014602608191762000",
-						"36076506386440595565667103600",
-						"39606117203495288875268678100",
-						"42959247479697247519390173900",
-						"46144721242089108231305594900",
-						"49170921316361375907625244900",
-						"52045811386920030200128912400",
-						"54776956953950751778007396500",
-						"57371545242629937276991956400",
-						"59836404116875163501027288300",
-						"62178020047408128413860853600",
-						"64402555181414445081052740600",
-						"66515863558720445914885033300",
-						"68523506517161146707025711300",
-						"70430767327679812459559355400",
-						"72242665097672544924466317300",
-						"73963967979165640766127931100",
-						"75599205716584081815706464200",
-						"77152681567131600812806070700",
-						"78628483625151743860050696800",
-						"80030495580270879754933091600",
-						"81362406937634058855071366700",
-						"82627722727129079000202728000",
-						"83829772727149348138077521300",
-						"84971720227168603819058574900",
-						"86056570352186896715990575800",
-						"87087177970954274968075976700",
-						"88066255208783284307557107500",
-						"88996378584720843180064181800",
-						"89879995791861524108945902400",
-						"90719432138645170991383536900",
-						"91516896668089635529699289700",
-						"92274487971061876841099254900",
-						"92994199708885506086929221800",
-						"93677925859817953870467690300",
-						"94327465703203779264829235400",
-						"94944528554420313389472703300",
-						"95530738263076020807883997800",
-						"96087637486298942855374727500",
-						"96616691748360718800490920800",
-						"97119293297319405948351304400",
-						"97596764768830158738818668800",
-						"98050362666765373889762665000",
-						"98481280669803828283159461400",
-						"98890652772690359956886417900",
-						"99279556270432565046927026600",
-						"99649014593287659882465604900",
-						"100000000000000000000000000000",
-						"100000000000000000000000000000",
-					}
+				fundAmount := sdk.TokensFromConsensusPower(100_000_000, sdk.DefaultPowerReduction)
 
-					for era := 1; era <= len(expectedSupplys); era++ {
-						s.Commit(100)
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(denomMint, fundAmount)))
+				s.Require().NoError(err)
 
-						currentSupply = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-						currentEra = s.app.CoinomicsKeeper.GetEra(s.ctx)
+				totalSupplyAfterFund := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_100_000_000, 18))
 
-						eraExpectedSupplyBigInt, _ := big.NewInt(0).SetString(expectedSupplys[era-1], 0)
-						eraExpectedSupply := sdk.NewCoin(denomMint, sdk.NewIntFromBigInt(eraExpectedSupplyBigInt))
+				Expect(totalSupplyAfterFund.Amount).To(Equal(expectedSupply.Amount))
 
-						Expect(eraExpectedSupply.Amount).To(Equal(currentSupply.Amount))
-						Expect(currentEra).To(Equal(uint64(era)))
-					}
-				})
-				It("should allocate funds to the evergreen pool", func() {
-					balanceCommunityPool := s.app.DistrKeeper.GetFeePoolCommunityCoins(s.ctx)
-					Expect(balanceCommunityPool.IsZero()).To(BeTrue())
+				s.Commit(1)
 
-					// skip some blocks
-					s.Commit(10)
+				isLeapYear := isLeapYear(s.ctx)
+				Expect(isLeapYear).To(Equal(false))
 
-					currentEra := s.app.CoinomicsKeeper.GetEra(s.ctx)
-					Expect(currentEra).To(Equal(uint64(1)))
+				// delegation
+				delAmount := sdk.TokensFromConsensusPower(10_000_000, sdk.DefaultPowerReduction)
+				delCoin := sdk.NewCoin(denomMint, delAmount)
 
-					balanceCommunityPool = s.app.DistrKeeper.GetFeePoolCommunityCoins(s.ctx)
-					Expect(balanceCommunityPool.IsZero()).ToNot(BeTrue())
-				})
-				// It("delegations is works", func() {
-				// 	s.Commit(1)
+				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
+				s.Require().NoError(err)
 
-				// 	accKey, err := ethsecp256k1.GenerateKey() // _accPrivKey
-				// 	s.Require().NoError(err)
-				// 	addr := sdk.AccAddress(accKey.PubKey().Address())
+				totalBonded := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(10_000_001, 18))
+				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
 
-				// 	fundAmount := sdk.TokensFromConsensusPower(100_000_000, sdk.DefaultPowerReduction)
+				totalSupplyBeforeMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				heightBeforeMint := s.ctx.BlockHeight()
+				PrevTSBeforeMint := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
 
-				// 	err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(denomMint, fundAmount)))
-				// 	s.Require().NoError(err)
+				// mint blocks
+				s.Commit(10)
 
-				// 	s.Commit(1)
+				PrevTSAfter10Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
 
-				// 	// delegation
-				// 	delAmount := sdk.TokensFromConsensusPower(11_000_000, sdk.DefaultPowerReduction)
-				// 	delCoin := sdk.NewCoin(denomMint, delAmount)
+				// check commit height is changed and prev block ts is changed
+				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 10))
+				Expect(PrevTSAfter10Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(10 * 6 * 1000))))
 
-				// 	_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
-				// 	s.Require().NoError(err)
+				// check mint amount with 7.8% coefficient
+				totalSupplyAfterMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				diff7_8Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
+				Expect(diff7_8Coefficient10blocks.Amount).To(Equal(sdk.NewInt(1484018413245226480)))
 
-				// 	// println("suite.validator #start# bonded tokens: ", s.validator.GetBondedTokens().String())
-				// 	// println("suite.validator #start# get tokens: ", s.validator.GetTokens().String())
+				// change params
+				rewardCoefficient := sdk.NewDecWithPrec(10, 1) // 10%
+				setupCoinomicsParams(s, rewardCoefficient)
 
-				// 	s.Commit(1)
+				totalSupplyBeforeMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 
-				// 	validators := s.app.StakingKeeper.GetValidators(s.ctx, 2)
+				// mint blocks
+				s.Commit(10)
 
-				// 	for i, v := range validators {
-				// 		println("validator info", i, "status: ", v.Status.String())
+				PrevTSAfter20Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
 
-				// 		if v.Status == types.Bonded {
-				// 			println("Bonded!")
-				// 			_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, v)
-				// 			s.Require().NoError(err)
-				// 			s.Commit(1)
+				// check commit height is changed and prev block ts is changed
+				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 20))
+				Expect(PrevTSAfter20Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(20 * 6 * 1000))))
 
-				// 			// println("suite.validator #start# bonded tokens: ", v.GetBondedTokens().String())
-				// 			// println("suite.validator #start# get tokens: ", v.GetTokens().String())
-				// 		}
-				// 	}
+				// check mint amount with 10.0% coefficient
+				totalSupplyAfterMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				diff10_0Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
+				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(sdk.NewInt(190258770928875190)))
+			})
 
-				// 	s.Commit(10)
+			It("check mint calculations for leap year", func() {
+				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
 
-				// 	delegations := s.app.StakingKeeper.GetAllDelegations(s.ctx)
+				Expect(startExpectedSupply.Amount).To(Equal(totalSupplyOnStart.Amount))
 
-				// 	for i, del := range delegations {
-				// 		println("delegation #", i, "deladdr: ", del.DelegatorAddress, "valaddr: ", del.ValidatorAddress, "shares: ", del.Shares.String())
+				accKey, err := ethsecp256k1.GenerateKey()
+				s.Require().NoError(err)
+				addr := sdk.AccAddress(accKey.PubKey().Address())
 
-				// 		endingPeriod := s.app.DistrKeeper.IncrementValidatorPeriod(s.ctx, s.validator)
-				// 		rewards := s.app.DistrKeeper.CalculateDelegationRewards(s.ctx, s.validator, del, endingPeriod)
-				// 		println("rewards: ", rewards.String())
-				// 	}
-				// })
+				fundAmount := sdk.TokensFromConsensusPower(100_000_000, sdk.DefaultPowerReduction)
+
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(denomMint, fundAmount)))
+				s.Require().NoError(err)
+
+				totalSupplyAfterFund := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_100_000_000, 18))
+
+				Expect(totalSupplyAfterFund.Amount).To(Equal(expectedSupply.Amount))
+
+				s.CommitLeapYear()
+
+				isLeapYear := isLeapYear(s.ctx)
+				Expect(isLeapYear).To(Equal(true))
+
+				// delegation
+				delAmount := sdk.TokensFromConsensusPower(10_000_000, sdk.DefaultPowerReduction)
+				delCoin := sdk.NewCoin(denomMint, delAmount)
+
+				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
+				s.Require().NoError(err)
+
+				totalBonded := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(10_000_001, 18))
+				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
+
+				totalSupplyBeforeMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				heightBeforeMint := s.ctx.BlockHeight()
+				PrevTSBeforeMint := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+
+				// mint blocks
+				s.Commit(10)
+
+				PrevTSAfter10Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+
+				// check commit height is changed and prev block ts is changed
+				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 10))
+				Expect(PrevTSAfter10Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(10 * 6 * 1000))))
+
+				// check mint amount with 7.8% coefficient
+				totalSupplyAfterMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				diff7_8Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
+				Expect(diff7_8Coefficient10blocks.Amount).To(Equal(sdk.NewInt(1479963718122957010)))
+
+				// change params
+				rewardCoefficient := sdk.NewDecWithPrec(10, 1) // 10%
+				setupCoinomicsParams(s, rewardCoefficient)
+
+				totalSupplyBeforeMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+
+				// mint blocks
+				s.Commit(10)
+
+				PrevTSAfter20Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+
+				// check commit height is changed and prev block ts is changed
+				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 20))
+				Expect(PrevTSAfter20Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(20 * 6 * 1000))))
+
+				// check mint amount with 10.0% coefficient
+				totalSupplyAfterMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				diff10_0Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
+				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(sdk.NewInt(189738938220891920)))
+			})
+
+			It("check max supply limit", func() {
+				setupCoinomicsParams(s, sdk.NewDecWithPrec(15_000_000_000, 0)) // 15_000_000_000 %
+
+				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
+
+				Expect(startExpectedSupply.Amount).To(Equal(totalSupplyOnStart.Amount))
+
+				accKey, err := ethsecp256k1.GenerateKey()
+				s.Require().NoError(err)
+				addr := sdk.AccAddress(accKey.PubKey().Address())
+
+				fundAmount := sdk.TokensFromConsensusPower(100_000_000, sdk.DefaultPowerReduction)
+
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(denomMint, fundAmount)))
+				s.Require().NoError(err)
+
+				totalSupplyAfterFund := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_100_000_000, 18))
+
+				Expect(totalSupplyAfterFund.Amount).To(Equal(expectedSupply.Amount))
+
+				s.Commit(1)
+
+				// delegation
+				delAmount := sdk.TokensFromConsensusPower(90_000_000, sdk.DefaultPowerReduction)
+				delCoin := sdk.NewCoin(denomMint, delAmount)
+
+				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
+				s.Require().NoError(err)
+
+				totalBonded := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(90_000_001, 18))
+				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
+
+				// mint blocks
+				s.Commit(10)
+
+				maxSupply := s.app.CoinomicsKeeper.GetMaxSupply(s.ctx)
+				paramsAfterCommits := s.app.CoinomicsKeeper.GetParams(s.ctx)
+				totalSupplyAfterCommits := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+
+				Expect(maxSupply.Amount).To(Not(Equal(totalSupplyAfterCommits.Amount)))
+				Expect(paramsAfterCommits.EnableCoinomics).To(Equal(true))
+
+				// mint blocks
+				s.Commit(60)
+
+				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				paramsAfterCommits = s.app.CoinomicsKeeper.GetParams(s.ctx)
+
+				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
+				Expect(paramsAfterCommits.EnableCoinomics).To(Equal(false))
+
+				// double check
+				s.Commit(10)
+
+				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
+
+				// check: not mint if coinomics enables back
+				params := s.app.CoinomicsKeeper.GetParams(s.ctx)
+				params.EnableCoinomics = true
+
+				s.app.CoinomicsKeeper.SetParams(s.ctx, params)
+
+				s.Commit(10)
+
+				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				paramsAfterCommits = s.app.CoinomicsKeeper.GetParams(s.ctx)
+
+				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
+				Expect(paramsAfterCommits.EnableCoinomics).To(Equal(false))
 			})
 		})
 	})

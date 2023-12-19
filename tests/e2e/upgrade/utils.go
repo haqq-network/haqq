@@ -70,6 +70,7 @@ func RetrieveUpgradesList(upgradesPath string) ([]string, error) {
 
 		// creating path to upgrade dir file with constant upgrade version
 		constantsPath := fmt.Sprintf("%s/%s/constants.go", upgradesPath, d.Name())
+		// deepcode ignore PT/test: <tests scope>
 		f, err := os.ReadFile(constantsPath)
 		if err != nil {
 			return nil, err

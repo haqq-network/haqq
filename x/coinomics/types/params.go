@@ -3,7 +3,6 @@ package types
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,9 +13,9 @@ var DefaultMintDenom = "aISLM"
 
 // Parameter store keys
 var (
-	ParamStoreKeyMintDenom       = []byte("ParamStoreKeyMintDenom")
-	ParamStoreKeyBlockPerEra     = []byte("ParamStoreKeyBlockPerEra")
-	ParamStoreKeyEnableCoinomics = []byte("ParamStoreKeyEnableCoinomics")
+	ParamStoreKeyMintDenom         = []byte("ParamStoreKeyMintDenom")
+	ParamStoreKeyEnableCoinomics   = []byte("ParamStoreKeyEnableCoinomics")
+	ParamStoreKeyRewardCoefficient = []byte("ParamStoreKeyRewardCoefficient")
 )
 
 func ParamKeyTable() paramtypes.KeyTable {
@@ -25,21 +24,21 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 func NewParams(
 	mintDenom string,
-	blockPerEra uint64,
+	rewardsCoefficient sdk.Dec,
 	enableCoinomics bool,
 ) Params {
 	return Params{
-		MintDenom:       mintDenom,
-		BlocksPerEra:    blockPerEra,
-		EnableCoinomics: enableCoinomics,
+		MintDenom:         mintDenom,
+		RewardCoefficient: rewardsCoefficient,
+		EnableCoinomics:   enableCoinomics,
 	}
 }
 
 func DefaultParams() Params {
 	return Params{
-		MintDenom:       DefaultMintDenom,
-		BlocksPerEra:    5259600 * 2, // 2 years
-		EnableCoinomics: true,
+		MintDenom:         DefaultMintDenom,
+		RewardCoefficient: sdk.NewDecWithPrec(78, 1),
+		EnableCoinomics:   true,
 	}
 }
 
@@ -47,7 +46,7 @@ func DefaultParams() Params {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyMintDenom, &p.MintDenom, validateMintDenom),
-		paramtypes.NewParamSetPair(ParamStoreKeyBlockPerEra, &p.BlocksPerEra, validateBlockPerEra),
+		paramtypes.NewParamSetPair(ParamStoreKeyRewardCoefficient, &p.RewardCoefficient, validateRewardCoefficient),
 		paramtypes.NewParamSetPair(ParamStoreKeyEnableCoinomics, &p.EnableCoinomics, validateBool),
 	}
 }
@@ -65,20 +64,11 @@ func validateMintDenom(i interface{}) error {
 	return sdk.ValidateDenom(v)
 }
 
-func validateBlockPerEra(i interface{}) error {
-	v, ok := i.(uint64)
+func validateRewardCoefficient(i interface{}) error {
+	_, ok := i.(sdk.Dec)
 
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-
-	// Check if BlocksPerEra is within the uint64 range
-	if v > math.MaxUint64 {
-		return errors.New("BlocksPerEra is out of uint64 range")
-	}
-
-	if v == 0 {
-		return errors.New("block per era must not be zero")
 	}
 
 	return nil
@@ -97,7 +87,7 @@ func (p Params) Validate() error {
 	if err := validateMintDenom(p.MintDenom); err != nil {
 		return err
 	}
-	if err := validateBlockPerEra(p.BlocksPerEra); err != nil {
+	if err := validateRewardCoefficient(p.RewardCoefficient); err != nil {
 		return err
 	}
 

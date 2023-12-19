@@ -16,20 +16,12 @@ const (
 
 // prefix bytes for the inflation persistent store
 const (
-	prefixInflation = iota + 1
-	prefixEra
-	prefixEraStartedAtBlock
-	prefixEraTargetMint
-	prefixEraClosingSupply
+	prefixPrevBlockTS = iota + 1
 	prefixMaxSupply
 )
 
 // KVStore key prefixes
 var (
-	KeyPrefixInflation         = []byte{prefixInflation}
-	KeyPrefixEra               = []byte{prefixEra}
-	KeyPrefixEraStartedAtBlock = []byte{prefixEraStartedAtBlock}
-	KetPrefixEraTargetMint     = []byte{prefixEraTargetMint}
-	KeyPrefixEraClosingSupply  = []byte{prefixEraClosingSupply}
-	KeyPrefixMaxSupply         = []byte{prefixMaxSupply}
+	KeyPrefixPrevBlockTS = []byte{prefixPrevBlockTS}
+	KeyPrefixMaxSupply   = []byte{prefixMaxSupply}
 )

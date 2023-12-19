@@ -79,3 +79,4 @@ tmp-swagger-gen
 .devenv
 .secrets
 .env
+.dccache

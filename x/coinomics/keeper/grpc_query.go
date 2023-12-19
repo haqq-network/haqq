@@ -12,24 +12,14 @@ import (
 
 var _ types.QueryServer = Keeper{}
 
-func (k Keeper) Era(
+func (k Keeper) RewardCoefficient(
 	c context.Context,
-	_ *types.QueryEraRequest,
-) (*types.QueryEraResponse, error) {
+	_ *types.QueryRewardCoefficientRequest,
+) (*types.QueryRewardCoefficientResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	era := k.GetEra(ctx)
+	params := k.GetParams(ctx)
 
-	return &types.QueryEraResponse{Era: era}, nil
-}
-
-func (k Keeper) InflationRate(
-	c context.Context,
-	_ *types.QueryInflationRateRequest,
-) (*types.QueryInflationRateResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
-	inflation := k.GetInflation(ctx)
-
-	return &types.QueryInflationRateResponse{InflationRate: inflation}, nil
+	return &types.QueryRewardCoefficientResponse{RewardCoefficient: params.RewardCoefficient}, nil
 }
 
 func (k Keeper) MaxSupply(
@@ -40,16 +30,6 @@ func (k Keeper) MaxSupply(
 	maxSupply := k.GetMaxSupply(ctx)
 
 	return &types.QueryMaxSupplyResponse{MaxSupply: maxSupply}, nil
-}
-
-func (k Keeper) EraClosingSupply(
-	c context.Context,
-	_ *types.QueryEraClosingSupplyRequest,
-) (*types.QueryEraClosingSupplyResponse, error) {
-	ctx := sdk.UnwrapSDKContext(c)
-	eraClosingSupply := k.GetEraClosingSupply(ctx)
-
-	return &types.QueryEraClosingSupplyResponse{EraClosingSupply: eraClosingSupply}, nil
 }
 
 // Params returns params of the mint module.
