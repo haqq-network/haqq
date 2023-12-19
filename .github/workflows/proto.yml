@@ -2,6 +2,8 @@ name: Protobuf
 # Protobuf runs buf (https://buf.build/) lint and check-breakage
 # This workflow is only run when a .proto file has been changed
 on:
+  branches-ignore:    
+    - 'coinomics_v2' # NOTE: breaking changes are not really breaking as they are introduced in a module which was never deployed on chain
   workflow_dispatch:
   pull_request:
     # paths:
