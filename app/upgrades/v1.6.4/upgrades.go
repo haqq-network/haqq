@@ -7,6 +7,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/haqq-network/haqq/utils"
 
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
@@ -57,7 +58,13 @@ func MigrateStore(ctx sdk.Context,
 
 	// reset coinomics params
 	defaultParams := coinomicstypes.DefaultParams()
-	maxSupply := sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(100_000_000_000, 18)} // 100bn ISLM
+
+	var maxSupply sdk.Coin
+	if utils.IsTestEdge2Network(ctx.ChainID()) {
+		maxSupply = sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(200_000_000_000, 18)} // 200bn ISLM
+	} else {
+		maxSupply = sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(100_000_000_000, 18)} // 100bn ISLM
+	}
 
 	ck.SetMaxSupply(ctx, maxSupply)
 	ck.SetParams(ctx, defaultParams)
