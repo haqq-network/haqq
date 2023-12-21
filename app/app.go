@@ -1173,8 +1173,9 @@ func (app *Haqq) setupUpgradeHandlers() {
 			app.GetKey(paramstypes.StoreKey),
 			app.DistrKeeper,
 			app.CoinomicsKeeper,
+		),
 	)
-	
+
 	// v1.7.0 Upgrade SDK, CometBFT and IBC
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v170.UpgradeName,
@@ -1202,7 +1203,8 @@ func (app *Haqq) setupUpgradeHandlers() {
 
 	var storeUpgrades *storetypes.StoreUpgrades
 
-	if upgradeInfo.Name == v160.UpgradeName {
+	switch upgradeInfo.Name {
+	case v160.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{
 				icahosttypes.SubModuleName,
