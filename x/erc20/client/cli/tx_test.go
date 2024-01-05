@@ -3,6 +3,9 @@ package cli_test
 import (
 	"context"
 	"fmt"
+	"io"
+	"testing"
+
 	rpcclientmock "github.com/cometbft/cometbft/rpc/client/mock"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -12,11 +15,10 @@ import (
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	testutilmod "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/haqq-network/haqq/x/erc20"
 	"github.com/haqq-network/haqq/x/erc20/client/cli"
-	"github.com/stretchr/testify/suite"
-	"io"
-	"testing"
 )
 
 type ERC20TxTestSuite struct {
@@ -146,7 +148,7 @@ func (s *ERC20TxTestSuite) TestConvertCoinCmd() {
 
 			args := tc.extraArgs
 			if tc.from != "" {
-				args = append(tc.extraArgs, fmt.Sprintf("--from=%s", tc.from))
+				args = append(args, fmt.Sprintf("--from=%s", tc.from))
 			}
 			cmd.SetArgs(append(tc.args, args...))
 
@@ -283,7 +285,7 @@ func (s *ERC20TxTestSuite) TestConvertERC20Cmd() {
 
 			args := tc.extraArgs
 			if tc.from != "" {
-				args = append(tc.extraArgs, fmt.Sprintf("--from=%s", tc.from))
+				args = append(args, fmt.Sprintf("--from=%s", tc.from))
 			}
 			cmd.SetArgs(append(tc.args, args...))
 

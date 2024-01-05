@@ -2,17 +2,18 @@ package cli_test
 
 import (
 	"fmt"
-	tmcli "github.com/cometbft/cometbft/libs/cli"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/haqq-network/haqq/x/erc20/client/cli"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"testing"
 
+	tmcli "github.com/cometbft/cometbft/libs/cli"
 	testcli "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/haqq-network/haqq/testutil/network"
-	"github.com/haqq-network/haqq/x/erc20/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/haqq-network/haqq/testutil/network"
+	"github.com/haqq-network/haqq/x/erc20/client/cli"
+	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
 type ERC20QueryTestSuite struct {
