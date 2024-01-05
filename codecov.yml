@@ -3,6 +3,9 @@
 # all repositories on Codecov. You may adjust the settings
 # below in your own codecov.yml in your repository.
 #
+codecov:
+  require_ci_to_pass: false
+
 coverage:
   precision: 2
   round: down
@@ -33,7 +36,6 @@ coverage:
 comment:
   layout: "reach, diff, files"
   behavior: default # update if exists else create new
-  require_changes: true
 
 flags:
   app:
