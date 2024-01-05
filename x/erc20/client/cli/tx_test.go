@@ -300,7 +300,3 @@ func (s *ERC20TxTestSuite) TestConvertERC20Cmd() {
 		})
 	}
 }
-
-func (s *ERC20TxTestSuite) TestRegisterCoinProposalCmd() {
-
-}
