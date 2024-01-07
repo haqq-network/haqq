@@ -3,7 +3,6 @@ package coinomics
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	haqqtypes "github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/coinomics/keeper"
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
@@ -23,10 +22,6 @@ func InitGenesis(
 
 	// Set genesis state
 	params := data.Params
-
-	if haqqtypes.IsMainNetwork(ctx.ChainID()) {
-		params.EnableCoinomics = false
-	}
 
 	k.SetParams(ctx, params)
 

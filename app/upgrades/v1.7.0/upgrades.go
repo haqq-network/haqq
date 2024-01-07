@@ -20,6 +20,7 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	ibctmmigrations "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/migrations"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
@@ -62,6 +63,8 @@ func CreateUpgradeHandler(
 				keyTable = evmtypes.ParamKeyTable() //nolint:staticcheck
 			case feemarkettypes.ModuleName:
 				keyTable = feemarkettypes.ParamKeyTable()
+			case coinomicstypes.ModuleName:
+				keyTable = coinomicstypes.ParamKeyTable()
 			default:
 				continue
 			}
