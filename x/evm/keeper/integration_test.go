@@ -8,15 +8,15 @@ import (
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/simapp"
+	simutils "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
@@ -173,6 +173,7 @@ func setupTest(localMinGasPrices string) (*ethsecp256k1.PrivKey, banktypes.MsgSe
 func setupChain(localMinGasPricesStr string) {
 	// Initialize the app, so we can use SetMinGasPrices to set the
 	// validator-specific min-gas-prices setting
+	chainID := utils.TestEdge2ChainID + "-3"
 	db := dbm.NewMemDB()
 	newapp := app.NewHaqq(
 		log.NewNopLogger(),
@@ -183,8 +184,9 @@ func setupChain(localMinGasPricesStr string) {
 		app.DefaultNodeHome,
 		5,
 		encoding.MakeConfig(app.ModuleBasics),
-		simapp.EmptyAppOptions{},
+		simutils.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
 		baseapp.SetMinGasPrices(localMinGasPricesStr),
+		baseapp.SetChainID(chainID),
 	)
 
 	genesisState := app.NewTestGenesisState(newapp.AppCodec())
@@ -196,7 +198,7 @@ func setupChain(localMinGasPricesStr string) {
 	// Initialize the chain
 	newapp.InitChain(
 		abci.RequestInitChain{
-			ChainId:         utils.TestEdge2ChainID + "-3",
+			ChainId:         chainID,
 			Validators:      []abci.ValidatorUpdate{},
 			AppStateBytes:   stateBytes,
 			ConsensusParams: app.DefaultConsensusParams,

@@ -9,7 +9,7 @@ const (
 	LocalVersionTag = "latest"
 
 	// haqqRepo is the docker hub repository that contains the Haqq images pulled during tests
-	haqqRepo = "haqq/haqq"
+	haqqRepo = "alhaqq/haqq"
 
 	// upgradesPath is the relative path from this folder to the app/upgrades folder
 	upgradesPath = "../../../app/upgrades"

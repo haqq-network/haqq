@@ -6,10 +6,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	tmtime "github.com/cometbft/cometbft/types/time"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
 
 	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/x/vesting/types"
@@ -169,7 +169,7 @@ func (suite *VestingAccountTestSuite) TestGetVestedVestingLockedCoins() {
 			"all coins vested at the end of the vesting schedule",
 			endTime,
 			origCoins,
-			nil,
+			sdk.NewCoins(),
 			sdk.NewCoins(),
 		},
 		{
@@ -211,7 +211,7 @@ func (suite *VestingAccountTestSuite) TestGetVestedVestingLockedCoins() {
 			"100 percent of coins vested",
 			now.Add(48 * time.Hour),
 			origCoins,
-			nil,
+			sdk.NewCoins(),
 			sdk.NewCoins(),
 		},
 	}
@@ -245,7 +245,7 @@ func (suite *VestingAccountTestSuite) TestGetVestedUnvestedLockedOnly() {
 		{
 			"no coins vested at the beginning of the vesting schedule",
 			now,
-			sdk.Coins{},
+			sdk.NewCoins(),
 			origCoins,
 			origCoins,
 		},
@@ -253,13 +253,13 @@ func (suite *VestingAccountTestSuite) TestGetVestedUnvestedLockedOnly() {
 			"all coins vested at the end of the vesting schedule",
 			endTime,
 			origCoins,
-			sdk.Coins{},
-			nil,
+			sdk.NewCoins(),
+			sdk.NewCoins(),
 		},
 		{
 			"no coins vested during first vesting period",
 			now.Add(6 * time.Hour),
-			sdk.Coins{},
+			sdk.NewCoins(),
 			origCoins,
 			origCoins,
 		},
@@ -275,28 +275,28 @@ func (suite *VestingAccountTestSuite) TestGetVestedUnvestedLockedOnly() {
 			now.Add(16 * time.Hour),
 			sdk.Coins{sdk.NewInt64Coin(feeDenom, 500), sdk.NewInt64Coin(stakeDenom, 50)},
 			sdk.Coins{sdk.NewInt64Coin(feeDenom, 500), sdk.NewInt64Coin(stakeDenom, 50)},
-			nil,
+			sdk.NewCoins(),
 		},
 		{
 			"period 2 coins don't vest until period is over",
 			now.Add(17 * time.Hour),
 			sdk.Coins{sdk.NewInt64Coin(feeDenom, 500), sdk.NewInt64Coin(stakeDenom, 50)},
 			sdk.Coins{sdk.NewInt64Coin(feeDenom, 500), sdk.NewInt64Coin(stakeDenom, 50)},
-			nil,
+			sdk.NewCoins(),
 		},
 		{
 			"75 percent of coins vested after period 2",
 			now.Add(18 * time.Hour),
 			sdk.Coins{sdk.NewInt64Coin(feeDenom, 750), sdk.NewInt64Coin(stakeDenom, 75)},
 			sdk.Coins{sdk.NewInt64Coin(feeDenom, 250), sdk.NewInt64Coin(stakeDenom, 25)},
-			nil,
+			sdk.NewCoins(),
 		},
 		{
 			"100 percent of coins vested",
 			now.Add(48 * time.Hour),
 			origCoins,
-			sdk.Coins{},
-			nil,
+			sdk.NewCoins(),
+			sdk.NewCoins(),
 		},
 	}
 
@@ -337,7 +337,7 @@ func (suite *VestingAccountTestSuite) TestTrackDelegationUndelegation() {
 			func(va *types.ClawbackVestingAccount) {
 				va.TrackUndelegation(origCoins)
 			},
-			nil,
+			sdk.NewCoins(),
 			nil,
 			false,
 			false,
@@ -353,7 +353,7 @@ func (suite *VestingAccountTestSuite) TestTrackDelegationUndelegation() {
 				va.TrackUndelegation(origCoins)
 			},
 			nil,
-			nil,
+			sdk.NewCoins(),
 			false,
 			false,
 		},
@@ -367,7 +367,7 @@ func (suite *VestingAccountTestSuite) TestTrackDelegationUndelegation() {
 			func(va *types.ClawbackVestingAccount) {
 				va.TrackUndelegation(vestingPeriods[0].Amount)
 			},
-			nil,
+			sdk.NewCoins(),
 			nil,
 			false,
 			false,
@@ -431,7 +431,7 @@ func (suite *VestingAccountTestSuite) TestTrackDelegationUndelegation() {
 				va.TrackUndelegation(sdk.Coins{sdk.NewInt64Coin(stakeDenom, 50)})
 			},
 			sdk.Coins{sdk.NewInt64Coin(stakeDenom, 25)},
-			nil,
+			sdk.NewCoins(),
 			false,
 			false,
 		},

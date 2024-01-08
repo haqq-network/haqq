@@ -1,8 +1,8 @@
 package txpool
 
 import (
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/haqq-network/haqq/rpc/types"
 )

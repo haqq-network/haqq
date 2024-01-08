@@ -3,10 +3,10 @@ package rpc
 import (
 	"fmt"
 
+	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/ethereum/go-ethereum/rpc"
-	rpcclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
 
 	"github.com/haqq-network/haqq/rpc/backend"
 	"github.com/haqq-network/haqq/rpc/namespaces/ethereum/debug"

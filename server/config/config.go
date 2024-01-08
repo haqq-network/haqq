@@ -7,10 +7,10 @@ import (
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
+	"github.com/cometbft/cometbft/libs/strings"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/spf13/viper"
-	"github.com/tendermint/tendermint/libs/strings"
 )
 
 const (

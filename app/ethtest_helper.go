@@ -4,30 +4,32 @@ import (
 	"encoding/json"
 	"time"
 
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/haqq-network/haqq/encoding"
+	"github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 )
 
 // EthDefaultConsensusParams defines the default Tendermint consensus params used in
 // HaqqApp testing.
-var EthDefaultConsensusParams = &abci.ConsensusParams{
-	Block: &abci.BlockParams{
+var EthDefaultConsensusParams = &tmproto.ConsensusParams{
+	Block: &tmproto.BlockParams{
 		MaxBytes: 200000,
 		MaxGas:   -1, // no limit
 	},
@@ -44,12 +46,13 @@ var EthDefaultConsensusParams = &abci.ConsensusParams{
 }
 
 // EthSetup initializes a new HaqqApp. A Nop logger is set in HaqqApp.
-func EthSetup(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState) simapp.GenesisState) *Haqq {
+func EthSetup(isCheckTx bool, patchGenesis func(*Haqq, types.GenesisState) types.GenesisState) *Haqq {
 	return EthSetupWithDB(isCheckTx, patchGenesis, dbm.NewMemDB())
 }
 
 // EthSetupWithDB initializes a new HaqqApp. A Nop logger is set in HaqqApp.
-func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState) simapp.GenesisState, db dbm.DB) *Haqq {
+func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, types.GenesisState) types.GenesisState, db dbm.DB) *Haqq {
+	chainID := utils.TestEdge2ChainID + "-3"
 	app := NewHaqq(log.NewNopLogger(),
 		db,
 		nil,
@@ -58,7 +61,9 @@ func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState
 		DefaultNodeHome,
 		5,
 		encoding.MakeConfig(ModuleBasics),
-		simapp.EmptyAppOptions{})
+		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
+		baseapp.SetChainID(chainID),
+	)
 	if !isCheckTx {
 		// init chain must be called to stop deliverState from being nil
 		genesisState := NewTestGenesisState(app.AppCodec())
@@ -74,7 +79,7 @@ func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         utils.TestEdge2ChainID + "-3",
+				ChainId:         chainID,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
@@ -86,7 +91,7 @@ func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, simapp.GenesisState
 }
 
 // NewTestGenesisState generate genesis state with single validator
-func NewTestGenesisState(codec codec.Codec) simapp.GenesisState {
+func NewTestGenesisState(codec codec.Codec) types.GenesisState {
 	privVal := mock.NewPV()
 	pubKey, err := privVal.GetPubKey()
 	if err != nil {
@@ -108,10 +113,10 @@ func NewTestGenesisState(codec codec.Codec) simapp.GenesisState {
 	return genesisStateWithValSet(codec, genesisState, valSet, []authtypes.GenesisAccount{acc}, balance)
 }
 
-func genesisStateWithValSet(codec codec.Codec, genesisState simapp.GenesisState,
+func genesisStateWithValSet(codec codec.Codec, genesisState types.GenesisState,
 	valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount,
 	balances ...banktypes.Balance,
-) simapp.GenesisState {
+) types.GenesisState {
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
 	genesisState[authtypes.ModuleName] = codec.MustMarshalJSON(authGenesis)
@@ -168,7 +173,7 @@ func genesisStateWithValSet(codec codec.Codec, genesisState simapp.GenesisState,
 	})
 
 	// update total supply
-	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{})
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = codec.MustMarshalJSON(bankGenesis)
 
 	return genesisState

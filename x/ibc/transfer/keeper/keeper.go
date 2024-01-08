@@ -5,9 +5,9 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
-	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
-	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/keeper"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 
 	"github.com/haqq-network/haqq/x/ibc/transfer/types"
 )

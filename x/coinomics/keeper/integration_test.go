@@ -36,7 +36,8 @@ var _ = Describe("Coinomics", Ordered, func() {
 		distributionParams.BonusProposerReward = sdk.NewDecWithPrec(4, 2)
 		distributionParams.WithdrawAddrEnabled = true
 
-		s.app.DistrKeeper.SetParams(s.ctx, distributionParams)
+		err := s.app.DistrKeeper.SetParams(s.ctx, distributionParams)
+		s.Require().NoError(err)
 	})
 
 	Describe("Check coinomics on regular year", func() {

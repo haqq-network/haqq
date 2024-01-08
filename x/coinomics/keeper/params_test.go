@@ -8,7 +8,7 @@ func (suite *KeeperTestSuite) TestParams() {
 	params := suite.app.CoinomicsKeeper.GetParams(suite.ctx)
 	expParams := types.DefaultParams()
 
-	suite.Require().NotEqual(expParams, params)
+	suite.Require().Equal(expParams, params)
 
 	suite.app.CoinomicsKeeper.SetParams(suite.ctx, params)
 	newParams := suite.app.CoinomicsKeeper.GetParams(suite.ctx)

@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	"github.com/tendermint/tendermint/abci/types"
+	"github.com/cometbft/cometbft/abci/types"
 
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )

@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
+	chainparams "cosmossdk.io/simapp/params"
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	chainparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"

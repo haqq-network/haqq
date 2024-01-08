@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	abci "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 func (suite *KeeperTestSuite) TestCalculateBaseFee() {

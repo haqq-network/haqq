@@ -126,6 +126,17 @@ func (k WrappedBaseKeeper) SpendableBalances(ctx context.Context, req *types.Que
 	return res, nil
 }
 
+func (k WrappedBaseKeeper) SpendableBalanceByDenom(ctx context.Context, req *types.QuerySpendableBalanceByDenomRequest) (*types.QuerySpendableBalanceByDenomResponse, error) {
+	res, err := k.Keeper.SpendableBalanceByDenom(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO Add EVM balances
+
+	return res, nil
+}
+
 // TotalSupply implements the Query/TotalSupply gRPC method
 func (k WrappedBaseKeeper) TotalSupply(ctx context.Context, req *types.QueryTotalSupplyRequest) (*types.QueryTotalSupplyResponse, error) {
 	return k.Keeper.TotalSupply(ctx, req)
@@ -156,4 +167,8 @@ func (k WrappedBaseKeeper) DenomOwners(
 	req *types.QueryDenomOwnersRequest,
 ) (*types.QueryDenomOwnersResponse, error) {
 	return k.Keeper.DenomOwners(goCtx, req)
+}
+
+func (k WrappedBaseKeeper) SendEnabled(c context.Context, req *types.QuerySendEnabledRequest) (*types.QuerySendEnabledResponse, error) {
+	return k.Keeper.SendEnabled(c, req)
 }

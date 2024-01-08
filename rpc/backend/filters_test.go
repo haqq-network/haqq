@@ -3,9 +3,9 @@ package backend
 import (
 	"encoding/json"
 
+	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/haqq-network/haqq/rpc/backend/mocks"
 	ethrpc "github.com/haqq-network/haqq/rpc/types"

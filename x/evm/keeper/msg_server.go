@@ -8,11 +8,11 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/armon/go-metrics"
+	tmbytes "github.com/cometbft/cometbft/libs/bytes"
+	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/haqq-network/haqq/x/evm/types"
 )

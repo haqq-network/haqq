@@ -4,24 +4,26 @@ import (
 	"encoding/json"
 	"time"
 
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/simapp"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctesting "github.com/cosmos/ibc-go/v6/testing"
-	"github.com/cosmos/ibc-go/v6/testing/mock"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
+	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/cosmos/ibc-go/v7/testing/mock"
 
 	"github.com/haqq-network/haqq/cmd/config"
 	"github.com/haqq-network/haqq/encoding"
+	"github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
@@ -34,13 +36,10 @@ func init() {
 	config.SetBip44CoinType(cfg)
 }
 
-// DefaultTestingAppInit defines the IBC application used for testing
-var DefaultTestingAppInit func() (ibctesting.TestingApp, map[string]json.RawMessage) = SetupTestingApp
-
 // DefaultConsensusParams defines the default Tendermint consensus params used in
 // Evmos testing.
-var DefaultConsensusParams = &abci.ConsensusParams{
-	Block: &abci.BlockParams{
+var DefaultConsensusParams = &tmproto.ConsensusParams{
+	Block: &tmproto.BlockParams{
 		MaxBytes: 200000,
 		MaxGas:   -1, // no limit
 	},
@@ -88,8 +87,16 @@ func Setup(
 		Coins:   sdk.NewCoins(mintCoin),
 	}
 
+	chainID := utils.MainNetChainID + "-1"
 	db := dbm.NewMemDB()
-	app := NewHaqq(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, 5, encoding.MakeConfig(ModuleBasics), simapp.EmptyAppOptions{})
+	app := NewHaqq(
+		log.NewNopLogger(),
+		db, nil, true,
+		map[int64]bool{}, DefaultNodeHome, 5,
+		encoding.MakeConfig(ModuleBasics),
+		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
+		baseapp.SetChainID(chainID),
+	)
 	if !isCheckTx {
 		// init chain must be called to stop deliverState from being nil
 		genesisState := NewDefaultGenesisState()
@@ -112,7 +119,7 @@ func Setup(
 		// Initialize the chain
 		app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         utils.MainNetChainID + "-1",
+				ChainId:         chainID,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
@@ -123,10 +130,10 @@ func Setup(
 	return app, pubKey.Bytes()
 }
 
-func GenesisStateWithValSet(app *Haqq, genesisState simapp.GenesisState,
+func GenesisStateWithValSet(app *Haqq, genesisState types.GenesisState,
 	valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount,
 	balances ...banktypes.Balance,
-) simapp.GenesisState {
+) types.GenesisState {
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
 	genesisState[authtypes.ModuleName] = app.AppCodec().MustMarshalJSON(authGenesis)
@@ -180,16 +187,23 @@ func GenesisStateWithValSet(app *Haqq, genesisState simapp.GenesisState,
 	})
 
 	// update total supply
-	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{})
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{}, []banktypes.SendEnabled{})
 	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
 
 	return genesisState
 }
 
 // SetupTestingApp initializes the IBC-go testing application
-func SetupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	db := dbm.NewMemDB()
-	cfg := encoding.MakeConfig(ModuleBasics)
-	app := NewHaqq(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, 5, cfg, simapp.EmptyAppOptions{})
-	return app, NewDefaultGenesisState()
+func SetupTestingApp(chainID string) func() (ibctesting.TestingApp, map[string]json.RawMessage) {
+	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
+		db := dbm.NewMemDB()
+		cfg := encoding.MakeConfig(ModuleBasics)
+		app := NewHaqq(
+			log.NewNopLogger(), db, nil, true,
+			map[int64]bool{}, DefaultNodeHome, 5,
+			cfg, simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
+			baseapp.SetChainID(chainID),
+		)
+		return app, NewDefaultGenesisState()
+	}
 }

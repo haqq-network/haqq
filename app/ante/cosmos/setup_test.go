@@ -8,15 +8,14 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/app/ante"
@@ -60,7 +59,7 @@ func (suite *AnteTestSuite) SetupTest() {
 	suite.Require().NoError(err)
 	suite.priv = priv
 
-	suite.app = app.EthSetup(checkTx, func(app *app.Haqq, genesis simapp.GenesisState) simapp.GenesisState {
+	suite.app = app.EthSetup(checkTx, func(app *app.Haqq, genesis types.GenesisState) types.GenesisState {
 		if suite.enableFeemarket {
 			// setup feemarketGenesis params
 			feemarketGenesis := feemarkettypes.DefaultGenesisState()
@@ -96,10 +95,12 @@ func (suite *AnteTestSuite) SetupTest() {
 
 	stakingParams := suite.app.StakingKeeper.GetParams(suite.ctx)
 	stakingParams.BondDenom = utils.BaseDenom
-	suite.app.StakingKeeper.SetParams(suite.ctx, stakingParams)
+	err = suite.app.StakingKeeper.SetParams(suite.ctx, stakingParams)
+	suite.Require().NoError(err)
 
 	infCtx := suite.ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-	suite.app.AccountKeeper.SetParams(infCtx, authtypes.DefaultParams())
+	err = suite.app.AccountKeeper.SetParams(infCtx, authtypes.DefaultParams())
+	suite.Require().NoError(err)
 
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	// We're using TestMsg amino encoding in some tests, so register it here.

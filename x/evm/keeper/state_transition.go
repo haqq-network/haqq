@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -11,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"

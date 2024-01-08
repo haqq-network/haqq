@@ -1,6 +1,6 @@
 # argument to provide specific version of haqq node
 ARG INITIAL_VERSION
-FROM haqq/haqq:$INITIAL_VERSION
+FROM alhaqq/haqq:$INITIAL_VERSION
 
 # jq needs to perform changes of node parameters
 RUN apt-get update \ 

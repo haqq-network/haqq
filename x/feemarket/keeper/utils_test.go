@@ -8,9 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/simapp"
+	simutils "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -19,9 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
@@ -67,8 +67,8 @@ func (suite *KeeperTestSuite) SetupApp(checkTx bool) {
 	valAddr := sdk.ValAddress(suite.address.Bytes())
 	validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
-	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper, suite.ctx, validator, true)
-	err = suite.app.StakingKeeper.AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
+	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
 	require.NoError(t, err)
 
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
@@ -77,7 +77,8 @@ func (suite *KeeperTestSuite) SetupApp(checkTx bool) {
 
 	stakingParams := stakingtypes.DefaultParams()
 	stakingParams.BondDenom = utils.BaseDenom
-	suite.app.StakingKeeper.SetParams(suite.ctx, stakingParams)
+	err = suite.app.StakingKeeper.SetParams(suite.ctx, stakingParams)
+	require.NoError(t, err)
 
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
@@ -143,6 +144,7 @@ func setupTest(localMinGasPrices string) (*ethsecp256k1.PrivKey, banktypes.MsgSe
 func setupChain(localMinGasPricesStr string) {
 	// Initialize the app, so we can use SetMinGasPrices to set the
 	// validator-specific min-gas-prices setting
+	chainID := utils.TestEdge2ChainID + "-3"
 	db := dbm.NewMemDB()
 	newapp := app.NewHaqq(
 		log.NewNopLogger(),
@@ -153,8 +155,9 @@ func setupChain(localMinGasPricesStr string) {
 		app.DefaultNodeHome,
 		5,
 		encoding.MakeConfig(app.ModuleBasics),
-		simapp.EmptyAppOptions{},
+		simutils.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
 		baseapp.SetMinGasPrices(localMinGasPricesStr),
+		baseapp.SetChainID(chainID),
 	)
 
 	genesisState := app.NewTestGenesisState(newapp.AppCodec())
@@ -166,7 +169,7 @@ func setupChain(localMinGasPricesStr string) {
 	// Initialize the chain
 	newapp.InitChain(
 		abci.RequestInitChain{
-			ChainId:         "haqq_54211-3",
+			ChainId:         chainID,
 			Validators:      []abci.ValidatorUpdate{},
 			AppStateBytes:   stateBytes,
 			ConsensusParams: app.DefaultConsensusParams,

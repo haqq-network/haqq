@@ -16,7 +16,7 @@ type (
 	HDPathIterator func() ethaccounts.DerivationPath
 )
 
-// HDPathIterator receives a base path as a string and a boolean for the desired iterator type and
+// NewHDPathIterator receives a base path as a string and a boolean for the desired iterator type and
 // returns a function that iterates over the base HD path, returning the string.
 func NewHDPathIterator(basePath string, ledgerIter bool) (HDPathIterator, error) {
 	hdPath, err := ethaccounts.ParseDerivationPath(basePath)
