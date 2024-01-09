@@ -1,0 +1,17 @@
+syntax = "proto3";
+package haqq.liquidvesting;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "haqq/liquidvesting/params.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
+
+// GenesisState defines the liquidvesting module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+}
