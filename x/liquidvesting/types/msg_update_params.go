@@ -20,7 +20,7 @@ func (m *MsgUpdateParams) ValidateBasic() error {
 	return nil
 }
 
-func (msg *MsgUpdateParams) GetSigners() []sdk.AccAddress {
-	from := sdk.MustAccAddressFromBech32(msg.Authority)
+func (m *MsgUpdateParams) GetSigners() []sdk.AccAddress {
+	from := sdk.MustAccAddressFromBech32(m.Authority)
 	return []sdk.AccAddress{from}
 }

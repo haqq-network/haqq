@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
