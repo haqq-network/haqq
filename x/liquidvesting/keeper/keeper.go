@@ -28,7 +28,6 @@ func NewKeeper(
 	storeKey storetypes.StoreKey,
 	logger log.Logger,
 	authority string,
-
 ) Keeper {
 	if _, err := sdk.AccAddressFromBech32(authority); err != nil {
 		panic(fmt.Sprintf("invalid authority address: %s", authority))
