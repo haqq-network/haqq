@@ -146,6 +146,9 @@ import (
 	erc20client "github.com/haqq-network/haqq/x/erc20/client"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	"github.com/haqq-network/haqq/x/liquidvesting"
+	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 	"github.com/haqq-network/haqq/x/vesting"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -232,6 +235,7 @@ var (
 		erc20.AppModuleBasic{},
 		epochs.AppModuleBasic{},
 		consensus.AppModuleBasic{},
+		liquidvesting.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -247,6 +251,7 @@ var (
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		coinomicstypes.ModuleName:      {authtypes.Minter},
 		vestingtypes.ModuleName:        nil, // Add vesting module account
+		liquidvestingtypes.ModuleName:  {authtypes.Minter},
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -307,9 +312,10 @@ type Haqq struct {
 	FeeMarketKeeper feemarketkeeper.Keeper
 
 	// Evmos keepers
-	Erc20Keeper   erc20keeper.Keeper
-	EpochsKeeper  epochskeeper.Keeper
-	VestingKeeper vestingkeeper.Keeper
+	Erc20Keeper         erc20keeper.Keeper
+	EpochsKeeper        epochskeeper.Keeper
+	VestingKeeper       vestingkeeper.Keeper
+	LiquidVestingKeeper liquidvestingkeeper.Keeper
 
 	// Haqq keepers
 	CoinomicsKeeper coinomicskeeper.Keeper
@@ -384,6 +390,7 @@ func NewHaqq(
 		epochstypes.StoreKey, vestingtypes.StoreKey,
 		// haqq keys
 		coinomicstypes.StoreKey,
+		liquidvestingtypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
@@ -528,6 +535,11 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
 	)
 
+	app.LiquidVestingKeeper = liquidvestingkeeper.NewKeeper(
+		keys[vestingtypes.StoreKey], appCodec,
+		app.AccountKeeper, app.BankKeeper, app.Erc20Keeper,
+	)
+
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
 		epochskeeper.NewMultiEpochHooks(
@@ -649,6 +661,7 @@ func NewHaqq(
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+		liquidvesting.NewAppModule(appCodec, app.LiquidVestingKeeper, app.AccountKeeper, app.BankKeeper, app.Erc20Keeper),
 
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
@@ -687,6 +700,7 @@ func NewHaqq(
 		erc20types.ModuleName,
 		coinomicstypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		liquidvestingtypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -721,6 +735,7 @@ func NewHaqq(
 		// Haqq modules
 		coinomicstypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		liquidvestingtypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -755,6 +770,7 @@ func NewHaqq(
 		upgradetypes.ModuleName,
 		// Evmos modules
 		vestingtypes.ModuleName,
+		liquidvestingtypes.ModuleName,
 		coinomicstypes.ModuleName,
 		erc20types.ModuleName,
 		epochstypes.ModuleName,

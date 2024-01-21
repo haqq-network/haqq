@@ -123,134 +123,36 @@ func (m *MsgLiquidateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgLiquidateResponse proto.InternalMessageInfo
 
-// MsgLiquidate represents message to redeem arbitrary amount of liquid vesting tokens
-type MsgRedeem struct {
-	// destination address for vesting tokens
-	RedeemTo string `protobuf:"bytes,1,opt,name=redeem_to,json=redeemTo,proto3" json:"redeem_to,omitempty"`
-	// amount of vesting tokens to redeem from liquidation module
-	Amount types.Coin `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount"`
-}
-
-func (m *MsgRedeem) Reset()         { *m = MsgRedeem{} }
-func (m *MsgRedeem) String() string { return proto.CompactTextString(m) }
-func (*MsgRedeem) ProtoMessage()    {}
-func (*MsgRedeem) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cfdce5e8d421730a, []int{2}
-}
-func (m *MsgRedeem) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgRedeem) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgRedeem.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgRedeem) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgRedeem.Merge(m, src)
-}
-func (m *MsgRedeem) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgRedeem) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgRedeem.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgRedeem proto.InternalMessageInfo
-
-func (m *MsgRedeem) GetRedeemTo() string {
-	if m != nil {
-		return m.RedeemTo
-	}
-	return ""
-}
-
-func (m *MsgRedeem) GetAmount() types.Coin {
-	if m != nil {
-		return m.Amount
-	}
-	return types.Coin{}
-}
-
-// MsgRedeemResponse defines the Msg/Redeem response type
-type MsgRedeemResponse struct {
-}
-
-func (m *MsgRedeemResponse) Reset()         { *m = MsgRedeemResponse{} }
-func (m *MsgRedeemResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgRedeemResponse) ProtoMessage()    {}
-func (*MsgRedeemResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cfdce5e8d421730a, []int{3}
-}
-func (m *MsgRedeemResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgRedeemResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgRedeemResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgRedeemResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgRedeemResponse.Merge(m, src)
-}
-func (m *MsgRedeemResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgRedeemResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgRedeemResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgRedeemResponse proto.InternalMessageInfo
-
 func init() {
 	proto.RegisterType((*MsgLiquidate)(nil), "haqq.liquidvesting.MsgLiquidate")
 	proto.RegisterType((*MsgLiquidateResponse)(nil), "haqq.liquidvesting.MsgLiquidateResponse")
-	proto.RegisterType((*MsgRedeem)(nil), "haqq.liquidvesting.MsgRedeem")
-	proto.RegisterType((*MsgRedeemResponse)(nil), "haqq.liquidvesting.MsgRedeemResponse")
 }
 
 func init() { proto.RegisterFile("haqq/liquidvesting/v1/tx.proto", fileDescriptor_cfdce5e8d421730a) }
 
 var fileDescriptor_cfdce5e8d421730a = []byte{
-	// 403 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x92, 0xbf, 0xae, 0xd3, 0x30,
-	0x14, 0xc6, 0xe3, 0x22, 0x15, 0x62, 0x58, 0xae, 0xb9, 0x42, 0x25, 0x80, 0x89, 0x82, 0xae, 0x14,
-	0x81, 0xb0, 0xd5, 0xb2, 0x32, 0x5d, 0xd6, 0xdb, 0x25, 0x62, 0x62, 0x41, 0x4e, 0xe3, 0xba, 0x16,
-	0x8d, 0x4f, 0x1a, 0xbb, 0xa5, 0xac, 0x08, 0x31, 0x23, 0xf1, 0x12, 0x8c, 0x3c, 0x46, 0xc7, 0x4a,
-	0x2c, 0x4c, 0x08, 0xb5, 0x48, 0xbc, 0x06, 0xca, 0x9f, 0x96, 0x02, 0x2a, 0x0c, 0x2c, 0xd6, 0xf1,
-	0xf9, 0x8e, 0xbf, 0x9f, 0x7d, 0x7c, 0x30, 0x9d, 0x88, 0xd9, 0x8c, 0x4f, 0xf5, 0x6c, 0xae, 0xb3,
-	0x85, 0xb4, 0x4e, 0x1b, 0xc5, 0x17, 0x7d, 0xee, 0x96, 0xac, 0x28, 0xc1, 0x01, 0x21, 0x95, 0xce,
-	0x7e, 0xd1, 0x83, 0x13, 0x91, 0x6b, 0x03, 0xbc, 0x5e, 0x9b, 0xb2, 0xe0, 0x54, 0x81, 0x82, 0x3a,
-	0xe4, 0x55, 0xd4, 0x66, 0x6f, 0x2b, 0x00, 0x35, 0x95, 0x5c, 0x14, 0x9a, 0x0b, 0x63, 0xc0, 0x09,
-	0xa7, 0xc1, 0xd8, 0x56, 0xa5, 0x23, 0xb0, 0x39, 0x58, 0x9e, 0x0a, 0x2b, 0xf9, 0xa2, 0x9f, 0x4a,
-	0x27, 0xfa, 0x7c, 0x04, 0xda, 0x34, 0x7a, 0x34, 0xc6, 0xd7, 0x86, 0x56, 0x5d, 0xd4, 0x68, 0xe1,
-	0x24, 0xe9, 0xe1, 0xcb, 0x22, 0xcb, 0x4a, 0x69, 0x6d, 0x0f, 0x85, 0x28, 0xf6, 0x93, 0xdd, 0x96,
-	0x3c, 0xc6, 0x5d, 0x91, 0xc3, 0xdc, 0xb8, 0x5e, 0x27, 0x44, 0xf1, 0xd5, 0xc1, 0x4d, 0xd6, 0x58,
-	0xb3, 0xca, 0x9a, 0xb5, 0xd6, 0xec, 0x09, 0x68, 0x73, 0xee, 0xaf, 0xbe, 0xdc, 0xf5, 0x3e, 0x7c,
-	0xff, 0x78, 0x1f, 0x25, 0xed, 0x99, 0xe8, 0x06, 0x3e, 0x3d, 0xe4, 0x24, 0xd2, 0x16, 0x60, 0xac,
-	0x8c, 0xc6, 0xd8, 0x1f, 0x5a, 0x95, 0xc8, 0x4c, 0xca, 0x9c, 0xdc, 0xc2, 0x7e, 0x59, 0x47, 0xcf,
-	0x1d, 0xb4, 0xf8, 0x2b, 0x4d, 0xe2, 0x29, 0xfc, 0x27, 0xff, 0x3a, 0x3e, 0xd9, 0x73, 0x76, 0xf0,
-	0xc1, 0xdb, 0x0e, 0xbe, 0x34, 0xb4, 0x8a, 0xbc, 0x41, 0xd8, 0xff, 0xd9, 0x82, 0x90, 0xfd, 0xf9,
-	0x1d, 0xec, 0xf0, 0xf2, 0x41, 0xfc, 0xaf, 0x8a, 0xfd, 0xf3, 0x1e, 0xbc, 0xfe, 0xf4, 0xed, 0x7d,
-	0xe7, 0x8c, 0xdc, 0xe3, 0xc7, 0x46, 0xa0, 0xcd, 0x55, 0xe0, 0x25, 0xee, 0xb6, 0x8d, 0xb8, 0x73,
-	0x04, 0xd0, 0xc8, 0xc1, 0xd9, 0x5f, 0xe5, 0x3d, 0x3c, 0xae, 0xe1, 0x11, 0x09, 0x8f, 0xc3, 0x9b,
-	0xee, 0x9e, 0x5f, 0xac, 0x36, 0x14, 0xad, 0x37, 0x14, 0x7d, 0xdd, 0x50, 0xf4, 0x6e, 0x4b, 0xbd,
-	0xf5, 0x96, 0x7a, 0x9f, 0xb7, 0xd4, 0x7b, 0x36, 0x50, 0xda, 0x4d, 0xe6, 0x29, 0x1b, 0x41, 0x5e,
-	0xbb, 0x3c, 0x34, 0xd2, 0xbd, 0x84, 0xf2, 0x45, 0x63, 0xb9, 0xfc, 0xcd, 0xd4, 0xbd, 0x2a, 0xa4,
-	0x4d, 0xbb, 0xf5, 0x68, 0x3d, 0xfa, 0x11, 0x00, 0x00, 0xff, 0xff, 0x45, 0x5f, 0xba, 0xeb, 0xf7,
+	// 339 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x91, 0x41, 0x4b, 0x02, 0x41,
+	0x14, 0xc7, 0x77, 0x0c, 0x0c, 0xa7, 0x2e, 0x2d, 0x12, 0x26, 0x31, 0x89, 0x11, 0x48, 0xd1, 0x0c,
+	0xda, 0xb5, 0x93, 0x5d, 0xf5, 0xe2, 0xb1, 0xdb, 0xac, 0x4e, 0xe3, 0x90, 0x3b, 0x6f, 0x75, 0x9e,
+	0x66, 0xd7, 0xe8, 0xd8, 0x21, 0xe8, 0x4b, 0x74, 0xec, 0x63, 0x78, 0x14, 0xba, 0x74, 0x8a, 0xd0,
+	0xa0, 0xaf, 0x11, 0xee, 0xae, 0x64, 0x45, 0x74, 0x19, 0xde, 0xbc, 0xff, 0x7b, 0xbf, 0xff, 0xf0,
+	0x1f, 0xca, 0xba, 0xb2, 0xdf, 0x17, 0x3d, 0xd3, 0x1f, 0x9a, 0xce, 0x48, 0x39, 0x34, 0x56, 0x8b,
+	0x51, 0x55, 0xe0, 0x98, 0x47, 0x03, 0x40, 0xf0, 0xfd, 0x85, 0xce, 0xbf, 0xe9, 0xc5, 0x2d, 0x19,
+	0x1a, 0x0b, 0x22, 0x3e, 0x93, 0xb1, 0x62, 0x5e, 0x83, 0x86, 0xb8, 0x14, 0x8b, 0x2a, 0xed, 0xee,
+	0x6a, 0x00, 0xdd, 0x53, 0x42, 0x46, 0x46, 0x48, 0x6b, 0x01, 0x25, 0x1a, 0xb0, 0x2e, 0x55, 0x59,
+	0x1b, 0x5c, 0x08, 0x4e, 0x04, 0xd2, 0x29, 0x31, 0xaa, 0x06, 0x0a, 0x65, 0x55, 0xb4, 0xc1, 0xd8,
+	0x44, 0x2f, 0x5f, 0xd0, 0xcd, 0xa6, 0xd3, 0x8d, 0xd8, 0x5a, 0xa2, 0xf2, 0x0b, 0x74, 0x5d, 0x76,
+	0x3a, 0x03, 0xe5, 0x5c, 0x81, 0x94, 0x48, 0x25, 0xd7, 0x5a, 0x5e, 0xfd, 0x53, 0x9a, 0x95, 0x21,
+	0x0c, 0x2d, 0x16, 0x32, 0x25, 0x52, 0xd9, 0xa8, 0xed, 0xf0, 0x04, 0xcd, 0x17, 0x68, 0x9e, 0xa2,
+	0xf9, 0x19, 0x18, 0x5b, 0xcf, 0x4d, 0x5e, 0xf7, 0xbc, 0xc7, 0x8f, 0xa7, 0x43, 0xd2, 0x4a, 0x77,
+	0xca, 0xdb, 0x34, 0xbf, 0xea, 0xd3, 0x52, 0x2e, 0x02, 0xeb, 0x54, 0xed, 0x8e, 0xd0, 0xb5, 0xa6,
+	0xd3, 0xfe, 0x2d, 0xa1, 0xb9, 0xaf, 0x57, 0x94, 0xf8, 0xef, 0x44, 0xf8, 0xea, 0x7e, 0xb1, 0xf2,
+	0xdf, 0xc4, 0xd2, 0xa1, 0x7c, 0x74, 0xf3, 0xfc, 0xfe, 0x90, 0x39, 0xf0, 0xf7, 0xc5, 0x5f, 0xbf,
+	0x90, 0xf6, 0x24, 0xaa, 0x7a, 0x63, 0x32, 0x63, 0x64, 0x3a, 0x63, 0xe4, 0x6d, 0xc6, 0xc8, 0xfd,
+	0x9c, 0x79, 0xd3, 0x39, 0xf3, 0x5e, 0xe6, 0xcc, 0x3b, 0xaf, 0x69, 0x83, 0xdd, 0x61, 0xc0, 0xdb,
+	0x10, 0xc6, 0xa0, 0x63, 0xab, 0xf0, 0x0a, 0x06, 0x97, 0x09, 0x75, 0xfc, 0x83, 0x8b, 0xd7, 0x91,
+	0x72, 0x41, 0x36, 0xce, 0xf8, 0xe4, 0x33, 0x00, 0x00, 0xff, 0xff, 0x43, 0x80, 0x3c, 0x73, 0x00,
 	0x02, 0x00, 0x00,
 }
 
@@ -268,8 +170,6 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	// Liquidate transforms specified amount of tokens locked on vesting account into a new liquid token
 	Liquidate(ctx context.Context, in *MsgLiquidate, opts ...grpc.CallOption) (*MsgLiquidateResponse, error)
-	// Redeem burns liquid token and deposits corresponding amount of vesting token to the specified account
-	Redeem(ctx context.Context, in *MsgRedeem, opts ...grpc.CallOption) (*MsgRedeemResponse, error)
 }
 
 type msgClient struct {
@@ -289,21 +189,10 @@ func (c *msgClient) Liquidate(ctx context.Context, in *MsgLiquidate, opts ...grp
 	return out, nil
 }
 
-func (c *msgClient) Redeem(ctx context.Context, in *MsgRedeem, opts ...grpc.CallOption) (*MsgRedeemResponse, error) {
-	out := new(MsgRedeemResponse)
-	err := c.cc.Invoke(ctx, "/haqq.liquidvesting.Msg/Redeem", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	// Liquidate transforms specified amount of tokens locked on vesting account into a new liquid token
 	Liquidate(context.Context, *MsgLiquidate) (*MsgLiquidateResponse, error)
-	// Redeem burns liquid token and deposits corresponding amount of vesting token to the specified account
-	Redeem(context.Context, *MsgRedeem) (*MsgRedeemResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -312,9 +201,6 @@ type UnimplementedMsgServer struct {
 
 func (*UnimplementedMsgServer) Liquidate(ctx context.Context, req *MsgLiquidate) (*MsgLiquidateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Liquidate not implemented")
-}
-func (*UnimplementedMsgServer) Redeem(ctx context.Context, req *MsgRedeem) (*MsgRedeemResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Redeem not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -339,24 +225,6 @@ func _Msg_Liquidate_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_Redeem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgRedeem)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).Redeem(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/haqq.liquidvesting.Msg/Redeem",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).Redeem(ctx, req.(*MsgRedeem))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "haqq.liquidvesting.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -364,10 +232,6 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Liquidate",
 			Handler:    _Msg_Liquidate_Handler,
-		},
-		{
-			MethodName: "Redeem",
-			Handler:    _Msg_Redeem_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -437,69 +301,6 @@ func (m *MsgLiquidateResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgRedeem) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgRedeem) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgRedeem) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Amount.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x12
-	if len(m.RedeemTo) > 0 {
-		i -= len(m.RedeemTo)
-		copy(dAtA[i:], m.RedeemTo)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.RedeemTo)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgRedeemResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgRedeemResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgRedeemResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -527,30 +328,6 @@ func (m *MsgLiquidate) Size() (n int) {
 }
 
 func (m *MsgLiquidateResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *MsgRedeem) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.RedeemTo)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	l = m.Amount.Size()
-	n += 1 + l + sovTx(uint64(l))
-	return n
-}
-
-func (m *MsgRedeemResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -707,171 +484,6 @@ func (m *MsgLiquidateResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgLiquidateResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgRedeem) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgRedeem: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgRedeem: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RedeemTo", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.RedeemTo = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Amount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgRedeemResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgRedeemResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgRedeemResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

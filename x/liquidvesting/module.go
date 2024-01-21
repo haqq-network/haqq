@@ -10,8 +10,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/haqq-network/haqq/x/liquidvesting/client/cli"
 	"github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
+	"github.com/spf13/cobra"
 )
 
 // ----------------------------------------------------------------------------
@@ -31,6 +33,16 @@ func NewAppModuleBasic(cdc codec.BinaryCodec) AppModuleBasic {
 // Name returns the name of the module as a string.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
+}
+
+// GetTxCmd returns the root tx command for the auth module.
+func (AppModuleBasic) GetTxCmd() *cobra.Command {
+	return cli.NewTxCmd()
+}
+
+// GetQueryCmd returns the module's root query command. Currently, this is a no-op.
+func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd()
 }
 
 // RegisterLegacyAminoCodec registers the amino codec for the module, which is used
@@ -78,6 +90,7 @@ type AppModule struct {
 	keeper        keeper.Keeper
 	accountKeeper types.AccountKeeper
 	bankKeeper    types.BankKeeper
+	erc20Keeper   types.ERC20Keeper
 }
 
 func NewAppModule(
@@ -85,12 +98,14 @@ func NewAppModule(
 	keeper keeper.Keeper,
 	accountKeeper types.AccountKeeper,
 	bankKeeper types.BankKeeper,
+	erc20Keeper types.ERC20Keeper,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: NewAppModuleBasic(cdc),
 		keeper:         keeper,
 		accountKeeper:  accountKeeper,
 		bankKeeper:     bankKeeper,
+		erc20Keeper:    erc20Keeper,
 	}
 }
 
