@@ -93,14 +93,6 @@ func (vdd VestingDelegationDecorator) validateMsg(ctx sdk.Context, msg sdk.Msg) 
 
 		// error if bond amount is > vested coins
 		bondDenom := vdd.sk.BondDenom(ctx)
-		coins := clawbackAccount.GetVestedOnly(ctx.BlockTime())
-		if coins == nil || coins.Empty() {
-			return errorsmod.Wrap(
-				vestingtypes.ErrInsufficientVestedCoins,
-				"account has no vested coins",
-			)
-		}
-
 		balance := vdd.bk.GetBalance(ctx, addr, bondDenom)
 		unvestedOnly := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
 		spendable, hasNeg := sdk.Coins{balance}.SafeSub(unvestedOnly...)
