@@ -222,7 +222,7 @@ func delegate(clawbackAccount *types.ClawbackVestingAccount, amount sdkmath.Int,
 	s.Require().NoError(err)
 	delegateMsg := stakingtypes.NewMsgDelegate(addr, val, sdk.NewCoin(s.app.StakingKeeper.BondDenom(s.ctx), amount))
 
-	dec := cosmosante.NewVestingDelegationDecorator(s.app.AccountKeeper, s.app.StakingKeeper, types.ModuleCdc)
+	dec := cosmosante.NewVestingDelegationDecorator(s.app.AccountKeeper, s.app.StakingKeeper, s.app.BankKeeper, types.ModuleCdc)
 	err = testutil.ValidateAnteForMsgs(s.ctx, dec, delegateMsg)
 	return err
 }
