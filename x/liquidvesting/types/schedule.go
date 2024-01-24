@@ -40,11 +40,22 @@ func SubtractAmountFromPeriods(
 		})
 	}
 
+	// subtract residue from decreased periods tail
+	// and add it to diff tail
 	if len(decreasedPeriods) > 0 {
 		residue := subtrahendAmount.Sub(totalSubtracted)
-		residueCoin := sdk.NewCoin(minuendDenom, residue)
-		decreasedPeriods[len(decreasedPeriods)-1].Amount = decreasedPeriods[len(decreasedPeriods)-1].Amount.Sub(residueCoin)
-		diffPeriods[len(diffPeriods)-1].Amount = diffPeriods[len(diffPeriods)-1].Amount.Add(residueCoin)
+		for i := len(decreasedPeriods) - 1; i >= 0; i-- {
+			periodMinuendDenomAmount := decreasedPeriods[i].Amount.AmountOf(minuendDenom)
+			if periodMinuendDenomAmount.LT(residue) {
+				decreasedPeriods[i].Amount = decreasedPeriods[i].Amount.Sub(sdk.NewCoin(minuendDenom, periodMinuendDenomAmount))
+				diffPeriods[i].Amount = diffPeriods[i].Amount.Add(sdk.NewCoin(minuendDenom, periodMinuendDenomAmount))
+				residue = residue.Sub(periodMinuendDenomAmount)
+				continue
+			}
+			decreasedPeriods[i].Amount = decreasedPeriods[i].Amount.Sub(sdk.NewCoin(minuendDenom, residue))
+			diffPeriods[i].Amount = diffPeriods[i].Amount.Add(sdk.NewCoin(minuendDenom, residue))
+			break
+		}
 	}
 
 	return decreasedPeriods, diffPeriods, nil

@@ -98,3 +98,17 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 
 	return &types.MsgLiquidateResponse{}, nil
 }
+
+// func (k Keeper) Redeem(ctx context.Context, redeem *types.MsgRedeem) (*types.MsgRedeemResponse, error) {
+// query liquid token info
+// check liquid token sufficient amount
+// burn liquid token specified amount
+// subtract burned amount from token schedule
+// save modified token schedule
+// convert to account into vesting account
+// or
+// just transfer tokens if there is no upcoming vesting  periods
+//
+
+// return &types.MsgRedeemResponse{}, nil
+//}
