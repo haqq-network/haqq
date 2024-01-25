@@ -63,12 +63,12 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 
 	// create new sdk denom for liquidated locked coins
 	diffPeriods[0].Length -= types.CurrentPeriodShift(va.StartTime.Unix(), ctx.BlockTime().Unix(), va.LockupPeriods)
-	liquidDenom, err := k.CreateDenom(ctx, ctx.BlockTime().Unix(), diffPeriods)
+	liquidDenom, err := k.CreateDenom(ctx, msg.Amount.Denom, ctx.BlockTime().Unix(), diffPeriods)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to create denom for liquid token: %s", err.Error())
 	}
 
-	liquidTokenCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetDenom(), msg.Amount.Amount))
+	liquidTokenCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetLiquidDenom(), msg.Amount.Amount))
 	err = k.bankKeeper.MintCoins(ctx, types.ModuleName, liquidTokenCoins)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to mint liquid token: %s", err.Error())
@@ -77,10 +77,10 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	liquidTokenMetadata := banktypes.Metadata{
 		Description: "Liquid vesting token",
 		DenomUnits: []*banktypes.DenomUnit{{
-			Denom:    liquidDenom.GetDenom(),
+			Denom:    liquidDenom.GetLiquidDenom(),
 			Exponent: 0,
 		}},
-		Base: liquidDenom.GetDenom(),
+		Base: liquidDenom.GetLiquidDenom(),
 	}
 
 	k.bankKeeper.SetDenomMetaData(ctx, liquidTokenMetadata)

@@ -12,7 +12,8 @@ option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
 
 // Denom represents liquid token bonded to some specific vesting schedule
 message Denom {
-  string denom = 1;
+  string liquidDenom = 1;
+  string originalDenom = 2;
   // start date
   google.protobuf.Timestamp start_time = 3
   [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];

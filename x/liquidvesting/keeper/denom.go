@@ -13,25 +13,39 @@ import (
 // CreateDenom
 func (k Keeper) CreateDenom(
 	ctx sdk.Context,
+	originalDenom string,
 	startTime int64,
 	periods sdkvesting.Periods,
 ) (types.Denom, error) {
 	denom := types.Denom{
 		StartTime:     time.Unix(startTime, 0),
 		LockupPeriods: periods,
+		OriginalDenom: originalDenom,
 	}
 
 	counter := k.GetDenomCounter(ctx)
-	denom.Denom = types.DenomNameFromID(counter)
+	denom.LiquidDenom = types.DenomNameFromID(counter)
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
 	appendedValue := k.cdc.MustMarshal(&denom)
-	store.Set([]byte(denom.Denom), appendedValue)
+	store.Set([]byte(denom.LiquidDenom), appendedValue)
 
 	// Update chain counter
 	k.SetDenomCounter(ctx, counter+1)
 
 	return denom, nil
+}
+
+func (k Keeper) GetDenom(ctx sdk.Context, liquidDenom string) (val types.Denom, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
+
+	b := store.Get([]byte(liquidDenom))
+	if b == nil {
+		return val, false
+	}
+
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
 }
 
 // GetDenomCounter get the counter for denoms
