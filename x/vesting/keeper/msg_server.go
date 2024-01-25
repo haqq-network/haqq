@@ -309,7 +309,6 @@ func (k Keeper) ConvertIntoVestingAccount(
 	msg *types.MsgConvertIntoVestingAccount,
 ) (*types.MsgConvertIntoVestingAccountResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	ak := k.accountKeeper
 	bk := k.bankKeeper
 
 	var (
@@ -364,75 +363,20 @@ func (k Keeper) ConvertIntoVestingAccount(
 		)
 	}
 
-	createNewAcc := false
-	targetAccount := k.accountKeeper.GetAccount(ctx, to)
+	vestingAcc, newAccountCreated, wasMerged, err := k.ApplyVestingSchedule(
+		ctx,
+		from, to,
+		vestingCoins,
+		msg.StartTime,
+		msg.LockupPeriods, msg.VestingPeriods,
+		msg.Merge,
+	)
 
-	if targetAccount == nil {
-		createNewAcc = true
+	if err != nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to apply schedule: %s", err.Error())
 	}
 
-	madeNewAcc := false
-	var vestingAcc *types.ClawbackVestingAccount
-	var isClawback bool
-
-	ethAcc, isEthAccount := targetAccount.(*ethtypes.EthAccount)
-	vestingAcc, isClawback = targetAccount.(*types.ClawbackVestingAccount)
-
-	if isClawback && !msg.Merge {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists; consider using --merge", msg.ToAddress)
-	}
-
-	codeHash := common.BytesToHash(crypto.Keccak256(nil))
-	if isEthAccount {
-		codeHash = ethAcc.GetCodeHash()
-	}
-
-	switch {
-	case createNewAcc:
-		baseAcc := authtypes.NewBaseAccountWithAddress(to)
-		vestingAcc = types.NewClawbackVestingAccount(
-			baseAcc,
-			from,
-			vestingCoins,
-			msg.StartTime,
-			msg.LockupPeriods,
-			msg.VestingPeriods,
-			&codeHash,
-		)
-		acc := ak.NewAccount(ctx, vestingAcc)
-		ak.SetAccount(ctx, acc)
-
-		madeNewAcc = true
-	case !isClawback && !isEthAccount:
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s already exists but can't be converted into vesting account", msg.ToAddress)
-	case !isClawback && isEthAccount:
-		baseAcc := ethAcc.GetBaseAccount()
-		vestingAcc = types.NewClawbackVestingAccount(
-			baseAcc,
-			from,
-			vestingCoins,
-			msg.StartTime,
-			msg.LockupPeriods,
-			msg.VestingPeriods,
-			&codeHash,
-		)
-		acc := ak.NewAccount(ctx, vestingAcc)
-		ak.SetAccount(ctx, acc)
-	case isClawback && msg.Merge:
-		if msg.FromAddress != vestingAcc.FunderAddress {
-			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s can only accept grants from account %s", msg.ToAddress, vestingAcc.FunderAddress)
-		}
-
-		err := k.addGrant(ctx, vestingAcc, types.Min64(msg.StartTime.Unix(), vestingAcc.StartTime.Unix()), msg.LockupPeriods, msg.VestingPeriods, vestingCoins)
-		if err != nil {
-			return nil, err
-		}
-		ak.SetAccount(ctx, vestingAcc)
-	default:
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to initiate vesting for account %s", msg.ToAddress)
-	}
-
-	if madeNewAcc {
+	if newAccountCreated {
 		defer func() {
 			telemetry.IncrCounter(1, "new", "account")
 		}()
@@ -449,7 +393,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 			sdk.NewAttribute(sdk.AttributeKeySender, from.String()),
 			sdk.NewAttribute(types.AttributeKeyCoins, vestingCoins.String()),
 			sdk.NewAttribute(types.AttributeKeyStartTime, vestingAcc.StartTime.String()),
-			sdk.NewAttribute(types.AttributeKeyMerge, strconv.FormatBool(isClawback)),
+			sdk.NewAttribute(types.AttributeKeyMerge, strconv.FormatBool(wasMerged)),
 			sdk.NewAttribute(types.AttributeKeyAccount, vestingAcc.Address),
 		),
 		// sdk.NewEvent(
