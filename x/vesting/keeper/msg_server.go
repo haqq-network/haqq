@@ -371,7 +371,6 @@ func (k Keeper) ConvertIntoVestingAccount(
 		msg.LockupPeriods, msg.VestingPeriods,
 		msg.Merge,
 	)
-
 	if err != nil {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to apply schedule: %s", err.Error())
 	}

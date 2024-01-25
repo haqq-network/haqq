@@ -537,7 +537,7 @@ func NewHaqq(
 
 	app.LiquidVestingKeeper = liquidvestingkeeper.NewKeeper(
 		keys[vestingtypes.StoreKey], appCodec,
-		app.AccountKeeper, app.BankKeeper, app.Erc20Keeper,
+		app.AccountKeeper, app.BankKeeper, app.Erc20Keeper, app.VestingKeeper,
 	)
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
