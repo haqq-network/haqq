@@ -17,8 +17,11 @@ message Denom {
   // start date
   google.protobuf.Timestamp start_time = 3
   [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  // end_date
+  google.protobuf.Timestamp end_time = 4
+  [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
   // lockup periods
-  repeated cosmos.vesting.v1beta1.Period lockup_periods = 4 [
+  repeated cosmos.vesting.v1beta1.Period lockup_periods = 5 [
     (gogoproto.nullable) = false,
     (gogoproto.castrepeated) =
         "github.com/cosmos/cosmos-sdk/x/auth/vesting/types.Periods"

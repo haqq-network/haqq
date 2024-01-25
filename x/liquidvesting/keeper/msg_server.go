@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -146,7 +147,7 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 	}
 
 	// subtract burned amount from token schedule
-	decreasedPeriods, _, err := types.SubtractAmountFromPeriods(liquidDenom.LockupPeriods, msg.Amount)
+	decreasedPeriods, diffPeriods, err := types.SubtractAmountFromPeriods(liquidDenom.LockupPeriods, msg.Amount)
 	if err != nil {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to calculate new liquid denom schedule: %s", err.Error())
 	}
@@ -163,35 +164,29 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to transfer original denom to target account: %s", err.Error())
 	}
 
-	// ethAcc, isEthAccount := toAccount.(*ethtypes.EthAccount)
-	// vestingAcc, isClawback := toAccount.(*vestingtypes.ClawbackVestingAccount)
-	//
-	// codeHash := common.BytesToHash(crypto.Keccak256(nil))
-	// if isEthAccount {
-	//	codeHash = ethAcc.GetCodeHash()
-	// }
-	//
-	// if !isClawback {
-	//	baseAcc := ethAcc.GetBaseAccount()
-	//	vestingAcc = vestingtypes.NewClawbackVestingAccount(
-	//		baseAcc,
-	//		toAddress,
-	//		originalDenomCoins,
-	//		liquidDenom.GetStartTime(),
-	//		diffPeriods,
-	//		sdkvesting.Periods{{Length: 0, Amount: originalDenomCoins}},
-	//		&codeHash,
-	//	)
-	//	acc := k.accountKeeper.NewAccount(ctx, vestingAcc)
-	//	k.accountKeeper.SetAccount(ctx, acc)
-	// } else {
-	//
-	// }
+	upcomingPeriods := types.ExtractUpcomingPeriods(
+		liquidDenom.GetStartTime().Unix(),
+		liquidDenom.GetEndTime().Unix(),
+		diffPeriods,
+		ctx.BlockTime().Unix(),
+	)
 
-	// convert to account into vesting account
-	// or
-	// just transfer tokens if there is no upcoming vesting  periods
-	//
+	// if there is upcoming periods, apply vesting schedule on target account
+	if len(upcomingPeriods) > 0 {
+		_, _, _, err = k.vestingKeeper.ApplyVestingSchedule(
+			ctx,
+			k.accountKeeper.GetModuleAddress(types.ModuleName),
+			toAddress,
+			sdk.NewCoins(msg.Amount),
+			liquidDenom.GetStartTime(),
+			diffPeriods,
+			sdkvesting.Periods{{Length: 0, Amount: sdk.NewCoins(msg.Amount)}},
+			true,
+		)
+		if err != nil {
+			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to apply vesting schedule to account %s: %s", toAddress, err.Error())
+		}
+	}
 
 	return &types.MsgRedeemResponse{}, nil
 }

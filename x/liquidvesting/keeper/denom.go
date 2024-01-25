@@ -21,6 +21,7 @@ func (k Keeper) CreateDenom(
 		StartTime:     time.Unix(startTime, 0),
 		LockupPeriods: periods,
 		OriginalDenom: originalDenom,
+		EndTime:       time.Unix(startTime+periods.TotalLength(), 0),
 	}
 
 	counter := k.GetDenomCounter(ctx)

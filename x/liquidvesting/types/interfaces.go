@@ -3,8 +3,11 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/haqq-network/haqq/x/erc20/types"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+	"time"
 )
 
 // AccountKeeper defines the expected interface for the Account module.
@@ -12,6 +15,8 @@ type AccountKeeper interface {
 	GetAccount(sdk.Context, sdk.AccAddress) authtypes.AccountI // only used for simulation
 	SetAccount(sdk.Context, authtypes.AccountI)
 	NewAccount(ctx sdk.Context, acc authtypes.AccountI) authtypes.AccountI
+	GetModuleAddress(moduleName string) sdk.AccAddress
+
 	// Methods imported from account should be defined here
 }
 
@@ -33,4 +38,15 @@ type BankKeeper interface {
 
 type ERC20Keeper interface {
 	RegisterCoin(ctx sdk.Context, coinMetadata banktypes.Metadata) (*types.TokenPair, error)
+}
+
+type VestingKeeper interface {
+	ApplyVestingSchedule(
+		ctx sdk.Context,
+		funder, funded sdk.AccAddress,
+		coins sdk.Coins,
+		startTime time.Time,
+		lockupPeriods, vestingPeriods sdkvesting.Periods,
+		merge bool,
+	) (vestingAcc *vestingtypes.ClawbackVestingAccount, newAccountCreated, wasMerged bool, err error)
 }

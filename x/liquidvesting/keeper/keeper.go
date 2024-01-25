@@ -14,6 +14,7 @@ type (
 		accountKeeper types.AccountKeeper
 		bankKeeper    types.BankKeeper
 		erc20Keeper   types.ERC20Keeper
+		vestingKeeper types.VestingKeeper
 	}
 )
 
@@ -23,6 +24,7 @@ func NewKeeper(
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
 	erc20 types.ERC20Keeper,
+	vk types.VestingKeeper,
 ) Keeper {
 	return Keeper{
 		cdc:           cdc,
@@ -30,5 +32,6 @@ func NewKeeper(
 		accountKeeper: ak,
 		bankKeeper:    bk,
 		erc20Keeper:   erc20,
+		vestingKeeper: vk,
 	}
 }
