@@ -36,6 +36,16 @@ func (k Keeper) CreateDenom(
 	return denom, nil
 }
 
+func (k Keeper) UpdateDenomPeriods(ctx sdk.Context, liquidDenom string, newPeriods sdkvesting.Periods) error {
+	d, found := k.GetDenom(ctx, liquidDenom)
+	if !found {
+		return types.ErrDenomNotFound
+	}
+	d.LockupPeriods = newPeriods
+	k.SetDenom(ctx, d)
+	return nil
+}
+
 func (k Keeper) GetDenom(ctx sdk.Context, liquidDenom string) (val types.Denom, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
 
@@ -46,6 +56,12 @@ func (k Keeper) GetDenom(ctx sdk.Context, liquidDenom string) (val types.Denom, 
 
 	k.cdc.MustUnmarshal(b, &val)
 	return val, true
+}
+
+func (k Keeper) SetDenom(ctx sdk.Context, denom types.Denom) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
+	b := k.cdc.MustMarshal(&denom)
+	store.Set([]byte(denom.LiquidDenom), b)
 }
 
 // GetDenomCounter get the counter for denoms

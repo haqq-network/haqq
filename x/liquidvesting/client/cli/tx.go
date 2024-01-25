@@ -45,7 +45,7 @@ func NewMsgCreateClawbackVestingAccountCmd() *cobra.Command {
 
 			vestingAccountAddress := cliCtx.GetFromAddress()
 
-			msg := types.NewMsgLiquidate(vestingAccountAddress, coin)
+			msg := types.NewMsgLiquidate(vestingAccountAddress, vestingAccountAddress, coin)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

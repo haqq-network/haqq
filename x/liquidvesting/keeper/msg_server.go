@@ -14,36 +14,42 @@ import (
 var _ types.MsgServer = Keeper{}
 
 func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*types.MsgLiquidateResponse, error) {
-	// get account
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	address := sdk.MustAccAddressFromBech32(msg.Address)
-	account := k.accountKeeper.GetAccount(ctx, address)
-	if account == nil {
-		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", msg.Address)
+
+	// get account
+	liquidateFromAddress := sdk.MustAccAddressFromBech32(msg.LiquidateFrom)
+	liquidateFromAccount := k.accountKeeper.GetAccount(ctx, liquidateFromAddress)
+	if liquidateFromAccount == nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", msg.LiquidateFrom)
 	}
 
-	// check account is vesting account
-	acc := k.accountKeeper.GetAccount(ctx, address)
-	va, isClawback := acc.(*vestingtypes.ClawbackVestingAccount)
+	// set to address
+	liquidateToAddress := liquidateFromAddress
+	if msg.LiquidateTo != msg.LiquidateFrom {
+		liquidateToAddress = sdk.MustAccAddressFromBech32(msg.LiquidateTo)
+	}
+
+	// check from account is vesting account
+	va, isClawback := liquidateFromAccount.(*vestingtypes.ClawbackVestingAccount)
 	if !isClawback {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s is regular nothing to liquidate", msg.Address)
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s is regular nothing to liquidate", msg.LiquidateFrom)
 	}
 
 	// check there is not vesting periods on the schedule
 	vestingPeriods := va.VestingPeriods
 	if len(vestingPeriods) > 1 || vestingPeriods.TotalLength() > 0 || ctx.BlockTime().Before(va.StartTime) {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s has vesting periods, unable to liquidate locked coins", msg.Address)
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s has vesting periods, unable to liquidate locked coins", msg.LiquidateFrom)
 	}
 
-	// check account has only ISLM in locked in vesting
+	// check account has liquidation target denom locked in vesting
 	hasTargetDenom, targetCoin := va.GetLockedOnly(ctx.BlockTime()).Find(msg.Amount.Denom)
 	if !(hasTargetDenom) {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s doesn't contain coin specified as liquidation target", msg.Address)
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s doesn't contain coin specified as liquidation target", msg.LiquidateFrom)
 	}
 
-	// validate current locked periods have sufficient to be liquidated
+	// validate current locked periods have sufficient amount to be liquidated
 	if targetCoin.IsLT(msg.Amount) {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s doesn't have sufficient amount of target coin for liquidation", msg.Address)
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s doesn't have sufficient amount of target coin for liquidation", msg.LiquidateFrom)
 	}
 
 	// calculate new schedule
@@ -53,10 +59,11 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to calculate new schedule: %s", err.Error())
 	}
 	va.LockupPeriods = types.ReplacePeriodsTail(va.LockupPeriods, decreasedPeriods)
+	va.OriginalVesting = va.OriginalVesting.Sub(msg.Amount)
 	k.accountKeeper.SetAccount(ctx, va)
 
 	// transfer liquidated amount to liquid vesting module account
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, address, types.ModuleName, sdk.NewCoins(msg.Amount))
+	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, liquidateFromAddress, types.ModuleName, sdk.NewCoins(msg.Amount))
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to transfer liquidated locked coins from account to module: %s", err.Error())
 	}
@@ -85,7 +92,7 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 
 	k.bankKeeper.SetDenomMetaData(ctx, liquidTokenMetadata)
 
-	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, address, liquidTokenCoins)
+	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, liquidateToAddress, liquidTokenCoins)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to transfer liquid tokens to vesting account %s", err.Error())
 	}
@@ -99,16 +106,92 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	return &types.MsgLiquidateResponse{}, nil
 }
 
-// func (k Keeper) Redeem(ctx context.Context, redeem *types.MsgRedeem) (*types.MsgRedeemResponse, error) {
-// query liquid token info
-// check liquid token sufficient amount
-// burn liquid token specified amount
-// subtract burned amount from token schedule
-// save modified token schedule
-// convert to account into vesting account
-// or
-// just transfer tokens if there is no upcoming vesting  periods
-//
+func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgRedeemResponse, error) {
+	// get accounts
+	ctx := sdk.UnwrapSDKContext(goCtx)
 
-// return &types.MsgRedeemResponse{}, nil
-//}
+	fromAddress := sdk.MustAccAddressFromBech32(msg.RedeemFrom)
+	fromAccount := k.accountKeeper.GetAccount(ctx, fromAddress)
+	if fromAccount == nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", msg.RedeemFrom)
+	}
+
+	toAddress := sdk.MustAccAddressFromBech32(msg.RedeemTo)
+	toAccount := k.accountKeeper.GetAccount(ctx, toAddress)
+	if toAccount == nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", msg.RedeemTo)
+	}
+
+	// query liquid token info
+	liquidDenom, found := k.GetDenom(ctx, msg.Amount.Denom)
+	if !found {
+		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "liquidDenom %s does not exist", msg.Amount.Denom)
+	}
+
+	// check fromAccount has enough liquid token in balance
+	if hasBalance := k.bankKeeper.HasBalance(ctx, fromAddress, msg.Amount); !hasBalance {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "from account has insufficient balance")
+	}
+
+	// transfer liquid denom to liquidvesting module
+	err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, fromAddress, types.ModuleName, sdk.NewCoins(msg.Amount))
+	if err != nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to transfer liquid token to module: %s", err.Error())
+	}
+
+	// burn liquid token specified amount
+	err = k.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(msg.Amount))
+	if err != nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to burn liquid tokens: %s", err.Error())
+	}
+
+	// subtract burned amount from token schedule
+	decreasedPeriods, _, err := types.SubtractAmountFromPeriods(liquidDenom.LockupPeriods, msg.Amount)
+	if err != nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to calculate new liquid denom schedule: %s", err.Error())
+	}
+	// save modified token schedule
+	err = k.UpdateDenomPeriods(ctx, liquidDenom.LiquidDenom, decreasedPeriods)
+	if err != nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to update liquid denom schedule: %s", err.Error())
+	}
+
+	// transfer original token to account
+	originalDenomCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetOriginalDenom(), msg.Amount.Amount))
+	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, toAddress, originalDenomCoins)
+	if err != nil {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to transfer original denom to target account: %s", err.Error())
+	}
+
+	// ethAcc, isEthAccount := toAccount.(*ethtypes.EthAccount)
+	// vestingAcc, isClawback := toAccount.(*vestingtypes.ClawbackVestingAccount)
+	//
+	// codeHash := common.BytesToHash(crypto.Keccak256(nil))
+	// if isEthAccount {
+	//	codeHash = ethAcc.GetCodeHash()
+	// }
+	//
+	// if !isClawback {
+	//	baseAcc := ethAcc.GetBaseAccount()
+	//	vestingAcc = vestingtypes.NewClawbackVestingAccount(
+	//		baseAcc,
+	//		toAddress,
+	//		originalDenomCoins,
+	//		liquidDenom.GetStartTime(),
+	//		diffPeriods,
+	//		sdkvesting.Periods{{Length: 0, Amount: originalDenomCoins}},
+	//		&codeHash,
+	//	)
+	//	acc := k.accountKeeper.NewAccount(ctx, vestingAcc)
+	//	k.accountKeeper.SetAccount(ctx, acc)
+	// } else {
+	//
+	// }
+
+	// convert to account into vesting account
+	// or
+	// just transfer tokens if there is no upcoming vesting  periods
+	//
+
+	return &types.MsgRedeemResponse{}, nil
+}
