@@ -81,3 +81,5 @@ tmp-swagger-gen
 .secrets
 .env
 .dccache
+
+result

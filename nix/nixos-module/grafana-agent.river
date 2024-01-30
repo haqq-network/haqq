@@ -1,0 +1,76 @@
+local.file "grafana_secret_key" {
+	filename = env("GRAFANA_SECRET_KEY")
+	is_secret = true
+}
+
+logging {
+	level  = "debug"
+	format = "logfmt"
+}
+
+prometheus.remote_write "default" {
+	endpoint {
+		url = env("GRAFANA_METRICS_URL")
+		bearer_token = local.file.grafana_secret_key.content
+	}
+}
+
+prometheus.scrape "linux_node" {
+	targets = prometheus.exporter.unix.default.targets
+	forward_to = [
+		prometheus.remote_write.default.receiver,
+	]
+}
+
+prometheus.exporter.unix "default" {
+}
+
+prometheus.scrape "tendermint" {
+	forward_to = [
+		prometheus.remote_write.default.receiver,
+	]
+	targets = [
+		{
+			"__address__" = "localhost:26660",
+			"instance" = "@instance@",
+			"app" = "haqqd-tendermint",
+		},
+	]
+}
+
+loki.relabel "journal" {
+	forward_to = []
+
+	rule {
+		source_labels = ["__journal__systemd_unit"]
+		target_label  = "unit"
+	}
+	rule {
+		source_labels = ["__journal__boot_id"]
+		target_label  = "boot_id"
+	}
+	rule {
+		source_labels = ["__journal__transport"]
+		target_label  = "transport"
+	}
+	rule {
+		source_labels = ["__journal_priority_keyword"]
+		target_label  = "level"
+	}
+	rule {
+		source_labels = ["__journal__hostname"]
+		target_label  = "instance"
+	}
+}
+
+// loki.source.journal "read" {
+	//   forward_to = [
+		//     module.git.grafana_cloud.exports.logs_receiver,
+		//   ]
+	//   relabel_rules = loki.relabel.journal.rules
+	//   labels = {
+		//     "job" = "integrations/node_exporter",
+		//   }
+	// }
+	
+
