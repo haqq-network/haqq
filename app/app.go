@@ -251,7 +251,7 @@ var (
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		coinomicstypes.ModuleName:      {authtypes.Minter},
 		vestingtypes.ModuleName:        nil, // Add vesting module account
-		liquidvestingtypes.ModuleName:  {authtypes.Minter},
+		liquidvestingtypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
 	}
 
 	// module accounts that are allowed to receive tokens

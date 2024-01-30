@@ -14,6 +14,7 @@ import (
 
 var _ types.MsgServer = Keeper{}
 
+// Liquidate liquidates specified amount of token locked in vesting into liquid token
 func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*types.MsgLiquidateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -69,26 +70,33 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to transfer liquidated locked coins from account to module: %s", err.Error())
 	}
 
-	// create new sdk denom for liquidated locked coins
 	diffPeriods[0].Length -= types.CurrentPeriodShift(va.StartTime.Unix(), ctx.BlockTime().Unix(), va.LockupPeriods)
+	// todo: expect to get base denom with exponent 0 here, may causes some misunderstanding
 	liquidDenom, err := k.CreateDenom(ctx, msg.Amount.Denom, ctx.BlockTime().Unix(), diffPeriods)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to create denom for liquid token: %s", err.Error())
 	}
 
-	liquidTokenCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetLiquidDenom(), msg.Amount.Amount))
+	// create new sdk denom for liquidated locked coins
+	liquidTokenMetadata := banktypes.Metadata{
+		Description: "Liquid vesting token",
+		DenomUnits: []*banktypes.DenomUnit{
+			{
+				Denom:    liquidDenom.GetDenomName0(),
+				Exponent: 0,
+			},
+			{
+				Denom:    liquidDenom.GetDenomName18(),
+				Exponent: 18,
+			},
+		},
+		Base: liquidDenom.GetDenomName0(),
+	}
+
+	liquidTokenCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetDenomName0(), msg.Amount.Amount))
 	err = k.bankKeeper.MintCoins(ctx, types.ModuleName, liquidTokenCoins)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to mint liquid token: %s", err.Error())
-	}
-
-	liquidTokenMetadata := banktypes.Metadata{
-		Description: "Liquid vesting token",
-		DenomUnits: []*banktypes.DenomUnit{{
-			Denom:    liquidDenom.GetLiquidDenom(),
-			Exponent: 0,
-		}},
-		Base: liquidDenom.GetLiquidDenom(),
 	}
 
 	k.bankKeeper.SetDenomMetaData(ctx, liquidTokenMetadata)
@@ -107,6 +115,7 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	return &types.MsgLiquidateResponse{}, nil
 }
 
+// Redeem redeems specified amount of liquid token into original locked token and adds them to account
 func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgRedeemResponse, error) {
 	// get accounts
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -124,6 +133,7 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 	}
 
 	// query liquid token info
+	// todo: expect to get base denom with exponent 0 here, may causes some misunderstanding
 	liquidDenom, found := k.GetDenom(ctx, msg.Amount.Denom)
 	if !found {
 		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "liquidDenom %s does not exist", msg.Amount.Denom)
@@ -147,19 +157,19 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 	}
 
 	// subtract burned amount from token schedule
-	decreasedPeriods, diffPeriods, err := types.SubtractAmountFromPeriods(liquidDenom.LockupPeriods, msg.Amount)
+	originalDenomCoin := sdk.NewCoin(liquidDenom.GetOriginalDenom(), msg.Amount.Amount)
+	decreasedPeriods, diffPeriods, err := types.SubtractAmountFromPeriods(liquidDenom.LockupPeriods, originalDenomCoin)
 	if err != nil {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to calculate new liquid denom schedule: %s", err.Error())
 	}
 	// save modified token schedule
-	err = k.UpdateDenomPeriods(ctx, liquidDenom.LiquidDenom, decreasedPeriods)
+	err = k.UpdateDenomPeriods(ctx, liquidDenom.DenomName0, decreasedPeriods)
 	if err != nil {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to update liquid denom schedule: %s", err.Error())
 	}
 
 	// transfer original token to account
-	originalDenomCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetOriginalDenom(), msg.Amount.Amount))
-	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, toAddress, originalDenomCoins)
+	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, toAddress, sdk.NewCoins(originalDenomCoin))
 	if err != nil {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to transfer original denom to target account: %s", err.Error())
 	}
@@ -171,16 +181,23 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 		ctx.BlockTime().Unix(),
 	)
 
-	// if there is upcoming periods, apply vesting schedule on target account
+	// if there are upcoming periods, apply vesting schedule on target account
 	if len(upcomingPeriods) > 0 {
+		funder := k.accountKeeper.GetModuleAddress(types.ModuleName)
+		// check if toAddress already a vesting account to apply current funder
+		toVestingAcc, isClawback := toAccount.(*vestingtypes.ClawbackVestingAccount)
+		if isClawback {
+			funder = sdk.MustAccAddressFromBech32(toVestingAcc.FunderAddress)
+		}
+
 		_, _, _, err = k.vestingKeeper.ApplyVestingSchedule(
 			ctx,
-			k.accountKeeper.GetModuleAddress(types.ModuleName),
+			funder,
 			toAddress,
-			sdk.NewCoins(msg.Amount),
+			sdk.NewCoins(originalDenomCoin),
 			liquidDenom.GetStartTime(),
 			diffPeriods,
-			sdkvesting.Periods{{Length: 0, Amount: sdk.NewCoins(msg.Amount)}},
+			sdkvesting.Periods{{Length: 0, Amount: sdk.NewCoins(originalDenomCoin)}},
 			true,
 		)
 		if err != nil {

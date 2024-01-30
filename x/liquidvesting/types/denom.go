@@ -2,8 +2,17 @@ package types
 
 import "fmt"
 
-const denomNamePrefix = "liquidDenom"
+const (
+	denomNamePrefix0  = "aLIQUIDDENOM"
+	denomNamePrefix18 = "LIQUIDDENOM"
+)
 
-func DenomNameFromID(id uint64) string {
-	return fmt.Sprintf("%s%d", denomNamePrefix, id)
+// DenomName0FromID compose denom name based on id for exponent 0
+func DenomName0FromID(id uint64) string {
+	return fmt.Sprintf("%s%d", denomNamePrefix0, id)
+}
+
+// DenomName0FromID compose denom name based on id for exponent 18
+func DenomName18FromID(id uint64) string {
+	return fmt.Sprintf("%s%d", denomNamePrefix18, id)
 }

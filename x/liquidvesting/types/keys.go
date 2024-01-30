@@ -7,10 +7,10 @@ const (
 	// StoreKey defines the primary module store key
 	StoreKey = ModuleName
 
-	// ChainKeyPrefix is the prefix to retrieve all Chain
+	// DenomKeyPrefix is the prefix to retrieve all Denom
 	DenomKeyPrefix = "Denom/value/"
 
-	// ChainCounterKey is the prefix to store chain counter
+	// DenomCounterKey is the prefix to store denom counter
 	DenomCounterKey = "Denom/count/"
 
 	// MemStoreKey defines the in-memory store key

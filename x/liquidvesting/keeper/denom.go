@@ -10,7 +10,7 @@ import (
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 )
 
-// CreateDenom
+// CreateDenom creates new liquid denom and stores it
 func (k Keeper) CreateDenom(
 	ctx sdk.Context,
 	originalDenom string,
@@ -25,11 +25,12 @@ func (k Keeper) CreateDenom(
 	}
 
 	counter := k.GetDenomCounter(ctx)
-	denom.LiquidDenom = types.DenomNameFromID(counter)
+	denom.DenomName0 = types.DenomName0FromID(counter)
+	denom.DenomName18 = types.DenomName18FromID(counter)
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
 	appendedValue := k.cdc.MustMarshal(&denom)
-	store.Set([]byte(denom.LiquidDenom), appendedValue)
+	store.Set([]byte(denom.GetDenomName18()), appendedValue)
 
 	// Update chain counter
 	k.SetDenomCounter(ctx, counter+1)
@@ -37,8 +38,9 @@ func (k Keeper) CreateDenom(
 	return denom, nil
 }
 
-func (k Keeper) UpdateDenomPeriods(ctx sdk.Context, liquidDenom string, newPeriods sdkvesting.Periods) error {
-	d, found := k.GetDenom(ctx, liquidDenom)
+// UpdateDenomPeriods updates schedule periods bound to liquid denom
+func (k Keeper) UpdateDenomPeriods(ctx sdk.Context, baseDenom string, newPeriods sdkvesting.Periods) error {
+	d, found := k.GetDenom(ctx, baseDenom)
 	if !found {
 		return types.ErrDenomNotFound
 	}
@@ -47,10 +49,11 @@ func (k Keeper) UpdateDenomPeriods(ctx sdk.Context, liquidDenom string, newPerio
 	return nil
 }
 
-func (k Keeper) GetDenom(ctx sdk.Context, liquidDenom string) (val types.Denom, found bool) {
+// GetDenom queries denom from the store
+func (k Keeper) GetDenom(ctx sdk.Context, baseDenom string) (val types.Denom, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
 
-	b := store.Get([]byte(liquidDenom))
+	b := store.Get([]byte(baseDenom))
 	if b == nil {
 		return val, false
 	}
@@ -59,10 +62,11 @@ func (k Keeper) GetDenom(ctx sdk.Context, liquidDenom string) (val types.Denom, 
 	return val, true
 }
 
+// SetDenom sets denom in the store
 func (k Keeper) SetDenom(ctx sdk.Context, denom types.Denom) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
 	b := k.cdc.MustMarshal(&denom)
-	store.Set([]byte(denom.LiquidDenom), b)
+	store.Set([]byte(denom.GetDenomName0()), b)
 }
 
 // GetDenomCounter get the counter for denoms
@@ -80,7 +84,7 @@ func (k Keeper) GetDenomCounter(ctx sdk.Context) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// SetDenomCounter set the counter for chains
+// SetDenomCounter set the counter for denoms
 func (k Keeper) SetDenomCounter(ctx sdk.Context, counter uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
 	byteKey := types.KeyPrefix(types.DenomCounterKey)

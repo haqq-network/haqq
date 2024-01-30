@@ -18,6 +18,7 @@ type (
 	}
 )
 
+// NewKeeper creates new Keeper
 func NewKeeper(
 	storeKey storetypes.StoreKey,
 	cdc codec.BinaryCodec,

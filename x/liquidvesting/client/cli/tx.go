@@ -21,17 +21,19 @@ func NewTxCmd() *cobra.Command {
 	}
 
 	txCmd.AddCommand(
-		NewMsgCreateClawbackVestingAccountCmd(),
+		NewMsgLiquidateCmd(),
+		NewMsgRedeemCmd(),
 	)
 
 	return txCmd
 }
 
-func NewMsgCreateClawbackVestingAccountCmd() *cobra.Command {
+// NewMsgLiquidateCmd returns command for composing MsgLiquidate and sending it to blockchain
+func NewMsgLiquidateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "liquidate COIN",
+		Use:   "liquidate COIN [RECEIVER]",
 		Short: "Liquidate locked tokens from vesting account into erc20 token",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -43,9 +45,61 @@ func NewMsgCreateClawbackVestingAccountCmd() *cobra.Command {
 				return err
 			}
 
-			vestingAccountAddress := cliCtx.GetFromAddress()
+			var liquidateTo sdk.AccAddress
+			liauidateFrom := cliCtx.GetFromAddress()
 
-			msg := types.NewMsgLiquidate(vestingAccountAddress, vestingAccountAddress, coin)
+			if len(args) == 2 {
+				liquidateTo, err = sdk.AccAddressFromBech32(args[1])
+				if err != nil {
+					return err
+				}
+			} else {
+				liquidateTo = liauidateFrom
+			}
+
+			msg := types.NewMsgLiquidate(liauidateFrom, liquidateTo, coin)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(cliCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+// NewMsgRedeemCmd returns command for composing MsgRedeem and sending it to blockchain
+func NewMsgRedeemCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "redeem COIN [RECEIVER]",
+		Short: "Redeem liquid token into locked vesting tokens",
+		Args:  cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			coin, err := sdk.ParseCoinNormalized(args[0])
+			if err != nil {
+				return err
+			}
+
+			var redeemTo sdk.AccAddress
+			redeemFrom := cliCtx.GetFromAddress()
+
+			if len(args) == 2 {
+				redeemTo, err = sdk.AccAddressFromBech32(args[1])
+				if err != nil {
+					return err
+				}
+			} else {
+				redeemTo = redeemFrom
+			}
+
+			msg := types.NewMsgRedeem(redeemFrom, redeemTo, coin)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

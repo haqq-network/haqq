@@ -37,10 +37,12 @@ type BankKeeper interface {
 	SetDenomMetaData(ctx sdk.Context, denomMetaData banktypes.Metadata)
 }
 
+// ERC20Keeper defines the expected interface for the ERC20 module.
 type ERC20Keeper interface {
 	RegisterCoin(ctx sdk.Context, coinMetadata banktypes.Metadata) (*types.TokenPair, error)
 }
 
+// VestingKeeper defines the expected interface for the Vesting module.
 type VestingKeeper interface {
 	ApplyVestingSchedule(
 		ctx sdk.Context,

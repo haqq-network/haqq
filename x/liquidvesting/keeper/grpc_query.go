@@ -13,13 +13,26 @@ import (
 
 var _ types.QueryServer = Keeper{}
 
+// Denom retrieves liquid token denom by its name
 func (k Keeper) Denom(goCtx context.Context, req *types.QueryDenomRequest) (*types.QueryDenomResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	val, found := k.GetDenom(ctx, req.Denom)
+	metadata, found := k.bankKeeper.GetDenomMetaData(ctx, req.Denom)
+	if !found {
+		return nil, status.Error(codes.NotFound, "not found")
+	}
+
+	unitIdentifier := req.Denom
+	for _, unit := range metadata.DenomUnits {
+		if unit.GetExponent() == 18 {
+			unitIdentifier = unit.GetDenom()
+		}
+	}
+
+	val, found := k.GetDenom(ctx, unitIdentifier)
 	if !found {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
@@ -27,6 +40,7 @@ func (k Keeper) Denom(goCtx context.Context, req *types.QueryDenomRequest) (*typ
 	return &types.QueryDenomResponse{Denom: val}, nil
 }
 
+// Denoms retrieves liquid tokens denoms
 func (k Keeper) Denoms(goCtx context.Context, req *types.QueryDenomsRequest) (*types.QueryDenomsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

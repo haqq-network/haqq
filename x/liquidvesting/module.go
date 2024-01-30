@@ -93,6 +93,7 @@ type AppModule struct {
 	erc20Keeper   types.ERC20Keeper
 }
 
+// NewAppModule creates new AppModule
 func NewAppModule(
 	cdc codec.Codec,
 	keeper keeper.Keeper,

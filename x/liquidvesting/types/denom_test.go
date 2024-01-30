@@ -14,7 +14,7 @@ func TestDenomSuite(t *testing.T) {
 	suite.Run(t, new(DenomTestSuite))
 }
 
-func (suite *DenomTestSuite) TestDenomNameFromID() {
+func (suite *DenomTestSuite) TestDenomName0FromID() {
 	testCases := []struct {
 		name         string
 		ID           uint64
@@ -23,13 +23,34 @@ func (suite *DenomTestSuite) TestDenomNameFromID() {
 		{
 			name:         "Simple id",
 			ID:           1,
-			expectedName: "liquidDenom1",
+			expectedName: "aLIQUIDDENOM1",
 		},
 	}
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			result := DenomNameFromID(tc.ID)
+			result := DenomName0FromID(tc.ID)
+			suite.Require().Equal(tc.expectedName, result)
+		})
+	}
+}
+
+func (suite *DenomTestSuite) TestDenomName18FromID() {
+	testCases := []struct {
+		name         string
+		ID           uint64
+		expectedName string
+	}{
+		{
+			name:         "Simple id",
+			ID:           1,
+			expectedName: "LIQUIDDENOM1",
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			result := DenomName18FromID(tc.ID)
 			suite.Require().Equal(tc.expectedName, result)
 		})
 	}

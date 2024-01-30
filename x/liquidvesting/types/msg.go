@@ -23,7 +23,7 @@ func NewMsgLiquidate(liquidateFrom, liquidateTo sdk.AccAddress, amount sdk.Coin)
 // Route returns the name of the module
 func (msg MsgLiquidate) Route() string { return RouterKey }
 
-// Type returns the the action
+// Type returns the action type
 func (msg MsgLiquidate) Type() string { return TypeMsgLiquidate }
 
 // ValidateBasic runs stateless checks on the message
@@ -62,7 +62,7 @@ func NewMsgRedeem(redeemFrom, redeemTo sdk.AccAddress, amount sdk.Coin) *MsgRede
 // Route returns the name of the module
 func (msg MsgRedeem) Route() string { return RouterKey }
 
-// Type returns the the action
+// Type returns the action type
 func (msg MsgRedeem) Type() string { return TypeMsgRedeem }
 
 // ValidateBasic runs stateless checks on the message

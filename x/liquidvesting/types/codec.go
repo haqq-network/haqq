@@ -9,7 +9,7 @@ import (
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgLiquidate{},
-		// &MsgRedeem{},
+		&MsgRedeem{},
 	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
+// ApplyVestingSchedule takes funder and funded addresses
 func (k Keeper) ApplyVestingSchedule(
 	ctx sdk.Context,
 	funder, funded sdk.AccAddress,

@@ -61,6 +61,8 @@ func SubtractAmountFromPeriods(
 	return decreasedPeriods, diffPeriods, nil
 }
 
+// ExtractUpcomingPeriods takes the list of periods with started time and
+// returns list of periods which are currently upcoming
 func ExtractUpcomingPeriods(startDate, endDate int64, periods sdkvesting.Periods, readTime int64) sdkvesting.Periods {
 	pastPeriods := vestingTypes.ReadPastPeriodCount(startDate, endDate, periods, readTime)
 	upcomingPeriods := make(sdkvesting.Periods, len(periods)-pastPeriods)
@@ -69,6 +71,8 @@ func ExtractUpcomingPeriods(startDate, endDate int64, periods sdkvesting.Periods
 	return upcomingPeriods
 }
 
+// ReplacePeriodsTail replaces the last N periods in original periods list with replacements period list
+// where N is length of replacement list
 func ReplacePeriodsTail(periods, replacement sdkvesting.Periods) sdkvesting.Periods {
 	replacedPeriods := make(sdkvesting.Periods, 0, len(periods))
 	if len(replacement) >= len(periods) {
@@ -81,6 +85,7 @@ func ReplacePeriodsTail(periods, replacement sdkvesting.Periods) sdkvesting.Peri
 	return replacedPeriods
 }
 
+// CurrentPeriodShift calculates how much time has passed since the beginning of the current period
 func CurrentPeriodShift(startTime, currentTime int64, periods sdkvesting.Periods) int64 {
 	if startTime >= currentTime {
 		return 0
