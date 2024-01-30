@@ -18,14 +18,16 @@ import (
 type VestingDelegationDecorator struct {
 	ak  evmtypes.AccountKeeper
 	sk  vestingtypes.StakingKeeper
+	bk  evmtypes.BankKeeper
 	cdc codec.BinaryCodec
 }
 
 // NewVestingDelegationDecorator creates a new VestingDelegationDecorator
-func NewVestingDelegationDecorator(ak evmtypes.AccountKeeper, sk vestingtypes.StakingKeeper, cdc codec.BinaryCodec) VestingDelegationDecorator {
+func NewVestingDelegationDecorator(ak evmtypes.AccountKeeper, sk vestingtypes.StakingKeeper, bk evmtypes.BankKeeper, cdc codec.BinaryCodec) VestingDelegationDecorator {
 	return VestingDelegationDecorator{
 		ak:  ak,
 		sk:  sk,
+		bk:  bk,
 		cdc: cdc,
 	}
 }
@@ -91,19 +93,18 @@ func (vdd VestingDelegationDecorator) validateMsg(ctx sdk.Context, msg sdk.Msg) 
 
 		// error if bond amount is > vested coins
 		bondDenom := vdd.sk.BondDenom(ctx)
-		coins := clawbackAccount.GetVestedOnly(ctx.BlockTime())
-		if coins == nil || coins.Empty() {
-			return errorsmod.Wrap(
-				vestingtypes.ErrInsufficientVestedCoins,
-				"account has no vested coins",
-			)
+		balance := vdd.bk.GetBalance(ctx, addr, bondDenom)
+		unvestedOnly := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
+		spendable, hasNeg := sdk.Coins{balance}.SafeSub(unvestedOnly...)
+		if hasNeg {
+			spendable = sdk.NewCoins()
 		}
 
-		vested := coins.AmountOf(bondDenom)
+		vested := spendable.AmountOf(bondDenom)
 		if vested.LT(delegateMsg.Amount.Amount) {
 			return errorsmod.Wrapf(
 				vestingtypes.ErrInsufficientVestedCoins,
-				"cannot delegate unvested coins. coins vested < delegation amount (%s < %s)",
+				"cannot delegate unvested coins. coins stakable < delegation amount (%s < %s)",
 				vested, delegateMsg.Amount.Amount,
 			)
 		}

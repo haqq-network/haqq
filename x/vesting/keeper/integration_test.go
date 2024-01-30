@@ -150,13 +150,26 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			vested := clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
 			unlocked := clawbackAccount.GetUnlockedOnly(s.ctx.BlockTime())
 			zeroCoins := sdk.NewCoins(sdk.NewCoin(stakeDenom, sdk.ZeroInt()))
-			s.Require().Equal(zeroCoins, vested)
-			s.Require().Equal(zeroCoins, unlocked)
+			s.Require().Equal(zeroCoins.String(), vested.String())
+			s.Require().Equal(zeroCoins.String(), unlocked.String())
 		})
 
-		It("cannot delegate tokens", func() {
-			err := delegate(clawbackAccount, math.NewInt(100), s.validator.GetOperator().String())
+		It("cannot delegate unvested tokens", func() {
+			// Try to delegate more than available spendable balance
+			// All vesting tokens are unvested at this point
+			// Only 1e16 aISLM is available for gas coverage
+			err := delegate(clawbackAccount, math.NewInt(1e18), s.validator.GetOperator().String())
+			// Must fail due to insufficient balance
 			Expect(err).ToNot(BeNil())
+		})
+
+		It("can delegate spendable tokens", func() {
+			// Try to delegate available spendable balance
+			// All vesting tokens are unvested at this point
+			// Only 1e16 aISLM is available for gas coverage
+			err := delegate(clawbackAccount, math.NewInt(1e15), s.validator.GetOperator().String())
+			// Must succeed as spendable balance is sufficient
+			Expect(err).To(BeNil())
 		})
 
 		It("can transfer spendable tokens", func() {
@@ -215,6 +228,7 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 
 			// Check if some, but not all tokens are vested
 			vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
+			unvested = clawbackAccount.GetUnvestedOnly(s.ctx.BlockTime())
 			expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(sdk.NewInt(cliff))))
 			s.Require().NotEqual(vestingAmtTotal, vested)
 			s.Require().Equal(expVested, vested)
@@ -222,6 +236,21 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 
 		It("can delegate vested tokens", func() {
 			err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator().String())
+			Expect(err).To(BeNil())
+		})
+
+		It("can delegate vested and own tokens", func() {
+			// Try to delegate more than vested amount
+			// 1e16 aISLM is available for gas coverage
+			// So there's enough to delegate vested and own tokens
+			vestedIslm := vested.AmountOf(stakeDenom)
+			unvestedIslm := unvested.AmountOf(stakeDenom)
+			// Fund account with new spendable tokens
+			err := testutil.FundAccount(s.ctx, s.app.BankKeeper, clawbackAccount.GetAddress(), unvested)
+			Expect(err).To(BeNil())
+
+			err = delegate(clawbackAccount, vestedIslm.Add(unvestedIslm), s.validator.GetOperator().String())
+			// Must succeed as spendable balance is sufficient
 			Expect(err).To(BeNil())
 		})
 
