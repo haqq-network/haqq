@@ -27,7 +27,7 @@ buildGo120Module {
   proxyVendor = true;
 
   # if some tests are intentionally failing, uncomment this
-  doCheck = false;
+  # doCheck = false;
 
   preBuild = ''
     export HOME=$TMP
