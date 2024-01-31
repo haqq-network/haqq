@@ -1,6 +1,6 @@
 { pkgs, nix-filter }:
 let
-  version = "1.7.0";
+  version = "1.7.1";
   inherit (pkgs) lib buildGo120Module;
 in
 buildGo120Module {

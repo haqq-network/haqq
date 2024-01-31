@@ -33,3 +33,8 @@ jobs:
       - run: |
           make build
         if: "env.GIT_DIFF != ''"
+      - uses: haqq-network/nix-action@master
+        with:
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - run: |
+          nix develop --impure --command ci-check-version
