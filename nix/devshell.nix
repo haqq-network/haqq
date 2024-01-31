@@ -18,6 +18,7 @@
       protobuf
       buf
       clang-tools
+      nix-prefetch
 
       (callPackage ./grpc-gateway.nix { inherit pkgs; })
     ];
