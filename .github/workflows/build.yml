@@ -36,5 +36,9 @@ jobs:
       - uses: haqq-network/nix-action@master
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-      - run: |
+      - name: build nix package
+        run: |
+          nix build .#haqqd
+      - name: check if nix package and Makefile versions match
+        run: |
           nix develop --impure --command ci-check-version
