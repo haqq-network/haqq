@@ -90,7 +90,10 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 				Exponent: 18,
 			},
 		},
-		Base: liquidDenom.GetDenomName0(),
+		Base:    liquidDenom.GetDenomName0(),
+		Display: liquidDenom.GetDenomName18(),
+		Name:    liquidDenom.GetDenomName18(),
+		Symbol:  liquidDenom.GetDenomName18(),
 	}
 
 	liquidTokenCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetDenomName0(), msg.Amount.Amount))

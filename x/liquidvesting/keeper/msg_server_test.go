@@ -9,9 +9,11 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
 	haqqtypes "github.com/haqq-network/haqq/types"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
@@ -144,6 +146,20 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				cva, isClawback := accIFrom.(*vestingtypes.ClawbackVestingAccount)
 				suite.Require().True(isClawback)
 				suite.Require().Equal(cva.GetLockedOnly(suite.ctx.BlockTime()), lockupPeriods.TotalAmount().Sub(tc.amount))
+
+				// check erc20 token contract
+				pairResp, err := s.app.Erc20Keeper.TokenPair(s.ctx, &erc20types.QueryTokenPairRequest{Token: types.DenomName0FromID(0)})
+				s.Require().NoError(err)
+				s.Require().True(pairResp.TokenPair.Enabled)
+				ethAccTo, isEthAccount := accIto.(*haqqtypes.EthAccount)
+				s.Require().True(isEthAccount)
+				balanceOfLiquidTokeErc20Pair := s.app.Erc20Keeper.BalanceOf(
+					s.ctx,
+					contracts.ERC20MinterBurnerDecimalsContract.ABI,
+					pairResp.TokenPair.GetERC20Contract(),
+					common.BytesToAddress(ethAccTo.GetAddress().Bytes()),
+				)
+				s.Require().NotNil(balanceOfLiquidTokeErc20Pair)
 			} else {
 				suite.Require().Error(err)
 			}
