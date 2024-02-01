@@ -45,4 +45,4 @@ jobs:
           nix develop --impure --command ci-check-version
       - name: Build nix package
         run: |
-          nix build .#haqqNoCheck
+          nix build .#haqqNoCheck --print-build-logs
