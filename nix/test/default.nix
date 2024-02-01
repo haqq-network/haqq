@@ -2,7 +2,7 @@
 pkgs.nixosTest rec {
   name = "service-test";
   enableOCR = true;
-  globalTimeout = 60 * 60 * 4; # 4 hours (statesync is very slow until we migrate to iavlv1)
+  globalTimeout = 60 * 60 * 6; # 6 hours (statesync is very slow until we migrate to iavlv1)
 
   nodes.machine = { config, ... }: {
     virtualisation = {
