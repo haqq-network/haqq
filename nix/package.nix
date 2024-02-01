@@ -19,7 +19,7 @@ mkCosmosGoApp {
   # prevent rebuilds on irrelevant files changes
   # https://ryantm.github.io/nixpkgs/functions/nix-gitignore/
   src = nix-gitignore.gitignoreSource [
-    ".github"
+    ".github/"
     "nix/"
     "*.nix"
     "flake.lock"
