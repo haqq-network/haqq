@@ -73,4 +73,4 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: Run nix package tests
         run: |
-          nix build .#haqq
+          nix build .#haqq --print-build-logs
