@@ -5,8 +5,6 @@
     nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2311.*.tar.gz";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    nix-filter.url = "github:numtide/nix-filter";
-
     cosmos.url = "https://flakehub.com/f/informalsystems/cosmos.nix/0.*.tar.gz";
     cosmos.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -16,7 +14,7 @@
     devenv.inputs.nixpkgs.follows = "nixpkgs-unstable";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, nix-filter, cosmos, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, cosmos, ... }@inputs:
     flake-utils.lib.eachDefaultSystem
       (system:
         let
@@ -36,10 +34,9 @@
               overlay = self.overlays.default;
             };
             haqq = pkgs.callPackage ./nix/package.nix {
-              inherit (pkgs) lib;
+              inherit (pkgs) lib nix-gitignore;
               inherit (pkgs.cosmosLib) mkCosmosGoApp;
               rev = if (self ? rev) then self.rev else self.dirtyRev;
-              nix-filter = nix-filter.lib;
             };
             haqqNoCheck = haqq.overrideAttrs (_: { doCheck = false; });
             default = haqq;

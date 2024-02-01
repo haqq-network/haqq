@@ -1,4 +1,4 @@
-{ rev, nix-filter, mkCosmosGoApp, lib }:
+{ rev, nix-gitignore, mkCosmosGoApp, lib }:
 mkCosmosGoApp {
   name = "haqq";
   version = "v1.7.1";
@@ -15,14 +15,13 @@ mkCosmosGoApp {
   proxyVendor = true;
 
   inherit rev;
-  src = nix-filter.filter {
-    root = ../.;
 
-    exclude = [
-      ".github/"
-      "nix/"
-      "flake.nix"
-      "flake.lock"
-    ];
-  };
+  # prevent rebuilds on irrelevant files changes
+  # https://ryantm.github.io/nixpkgs/functions/nix-gitignore/
+  src = nix-gitignore.gitignoreSource [
+    ".github"
+    "nix/"
+    "*.nix"
+    "flake.lock"
+  ] ../.;
 }
