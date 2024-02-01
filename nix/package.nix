@@ -1,7 +1,7 @@
 { rev, nix-gitignore, mkCosmosGoApp, lib }:
 mkCosmosGoApp {
   name = "haqq";
-  version = "v1.7.1";
+  version = "1.7.1";
 
   goVersion = "1.20";
   tags = [ "netgo" ];
