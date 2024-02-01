@@ -19,6 +19,7 @@ mkCosmosGoApp {
     root = ../.;
 
     exclude = [
+      ".github/"
       "nix/"
       "flake.nix"
       "flake.lock"
