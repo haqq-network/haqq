@@ -64,6 +64,10 @@ jobs:
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  test-nix:
+    runs-on: ubuntu-cpu16-ram64
+    steps:
+      - uses: actions/checkout@v2.4.0
       - uses: haqq-network/nix-action@master
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'

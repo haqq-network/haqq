@@ -33,6 +33,10 @@ jobs:
       - run: |
           make build
         if: "env.GIT_DIFF != ''"
+  build-nix:
+    runs-on: ubuntu-cpu16-ram64
+    steps:
+      - uses: actions/checkout@v2.4.0
       - uses: haqq-network/nix-action@master
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
