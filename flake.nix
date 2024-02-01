@@ -8,7 +8,7 @@
     nix-filter.url = "github:numtide/nix-filter";
 
     cosmos.url = "https://flakehub.com/f/informalsystems/cosmos.nix/0.*.tar.gz";
-    cosmos.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    cosmos.inputs.nixpkgs.follows = "nixpkgs";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -16,22 +16,33 @@
     devenv.inputs.nixpkgs.follows = "nixpkgs-unstable";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, nix-filter, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, nix-filter, cosmos, ... }@inputs:
     flake-utils.lib.eachDefaultSystem
       (system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
-          pkgsUnstable = nixpkgs-unstable.legacyPackages.${system};
+          overlays = [
+            cosmos.overlays.cosmosNixLib
+          ];
+          pkgs = import nixpkgs {
+            inherit system overlays;
+          };
+          pkgsUnstable = import nixpkgs-unstable {
+            inherit system overlays;
+          };
         in
         {
-
-          packages = {
+          packages = rec {
             nixos-test = pkgs.callPackage ./nix/test {
               overlay = self.overlays.default;
             };
-            haqqd = pkgs.callPackage ./nix/package.nix {
+            haqq = pkgs.callPackage ./nix/package.nix {
+              inherit (pkgs) lib;
+              inherit (pkgs.cosmosLib) mkCosmosGoApp;
+              rev = if (self ? rev) then self.rev else self.dirtyRev;
               nix-filter = nix-filter.lib;
             };
+            haqqNoCheck = haqq.overrideAttrs (_: { doCheck = false; });
+            default = haqq;
           };
 
           devShells = {
@@ -47,7 +58,7 @@
 
       overlays.default = prev: final: {
         inherit (inputs.cosmos.packages.${prev.system}) cosmovisor;
-        inherit (self.packages.${prev.system}) haqqd;
+        inherit (self.packages.${prev.system}) haqq;
         grafana-agent-unstable = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.grafana-agent;
       };
 

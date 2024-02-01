@@ -36,9 +36,9 @@
   scripts.ci-check-version.exec = ''
     set -e
     MAKEFILE_VERSION=$(grep "^VERSION :=" Makefile | awk -F '"' '{print $2}')
-    FLAKE_VERSION=$(nix derivation show .#haqqd | jq -r '.[].env.version')
+    FLAKE_VERSION=$(nix derivation show .#haqq | jq -r '.[].env.version')
 
-    if [[ "$MAKEFILE_VERSION" != "$FLAKE_VERSION" ]]; then
+    if [[ "v$MAKEFILE_VERSION" != "$FLAKE_VERSION" ]]; then
       echo "Makefile version ($MAKEFILE_VERSION) and haqqd package version ($FLAKE_VERSION) are not equal. Please update version in ./nix/package.nix"
       exit 1
     fi

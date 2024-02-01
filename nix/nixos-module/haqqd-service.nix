@@ -41,7 +41,7 @@ in
 
       initialPackage = lib.mkOption {
         type = lib.types.package;
-        default = pkgs.haqqd;
+        default = pkgs.haqq;
       };
 
       config = lib.mkOption {

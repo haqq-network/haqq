@@ -64,3 +64,9 @@ jobs:
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - uses: haqq-network/nix-action@master
+        with:
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - name: Run nix package tests
+        run: |
+          nix build .#haqq

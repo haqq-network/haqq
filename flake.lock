@@ -152,7 +152,7 @@
         "neutron-src": "neutron-src",
         "nix-std": "nix-std",
         "nixpkgs": [
-          "nixpkgs-unstable"
+          "nixpkgs"
         ],
         "osmosis-src": "osmosis-src",
         "provenance-src": "provenance-src",
