@@ -68,8 +68,14 @@
       };
 
       nixConfig = {
-        extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
-        extra-substituters = "https://devenv.cachix.org";
+        extra-trusted-public-keys = [
+          "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
+          "haqq.cachix.org-1:m8QJypf2boIKRBz4BvVyGPo7gHQoj4D6iMGCmGozNEg="
+        ];
+        extra-substituters = [
+          "https://devenv.cachix.org"
+          "https://haqq.cachix.org"
+        ];
       };
     };
 }
