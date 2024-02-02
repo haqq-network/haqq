@@ -34,7 +34,7 @@
         rpc_servers = "https://rpc.tm.haqq.network:443,https://m-s1-tm.haqq.sh:443";
       };
 
-      # little chance to get discovered in a little time of running the test
+      # small chance to get discovered in a little time of running the test
       # so we are increasing outbound peers for better connectivity
       p2p.max_num_outbound_peers = 40;
     };
