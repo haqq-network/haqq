@@ -45,7 +45,20 @@
             default = devenv.lib.mkShell {
               inherit inputs pkgs;
               modules = [
-                (import ./nix/devshell.nix { inherit pkgs pkgsUnstable go; })
+                (import
+                  ./nix/devshell/common.nix
+                  { inherit pkgs pkgsUnstable go; })
+                (import ./nix/devshell { inherit pkgs pkgsUnstable; })
+              ];
+            };
+
+            ci = devenv.lib.mkShell {
+              inherit inputs pkgs;
+              modules = [
+                (import
+                  ./nix/devshell/common.nix
+                  { inherit pkgs pkgsUnstable go; })
+                (import ./nix/devshell/ci.nix { inherit pkgs pkgsUnstable go; })
               ];
             };
           };

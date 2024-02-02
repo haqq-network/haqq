@@ -1,52 +1,5 @@
-{ pkgs, pkgsUnstable, go, ... }:
+{ ... }:
 {
-  dotenv.enable = true;
-
-  packages = with pkgs;
-    [
-      pkgsUnstable.act
-      gh
-
-      yarn
-      nodejs
-
-      jq
-      yq
-
-      statik
-
-      protobuf
-      buf
-      clang-tools
-      nix-prefetch
-
-      go
-      (pkgsUnstable.gomod2nix.override {
-        inherit go;
-      })
-      golangci-lint
-
-      (callPackage ./grpc-gateway.nix {
-        inherit pkgs;
-      })
-    ];
-
-  enterShell = ''
-    export PATH=node_modules/.bin:$PATH
-  '';
-
-  pre-commit.hooks = {
-    golangci-lint.enable = true;
-
-    gomod2nix-generate = {
-      enable = true;
-      name = "gomod2nix-generate";
-      always_run = true;
-      entry = "gomod2nix generate";
-      pass_filenames = false;
-    };
-  };
-
   scripts.ci-check-version.exec = ''
     set -e
     MAKEFILE_VERSION=$(grep "^VERSION :=" Makefile | awk -F '"' '{print $2}')
