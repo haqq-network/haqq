@@ -48,4 +48,4 @@ jobs:
           nix develop --impure --command ci-check-gomod2nix
       - name: Build nix package
         run: |
-          nix build .#haqqNoCheck --print-build-logs
+          nix build .#haqq --print-build-logs

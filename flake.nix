@@ -34,7 +34,10 @@
               inherit go;
               rev = if (self ? rev) then self.rev else self.dirtyRev;
             };
-            haqqNoCheck = haqq.overrideAttrs (_: { doCheck = false; });
+            haqq-with-tests = haqq.overrideAttrs (_: {
+              subPackages = null;
+              doCheck = true;
+            });
             default = haqq;
           };
 

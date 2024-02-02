@@ -36,6 +36,10 @@ buildGoApplication rec {
 
   pwd = src;
 
+  subPackages = [ "cmd/haqqd" ];
+
+  doCheck = false;
+
   # tests require writeable $HOME
   preCheck = ''
     export HOME=$(mktemp -d)
