@@ -24,6 +24,7 @@
       (pkgsUnstable.gomod2nix.override {
         inherit go;
       })
+      golangci-lint
 
       (callPackage ./grpc-gateway.nix {
         inherit pkgs;
@@ -35,6 +36,8 @@
   '';
 
   pre-commit.hooks = {
+    golangci-lint.enable = true;
+
     gomod2nix-generate = {
       enable = true;
       name = "gomod2nix-generate";

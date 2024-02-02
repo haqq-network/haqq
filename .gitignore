@@ -83,3 +83,4 @@ tmp-swagger-gen
 .dccache
 
 result
+.pre-commit-config.yaml
