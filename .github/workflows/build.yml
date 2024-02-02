@@ -40,12 +40,19 @@ jobs:
       - uses: haqq-network/nix-action@master
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - name: Build nix package
+        run: |
+          nix build .#haqq --print-build-logs
+  check-nix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.4.0
+      - uses: haqq-network/nix-action@master
+        with:
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: Check if nix package and Makefile versions match
         run: |
           nix develop --impure --command ci-check-version
       - name: Check if gomod2nix is up to date
         run: |
           nix develop --impure --command ci-check-gomod2nix
-      - name: Build nix package
-        run: |
-          nix build .#haqq --print-build-logs
