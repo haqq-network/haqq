@@ -152,7 +152,7 @@
         "neutron-src": "neutron-src",
         "nix-std": "nix-std",
         "nixpkgs": [
-          "nixpkgs"
+          "nixpkgs-unstable"
         ],
         "osmosis-src": "osmosis-src",
         "provenance-src": "provenance-src",
@@ -180,16 +180,18 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1704726944,
-        "narHash": "sha256-e2qpoNK6QJfitJp3j4YZRXKqGqeo3RRYu8GJNHT+uvE=",
-        "rev": "17aab441561f778f968efc5d25658709c28167f0",
-        "revCount": 183,
-        "type": "tarball",
-        "url": "https://api.flakehub.com/f/pinned/informalsystems/cosmos.nix/0.3.0/018ce9ed-d0be-7ce5-81b6-a3c6e3ae1187/source.tar.gz"
+        "lastModified": 1706818597,
+        "narHash": "sha256-43mQd/gtSvIEVxqEozANOFoN2AwDMy+99MNJW33eMMc=",
+        "owner": "informalsystems",
+        "repo": "cosmos.nix",
+        "rev": "937fa041ec3c68c04b97b6f0c45d39638cf51227",
+        "type": "github"
       },
       "original": {
-        "type": "tarball",
-        "url": "https://flakehub.com/f/informalsystems/cosmos.nix/0.%2A.tar.gz"
+        "owner": "informalsystems",
+        "ref": "main",
+        "repo": "cosmos.nix",
+        "type": "github"
       }
     },
     "cosmos-sdk-src": {
@@ -822,16 +824,16 @@
     "ibc-go-v8-channel-upgrade-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1695726576,
-        "narHash": "sha256-mM6h1KAi8lQUrJakxI6f8WI+vpmBhCnAysk3hTZBI7M=",
+        "lastModified": 1705917317,
+        "narHash": "sha256-o+dg+AjhzRPKcv+gbIV01qqFfuwsTRDXc2oBG7KuENQ=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "63c30108f0ecf954108cf51f50f3d36ec58c7e51",
+        "rev": "4e3d164e4f9a5986bbe6595138feb49160e27215",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "04-channel-upgrades-alpha.0",
+        "ref": "04-channel-upgrades-hermes-integration.1",
         "repo": "ibc-go",
         "type": "github"
       }
