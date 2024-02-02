@@ -1,4 +1,4 @@
-{ pkgs, pkgsUnstable, ... }:
+{ pkgs, pkgsUnstable, go, ... }:
 {
   dotenv.enable = true;
 
@@ -20,18 +20,29 @@
       clang-tools
       nix-prefetch
 
-      (callPackage ./grpc-gateway.nix { inherit pkgs; })
+      go
+      (pkgsUnstable.gomod2nix.override {
+        inherit go;
+      })
+
+      (callPackage ./grpc-gateway.nix {
+        inherit pkgs;
+      })
     ];
 
   enterShell = ''
     export PATH=node_modules/.bin:$PATH
   '';
 
-  languages.go =
-    {
+  pre-commit.hooks = {
+    gomod2nix-generate = {
       enable = true;
-      package = pkgs.go_1_20;
+      name = "gomod2nix-generate";
+      always_run = true;
+      entry = "gomod2nix generate";
+      pass_filenames = false;
     };
+  };
 
   scripts.ci-check-version.exec = ''
     set -e
@@ -41,6 +52,16 @@
     if [[ "$MAKEFILE_VERSION" != "$FLAKE_VERSION" ]]; then
       echo "Makefile version ($MAKEFILE_VERSION) and haqqd package version ($FLAKE_VERSION) are not equal. Please update version in ./nix/package.nix"
       exit 1
+    fi
+  '';
+
+  scripts.ci-check-gomod2nix.exec = ''
+    set -e
+    gomod2nix generate
+    if ! git diff --exit-code; then
+    echo "Directory is not clean after gomod2nix generation"
+    echo "Please run gomod2nix and commit the changes"
+    exit 1
     fi
   '';
 

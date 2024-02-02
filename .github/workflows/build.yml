@@ -43,6 +43,9 @@ jobs:
       - name: Check if nix package and Makefile versions match
         run: |
           nix develop --impure --command ci-check-version
+      - name: Check if gomod2nix is up to date
+        run: |
+          nix develop --impure --command ci-check-gomod2nix
       - name: Build nix package
         run: |
           nix build .#haqqNoCheck --print-build-logs

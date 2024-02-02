@@ -5,28 +5,24 @@
     nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2311.*.tar.gz";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    cosmos.url = "github:informalsystems/cosmos.nix/main";
-    cosmos.inputs.nixpkgs.follows = "nixpkgs-unstable";
-
     flake-utils.url = "github:numtide/flake-utils";
 
     devenv.url = "github:cachix/devenv";
     devenv.inputs.nixpkgs.follows = "nixpkgs-unstable";
+
+    gomod2nix.url = "github:nix-community/gomod2nix/master";
+    gomod2nix.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    gomod2nix.inputs.flake-utils.follows = "flake-utils";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, cosmos, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, gomod2nix, ... }@inputs:
     flake-utils.lib.eachDefaultSystem
       (system:
         let
-          overlays = [
-            cosmos.overlays.cosmosNixLib
-          ];
-          pkgs = import nixpkgs {
-            inherit system overlays;
-          };
-          pkgsUnstable = import nixpkgs-unstable {
-            inherit system overlays;
-          };
+          overlays = [ gomod2nix.overlays.default ];
+          pkgs = import nixpkgs { inherit system overlays; };
+          pkgsUnstable = import nixpkgs-unstable { inherit system overlays; };
+          go = pkgs.go_1_20;
         in
         {
           packages = rec {
@@ -34,8 +30,8 @@
               overlay = self.overlays.default;
             };
             haqq = pkgsUnstable.callPackage ./nix/package.nix {
-              inherit (pkgsUnstable) lib nix-gitignore;
-              inherit (pkgsUnstable.cosmosLib) mkCosmosGoApp;
+              inherit (pkgsUnstable) buildGoApplication;
+              inherit go;
               rev = if (self ? rev) then self.rev else self.dirtyRev;
             };
             haqqNoCheck = haqq.overrideAttrs (_: { doCheck = false; });
@@ -46,7 +42,7 @@
             default = devenv.lib.mkShell {
               inherit inputs pkgs;
               modules = [
-                (import ./nix/devshell.nix { inherit pkgs pkgsUnstable; })
+                (import ./nix/devshell.nix { inherit pkgs pkgsUnstable go; })
               ];
             };
           };

@@ -1,20 +1,29 @@
-{ rev, nix-gitignore, mkCosmosGoApp, lib }:
-mkCosmosGoApp {
+{ rev
+, nix-gitignore
+, buildGoApplication
+, go
+, lib
+}:
+let
   name = "haqq";
-  version = "1.7.1";
+  pname = "${name}";
+  version =
+    (import ./version.nix { });
+  tags = [ "ledger" "netgo" ];
+  ldflags = [
+    "-X github.com/cosmos/cosmos-sdk/version.Name=evmos"
+    "-X github.com/cosmos/cosmos-sdk/version.AppName=${pname}"
+    "-X github.com/cosmos/cosmos-sdk/version.Version=${version}"
+    "-X github.com/cosmos/cosmos-sdk/version.BuildTags=${lib.concatStringsSep "," tags}"
+    "-X github.com/cosmos/cosmos-sdk/version.Commit=${rev}"
+    # "-X github.com/cosmos/cosmos-sdk/types.DBBackend=${dbBackend}"
+  ];
+in
+buildGoApplication rec {
+  inherit name version go ldflags;
 
-  goVersion = "1.20";
-  tags = [ "netgo" ];
-  engine = "cometbft/cometbft";
-
-  # if new version is released, set this to lib.fakeHash, run
-  # nix build .#haqqd
-  # and see acual hash in the error message
-  vendorHash = "sha256-LBN+o0XVqF8GGPNwIXi9sYrFwcGGp6BFGMiroSji4hE=";
-
-  proxyVendor = true;
-
-  inherit rev;
+  modules = ../gomod2nix.toml;
+  CGO_ENABLED = "1";
 
   # prevent rebuilds on irrelevant files changes
   # https://ryantm.github.io/nixpkgs/functions/nix-gitignore/
@@ -24,4 +33,11 @@ mkCosmosGoApp {
     "*.nix"
     "flake.lock"
   ] ../.;
+
+  pwd = src;
+
+  # tests require writeable $HOME
+  preCheck = ''
+    export HOME=$(mktemp -d)
+  '';
 }
