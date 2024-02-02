@@ -14,6 +14,8 @@
       yq
 
       statik
+
+      golangci-lint
     ];
 
   enterShell = ''
