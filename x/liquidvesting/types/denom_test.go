@@ -29,7 +29,7 @@ func (suite *DenomTestSuite) TestDenomName0FromID() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			result := DenomName0FromID(tc.ID)
+			result := DenomBaseNameFromID(tc.ID)
 			suite.Require().Equal(tc.expectedName, result)
 		})
 	}
@@ -50,7 +50,7 @@ func (suite *DenomTestSuite) TestDenomName18FromID() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			result := DenomName18FromID(tc.ID)
+			result := DenomDisplayNameFromID(tc.ID)
 			suite.Require().Equal(tc.expectedName, result)
 		})
 	}

@@ -38,8 +38,7 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	}
 
 	// check there is not vesting periods on the schedule
-	vestingPeriods := va.VestingPeriods
-	if len(vestingPeriods) > 1 || vestingPeriods.TotalLength() > 0 || ctx.BlockTime().Before(va.StartTime) {
+	if !va.GetUnvestedOnly(ctx.BlockTime()).IsZero() {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s has vesting periods, unable to liquidate locked coins", msg.LiquidateFrom)
 	}
 
@@ -82,21 +81,21 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 		Description: "Liquid vesting token",
 		DenomUnits: []*banktypes.DenomUnit{
 			{
-				Denom:    liquidDenom.GetDenomName0(),
+				Denom:    liquidDenom.GetBaseName(),
 				Exponent: 0,
 			},
 			{
-				Denom:    liquidDenom.GetDenomName18(),
+				Denom:    liquidDenom.GetDisplayName(),
 				Exponent: 18,
 			},
 		},
-		Base:    liquidDenom.GetDenomName0(),
-		Display: liquidDenom.GetDenomName18(),
-		Name:    liquidDenom.GetDenomName18(),
-		Symbol:  liquidDenom.GetDenomName18(),
+		Base:    liquidDenom.GetBaseName(),
+		Display: liquidDenom.GetDisplayName(),
+		Name:    liquidDenom.GetDisplayName(),
+		Symbol:  liquidDenom.GetDisplayName(),
 	}
 
-	liquidTokenCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetDenomName0(), msg.Amount.Amount))
+	liquidTokenCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetBaseName(), msg.Amount.Amount))
 	err = k.bankKeeper.MintCoins(ctx, types.ModuleName, liquidTokenCoins)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to mint liquid token: %s", err.Error())
@@ -144,37 +143,41 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 
 	// check fromAccount has enough liquid token in balance
 	if hasBalance := k.bankKeeper.HasBalance(ctx, fromAddress, msg.Amount); !hasBalance {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "from account has insufficient balance")
+		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "from account has insufficient balance")
 	}
 
 	// transfer liquid denom to liquidvesting module
 	err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, fromAddress, types.ModuleName, sdk.NewCoins(msg.Amount))
 	if err != nil {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to transfer liquid token to module: %s", err.Error())
+		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to transfer liquid token to module: %s", err.Error())
 	}
 
 	// burn liquid token specified amount
 	err = k.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(msg.Amount))
 	if err != nil {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to burn liquid tokens: %s", err.Error())
+		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to burn liquid tokens: %s", err.Error())
 	}
 
 	// subtract burned amount from token schedule
 	originalDenomCoin := sdk.NewCoin(liquidDenom.GetOriginalDenom(), msg.Amount.Amount)
 	decreasedPeriods, diffPeriods, err := types.SubtractAmountFromPeriods(liquidDenom.LockupPeriods, originalDenomCoin)
 	if err != nil {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to calculate new liquid denom schedule: %s", err.Error())
+		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to calculate new liquid denom schedule: %s", err.Error())
 	}
 	// save modified token schedule
-	err = k.UpdateDenomPeriods(ctx, liquidDenom.DenomName0, decreasedPeriods)
-	if err != nil {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to update liquid denom schedule: %s", err.Error())
+	if decreasedPeriods.TotalAmount().IsZero() {
+		k.DeleteDenom(ctx, liquidDenom.GetBaseName())
+	} else {
+		err = k.UpdateDenomPeriods(ctx, liquidDenom.GetBaseName(), decreasedPeriods)
+		if err != nil {
+			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to update liquid denom schedule: %s", err.Error())
+		}
 	}
 
 	// transfer original token to account
 	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, toAddress, sdk.NewCoins(originalDenomCoin))
 	if err != nil {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to transfer original denom to target account: %s", err.Error())
+		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to transfer original denom to target account: %s", err.Error())
 	}
 
 	upcomingPeriods := types.ExtractUpcomingPeriods(
@@ -204,7 +207,7 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 			true,
 		)
 		if err != nil {
-			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to apply vesting schedule to account %s: %s", toAddress, err.Error())
+			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to apply vesting schedule to account %s: %s", toAddress, err.Error())
 		}
 	}
 

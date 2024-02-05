@@ -8,5 +8,6 @@ import (
 
 var (
 	ErrLiquidationFailed = sdkerrors.Register(ModuleName, 1102, "liquidation failed")
-	ErrDenomNotFound     = sdkerrors.Register(ModuleName, 1103, "denom not found")
+	ErrRedeemFailed      = sdkerrors.Register(ModuleName, 1103, "redeem failed")
+	ErrDenomNotFound     = sdkerrors.Register(ModuleName, 1104, "denom not found")
 )

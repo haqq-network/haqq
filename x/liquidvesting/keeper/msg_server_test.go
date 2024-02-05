@@ -50,7 +50,8 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
-				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, suite.ctx.BlockTime(), lockupPeriods, vestingPeriods, nil)
+				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
+				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -64,7 +65,8 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
-				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, suite.ctx.BlockTime(), lockupPeriods, vestingPeriods, nil)
+				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
+				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -107,7 +109,8 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				vestingPeriods := sdkvesting.Periods{{Length: 100, Amount: amount}}
-				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, suite.ctx.BlockTime(), lockupPeriods, vestingPeriods, nil)
+				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
+				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
@@ -137,8 +140,8 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				// check target account exists and has liquid token
 				accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.to)
 				suite.Require().NotNil(accIto)
-				balanceTarget := suite.app.BankKeeper.GetBalance(suite.ctx, tc.to, types.DenomName0FromID(0))
-				suite.Require().Equal(sdk.NewCoin(types.DenomName0FromID(0), tc.amount.Amount), balanceTarget)
+				balanceTarget := suite.app.BankKeeper.GetBalance(suite.ctx, tc.to, types.DenomBaseNameFromID(0))
+				suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(0), tc.amount.Amount), balanceTarget)
 
 				// check liquidated vesting locked coins are decreased on initial account
 				accIFrom := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.from)
@@ -148,7 +151,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				suite.Require().Equal(cva.GetLockedOnly(suite.ctx.BlockTime()), lockupPeriods.TotalAmount().Sub(tc.amount))
 
 				// check erc20 token contract
-				pairResp, err := s.app.Erc20Keeper.TokenPair(s.ctx, &erc20types.QueryTokenPairRequest{Token: types.DenomName0FromID(0)})
+				pairResp, err := s.app.Erc20Keeper.TokenPair(s.ctx, &erc20types.QueryTokenPairRequest{Token: types.DenomBaseNameFromID(0)})
 				s.Require().NoError(err)
 				s.Require().True(pairResp.TokenPair.Enabled)
 				ethAccTo, isEthAccount := accIto.(*haqqtypes.EthAccount)
@@ -184,8 +187,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					DenomName0:    "liquid",
-					DenomName18:   "liquid18",
+					BaseName:      "liquid",
+					DisplayName:   "liquid18",
 					OriginalDenom: "test",
 					LockupPeriods: lockupPeriods,
 				})
@@ -209,8 +212,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				// subs 150 second, it is the half of the second period now
 				startTime := s.ctx.BlockTime().Add(-150 * time.Second)
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					DenomName0:    "liquid",
-					DenomName18:   "liquid18",
+					BaseName:      "liquid",
+					DisplayName:   "liquid18",
 					OriginalDenom: "test",
 					StartTime:     startTime,
 					EndTime:       startTime.Add(lockupPeriods.TotalDuration()),
@@ -243,8 +246,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					DenomName0:    "liquid",
-					DenomName18:   "liquid18",
+					BaseName:      "liquid",
+					DisplayName:   "liquid18",
 					OriginalDenom: "test",
 					LockupPeriods: lockupPeriods,
 				})
@@ -266,8 +269,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					DenomName0:    "solid",
-					DenomName18:   "solid18",
+					BaseName:      "solid",
+					DisplayName:   "solid18",
 					OriginalDenom: "test",
 					LockupPeriods: lockupPeriods,
 				})

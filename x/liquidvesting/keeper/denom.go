@@ -25,12 +25,12 @@ func (k Keeper) CreateDenom(
 	}
 
 	counter := k.GetDenomCounter(ctx)
-	denom.DenomName0 = types.DenomName0FromID(counter)
-	denom.DenomName18 = types.DenomName18FromID(counter)
+	denom.BaseName = types.DenomBaseNameFromID(counter)
+	denom.DisplayName = types.DenomDisplayNameFromID(counter)
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
 	appendedValue := k.cdc.MustMarshal(&denom)
-	store.Set([]byte(denom.GetDenomName18()), appendedValue)
+	store.Set([]byte(denom.GetBaseName()), appendedValue)
 
 	// Update chain counter
 	k.SetDenomCounter(ctx, counter+1)
@@ -47,6 +47,11 @@ func (k Keeper) UpdateDenomPeriods(ctx sdk.Context, baseDenom string, newPeriods
 	d.LockupPeriods = newPeriods
 	k.SetDenom(ctx, d)
 	return nil
+}
+
+func (k Keeper) DeleteDenom(ctx sdk.Context, baseDenom string) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
+	store.Delete([]byte(baseDenom))
 }
 
 // GetDenom queries denom from the store
@@ -66,13 +71,13 @@ func (k Keeper) GetDenom(ctx sdk.Context, baseDenom string) (val types.Denom, fo
 func (k Keeper) SetDenom(ctx sdk.Context, denom types.Denom) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
 	b := k.cdc.MustMarshal(&denom)
-	store.Set([]byte(denom.GetDenomName0()), b)
+	store.Set([]byte(denom.GetBaseName()), b)
 }
 
 // GetDenomCounter get the counter for denoms
 func (k Keeper) GetDenomCounter(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.DenomKeyPrefix)
+	byteKey := types.KeyPrefix(types.DenomCounterKey)
 	bz := store.Get(byteKey)
 
 	// Counter doesn't exist: no element

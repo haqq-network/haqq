@@ -20,7 +20,7 @@ func SubtractAmountFromPeriods(
 	subtrahendAmount := subtrahend.Amount
 
 	if minuendTotalAmount.LT(subtrahendAmount) {
-		return nil, nil, errors.New("total amount of minuend periods is less than subtrahend amount")
+		return nil, nil, errors.New("insufficient locked up funds")
 	}
 
 	decreasedPeriods = make(sdkvesting.Periods, len(minuendPeriods))

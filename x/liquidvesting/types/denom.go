@@ -3,16 +3,16 @@ package types
 import "fmt"
 
 const (
-	denomNamePrefix0  = "aLIQUIDDENOM"
-	denomNamePrefix18 = "LIQUIDDENOM"
+	denomBaseNamePrefix    = "aLIQUIDDENOM"
+	denomDisplayNamePrefix = "LIQUIDDENOM"
 )
 
-// DenomName0FromID compose denom name based on id for exponent 0
-func DenomName0FromID(id uint64) string {
-	return fmt.Sprintf("%s%d", denomNamePrefix0, id)
+// DenomBaseNameFromID compose denom name based on id for exponent 0
+func DenomBaseNameFromID(id uint64) string {
+	return fmt.Sprintf("%s%d", denomBaseNamePrefix, id)
 }
 
-// DenomName0FromID compose denom name based on id for exponent 18
-func DenomName18FromID(id uint64) string {
-	return fmt.Sprintf("%s%d", denomNamePrefix18, id)
+// DenomDisplayNameFromID compose denom name based on id for exponent 18
+func DenomDisplayNameFromID(id uint64) string {
+	return fmt.Sprintf("%s%d", denomDisplayNamePrefix, id)
 }

@@ -20,19 +20,7 @@ func (k Keeper) Denom(goCtx context.Context, req *types.QueryDenomRequest) (*typ
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	metadata, found := k.bankKeeper.GetDenomMetaData(ctx, req.Denom)
-	if !found {
-		return nil, status.Error(codes.NotFound, "not found")
-	}
-
-	unitIdentifier := req.Denom
-	for _, unit := range metadata.DenomUnits {
-		if unit.GetExponent() == 18 {
-			unitIdentifier = unit.GetDenom()
-		}
-	}
-
-	val, found := k.GetDenom(ctx, unitIdentifier)
+	val, found := k.GetDenom(ctx, req.Denom)
 	if !found {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
