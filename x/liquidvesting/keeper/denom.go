@@ -28,7 +28,7 @@ func (k Keeper) CreateDenom(
 	denom.BaseName = types.DenomBaseNameFromID(counter)
 	denom.DisplayName = types.DenomDisplayNameFromID(counter)
 
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DenomKeyPrefix)
 	appendedValue := k.cdc.MustMarshal(&denom)
 	store.Set([]byte(denom.GetBaseName()), appendedValue)
 
@@ -50,13 +50,13 @@ func (k Keeper) UpdateDenomPeriods(ctx sdk.Context, baseDenom string, newPeriods
 }
 
 func (k Keeper) DeleteDenom(ctx sdk.Context, baseDenom string) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DenomKeyPrefix)
 	store.Delete([]byte(baseDenom))
 }
 
 // GetDenom queries denom from the store
 func (k Keeper) GetDenom(ctx sdk.Context, baseDenom string) (val types.Denom, found bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DenomKeyPrefix)
 
 	b := store.Get([]byte(baseDenom))
 	if b == nil {
@@ -69,7 +69,7 @@ func (k Keeper) GetDenom(ctx sdk.Context, baseDenom string) (val types.Denom, fo
 
 // SetDenom sets denom in the store
 func (k Keeper) SetDenom(ctx sdk.Context, denom types.Denom) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DenomKeyPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DenomKeyPrefix)
 	b := k.cdc.MustMarshal(&denom)
 	store.Set([]byte(denom.GetBaseName()), b)
 }
@@ -77,7 +77,7 @@ func (k Keeper) SetDenom(ctx sdk.Context, denom types.Denom) {
 // GetDenomCounter get the counter for denoms
 func (k Keeper) GetDenomCounter(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.DenomCounterKey)
+	byteKey := types.DenomCounterKey
 	bz := store.Get(byteKey)
 
 	// Counter doesn't exist: no element
@@ -92,7 +92,7 @@ func (k Keeper) GetDenomCounter(ctx sdk.Context) uint64 {
 // SetDenomCounter set the counter for denoms
 func (k Keeper) SetDenomCounter(ctx sdk.Context, counter uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.DenomCounterKey)
+	byteKey := types.DenomCounterKey
 	bz := make([]byte, 8)
 	binary.BigEndian.PutUint64(bz, counter)
 	store.Set(byteKey, bz)

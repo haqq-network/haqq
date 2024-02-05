@@ -38,7 +38,7 @@ func (k Keeper) Denoms(goCtx context.Context, req *types.QueryDenomsRequest) (*t
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	store := ctx.KVStore(k.storeKey)
-	chainStore := prefix.NewStore(store, types.KeyPrefix(types.DenomKeyPrefix))
+	chainStore := prefix.NewStore(store, types.DenomKeyPrefix)
 
 	pageRes, err := query.Paginate(chainStore, req.Pagination, func(key []byte, value []byte) error {
 		var chain types.Denom
