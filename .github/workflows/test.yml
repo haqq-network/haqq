@@ -71,6 +71,7 @@ jobs:
       - uses: haqq-network/nix-action@master
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
       - name: Run nix package tests
         run: |
           nix build .#haqq-with-tests --print-build-logs

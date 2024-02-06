@@ -40,6 +40,7 @@ jobs:
       - uses: haqq-network/nix-action@master
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
       - name: Build nix package
         run: |
           nix build .#haqq --print-build-logs
@@ -50,6 +51,7 @@ jobs:
       - uses: haqq-network/nix-action@master
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
       - name: Check if nix package and Makefile versions match
         run: |
           nix develop --impure .#ci --command ci-check-version
