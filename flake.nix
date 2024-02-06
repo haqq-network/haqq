@@ -22,7 +22,12 @@
           overlays = [ gomod2nix.overlays.default ];
           pkgs = import nixpkgs { inherit system overlays; };
           pkgsUnstable = import nixpkgs-unstable { inherit system overlays; };
-          go = pkgs.go_1_20;
+
+          # match go x.x in go.mod
+          gomod = builtins.readFile ./go.mod;
+          goVersion = builtins.match ".*[\n]go ([[:digit:]]*)\.([[:digit:]]*)[\n].*" gomod;
+
+          go = pkgs."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
         in
         {
           packages = rec {
@@ -91,4 +96,3 @@
       };
     };
 }
-
