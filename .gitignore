@@ -81,3 +81,6 @@ tmp-swagger-gen
 .secrets
 .env
 .dccache
+
+result
+.pre-commit-config.yaml

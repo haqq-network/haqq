@@ -17,10 +17,10 @@ jobs:
   build:
     runs-on: ubuntu-cpu16-ram64
     steps:
-      - uses: actions/checkout@v2.4.0
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: 1.19
+          go-version: '1.20'
       - uses: technote-space/get-diff-action@v5
         id: git_diff
         with:
@@ -33,3 +33,28 @@ jobs:
       - run: |
           make build
         if: "env.GIT_DIFF != ''"
+  build-nix:
+    runs-on: ubuntu-cpu16-ram64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haqq-network/nix-action@master
+        with:
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
+      - name: Build nix package
+        run: |
+          nix build .#haqq --print-build-logs
+  check-nix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haqq-network/nix-action@master
+        with:
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
+      - name: Check if nix package and Makefile versions match
+        run: |
+          nix develop --impure .#ci --command ci-check-version
+      - name: Check if gomod2nix is up to date
+        run: |
+          nix develop --impure .#ci --command ci-check-gomod2nix
