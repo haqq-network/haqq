@@ -34,7 +34,10 @@ jobs:
           make build
         if: "env.GIT_DIFF != ''"
   build-nix:
-    runs-on: ubuntu-cpu16-ram64
+    strategy:
+      matrix:
+        os: [ubuntu-cpu16-ram64, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: haqq-network/nix-action@master
