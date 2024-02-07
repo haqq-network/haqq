@@ -29,7 +29,12 @@
 
           go = pkgs."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
         in
-        {
+        rec {
+          apps.haqq = {
+            type = "app";
+            program = "${packages.haqq}/bin/haqqd";
+          };
+
           packages = rec {
             nixos-test = pkgs.callPackage ./nix/test {
               overlay = self.overlays.default;
