@@ -18,7 +18,7 @@ Ethereum compatibility is done using modules built by [Tharsis](https://thars.is
 
 Haqq Network’s Shariah-compliant native currency is ISLM – [Fatwa]([https://islamiccoin.net/fatwa](https://islamiccoin.net/shariah)).
 
-**Note**: Requires [Go 1.19+](https://golang.org/dl)
+**Note**: Requires [Go 1.20+](https://golang.org/dl)
 
 ## Installation
 
