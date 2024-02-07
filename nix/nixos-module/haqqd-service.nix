@@ -42,6 +42,9 @@ in
       initialPackage = lib.mkOption {
         type = lib.types.package;
         default = pkgs.haqq;
+        defaultText = lib.literalMD ''
+          `pkgs.haqq` where pkgs is the nixpkgs version used in this flake
+        '';
       };
 
       config = lib.mkOption {
@@ -69,6 +72,9 @@ in
         package = lib.mkOption {
           type = lib.types.package;
           default = pkgs.grafana-agent-unstable;
+          defaultText = lib.literalMD ''
+            `pkgs.grafana-agent-unstable` where pkgs is the nixpkgs-unstable version used in this flake
+          '';
         };
 
         instance = lib.mkOption {
