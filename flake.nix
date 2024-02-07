@@ -42,8 +42,12 @@
             haqq = pkgsUnstable.callPackage ./nix/package.nix {
               inherit (pkgsUnstable) buildGoApplication;
               inherit go;
-              rev = if (self ? rev) then self.rev else self.dirtyRev;
+              rev =
+                if (self ? rev) then self.rev
+                else self.dirtyRev;
             };
+            # for local development, to prevent recompiles on git tree changes
+            haqq-no-rev = haqq.overrideAttrs (_: { rev = "norev"; });
             haqq-with-tests = haqq.overrideAttrs (_: {
               subPackages = null;
               doCheck = true;

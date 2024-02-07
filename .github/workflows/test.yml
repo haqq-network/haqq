@@ -32,7 +32,8 @@ jobs:
           key: ${{ runner.os }}-go-tparse-binary
 
   test-unit:
-    runs-on: ubuntu-cpu16-ram64
+    # runs-on: [self-hosted, ubuntu]
+    runs-on: ubuntu-latest
     steps:
       - name: Set up go
         uses: actions/setup-go@v5
@@ -59,19 +60,17 @@ jobs:
             go.sum
       - name: Test unit
         run: |
+          id
+          env
           make test-unit-cover
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   test-nix:
-    runs-on: ubuntu-cpu16-ram64
+    runs-on: [self-hosted, nixos]
     steps:
       - uses: actions/checkout@v4
-      - uses: haqq-network/nix-action@master
-        with:
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
       - name: Run nix package tests
         run: |
           nix build .#haqq-with-tests --print-build-logs
