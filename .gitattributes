@@ -8,3 +8,4 @@ x/**/spec/* linguist-documentation
 **/*.pb.gw.go linguist-generated
 *.gz filter=lfs diff=lfs merge=lfs -text
 flake.lock linguist-generated
+gomod2nix.toml linguist-generated
