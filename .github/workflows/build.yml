@@ -15,7 +15,7 @@ jobs:
     if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
 
   build:
-    runs-on: ubuntu-cpu16-ram64
+    runs-on: [self-hosted, ubuntu]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -36,28 +36,34 @@ jobs:
   build-nix:
     strategy:
       matrix:
-        os: [ubuntu-cpu16-ram64, macos-latest]
+        os: [nixos, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: haqq-network/nix-action@master
+        if: ${{ matrix.os == 'macos-latest' }}
         with:
+          installNix: true
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
       - name: Build nix package
+        env:
+          CACHIX_SIGNING_KEY: ${{ secrets.CACHIX_SIGNING_KEY }}
         run: |
           nix build .#haqq --print-build-logs
+          nix build --json \
+           | jq -r '.[].outputs | to_entries[].value' \
+           | cachix push haqq
   check-nix:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nixos]
     steps:
       - uses: actions/checkout@v4
-      - uses: haqq-network/nix-action@master
-        with:
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
       - name: Check if nix package and Makefile versions match
         run: |
           nix develop --impure .#ci --command ci-check-version
       - name: Check if gomod2nix is up to date
         run: |
           nix develop --impure .#ci --command ci-check-gomod2nix
+      # GLIBC problems when executing it on nixos 23.11
+      # - name: Check nixos-search validity
+      #   run: |
+      #     nix run nixos-search -- --json flake .
