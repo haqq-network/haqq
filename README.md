@@ -11,7 +11,7 @@ parent:
 <!-- ![banner](docs/ethermint.jpg) -->
 
 Haqq is a scalable, high-throughput Proof-of-Stake blockchain that is fully compatible and interoperable with Ethereum. 
-It's built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) which runs on top of [Tendermint Core](https://github.com/tendermint/tendermint) consensus engine.
+It's built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) which runs on top of [CometBFT](https://github.com/cometbft/cometbft) consensus engine.
 Ethereum compatibility allows developers to build applications on Haqq using the existing Ethereum codebase and toolset,
 without rewriting smart contracts that already work on Ethereum or other Ethereum-compatible networks.
 Ethereum compatibility is done using modules built by [Tharsis](https://thars.is) for their [Evmos](https://evmos.org) network.
