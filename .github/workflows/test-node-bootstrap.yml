@@ -1,0 +1,13 @@
+name: update-flake-lock
+on:
+  workflow_dispatch: # allows manual triggering
+  schedule:
+    - cron: '0 0 * * 0' # runs weekly on Sunday at 00:00
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-cpu16-ram64
+    steps:
+      - name: Test node bootstrap
+        run: |
+          nix build .#packages.x86_64-linux.nixos-test --no-sandbox --print-build-logs
