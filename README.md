@@ -34,7 +34,7 @@ Or check out the latest [release](https://github.com/haqq-network/haqq/releases)
 
 ## Quick Start
 
-To learn how the Haqq works from a high-level perspective, go to the [Introduction](https://docs.haqq.network/intro/overview.html) section from the documentation. You can also check the instructions to [Run a Node](https://docs.haqq.network/guides/localnet/single_node.html).
+To learn how the Haqq works from a high-level perspective, go to the [Intro](https://docs.haqq.network/learn) section from the documentation. You can also check the instructions to [Run a Node](https://docs.haqq.network/user-guides/run-node/mainnet).
 
 <!-- ## Community -->
 <!-- ## Contributing -->
