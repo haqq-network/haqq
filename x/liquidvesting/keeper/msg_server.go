@@ -18,6 +18,17 @@ var _ types.MsgServer = Keeper{}
 func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*types.MsgLiquidateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// check amount denom
+	if msg.Amount.Denom != "aISLM" {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "unable to liquidate any other coin except aISLM")
+	}
+
+	// check amount
+	minLiquidation := k.GetParams(ctx).MinimumLiquidationAmount
+	if msg.Amount.IsLT(sdk.NewCoin("aISLM", minLiquidation)) {
+		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "unable to liquidate amount lesser than %d", minLiquidation)
+	}
+
 	// get account
 	liquidateFromAddress := sdk.MustAccAddressFromBech32(msg.LiquidateFrom)
 	liquidateFromAccount := k.accountKeeper.GetAccount(ctx, liquidateFromAddress)

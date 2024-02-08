@@ -536,7 +536,7 @@ func NewHaqq(
 	)
 
 	app.LiquidVestingKeeper = liquidvestingkeeper.NewKeeper(
-		keys[vestingtypes.StoreKey], appCodec,
+		keys[vestingtypes.StoreKey], appCodec, app.GetSubspace(liquidvestingtypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, app.Erc20Keeper, app.VestingKeeper,
 	)
 
@@ -1134,6 +1134,7 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(erc20types.ModuleName)
 	// haqq subspaces
 	paramsKeeper.Subspace(coinomicstypes.ModuleName)
+	paramsKeeper.Subspace(liquidvestingtypes.ModuleName)
 
 	return paramsKeeper
 }

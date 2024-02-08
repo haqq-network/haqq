@@ -1,0 +1,20 @@
+syntax = "proto3";
+package haqq.liquidvesting.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
+
+// GenesisState defines the liquidvesting module's genesis state.
+message GenesisState {
+  // params defines all the paramaters of the module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+// Params holds parameters for the liquidvesting module.
+message Params {
+  string minimum_liquidation_amount = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}

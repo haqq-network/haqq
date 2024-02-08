@@ -19,10 +19,10 @@ import (
 )
 
 var (
-	amount = sdk.NewCoins(sdk.NewInt64Coin("test", 300))
-	third  = sdk.NewCoins(sdk.NewInt64Coin("test", 100))
+	amount = sdk.NewCoins(sdk.NewInt64Coin("aISLM", 3_000_000))
+	third  = sdk.NewCoins(sdk.NewInt64Coin("aISLM", 1_000_000))
 
-	liquidDenomAmount = sdk.NewCoins(sdk.NewInt64Coin("liquid", 300))
+	liquidDenomAmount = sdk.NewCoins(sdk.NewInt64Coin("liquid", 3_000_000))
 
 	lockupPeriods = sdkvesting.Periods{
 		{Length: 100, Amount: third},
@@ -57,7 +57,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("test", third.AmountOf("test")),
+			amount:     sdk.NewCoin("aISLM", third.AmountOf("aISLM")),
 			expectPass: true,
 		},
 		{
@@ -72,7 +72,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("test", math.NewInt(300)),
+			amount:     sdk.NewCoin("aISLM", amount.AmountOf("aISLM")),
 			expectPass: true,
 		},
 		{
@@ -86,11 +86,11 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("test", math.NewInt(400)),
+			amount:     sdk.NewInt64Coin("aISLM", 4_000_000),
 			expectPass: false,
 		},
 		{
-			name: "fail - denom is not locked in staking",
+			name: "fail - denom is not aISLM",
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
@@ -100,7 +100,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("nonpresent", math.NewInt(200)),
+			amount:     sdk.NewCoin("nonaISLM", math.NewInt(2_000_000)),
 			expectPass: false,
 		},
 		{
@@ -116,7 +116,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("test", math.NewInt(200)),
+			amount:     sdk.NewInt64Coin("aISLM", 2_000_000),
 			expectPass: false,
 		},
 	}
@@ -189,7 +189,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
 					BaseDenom:     "liquid",
 					DisplayDenom:  "liquid18",
-					OriginalDenom: "test",
+					OriginalDenom: "aISLM",
 					LockupPeriods: lockupPeriods,
 				})
 				// create accounts
@@ -200,7 +200,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			},
 			redeemFrom:   addr1,
 			redeemTo:     addr2,
-			redeemAmount: 300,
+			redeemAmount: 3_000_000,
 			expectPass:   true,
 		},
 		{
@@ -214,7 +214,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
 					BaseDenom:     "liquid",
 					DisplayDenom:  "liquid18",
-					OriginalDenom: "test",
+					OriginalDenom: "aISLM",
 					StartTime:     startTime,
 					EndTime:       startTime.Add(lockupPeriods.TotalDuration()),
 					LockupPeriods: lockupPeriods,
@@ -235,8 +235,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			},
 			redeemFrom:           addr1,
 			redeemTo:             addr2,
-			redeemAmount:         60,
-			expectedLockedAmount: 40,
+			redeemAmount:         600_000,
+			expectedLockedAmount: 400_000,
 			expectPass:           true,
 		},
 		{
@@ -248,7 +248,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
 					BaseDenom:     "liquid",
 					DisplayDenom:  "liquid18",
-					OriginalDenom: "test",
+					OriginalDenom: "aISLM",
 					LockupPeriods: lockupPeriods,
 				})
 				// create accounts
@@ -259,7 +259,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			},
 			redeemFrom:   addr1,
 			redeemTo:     addr2,
-			redeemAmount: 400,
+			redeemAmount: 4_000_000,
 			expectPass:   false,
 		},
 		{
@@ -271,7 +271,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
 					BaseDenom:     "solid",
 					DisplayDenom:  "solid18",
-					OriginalDenom: "test",
+					OriginalDenom: "aISLM",
 					LockupPeriods: lockupPeriods,
 				})
 				// create accounts
@@ -282,7 +282,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			},
 			redeemFrom:   addr1,
 			redeemTo:     addr2,
-			redeemAmount: 400,
+			redeemAmount: 4_000_000,
 			expectPass:   false,
 		},
 	}
@@ -305,12 +305,12 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				// check target account has original tokens
 				accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.redeemTo)
 				suite.Require().NotNil(accIto)
-				balanceTarget := suite.app.BankKeeper.SpendableCoin(suite.ctx, tc.redeemTo, "test")
-				suite.Require().Equal(sdk.NewInt64Coin("test", tc.redeemAmount-tc.expectedLockedAmount).String(), balanceTarget.String())
+				balanceTarget := suite.app.BankKeeper.SpendableCoin(suite.ctx, tc.redeemTo, "aISLM")
+				suite.Require().Equal(sdk.NewInt64Coin("aISLM", tc.redeemAmount-tc.expectedLockedAmount).String(), balanceTarget.String())
 				if tc.expectedLockedAmount > 0 {
 					cva, isClawback := accIto.(*vestingtypes.ClawbackVestingAccount)
 					suite.Require().True(isClawback)
-					expectedLockedCoins := sdk.NewCoins(sdk.NewInt64Coin("test", tc.expectedLockedAmount))
+					expectedLockedCoins := sdk.NewCoins(sdk.NewInt64Coin("aISLM", tc.expectedLockedAmount))
 					actualLockedCoins := cva.GetLockedOnly(s.ctx.BlockTime())
 					s.Require().Equal(expectedLockedCoins.String(), actualLockedCoins.String())
 				}

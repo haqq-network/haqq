@@ -1,7 +1,9 @@
 package keeper_test
 
 import (
+	sdkmath "cosmossdk.io/math"
 	"math"
+
 	"testing"
 	"time"
 
@@ -111,6 +113,9 @@ func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
 		sdk.NewCoins(sdk.NewCoin(suite.app.StakingKeeper.BondDenom(suite.ctx), amt)),
 	)
 	suite.Require().NoError(err)
+
+	// Set minimum liquidation amount to 10^6
+	suite.app.LiquidVestingKeeper.SetParams(suite.ctx, types.NewParams(sdkmath.NewInt(1_000_000)))
 
 	// Set Validator
 	valAddr := sdk.ValAddress(suite.address.Bytes())

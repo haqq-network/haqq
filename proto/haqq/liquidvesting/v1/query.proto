@@ -1,5 +1,5 @@
 syntax = "proto3";
-package haqq.liquidvesting;
+package haqq.liquidvesting.v1;
 
 import "amino/amino.proto";
 import "gogoproto/gogo.proto";
