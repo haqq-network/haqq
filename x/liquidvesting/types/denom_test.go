@@ -14,7 +14,7 @@ func TestDenomSuite(t *testing.T) {
 	suite.Run(t, new(DenomTestSuite))
 }
 
-func (suite *DenomTestSuite) TestDenomName0FromID() {
+func (suite *DenomTestSuite) TestDenomBaseNameFromID() {
 	testCases := []struct {
 		name         string
 		ID           uint64
@@ -23,7 +23,7 @@ func (suite *DenomTestSuite) TestDenomName0FromID() {
 		{
 			name:         "Simple id",
 			ID:           1,
-			expectedName: "aLIQUIDDENOM1",
+			expectedName: "aLIQUID1",
 		},
 	}
 
@@ -35,7 +35,7 @@ func (suite *DenomTestSuite) TestDenomName0FromID() {
 	}
 }
 
-func (suite *DenomTestSuite) TestDenomName18FromID() {
+func (suite *DenomTestSuite) TestDenomDisplayNameFromID() {
 	testCases := []struct {
 		name         string
 		ID           uint64
@@ -44,7 +44,7 @@ func (suite *DenomTestSuite) TestDenomName18FromID() {
 		{
 			name:         "Simple id",
 			ID:           1,
-			expectedName: "LIQUIDDENOM1",
+			expectedName: "LIQUID1",
 		},
 	}
 

@@ -31,7 +31,7 @@ func NewTxCmd() *cobra.Command {
 // NewMsgLiquidateCmd returns command for composing MsgLiquidate and sending it to blockchain
 func NewMsgLiquidateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "liquidate COIN [RECEIVER]",
+		Use:   "liquidate AMOUNT [RECEIVER]",
 		Short: "Liquidate locked tokens from vesting account into erc20 token",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -46,7 +46,7 @@ func NewMsgLiquidateCmd() *cobra.Command {
 			}
 
 			var liquidateTo sdk.AccAddress
-			liauidateFrom := cliCtx.GetFromAddress()
+			liquidateFrom := cliCtx.GetFromAddress()
 
 			if len(args) == 2 {
 				liquidateTo, err = sdk.AccAddressFromBech32(args[1])
@@ -54,10 +54,10 @@ func NewMsgLiquidateCmd() *cobra.Command {
 					return err
 				}
 			} else {
-				liquidateTo = liauidateFrom
+				liquidateTo = liquidateFrom
 			}
 
-			msg := types.NewMsgLiquidate(liauidateFrom, liquidateTo, coin)
+			msg := types.NewMsgLiquidate(liquidateFrom, liquidateTo, coin)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
@@ -73,7 +73,7 @@ func NewMsgLiquidateCmd() *cobra.Command {
 // NewMsgRedeemCmd returns command for composing MsgRedeem and sending it to blockchain
 func NewMsgRedeemCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "redeem COIN [RECEIVER]",
+		Use:   "redeem AMOUNT [RECEIVER]",
 		Short: "Redeem liquid token into locked vesting tokens",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {

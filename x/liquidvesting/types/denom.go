@@ -3,8 +3,8 @@ package types
 import "fmt"
 
 const (
-	denomBaseNamePrefix    = "aLIQUIDDENOM"
-	denomDisplayNamePrefix = "LIQUIDDENOM"
+	denomBaseNamePrefix    = "aLIQUID"
+	denomDisplayNamePrefix = "LIQUID"
 )
 
 // DenomBaseNameFromID compose denom name based on id for exponent 0

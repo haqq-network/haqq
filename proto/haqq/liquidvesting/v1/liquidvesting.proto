@@ -12,9 +12,11 @@ option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
 
 // Denom represents liquid token bonded to some specific vesting schedule
 message Denom {
-  // base_name main identifier for the denom, used to query it from store.
-  string base_name = 1;
-  string display_name = 2;
+  // base_denom main identifier for the denom, used to query it from store.
+  string base_denom = 1;
+  // display_denom identifier used for display name for broad audience
+  string display_denom = 2;
+  // original_denom which liquid denom derived from
   string original_denom = 3;
   // start date
   google.protobuf.Timestamp start_time = 4

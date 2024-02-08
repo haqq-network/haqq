@@ -20,12 +20,12 @@ func (k Keeper) Denom(goCtx context.Context, req *types.QueryDenomRequest) (*typ
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	val, found := k.GetDenom(ctx, req.Denom)
+	denom, found := k.GetDenom(ctx, req.Denom)
 	if !found {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
 
-	return &types.QueryDenomResponse{Denom: val}, nil
+	return &types.QueryDenomResponse{Denom: denom}, nil
 }
 
 // Denoms retrieves liquid tokens denoms

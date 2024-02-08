@@ -13,12 +13,12 @@ option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
 service Msg {
   // Liquidate transforms specified amount of tokens locked on vesting account into a new liquid token
   rpc Liquidate(MsgLiquidate) returns (MsgLiquidateResponse) {
-    option (google.api.http).get = "/haqq/liquidvesting/v1/tx/liquidate";
+    option (google.api.http).post = "/haqq/liquidvesting/v1/tx/liquidate";
   };
 
   // Redeem burns liquid token and deposits corresponding amount of vesting token to the specified account
   rpc Redeem (MsgRedeem) returns (MsgRedeemResponse) {
-    option (google.api.http).get = "/haqq/liquidvesting/v1/tx/redeem";
+    option (google.api.http).post = "/haqq/liquidvesting/v1/tx/redeem";
   };
 }
 

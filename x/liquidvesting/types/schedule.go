@@ -64,9 +64,9 @@ func SubtractAmountFromPeriods(
 // ExtractUpcomingPeriods takes the list of periods with started time and
 // returns list of periods which are currently upcoming
 func ExtractUpcomingPeriods(startDate, endDate int64, periods sdkvesting.Periods, readTime int64) sdkvesting.Periods {
-	pastPeriods := vestingTypes.ReadPastPeriodCount(startDate, endDate, periods, readTime)
-	upcomingPeriods := make(sdkvesting.Periods, len(periods)-pastPeriods)
-	copy(upcomingPeriods, periods[pastPeriods:])
+	pastPeriodsCount := vestingTypes.ReadPastPeriodCount(startDate, endDate, periods, readTime)
+	upcomingPeriods := make(sdkvesting.Periods, len(periods)-pastPeriodsCount)
+	copy(upcomingPeriods, periods[pastPeriodsCount:])
 
 	return upcomingPeriods
 }

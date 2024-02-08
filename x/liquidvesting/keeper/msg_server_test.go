@@ -187,8 +187,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					BaseName:      "liquid",
-					DisplayName:   "liquid18",
+					BaseDenom:     "liquid",
+					DisplayDenom:  "liquid18",
 					OriginalDenom: "test",
 					LockupPeriods: lockupPeriods,
 				})
@@ -212,8 +212,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				// subs 150 second, it is the half of the second period now
 				startTime := s.ctx.BlockTime().Add(-150 * time.Second)
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					BaseName:      "liquid",
-					DisplayName:   "liquid18",
+					BaseDenom:     "liquid",
+					DisplayDenom:  "liquid18",
 					OriginalDenom: "test",
 					StartTime:     startTime,
 					EndTime:       startTime.Add(lockupPeriods.TotalDuration()),
@@ -246,8 +246,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					BaseName:      "liquid",
-					DisplayName:   "liquid18",
+					BaseDenom:     "liquid",
+					DisplayDenom:  "liquid18",
 					OriginalDenom: "test",
 					LockupPeriods: lockupPeriods,
 				})
@@ -269,8 +269,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					BaseName:      "solid",
-					DisplayName:   "solid18",
+					BaseDenom:     "solid",
+					DisplayDenom:  "solid18",
 					OriginalDenom: "test",
 					LockupPeriods: lockupPeriods,
 				})

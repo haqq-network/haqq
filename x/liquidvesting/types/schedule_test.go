@@ -27,7 +27,7 @@ func (suite *ScheduleTestSuite) TestSubtractAmountFromPeriods() {
 		expectError       bool
 	}{
 		{
-			name: "Standard subtraction without residue",
+			name: " OK Standard subtraction without residue",
 			minuendPeriods: []sdkvesting.Period{
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(300)))},
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(300)))},
@@ -44,7 +44,7 @@ func (suite *ScheduleTestSuite) TestSubtractAmountFromPeriods() {
 			expectError: false,
 		},
 		{
-			name: "Standard subtraction with residue",
+			name: "OK Standard subtraction with residue",
 			minuendPeriods: []sdkvesting.Period{
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(10)))},
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(20)))},
@@ -64,7 +64,15 @@ func (suite *ScheduleTestSuite) TestSubtractAmountFromPeriods() {
 			expectError: false,
 		},
 		{
-			name: "Standard subtraction with residue and little last period to hold whole residue",
+			name:              "OK Subtract zero from empty periods",
+			minuendPeriods:    []sdkvesting.Period{},
+			subtrahend:        sdk.NewCoin("test", math.NewInt(0)),
+			expectedDecreased: []sdkvesting.Period{},
+			expectedDiff:      []sdkvesting.Period{},
+			expectError:       false,
+		},
+		{
+			name: "OK Standard subtraction with residue and little last period to hold whole residue",
 			minuendPeriods: []sdkvesting.Period{
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(100)))},
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(200)))},
@@ -84,11 +92,19 @@ func (suite *ScheduleTestSuite) TestSubtractAmountFromPeriods() {
 			expectError: false,
 		},
 		{
-			name: "Subtrahend is bigger than total periods amount",
+			name: "FAIL Subtrahend is bigger than total periods amount",
 			minuendPeriods: []sdkvesting.Period{
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(10)))},
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(20)))},
 			},
+			subtrahend:        sdk.NewCoin("test", math.NewInt(50)),
+			expectedDecreased: []sdkvesting.Period{},
+			expectedDiff:      []sdkvesting.Period{},
+			expectError:       true,
+		},
+		{
+			name:              "FAIL Subtrahend is bigger than total periods amount, and periods are empty",
+			minuendPeriods:    []sdkvesting.Period{},
 			subtrahend:        sdk.NewCoin("test", math.NewInt(50)),
 			expectedDecreased: []sdkvesting.Period{},
 			expectedDiff:      []sdkvesting.Period{},
