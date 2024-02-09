@@ -2,6 +2,11 @@ package keeper
 
 import (
 	"context"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+
+	"cosmossdk.io/math"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/haqq-network/haqq/contracts"
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -147,8 +152,43 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 	}
 
 	// check fromAccount has enough liquid token in balance
-	if hasBalance := k.bankKeeper.HasBalance(ctx, fromAddress, msg.Amount); !hasBalance {
-		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "from account has insufficient balance")
+	if balance := k.bankKeeper.GetBalance(ctx, fromAddress, msg.Amount.Denom); balance.IsLT(msg.Amount) {
+		// get token pair
+		tokenPairID := k.erc20Keeper.GetTokenPairID(ctx, msg.Amount.Denom)
+		if len(tokenPairID) == 0 {
+			return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", msg.Amount.Denom)
+		}
+		tokenPair, found := k.erc20Keeper.GetTokenPair(ctx, tokenPairID)
+		if !found || !tokenPair.Enabled {
+			return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", msg.Amount.Denom)
+		}
+
+		// get erc20 liquid token balance
+		contract := tokenPair.GetERC20Contract()
+		erc20LiquidTokenBalance := math.NewIntFromBigInt(k.erc20Keeper.BalanceOf(
+			ctx,
+			contracts.ERC20MinterBurnerDecimalsContract.ABI,
+			contract,
+			common.BytesToAddress(fromAddress.Bytes()),
+		))
+
+		// check if erc20 + cosmos tokens are sufficient for redeem
+		if erc20LiquidTokenBalance.Add(balance.Amount).LT(msg.Amount.Amount) {
+			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "from account has insufficient balance")
+		}
+
+		// transfer token from erc20 layer to get sufficient amount
+		amountToConvert := msg.Amount.Amount.Sub(balance.Amount)
+		msgConvert := erc20types.NewMsgConvertERC20(
+			amountToConvert,
+			fromAddress,
+			contract,
+			common.BytesToAddress(fromAddress.Bytes()),
+		)
+		_, err := k.erc20Keeper.ConvertERC20(sdk.WrapSDKContext(ctx), msgConvert)
+		if err != nil {
+			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to convert erc20 token: %s", err.Error())
+		}
 	}
 
 	// transfer liquid denom to liquidvesting module
