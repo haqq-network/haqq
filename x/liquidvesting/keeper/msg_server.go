@@ -211,6 +211,10 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 	// save modified token schedule
 	if decreasedPeriods.TotalAmount().IsZero() {
 		k.DeleteDenom(ctx, liquidDenom.GetBaseDenom())
+		_, err := k.erc20Keeper.ToggleConversion(ctx, msg.Amount.Denom)
+		if err != nil {
+			return nil, errorsmod.Wrap(types.ErrRedeemFailed, "failde to disable conversion")
+		}
 	} else {
 		err = k.UpdateDenomPeriods(ctx, liquidDenom.GetBaseDenom(), decreasedPeriods)
 		if err != nil {
