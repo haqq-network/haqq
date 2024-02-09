@@ -44,7 +44,7 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         with:
           installNix: true
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+          useCachix: false
       - name: Build nix package
         env:
           CACHIX_SIGNING_KEY: ${{ secrets.CACHIX_SIGNING_KEY }}
@@ -52,7 +52,7 @@ jobs:
           nix build .#haqq --print-build-logs
           nix build --json \
            | jq -r '.[].outputs | to_entries[].value' \
-           | cachix push haqq
+           | nix run nixpkgs#cachix push haqq
   check-nix:
     runs-on: [self-hosted, nixos]
     steps:
