@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/haqq-network/haqq/contracts"
@@ -22,7 +23,7 @@ var (
 	amount = sdk.NewCoins(sdk.NewInt64Coin("aISLM", 3_000_000))
 	third  = sdk.NewCoins(sdk.NewInt64Coin("aISLM", 1_000_000))
 
-	liquidDenomAmount = sdk.NewCoins(sdk.NewInt64Coin("liquid", 3_000_000))
+	liquidDenomAmount = sdk.NewCoins(sdk.NewInt64Coin("aLIQUID0", 3_000_000))
 
 	lockupPeriods = sdkvesting.Periods{
 		{Length: 100, Amount: third},
@@ -187,8 +188,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					BaseDenom:     "liquid",
-					DisplayDenom:  "liquid18",
+					BaseDenom:     "aLIQUID0",
+					DisplayDenom:  "LIQUID0",
 					OriginalDenom: "aISLM",
 					LockupPeriods: lockupPeriods,
 				})
@@ -197,6 +198,17 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr2))
 				// fund account with liquid denom token
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
+				liquidTokenMetadata := banktypes.Metadata{
+					Description: "Liquid vesting token",
+					DenomUnits:  []*banktypes.DenomUnit{{Denom: "aLIQUID0", Exponent: 0}, {Denom: "LIQUID0", Exponent: 18}},
+					Base:        "aLIQUID0",
+					Display:     "LIQUID0",
+					Name:        "LIQUID0",
+					Symbol:      "LIQUID0",
+				}
+
+				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
+				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
 			},
 			redeemFrom:   addr1,
 			redeemTo:     addr2,
@@ -212,8 +224,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				// subs 150 second, it is the half of the second period now
 				startTime := s.ctx.BlockTime().Add(-150 * time.Second)
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					BaseDenom:     "liquid",
-					DisplayDenom:  "liquid18",
+					BaseDenom:     "aLIQUID0",
+					DisplayDenom:  "LIQUID0",
 					OriginalDenom: "aISLM",
 					StartTime:     startTime,
 					EndTime:       startTime.Add(lockupPeriods.TotalDuration()),
@@ -232,6 +244,18 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				s.app.AccountKeeper.SetAccount(s.ctx, acc2)
 				// fund account with liquid denom token
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
+
+				liquidTokenMetadata := banktypes.Metadata{
+					Description: "Liquid vesting token",
+					DenomUnits:  []*banktypes.DenomUnit{{Denom: "aLIQUID0", Exponent: 0}, {Denom: "LIQUID0", Exponent: 18}},
+					Base:        "aLIQUID0",
+					Display:     "LIQUID0",
+					Name:        "LIQUID0",
+					Symbol:      "LIQUID0",
+				}
+
+				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
+				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
 			},
 			redeemFrom:           addr1,
 			redeemTo:             addr2,
@@ -246,8 +270,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					BaseDenom:     "liquid",
-					DisplayDenom:  "liquid18",
+					BaseDenom:     "aLIQUID0",
+					DisplayDenom:  "LIQUID0",
 					OriginalDenom: "aISLM",
 					LockupPeriods: lockupPeriods,
 				})
@@ -256,6 +280,17 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr2))
 				// fund account with liquid denom token
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
+				liquidTokenMetadata := banktypes.Metadata{
+					Description: "Liquid vesting token",
+					DenomUnits:  []*banktypes.DenomUnit{{Denom: "aLIQUID0", Exponent: 0}, {Denom: "LIQUID0", Exponent: 18}},
+					Base:        "aLIQUID0",
+					Display:     "LIQUID0",
+					Name:        "LIQUID0",
+					Symbol:      "LIQUID0",
+				}
+
+				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
+				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
 			},
 			redeemFrom:   addr1,
 			redeemTo:     addr2,
@@ -279,6 +314,17 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr2))
 				// fund account with liquid denom token
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
+				liquidTokenMetadata := banktypes.Metadata{
+					Description: "Liquid vesting token",
+					DenomUnits:  []*banktypes.DenomUnit{{Denom: "aLIQUID0", Exponent: 0}, {Denom: "LIQUID0", Exponent: 18}},
+					Base:        "aLIQUID0",
+					Display:     "LIQUID0",
+					Name:        "LIQUID0",
+					Symbol:      "LIQUID0",
+				}
+
+				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
+				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
 			},
 			redeemFrom:   addr1,
 			redeemTo:     addr2,
@@ -293,7 +339,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			ctx := sdk.WrapSDKContext(suite.ctx)
 
 			tc.malleate()
-			redeemCoin := sdk.NewInt64Coin("liquid", tc.redeemAmount)
+			redeemCoin := sdk.NewInt64Coin("aLIQUID0", tc.redeemAmount)
 			msg := types.NewMsgRedeem(tc.redeemFrom, tc.redeemTo, redeemCoin)
 			resp, err := suite.app.LiquidVestingKeeper.Redeem(ctx, msg)
 			expRes := &types.MsgRedeemResponse{}
@@ -316,9 +362,9 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				}
 
 				// check liquid tokens are burnt
-				_, liquidDenomCoin := liquidDenomAmount.Find("liquid")
+				_, liquidDenomCoin := liquidDenomAmount.Find("aLIQUID0")
 				expectedLiquidTokenSupply := liquidDenomCoin.Sub(redeemCoin)
-				actualLiquidTokenSupply := s.app.BankKeeper.GetSupply(s.ctx, "liquid")
+				actualLiquidTokenSupply := s.app.BankKeeper.GetSupply(s.ctx, "aLIQUID0")
 				s.Require().Equal(expectedLiquidTokenSupply.String(), actualLiquidTokenSupply.String())
 			} else {
 				suite.Require().Error(err)

@@ -150,18 +150,18 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "liquidDenom %s does not exist", msg.Amount.Denom)
 	}
 
+	// get token pair
+	tokenPairID := k.erc20Keeper.GetTokenPairID(ctx, msg.Amount.Denom)
+	if len(tokenPairID) == 0 {
+		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", msg.Amount.Denom)
+	}
+	tokenPair, found := k.erc20Keeper.GetTokenPair(ctx, tokenPairID)
+	if !found || !tokenPair.Enabled {
+		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", msg.Amount.Denom)
+	}
+
 	// check fromAccount has enough liquid token in balance
 	if balance := k.bankKeeper.GetBalance(ctx, fromAddress, msg.Amount.Denom); balance.IsLT(msg.Amount) {
-		// get token pair
-		tokenPairID := k.erc20Keeper.GetTokenPairID(ctx, msg.Amount.Denom)
-		if len(tokenPairID) == 0 {
-			return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", msg.Amount.Denom)
-		}
-		tokenPair, found := k.erc20Keeper.GetTokenPair(ctx, tokenPairID)
-		if !found || !tokenPair.Enabled {
-			return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", msg.Amount.Denom)
-		}
-
 		// get erc20 liquid token balance
 		contract := tokenPair.GetERC20Contract()
 		erc20LiquidTokenBalance := math.NewIntFromBigInt(k.erc20Keeper.BalanceOf(
@@ -211,9 +211,11 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 	// save modified token schedule
 	if decreasedPeriods.TotalAmount().IsZero() {
 		k.DeleteDenom(ctx, liquidDenom.GetBaseDenom())
-		_, err := k.erc20Keeper.ToggleConversion(ctx, msg.Amount.Denom)
-		if err != nil {
-			return nil, errorsmod.Wrap(types.ErrRedeemFailed, "failde to disable conversion")
+		if tokenPair.Enabled {
+			_, err := k.erc20Keeper.ToggleConversion(ctx, msg.Amount.Denom)
+			if err != nil {
+				return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to disable conversion: %s", err.Error())
+			}
 		}
 	} else {
 		err = k.UpdateDenomPeriods(ctx, liquidDenom.GetBaseDenom(), decreasedPeriods)
