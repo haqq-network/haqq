@@ -20,12 +20,9 @@ jobs:
   
   build:
     name: Check that proto builds and commited
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nixos]
     steps:
       - uses: actions/checkout@v4
-      - uses: haqq-network/nix-action@master
-        with:
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
           nix develop --impure #ci --command ci-proto
 
