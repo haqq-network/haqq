@@ -1,18 +1,17 @@
 package types
 
 import (
-	"cosmossdk.io/math"
 	"fmt"
 	"math/big"
 
+	"cosmossdk.io/math"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
-// Default parameters
-// 1 * 10^24
+// DefaultMinimumLiquidationAmount Default parameters 1 * 10^24
 var DefaultMinimumLiquidationAmount = math.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(24), nil))
 
-// Parameter store keys
+// ParamStoreKeyMinimumLiquidationAmount Parameter store keys
 var ParamStoreKeyMinimumLiquidationAmount = []byte("ParamStoreKeyMinimumLiquidationAmount")
 
 func ParamKeyTable() paramtypes.KeyTable {

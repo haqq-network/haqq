@@ -2,17 +2,16 @@ package keeper
 
 import (
 	"context"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
-
-	"cosmossdk.io/math"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/haqq-network/haqq/contracts"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/haqq-network/haqq/contracts"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
