@@ -32,8 +32,8 @@ jobs:
           key: ${{ runner.os }}-go-tparse-binary
 
   test-unit:
-    # runs-on: [self-hosted, ubuntu]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu]
+    # runs-on: ubuntu-latest
     steps:
       - name: Set up go
         uses: actions/setup-go@v5
