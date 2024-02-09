@@ -2,7 +2,6 @@ package liquidvesting
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 )

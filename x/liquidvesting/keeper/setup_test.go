@@ -57,8 +57,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 }
 
 func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
-	checkTx := false
-
 	// account key
 	priv, err := ethsecp256k1.GenerateKey()
 	require.NoError(t, err)
@@ -72,7 +70,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
 	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
 
 	// Init app
-	suite.app, _ = app.Setup(checkTx, nil)
+	suite.app, _ = app.Setup(false, nil)
 
 	// Set Context
 	header := testutil.NewHeader(
@@ -96,7 +94,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
 	}
 
 	acc := &haqqtypes.EthAccount{
-		BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.address.Bytes()), nil, 0, 0),
+		BaseAccount: authtypes.NewBaseAccount(suite.address.Bytes(), nil, 0, 0),
 		CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 	}
 

@@ -50,7 +50,7 @@ func (msg MsgLiquidate) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{addr}
 }
 
-// NewMsgLiquidate creates new instance of MsgLiquidate
+// NewMsgRedeem creates new instance of MsgLiquidate
 func NewMsgRedeem(redeemFrom, redeemTo sdk.AccAddress, amount sdk.Coin) *MsgRedeem {
 	return &MsgRedeem{
 		RedeemFrom: redeemFrom.String(),
