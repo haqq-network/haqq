@@ -5,7 +5,7 @@ on:
     - cron: '0 0 * * 0' # runs weekly on Sunday at 00:00
 
 jobs:
-  lockfile:
+  node-bootstrap:
     runs-on: [self-hosted, nixos]
     steps:
       - name: Test node bootstrap
