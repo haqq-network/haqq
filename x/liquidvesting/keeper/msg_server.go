@@ -76,6 +76,16 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	}
 	va.LockupPeriods = types.ReplacePeriodsTail(va.LockupPeriods, decreasedPeriods)
 	va.OriginalVesting = va.OriginalVesting.Sub(msg.Amount)
+
+	// =========================================
+
+	decreasedVestingPeriods, _, err := types.SubtractAmountFromPeriods(va.VestingPeriods, msg.Amount)
+	if err != nil {
+		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to calculate new schedule: %s", err.Error())
+	}
+
+	va.VestingPeriods = types.ReplacePeriodsTail(va.VestingPeriods, decreasedVestingPeriods)
+
 	k.accountKeeper.SetAccount(ctx, va)
 
 	// transfer liquidated amount to liquid vesting module account
