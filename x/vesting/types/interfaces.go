@@ -13,6 +13,7 @@ import (
 // requires for storing accounts.
 type AccountKeeper interface {
 	GetAllAccounts(ctx sdk.Context) (accounts []authtypes.AccountI)
+	GetModuleAccount(ctx sdk.Context, moduleName string) authtypes.ModuleAccountI
 	GetAccount(sdk.Context, sdk.AccAddress) authtypes.AccountI
 	SetAccount(sdk.Context, authtypes.AccountI)
 	NewAccount(ctx sdk.Context, acc authtypes.AccountI) authtypes.AccountI
@@ -23,6 +24,7 @@ type AccountKeeper interface {
 // BankKeeper defines the expected interface contract the vesting module requires
 // for creating vesting accounts with funds.
 type BankKeeper interface {
+	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 	SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
 	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
