@@ -142,7 +142,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.to)
 				suite.Require().NotNil(accIto)
 				balanceTarget := suite.app.BankKeeper.GetBalance(suite.ctx, tc.to, types.DenomBaseNameFromID(0))
-				suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(0), tc.amount.Amount), balanceTarget)
+				suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(0), math.ZeroInt()).String(), balanceTarget.String())
 
 				// check liquidated vesting locked coins are decreased on initial account
 				accIFrom := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.from)
@@ -163,7 +163,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 					pairResp.TokenPair.GetERC20Contract(),
 					common.BytesToAddress(ethAccTo.GetAddress().Bytes()),
 				)
-				s.Require().NotNil(balanceOfLiquidTokeErc20Pair)
+				s.Require().Equal(tc.amount.Amount.String(), balanceOfLiquidTokeErc20Pair.String())
 			} else {
 				suite.Require().Error(err)
 			}
