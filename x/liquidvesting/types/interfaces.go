@@ -49,6 +49,7 @@ type ERC20Keeper interface {
 	GetTokenPairID(ctx sdk.Context, token string) []byte
 	GetTokenPair(ctx sdk.Context, id []byte) (erc20types.TokenPair, bool)
 	BalanceOf(ctx sdk.Context, abi abi.ABI, contract, account common.Address) *big.Int
+	ConvertCoin(goCtx context.Context, msg *erc20types.MsgConvertCoin) (*erc20types.MsgConvertCoinResponse, error)
 	ConvertERC20(context.Context, *erc20types.MsgConvertERC20) (*erc20types.MsgConvertERC20Response, error)
 	RegisterCoin(ctx sdk.Context, coinMetadata banktypes.Metadata) (*erc20types.TokenPair, error)
 }

@@ -77,8 +77,7 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	va.LockupPeriods = types.ReplacePeriodsTail(va.LockupPeriods, decreasedPeriods)
 	va.OriginalVesting = va.OriginalVesting.Sub(msg.Amount)
 
-	// =========================================
-
+	// all vesting periods are completed at this point, so we can reduce amounts without additional extracting logic
 	decreasedVestingPeriods, _, err := types.SubtractAmountFromPeriods(va.VestingPeriods, msg.Amount)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to calculate new schedule: %s", err.Error())
@@ -119,7 +118,8 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 		Symbol:  liquidDenom.GetDisplayDenom(),
 	}
 
-	liquidTokenCoins := sdk.NewCoins(sdk.NewCoin(liquidDenom.GetBaseDenom(), msg.Amount.Amount))
+	liquidTokenCoin := sdk.NewCoin(liquidDenom.GetBaseDenom(), msg.Amount.Amount)
+	liquidTokenCoins := sdk.NewCoins(liquidTokenCoin)
 	err = k.bankKeeper.MintCoins(ctx, types.ModuleName, liquidTokenCoins)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to mint liquid token: %s", err.Error())
@@ -136,6 +136,14 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	_, err = k.erc20Keeper.RegisterCoin(ctx, liquidTokenMetadata)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to create erc20 token pair: %s", err.Error())
+	}
+
+	// convert new liquid token to erc20 token
+	// Build MsgConvertCoin, from recipient to recipient since Liquidation already occurred
+	evmLiquidateToAddress := common.BytesToAddress(liquidateToAddress.Bytes())
+	msgConvert := erc20types.NewMsgConvertCoin(liquidTokenCoin, evmLiquidateToAddress, liquidateToAddress)
+	if _, err := k.erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), msgConvert); err != nil {
+		return nil, errorsmod.Wrap(err, "failed to convert liquid tokens into erc20 tokens")
 	}
 
 	return &types.MsgLiquidateResponse{}, nil
