@@ -8,8 +8,14 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
-// DefaultMinimumLiquidationAmount Default parameters 1 * 10^24
-var DefaultMinimumLiquidationAmount = math.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(21), nil))
+// DefaultMinimumLiquidationAmountISLM default parameter value in ISLM
+const DefaultMinimumLiquidationAmountISLM = 1000
+
+// AttoMultiplier 10^18
+var AttoMultiplier = math.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil))
+
+// DefaultMinimumLiquidationAmount default atto parameter value
+var DefaultMinimumLiquidationAmount = math.NewInt(DefaultMinimumLiquidationAmountISLM).Mul(AttoMultiplier)
 
 // ParamStoreKeyMinimumLiquidationAmount Parameter store keys
 var ParamStoreKeyMinimumLiquidationAmount = []byte("ParamStoreKeyMinimumLiquidationAmount")
