@@ -9,7 +9,7 @@ import (
 )
 
 // DefaultMinimumLiquidationAmount Default parameters 1 * 10^24
-var DefaultMinimumLiquidationAmount = math.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(24), nil))
+var DefaultMinimumLiquidationAmount = math.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(21), nil))
 
 // ParamStoreKeyMinimumLiquidationAmount Parameter store keys
 var ParamStoreKeyMinimumLiquidationAmount = []byte("ParamStoreKeyMinimumLiquidationAmount")
