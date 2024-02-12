@@ -18,7 +18,7 @@ var AttoMultiplier = math.NewIntFromBigInt(new(big.Int).Exp(big.NewInt(10), big.
 var DefaultMinimumLiquidationAmount = math.NewInt(DefaultMinimumLiquidationAmountISLM).Mul(AttoMultiplier)
 
 // ParamStoreKeyMinimumLiquidationAmount Parameter store keys
-var ParamStoreKeyMinimumLiquidationAmount = []byte("ParamStoreKeyMinimumLiquidationAmount")
+var ParamStoreKeyMinimumLiquidationAmount = []byte("MinimumLiquidationAmount")
 
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
