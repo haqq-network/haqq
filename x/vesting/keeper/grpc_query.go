@@ -6,11 +6,14 @@ import (
 	"os"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/spf13/cast"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/haqq-network/haqq/utils"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -97,6 +100,14 @@ func (k Keeper) TotalLocked(
 		}
 		return false
 	})
+
+	lvmAcc := k.accountKeeper.GetModuleAccount(ctx, liquidvestingtypes.ModuleName)
+	if lvmAcc == nil {
+		panic(sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", lvmAcc))
+	}
+
+	escrowedLiquidBalance := k.bankKeeper.GetBalance(ctx, lvmAcc.GetAddress(), utils.BaseDenom)
+	totalLocked = totalLocked.Add(escrowedLiquidBalance)
 
 	return &types.QueryTotalLockedResponse{
 		Locked:   totalLocked,

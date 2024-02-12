@@ -1,0 +1,55 @@
+syntax = "proto3";
+package haqq.liquidvesting.v1;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "haqq/liquidvesting/v1/liquidvesting.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Denom queries liquid vesting token info by denom
+  rpc Denom(QueryDenomRequest) returns (QueryDenomResponse) {
+    option (google.api.http).get = "/haqq/liquidvesting/v1/denom";
+  };
+  // Denoms queries liquid vesting tokens info
+  rpc Denoms(QueryDenomsRequest) returns (QueryDenomsResponse) {
+    option (google.api.http).get = "/haqq/liquidvesting/v1/denoms";
+  };
+}
+
+// QueryDenomRequest is request fo Denom rpc method
+message QueryDenomRequest {
+  // denom is liquidated vesting token
+  string denom = 1;
+}
+
+// QueryDenomResponse is response for Denom rpc method
+message QueryDenomResponse {
+  // denom is liquidated vesting token
+  Denom denom = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+}
+
+// QueryDenomsRequest is request for Denoms rpc method
+message QueryDenomsRequest {
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryDenomsResponse is response for Denoms rpc method
+message QueryDenomsResponse {
+  // denoms are liquidated vesting tokens
+  repeated Denom denoms = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

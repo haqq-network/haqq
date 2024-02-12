@@ -302,7 +302,7 @@ func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 
 			// valAddr, err := sdk.ValAddressFromBech32(args[0])
 			valAddrStr, err := cmd.Flags().GetString(FlagValidator)
-			if err != nil {
+			if err != nil || valAddrStr == "" {
 				staking = false
 				valAddr = sdk.ValAddress{}
 			} else {
