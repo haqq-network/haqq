@@ -77,6 +77,22 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			expectPass: true,
 		},
 		{
+			name: "fail - liquidate amount bigger than locked but less than total",
+			malleate: func() {
+				funder := sdk.AccAddress(types.ModuleName)
+				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
+				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
+			},
+			from:       addr1,
+			to:         addr2,
+			amount:     sdk.NewCoin("aISLM", amount.AmountOf("aISLM").Add(math.NewInt(1_500_000))),
+			expectPass: false,
+		},
+		{
 			name: "fail - amount exceeded",
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
@@ -171,6 +187,90 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
+	var (
+		from              = addr1
+		to                = addr2
+		liquidationAmount = sdk.NewCoin("aISLM", third.AmountOf("aISLM"))
+		funder            = sdk.AccAddress(types.ModuleName)
+	)
+	suite.SetupTest() // Reset
+	ctx := sdk.WrapSDKContext(suite.ctx)
+
+	baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+	startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
+	clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
+	testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+	s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
+
+	// FIRST LIQUIDATION
+	msg := types.NewMsgLiquidate(from, to, liquidationAmount)
+	resp, err := suite.app.LiquidVestingKeeper.Liquidate(ctx, msg)
+	expRes := &types.MsgLiquidateResponse{}
+
+	// check returns
+	suite.Require().NoError(err)
+	suite.Require().Equal(expRes, resp)
+
+	// check target account exists and has liquid token
+	accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, to)
+	suite.Require().NotNil(accIto)
+	balanceTarget := suite.app.BankKeeper.GetBalance(suite.ctx, to, types.DenomBaseNameFromID(0))
+	suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(0), math.ZeroInt()).String(), balanceTarget.String())
+
+	// check liquidated vesting locked coins are decreased on initial account
+	accIFrom := suite.app.AccountKeeper.GetAccount(suite.ctx, from)
+	suite.Require().NotNil(accIFrom)
+	cva, isClawback := accIFrom.(*vestingtypes.ClawbackVestingAccount)
+	suite.Require().True(isClawback)
+	suite.Require().Equal(cva.GetLockedOnly(suite.ctx.BlockTime()), lockupPeriods.TotalAmount().Sub(liquidationAmount))
+
+	// check erc20 token contract
+	pair0Resp, err := s.app.Erc20Keeper.TokenPair(s.ctx, &erc20types.QueryTokenPairRequest{Token: types.DenomBaseNameFromID(0)})
+	s.Require().NoError(err)
+	s.Require().True(pair0Resp.TokenPair.Enabled)
+	ethAccTo, isEthAccount := accIto.(*haqqtypes.EthAccount)
+	s.Require().True(isEthAccount)
+	balanceOfLiquidTokeErc20Pair0 := s.app.Erc20Keeper.BalanceOf(
+		s.ctx,
+		contracts.ERC20MinterBurnerDecimalsContract.ABI,
+		pair0Resp.TokenPair.GetERC20Contract(),
+		common.BytesToAddress(ethAccTo.GetAddress().Bytes()),
+	)
+	s.Require().Equal(liquidationAmount.Amount.String(), balanceOfLiquidTokeErc20Pair0.String())
+
+	// SECOND LIQUIDATION
+	msg = types.NewMsgLiquidate(from, to, liquidationAmount)
+	resp, err = suite.app.LiquidVestingKeeper.Liquidate(ctx, msg)
+
+	// check returns
+	suite.Require().NoError(err)
+	suite.Require().Equal(expRes, resp)
+
+	// check target account exists and has liquid token
+	balanceTarget = suite.app.BankKeeper.GetBalance(suite.ctx, to, types.DenomBaseNameFromID(1))
+	suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(1), math.ZeroInt()).String(), balanceTarget.String())
+
+	// check liquidated vesting locked coins are decreased on initial account
+	accIFrom = suite.app.AccountKeeper.GetAccount(suite.ctx, from)
+	suite.Require().NotNil(accIFrom)
+	cva, isClawback = accIFrom.(*vestingtypes.ClawbackVestingAccount)
+	suite.Require().True(isClawback)
+	suite.Require().Equal(cva.GetLockedOnly(suite.ctx.BlockTime()), sdk.NewCoins(liquidationAmount))
+
+	// check erc20 token contract
+	pair1Resp, err := s.app.Erc20Keeper.TokenPair(s.ctx, &erc20types.QueryTokenPairRequest{Token: types.DenomBaseNameFromID(1)})
+	s.Require().NoError(err)
+	s.Require().True(pair1Resp.TokenPair.Enabled)
+	balanceOfLiquidTokeErc20Pair1 := s.app.Erc20Keeper.BalanceOf(
+		s.ctx,
+		contracts.ERC20MinterBurnerDecimalsContract.ABI,
+		pair1Resp.TokenPair.GetERC20Contract(),
+		common.BytesToAddress(ethAccTo.GetAddress().Bytes()),
+	)
+	s.Require().Equal(liquidationAmount.Amount.String(), balanceOfLiquidTokeErc20Pair1.String())
+}
+
 func (suite *KeeperTestSuite) TestRedeem() {
 	testCases := []struct {
 		name                 string
@@ -262,6 +362,55 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			redeemAmount:         600_000,
 			expectedLockedAmount: 400_000,
 			expectPass:           true,
+		},
+		{
+			name: "ok - redeem token partially from evm and cosmos layers",
+			malleate: func() {
+				// fund liquid vesting module
+				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
+				// create liquid vesting denom
+				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
+					BaseDenom:     "aLIQUID0",
+					DisplayDenom:  "LIQUID0",
+					OriginalDenom: "aISLM",
+					LockupPeriods: lockupPeriods,
+				})
+				// create accounts
+				acc1 := &haqqtypes.EthAccount{
+					BaseAccount: authtypes.NewBaseAccountWithAddress(addr1),
+					CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
+				}
+				s.app.AccountKeeper.SetAccount(s.ctx, acc1)
+				acc2 := &haqqtypes.EthAccount{
+					BaseAccount: authtypes.NewBaseAccountWithAddress(addr2),
+					CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
+				}
+				s.app.AccountKeeper.SetAccount(s.ctx, acc2)
+				// fund account with liquid denom token
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
+
+				liquidTokenMetadata := banktypes.Metadata{
+					Description: "Liquid vesting token",
+					DenomUnits:  []*banktypes.DenomUnit{{Denom: "aLIQUID0", Exponent: 0}, {Denom: "LIQUID0", Exponent: 18}},
+					Base:        "aLIQUID0",
+					Display:     "LIQUID0",
+					Name:        "LIQUID0",
+					Symbol:      "LIQUID0",
+				}
+
+				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
+				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
+
+				// transfer half of liquid token to evm layer
+				evmLiquidateToAddress := common.BytesToAddress(addr1.Bytes())
+				msgConvert := erc20types.NewMsgConvertCoin(sdk.NewInt64Coin("aLIQUID0", 1_500_000), evmLiquidateToAddress, addr1)
+				_, err := suite.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(suite.ctx), msgConvert)
+				suite.Require().NoError(err)
+			},
+			redeemFrom:   addr1,
+			redeemTo:     addr2,
+			redeemAmount: 3_000_000,
+			expectPass:   true,
 		},
 		{
 			name: "fail - insufficient liquid token balance",
