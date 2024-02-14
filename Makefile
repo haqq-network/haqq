@@ -525,59 +525,6 @@ proto-check-breaking:
 
 .PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking
 
-###############################################################################
-###                                Localnet                                 ###
-###############################################################################
-
-# Build image for a local testnet
-localnet-build:
-	@$(MAKE) -C networks/local
-
-# Start a 4-node testnet locally
-localnet-start: localnet-stop
-ifeq ($(OS),Windows_NT)
-	mkdir localnet-setup &
-	@$(MAKE) localnet-build
-
-	IF not exist "build/node0/$(HAQQ_BINARY)/config/genesis.json" docker run --rm -v $(CURDIR)/build\haqq\Z haqqd/node "./haqqd testnet --v 4 -o /haqq --keyring-backend=test --ip-addresses haqqdnode0,haqqdnode1,haqqdnode2,haqqdnode3"
-	docker-compose up -d
-else
-	mkdir -p localnet-setup
-	@$(MAKE) localnet-build
-
-	if ! [ -f localnet-setup/node0/$(HAQQ_BINARY)/config/genesis.json ]; then docker run --rm -v $(CURDIR)/localnet-setup:/haqq:Z haqqd/node "./haqqd testnet --v 4 -o /haqq --keyring-backend=test --ip-addresses haqqdnode0,haqqdnode1,haqqdnode2,haqqdnode3"; fi
-	docker-compose up -d
-endif
-
-# Stop testnet
-localnet-stop:
-	docker-compose down
-
-# Clean testnet
-localnet-clean:
-	docker-compose down
-	sudo rm -rf localnet-setup
-
- # Reset testnet
-localnet-unsafe-reset:
-	docker-compose down
-ifeq ($(OS),Windows_NT)
-	@docker run --rm -v $(CURDIR)\localnet-setup\node0\haqqd:haqq\Z haqqd/node "./haqqd unsafe-reset-all --home=/haqq"
-	@docker run --rm -v $(CURDIR)\localnet-setup\node1\haqqd:haqq\Z haqqd/node "./haqqd unsafe-reset-all --home=/haqq"
-	@docker run --rm -v $(CURDIR)\localnet-setup\node2\haqqd:haqq\Z haqqd/node "./haqqd unsafe-reset-all --home=/haqq"
-	@docker run --rm -v $(CURDIR)\localnet-setup\node3\haqqd:haqq\Z haqqd/node "./haqqd unsafe-reset-all --home=/haqq"
-else
-	@docker run --rm -v $(CURDIR)/localnet-setup/node0/haqqd:/haqq:Z haqqd/node "./haqqd unsafe-reset-all --home=/haqq"
-	@docker run --rm -v $(CURDIR)/localnet-setup/node1/haqqd:/haqq:Z haqqd/node "./haqqd unsafe-reset-all --home=/haqq"
-	@docker run --rm -v $(CURDIR)/localnet-setup/node2/haqqd:/haqq:Z haqqd/node "./haqqd unsafe-reset-all --home=/haqq"
-	@docker run --rm -v $(CURDIR)/localnet-setup/node3/haqqd:/haqq:Z haqqd/node "./haqqd unsafe-reset-all --home=/haqq"
-endif
-
-# Clean testnet
-localnet-show-logstream:
-	docker-compose logs --tail=1000 -f
-
-.PHONY: build-docker-local-haqq localnet-start localnet-stop
 
 ###############################################################################
 ###                                Releasing                                ###
