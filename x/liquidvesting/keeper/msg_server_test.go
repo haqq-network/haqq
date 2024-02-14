@@ -93,6 +93,21 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			expectPass: false,
 		},
 		{
+			name: "fail - liquidate tokens partially unlocked",
+			malleate: func() {
+				funder := sdk.AccAddress(types.ModuleName)
+				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				startTime := suite.ctx.BlockTime().Add(-201 * time.Second)
+				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
+			},
+			from:       addr1,
+			to:         addr2,
+			amount:     sdk.NewCoin("aISLM", math.NewInt(1_500_000)),
+			expectPass: false,
+		},
+		{
 			name: "fail - amount exceeded",
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
