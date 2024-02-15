@@ -1,18 +1,23 @@
 #!/bin/sh
 
-config_dir="/home/coin/haqqd"
+KEYRING="test"
+LOGLEVEL="info"
+# to trace evm
+# TRACE="--trace"
+TRACE=""
+MONIKER="test"
 
-if [ ! -d "$config_dir" ]
+if [ ! -d "root/.haqqd/config" ]
 then
-  echo "Node config directory does NOT exist!"
-  echo "Running forever (hit Ctrl-C to exit) ..."
-  until [ -d "$config_dir" ]
-  do
-    sleep 5
-  done
-  echo "Node config directory finally created!"
-  sleep 15
+  echo "Node config directory doesn't exist!"
+else
+
+haqqd start \
+--pruning=nothing $TRACE \
+--log_level $LOGLEVEL \
+--minimum-gas-prices=0.0001aISLM \
+--json-rpc.api eth,txpool,personal,net,debug,web3 \
+--json-rpc.enable true \
+--keyring-backend $KEYRING
+
 fi
-
-haqqd --home "$config_dir" start
-
