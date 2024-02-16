@@ -32,6 +32,7 @@ jobs:
         run: git lfs pull
       - run: |
           nix --version
+          echo test
           make build
         if: "env.GIT_DIFF != ''"
   build-nix:
