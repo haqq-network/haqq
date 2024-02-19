@@ -15,8 +15,8 @@ var (
 
 const (
 	// Amino names
-	liquidate = "evmos/MsgLiquidate"
-	redeem    = "evmos/MsgRedeem"
+	liquidate = "haqq/MsgLiquidate"
+	redeem    = "haqq/MsgRedeem"
 )
 
 // NOTE: This is required for the GetSignBytes function
