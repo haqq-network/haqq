@@ -26,6 +26,11 @@ func (msg MsgLiquidate) Route() string { return RouterKey }
 // Type returns the action type
 func (msg MsgLiquidate) Type() string { return TypeMsgLiquidate }
 
+// GetSignBytes encodes the message for signing
+func (msg *MsgLiquidate) GetSignBytes() []byte {
+	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
+}
+
 // ValidateBasic runs stateless checks on the message
 func (msg MsgLiquidate) ValidateBasic() error {
 	if !msg.Amount.Amount.IsPositive() {
@@ -64,6 +69,11 @@ func (msg MsgRedeem) Route() string { return RouterKey }
 
 // Type returns the action type
 func (msg MsgRedeem) Type() string { return TypeMsgRedeem }
+
+// GetSignBytes encodes the message for signing
+func (msg *MsgRedeem) GetSignBytes() []byte {
+	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
+}
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgRedeem) ValidateBasic() error {
