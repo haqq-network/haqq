@@ -161,6 +161,7 @@ import (
 	v170 "github.com/haqq-network/haqq/app/upgrades/v1.7.0"
 	v171 "github.com/haqq-network/haqq/app/upgrades/v1.7.1"
 	v172 "github.com/haqq-network/haqq/app/upgrades/v1.7.2"
+	v173 "github.com/haqq-network/haqq/app/upgrades/v1.7.3"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -1218,6 +1219,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v172.UpgradeName,
 		v172.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
+	// v1.7.3 Fix Liquid Vesting Module
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v173.UpgradeName,
+		v173.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
 	// When a planned update height is reached, the old binary will panic
