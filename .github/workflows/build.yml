@@ -55,6 +55,7 @@ jobs:
           nix build --json \
            | jq -r '.[].outputs | to_entries[].value' \
            | nix run nixpkgs#cachix push haqq
+           
   check-nix:
     runs-on: [self-hosted, nixos]
     steps:
