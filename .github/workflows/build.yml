@@ -2,8 +2,8 @@ name: Build
 on:
   pull_request:
   push:
-    branches:
-      - master
+    # branches:
+    #   - master
 
 jobs:
   cleanup-runs:
@@ -15,8 +15,7 @@ jobs:
     if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
 
   build:
-    runs-on: ubuntu-cpu16-ram64
-    # [self-hosted, ubuntu]
+    runs-on: [self-hosted, ubuntu]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
