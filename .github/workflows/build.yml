@@ -15,7 +15,8 @@ jobs:
     if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
 
   build:
-    runs-on: [self-hosted, ubuntu]
+    runs-on: ubuntu-cpu16-ram64
+    # [self-hosted, ubuntu]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
