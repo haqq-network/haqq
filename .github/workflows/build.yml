@@ -31,19 +31,17 @@ jobs:
       - name: Pull LFS files
         run: git lfs pull
       - run: |
-          nix --version
-          echo test
           make build
         if: "env.GIT_DIFF != ''"
   build-nix:
     strategy:
       matrix:
-        os: [nixos, macos-latest]
-    runs-on: ${{ matrix.os }}
+        runner: [nix, macos-latest]
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       - uses: haqq-network/nix-action@master
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ matrix.runner == 'macos-latest' }}
         with:
           installNix: true
           useCachix: false
@@ -56,7 +54,7 @@ jobs:
            | jq -r '.[].outputs | to_entries[].value' \
            | nix run nixpkgs#cachix push haqq           
   check-nix:
-    runs-on: [self-hosted, nixos]
+    runs-on: [self-hosted, nix]
     steps:
       - uses: actions/checkout@v4
       - name: Check if nix package and Makefile versions match

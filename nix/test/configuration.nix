@@ -1,4 +1,4 @@
-{ pkgs, config, lib, ... }:
+{ ... }:
 {
   system.stateVersion = "23.11";
 
@@ -25,11 +25,6 @@
     config = {
       statesync = {
         enable = true;
-
-        # get block hash from ping pub
-        # https://ping.pub/haqq/block/<current - 1k>
-        trust_height = 9623214;
-        trust_hash = "6E784CF9689F635DF7521B77A737E4BD7048699A93442C5E1E926B4A2736C83A";
 
         rpc_servers = "https://rpc.tm.haqq.network:443,https://m-s1-tm.haqq.sh:443";
       };

@@ -9,6 +9,7 @@
 
       jq
       yq
+      dasel
     ];
 
   enterShell = ''

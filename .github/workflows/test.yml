@@ -67,7 +67,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   test-nix:
-    runs-on: [self-hosted, nixos]
+    runs-on: [self-hosted, nix]
     steps:
       - uses: actions/checkout@v4
       - name: Run nix package tests
