@@ -78,7 +78,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			expectPass: true,
 		},
 		{
-			name: "fail - liquidate partially staked tokens",
+			name: "ok - liquidate partially staked tokens",
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
