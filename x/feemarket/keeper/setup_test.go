@@ -16,6 +16,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/feemarket/types"
 )
 
@@ -51,6 +52,7 @@ func TestKeeperTestSuite(t *testing.T) {
 // SetupTest setup test environment, it uses`require.TestingT` to support both `testing.T` and `testing.B`.
 func (suite *KeeperTestSuite) SetupTest() {
 	checkTx := false
-	suite.app, _ = app.Setup(checkTx, nil)
-	suite.SetupApp(checkTx)
+	chainID := utils.TestEdge2ChainID + "-1"
+	suite.app = app.Setup(checkTx, nil, chainID)
+	suite.SetupApp(checkTx, chainID)
 }

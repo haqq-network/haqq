@@ -1,40 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/haqq-network/haqq/app"
-	cmdcfg "github.com/haqq-network/haqq/cmd/config"
+	"github.com/haqq-network/haqq/app/config"
 )
 
 func main() {
-	setupConfig()
-	cmdcfg.RegisterDenoms()
+	config.SetupConfig()
 
 	rootCmd, _ := NewRootCmd()
 
-	if err := svrcmd.Execute(rootCmd, "haqqd", app.DefaultNodeHome); err != nil {
-		switch e := err.(type) {
-		case server.ErrorCode:
-			os.Exit(e.Code)
-
-		default:
-			os.Exit(1)
-		}
+	if err := svrcmd.Execute(rootCmd, app.Name, app.DefaultNodeHome); err != nil {
+		fmt.Fprintln(rootCmd.OutOrStderr(), err) // nolint: errcheck
+		// Exit with default error code due possible exact error code overflow (max value is 125)
+		os.Exit(1)
 	}
-}
-
-func setupConfig() {
-	// set the address prefixes
-	config := sdk.GetConfig()
-	cmdcfg.SetBech32Prefixes(config)
-	// if err := cmdcfg.EnableObservability(); err != nil {
-	// 	panic(err)
-	// }
-	cmdcfg.SetBip44CoinType(config)
-	config.Seal()
 }
