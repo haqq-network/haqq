@@ -58,9 +58,6 @@ func NewMsgLiquidateCmd() *cobra.Command {
 			}
 
 			msg := types.NewMsgLiquidate(liquidateFrom, liquidateTo, coin)
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
 
 			return tx.GenerateOrBroadcastTxCLI(cliCtx, cmd.Flags(), msg)
 		},
@@ -100,9 +97,6 @@ func NewMsgRedeemCmd() *cobra.Command {
 			}
 
 			msg := types.NewMsgRedeem(redeemFrom, redeemTo, coin)
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
 
 			return tx.GenerateOrBroadcastTxCLI(cliCtx, cmd.Flags(), msg)
 		},
