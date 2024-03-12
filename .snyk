@@ -1,0 +1,4 @@
+version: 1.19.0
+exclude:
+    global:
+        - client/export.go
