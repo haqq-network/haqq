@@ -8,6 +8,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/haqq-network/haqq/contracts"
@@ -77,6 +78,22 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			expectPass: true,
 		},
 		{
+			name: "ok - liquidate partially staked tokens",
+			malleate: func() {
+				funder := sdk.AccAddress(types.ModuleName)
+				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
+				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
+				s.app.StakingKeeper.Delegate(s.ctx, addr1, third.AmountOf("aISLM"), stakingtypes.Unbonded, s.validator, true) //nolint:errcheck
+			},
+			from:       addr1,
+			to:         addr2,
+			amount:     sdk.NewCoin("aISLM", third.AmountOf("aISLM").Add(third.AmountOf("aISLM"))),
+			expectPass: true,
+		},
+		{
 			name: "fail - liquidate amount bigger than locked but less than total",
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
@@ -90,6 +107,22 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			from:       addr1,
 			to:         addr2,
 			amount:     sdk.NewCoin("aISLM", amount.AmountOf("aISLM").Add(math.NewInt(1_500_000))),
+			expectPass: false,
+		},
+		{
+			name: "fail - liquidate staked tokens",
+			malleate: func() {
+				funder := sdk.AccAddress(types.ModuleName)
+				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
+				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
+				s.app.StakingKeeper.Delegate(s.ctx, addr1, amount.AmountOf("aISLM"), stakingtypes.Unbonded, s.validator, true) //nolint:errcheck
+			},
+			from:       addr1,
+			to:         addr2,
+			amount:     sdk.NewCoin("aISLM", amount.AmountOf("aISLM")),
 			expectPass: false,
 		},
 		{
