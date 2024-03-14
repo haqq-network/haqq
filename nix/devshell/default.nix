@@ -7,15 +7,9 @@
       pkgsUnstable.act
       gh
 
-      yarn
-      nodejs
-
       jq
       yq
-
-      statik
-
-      golangci-lint
+      dasel
     ];
 
   enterShell = ''

@@ -13,13 +13,17 @@
     gomod2nix.url = "github:nix-community/gomod2nix/master";
     gomod2nix.inputs.nixpkgs.follows = "nixpkgs-unstable";
     gomod2nix.inputs.flake-utils.follows = "flake-utils";
+
+    cosmos.url = "github:informalsystems/cosmos.nix";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, gomod2nix, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, gomod2nix, cosmos, ... }@inputs:
     flake-utils.lib.eachDefaultSystem
       (system:
         let
-          overlays = [ gomod2nix.overlays.default ];
+          overlays = [
+            gomod2nix.overlays.default
+          ];
           pkgs = import nixpkgs { inherit system overlays; };
           pkgsUnstable = import nixpkgs-unstable { inherit system overlays; };
 
@@ -29,7 +33,12 @@
 
           go = pkgs."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
         in
-        {
+        rec {
+          apps.haqq = {
+            type = "app";
+            program = "${packages.haqq}/bin/haqqd";
+          };
+
           packages = rec {
             nixos-test = pkgs.callPackage ./nix/test {
               overlay = self.overlays.default;
@@ -37,8 +46,12 @@
             haqq = pkgsUnstable.callPackage ./nix/package.nix {
               inherit (pkgsUnstable) buildGoApplication;
               inherit go;
-              rev = if (self ? rev) then self.rev else self.dirtyRev;
+              rev =
+                if (self ? rev) then self.rev
+                else self.dirtyRev;
             };
+            # for local development, to prevent recompiles on git tree changes
+            haqq-no-rev = haqq.overrideAttrs (_: { rev = "norev"; });
             haqq-with-tests = haqq.overrideAttrs (_: {
               subPackages = null;
               doCheck = true;
@@ -85,13 +98,15 @@
       };
 
       nixConfig = {
-        extra-trusted-public-keys = [
+        trusted-public-keys = [
           "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
           "haqq.cachix.org-1:m8QJypf2boIKRBz4BvVyGPo7gHQoj4D6iMGCmGozNEg="
+          "cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk="
         ];
-        extra-substituters = [
+        substituters = [
           "https://devenv.cachix.org"
           "https://haqq.cachix.org"
+          "https://cosmosnix-store.s3.us-east-2.amazonaws.com"
         ];
       };
     };

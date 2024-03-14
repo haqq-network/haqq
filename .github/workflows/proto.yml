@@ -2,8 +2,6 @@ name: Protobuf
 # Protobuf runs buf (https://buf.build/) lint and check-breakage
 # This workflow is only run when a .proto file has been changed
 on:
-  branches-ignore:    
-    - 'coinomics_v2' # NOTE: breaking changes are not really breaking as they are introduced in a module which was never deployed on chain
   workflow_dispatch:
   pull_request:
     # paths:
@@ -22,12 +20,9 @@ jobs:
   
   build:
     name: Check that proto builds and commited
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nix]
     steps:
       - uses: actions/checkout@v4
-      - uses: haqq-network/nix-action@master
-        with:
-          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
           nix develop --impure #ci --command ci-proto
 
@@ -37,7 +32,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1.28.1
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: bufbuild/buf-lint-action@v1
         with:
           input: "proto"
@@ -47,7 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1.28.1
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: bufbuild/buf-breaking-action@v1
         with:
           input: "proto"

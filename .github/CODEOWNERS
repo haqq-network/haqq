@@ -1,1 +1,4 @@
-* @onsails @Yurist-85 @VorobevSA @kioqq
+# CODEOWNERS: https://help.github.com/articles/about-codeowners/
+
+# Primary repo maintainers
+**/*.yml @haqq-network/node

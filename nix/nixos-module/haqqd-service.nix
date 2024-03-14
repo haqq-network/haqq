@@ -12,7 +12,7 @@ let
   defaultCfgConfigToml = lib.recursiveUpdate (lib.importTOML "${defaultCfg}/config.toml") {
     instrumentation.prometheus = true;
     chain-id = "haqq_11235-1";
-    p2p.seeds = "c45991e0098b9cacb8603caf4e1cdb7e6e5f87c0@eu.seed.haqq.network:26656,e37cb47590ba46b503269ef255873e9698244d8b@us.seed.haqq.network:26656,c593e93e1fb8be8b48d4e7bab514a227aa620bf8@as.seed.haqq.network:26656";
+    p2p.seeds = "c45991e0098b9cacb8603caf4e1cdb7e6e5f87c0@eu.seed.haqq.network:26656,e37cb47590ba46b503269ef255873e9698244d8b@us.seed.haqq.network:26656,c593e93e1fb8be8b48d4e7bab514a227aa620bf8@as.seed.haqq.network:26656,8542cd7e6bf9d260fef543bc49e59be5a3fa9074@seed.publicnode.com:26656,0533e20e65912f72f2ad88a4c91eefbc634212d7@haqq-sync.rpc.p2p.world:26656,20e1000e88125698264454a884812746c2eb4807@seeds.lavenderfive.com:24056";
   };
   defaultCfgAppToml = lib.recursiveUpdate (lib.importTOML "${defaultCfg}/app.toml")
     {
@@ -24,7 +24,6 @@ in
 {
   imports = [
     ./grafana-agent.nix
-    # ./nginx.nix
   ];
 
   options.services.haqqd-supervised =
@@ -32,6 +31,25 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
+      };
+
+      fetchTrustBlock = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Fetch the trust block from the network";
+      };
+
+      fetchTrustBlockUrl = lib.mkOption {
+        type = lib.types.str;
+        default = "https://rpc.tm.haqq.network";
+        description = "URL to fetch the trust block from";
+      };
+
+      fetchTrustBlockOffset = lib.mkOption {
+        type = lib.types.int;
+        # 21 days in block time
+        default = 21 * 24 * 60 * 60 / 5;
+        description = "Offset to fetch the trust block from";
       };
 
       deleteOldBackups = lib.mkOption {
@@ -42,6 +60,9 @@ in
       initialPackage = lib.mkOption {
         type = lib.types.package;
         default = pkgs.haqq;
+        defaultText = lib.literalMD ''
+          `pkgs.haqq` where pkgs is the nixpkgs version used in this flake
+        '';
       };
 
       config = lib.mkOption {
@@ -69,6 +90,9 @@ in
         package = lib.mkOption {
           type = lib.types.package;
           default = pkgs.grafana-agent-unstable;
+          defaultText = lib.literalMD ''
+            `pkgs.grafana-agent-unstable` where pkgs is the nixpkgs-unstable version used in this flake
+          '';
         };
 
         instance = lib.mkOption {
@@ -155,9 +179,15 @@ in
                 appConfig = format.generate "app.toml" (lib.attrsets.recursiveUpdate defaultCfgAppToml cfg.app);
                 start = pkgs.writeShellApplication {
                   name = "haqqd-start";
+                  runtimeInputs = with pkgs; [ curl jq dasel ];
                   text = ''
                     ln -snf ${tomlConfig} .haqqd/config/config.toml
                     ln -snf ${appConfig} .haqqd/config/app.toml
+
+                    export RPC=${cfg.fetchTrustBlockUrl}
+                    export OFFSET=${toString cfg.fetchTrustBlockOffset}
+                    ${if cfg.fetchTrustBlock then "${./fetch-trust-block.sh} .haqqd/config/config.toml" else ""}
+                    
                     ${pkgs.cosmovisor}/bin/cosmovisor run start
                   '';
                 };
