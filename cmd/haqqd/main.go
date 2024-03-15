@@ -13,9 +13,9 @@ import (
 func main() {
 	config.SetupConfig()
 
-	rootCmd, _ := NewRootCmd()
+	rootCmd := NewRootCmd()
 
-	if err := svrcmd.Execute(rootCmd, app.Name, app.DefaultNodeHome); err != nil {
+	if err := svrcmd.Execute(rootCmd, app.DaemonName, app.DefaultNodeHome); err != nil {
 		fmt.Fprintln(rootCmd.OutOrStderr(), err) // nolint: errcheck
 		// Exit with default error code due possible exact error code overflow (max value is 125)
 		os.Exit(1)
