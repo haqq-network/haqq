@@ -1,14 +1,18 @@
 package keeper
 
 import (
+	"context"
+
+	"cosmossdk.io/collections"
+	"cosmossdk.io/core/store"
+	"cosmossdk.io/log"
+
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -16,31 +20,32 @@ import (
 type BaseKeeper struct {
 	bankkeeper.BaseKeeper
 
-	ak            banktypes.AccountKeeper
-	dk            distrkeeper.Keeper
-	distrStoreKey storetypes.StoreKey
-	cdc           codec.BinaryCodec
+	ak                banktypes.AccountKeeper
+	dk                distrkeeper.Keeper
+	distrStoreService store.KVStoreService
+	cdc               codec.BinaryCodec
 }
 
 func NewBaseKeeper(
 	cdc codec.BinaryCodec,
-	storeKey storetypes.StoreKey,
-	distrStoreKey storetypes.StoreKey,
+	storeService store.KVStoreService,
+	distrStoreService store.KVStoreService,
 	ak banktypes.AccountKeeper,
 	dk distrkeeper.Keeper,
 	blockedAddrs map[string]bool,
 	authority string,
+	logger log.Logger,
 ) BaseKeeper {
 	return BaseKeeper{
-		BaseKeeper:    bankkeeper.NewBaseKeeper(cdc, storeKey, ak, blockedAddrs, authority),
-		ak:            ak,
-		dk:            dk,
-		distrStoreKey: distrStoreKey,
-		cdc:           cdc,
+		BaseKeeper:        bankkeeper.NewBaseKeeper(cdc, storeService, ak, blockedAddrs, authority, logger),
+		ak:                ak,
+		dk:                dk,
+		distrStoreService: distrStoreService,
+		cdc:               cdc,
 	}
 }
 
-func (k BaseKeeper) BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
+func (k BaseKeeper) BurnCoins(ctx context.Context, moduleName string, amounts sdk.Coins) error {
 	switch moduleName {
 	case govtypes.ModuleName, stakingtypes.BondedPoolName, stakingtypes.NotBondedPoolName:
 		// send coins to distribution module
@@ -49,17 +54,19 @@ func (k BaseKeeper) BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Co
 		}
 
 		// update fee pool
-		kvstore := ctx.MultiStore().GetKVStore(k.distrStoreKey)
-		feePoolBin := kvstore.Get(distrtypes.FeePoolKey)
+		sb := collections.NewSchemaBuilder(k.distrStoreService)
+		feePoolItem := collections.NewItem(sb, distrtypes.FeePoolKey, "fee_pool", codec.CollValue[distrtypes.FeePool](k.cdc))
 
-		var feePool distrtypes.FeePool
-		k.cdc.MustUnmarshal(feePoolBin, &feePool)
+		feePool, err := feePoolItem.Get(ctx)
+		if err != nil {
+			return err
+		}
 
 		coins := sdk.NewDecCoinsFromCoins(amounts...)
 		feePool.CommunityPool = feePool.CommunityPool.Add(coins...)
-
-		b := k.cdc.MustMarshal(&feePool)
-		kvstore.Set(distrtypes.FeePoolKey, b)
+		if err := feePoolItem.Set(ctx, feePool); err != nil {
+			return err
+		}
 
 		return nil
 	}
