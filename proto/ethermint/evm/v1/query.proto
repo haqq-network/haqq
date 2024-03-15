@@ -7,6 +7,7 @@ import "ethermint/evm/v1/tx.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
+import "amino/amino.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/evm/types";
 
@@ -217,7 +218,10 @@ message QueryParamsRequest {}
 // QueryParamsResponse defines the response type for querying x/evm parameters.
 message QueryParamsResponse {
   // params define the evm module parameters.
-  Params params = 1 [ (gogoproto.nullable) = false ];
+  Params params = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
 }
 
 // EthCallRequest defines EthCall request
@@ -257,14 +261,19 @@ message QueryTraceTxRequest {
   // block_hash of requested transaction
   string block_hash = 6;
   // block_time of requested transaction
-  google.protobuf.Timestamp block_time = 7
-      [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
+  google.protobuf.Timestamp block_time = 7 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.stdtime) = true
+  ];
   // proposer_address is the proposer of the requested block
   bytes proposer_address = 8
       [ (gogoproto.casttype) =
             "github.com/cosmos/cosmos-sdk/types.ConsAddress" ];
   // chain_id is the the eip155 chain id parsed from the requested block header
   int64 chain_id = 9;
+  // block_max_gas of the block of the requested transaction
+  int64 block_max_gas = 10;
 }
 
 // QueryTraceTxResponse defines TraceTx response
@@ -284,14 +293,19 @@ message QueryTraceBlockRequest {
   // block_hash (hex) of the traced block
   string block_hash = 6;
   // block_time of the traced block
-  google.protobuf.Timestamp block_time = 7
-      [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
+  google.protobuf.Timestamp block_time = 7 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.stdtime) = true
+  ];
   // proposer_address is the address of the requested block
   bytes proposer_address = 8
       [ (gogoproto.casttype) =
             "github.com/cosmos/cosmos-sdk/types.ConsAddress" ];
   // chain_id is the eip155 chain id parsed from the requested block header
   int64 chain_id = 9;
+  // block_max_gas of the traced block
+  int64 block_max_gas = 10;
 }
 
 // QueryTraceBlockResponse defines TraceBlock response
@@ -308,5 +322,5 @@ message QueryBaseFeeRequest {}
 message QueryBaseFeeResponse {
   // base_fee is the EIP1559 base fee
   string base_fee = 1
-      [ (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int" ];
+      [ (gogoproto.customtype) = "cosmossdk.io/math.Int" ];
 }

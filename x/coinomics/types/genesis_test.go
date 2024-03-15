@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -25,7 +26,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 
 	newGen := NewGenesisState(
 		validParams,
-		sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
+		sdk.NewCoin("aISLM", sdkmath.NewInt(10_000_000_000)),
 	)
 
 	testCases := []struct {
@@ -52,7 +53,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 			"valid genesis",
 			&GenesisState{
 				Params:    validParams,
-				MaxSupply: sdk.NewCoin("aISLM", sdk.NewInt(10_000_000_000)),
+				MaxSupply: sdk.NewCoin("aISLM", sdkmath.NewInt(10_000_000_000)),
 			},
 			true,
 		},
