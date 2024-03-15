@@ -24,7 +24,7 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 			"default reward coefficient",
 			func() {
 				req = &types.QueryRewardCoefficientRequest{}
-				expRes = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(78, 1)}
+				expRes = &types.QueryRewardCoefficientResponse{RewardCoefficient: math.LegacyNewDecWithPrec(78, 1)}
 			},
 			true,
 		},
@@ -32,11 +32,11 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 			"set reward coefficient",
 			func() {
 				coinomicsParams := suite.app.CoinomicsKeeper.GetParams(s.ctx)
-				coinomicsParams.RewardCoefficient = sdk.NewDecWithPrec(10, 0)
+				coinomicsParams.RewardCoefficient = math.LegacyNewDecWithPrec(10, 0)
 				s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
 
 				req = &types.QueryRewardCoefficientRequest{}
-				expRes = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(10, 0)}
+				expRes = &types.QueryRewardCoefficientResponse{RewardCoefficient: math.LegacyNewDecWithPrec(10, 0)}
 			},
 			true,
 		},

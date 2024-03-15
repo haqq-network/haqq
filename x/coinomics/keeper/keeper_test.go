@@ -87,7 +87,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	startTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	suite.app = app
-	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, tmproto.Header{
 		Height:          1,
 		ChainID:         haqqtypes.MainNetChainID + "-1",
 		Time:            startTime,
@@ -118,24 +118,26 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.queryClient = types.NewQueryClient(queryHelper)
 
 	// staking module - bond denom
-	stakingParams := suite.app.StakingKeeper.GetParams(suite.ctx)
+	stakingParams, err := suite.app.StakingKeeper.GetParams(suite.ctx)
+	require.NoError(t, err)
 	stakingParams.BondDenom = suite.denom
 	err = suite.app.StakingKeeper.SetParams(suite.ctx, stakingParams)
 	require.NoError(t, err)
 
 	// Set Validator
 	valAddr := sdk.ValAddress(suite.address.Bytes())
-	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
+	validator, err := stakingtypes.NewValidator(valAddr.String(), privCons.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 
 	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
-	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, valAddr)
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 
 	// TODO change to setup with 1 validator
-	validators := s.app.StakingKeeper.GetValidators(s.ctx, 2)
+	validators, err := s.app.StakingKeeper.GetValidators(s.ctx, 2)
+	require.NoError(t, err)
 
 	// set a bonded validator that takes part in consensus
 	if validators[0].Status == stakingtypes.Bonded {
@@ -159,7 +161,7 @@ func (suite *KeeperTestSuite) CommitWithShift(numBlocks uint64, shift uint64) {
 
 func (suite *KeeperTestSuite) CommitBlock(shift uint64) {
 	header := suite.ctx.BlockHeader()
-	_ = suite.app.Commit()
+	_, _ = suite.app.Commit()
 
 	header.Height++
 	header.Time = header.Time.Add(time.Second * time.Duration(shift))
@@ -175,7 +177,7 @@ func (suite *KeeperTestSuite) CommitBlock(shift uint64) {
 	})
 
 	// update ctx
-	suite.ctx = suite.app.BaseApp.NewContext(false, header)
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
 	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
@@ -184,7 +186,7 @@ func (suite *KeeperTestSuite) CommitBlock(shift uint64) {
 
 func (suite *KeeperTestSuite) CommitLeapYear() {
 	header := suite.ctx.BlockHeader()
-	_ = suite.app.Commit()
+	_, _ = suite.app.Commit()
 
 	leapYearTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -202,7 +204,7 @@ func (suite *KeeperTestSuite) CommitLeapYear() {
 	})
 
 	// update ctx
-	suite.ctx = suite.app.BaseApp.NewContext(false, header)
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
 	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
