@@ -51,8 +51,7 @@ func TestKeeperTestSuite(t *testing.T) {
 
 // SetupTest setup test environment, it uses`require.TestingT` to support both `testing.T` and `testing.B`.
 func (suite *KeeperTestSuite) SetupTest() {
-	checkTx := false
 	chainID := utils.TestEdge2ChainID + "-1"
-	suite.app = app.Setup(checkTx, nil, chainID)
-	suite.SetupApp(checkTx, chainID)
+	suite.app, _ = app.Setup(false, nil, chainID)
+	suite.SetupApp(false, chainID)
 }
