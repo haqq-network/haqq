@@ -12,7 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
@@ -82,7 +81,8 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.denom = types.DefaultMintDenom
 
 	// setup context
-	app, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState())
+	chainId := haqqtypes.TestEdge2ChainID + "-1"
+	app, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState(), chainId)
 
 	startTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -167,14 +167,10 @@ func (suite *KeeperTestSuite) CommitBlock(shift uint64) {
 	header.Time = header.Time.Add(time.Second * time.Duration(shift))
 
 	// run begin block
-	suite.app.BeginBlock(abci.RequestBeginBlock{
-		Header: header,
-	})
+	suite.app.BeginBlocker(suite.ctx)
 
 	// run end block
-	suite.app.EndBlock(abci.RequestEndBlock{
-		Height: header.Height,
-	})
+	suite.app.EndBlocker(suite.ctx)
 
 	// update ctx
 	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)
@@ -194,14 +190,10 @@ func (suite *KeeperTestSuite) CommitLeapYear() {
 	header.Time = leapYearTime
 
 	// run begin block
-	suite.app.BeginBlock(abci.RequestBeginBlock{
-		Header: header,
-	})
+	suite.app.BeginBlocker(suite.ctx)
 
 	// run end block
-	suite.app.EndBlock(abci.RequestEndBlock{
-		Height: header.Height,
-	})
+	suite.app.EndBlocker(suite.ctx)
 
 	// update ctx
 	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)

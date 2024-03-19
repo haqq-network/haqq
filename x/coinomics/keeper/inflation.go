@@ -36,7 +36,8 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	params := k.GetParams(ctx)
 	rewardCoefficient := params.RewardCoefficient.Quo(math.LegacyNewDec(100))
 	prevBlockTS, _ := math.LegacyNewDecFromStr(k.GetPrevBlockTS(ctx).String())
-	totalBonded, _ := math.LegacyNewDecFromStr(k.stakingKeeper.TotalBondedTokens(ctx).String())
+	totalBondedInt, _ := k.stakingKeeper.TotalBondedTokens(ctx)
+	totalBonded, _ := math.LegacyNewDecFromStr(totalBondedInt.String())
 
 	// totalBonded * rewardCoefficient * ((currentBlockTS - prevBlockTS) / yearInMillis)
 	blockMint := totalBonded.Mul(rewardCoefficient).Mul((currentBlockTS.Sub(prevBlockTS)).Quo(yearInMillis))
