@@ -4,8 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
@@ -14,13 +13,13 @@ import (
 // AccountKeeper defines the expected interface needed to retrieve account info.
 type AccountKeeper interface {
 	transfertypes.AccountKeeper
-	GetAccount(sdk.Context, sdk.AccAddress) authtypes.AccountI
+	GetAccount(context.Context, sdk.AccAddress) sdk.AccountI
 }
 
 // BankKeeper defines the expected interface needed to check balances and send coins.
 type BankKeeper interface {
 	transfertypes.BankKeeper
-	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
+	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 }
 
 // ERC20Keeper defines the expected ERC20 keeper interface for supporting

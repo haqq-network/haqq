@@ -4,12 +4,12 @@ import (
 	"context"
 	"strings"
 
-	"github.com/armon/go-metrics"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/hashicorp/go-metrics"
 
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
@@ -47,25 +47,20 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 	pairID := k.erc20Keeper.GetTokenPairID(ctx, denom)
 	if len(pairID) == 0 {
 		// no-op: token is not registered so we can proceed with regular transfer
-		return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
+		return k.Keeper.Transfer(ctx, msg)
 	}
 
 	pair, _ := k.erc20Keeper.GetTokenPair(ctx, pairID)
 	if !pair.Enabled {
 		// no-op: pair is not enabled so we can proceed with regular transfer
-		return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
+		return k.Keeper.Transfer(ctx, msg)
 	}
 
 	sender := sdk.MustAccAddressFromBech32(msg.Sender)
-	senderAcc := k.accountKeeper.GetAccount(ctx, sender)
-
-	if erc20types.IsModuleAccount(senderAcc) {
-		return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
-	}
 
 	if !k.erc20Keeper.IsERC20Enabled(ctx) {
 		// no-op: continue with regular transfer
-		return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
+		return k.Keeper.Transfer(ctx, msg)
 	}
 
 	// update the msg denom to the token pair denom
@@ -85,7 +80,7 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 			)
 		}()
 
-		return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
+		return k.Keeper.Transfer(ctx, msg)
 	}
 
 	// only convert the remaining difference
@@ -99,7 +94,7 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 	)
 
 	// Use MsgConvertERC20 to convert the ERC20 to a Cosmos IBC Coin
-	if _, err := k.erc20Keeper.ConvertERC20(sdk.WrapSDKContext(ctx), msgConvertERC20); err != nil {
+	if _, err := k.erc20Keeper.ConvertERC20(ctx, msgConvertERC20); err != nil {
 		return nil, err
 	}
 
@@ -113,5 +108,5 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 		)
 	}()
 
-	return k.Keeper.Transfer(sdk.WrapSDKContext(ctx), msg)
+	return k.Keeper.Transfer(ctx, msg)
 }
