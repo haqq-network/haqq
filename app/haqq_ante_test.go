@@ -2,15 +2,15 @@ package app
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 
-	dbm "github.com/cometbft/cometbft-db"
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmed25519 "github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -19,8 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	// distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	// govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 
@@ -43,13 +41,13 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 	acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), 0, 0)
 	balance := banktypes.Balance{
 		Address: acc.GetAddress().String(),
-		Coins:   sdk.NewCoins(sdk.NewCoin("aISLM", sdk.NewInt(100000000000000))),
+		Coins:   sdk.NewCoins(sdk.NewCoin("aISLM", math.NewInt(100000000000000))),
 	}
 
 	chainID := MainnetChainID + "-1"
 	db := dbm.NewMemDB()
 	app := NewHaqq(
-		log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
+		log.NewTestLogger(t),
 		db, nil, true,
 		map[int64]bool{}, DefaultNodeHome, 0,
 		encoding.MakeConfig(ModuleBasics),
@@ -62,29 +60,32 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
 	require.NoError(t, err)
 
-	app.InitChain(
-		abci.RequestInitChain{
-			ChainId:       chainID,
-			Validators:    []abci.ValidatorUpdate{},
-			AppStateBytes: stateBytes,
-		},
-	)
-	app.Commit()
+	reqInit := abci.RequestInitChain{
+		ChainId:       chainID,
+		Validators:    []abci.ValidatorUpdate{},
+		AppStateBytes: stateBytes,
+	}
+	_, err = app.InitChain(&reqInit)
+	require.NoError(t, err)
+	_, err = app.Commit()
+	require.NoError(t, err)
 
 	handler := NewHaqqAnteHandlerDecorator(app.StakingKeeper, func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
 		return ctx, nil
 	})
 
 	t.Run("set validator", func(t *testing.T) {
-		ctx := app.NewContext(true, tmproto.Header{})
+		ctx := app.NewContextLegacy(true, tmproto.Header{})
 		validator, err := stakingtypes.NewValidator(
-			valAddr,
+			valAddr.String(),
 			valPkey.PubKey(),
 			stakingtypes.NewDescription("validator", "", "", "", ""),
 		)
 		require.NoError(t, err)
-		app.StakingKeeper.SetValidator(ctx, validator)
-		app.StakingKeeper.SetNewValidatorByPowerIndex(ctx, validator)
+		err = app.StakingKeeper.SetValidator(ctx, validator)
+		require.NoError(t, err)
+		err = app.StakingKeeper.SetNewValidatorByPowerIndex(ctx, validator)
+		require.NoError(t, err)
 	})
 
 	// TODO Need to fix. Distribution module doesn't have a handler for gov proposal now
@@ -117,12 +118,12 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 			newValPkey := ed25519.GenPrivKey()
 			newValAddr := sdk.ValAddress(newValPkey.PubKey().Address())
 			msg, err := stakingtypes.NewMsgCreateValidator(
-				newValAddr,
+				newValAddr.String(),
 				newValPkey.PubKey(),
 				sdk.NewInt64Coin(sdk.DefaultBondDenom, 50),
 				stakingtypes.NewDescription("testname", "", "", "", ""),
 				stakingtypes.CommissionRates{},
-				sdk.OneInt(),
+				math.OneInt(),
 			)
 			require.NoError(t, err)
 
@@ -133,7 +134,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 				Data:   nil,
 			}))
 
-			ctx := app.NewContext(true, tmproto.Header{Height: 1})
+			ctx := app.NewContextLegacy(true, tmproto.Header{Height: 1})
 			_, err = handler(ctx, builder.GetTx(), true)
 
 			t.Logf("### from unknown address %v ###", err)
@@ -143,12 +144,12 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 
 		t.Run("from validator address", func(t *testing.T) {
 			msg, err := stakingtypes.NewMsgCreateValidator(
-				valAddr,
+				valAddr.String(),
 				valPkey.PubKey(),
 				sdk.NewInt64Coin(sdk.DefaultBondDenom, 50),
 				stakingtypes.NewDescription("testname", "", "", "", ""),
 				stakingtypes.CommissionRates{},
-				sdk.OneInt(),
+				math.OneInt(),
 			)
 			require.NoError(t, err)
 
@@ -159,7 +160,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 				Data:   nil,
 			}))
 
-			ctx := app.NewContext(true, tmproto.Header{Height: 1})
+			ctx := app.NewContextLegacy(true, tmproto.Header{Height: 1})
 			_, err = handler(ctx, builder.GetTx(), true)
 			require.NoError(t, err)
 		})
@@ -170,7 +171,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 			delPkey := ed25519.GenPrivKey()
 			delAddr := sdk.AccAddress(delPkey.PubKey().Address())
 
-			msg := stakingtypes.NewMsgDelegate(delAddr, valAddr, sdk.NewCoin("aISLM", sdk.NewInt(10)))
+			msg := stakingtypes.NewMsgDelegate(delAddr.String(), valAddr.String(), sdk.NewCoin("aISLM", math.NewInt(10)))
 			builder := app.GetTxConfig().NewTxBuilder()
 			require.NoError(t, builder.SetMsgs(msg))
 			require.NoError(t, builder.SetSignatures(signing.SignatureV2{
@@ -178,7 +179,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 				Data:   nil,
 			}))
 
-			ctx := app.NewContext(true, tmproto.Header{Height: 1})
+			ctx := app.NewContextLegacy(true, tmproto.Header{Height: 1})
 			_, err := handler(ctx, builder.GetTx(), true)
 
 			require.NoError(t, err)
@@ -187,7 +188,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 		t.Run("from validator address", func(t *testing.T) {
 			delAddr := sdk.AccAddress(valPkey.PubKey().Address())
 
-			msg := stakingtypes.NewMsgDelegate(delAddr, valAddr, sdk.NewCoin("aISLM", sdk.NewInt(10)))
+			msg := stakingtypes.NewMsgDelegate(delAddr.String(), valAddr.String(), sdk.NewCoin("aISLM", math.NewInt(10)))
 			builder := app.GetTxConfig().NewTxBuilder()
 			require.NoError(t, builder.SetMsgs(msg))
 			require.NoError(t, builder.SetSignatures(signing.SignatureV2{
@@ -195,7 +196,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 				Data:   nil,
 			}))
 
-			ctx := app.NewContext(true, tmproto.Header{Height: 1})
+			ctx := app.NewContextLegacy(true, tmproto.Header{Height: 1})
 			_, err := handler(ctx, builder.GetTx(), true)
 
 			require.NoError(t, err)

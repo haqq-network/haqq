@@ -481,7 +481,7 @@ func NewHaqq(
 
 	app.Erc20Keeper = erc20keeper.NewKeeper(
 		keys[erc20types.StoreKey], appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
+		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper, app.AuthzKeeper, &app.TransferKeeper,
 	)
 
 	app.LiquidVestingKeeper = liquidvestingkeeper.NewKeeper(
@@ -522,6 +522,7 @@ func NewHaqq(
 		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
+		authAddr,
 	)
 
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
@@ -868,8 +869,6 @@ func (app *Haqq) setPostHandler() {
 // of the new block for every registered module. If there is a registered fork at the current height,
 // BeginBlocker will schedule the upgrade plan and perform the state migration (if any).
 func (app *Haqq) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	// Perform any scheduled forks before executing the modules logic
-	app.ScheduleForkUpgrade(ctx)
 	return app.mm.BeginBlock(ctx)
 }
 

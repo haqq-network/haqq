@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -18,10 +19,10 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
-	"github.com/cosmos/ibc-go/v7/testing/mock"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	"github.com/cosmos/ibc-go/v8/testing/mock"
 
-	"github.com/haqq-network/haqq/cmd/config"
+	"github.com/haqq-network/haqq/app/config"
 	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
@@ -31,9 +32,8 @@ import (
 const PremintAmount = 20_000_000_000
 
 func init() {
-	cfg := sdk.GetConfig()
-	config.SetBech32Prefixes(cfg)
-	config.SetBip44CoinType(cfg)
+	feemarkettypes.DefaultMinGasPrice = math.LegacyZeroDec()
+	config.SetupConfig()
 }
 
 // DefaultConsensusParams defines the default Tendermint consensus params used in
@@ -55,17 +55,11 @@ var DefaultConsensusParams = &tmproto.ConsensusParams{
 	},
 }
 
-func init() {
-	feemarkettypes.DefaultMinGasPrice = sdk.ZeroDec()
-	cfg := sdk.GetConfig()
-	config.SetBech32Prefixes(cfg)
-	config.SetBip44CoinType(cfg)
-}
-
 // Setup initializes a new Evmos. A Nop logger is set in Evmos.
 func Setup(
 	isCheckTx bool,
 	feemarketGenesis *feemarkettypes.GenesisState,
+	chainID string,
 ) (*Haqq, []byte) {
 	privVal := mock.NewPV()
 	pubKey, _ := privVal.GetPubKey()
@@ -87,7 +81,6 @@ func Setup(
 		Coins:   sdk.NewCoins(mintCoin),
 	}
 
-	chainID := utils.MainNetChainID + "-1"
 	db := dbm.NewMemDB()
 	app := NewHaqq(
 		log.NewNopLogger(),
@@ -118,7 +111,7 @@ func Setup(
 
 		// Initialize the chain
 		app.InitChain(
-			abci.RequestInitChain{
+			&abci.RequestInitChain{
 				ChainId:         chainID,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
@@ -152,15 +145,15 @@ func GenesisStateWithValSet(app *Haqq, genesisState types.GenesisState,
 			Jailed:            false,
 			Status:            stakingtypes.Bonded,
 			Tokens:            bondAmt,
-			DelegatorShares:   sdk.OneDec(),
+			DelegatorShares:   math.LegacyOneDec(),
 			Description:       stakingtypes.Description{},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
+			Commission:        stakingtypes.NewCommission(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
+			MinSelfDelegation: math.ZeroInt(),
 		}
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), val.Address.String(), math.LegacyOneDec()))
 
 	}
 	// set validators and delegations
