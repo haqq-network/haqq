@@ -3,8 +3,8 @@ package v5_test
 import (
 	"testing"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/haqq-network/haqq/app"
@@ -14,16 +14,23 @@ import (
 	"github.com/haqq-network/haqq/x/evm/types"
 )
 
+// AvailableExtraEIPs define the list of all EIPs that can be enabled by the
+// EVM interpreter. These EIPs are applied in order and can override the
+// instruction sets from the latest hard fork enabled by the ChainConfig. For
+// more info check:
+// https://github.com/ethereum/go-ethereum/blob/master/core/vm/interpreter.go#L97
+var AvailableExtraEIPs = []int64{1344, 1884, 2200, 2929, 3198, 3529}
+
 func TestMigrate(t *testing.T) {
 	encCfg := encoding.MakeConfig(app.ModuleBasics)
 	cdc := encCfg.Codec
 
-	storeKey := sdk.NewKVStoreKey(types.ModuleName)
-	tKey := sdk.NewTransientStoreKey("transient_test")
+	storeKey := storetypes.NewKVStoreKey(types.ModuleName)
+	tKey := storetypes.NewTransientStoreKey("transient_test")
 	ctx := testutil.DefaultContext(storeKey, tKey)
 	kvStore := ctx.KVStore(storeKey)
 
-	extraEIPs := v5types.V5ExtraEIPs{EIPs: types.AvailableExtraEIPs}
+	extraEIPs := v5types.V5ExtraEIPs{EIPs: AvailableExtraEIPs}
 	extraEIPsBz := cdc.MustMarshal(&extraEIPs)
 	chainConfig := types.DefaultChainConfig()
 	chainConfigBz := cdc.MustMarshal(&chainConfig)

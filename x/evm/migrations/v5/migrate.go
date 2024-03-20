@@ -1,10 +1,11 @@
 package v5
 
 import (
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/haqq-network/haqq/utils"
 	v5types "github.com/haqq-network/haqq/x/evm/migrations/v5/types"
 	"github.com/haqq-network/haqq/x/evm/types"
 )
@@ -32,7 +33,7 @@ func MigrateStore(
 	cdc.MustUnmarshal(extraEIPsBz, &extraEIPs)
 
 	// revert ExtraEIP change for Haqq testnet
-	if ctx.ChainID() == "haqq_54211-4" {
+	if ctx.ChainID() == utils.TestEdge2ChainID+"-1" {
 		extraEIPs.EIPs = []int64{}
 	}
 
