@@ -14,7 +14,7 @@ import (
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	"github.com/haqq-network/haqq/precompiles/staking"
-	testkeyring "github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
@@ -449,7 +449,7 @@ func (s *PrecompileTestSuite) TestRun() {
 				To:        &contractAddr,
 				Amount:    nil,
 				GasLimit:  tc.gas,
-				GasPrice:  app.MainnetMinGasPrices.BigInt(),
+				GasPrice:  app.MinGasPrices.BigInt(),
 				GasFeeCap: baseFee,
 				GasTipCap: big.NewInt(1),
 				Accesses:  &ethtypes.AccessList{},

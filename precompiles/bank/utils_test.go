@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/bank"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"

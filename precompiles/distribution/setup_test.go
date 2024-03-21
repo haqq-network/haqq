@@ -15,11 +15,11 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
 	"github.com/haqq-network/haqq/precompiles/distribution"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/factory"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/grpc"
-	testkeyring "github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/network"
-	infltypes "github.com/haqq-network/haqq/x/inflation/v1/types"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 
 type PrecompileTestSuite struct {
@@ -50,9 +50,9 @@ func (s *PrecompileTestSuite) SetupTest() {
 	keyring := testkeyring.New(2)
 	s.validatorsKeys = generateKeys(3)
 
-	// enable inflation for staking rewards
+	// enable coinomics for staking rewards
 	customGen := network.CustomGenesisState{}
-	customGen[infltypes.ModuleName] = infltypes.DefaultGenesisState()
+	customGen[coinomicstypes.ModuleName] = coinomicstypes.DefaultGenesisState()
 
 	// set some slashing events for integration test
 	distrGen := distrtypes.DefaultGenesisState()

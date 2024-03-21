@@ -14,11 +14,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/p256"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/factory"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/grpc"
-	testkeyring "github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/network"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/utils"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/utils"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 

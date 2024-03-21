@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/haqq-network/haqq/precompiles/bech32"
-	testkeyring "github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/network"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 )
 
 var s *PrecompileTestSuite

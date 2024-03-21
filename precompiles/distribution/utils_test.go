@@ -7,7 +7,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/haqq-network/haqq/precompiles/staking"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 

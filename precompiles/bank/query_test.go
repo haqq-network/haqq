@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/haqq-network/haqq/precompiles/bank"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/network"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 )
 
@@ -68,7 +68,7 @@ func (s *PrecompileTestSuite) TestBalances() {
 			"",
 			[]bank.Balance{
 				{
-					ContractAddress: s.evmosAddr,
+					ContractAddress: s.haqqAddr,
 					Amount:          network.PrefundedAccountInitialBalance.BigInt(),
 				},
 				{
@@ -88,7 +88,7 @@ func (s *PrecompileTestSuite) TestBalances() {
 			true,
 			"",
 			[]bank.Balance{{
-				ContractAddress: s.evmosAddr,
+				ContractAddress: s.haqqAddr,
 				Amount:          network.PrefundedAccountInitialBalance.BigInt(),
 			}, {
 				ContractAddress: s.xmplAddr,
@@ -145,7 +145,7 @@ func (s *PrecompileTestSuite) TestTotalSupply() {
 				ctx = s.mintAndSendXMPLCoin(ctx, s.keyring.GetAccAddr(0), math.NewInt(1e18))
 			},
 			[]bank.Balance{{
-				ContractAddress: s.evmosAddr,
+				ContractAddress: s.haqqAddr,
 				Amount:          evmosTotalSupply.BigInt(),
 			}, {
 				ContractAddress: s.xmplAddr,
@@ -242,7 +242,7 @@ func (s *PrecompileTestSuite) TestSupplyOf() {
 			"pass - EVMOS total supply",
 			func() []interface{} {
 				return []interface{}{
-					s.evmosAddr,
+					s.haqqAddr,
 				}
 			},
 			false,

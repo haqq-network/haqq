@@ -17,8 +17,8 @@ import (
 	"github.com/haqq-network/haqq/precompiles/erc20"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	commonfactory "github.com/haqq-network/haqq/testutil/integration/common/factory"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/factory"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 

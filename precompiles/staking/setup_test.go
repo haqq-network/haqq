@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/haqq-network/haqq/precompiles/staking"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/factory"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/grpc"
-	testkeyring "github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/network"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 )
 
 type PrecompileTestSuite struct {

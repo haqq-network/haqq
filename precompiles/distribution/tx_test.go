@@ -14,7 +14,7 @@ import (
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/distribution"
 	"github.com/haqq-network/haqq/precompiles/testutil"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/network"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 )

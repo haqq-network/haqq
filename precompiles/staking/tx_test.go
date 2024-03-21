@@ -14,7 +14,7 @@ import (
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/staking"
 	"github.com/haqq-network/haqq/precompiles/testutil"
-	testkeyring "github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 )
