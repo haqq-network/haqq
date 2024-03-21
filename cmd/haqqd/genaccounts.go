@@ -177,14 +177,14 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 				// The vesting and lockup schedules must describe the same total amount.
 				// IsEqual can panic, so use (a == b) <=> (a <= b && b <= a).
-				if !(vestingCoins.IsAllLTE(lockupCoins) && lockupCoins.IsAllLTE(vestingCoins)) {
+				if !vestingtypes.CoinEq(lockupCoins, vestingCoins) {
 					return fmt.Errorf("lockup (%s) and vesting (%s) amounts must be equal",
 						lockupCoins, vestingCoins,
 					)
 				}
 
 				// Check if account balance is aligned with vesting schedule
-				if !(vestingCoins.IsAllLTE(coins) && coins.IsAllLTE(vestingCoins)) {
+				if !vestingCoins.Equal(coins) {
 					return fmt.Errorf("vestingCoins (%s) and coin balance (%s) amounts must be equal",
 						vestingCoins, coins,
 					)

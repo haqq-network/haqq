@@ -13,7 +13,7 @@ import (
 func main() {
 	config.SetupConfig()
 
-	rootCmd := NewRootCmd()
+	rootCmd, _ := NewRootCmd()
 
 	if err := svrcmd.Execute(rootCmd, app.DaemonName, app.DefaultNodeHome); err != nil {
 		fmt.Fprintln(rootCmd.OutOrStderr(), err) // nolint: errcheck
