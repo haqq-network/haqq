@@ -6,9 +6,9 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/evmos/evmos/v16/precompiles/staking"
-	"github.com/evmos/evmos/v16/testutil/integration/evmos/keyring"
-	inflationtypes "github.com/evmos/evmos/v16/x/inflation/v1/types"
+	"github.com/haqq-network/haqq/precompiles/staking"
+	"github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 
 type stakingRewards struct {
@@ -55,7 +55,7 @@ func (s *PrecompileTestSuite) mintCoinsForDistrMod(ctx sdk.Context, amount sdk.C
 	// Minting tokens for the FeeCollector to simulate fee accrued.
 	if err := s.network.App.BankKeeper.MintCoins(
 		ctx,
-		inflationtypes.ModuleName,
+		coinomicstypes.ModuleName,
 		amount,
 	); err != nil {
 		return err
@@ -63,7 +63,7 @@ func (s *PrecompileTestSuite) mintCoinsForDistrMod(ctx sdk.Context, amount sdk.C
 
 	return s.network.App.BankKeeper.SendCoinsFromModuleToModule(
 		ctx,
-		inflationtypes.ModuleName,
+		coinomicstypes.ModuleName,
 		distrtypes.ModuleName,
 		amount,
 	)
@@ -73,10 +73,10 @@ func (s *PrecompileTestSuite) mintCoinsForDistrMod(ctx sdk.Context, amount sdk.C
 // base denomination.
 func (s *PrecompileTestSuite) fundAccountWithBaseDenom(ctx sdk.Context, addr sdk.AccAddress, amount math.Int) error {
 	coins := sdk.NewCoins(sdk.NewCoin(s.bondDenom, amount))
-	if err := s.network.App.BankKeeper.MintCoins(ctx, inflationtypes.ModuleName, coins); err != nil {
+	if err := s.network.App.BankKeeper.MintCoins(ctx, coinomicstypes.ModuleName, coins); err != nil {
 		return err
 	}
-	return s.network.App.BankKeeper.SendCoinsFromModuleToAccount(ctx, inflationtypes.ModuleName, addr, coins)
+	return s.network.App.BankKeeper.SendCoinsFromModuleToAccount(ctx, coinomicstypes.ModuleName, addr, coins)
 }
 
 func (s *PrecompileTestSuite) getStakingPrecompile() (*staking.Precompile, error) {

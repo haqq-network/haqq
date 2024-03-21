@@ -3,24 +3,23 @@ package distribution_test
 import (
 	"testing"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-
-	infltypes "github.com/evmos/evmos/v16/x/inflation/v1/types"
-
-	"github.com/evmos/evmos/v16/precompiles/distribution"
-	"github.com/evmos/evmos/v16/testutil/integration/evmos/factory"
-	"github.com/evmos/evmos/v16/testutil/integration/evmos/grpc"
-	testkeyring "github.com/evmos/evmos/v16/testutil/integration/evmos/keyring"
-	"github.com/evmos/evmos/v16/testutil/integration/evmos/network"
-
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	"github.com/stretchr/testify/suite"
+
+	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+
+	"github.com/haqq-network/haqq/precompiles/distribution"
+	"github.com/haqq-network/haqq/testutil/integration/evmos/factory"
+	"github.com/haqq-network/haqq/testutil/integration/evmos/grpc"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/evmos/network"
+	infltypes "github.com/haqq-network/haqq/x/inflation/v1/types"
 )
 
 type PrecompileTestSuite struct {

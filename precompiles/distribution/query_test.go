@@ -12,10 +12,9 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 
-	testutiltx "github.com/evmos/evmos/v16/testutil/tx"
-
-	cmn "github.com/evmos/evmos/v16/precompiles/common"
-	"github.com/evmos/evmos/v16/precompiles/distribution"
+	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/precompiles/distribution"
+	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 )
 
 var expValAmount int64 = 1
