@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 
+	addresscodec "cosmossdk.io/core/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -23,5 +24,6 @@ type DistributionKeeper interface {
 // in the context of the AnteHandler utils package.
 type StakingKeeper interface {
 	BondDenom(ctx context.Context) (string, error)
+	ValidatorAddressCodec() addresscodec.Codec
 	IterateDelegations(ctx context.Context, delegator sdk.AccAddress, fn func(index int64, delegation stakingtypes.DelegationI) (stop bool)) error
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
+	anteutils "github.com/haqq-network/haqq/app/ante/utils"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
@@ -17,13 +18,13 @@ import (
 // VestingDelegationDecorator validates delegation of vested coins
 type VestingDelegationDecorator struct {
 	ak  evmtypes.AccountKeeper
-	sk  vestingtypes.StakingKeeper
+	sk  anteutils.StakingKeeper
 	bk  evmtypes.BankKeeper
 	cdc codec.BinaryCodec
 }
 
 // NewVestingDelegationDecorator creates a new VestingDelegationDecorator
-func NewVestingDelegationDecorator(ak evmtypes.AccountKeeper, sk vestingtypes.StakingKeeper, bk evmtypes.BankKeeper, cdc codec.BinaryCodec) VestingDelegationDecorator {
+func NewVestingDelegationDecorator(ak evmtypes.AccountKeeper, sk anteutils.StakingKeeper, bk evmtypes.BankKeeper, cdc codec.BinaryCodec) VestingDelegationDecorator {
 	return VestingDelegationDecorator{
 		ak:  ak,
 		sk:  sk,
@@ -76,38 +77,43 @@ func (vdd VestingDelegationDecorator) validateMsg(ctx sdk.Context, msg sdk.Msg) 
 		return nil
 	}
 
-	for _, addr := range msg.GetSigners() {
-		acc := vdd.ak.GetAccount(ctx, addr)
-		if acc == nil {
-			return errorsmod.Wrapf(
-				errortypes.ErrUnknownAddress,
-				"account %s does not exist", addr,
-			)
-		}
+	addr, err := vdd.ak.AddressCodec().StringToBytes(delegateMsg.DelegatorAddress)
+	if err != nil {
+		return err
+	}
+	acc := vdd.ak.GetAccount(ctx, addr)
+	if acc == nil {
+		return errorsmod.Wrapf(
+			errortypes.ErrUnknownAddress,
+			"account %s does not exist", addr,
+		)
+	}
 
-		clawbackAccount, isClawback := acc.(*vestingtypes.ClawbackVestingAccount)
-		if !isClawback {
-			// continue to next decorator as this logic only applies to vesting
-			return nil
-		}
+	clawbackAccount, isClawback := acc.(*vestingtypes.ClawbackVestingAccount)
+	if !isClawback {
+		// continue to next decorator as this logic only applies to vesting
+		return nil
+	}
 
-		// error if bond amount is > vested coins
-		bondDenom := vdd.sk.BondDenom(ctx)
-		balance := vdd.bk.GetBalance(ctx, addr, bondDenom)
-		unvestedOnly := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
-		spendable, hasNeg := sdk.Coins{balance}.SafeSub(unvestedOnly...)
-		if hasNeg {
-			spendable = sdk.NewCoins()
-		}
+	// error if bond amount is > vested coins
+	bondDenom, err := vdd.sk.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	balance := vdd.bk.GetBalance(ctx, addr, bondDenom)
+	unvestedOnly := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
+	spendable, hasNeg := sdk.Coins{balance}.SafeSub(unvestedOnly...)
+	if hasNeg {
+		spendable = sdk.NewCoins()
+	}
 
-		vested := spendable.AmountOf(bondDenom)
-		if vested.LT(delegateMsg.Amount.Amount) {
-			return errorsmod.Wrapf(
-				vestingtypes.ErrInsufficientVestedCoins,
-				"cannot delegate unvested coins. coins stakable < delegation amount (%s < %s)",
-				vested, delegateMsg.Amount.Amount,
-			)
-		}
+	vested := spendable.AmountOf(bondDenom)
+	if vested.LT(delegateMsg.Amount.Amount) {
+		return errorsmod.Wrapf(
+			vestingtypes.ErrInsufficientVestedCoins,
+			"cannot delegate unvested coins. coins stakable < delegation amount (%s < %s)",
+			vested, delegateMsg.Amount.Amount,
+		)
 	}
 
 	return nil

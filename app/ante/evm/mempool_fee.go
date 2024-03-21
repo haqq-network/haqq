@@ -51,13 +51,15 @@ func (mfd EthMempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulat
 	minGasPrice := ctx.MinGasPrices().AmountOf(evmDenom)
 
 	for _, msg := range tx.GetMsgs() {
-		ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
-		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
+		_, txData, _, err := evmtypes.UnpackEthMsg(msg)
+		if err != nil {
+			return ctx, err
 		}
 
-		fee := sdkmath.LegacyNewDecFromBigInt(ethMsg.GetFee())
-		gasLimit := sdkmath.LegacyNewDecFromBigInt(new(big.Int).SetUint64(ethMsg.GetGas()))
+		feeAmt := txData.Fee()
+		gas := txData.GetGas()
+		fee := sdkmath.LegacyNewDecFromBigInt(feeAmt)
+		gasLimit := sdkmath.LegacyNewDecFromBigInt(new(big.Int).SetUint64(gas))
 		requiredFee := minGasPrice.Mul(gasLimit)
 
 		if fee.LT(requiredFee) {

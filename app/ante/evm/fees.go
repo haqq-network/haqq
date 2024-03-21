@@ -1,10 +1,10 @@
 package evm
 
 import (
-	sdkmath "cosmossdk.io/math"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -44,16 +44,15 @@ func (empd EthMinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 	baseFee := empd.evmKeeper.GetBaseFee(ctx, ethCfg)
 
 	for _, msg := range tx.GetMsgs() {
-		ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
-		if !ok {
-			return ctx, errorsmod.Wrapf(
-				errortypes.ErrUnknownRequest,
-				"invalid message type %T, expected %T",
-				msg, (*evmtypes.MsgEthereumTx)(nil),
-			)
+		_, txData, _, err := evmtypes.UnpackEthMsg(msg)
+		if err != nil {
+			return ctx, err
 		}
 
-		feeAmt := ethMsg.GetFee()
+		feeAmt := txData.Fee()
+		gas := txData.GetGas()
+		fee := sdkmath.LegacyNewDecFromBigInt(feeAmt)
+		gasLimit := sdkmath.LegacyNewDecFromBigInt(new(big.Int).SetUint64(gas))
 
 		// For dynamic transactions, GetFee() uses the GasFeeCap value, which
 		// is the maximum gas price that the signer can pay. In practice, the
@@ -64,20 +63,12 @@ func (empd EthMinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 		// Transactions with MinGasPrices * gasUsed < tx fees < EffectiveFee are rejected
 		// by the feemarket AnteHandle
 
-		txData, err := evmtypes.UnpackTxData(ethMsg.Data)
-		if err != nil {
-			return ctx, errorsmod.Wrapf(err, "failed to unpack tx data %s", ethMsg.Hash)
-		}
-
 		if txData.TxType() != ethtypes.LegacyTxType {
-			feeAmt = ethMsg.GetEffectiveFee(baseFee)
+			feeAmt = txData.EffectiveFee(baseFee)
+			fee = sdkmath.LegacyNewDecFromBigInt(feeAmt)
 		}
-
-		gasLimit := sdkmath.LegacyNewDecFromBigInt(new(big.Int).SetUint64(ethMsg.GetGas()))
 
 		requiredFee := minGasPrice.Mul(gasLimit)
-		fee := sdkmath.LegacyNewDecFromBigInt(feeAmt)
-
 		if fee.LT(requiredFee) {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrInsufficientFee,

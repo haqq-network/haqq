@@ -8,6 +8,8 @@ import (
 	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 )
 
+var _ sdk.AnteDecorator = &EthSetupContextDecorator{}
+
 // EthSetupContextDecorator is adapted from SetUpContextDecorator from cosmos-sdk, it ignores gas consumption
 // by setting the gas meter to infinite
 type EthSetupContextDecorator struct {
@@ -21,6 +23,14 @@ func NewEthSetUpContextDecorator(evmKeeper EVMKeeper) EthSetupContextDecorator {
 }
 
 func (esc EthSetupContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	newCtx, err = SetupContext(ctx, tx, esc.evmKeeper)
+	if err != nil {
+		return ctx, err
+	}
+	return next(newCtx, tx, simulate)
+}
+
+func SetupContext(ctx sdk.Context, tx sdk.Tx, evmKeeper EVMKeeper) (sdk.Context, error) {
 	// all transactions must implement GasTx
 	_, ok := tx.(authante.GasTx)
 	if !ok {
@@ -28,12 +38,13 @@ func (esc EthSetupContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 	}
 
 	// We need to setup an empty gas config so that the gas is consistent with Ethereum.
-	newCtx = ctx.WithGasMeter(storetypes.NewInfiniteGasMeter()).
+	newCtx := ctx.WithGasMeter(storetypes.NewInfiniteGasMeter()).
 		WithKVGasConfig(storetypes.GasConfig{}).
 		WithTransientKVGasConfig(storetypes.GasConfig{})
 
 	// Reset transient gas used to prepare the execution of current cosmos tx.
 	// Transient gas-used is necessary to sum the gas-used of cosmos tx, when it contains multiple eth msgs.
-	esc.evmKeeper.ResetTransientGasUsed(ctx)
-	return next(newCtx, tx, simulate)
+	evmKeeper.ResetTransientGasUsed(ctx)
+
+	return newCtx, nil
 }

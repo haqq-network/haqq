@@ -84,22 +84,17 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 	evmDenom := evmParams.GetEvmDenom()
 
 	for _, msg := range protoTx.GetMsgs() {
-		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
-		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
+		_, txData, from, err := evmtypes.UnpackEthMsg(msg)
+		if err != nil {
+			return ctx, err
 		}
 
 		// Validate `From` field
-		if msgEthTx.From != "" {
-			return ctx, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid From %s, expect empty string", msgEthTx.From)
+		if from != nil {
+			return ctx, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid From %s, expect empty string", from)
 		}
 
-		txGasLimit += msgEthTx.GetGas()
-
-		txData, err := evmtypes.UnpackTxData(msgEthTx.Data)
-		if err != nil {
-			return ctx, errorsmod.Wrap(err, "failed to unpack MsgEthereumTx Data")
-		}
+		txGasLimit += txData.GetGas()
 
 		// return error if contract creation or call are disabled through governance
 		if !enableCreate && txData.GetTo() == nil {
