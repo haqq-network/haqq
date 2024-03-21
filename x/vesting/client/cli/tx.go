@@ -2,8 +2,6 @@ package cli
 
 import (
 	"fmt"
-	// "github.com/ethereum/go-ethereum/common"
-	// "strconv"
 	"time"
 
 	"github.com/spf13/cobra"
