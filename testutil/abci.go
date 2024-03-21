@@ -8,7 +8,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmtypes "github.com/cometbft/cometbft/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
@@ -24,7 +24,7 @@ import (
 //  2. DeliverTx
 //  3. EndBlock
 //  4. Commit
-func Commit(ctx sdk.Context, app *app.Haqq, t time.Duration, vs *tmtypes.ValidatorSet) (sdk.Context, error) {
+func Commit(ctx sdk.Context, app *app.Haqq, t time.Duration, vs *cmttypes.ValidatorSet) (sdk.Context, error) {
 	header, err := commit(ctx, app, t, vs)
 	if err != nil {
 		return ctx, err
@@ -36,7 +36,7 @@ func Commit(ctx sdk.Context, app *app.Haqq, t time.Duration, vs *tmtypes.Validat
 // CommitAndCreateNewCtx commits a block at a given time creating a ctx with the current settings
 // This is useful to keep test settings that could be affected by EndBlockers, e.g.
 // setting a baseFee == 0 and expecting this condition to continue after commit
-func CommitAndCreateNewCtx(ctx sdk.Context, app *app.Haqq, t time.Duration, vs *tmtypes.ValidatorSet) (sdk.Context, error) {
+func CommitAndCreateNewCtx(ctx sdk.Context, app *app.Haqq, t time.Duration, vs *cmttypes.ValidatorSet) (sdk.Context, error) {
 	header, err := commit(ctx, app, t, vs)
 	if err != nil {
 		return ctx, err
@@ -91,20 +91,42 @@ func DeliverEthTx(
 	priv cryptotypes.PrivKey,
 	msgs ...sdk.Msg,
 ) (abci.ExecTxResult, error) {
-	// TODO: replace with app.config.GetConfig()
-	cfg := encoding.MakeConfig(app.ModuleBasics)
+	txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
 
-	ethTx, err := tx.PrepareEthTx(cfg.TxConfig, appHaqq, priv, msgs...)
+	ethTx, err := tx.PrepareEthTx(txConfig, appHaqq, priv, msgs...)
+	if err != nil {
+		return abci.ExecTxResult{}, err
+	}
+	res, err := BroadcastTxBytes(appHaqq, txConfig.TxEncoder(), ethTx)
 	if err != nil {
 		return abci.ExecTxResult{}, err
 	}
 
-	res, err := BroadcastTxBytes(appHaqq, cfg.TxConfig.TxEncoder(), ethTx)
+	codec := encoding.MakeConfig(app.ModuleBasics).Codec
+	if _, err := CheckEthTxResponse(res, codec); err != nil {
+		return abci.ExecTxResult{}, err
+	}
+	return res, nil
+}
+
+// DeliverEthTxWithoutCheck generates and broadcasts a Cosmos Tx populated with MsgEthereumTx messages.
+// If a private key is provided, it will attempt to sign all messages with the given private key,
+// otherwise, it will assume the messages have already been signed. It does not check if the Eth tx is
+// successful or not.
+func DeliverEthTxWithoutCheck(
+	appHaqq *app.Haqq,
+	priv cryptotypes.PrivKey,
+	msgs ...sdk.Msg,
+) (abci.ExecTxResult, error) {
+	txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+
+	ethTx, err := tx.PrepareEthTx(txConfig, appHaqq, priv, msgs...)
 	if err != nil {
 		return abci.ExecTxResult{}, err
 	}
 
-	if _, err := CheckEthTxResponse(res, cfg.Codec); err != nil {
+	res, err := BroadcastTxBytes(appHaqq, txConfig.TxEncoder(), ethTx)
+	if err != nil {
 		return abci.ExecTxResult{}, err
 	}
 
@@ -119,7 +141,6 @@ func CheckTx(
 	gasPrice *sdkmath.Int,
 	msgs ...sdk.Msg,
 ) (abci.ResponseCheckTx, error) {
-	// TODO: replace with app.config.GetConfig()
 	txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
 
 	cosmosTx, err := tx.PrepareCosmosTx(
@@ -146,7 +167,6 @@ func CheckEthTx(
 	priv cryptotypes.PrivKey,
 	msgs ...sdk.Msg,
 ) (abci.ResponseCheckTx, error) {
-	// TODO: replace with app.config.GetConfig()
 	txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
 
 	ethTx, err := tx.PrepareEthTx(txConfig, appHaqq, priv, msgs...)
@@ -182,7 +202,7 @@ func BroadcastTxBytes(app *app.Haqq, txEncoder sdk.TxEncoder, tx sdk.Tx) (abci.E
 
 // commit is a private helper function that runs the EndBlocker logic, commits the changes,
 // updates the header, runs the BeginBlocker function and returns the updated header
-func commit(ctx sdk.Context, app *app.Haqq, t time.Duration, vs *tmtypes.ValidatorSet) (tmproto.Header, error) {
+func commit(ctx sdk.Context, app *app.Haqq, t time.Duration, vs *cmttypes.ValidatorSet) (tmproto.Header, error) {
 	header := ctx.BlockHeader()
 	req := abci.RequestFinalizeBlock{Height: header.Height}
 
@@ -238,10 +258,10 @@ func checkTxBytes(app *app.Haqq, txEncoder sdk.TxEncoder, tx sdk.Tx) (abci.Respo
 	return *res, nil
 }
 
-// applyValSetChanges takes in tmtypes.ValidatorSet and []abci.ValidatorUpdate and will return a new tmtypes.ValidatorSet which has the
+// applyValSetChanges takes in cmttypes.ValidatorSet and []abci.ValidatorUpdate and will return a new cmttypes.ValidatorSet which has the
 // provided validator updates applied to the provided validator set.
-func applyValSetChanges(valSet *tmtypes.ValidatorSet, valUpdates []abci.ValidatorUpdate) (*tmtypes.ValidatorSet, error) {
-	updates, err := tmtypes.PB2TM.ValidatorUpdates(valUpdates)
+func applyValSetChanges(valSet *cmttypes.ValidatorSet, valUpdates []abci.ValidatorUpdate) (*cmttypes.ValidatorSet, error) {
+	updates, err := cmttypes.PB2TM.ValidatorUpdates(valUpdates)
 	if err != nil {
 		return nil, err
 	}

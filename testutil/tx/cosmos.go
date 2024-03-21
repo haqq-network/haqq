@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	protov2 "google.golang.org/protobuf/proto"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/utils"
@@ -17,7 +18,7 @@ import (
 
 var (
 	feeAmt     = math.Pow10(16)
-	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdk.NewIntFromUint64(uint64(feeAmt))) // 0.01 EVMOS
+	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdkmath.NewIntFromUint64(uint64(feeAmt))) // 0.01 ISLM
 )
 
 // CosmosTxArgs contains the params to create a cosmos tx
@@ -87,12 +88,17 @@ func signCosmosTx(
 		return nil, err
 	}
 
+	signMode, err := authsigning.APISignModeToInternal(args.TxCfg.SignModeHandler().DefaultMode())
+	if err != nil {
+		return nil, err
+	}
+
 	// First round: we gather all the signer infos. We use the "set empty
 	// signature" hack to do that.
 	sigV2 := signing.SignatureV2{
 		PubKey: args.Priv.PubKey(),
 		Data: &signing.SingleSignatureData{
-			SignMode:  args.TxCfg.SignModeHandler().DefaultMode(),
+			SignMode:  signMode,
 			Signature: nil,
 		},
 		Sequence: seq,
@@ -112,7 +118,8 @@ func signCosmosTx(
 		Sequence:      seq,
 	}
 	sigV2, err = tx.SignWithPrivKey(
-		args.TxCfg.SignModeHandler().DefaultMode(),
+		ctx,
+		signMode,
 		signerData,
 		txBuilder, args.Priv, args.TxCfg,
 		seq,
@@ -136,6 +143,7 @@ var _ sdk.Tx = &InvalidTx{}
 // NOTE: This is used for testing purposes, to serve the edge case of invalid data being passed to functions.
 type InvalidTx struct{}
 
-func (InvalidTx) GetMsgs() []sdk.Msg { return []sdk.Msg{nil} }
+func (InvalidTx) GetMsgs() []sdk.Msg                    { return nil }
+func (InvalidTx) GetMsgsV2() ([]protov2.Message, error) { return nil, nil }
 
 func (InvalidTx) ValidateBasic() error { return nil }
