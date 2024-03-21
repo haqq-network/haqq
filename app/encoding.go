@@ -47,7 +47,7 @@ func initEncodingConfig() EncodingConfig {
 	std.RegisterLegacyAminoCodec(encConfig.Amino)
 	std.RegisterInterfaces(encConfig.InterfaceRegistry)
 
-	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasics.RegisterLegacyAminoCodec(encConfig.Amino)
 	ModuleBasics.RegisterInterfaces(encConfig.InterfaceRegistry)
 
 	return encConfig

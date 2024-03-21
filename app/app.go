@@ -19,6 +19,8 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
+	"cosmossdk.io/client/v2/autocli"
+	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmos "github.com/cometbft/cometbft/libs/os"
@@ -36,12 +38,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/gogoproto/proto"
 
-	simappparams "cosmossdk.io/simapp/params"
 	storetypes "cosmossdk.io/store/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	sdktestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
@@ -264,7 +266,7 @@ func NewHaqq(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig simappparams.EncodingConfig,
+	encodingConfig sdktestutil.TestEncodingConfig,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *Haqq {
@@ -1076,6 +1078,27 @@ func (app *Haqq) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 func (app *Haqq) GetTxConfig() client.TxConfig {
 	cfg := encoding.MakeConfig(ModuleBasics)
 	return cfg.TxConfig
+}
+
+// AutoCliOpts returns the autocli options for the app.
+func (app *Haqq) AutoCliOpts() autocli.AppOptions {
+	modules := make(map[string]appmodule.AppModule, 0)
+	for _, m := range app.mm.Modules {
+		if moduleWithName, ok := m.(module.HasName); ok {
+			moduleName := moduleWithName.Name()
+			if appModule, ok := moduleWithName.(appmodule.AppModule); ok {
+				modules[moduleName] = appModule
+			}
+		}
+	}
+
+	return autocli.AppOptions{
+		Modules:               modules,
+		ModuleOptions:         runtimeservices.ExtractAutoCLIOptions(app.mm.Modules),
+		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
+		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+	}
 }
 
 // RegisterSwaggerAPI registers swagger route with API Server
