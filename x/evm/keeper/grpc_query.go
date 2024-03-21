@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -101,18 +103,22 @@ func (k Keeper) ValidatorAccount(c context.Context, req *types.QueryValidatorAcc
 
 	ctx := sdk.UnwrapSDKContext(c)
 
-	validator, found := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
-	if !found {
-		return nil, fmt.Errorf("validator not found for %s", consAddr.String())
+	validator, err := k.stakingKeeper.GetValidatorByConsAddr(ctx, consAddr)
+	if err != nil {
+		return nil, fmt.Errorf("error while getting validator %s. %w", consAddr.String(), err)
 	}
 
-	accAddr := sdk.AccAddress(validator.GetOperator())
+	valAddr := validator.GetOperator()
+	addrBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(valAddr)
+	if err != nil {
+		return nil, fmt.Errorf("error while getting validator %s. %w", consAddr.String(), err)
+	}
 
 	res := types.QueryValidatorAccountResponse{
-		AccountAddress: accAddr.String(),
+		AccountAddress: valAddr,
 	}
 
-	account := k.accountKeeper.GetAccount(ctx, accAddr)
+	account := k.accountKeeper.GetAccount(ctx, addrBz)
 	if account != nil {
 		res.Sequence = account.GetSequence()
 		res.AccountNumber = account.GetAccountNumber()
@@ -251,6 +257,16 @@ func (k Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.Ms
 
 // EstimateGas implements eth_estimateGas rpc api.
 func (k Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*types.EstimateGasResponse, error) {
+	return k.EstimateGasInternal(c, req, types.RPC)
+}
+
+// EstimateGasInternal returns the gas estimation for the corresponding request.
+// This function is called from the RPC client (eth_estimateGas) and internally
+// by the CallEVMWithData function in the x/erc20 module keeper.
+// When called from the RPC client, we need to reset the gas meter before
+// simulating the transaction to have
+// an accurate gas estimation for EVM extensions transactions.
+func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest, fromType types.CallType) (*types.EstimateGasResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -262,7 +278,7 @@ func (k Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*type
 	}
 
 	if req.GasCap < ethparams.TxGas {
-		return nil, status.Error(codes.InvalidArgument, "gas cap cannot be lower than 21,000")
+		return nil, status.Errorf(codes.InvalidArgument, "gas cap cannot be lower than %d", ethparams.TxGas)
 	}
 
 	var args types.TransactionArgs
@@ -284,7 +300,7 @@ func (k Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*type
 	} else {
 		// Query block gas limit
 		params := ctx.ConsensusParams()
-		if params != nil && params.Block != nil && params.Block.MaxGas > 0 {
+		if params.Block != nil && params.Block.MaxGas > 0 {
 			hi = uint64(params.Block.MaxGas)
 		} else {
 			hi = req.GasCap
@@ -308,7 +324,7 @@ func (k Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*type
 	nonce := k.GetNonce(ctx, args.GetFrom())
 	args.Nonce = (*hexutil.Uint64)(&nonce)
 
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
 
 	// convert the tx args to an ethereum message
 	msg, err := args.ToMessage(req.GasCap, cfg.BaseFee)
@@ -336,8 +352,32 @@ func (k Keeper) EstimateGas(c context.Context, req *types.EthCallRequest) (*type
 			msg.IsFake(),
 		)
 
+		tmpCtx := ctx
+		if fromType == types.RPC {
+			tmpCtx, _ = ctx.CacheContext()
+
+			acct := k.GetAccount(tmpCtx, msg.From())
+
+			from := msg.From()
+			if acct == nil {
+				acc := k.accountKeeper.NewAccountWithAddress(tmpCtx, from[:])
+				k.accountKeeper.SetAccount(tmpCtx, acc)
+				acct = statedb.NewEmptyAccount()
+			}
+			// When submitting a transaction, the `EthIncrementSenderSequence` ante handler increases the account nonce
+			acct.Nonce = nonce + 1
+			err = k.SetAccount(tmpCtx, from, *acct)
+			if err != nil {
+				return true, nil, err
+			}
+			// resetting the gasMeter after increasing the sequence to have an accurate gas estimation on EVM extensions transactions
+			gasMeter := haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas())
+			tmpCtx = tmpCtx.WithGasMeter(gasMeter).
+				WithKVGasConfig(storetypes.GasConfig{}).
+				WithTransientKVGasConfig(storetypes.GasConfig{})
+		}
 		// pass false to not commit StateDB
-		rsp, err = k.ApplyMessageWithConfig(ctx, msg, nil, false, cfg, txConfig)
+		rsp, err = k.ApplyMessageWithConfig(tmpCtx, msg, nil, false, cfg, txConfig)
 		if err != nil {
 			if errors.Is(err, core.ErrIntrinsicGas) {
 				return true, nil, nil // Special case, raise gas limit
@@ -386,8 +426,8 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 		return nil, status.Errorf(codes.InvalidArgument, "output limit cannot be negative, got %d", req.TraceConfig.Limit)
 	}
 
-	// minus one to get the context of block beginning
-	contextHeight := req.BlockNumber - 1
+	// get the context of block beginning
+	contextHeight := req.BlockNumber
 	if contextHeight < 1 {
 		// 0 is a special value in `ContextWithHeight`
 		contextHeight = 1
@@ -397,6 +437,12 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 	ctx = ctx.WithBlockHeight(contextHeight)
 	ctx = ctx.WithBlockTime(req.BlockTime)
 	ctx = ctx.WithHeaderHash(common.Hex2Bytes(req.BlockHash))
+
+	// to get the base fee we only need the block max gas in the consensus params
+	ctx = ctx.WithConsensusParams(tmproto.ConsensusParams{
+		Block: &tmproto.BlockParams{MaxGas: req.BlockMaxGas},
+	})
+
 	chainID, err := getChainID(ctx, req.ChainId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -405,9 +451,21 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to load evm config: %s", err.Error())
 	}
+
+	// compute and use base fee of the height that is being traced
+	baseFee := k.feeMarketKeeper.CalculateBaseFee(ctx)
+	if baseFee != nil {
+		cfg.BaseFee = baseFee
+	}
+
 	signer := ethtypes.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()))
 
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
+
+	// gas used at this point corresponds to GetProposerAddress & CalculateBaseFee
+	// need to reset gas meter per transaction to be consistent with tx execution
+	// and avoid stacking the gas used of every predecessor in the same gas meter
+
 	for i, tx := range req.Predecessors {
 		ethTx := tx.AsTransaction()
 		msg, err := ethTx.AsMessage(signer, cfg.BaseFee)
@@ -416,6 +474,8 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 		}
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
+		// reset gas meter for each transaction
+		ctx = ctx.WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
 		rsp, err := k.ApplyMessageWithConfig(ctx, msg, types.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
 			continue
@@ -463,8 +523,8 @@ func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest)
 		return nil, status.Errorf(codes.InvalidArgument, "output limit cannot be negative, got %d", req.TraceConfig.Limit)
 	}
 
-	// minus one to get the context of block beginning
-	contextHeight := req.BlockNumber - 1
+	// get the context of block beginning
+	contextHeight := req.BlockNumber
 	if contextHeight < 1 {
 		// 0 is a special value in `ContextWithHeight`
 		contextHeight = 1
@@ -474,6 +534,12 @@ func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest)
 	ctx = ctx.WithBlockHeight(contextHeight)
 	ctx = ctx.WithBlockTime(req.BlockTime)
 	ctx = ctx.WithHeaderHash(common.Hex2Bytes(req.BlockHash))
+
+	// to get the base fee we only need the block max gas in the consensus params
+	ctx = ctx.WithConsensusParams(tmproto.ConsensusParams{
+		Block: &tmproto.BlockParams{MaxGas: req.BlockMaxGas},
+	})
+
 	chainID, err := getChainID(ctx, req.ChainId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -483,11 +549,19 @@ func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to load evm config")
 	}
+
+	// compute and use base fee of height that is being traced
+	baseFee := k.feeMarketKeeper.CalculateBaseFee(ctx)
+	if baseFee != nil {
+		cfg.BaseFee = baseFee
+	}
+
 	signer := ethtypes.MakeSigner(cfg.ChainConfig, big.NewInt(ctx.BlockHeight()))
 	txsLength := len(req.Txs)
 	results := make([]*types.TxTraceResult, 0, txsLength)
 
-	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes()))
+	txConfig := statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash()))
+
 	for i, tx := range req.Txs {
 		result := types.TxTraceResult{}
 		ethTx := tx.AsTransaction()
@@ -586,6 +660,9 @@ func (k *Keeper) traceTx(
 		}
 	}()
 
+	// reset gas meter for tx
+	// to be consistent with tx execution gas meter
+	ctx = ctx.WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
 	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())

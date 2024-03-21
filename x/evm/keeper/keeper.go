@@ -4,10 +4,11 @@ import (
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -56,6 +57,11 @@ type Keeper struct {
 	hooks types.EvmHooks
 	// Legacy subspace
 	ss paramstypes.Subspace
+
+	// precompiles defines the map of all available precompiled smart contracts.
+	// Some these precompiled contracts might not be active depending on the EVM
+	// parameters.
+	precompiles map[common.Address]vm.PrecompiledContract
 }
 
 // NewKeeper generates new evm module keeper
@@ -333,13 +339,8 @@ func (k Keeper) getBaseFee(ctx sdk.Context, london bool) *big.Int {
 }
 
 // GetMinGasMultiplier returns the MinGasMultiplier param from the fee market module
-func (k Keeper) GetMinGasMultiplier(ctx sdk.Context) sdk.Dec {
-	fmkParmas := k.feeMarketKeeper.GetParams(ctx)
-	if fmkParmas.MinGasMultiplier.IsNil() {
-		// in case we are executing eth_call on a legacy block, returns a zero value.
-		return sdk.ZeroDec()
-	}
-	return fmkParmas.MinGasMultiplier
+func (k Keeper) GetMinGasMultiplier(ctx sdk.Context) math.LegacyDec {
+	return k.feeMarketKeeper.GetParams(ctx).MinGasMultiplier
 }
 
 // ResetTransientGasUsed reset gas used to prepare for execution of current cosmos tx, called in ante handler.
