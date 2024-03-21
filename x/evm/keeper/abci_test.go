@@ -1,8 +1,8 @@
 package keeper_test
 
 import (
-	testkeyring "github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/network"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 

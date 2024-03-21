@@ -16,11 +16,11 @@ import (
 
 	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/precompiles/staking"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/factory"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/grpc"
-	testkeyring "github.com/haqq-network/haqq/testutil/integration/evmos/keyring"
-	"github.com/haqq-network/haqq/testutil/integration/evmos/network"
-	integrationutils "github.com/haqq-network/haqq/testutil/integration/evmos/utils"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	integrationutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 

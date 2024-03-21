@@ -18,12 +18,10 @@ import (
 	bankprecompile "github.com/haqq-network/haqq/precompiles/bank"
 	"github.com/haqq-network/haqq/precompiles/bech32"
 	distprecompile "github.com/haqq-network/haqq/precompiles/distribution"
-	erc20precompile "github.com/haqq-network/haqq/precompiles/erc20"
 	ics20precompile "github.com/haqq-network/haqq/precompiles/ics20"
 	"github.com/haqq-network/haqq/precompiles/p256"
 	stakingprecompile "github.com/haqq-network/haqq/precompiles/staking"
-	//vestingprecompile "github.com/haqq-network/haqq/precompiles/vesting"
-	"github.com/haqq-network/haqq/utils"
+
 	erc20Keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
@@ -76,13 +74,6 @@ func AvailablePrecompiles(
 	bankPrecompile, err := bankprecompile.NewPrecompile(bankKeeper, erc20Keeper)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate bank precompile: %w", err))
-	}
-
-	var WISLMAddress common.Address
-	if utils.IsMainNetwork(chainID) {
-		WISLMAddress = common.HexToAddress(erc20precompile.WEVMOSContractMainnet)
-	} else {
-		WISLMAddress = common.HexToAddress(erc20precompile.WEVMOSContractTestnet)
 	}
 
 	// Stateless precompiles

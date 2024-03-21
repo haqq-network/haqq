@@ -2,11 +2,6 @@ package types
 
 import (
 	"fmt"
-	"github.com/haqq-network/haqq/precompiles/bank"
-	"github.com/haqq-network/haqq/precompiles/bech32"
-	"github.com/haqq-network/haqq/precompiles/distribution"
-	"github.com/haqq-network/haqq/precompiles/ics20"
-	"github.com/haqq-network/haqq/precompiles/staking"
 	"math/big"
 	"sort"
 	"strings"
@@ -20,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"golang.org/x/exp/slices"
 
-	"github.com/haqq-network/haqq/precompiles/p256"
 	"github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 )
@@ -36,13 +30,13 @@ var (
 	DefaultEnableCall = true
 	// AvailableEVMExtensions defines the default active precompiles
 	AvailableEVMExtensions = []string{
-		p256.PrecompileAddress,         // P256 precompile
-		bech32.PrecompileAddress,       // Bech32 precompile
-		staking.PrecompileAddress,      // Staking precompile
-		distribution.PrecompileAddress, // Distribution precompile
-		ics20.PrecompileAddress,        // ICS20 transfer precompile
+		"0x0000000000000000000000000000000000000100", // P256 precompile
+		"0x0000000000000000000000000000000000000400", // Bech32 precompile
+		"0x0000000000000000000000000000000000000800", // Staking precompile
+		"0x0000000000000000000000000000000000000801", // Distribution precompile
+		"0x0000000000000000000000000000000000000802", // ICS20 transfer precompile
 		//"0x0000000000000000000000000000000000000803", // Vesting precompile
-		bank.PrecompileAddress, // Bank precompile
+		"0x0000000000000000000000000000000000000804", // Bank precompile
 		//"0x0000000000000000000000000000000000000900", // Stride outpost
 		//"0x0000000000000000000000000000000000000901", // Osmosis outpost
 	}
