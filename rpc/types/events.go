@@ -24,9 +24,9 @@ const (
 
 	// Event Format 1 (the format used before PR #1062):
 	// ```
-	// ethereum_tx(amount, ethereumTxHash, [txIndex, txGasUsed], txHash, [receipient], ethereumTxFailed)
+	// ethereum_tx(amount, ethereumTxHash, [txIndex, txGasUsed], txHash, [recipient], ethereumTxFailed)
 	// tx_log(txLog, txLog, ...)
-	// ethereum_tx(amount, ethereumTxHash, [txIndex, txGasUsed], txHash, [receipient], ethereumTxFailed)
+	// ethereum_tx(amount, ethereumTxHash, [txIndex, txGasUsed], txHash, [recipient], ethereumTxFailed)
 	// tx_log(txLog, txLog, ...)
 	// ...
 	// ```
@@ -37,9 +37,9 @@ const (
 	// ethereum_tx(ethereumTxHash, txIndex)
 	// ethereum_tx(ethereumTxHash, txIndex)
 	// ...
-	// ethereum_tx(amount, ethereumTxHash, txIndex, txGasUsed, txHash, [receipient], ethereumTxFailed)
+	// ethereum_tx(amount, ethereumTxHash, txIndex, txGasUsed, txHash, [recipient], ethereumTxFailed)
 	// tx_log(txLog, txLog, ...)
-	// ethereum_tx(amount, ethereumTxHash, txIndex, txGasUsed, txHash, [receipient], ethereumTxFailed)
+	// ethereum_tx(amount, ethereumTxHash, txIndex, txGasUsed, txHash, [recipient], ethereumTxFailed)
 	// tx_log(txLog, txLog, ...)
 	// ...
 	// ```
@@ -75,7 +75,7 @@ type ParsedTxs struct {
 
 // ParseTxResult parse eth tx infos from cosmos-sdk events.
 // It supports two event formats, the formats are described in the comments of the format constants.
-func ParseTxResult(result *abci.ResponseDeliverTx, tx sdk.Tx) (*ParsedTxs, error) {
+func ParseTxResult(result *abci.ExecTxResult, tx sdk.Tx) (*ParsedTxs, error) {
 	format := eventFormatUnknown
 	// the index of current ethereum_tx event in format 1 or the second part of format 2
 	eventIndex := -1

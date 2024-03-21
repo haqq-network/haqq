@@ -9,11 +9,11 @@ import (
 
 // Tendermint/cosmos-sdk full-node start flags
 const (
-	WithTendermint = "with-tendermint"
-	Address        = "address"
-	Transport      = "transport"
-	TraceStore     = "trace-store"
-	CPUProfile     = "cpu-profile"
+	WithCometBFT = "with-cometbft"
+	Address      = "address"
+	Transport    = "transport"
+	TraceStore   = "trace-store"
+	CPUProfile   = "cpu-profile"
 	// The type of database for application and snapshots databases
 	AppDBBackend = "app-db-backend"
 )
@@ -77,7 +77,7 @@ func AddTxFlags(cmd *cobra.Command) (*cobra.Command, error) {
 	cmd.PersistentFlags().String(flags.FlagGasPrices, "", "Gas prices to determine the transaction fee (e.g. 10aISLM)")
 	cmd.PersistentFlags().String(flags.FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")                                                                                                   //nolint:lll
 	cmd.PersistentFlags().Float64(flags.FlagGasAdjustment, flags.DefaultGasAdjustment, "adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored ") //nolint:lll
-	cmd.PersistentFlags().StringP(flags.FlagBroadcastMode, "b", flags.BroadcastSync, "Transaction broadcasting mode (sync|async|block)")
+	cmd.PersistentFlags().StringP(flags.FlagBroadcastMode, "b", flags.BroadcastSync, "Transaction broadcasting mode (sync|async)")
 	cmd.PersistentFlags().String(flags.FlagKeyringBackend, keyring.BackendOS, "Select keyring's backend")
 
 	// --gas can accept integers and "simulate"

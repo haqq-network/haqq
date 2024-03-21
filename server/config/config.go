@@ -7,13 +7,42 @@ import (
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	"github.com/cometbft/cometbft/libs/strings"
 	"github.com/cosmos/cosmos-sdk/server/config"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/spf13/viper"
+
+	"github.com/cosmos/rosetta"
+	// NOT SUPPORTED IN SDK v0.50
+	// "github.com/crypto-org-chain/cronos/memiavl"
+	// memiavlcfg "github.com/crypto-org-chain/cronos/store/config"
 )
 
 const (
+	// ServerStartTime defines the time duration that the server need to stay running after startup
+	// for the startup be considered successful
+	ServerStartTime = 5 * time.Second
+
+	// DefaultAPIEnable is the default value for the parameter that defines if the cosmos REST API server is enabled
+	DefaultAPIEnable = false
+
+	// DefaultGRPCEnable is the default value for the parameter that defines if the gRPC server is enabled
+	DefaultGRPCEnable = false
+
+	// DefaultGRPCWebEnable is the default value for the parameter that defines if the gRPC web server is enabled
+	DefaultGRPCWebEnable = false
+
+	// DefaultJSONRPCEnable is the default value for the parameter that defines if the JSON-RPC server is enabled
+	DefaultJSONRPCEnable = false
+
+	// DefaultRosettaEnable is the default value for the parameter that defines if the Rosetta API server is enabled
+	DefaultRosettaEnable = false
+
+	// DefaultTelemetryEnable is the default value for the parameter that defines if the telemetry is enabled
+	DefaultTelemetryEnable = false
+
 	// DefaultGRPCAddress is the default address the gRPC server binds to.
 	DefaultGRPCAddress = "0.0.0.0:9900"
 
@@ -67,18 +96,61 @@ const (
 
 	// DefaultMaxOpenConnections represents the amount of open connections (unlimited = 0)
 	DefaultMaxOpenConnections = 0
+
+	// DefaultGasAdjustment value to use as default in gas-adjustment flag
+	DefaultGasAdjustment = 1.2
+
+	// DefaultRosettaBlockchain defines the default blockchain name for the rosetta server
+	DefaultRosettaBlockchain = "evmos"
+
+	// DefaultRosettaNetwork defines the default network name for the rosetta server
+	DefaultRosettaNetwork = "evmos"
+
+	// DefaultRosettaGasToSuggest defines the default gas to suggest for the rosetta server
+	DefaultRosettaGasToSuggest = 300_000
+
+	// DefaultRosettaDenomToSuggest defines the default denom for fee suggestion
+	DefaultRosettaDenomToSuggest = "aevmos"
+
+	// ============================
+	//           MemIAVL
+	// ============================
+
+	// DefaultMemIAVLEnable is the default value that defines if memIAVL is enabled
+	DefaultMemIAVLEnable = false
+
+	// DefaultZeroCopy is the default value that defines if
+	// the zero-copied slices must be retained beyond current block's execution
+	// the sdk address cache will be disabled if zero-copy is enabled
+	DefaultZeroCopy = false
+
+	// DefaultAsyncCommitBuffer value to use as default for the size of
+	// asynchronous commit queue when using memIAVL
+	DefaultAsyncCommitBuffer = 0
+
+	// DefaultSnapshotKeepRecent default value for how many old snapshots
+	// (excluding the latest one) should be kept after new snapshots
+	// when using memIAVL
+	DefaultSnapshotKeepRecent = 1
 )
+
+// DefaultRosettaGasPrices defines the default list of prices to suggest
+var DefaultRosettaGasPrices = sdk.NewDecCoins(sdk.NewDecCoin(DefaultRosettaDenomToSuggest, math.NewInt(4_000_000)))
 
 var evmTracers = []string{"json", "markdown", "struct", "access_list"}
 
 // Config defines the server's top level configuration. It includes the default app config
 // from the SDK as well as the EVM configuration to enable the JSON-RPC APIs.
 type Config struct {
-	config.Config
+	config.Config `mapstructure:",squash"`
 
 	EVM     EVMConfig     `mapstructure:"evm"`
 	JSONRPC JSONRPCConfig `mapstructure:"json-rpc"`
 	TLS     TLSConfig     `mapstructure:"tls"`
+	Rosetta RosettaConfig `mapstructure:"rosetta"`
+
+	// NOT SUPPORTED IN SDK v0.50
+	// MemIAVL MemIAVLConfig `mapstructure:"memiavl"`
 }
 
 // EVMConfig defines the application configuration values for the EVM.
@@ -142,12 +214,25 @@ type TLSConfig struct {
 	KeyPath string `mapstructure:"key-path"`
 }
 
+// RosettaConfig defines configuration for the Rosetta server.
+type RosettaConfig struct {
+	rosetta.Config
+	// Enable defines if the Rosetta server should be enabled.
+	Enable bool `mapstructure:"enable"`
+}
+
+// NOT SUPPORTED IN SDK v0.50
+// // MemIAVLConfig defines the configuration for memIAVL.
+// type MemIAVLConfig struct {
+// 	memiavlcfg.MemIAVLConfig
+// }
+
 // AppConfig helps to override default appConfig template and configs.
 // return "", nil if no custom configuration is required for the application.
 func AppConfig(denom string) (string, interface{}) {
 	// Optionally allow the chain developer to overwrite the SDK's default
 	// server config.
-	srvCfg := config.DefaultConfig()
+	customAppConfig := DefaultConfig()
 
 	// The SDK's default minimum gas price is set to "" (empty value) inside
 	// app.toml. If left empty by validators, the node will halt on startup.
@@ -162,28 +247,30 @@ func AppConfig(denom string) (string, interface{}) {
 	//
 	// In Haqq Network, we set the min gas prices to 0.
 	if denom != "" {
-		srvCfg.MinGasPrices = "0" + denom
-	}
-
-	customAppConfig := Config{
-		Config:  *srvCfg,
-		EVM:     *DefaultEVMConfig(),
-		JSONRPC: *DefaultJSONRPCConfig(),
-		TLS:     *DefaultTLSConfig(),
+		customAppConfig.Config.MinGasPrices = "0" + denom
 	}
 
 	customAppTemplate := config.DefaultConfigTemplate + DefaultConfigTemplate
 
-	return customAppTemplate, customAppConfig
+	return customAppTemplate, *customAppConfig
 }
 
 // DefaultConfig returns server's default configuration.
 func DefaultConfig() *Config {
+	defaultSDKConfig := config.DefaultConfig()
+	defaultSDKConfig.API.Enable = DefaultAPIEnable
+	defaultSDKConfig.GRPC.Enable = DefaultGRPCEnable
+	defaultSDKConfig.GRPCWeb.Enable = DefaultGRPCWebEnable
+	defaultSDKConfig.Telemetry.Enabled = DefaultTelemetryEnable
+
 	return &Config{
-		Config:  *config.DefaultConfig(),
+		Config:  *defaultSDKConfig,
 		EVM:     *DefaultEVMConfig(),
 		JSONRPC: *DefaultJSONRPCConfig(),
 		TLS:     *DefaultTLSConfig(),
+		Rosetta: *DefaultRosettaConfig(),
+		// NOT SUPPORTED ON SDK v0.50
+		// MemIAVL: *DefaultMemIAVLConfig(),
 	}
 }
 
@@ -217,7 +304,7 @@ func GetAPINamespaces() []string {
 // DefaultJSONRPCConfig returns an EVM config with the JSON-RPC API enabled by default
 func DefaultJSONRPCConfig() *JSONRPCConfig {
 	return &JSONRPCConfig{
-		Enable:                   true,
+		Enable:                   false,
 		API:                      GetDefaultAPINamespaces(),
 		Address:                  DefaultJSONRPCAddress,
 		WsAddress:                DefaultJSONRPCWsAddress,
@@ -315,53 +402,61 @@ func (c TLSConfig) Validate() error {
 	return nil
 }
 
-// GetConfig returns a fully parsed Config object.
-func GetConfig(v *viper.Viper) (Config, error) {
-	cfg, err := config.GetConfig(v)
-	if err != nil {
-		return Config{}, err
+// DefaultEVMConfig returns the default EVM configuration
+func DefaultRosettaConfig() *RosettaConfig {
+	return &RosettaConfig{
+		Config: rosetta.Config{
+			Blockchain:          DefaultRosettaBlockchain,
+			Network:             DefaultRosettaNetwork,
+			TendermintRPC:       rosetta.DefaultCometEndpoint,
+			GRPCEndpoint:        rosetta.DefaultGRPCEndpoint,
+			Addr:                rosetta.DefaultAddr,
+			Retries:             rosetta.DefaultRetries,
+			Offline:             rosetta.DefaultOffline,
+			EnableFeeSuggestion: rosetta.DefaultEnableFeeSuggestion,
+			GasToSuggest:        DefaultRosettaGasToSuggest,
+			DenomToSuggest:      DefaultRosettaDenomToSuggest,
+			GasPrices:           DefaultRosettaGasPrices,
+		},
+		Enable: DefaultRosettaEnable,
 	}
-
-	return Config{
-		Config: cfg,
-		EVM: EVMConfig{
-			Tracer:         v.GetString("evm.tracer"),
-			MaxTxGasWanted: v.GetUint64("evm.max-tx-gas-wanted"),
-		},
-		JSONRPC: JSONRPCConfig{
-			Enable:                   v.GetBool("json-rpc.enable"),
-			API:                      v.GetStringSlice("json-rpc.api"),
-			Address:                  v.GetString("json-rpc.address"),
-			WsAddress:                v.GetString("json-rpc.ws-address"),
-			GasCap:                   v.GetUint64("json-rpc.gas-cap"),
-			FilterCap:                v.GetInt32("json-rpc.filter-cap"),
-			FeeHistoryCap:            v.GetInt32("json-rpc.feehistory-cap"),
-			TxFeeCap:                 v.GetFloat64("json-rpc.txfee-cap"),
-			EVMTimeout:               v.GetDuration("json-rpc.evm-timeout"),
-			LogsCap:                  v.GetInt32("json-rpc.logs-cap"),
-			BlockRangeCap:            v.GetInt32("json-rpc.block-range-cap"),
-			HTTPTimeout:              v.GetDuration("json-rpc.http-timeout"),
-			HTTPIdleTimeout:          v.GetDuration("json-rpc.http-idle-timeout"),
-			MaxOpenConnections:       v.GetInt("json-rpc.max-open-connections"),
-			EnableIndexer:            v.GetBool("json-rpc.enable-indexer"),
-			MetricsAddress:           v.GetString("json-rpc.metrics-address"),
-			FixRevertGasRefundHeight: v.GetInt64("json-rpc.fix-revert-gas-refund-height"),
-			EnableVestingStats:       v.GetBool("json-rpc.enable-vesting-stats"),
-		},
-		TLS: TLSConfig{
-			CertificatePath: v.GetString("tls.certificate-path"),
-			KeyPath:         v.GetString("tls.key-path"),
-		},
-	}, nil
 }
 
-// ParseConfig retrieves the default environment configuration for the
-// application.
-func ParseConfig(v *viper.Viper) (*Config, error) {
-	conf := DefaultConfig()
-	err := v.Unmarshal(conf)
+// NOT SUPPORTED IN SDK v0.50
+// // DefaultMemIAVLConfig returns the default MemIAVL configuration
+// func DefaultMemIAVLConfig() *MemIAVLConfig {
+// 	return &MemIAVLConfig{memiavlcfg.MemIAVLConfig{
+// 		Enable:             DefaultMemIAVLEnable,
+// 		ZeroCopy:           DefaultZeroCopy,
+// 		AsyncCommitBuffer:  DefaultAsyncCommitBuffer,
+// 		SnapshotKeepRecent: DefaultSnapshotKeepRecent,
+// 		SnapshotInterval:   memiavl.DefaultSnapshotInterval,
+// 		CacheSize:          memiavlcfg.DefaultCacheSize,
+// 	}}
+// }
 
-	return conf, err
+// // Validate returns an error if the MemIAVL configuration fields are invalid.
+// func (c MemIAVLConfig) Validate() error {
+// 	// AsyncCommitBuffer can be -1, which means synchronous commit
+// 	if c.AsyncCommitBuffer < -1 {
+// 		return errors.New("AsyncCommitBuffer cannot be negative")
+// 	}
+
+// 	if c.CacheSize < 0 {
+// 		return errors.New("CacheSize cannot be negative")
+// 	}
+
+// 	return nil
+// }
+
+// GetConfig returns a fully parsed Config object.
+func GetConfig(v *viper.Viper) (Config, error) {
+	conf := DefaultConfig()
+	if err := v.Unmarshal(conf); err != nil {
+		return Config{}, fmt.Errorf("error extracting app config: %w", err)
+	}
+
+	return *conf, nil
 }
 
 // ValidateBasic returns an error any of the application configuration fields are invalid
@@ -377,6 +472,11 @@ func (c Config) ValidateBasic() error {
 	if err := c.TLS.Validate(); err != nil {
 		return errorsmod.Wrapf(errortypes.ErrAppConfig, "invalid tls config value: %s", err.Error())
 	}
+
+	// NOT SUPPORTED ON SDK v0.50
+	// if err := c.MemIAVL.Validate(); err != nil {
+	// 	return errorsmod.Wrapf(errortypes.ErrAppConfig, "invalid memIAVL config value: %s", err.Error())
+	// }
 
 	return c.Config.ValidateBasic()
 }

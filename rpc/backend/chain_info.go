@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"strconv"
 
-	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
-	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
+	"cosmossdk.io/math"
+	cmtrpcclient "github.com/cometbft/cometbft/rpc/client"
+	cmtrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -51,10 +52,10 @@ func (b *Backend) ChainConfig() *params.ChainConfig {
 }
 
 // GlobalMinGasPrice returns MinGasPrice param from FeeMarket
-func (b *Backend) GlobalMinGasPrice() (sdk.Dec, error) {
+func (b *Backend) GlobalMinGasPrice() (math.LegacyDec, error) {
 	res, err := b.queryClient.FeeMarket.Params(b.ctx, &feemarkettypes.QueryParamsRequest{})
 	if err != nil {
-		return sdk.ZeroDec(), err
+		return math.LegacyZeroDec(), err
 	}
 	return res.Params.MinGasPrice, nil
 }
@@ -63,15 +64,15 @@ func (b *Backend) GlobalMinGasPrice() (sdk.Dec, error) {
 // If the base fee is not enabled globally, the query returns nil.
 // If the London hard fork is not activated at the current height, the query will
 // return nil.
-func (b *Backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, error) {
+func (b *Backend) BaseFee(blockRes *cmtrpctypes.ResultBlockResults) (*big.Int, error) {
 	// return BaseFee if London hard fork is activated and feemarket is enabled
 	res, err := b.queryClient.BaseFee(rpctypes.ContextWithHeight(blockRes.Height), &evmtypes.QueryBaseFeeRequest{})
 	if err != nil || res.BaseFee == nil {
 		// we can't tell if it's london HF not enabled or the state is pruned,
 		// in either case, we'll fallback to parsing from begin blocker event,
 		// faster to iterate reversely
-		for i := len(blockRes.BeginBlockEvents) - 1; i >= 0; i-- {
-			evt := blockRes.BeginBlockEvents[i]
+		for i := len(blockRes.FinalizeBlockEvents) - 1; i >= 0; i-- {
+			evt := blockRes.FinalizeBlockEvents[i]
 			if evt.Type == feemarkettypes.EventTypeFeeMarket && len(evt.Attributes) > 0 {
 				baseFee, err := strconv.ParseInt(evt.Attributes[0].Value, 10, 64)
 				if err == nil {
@@ -91,15 +92,16 @@ func (b *Backend) BaseFee(blockRes *tmrpctypes.ResultBlockResults) (*big.Int, er
 }
 
 // CurrentHeader returns the latest block header
-func (b *Backend) CurrentHeader() *ethtypes.Header {
-	header, _ := b.HeaderByNumber(rpctypes.EthLatestBlockNumber) // #nosec G703
-	return header
+// This will return error as per node configuration
+// if the ABCI responses are discarded ('discard_abci_responses' config param)
+func (b *Backend) CurrentHeader() (*ethtypes.Header, error) {
+	return b.HeaderByNumber(rpctypes.EthLatestBlockNumber)
 }
 
 // PendingTransactions returns the transactions that are in the transaction pool
 // and have a from address that is one of the accounts this node manages.
 func (b *Backend) PendingTransactions() ([]*sdk.Tx, error) {
-	mc, ok := b.clientCtx.Client.(tmrpcclient.MempoolClient)
+	mc, ok := b.clientCtx.Client.(cmtrpcclient.MempoolClient)
 	if !ok {
 		return nil, errors.New("invalid rpc client")
 	}

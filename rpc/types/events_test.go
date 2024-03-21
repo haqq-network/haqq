@@ -12,7 +12,6 @@ import (
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
-//nolint:all
 func TestParseTxResult(t *testing.T) {
 	address := "0x57f96e6B86CdeFdB3d412547816a82E3E0EbF9D2"
 	txHash := common.BigToHash(big.NewInt(1))
@@ -20,12 +19,12 @@ func TestParseTxResult(t *testing.T) {
 
 	testCases := []struct {
 		name     string
-		response abci.ResponseDeliverTx
+		response abci.ExecTxResult
 		expTxs   []*ParsedTx // expected parse result, nil means expect error.
 	}{
 		{
 			"format 1 events",
-			abci.ResponseDeliverTx{
+			abci.ExecTxResult{
 				GasUsed: 21000,
 				Events: []abci.Event{
 					{Type: "coin_received", Attributes: []abci.EventAttribute{
@@ -81,7 +80,7 @@ func TestParseTxResult(t *testing.T) {
 		},
 		{
 			"format 2 events",
-			abci.ResponseDeliverTx{
+			abci.ExecTxResult{
 				GasUsed: 21000,
 				Events: []abci.Event{
 					{Type: "coin_received", Attributes: []abci.EventAttribute{
@@ -124,7 +123,7 @@ func TestParseTxResult(t *testing.T) {
 		},
 		{
 			"format 1 events, failed",
-			abci.ResponseDeliverTx{
+			abci.ExecTxResult{
 				GasUsed: 21000,
 				Events: []abci.Event{
 					{Type: evmtypes.EventTypeEthereumTx, Attributes: []abci.EventAttribute{
@@ -151,7 +150,7 @@ func TestParseTxResult(t *testing.T) {
 		},
 		{
 			"format 2 events failed",
-			abci.ResponseDeliverTx{
+			abci.ExecTxResult{
 				GasUsed: 21000,
 				Events: []abci.Event{
 					{Type: evmtypes.EventTypeEthereumTx, Attributes: []abci.EventAttribute{
@@ -172,7 +171,7 @@ func TestParseTxResult(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			parsed, err := ParseTxResult(&tc.response, nil)
+			parsed, err := ParseTxResult(&tc.response, nil) //#nosec G601 -- fine for tests
 			if tc.expTxs == nil {
 				require.Error(t, err)
 			} else {

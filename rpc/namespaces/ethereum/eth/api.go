@@ -3,7 +3,7 @@ package eth
 import (
 	"context"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -23,7 +23,8 @@ import (
 // otherwise specified, the interface is derived from the Alchemy Ethereum API:
 // https://docs.alchemy.com/alchemy/apis/ethereum
 type EthereumAPI interface {
-	// BlockNumber Getting Blocks
+	// Getting Blocks
+	//
 	// Retrieves information from a particular block in the blockchain.
 	BlockNumber() (hexutil.Uint64, error)
 	GetBlockByNumber(ethBlockNum rpctypes.BlockNumber, fullTx bool) (map[string]interface{}, error)
@@ -31,7 +32,8 @@ type EthereumAPI interface {
 	GetBlockTransactionCountByHash(hash common.Hash) *hexutil.Uint
 	GetBlockTransactionCountByNumber(blockNum rpctypes.BlockNumber) *hexutil.Uint
 
-	// GetTransactionByHash Reading Transactions
+	// Reading Transactions
+	//
 	// Retrieves information on the state data for addresses regardless of whether
 	// it is a user or a smart contract.
 	GetTransactionByHash(hash common.Hash) (*rpctypes.RPCTransaction, error)
@@ -41,7 +43,8 @@ type EthereumAPI interface {
 	GetTransactionByBlockNumberAndIndex(blockNum rpctypes.BlockNumber, idx hexutil.Uint) (*rpctypes.RPCTransaction, error)
 	// eth_getBlockReceipts
 
-	// SendRawTransaction Writing Transactions
+	// Writing Transactions
+	//
 	// Allows developers to both send ETH from one address to another, write data
 	// on-chain, and interact with smart contracts.
 	SendRawTransaction(data hexutil.Bytes) (common.Hash, error)
@@ -49,7 +52,8 @@ type EthereumAPI interface {
 	// eth_sendPrivateTransaction
 	// eth_cancel	PrivateTransaction
 
-	// Accounts Account Information
+	// Account Information
+	//
 	// Returns information regarding an address's stored on-chain data.
 	Accounts() ([]common.Address, error)
 	GetBalance(address common.Address, blockNrOrHash rpctypes.BlockNumberOrHash) (*hexutil.Big, error)
@@ -57,12 +61,14 @@ type EthereumAPI interface {
 	GetCode(address common.Address, blockNrOrHash rpctypes.BlockNumberOrHash) (hexutil.Bytes, error)
 	GetProof(address common.Address, storageKeys []string, blockNrOrHash rpctypes.BlockNumberOrHash) (*rpctypes.AccountResult, error)
 
-	// Call EVM/Smart Contract Execution
+	// EVM/Smart Contract Execution
+	//
 	// Allows developers to read data from the blockchain which includes executing
 	// smart contracts. However, no data is published to the Ethereum network.
 	Call(args evmtypes.TransactionArgs, blockNrOrHash rpctypes.BlockNumberOrHash, _ *rpctypes.StateOverride) (hexutil.Bytes, error)
 
-	// ProtocolVersion Chain Information
+	// Chain Information
+	//
 	// Returns information on the Ethereum network and internal settings.
 	ProtocolVersion() hexutil.Uint
 	GasPrice() (*hexutil.Big, error)
@@ -71,14 +77,15 @@ type EthereumAPI interface {
 	MaxPriorityFeePerGas() (*hexutil.Big, error)
 	ChainId() (*hexutil.Big, error)
 
-	// GetUncleByBlockHashAndIndex Getting Uncles
+	// Getting Uncles
+	//
 	// Returns information on uncle blocks are which are network rejected blocks and replaced by a canonical block instead.
 	GetUncleByBlockHashAndIndex(hash common.Hash, idx hexutil.Uint) map[string]interface{}
 	GetUncleByBlockNumberAndIndex(number, idx hexutil.Uint) map[string]interface{}
 	GetUncleCountByBlockHash(hash common.Hash) hexutil.Uint
 	GetUncleCountByBlockNumber(blockNum rpctypes.BlockNumber) hexutil.Uint
 
-	// Hashrate Proof of Work
+	// Proof of Work
 	Hashrate() hexutil.Uint64
 	Mining() bool
 
@@ -308,7 +315,10 @@ func (e *PublicAPI) FeeHistory(blockCount rpc.DecimalOrHex,
 // MaxPriorityFeePerGas returns a suggestion for a gas tip cap for dynamic fee transactions.
 func (e *PublicAPI) MaxPriorityFeePerGas() (*hexutil.Big, error) {
 	e.logger.Debug("eth_maxPriorityFeePerGas")
-	head := e.backend.CurrentHeader()
+	head, err := e.backend.CurrentHeader()
+	if err != nil {
+		return nil, err
+	}
 	tipcap, err := e.backend.SuggestGasTipCap(head.BaseFee)
 	if err != nil {
 		return nil, err

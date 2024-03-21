@@ -261,8 +261,9 @@ func (b *Backend) EthMsgsFromTendermintBlock(
 	for i, tx := range block.Txs {
 		// Check if tx exists on EVM by cross checking with blockResults:
 		//  - Include unsuccessful tx that exceeds block gas limit
+		//  - Include unsuccessful tx that failed when committing changes to stateDB
 		//  - Exclude unsuccessful tx with any other error but ExceedBlockGasLimit
-		if !rpctypes.TxSuccessOrExceedsBlockGasLimit(txResults[i]) {
+		if !rpctypes.TxSucessOrExpectedFailure(txResults[i]) {
 			b.logger.Debug("invalid tx result code", "cosmos-hash", hexutil.Encode(tx.Hash()))
 			continue
 		}
@@ -300,7 +301,7 @@ func (b *Backend) HeaderByNumber(blockNum rpctypes.BlockNumber) (*ethtypes.Heade
 
 	blockRes, err := b.TendermintBlockResultByNumber(&resBlock.Block.Height)
 	if err != nil {
-		return nil, fmt.Errorf("block result not found for height %d", resBlock.Block.Height)
+		return nil, fmt.Errorf("block result not found for height %d. %w", resBlock.Block.Height, err)
 	}
 
 	bloom, err := b.BlockBloom(blockRes)
@@ -350,7 +351,7 @@ func (b *Backend) HeaderByHash(blockHash common.Hash) (*ethtypes.Header, error) 
 
 // BlockBloom query block bloom filter from block results
 func (b *Backend) BlockBloom(blockRes *tmrpctypes.ResultBlockResults) (ethtypes.Bloom, error) {
-	for _, event := range blockRes.EndBlockEvents {
+	for _, event := range blockRes.FinalizeBlockEvents {
 		if event.Type != evmtypes.EventTypeBlockBloom {
 			continue
 		}
