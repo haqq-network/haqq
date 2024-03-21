@@ -5,13 +5,14 @@ import (
 	"math/big"
 	"strconv"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/app"
@@ -250,7 +251,7 @@ var _ = Describe("Convert receiving IBC to Erc20", Ordered, func() {
 
 			// Convert half of the available tokens
 			msgConvertERC20 := types.NewMsgConvertERC20(
-				sdk.NewInt(amount),
+				math.NewInt(amount),
 				senderAcc,
 				pair.GetERC20Contract(),
 				common.BytesToAddress(senderAcc.Bytes()),
@@ -259,7 +260,7 @@ var _ = Describe("Convert receiving IBC to Erc20", Ordered, func() {
 			err = msgConvertERC20.ValidateBasic()
 			s.Require().NoError(err)
 			// Use MsgConvertERC20 to convert the ERC20 to a Cosmos IBC Coin
-			_, err = s.app.Erc20Keeper.ConvertERC20(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertERC20)
+			_, err = s.app.Erc20Keeper.ConvertERC20(s.HaqqChain.GetContext(), msgConvertERC20)
 			s.Require().NoError(err)
 
 			// Check Balance
@@ -295,7 +296,7 @@ var _ = Describe("Convert receiving IBC to Erc20", Ordered, func() {
 
 			// Convert half of the available tokens
 			msgConvertERC20 := types.NewMsgConvertERC20(
-				sdk.NewInt(amount),
+				math.NewInt(amount),
 				senderAcc,
 				pair.GetERC20Contract(),
 				common.BytesToAddress(senderAcc.Bytes()),
@@ -304,7 +305,7 @@ var _ = Describe("Convert receiving IBC to Erc20", Ordered, func() {
 			err = msgConvertERC20.ValidateBasic()
 			s.Require().NoError(err)
 			// Use MsgConvertERC20 to convert the ERC20 to a Cosmos IBC Coin
-			_, err = s.app.Erc20Keeper.ConvertERC20(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertERC20)
+			_, err = s.app.Erc20Keeper.ConvertERC20(s.HaqqChain.GetContext(), msgConvertERC20)
 			s.Require().NoError(err)
 
 			// Check Balance
@@ -440,14 +441,16 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			originChain := s.HaqqChain
 			coin := pair.Denom
 			transfer := transfertypes.NewFungibleTokenPacketData(pair.Denom, strconv.Itoa(int(amount*2)), sender, receiver, "")
-			transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID, sdk.NewCoin(coin, sdk.NewInt(amount*2)), sender, receiver, timeoutHeight, 0, "")
+			transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID, sdk.NewCoin(coin, math.NewInt(amount*2)), sender, receiver, timeoutHeight, 0, "")
 
 			originChain.Coordinator.UpdateTimeForChain(originChain)
-			denom := originChain.App.(*app.Haqq).StakingKeeper.BondDenom(originChain.GetContext())
+			denom, err := originChain.App.(*app.Haqq).StakingKeeper.BondDenom(originChain.GetContext())
+			s.Require().Error(err)
+
 			fee := sdk.Coins{sdk.NewInt64Coin(denom, ibctesting.DefaultFeeAmt)}
 
 			_, _, err = ibctesting.SignAndDeliver(
-				originChain.T,
+				originChain.TB,
 				originChain.TxConfig,
 				originChain.App.GetBaseApp(),
 				[]sdk.Msg{transferMsg},
@@ -511,7 +514,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 
 			// Convert half of the available tokens
 			msgConvertERC20 := types.NewMsgConvertERC20(
-				sdk.NewInt(amount),
+				math.NewInt(amount),
 				senderAcc,
 				pair.GetERC20Contract(),
 				common.BytesToAddress(senderAcc.Bytes()),
@@ -520,7 +523,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			err = msgConvertERC20.ValidateBasic()
 			s.Require().NoError(err)
 			// Use MsgConvertERC20 to convert the ERC20 to a Cosmos IBC Coin
-			_, err = s.app.Erc20Keeper.ConvertERC20(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertERC20)
+			_, err = s.app.Erc20Keeper.ConvertERC20(s.HaqqChain.GetContext(), msgConvertERC20)
 			s.Require().NoError(err)
 
 			// Check Balance
@@ -579,15 +582,17 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			originEndpoint := path.EndpointB
 			originChain := s.HaqqChain
 			coin := pair.Denom
-			transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID, sdk.NewCoin(coin, sdk.NewInt(amount*2)), sender, receiver, timeoutHeight, 0, "")
+			transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID, sdk.NewCoin(coin, math.NewInt(amount*2)), sender, receiver, timeoutHeight, 0, "")
 
 			originChain.Coordinator.UpdateTimeForChain(originChain)
 
-			denom := originChain.App.(*app.Haqq).StakingKeeper.BondDenom(originChain.GetContext())
+			denom, err := originChain.App.(*app.Haqq).StakingKeeper.BondDenom(originChain.GetContext())
+			s.Require().Error(err)
+
 			fee := sdk.Coins{sdk.NewInt64Coin(denom, ibctesting.DefaultFeeAmt)}
 
 			_, _, err = ibctesting.SignAndDeliver(
-				originChain.T,
+				originChain.TB,
 				originChain.TxConfig,
 				originChain.App.GetBaseApp(),
 				[]sdk.Msg{transferMsg},
@@ -607,6 +612,78 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			// Check Balance didnt change
 			ibcOsmosBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), receiverAcc, erc20Denomtrace.IBCDenom())
 			s.Require().Equal(int64(0), ibcOsmosBalance.Amount.Int64())
+			balanceToken = s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(senderAcc.Bytes()))
+			s.Require().Equal(amount, balanceToken.Int64())
+		})
+		It("should timeout and reconvert to ERC20", func() {
+			// Mint tokens and send to receiver
+			_, err := s.app.Erc20Keeper.CallEVM(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, common.BytesToAddress(senderAcc.Bytes()), pair.GetERC20Contract(), true, "mint", common.BytesToAddress(senderAcc.Bytes()), big.NewInt(amount))
+			s.Require().NoError(err)
+
+			// Check Balance
+			balanceToken := s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(senderAcc.Bytes()))
+			s.Require().Equal(amount, balanceToken.Int64())
+
+			// Attempt to send erc20 into ibc, should automatically convert
+			// Send message that will timeout
+			path := s.pathOsmosisHaqq
+			originEndpoint := path.EndpointB
+			destEndpoint := path.EndpointA
+			originChain := s.HaqqChain
+			coin := pair.Denom
+			currentTime := s.HaqqChain.Coordinator.CurrentTime
+			timeout := uint64(currentTime.Unix() * 1000000000)
+			transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID,
+				sdk.NewCoin(coin, math.NewInt(amount)), sender, receiver, timeoutHeight, timeout, "")
+
+			originChain.Coordinator.UpdateTimeForChain(originChain)
+
+			denom, err := originChain.App.(*app.Haqq).StakingKeeper.BondDenom(originChain.GetContext())
+			s.Require().Error(err)
+
+			fee := sdk.Coins{sdk.NewInt64Coin(denom, ibctesting.DefaultFeeAmt)}
+
+			_, _, err = ibctesting.SignAndDeliver(
+				originChain.TB,
+				originChain.TxConfig,
+				originChain.App.GetBaseApp(),
+				[]sdk.Msg{transferMsg},
+				fee,
+				originChain.ChainID,
+				[]uint64{originChain.SenderAccount.GetAccountNumber()},
+				[]uint64{originChain.SenderAccount.GetSequence()},
+				true, originChain.SenderPrivKey,
+			)
+			s.Require().NoError(err)
+
+			// Check balance of erc20 depleted (converted to IBC coin)
+			balanceToken = s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(senderAcc.Bytes()))
+			s.Require().Equal(int64(0), balanceToken.Int64())
+
+			// NextBlock calls app.Commit()
+			originChain.NextBlock()
+
+			// increment sequence for successful transaction execution
+			err = originChain.SenderAccount.SetSequence(originChain.SenderAccount.GetSequence() + 1)
+			s.Require().NoError(err)
+
+			// Increment time so packet will timeout
+			originChain.Coordinator.IncrementTime()
+			s.IBCOsmosisChain.Coordinator.CommitBlock(s.IBCOsmosisChain)
+
+			// Recreate the packet that was sent
+			transfer := transfertypes.NewFungibleTokenPacketData(pair.Denom, strconv.Itoa(int(amount)), sender, receiver, "")
+			packet := channeltypes.NewPacket(transfer.GetBytes(), 1, originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID, destEndpoint.ChannelConfig.PortID, destEndpoint.ChannelID, timeoutHeight, timeout)
+
+			// need to update Haqq chain to prove missing ack
+			err = path.EndpointB.UpdateClient()
+			s.Require().NoError(err)
+			// Receive timeout
+			err = path.EndpointB.TimeoutPacket(packet)
+			s.Require().NoError(err)
+			originChain.NextBlock()
+
+			// Check that balance was reconverted to ERC20 and refunded to sender
 			balanceToken = s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(senderAcc.Bytes()))
 			s.Require().Equal(amount, balanceToken.Int64())
 		})
@@ -642,7 +719,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 
 			// Convert ibc vouchers to erc20 tokens
 			msgConvertCoin := types.NewMsgConvertCoin(
-				sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+				sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 				common.BytesToAddress(senderAcc.Bytes()),
 				senderAcc,
 			)
@@ -650,7 +727,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			err := msgConvertCoin.ValidateBasic()
 			s.Require().NoError(err)
 			// Use MsgConvertERC20 to convert the ERC20 to a Cosmos IBC Coin
-			_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+			_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 			s.Require().NoError(err)
 
 			s.HaqqChain.Coordinator.CommitBlock()
@@ -682,7 +759,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 
 			// Convert ibc vouchers to erc20 tokens
 			msgConvertCoin := types.NewMsgConvertCoin(
-				sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+				sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 				common.BytesToAddress(senderAcc.Bytes()),
 				senderAcc,
 			)
@@ -690,7 +767,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			s.Require().NoError(err)
 
 			// Use MsgConvertERC20 to convert the ERC20 to a Cosmos IBC Coin
-			_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+			_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 			s.Require().NoError(err)
 
 			s.HaqqChain.Coordinator.CommitBlock()
@@ -704,15 +781,17 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			currentTime := s.HaqqChain.Coordinator.CurrentTime
 			timeout := uint64(currentTime.Unix() * 1000000000)
 			transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID,
-				sdk.NewCoin(coin, sdk.NewInt(amount)), sender, receiver, timeoutHeight, timeout, "")
+				sdk.NewCoin(coin, math.NewInt(amount)), sender, receiver, timeoutHeight, timeout, "")
 
 			originChain.Coordinator.UpdateTimeForChain(originChain)
 
-			denom := originChain.App.(*app.Haqq).StakingKeeper.BondDenom(originChain.GetContext())
+			denom, err := originChain.App.(*app.Haqq).StakingKeeper.BondDenom(originChain.GetContext())
+			s.Require().Error(err)
+
 			fee := sdk.Coins{sdk.NewInt64Coin(denom, ibctesting.DefaultFeeAmt)}
 
 			_, _, err = ibctesting.SignAndDeliver(
-				originChain.T,
+				originChain.TB,
 				originChain.TxConfig,
 				originChain.App.GetBaseApp(),
 				[]sdk.Msg{transferMsg},
@@ -768,7 +847,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 
 			// Convert ibc vouchers to erc20 tokens
 			msgConvertCoin := types.NewMsgConvertCoin(
-				sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+				sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 				common.BytesToAddress(senderAcc.Bytes()),
 				senderAcc,
 			)
@@ -776,7 +855,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			s.Require().NoError(err)
 
 			// Use MsgConvertERC20 to convert the ERC20 to a Cosmos IBC Coin
-			_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+			_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 			s.Require().NoError(err)
 
 			s.HaqqChain.Coordinator.CommitBlock()
@@ -789,7 +868,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			coin := pair.Denom
 			timeout := uint64(0)
 			transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID,
-				sdk.NewCoin(coin, sdk.NewInt(amount)), sender, receiver, timeoutHeight, timeout, "")
+				sdk.NewCoin(coin, math.NewInt(amount)), sender, receiver, timeoutHeight, timeout, "")
 
 			_, err = ibctesting.SendMsgs(originChain, ibctesting.DefaultFeeAmt, transferMsg)
 			s.Require().NoError(err) // message committed
