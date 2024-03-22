@@ -143,7 +143,7 @@ which accepts a path for the resulting pprof file.
 				return err
 			}
 
-			serverCtx.Logger.Debug(fmt.Sprintf("received quit signal: %s", err.Error()))
+			serverCtx.Logger.Debug("received quit signal: node is gracefully shutdown")
 			return nil
 		},
 	}
