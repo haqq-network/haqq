@@ -46,7 +46,7 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	)
 
 	registry.RegisterImplementations(
-		(*authtypes.AccountI)(nil),
+		(*sdk.AccountI)(nil),
 		&sdkvesting.BaseVestingAccount{},
 		&ClawbackVestingAccount{},
 	)
