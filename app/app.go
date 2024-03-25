@@ -286,7 +286,7 @@ func NewHaqq(
 
 	// NOTE we use custom transaction decoder that supports the sdk.Tx interface instead of sdk.StdTx
 	bApp := baseapp.NewBaseApp(
-		DaemonName,
+		Name,
 		logger,
 		db,
 		encodingConfig.TxConfig.TxDecoder(),
@@ -296,37 +296,7 @@ func NewHaqq(
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
-	keys := storetypes.NewKVStoreKeys(
-		// SDK keys
-		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
-		distrtypes.StoreKey, slashingtypes.StoreKey,
-		govtypes.StoreKey, paramstypes.StoreKey, upgradetypes.StoreKey,
-		evidencetypes.StoreKey, capabilitytypes.StoreKey, consensusparamtypes.StoreKey,
-		feegrant.StoreKey, authzkeeper.StoreKey, crisistypes.StoreKey,
-		// ibc keys
-		ibcexported.StoreKey, ibctransfertypes.StoreKey,
-		// ica keys
-		icahosttypes.StoreKey,
-		// ethermint keys
-		evmtypes.StoreKey, feemarkettypes.StoreKey,
-		// evmos keys
-		erc20types.StoreKey,
-		epochstypes.StoreKey, vestingtypes.StoreKey,
-		// haqq keys
-		coinomicstypes.StoreKey,
-		liquidvestingtypes.StoreKey,
-	)
-
-	// Add the EVM transient store key
-	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
-	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
-
-	// TODO Change streaming initialization
-	//// load state streaming if enabled
-	//if _, _, err := streaming.LoadStreamingServices(bApp, appOpts, appCodec, logger, keys); err != nil {
-	//	fmt.Printf("failed to load state streaming: %s", err)
-	//	os.Exit(1)
-	//}
+	keys, tkeys, memKeys := StoreKeys()
 
 	app := &Haqq{
 		BaseApp:           bApp,
@@ -490,6 +460,22 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, app.Erc20Keeper, app.VestingKeeper,
 	)
 
+	chainID := bApp.ChainID()
+	// We call this after setting the hooks to ensure that the hooks are set on the keeper
+	app.EvmKeeper.WithPrecompiles(
+		evmkeeper.AvailablePrecompiles(
+			chainID,
+			*stakingKeeper,
+			app.DistrKeeper,
+			app.BankKeeper,
+			app.Erc20Keeper,
+			app.VestingKeeper,
+			app.AuthzKeeper,
+			app.TransferKeeper,
+			app.IBCKeeper.ChannelKeeper,
+		),
+	)
+
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
 		epochskeeper.NewMultiEpochHooks(
@@ -621,6 +607,11 @@ func NewHaqq(
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
 	)
 
+	// NOTE: upgrade module is required to be prioritized
+	app.mm.SetOrderPreBlockers(
+		upgradetypes.ModuleName,
+	)
+
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
 	// CanWithdrawInvariant invariant.
@@ -651,10 +642,10 @@ func NewHaqq(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
+		liquidvestingtypes.ModuleName,
 		erc20types.ModuleName,
 		coinomicstypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		liquidvestingtypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -682,14 +673,12 @@ func NewHaqq(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 
-		// Evmos modules
-		vestingtypes.ModuleName,
-		erc20types.ModuleName,
-
 		// Haqq modules
+		vestingtypes.ModuleName,
+		liquidvestingtypes.ModuleName,
+		erc20types.ModuleName,
 		coinomicstypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		liquidvestingtypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -703,7 +692,6 @@ func NewHaqq(
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
-		// NOTE: staking requires the claiming hook
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
@@ -802,6 +790,7 @@ func NewHaqq(
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
+			logger.Error("error on loading last version", "err", err)
 			tmos.Exit(err.Error())
 		}
 
