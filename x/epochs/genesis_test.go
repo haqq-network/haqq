@@ -1,6 +1,7 @@
 package epochs_test
 
 import (
+	"github.com/haqq-network/haqq/utils"
 	"testing"
 	"time"
 
@@ -19,8 +20,9 @@ func TestEpochsExportGenesis(t *testing.T) {
 	feemarketGenesis.Params.EnableHeight = 1
 	feemarketGenesis.Params.NoBaseFee = false
 
-	app, _ := simapp.Setup(false, feemarketGenesis)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	chainID := utils.TestEdge2ChainID + "-3"
+	app, _ := simapp.Setup(false, feemarketGenesis, chainID)
+	ctx := app.BaseApp.NewContextLegacy(false, tmproto.Header{})
 
 	chainStartTime := ctx.BlockTime()
 	chainStartHeight := ctx.BlockHeight()
@@ -50,8 +52,9 @@ func TestEpochsInitGenesis(t *testing.T) {
 	feemarketGenesis.Params.EnableHeight = 1
 	feemarketGenesis.Params.NoBaseFee = false
 
-	app, _ := simapp.Setup(false, feemarketGenesis)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	chainID := utils.TestEdge2ChainID + "-3"
+	app, _ := simapp.Setup(false, feemarketGenesis, chainID)
+	ctx := app.BaseApp.NewContextLegacy(false, tmproto.Header{})
 
 	// On init genesis, default epochs information is set
 	// To check init genesis again, should make it fresh status

@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"cosmossdk.io/math"
 	"encoding/json"
 	"math/big"
 	"testing"
@@ -82,12 +83,13 @@ func (suite *TransferETHTestSuite) DoSetupTest(t require.TestingT) {
 	suite.denom = "aISLM"
 
 	// setup context
-	haqqApp, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState())
+	chainID := haqqtypes.MainNetChainID + "-1"
+	haqqApp, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
 	suite.valAddr1 = valAddr1
 	suite.app = haqqApp
-	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, tmproto.Header{
 		Height:          1,
-		ChainID:         haqqtypes.MainNetChainID + "-1",
+		ChainID:         chainID,
 		Time:            time.Now().UTC(),
 		ProposerAddress: consAddress.Bytes(),
 
@@ -116,23 +118,25 @@ func (suite *TransferETHTestSuite) DoSetupTest(t require.TestingT) {
 	suite.queryClient = erc20types.NewQueryClient(queryHelper)
 
 	// staking module - bond denom
-	stakingParams := suite.app.StakingKeeper.GetParams(suite.ctx)
+	stakingParams, err := suite.app.StakingKeeper.GetParams(suite.ctx)
+	require.NoError(t, err)
 	stakingParams.BondDenom = suite.denom
 	err = suite.app.StakingKeeper.SetParams(suite.ctx, stakingParams)
 	require.NoError(t, err)
 
 	// Set Validator
 	valAddr := sdk.ValAddress(suite.address.Bytes())
-	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
+	validator, err := stakingtypes.NewValidator(valAddr.String(), privCons.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
-	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, valAddr)
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 
 	// TODO change to setup with 1 validator
-	validators := suite.app.StakingKeeper.GetValidators(suite.ctx, 2)
+	validators, err := suite.app.StakingKeeper.GetValidators(suite.ctx, 2)
+	require.NoError(t, err)
 
 	// set a bonded validator that takes part in consensus
 	if validators[0].Status == stakingtypes.Bonded {
@@ -150,7 +154,7 @@ func (suite *TransferETHTestSuite) Commit(numBlocks uint64) {
 
 func (suite *TransferETHTestSuite) CommitBlock() {
 	header := suite.ctx.BlockHeader()
-	_ = suite.app.Commit()
+	_, _ = suite.app.Commit()
 
 	header.Height++
 
@@ -165,7 +169,7 @@ func (suite *TransferETHTestSuite) CommitBlock() {
 	})
 
 	// update ctx
-	suite.ctx = suite.app.BaseApp.NewContext(false, header)
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
 	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
@@ -193,7 +197,7 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	ctx := sdk.WrapSDKContext(suite.ctx)
 
 	evmDenom := haqqtypes.BaseDenom
-	suite.MintToAccount(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(100000))))
+	suite.MintToAccount(sdk.NewCoins(sdk.NewCoin(evmDenom, math.NewInt(100000))))
 
 	suite.T().Log(suite.address.String())
 	balanceBefore, err := suite.queryClientEvm.Balance(ctx, &evm.QueryBalanceRequest{Address: suite.address.String()})
@@ -219,7 +223,7 @@ func (suite *TransferETHTestSuite) TestTransferETH() {
 	suite.Require().NoError(err)
 
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
-	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
+	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmDenom, math.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 
 	ercTransferTxParams := &evm.EvmTxArgs{
 		ChainID:   chainID,
