@@ -34,6 +34,7 @@ import (
 	"github.com/haqq-network/haqq/x/evm"
 	"github.com/haqq-network/haqq/x/feemarket"
 	"github.com/haqq-network/haqq/x/ibc/transfer"
+	"github.com/haqq-network/haqq/x/liquidvesting"
 	"github.com/haqq-network/haqq/x/vesting"
 )
 
@@ -69,6 +70,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{AppModuleBasic: &ibctransfer.AppModuleBasic{}},
 		vesting.AppModuleBasic{},
+		liquidvesting.AppModuleBasic{},
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
 		coinomics.AppModuleBasic{},

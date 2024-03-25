@@ -3,7 +3,10 @@ package keeper
 import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 )
 
@@ -12,8 +15,8 @@ type Keeper struct {
 	storeKey   storetypes.StoreKey
 	paramstore paramtypes.Subspace
 
-	accountKeeper types.AccountKeeper
-	bankKeeper    types.BankKeeper
+	accountKeeper authkeeper.AccountKeeper
+	bankKeeper    bankkeeper.Keeper
 	erc20Keeper   types.ERC20Keeper
 	vestingKeeper types.VestingKeeper
 }
@@ -23,8 +26,8 @@ func NewKeeper(
 	storeKey storetypes.StoreKey,
 	cdc codec.BinaryCodec,
 	ps paramtypes.Subspace,
-	ak types.AccountKeeper,
-	bk types.BankKeeper,
+	ak authkeeper.AccountKeeper,
+	bk bankkeeper.Keeper,
 	erc20 types.ERC20Keeper,
 	vk types.VestingKeeper,
 ) Keeper {

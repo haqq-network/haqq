@@ -240,8 +240,9 @@ type Haqq struct {
 	Erc20Keeper  erc20keeper.Keeper
 
 	// Haqq keepers
-	CoinomicsKeeper coinomicskeeper.Keeper
-	VestingKeeper   vestingkeeper.Keeper
+	CoinomicsKeeper     coinomicskeeper.Keeper
+	VestingKeeper       vestingkeeper.Keeper
+	LiquidVestingKeeper liquidvestingkeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -614,7 +615,7 @@ func NewHaqq(
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		liquidvesting.NewAppModule(appCodec, app.LiquidVestingKeeper, app.AccountKeeper, app.BankKeeper, app.Erc20Keeper),
+		liquidvesting.NewAppModule(app.LiquidVestingKeeper, app.AccountKeeper, app.BankKeeper, app.Erc20Keeper),
 
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),

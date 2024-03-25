@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -101,12 +102,12 @@ func (k Keeper) TotalLocked(
 		return false
 	})
 
-	lvmAcc := k.accountKeeper.GetModuleAccount(ctx, liquidvestingtypes.ModuleName)
-	if lvmAcc == nil {
-		panic(sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", lvmAcc))
+	lvmAddr := k.accountKeeper.GetModuleAddress(liquidvestingtypes.ModuleName)
+	if lvmAddr == nil {
+		panic(errors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", liquidvestingtypes.ModuleName))
 	}
 
-	escrowedLiquidBalance := k.bankKeeper.GetBalance(ctx, lvmAcc.GetAddress(), utils.BaseDenom)
+	escrowedLiquidBalance := k.bankKeeper.GetBalance(ctx, lvmAddr, utils.BaseDenom)
 	totalLocked = totalLocked.Add(escrowedLiquidBalance)
 
 	return &types.QueryTotalLockedResponse{
