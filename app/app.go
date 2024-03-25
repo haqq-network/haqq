@@ -150,8 +150,6 @@ import (
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
-	v172 "github.com/haqq-network/haqq/app/upgrades/v1.7.2"
-	v173 "github.com/haqq-network/haqq/app/upgrades/v1.7.3"
 	v180 "github.com/haqq-network/haqq/app/upgrades/v1.8.0"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
