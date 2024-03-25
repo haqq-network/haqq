@@ -110,12 +110,15 @@ func (k Keeper) ValidatorAccount(c context.Context, req *types.QueryValidatorAcc
 
 	valAddr := validator.GetOperator()
 	addrBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(valAddr)
+
+	accValAddr := sdk.AccAddress(addrBz).String()
+
 	if err != nil {
 		return nil, fmt.Errorf("error while getting validator %s. %w", consAddr.String(), err)
 	}
 
 	res := types.QueryValidatorAccountResponse{
-		AccountAddress: valAddr,
+		AccountAddress: accValAddr,
 	}
 
 	account := k.accountKeeper.GetAccount(ctx, addrBz)
