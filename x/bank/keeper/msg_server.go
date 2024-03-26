@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,12 +39,12 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 		err      error
 	)
 
-	if base, ok := k.Keeper.(BaseKeeper); ok {
-		from, err = base.ak.AddressCodec().StringToBytes(msg.FromAddress)
+	if _, ok := k.Keeper.(bankkeeper.BaseKeeper); ok {
+		from, err = k.ak.AddressCodec().StringToBytes(msg.FromAddress)
 		if err != nil {
 			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
 		}
-		to, err = base.ak.AddressCodec().StringToBytes(msg.ToAddress)
+		to, err = k.ak.AddressCodec().StringToBytes(msg.ToAddress)
 		if err != nil {
 			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 		}
