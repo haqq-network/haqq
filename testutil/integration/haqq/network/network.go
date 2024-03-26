@@ -121,8 +121,8 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 
 	delegations := createDelegations(validators, genAccounts[0].GetAddress())
 
-	// Create a new EvmosApp with the following params
-	evmosApp := createEvmosApp(n.cfg.chainID)
+	// Create a new HaqqApp with the following params
+	haqqApp := createHaqqApp(n.cfg.chainID)
 
 	stakingParams := StakingCustomGenesisState{
 		denom:       n.cfg.denom,
@@ -137,14 +137,14 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 
 	// Get the corresponding slashing info and missed block info
 	// for the created validators
-	slashingParams, err := getValidatorsSlashingGen(validators, evmosApp.StakingKeeper)
+	slashingParams, err := getValidatorsSlashingGen(validators, haqqApp.StakingKeeper)
 	if err != nil {
 		return err
 	}
 
 	// Configure Genesis state
 	genesisState := newDefaultGenesisState(
-		evmosApp,
+		haqqApp,
 		defaultGenesisParams{
 			genAccounts: genAccounts,
 			staking:     stakingParams,
@@ -155,7 +155,7 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 
 	// modify genesis state if there're any custom genesis state
 	// for specific modules
-	genesisState, err = customizeGenesis(evmosApp, n.cfg.customGenesisState, genesisState)
+	genesisState, err = customizeGenesis(haqqApp, n.cfg.customGenesisState, genesisState)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		}
 	}
 
-	if _, err := evmosApp.InitChain(
+	if _, err := haqqApp.InitChain(
 		&abcitypes.RequestInitChain{
 			ChainId:         n.cfg.chainID,
 			Validators:      []abcitypes.ValidatorUpdate{},
@@ -188,13 +188,13 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 	}
 
 	req := &abcitypes.RequestFinalizeBlock{
-		Height:             evmosApp.LastBlockHeight() + 1,
-		Hash:               evmosApp.LastCommitID().Hash,
+		Height:             haqqApp.LastBlockHeight() + 1,
+		Hash:               haqqApp.LastCommitID().Hash,
 		NextValidatorsHash: valSet.Hash(),
 		ProposerAddress:    valSet.Proposer.Address,
 	}
 
-	if _, err := evmosApp.FinalizeBlock(req); err != nil {
+	if _, err := haqqApp.FinalizeBlock(req); err != nil {
 		return err
 	}
 
@@ -210,10 +210,10 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		},
 	}
 	// TODO - this might not be the best way to initilize the context
-	n.ctx = evmosApp.BaseApp.NewContextLegacy(false, header)
+	n.ctx = haqqApp.BaseApp.NewContextLegacy(false, header)
 
 	// Commit genesis changes
-	if _, err := evmosApp.Commit(); err != nil {
+	if _, err := haqqApp.Commit(); err != nil {
 		return err
 	}
 
@@ -223,7 +223,7 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		blockMaxGas = uint64(consensusParams.Block.MaxGas)
 	}
 
-	n.app = evmosApp
+	n.app = haqqApp
 	n.ctx = n.ctx.WithConsensusParams(*consensusParams)
 	n.ctx = n.ctx.WithBlockGasMeter(types.NewInfiniteGasMeterWithLimit(blockMaxGas))
 

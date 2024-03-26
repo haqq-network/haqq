@@ -13,10 +13,11 @@ import (
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/utils"
+	haqqutils "github.com/haqq-network/haqq/utils"
 )
 
 func TestCheckBalances(t *testing.T) {
-	testDenom := "atest"
+	testDenom := haqqutils.BaseDenom
 	keyring := testkeyring.New(1)
 	nw := network.New(
 		network.WithDenom(testDenom),

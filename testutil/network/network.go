@@ -126,7 +126,7 @@ func DefaultConfig() Config {
 	}
 }
 
-// NewAppConstructor returns a new Evmos AppConstructor
+// NewAppConstructor returns a new Haqq AppConstructor
 func NewAppConstructor(encodingCfg sdktestutil.TestEncodingConfig, chainID string) AppConstructor {
 	return func(val Validator) servertypes.Application {
 		return app.NewHaqq(

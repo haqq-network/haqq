@@ -8,7 +8,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
-	evmostypes "github.com/haqq-network/haqq/types"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -36,12 +36,12 @@ func CheckTxTopics(res abcitypes.ExecTxResult, expectedTopics []string) error {
 
 // IsContractAccount checks if the given account is a contract account
 func IsContractAccount(acc sdk.AccountI) error {
-	contractETHAccount, ok := acc.(evmostypes.EthAccountI)
+	contractETHAccount, ok := acc.(haqqtypes.EthAccountI)
 	if !ok {
 		return fmt.Errorf("account is not an eth account")
 	}
 
-	if contractETHAccount.Type() != evmostypes.AccountTypeContract {
+	if contractETHAccount.Type() != haqqtypes.AccountTypeContract {
 		return fmt.Errorf("account is not a contract account")
 	}
 	return nil

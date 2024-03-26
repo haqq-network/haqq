@@ -36,7 +36,7 @@ func DefaultConfig() Config {
 	account, _ := testtx.NewAccAddressAndKey()
 	return Config{
 		chainID:            utils.MainNetChainID + "-1",
-		eip155ChainID:      big.NewInt(9001),
+		eip155ChainID:      big.NewInt(11235),
 		amountOfValidators: 3,
 		// No funded accounts besides the validators by default
 		preFundedAccounts: []sdktypes.AccAddress{account},

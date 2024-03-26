@@ -26,7 +26,7 @@ func newStakingTxFactory(bf BaseTxFactory) StakingTxFactory {
 
 // Delegate on behalf of the account associated with the given private key.
 // The defined amount will delegated to the specified validator.
-// The validator address should be in the format `evmosvaloper1...`.
+// The validator address should be in the format `haqqvaloper1...`.
 func (tf *stakingTxFactory) Delegate(delegatorPriv cryptotypes.PrivKey, validatorAddr string, amount sdk.Coin) error {
 	delegatorAccAddr := sdk.AccAddress(delegatorPriv.PubKey().Address())
 

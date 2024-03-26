@@ -46,7 +46,7 @@ func (tf *distributionTxFactory) SetWithdrawAddress(delegatorPriv cryptotypes.Pr
 
 // WithdrawDelegationRewards will withdraw any unclaimed staking rewards for the delegator associated with
 // the given private key from the validator.
-// The validator address should be in the format `evmosvaloper1...`.
+// The validator address should be in the format `haqqvaloper1...`.
 func (tf *distributionTxFactory) WithdrawDelegationRewards(delegatorPriv cryptotypes.PrivKey, validatorAddr string) error {
 	delegatorAccAddr := sdk.AccAddress(delegatorPriv.PubKey().Address())
 

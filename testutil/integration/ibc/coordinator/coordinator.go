@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
-	evmosibc "github.com/haqq-network/haqq/ibc/testing"
+	haqqtesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/testutil/integration/common/network"
 	ibcchain "github.com/haqq-network/haqq/testutil/integration/ibc/chain"
 )
@@ -115,8 +115,8 @@ func (c *IntegrationCoordinator) Setup(a, b string) IBCConnection {
 	chainA := c.coord.GetChain(a)
 	chainB := c.coord.GetChain(b)
 
-	path := evmosibc.NewTransferPath(chainA, chainB)
-	evmosibc.SetupPath(c.coord, path)
+	path := haqqtesting.NewTransferPath(chainA, chainB)
+	haqqtesting.SetupPath(c.coord, path)
 
 	return IBCConnection{
 		EndpointA: Endpoint{

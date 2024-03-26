@@ -18,11 +18,11 @@ const (
 	TokenToMint = 1e18
 )
 
-// RegisterEvmosERC20Coins uses the UnitNetwork to register the evmos token as an
+// RegisterIslmERC20Coins uses the UnitNetwork to register the ISLM token as an
 // ERC20 token. The function performs all the required steps for the registration
 // like registering the denom trace in the transfer keeper and minting the token
 // with the bank. Returns the TokenPair or an error.
-func RegisterEvmosERC20Coins(
+func RegisterIslmERC20Coins(
 	network network.UnitTestNetwork,
 	tokenReceiver sdk.AccAddress,
 ) (erc20types.TokenPair, error) {
@@ -49,20 +49,20 @@ func RegisterEvmosERC20Coins(
 		return erc20types.TokenPair{}, err
 	}
 
-	evmosMetadata, found := network.App.BankKeeper.GetDenomMetaData(network.GetContext(), utils.BaseDenom)
+	islmMetadata, found := network.App.BankKeeper.GetDenomMetaData(network.GetContext(), utils.BaseDenom)
 	if !found {
-		return erc20types.TokenPair{}, fmt.Errorf("expected evmos denom metadata")
+		return erc20types.TokenPair{}, fmt.Errorf("expected islm denom metadata")
 	}
 
-	_, err = network.App.Erc20Keeper.RegisterCoin(network.GetContext(), evmosMetadata)
+	_, err = network.App.Erc20Keeper.RegisterCoin(network.GetContext(), islmMetadata)
 	if err != nil {
 		return erc20types.TokenPair{}, err
 	}
 
-	evmosDenomID := network.App.Erc20Keeper.GetDenomMap(network.GetContext(), bondDenom)
-	tokenPair, ok := network.App.Erc20Keeper.GetTokenPair(network.GetContext(), evmosDenomID)
+	islmDenomID := network.App.Erc20Keeper.GetDenomMap(network.GetContext(), bondDenom)
+	tokenPair, ok := network.App.Erc20Keeper.GetTokenPair(network.GetContext(), islmDenomID)
 	if !ok {
-		return erc20types.TokenPair{}, fmt.Errorf("expected evmos erc20 token pair")
+		return erc20types.TokenPair{}, fmt.Errorf("expected islm erc20 token pair")
 	}
 
 	return tokenPair, nil

@@ -28,7 +28,7 @@ import (
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/types"
-	evmosutil "github.com/haqq-network/haqq/utils"
+	haqqutils "github.com/haqq-network/haqq/utils"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
@@ -36,7 +36,7 @@ import (
 )
 
 // genSetupFn is the type for the module genesis setup functions
-type genSetupFn func(evmosApp *app.Haqq, genesisState types.GenesisState, customGenesis interface{}) (types.GenesisState, error)
+type genSetupFn func(haqqApp *app.Haqq, genesisState types.GenesisState, customGenesis interface{}) (types.GenesisState, error)
 
 // defaultGenesisParams contains the params that are needed to
 // setup the default genesis for the testing setup
@@ -69,13 +69,13 @@ var genesisSetupFunctions = map[string]genSetupFn{
 
 // genStateSetter is a generic function to set module-specific genesis state
 func genStateSetter[T proto.Message](moduleName string) genSetupFn {
-	return func(evmosApp *app.Haqq, genesisState types.GenesisState, customGenesis interface{}) (types.GenesisState, error) {
+	return func(haqqApp *app.Haqq, genesisState types.GenesisState, customGenesis interface{}) (types.GenesisState, error) {
 		moduleGenesis, ok := customGenesis.(T)
 		if !ok {
 			return nil, fmt.Errorf("invalid type %T for %s module genesis state", customGenesis, moduleName)
 		}
 
-		genesisState[moduleName] = evmosApp.AppCodec().MustMarshalJSON(moduleGenesis)
+		genesisState[moduleName] = haqqApp.AppCodec().MustMarshalJSON(moduleGenesis)
 		return genesisState, nil
 	}
 }
@@ -141,9 +141,9 @@ func createBalances(accounts []sdktypes.AccAddress, denoms []string) []banktypes
 	return fundedAccountBalances
 }
 
-// createEvmosApp creates an evmos app
-func createEvmosApp(chainID string) *app.Haqq {
-	// Create evmos app
+// createHaqqApp creates an Haqq app
+func createHaqqApp(chainID string) *app.Haqq {
+	// Create Haqq app
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
 	loadLatest := true
@@ -295,7 +295,7 @@ type StakingCustomGenesisState struct {
 }
 
 // setDefaultStakingGenesisState sets the default staking genesis state
-func setDefaultStakingGenesisState(evmosApp *app.Haqq, genesisState types.GenesisState, overwriteParams StakingCustomGenesisState) types.GenesisState {
+func setDefaultStakingGenesisState(haqqApp *app.Haqq, genesisState types.GenesisState, overwriteParams StakingCustomGenesisState) types.GenesisState {
 	// Set staking params
 	stakingParams := stakingtypes.DefaultParams()
 	stakingParams.BondDenom = overwriteParams.denom
@@ -305,7 +305,7 @@ func setDefaultStakingGenesisState(evmosApp *app.Haqq, genesisState types.Genesi
 		overwriteParams.validators,
 		overwriteParams.delegations,
 	)
-	genesisState[stakingtypes.ModuleName] = evmosApp.AppCodec().MustMarshalJSON(stakingGenesis)
+	genesisState[stakingtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(stakingGenesis)
 	return genesisState
 }
 
@@ -315,7 +315,7 @@ type BankCustomGenesisState struct {
 }
 
 // setDefaultBankGenesisState sets the default bank genesis state
-func setDefaultBankGenesisState(evmosApp *app.Haqq, genesisState types.GenesisState, overwriteParams BankCustomGenesisState) types.GenesisState {
+func setDefaultBankGenesisState(haqqApp *app.Haqq, genesisState types.GenesisState, overwriteParams BankCustomGenesisState) types.GenesisState {
 	bankGenesis := banktypes.NewGenesisState(
 		banktypes.DefaultGenesisState().Params,
 		overwriteParams.balances,
@@ -323,7 +323,7 @@ func setDefaultBankGenesisState(evmosApp *app.Haqq, genesisState types.GenesisSt
 		[]banktypes.Metadata{},
 		[]banktypes.SendEnabled{},
 	)
-	genesisState[banktypes.ModuleName] = evmosApp.AppCodec().MustMarshalJSON(bankGenesis)
+	genesisState[banktypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(bankGenesis)
 	return genesisState
 }
 
@@ -335,24 +335,24 @@ type SlashingCustomGenesisState struct {
 }
 
 // setDefaultSlashingGenesisState sets the default slashing genesis state
-func setDefaultSlashingGenesisState(evmosApp *app.Haqq, genesisState types.GenesisState, overwriteParams SlashingCustomGenesisState) types.GenesisState {
+func setDefaultSlashingGenesisState(haqqApp *app.Haqq, genesisState types.GenesisState, overwriteParams SlashingCustomGenesisState) types.GenesisState {
 	slashingGen := slashingtypes.DefaultGenesisState()
 	slashingGen.SigningInfos = overwriteParams.signingInfo
 	slashingGen.MissedBlocks = overwriteParams.missedBlocks
 
-	genesisState[slashingtypes.ModuleName] = evmosApp.AppCodec().MustMarshalJSON(slashingGen)
+	genesisState[slashingtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(slashingGen)
 	return genesisState
 }
 
 // setBankGenesisState updates the bank genesis state with custom genesis state
-func setBankGenesisState(evmosApp *app.Haqq, genesisState types.GenesisState, customGenesis interface{}) (types.GenesisState, error) {
+func setBankGenesisState(haqqApp *app.Haqq, genesisState types.GenesisState, customGenesis interface{}) (types.GenesisState, error) {
 	customGen, ok := customGenesis.(*banktypes.GenesisState)
 	if !ok {
 		return nil, fmt.Errorf("invalid type %T for bank module genesis state", customGenesis)
 	}
 
 	bankGen := &banktypes.GenesisState{}
-	evmosApp.AppCodec().MustUnmarshalJSON(genesisState[banktypes.ModuleName], bankGen)
+	haqqApp.AppCodec().MustUnmarshalJSON(genesisState[banktypes.ModuleName], bankGen)
 
 	if len(customGen.Balances) > 0 {
 		coins := sdktypes.NewCoins()
@@ -372,7 +372,7 @@ func setBankGenesisState(evmosApp *app.Haqq, genesisState types.GenesisState, cu
 
 	bankGen.Params = customGen.Params
 
-	genesisState[banktypes.ModuleName] = evmosApp.AppCodec().MustMarshalJSON(bankGen)
+	genesisState[banktypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(bankGen)
 	return genesisState, nil
 }
 
@@ -397,21 +397,21 @@ func addBondedModuleAccountToFundedBalances(
 }
 
 // setDefaultAuthGenesisState sets the default auth genesis state
-func setDefaultAuthGenesisState(evmosApp *app.Haqq, genesisState types.GenesisState, genAccs []authtypes.GenesisAccount) types.GenesisState {
+func setDefaultAuthGenesisState(haqqApp *app.Haqq, genesisState types.GenesisState, genAccs []authtypes.GenesisAccount) types.GenesisState {
 	defaultAuthGen := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
-	genesisState[authtypes.ModuleName] = evmosApp.AppCodec().MustMarshalJSON(defaultAuthGen)
+	genesisState[authtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(defaultAuthGen)
 	return genesisState
 }
 
 // setAuthGenesisState updates the bank genesis state with custom genesis state
-func setAuthGenesisState(evmosApp *app.Haqq, genesisState types.GenesisState, customGenesis interface{}) (types.GenesisState, error) {
+func setAuthGenesisState(haqqApp *app.Haqq, genesisState types.GenesisState, customGenesis interface{}) (types.GenesisState, error) {
 	customGen, ok := customGenesis.(*authtypes.GenesisState)
 	if !ok {
 		return nil, fmt.Errorf("invalid type %T for auth module genesis state", customGenesis)
 	}
 
 	authGen := &authtypes.GenesisState{}
-	evmosApp.AppCodec().MustUnmarshalJSON(genesisState[authtypes.ModuleName], authGen)
+	haqqApp.AppCodec().MustUnmarshalJSON(genesisState[authtypes.ModuleName], authGen)
 
 	if len(customGen.Accounts) > 0 {
 		authGen.Accounts = append(authGen.Accounts, customGen.Accounts...)
@@ -419,42 +419,42 @@ func setAuthGenesisState(evmosApp *app.Haqq, genesisState types.GenesisState, cu
 
 	authGen.Params = customGen.Params
 
-	genesisState[authtypes.ModuleName] = evmosApp.AppCodec().MustMarshalJSON(authGen)
+	genesisState[authtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(authGen)
 	return genesisState, nil
 }
 
 // setDefaultGovGenesisState sets the default gov genesis state
-func setDefaultGovGenesisState(evmosApp *app.Haqq, genesisState types.GenesisState) types.GenesisState {
+func setDefaultGovGenesisState(haqqApp *app.Haqq, genesisState types.GenesisState) types.GenesisState {
 	govGen := govtypesv1.DefaultGenesisState()
 	updatedParams := govGen.Params
-	// set 'aevmos' as deposit denom
-	updatedParams.MinDeposit = sdktypes.NewCoins(sdktypes.NewCoin(evmosutil.BaseDenom, sdkmath.NewInt(1e18)))
+	// set 'aISLM' as deposit denom
+	updatedParams.MinDeposit = sdktypes.NewCoins(sdktypes.NewCoin(haqqutils.BaseDenom, sdkmath.NewInt(1e18)))
 	govGen.Params = updatedParams
-	genesisState[govtypes.ModuleName] = evmosApp.AppCodec().MustMarshalJSON(govGen)
+	genesisState[govtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(govGen)
 	return genesisState
 }
 
 // defaultAuthGenesisState sets the default genesis state
 // for the testing setup
-func newDefaultGenesisState(evmosApp *app.Haqq, params defaultGenesisParams) types.GenesisState {
+func newDefaultGenesisState(haqqApp *app.Haqq, params defaultGenesisParams) types.GenesisState {
 	genesisState := app.NewDefaultGenesisState()
 
-	genesisState = setDefaultAuthGenesisState(evmosApp, genesisState, params.genAccounts)
-	genesisState = setDefaultStakingGenesisState(evmosApp, genesisState, params.staking)
-	genesisState = setDefaultBankGenesisState(evmosApp, genesisState, params.bank)
-	genesisState = setDefaultGovGenesisState(evmosApp, genesisState)
-	genesisState = setDefaultSlashingGenesisState(evmosApp, genesisState, params.slashing)
+	genesisState = setDefaultAuthGenesisState(haqqApp, genesisState, params.genAccounts)
+	genesisState = setDefaultStakingGenesisState(haqqApp, genesisState, params.staking)
+	genesisState = setDefaultBankGenesisState(haqqApp, genesisState, params.bank)
+	genesisState = setDefaultGovGenesisState(haqqApp, genesisState)
+	genesisState = setDefaultSlashingGenesisState(haqqApp, genesisState, params.slashing)
 
 	return genesisState
 }
 
 // customizeGenesis modifies genesis state if there're any custom genesis state
 // for specific modules
-func customizeGenesis(evmosApp *app.Haqq, customGen CustomGenesisState, genesisState types.GenesisState) (types.GenesisState, error) {
+func customizeGenesis(haqqApp *app.Haqq, customGen CustomGenesisState, genesisState types.GenesisState) (types.GenesisState, error) {
 	var err error
 	for mod, modGenState := range customGen {
 		if fn, found := genesisSetupFunctions[mod]; found {
-			genesisState, err = fn(evmosApp, genesisState, modGenState)
+			genesisState, err = fn(haqqApp, genesisState, modGenState)
 			if err != nil {
 				return genesisState, err
 			}

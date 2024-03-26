@@ -22,8 +22,7 @@ import (
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
-// TxFactory defines a struct that can build and broadcast transactions for the Evmos
-// network.
+// TxFactory defines a struct that can build and broadcast transactions for the Haqq Network.
 // Methods are organized by build sign and broadcast type methods.
 type TxFactory interface {
 	commonfactory.CoreTxFactory
