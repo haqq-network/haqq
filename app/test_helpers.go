@@ -153,8 +153,7 @@ func GenesisStateWithValSet(app *Haqq, genesisState types.GenesisState,
 			MinSelfDelegation: math.ZeroInt(),
 		}
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), val.Address.String(), math.LegacyOneDec()))
-
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), validator.OperatorAddress, math.LegacyOneDec()))
 	}
 	// set validators and delegations
 	stakingParams := stakingtypes.DefaultParams()
