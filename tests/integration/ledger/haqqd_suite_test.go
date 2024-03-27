@@ -8,7 +8,9 @@ import (
 	"testing"
 	"time"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	"github.com/stretchr/testify/suite"
@@ -85,7 +87,7 @@ func (suite *LedgerTestSuite) SetupHaqqApp() {
 	consAddress := sdk.ConsAddress(utiltx.GenerateAddress().Bytes())
 
 	// init app
-	chainID := utils.TestEdge2ChainID + "-3"
+	chainID := utils.MainNetChainID + "-1"
 	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
 	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, tmproto.Header{
 		Height:          1,
@@ -133,7 +135,7 @@ func (suite *LedgerTestSuite) NewKeyringAndCtxs(krHome string, input io.Reader, 
 		WithLedgerHasProtobuf(true).
 		WithUseLedger(true).
 		WithKeyring(kr).
-		WithClient(mocks.MockTendermintRPC{Client: rpcclientmock.Client{}}).
+		WithClient(mocks.MockCometRPC{Client: rpcclientmock.Client{}}).
 		WithChainID(utils.TestEdge2ChainID + "-13")
 
 	srvCtx := server.NewDefaultContext()

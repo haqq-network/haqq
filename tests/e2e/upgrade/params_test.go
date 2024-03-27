@@ -25,7 +25,7 @@ func TestLoadUpgradeParams(t *testing.T) {
 	availableUpgrades, err := RetrieveUpgradesList(upgradesPath)
 	require.NoError(t, err, "can't retrieve upgrades list")
 	latestVersionName := availableUpgrades[len(availableUpgrades)-1]
-	defaultInitialVersion := availableUpgrades[0]
+	defaultInitialVersion := availableUpgrades[len(availableUpgrades)-2]
 
 	testcases := []struct {
 		name    string
