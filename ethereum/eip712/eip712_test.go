@@ -71,7 +71,7 @@ func (suite *EIP712TestSuite) SetupTest() {
 	suite.clientCtx = client.Context{}.WithTxConfig(suite.config.TxConfig)
 	suite.denom = utils.BaseDenom
 
-	sdk.GetConfig().SetBech32PrefixForAccount(config.Bech32Prefix, "")
+	config.SetupConfig()
 	eip712.SetEncodingConfig(suite.config)
 }
 

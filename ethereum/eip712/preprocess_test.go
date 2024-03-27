@@ -47,7 +47,7 @@ type TestCaseStruct struct {
 
 func TestLedgerPreprocessing(t *testing.T) {
 	// Update bech32 prefix
-	sdk.GetConfig().SetBech32PrefixForAccount(config.Bech32Prefix, "")
+	config.SetupConfig()
 
 	testCases := []TestCaseStruct{
 		createBasicTestCase(t),
