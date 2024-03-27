@@ -41,7 +41,7 @@ func (mpd MinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate 
 	evmParams := mpd.evmKeeper.GetParams(ctx)
 	evmDenom := evmParams.GetEvmDenom()
 
-	// only allow user to pass in aevmos and stake native token as transaction fees
+	// only allow user to pass in aISLM and stake native token as transaction fees
 	// allow use stake native tokens for fees is just for unit tests to pass
 	validFees := len(feeCoins) == 0 || (len(feeCoins) == 1 && slices.Contains([]string{evmDenom, sdk.DefaultBondDenom}, feeCoins.GetDenomByIndex(0)))
 	if !validFees && !simulate {

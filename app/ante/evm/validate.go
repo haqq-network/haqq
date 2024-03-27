@@ -83,7 +83,12 @@ func (vbd EthValidateBasicDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simu
 	enableCall := evmParams.GetEnableCall()
 	evmDenom := evmParams.GetEvmDenom()
 
-	for _, msg := range protoTx.GetMsgs() {
+	msgs := protoTx.GetMsgs()
+	if msgs == nil {
+		return ctx, errorsmod.Wrap(errortypes.ErrUnknownRequest, "invalid transaction. Transaction without messages")
+	}
+
+	for _, msg := range msgs {
 		_, txData, from, err := evmtypes.UnpackEthMsg(msg)
 		if err != nil {
 			return ctx, err

@@ -1,6 +1,7 @@
 package ante_test
 
 import (
+	"fmt"
 	"testing"
 
 	//nolint:revive // dot imports are fine for Ginkgo
@@ -226,10 +227,18 @@ var _ = Describe("when sending a Cosmos transaction", Label("AnteHandler"), Orde
 			Expect(err).To(BeNil())
 			prevBalance := balanceRes.Balance.Amount
 
+			// get the rewards before the tx
+			rewardsResBeforeTx, err := s.grpcHandler.GetDelegationTotalRewards(addr.String())
+			Expect(err).To(BeNil())
+			Expect(rewardsResBeforeTx.Total.IsZero()).To(BeFalse())
+
 			// make sure fees are higher than the remaining balance
 			baseFeeRes, err := s.grpcHandler.GetBaseFee()
 			Expect(err).To(BeNil())
-			gasWanted := balanceRes.Balance.Amount.Add(sdkmath.NewInt(1e10)).Quo(*baseFeeRes.BaseFee)
+			feeExtra := sdkmath.NewInt(1e10)
+			expectedFees := balanceRes.Balance.Amount.Add(feeExtra)
+			fmt.Printf("expectedFees: %s\n", expectedFees.String())
+			gasWanted := expectedFees.Quo(*baseFeeRes.BaseFee)
 			gwUint := gasWanted.Uint64()
 			res, err := s.factory.ExecuteCosmosTx(
 				priv,
@@ -242,6 +251,13 @@ var _ = Describe("when sending a Cosmos transaction", Label("AnteHandler"), Orde
 			Expect(err).To(BeNil())
 			Expect(res.IsOK()).To(BeTrue())
 
+			// expected balance after tx should be
+			// previous balance - expected fees - transfer amount + rewards
+			expectedBalance := balanceRes.Balance.Amount.
+				Add(rewardsResBeforeTx.Total.AmountOf(utils.BaseDenom).TruncateInt()).
+				Sub(expectedFees).
+				Sub(sdkmath.NewInt(1))
+
 			// include the tx in a block to update state
 			err = s.network.NextBlock()
 			Expect(err).To(BeNil())
@@ -251,10 +267,11 @@ var _ = Describe("when sending a Cosmos transaction", Label("AnteHandler"), Orde
 			Expect(err).To(BeNil())
 			Expect(rewardsRes.Total).To(BeEmpty())
 
-			// balance should have increased becuase paid the fees with staking rewards
+			// balance should have increased because paid the fees with staking rewards
 			balanceRes, err = s.grpcHandler.GetBalance(addr, utils.BaseDenom)
 			Expect(err).To(BeNil())
-			Expect(balanceRes.Balance.Amount.Sub(prevBalance).IsPositive()).To(BeTrue())
+			Expect(balanceRes.Balance.Amount.GTE(expectedBalance)).To(BeTrue())
+			Expect(balanceRes.Balance.Amount.LT(prevBalance)).To(BeTrue())
 		})
 	})
 })

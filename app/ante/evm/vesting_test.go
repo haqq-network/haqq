@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
@@ -28,7 +29,7 @@ var (
 		{Length: 2000, Amount: quarter},
 		{Length: 2000, Amount: quarter},
 	}
-	vestingCoins = sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(1000000000)))
+	vestingCoins = sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(1000000000)))
 )
 
 // TestEthVestingTransactionDecorator tests the EthVestingTransactionDecorator ante handler.
@@ -36,7 +37,7 @@ func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
 	addr := testutiltx.GenerateAddress()
 
 	ethTxParams := &evmtypes.EvmTxArgs{
-		ChainID:  suite.app.EvmKeeper.ChainID(),
+		ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
 		Nonce:    1,
 		To:       &addr,
 		Amount:   big.NewInt(1000000000),
@@ -57,8 +58,8 @@ func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
 			"pass - valid transaction, no vesting account",
 			tx,
 			func() {
-				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr.Bytes())
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				acc := suite.GetNetwork().App.AccountKeeper.NewAccountWithAddress(suite.GetNetwork().GetContext(), addr.Bytes())
+				suite.GetNetwork().App.AccountKeeper.SetAccount(suite.GetNetwork().GetContext(), acc)
 			},
 			true,
 			"",
@@ -68,7 +69,7 @@ func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
 			&testutiltx.InvalidTx{},
 			func() {},
 			false,
-			"invalid message type",
+			"invalid transaction",
 		},
 		{
 			"fail - from address not found",
@@ -86,12 +87,12 @@ func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
 				vestingAcc := vestingtypes.NewClawbackVestingAccount(
 					baseAcc, addr.Bytes(), vestingCoins, time.Now(), lockupPeriods, vestingPeriods, &codeHash,
 				)
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, vestingAcc)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				acc := suite.GetNetwork().App.AccountKeeper.NewAccount(suite.GetNetwork().GetContext(), vestingAcc)
+				suite.GetNetwork().App.AccountKeeper.SetAccount(suite.GetNetwork().GetContext(), acc)
 
-				denom := suite.app.EvmKeeper.GetParams(suite.ctx).EvmDenom
-				coins := sdk.NewCoins(sdk.NewCoin(denom, sdk.NewInt(1000000000)))
-				err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, addr.Bytes(), coins)
+				denom := suite.GetNetwork().App.EvmKeeper.GetParams(suite.GetNetwork().GetContext()).EvmDenom
+				coins := sdk.NewCoins(sdk.NewCoin(denom, sdkmath.NewInt(1000000000)))
+				err := testutil.FundAccount(suite.GetNetwork().GetContext(), suite.GetNetwork().App.BankKeeper, addr.Bytes(), coins)
 				suite.Require().NoError(err, "failed to fund account")
 			},
 			true,
@@ -106,8 +107,8 @@ func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
 				vestingAcc := vestingtypes.NewClawbackVestingAccount(
 					baseAcc, addr.Bytes(), vestingCoins, time.Now(), lockupPeriods, vestingPeriods, &codeHash,
 				)
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, vestingAcc)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				acc := suite.GetNetwork().App.AccountKeeper.NewAccount(suite.GetNetwork().GetContext(), vestingAcc)
+				suite.GetNetwork().App.AccountKeeper.SetAccount(suite.GetNetwork().GetContext(), acc)
 			},
 			false,
 			"account has no balance to execute transaction",
@@ -119,8 +120,12 @@ func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
 			suite.SetupTest()
 			tc.malleate()
 
-			dec := ethante.NewEthVestingTransactionDecorator(suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.EvmKeeper)
-			_, err := dec.AnteHandle(suite.ctx, tc.tx, false, testutil.NextFn)
+			dec := ethante.NewEthVestingTransactionDecorator(
+				suite.GetNetwork().App.AccountKeeper,
+				suite.GetNetwork().App.BankKeeper,
+				suite.GetNetwork().App.EvmKeeper,
+			)
+			_, err := dec.AnteHandle(suite.GetNetwork().GetContext(), tc.tx, false, testutil.NextFn)
 
 			if tc.expPass {
 				suite.Require().NoError(err, tc.name)

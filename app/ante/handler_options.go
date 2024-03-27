@@ -16,7 +16,7 @@ import (
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
-// HandlerOptions defines the list of module keepers required to run the Evmos
+// HandlerOptions defines the list of module keepers required to run the Haqq
 // AnteHandler decorators.
 type HandlerOptions struct {
 	Cdc                    codec.BinaryCodec
