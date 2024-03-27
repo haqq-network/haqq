@@ -9,6 +9,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -22,7 +23,6 @@ import (
 
 type EIP712TxArgs struct {
 	CosmosTxArgs       CosmosTxArgs
-	UseLegacyExtension bool
 	UseLegacyTypedData bool
 }
 
@@ -39,23 +39,17 @@ type signatureV2Args struct {
 	nonce     uint64
 }
 
-type legacyWeb3ExtensionArgs struct {
-	feePayer  string
-	chainID   uint64
-	signature []byte
-}
-
 // CreateEIP712CosmosTx creates a cosmos tx for typed data according to EIP712.
 // Also, signs the tx with the provided messages and private key.
 // It returns the signed transaction and an error
 func CreateEIP712CosmosTx(
 	ctx sdk.Context,
-	appEvmos *app.Haqq,
+	haqqApp *app.Haqq,
 	args EIP712TxArgs,
 ) (sdk.Tx, error) {
 	builder, err := PrepareEIP712CosmosTx(
 		ctx,
-		appEvmos,
+		haqqApp,
 		args,
 	)
 	return builder.GetTx(), err
@@ -66,7 +60,7 @@ func CreateEIP712CosmosTx(
 // It returns the tx builder with the signed transaction and an error
 func PrepareEIP712CosmosTx(
 	ctx sdk.Context,
-	appEvmos *app.Haqq,
+	haqqApp *app.Haqq,
 	args EIP712TxArgs,
 ) (client.TxBuilder, error) {
 	txArgs := args.CosmosTxArgs
@@ -78,17 +72,17 @@ func PrepareEIP712CosmosTx(
 	chainIDNum := pc.Uint64()
 
 	from := sdk.AccAddress(txArgs.Priv.PubKey().Address().Bytes())
-	accNumber := appEvmos.AccountKeeper.GetAccount(ctx, from).GetAccountNumber()
+	accNumber := haqqApp.AccountKeeper.GetAccount(ctx, from).GetAccountNumber()
 
-	nonce, err := appEvmos.AccountKeeper.GetSequence(ctx, from)
+	nonce, err := haqqApp.AccountKeeper.GetSequence(ctx, from)
 	if err != nil {
 		return nil, err
 	}
 
-	fee := legacytx.NewStdFee(txArgs.Gas, txArgs.Fees) //nolint: staticcheck
+	fee := legacytx.NewStdFee(txArgs.Gas, txArgs.Fees) //nolint:staticcheck
 
 	msgs := txArgs.Msgs
-	data := legacytx.StdSignBytes(ctx.ChainID(), accNumber, nonce, 0, fee, msgs, "", nil)
+	data := legacytx.StdSignBytes(ctx.ChainID(), accNumber, nonce, 0, fee, msgs, "")
 
 	typedDataArgs := typedDataArgs{
 		chainID:        chainIDNum,
@@ -117,10 +111,9 @@ func PrepareEIP712CosmosTx(
 
 	return signCosmosEIP712Tx(
 		ctx,
-		appEvmos,
+		haqqApp,
 		args,
 		builder,
-		chainIDNum,
 		typedData,
 	)
 }
@@ -129,16 +122,15 @@ func PrepareEIP712CosmosTx(
 // the provided private key and the typed data
 func signCosmosEIP712Tx(
 	ctx sdk.Context,
-	appEvmos *app.Haqq,
+	haqqApp *app.Haqq,
 	args EIP712TxArgs,
 	builder authtx.ExtensionOptionsTxBuilder,
-	chainID uint64,
 	data apitypes.TypedData,
 ) (client.TxBuilder, error) {
 	priv := args.CosmosTxArgs.Priv
 
 	from := sdk.AccAddress(priv.PubKey().Address().Bytes())
-	nonce, err := appEvmos.AccountKeeper.GetSequence(ctx, from)
+	nonce, err := haqqApp.AccountKeeper.GetSequence(ctx, from)
 	if err != nil {
 		return nil, err
 	}
@@ -149,23 +141,11 @@ func signCosmosEIP712Tx(
 	}
 
 	keyringSigner := NewSigner(priv)
-	signature, pubKey, err := keyringSigner.SignByAddress(from, sigHash)
+	signature, pubKey, err := keyringSigner.SignByAddress(from, sigHash, signingtypes.SignMode_SIGN_MODE_DIRECT)
 	if err != nil {
 		return nil, err
 	}
 	signature[crypto.RecoveryIDOffset] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
-
-	if args.UseLegacyExtension {
-		if err := setBuilderLegacyWeb3Extension(
-			builder,
-			legacyWeb3ExtensionArgs{
-				feePayer:  from.String(),
-				chainID:   chainID,
-				signature: signature,
-			}); err != nil {
-			return nil, err
-		}
-	}
 
 	sigsV2 := getTxSignatureV2(
 		signatureV2Args{
@@ -173,7 +153,6 @@ func signCosmosEIP712Tx(
 			signature: signature,
 			nonce:     nonce,
 		},
-		args.UseLegacyExtension,
 	)
 
 	err = builder.SetSignatures(sigsV2)
@@ -191,14 +170,14 @@ func createTypedData(args typedDataArgs, useLegacy bool) (apitypes.TypedData, er
 		registry := codectypes.NewInterfaceRegistry()
 		types.RegisterInterfaces(registry)
 		cryptocodec.RegisterInterfaces(registry)
-		evmosCodec := codec.NewProtoCodec(registry)
+		protoCodec := codec.NewProtoCodec(registry)
 
 		feeDelegation := &eip712.FeeDelegationOptions{
 			FeePayer: args.legacyFeePayer,
 		}
 
 		return eip712.LegacyWrapTxToTypedData(
-			evmosCodec,
+			protoCodec,
 			args.chainID,
 			args.legacyMsg,
 			args.data,
@@ -209,35 +188,9 @@ func createTypedData(args typedDataArgs, useLegacy bool) (apitypes.TypedData, er
 	return eip712.WrapTxToTypedData(args.chainID, args.data)
 }
 
-// setBuilderLegacyWeb3Extension creates a legacy ExtensionOptionsWeb3Tx and
-// appends it to the builder options.
-func setBuilderLegacyWeb3Extension(builder authtx.ExtensionOptionsTxBuilder, args legacyWeb3ExtensionArgs) error {
-	option, err := codectypes.NewAnyWithValue(&types.ExtensionOptionsWeb3Tx{
-		FeePayer:         args.feePayer,
-		TypedDataChainID: args.chainID,
-		FeePayerSig:      args.signature,
-	})
-	if err != nil {
-		return err
-	}
-
-	builder.SetExtensionOptions(option)
-	return nil
-}
-
 // getTxSignatureV2 returns the SignatureV2 object corresponding to
 // the arguments, using the legacy implementation as needed.
-func getTxSignatureV2(args signatureV2Args, useLegacyExtension bool) signing.SignatureV2 {
-	if useLegacyExtension {
-		return signing.SignatureV2{
-			PubKey: args.pubKey,
-			Data: &signing.SingleSignatureData{
-				SignMode: signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON,
-			},
-			Sequence: args.nonce,
-		}
-	}
-
+func getTxSignatureV2(args signatureV2Args) signing.SignatureV2 {
 	// Must use SIGN_MODE_DIRECT, since Amino has some trouble parsing certain Any values from a SignDoc
 	// with the Legacy EIP-712 TypedData encodings. This is not an issue with the latest encoding.
 	return signing.SignatureV2{

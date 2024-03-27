@@ -10,7 +10,7 @@ import (
 // each step at the end of a period. A schedule may also give the time and total
 // value at the last step, which can speed evaluation of the step function after
 // the last step.
-//
+
 // ReadSchedule returns the value of a schedule at readTime.
 func ReadSchedule(
 	startTime, endTime int64,
@@ -199,9 +199,9 @@ func ConjunctPeriods(
 	// if the minimum of P and Q changes
 	consumeA := func(nextTime int64) {
 		totalAmountPeriodsA = totalAmountPeriodsA.Add(periodsA[idxPeriodsA].Amount...)
-		min := totalAmountPeriodsA.Min(totalAmountPeriodsB)
-		if amount.IsAllLTE(min) {
-			diff := min.Sub(amount...)
+		minAmt := totalAmountPeriodsA.Min(totalAmountPeriodsB)
+		if amount.IsAllLTE(minAmt) {
+			diff := minAmt.Sub(amount...)
 			if !diff.IsZero() {
 				emit(nextTime, diff)
 			}
@@ -214,9 +214,9 @@ func ConjunctPeriods(
 	// if the minimum of P and Q changes
 	consumeB := func(nextTime int64) {
 		totalAmountPeriodsB = totalAmountPeriodsB.Add(periodsB[idxPeriodsB].Amount...)
-		min := totalAmountPeriodsA.Min(totalAmountPeriodsB)
-		if amount.IsAllLTE(min) {
-			diff := min.Sub(amount...)
+		minAmt := totalAmountPeriodsA.Min(totalAmountPeriodsB)
+		if amount.IsAllLTE(minAmt) {
+			diff := minAmt.Sub(amount...)
 			if !diff.IsZero() {
 				emit(nextTime, diff)
 			}
@@ -230,9 +230,9 @@ func ConjunctPeriods(
 	consumeBoth := func(nextTime int64) {
 		totalAmountPeriodsA = totalAmountPeriodsA.Add(periodsA[idxPeriodsA].Amount...)
 		totalAmountPeriodsB = totalAmountPeriodsB.Add(periodsB[idxPeriodsB].Amount...)
-		min := totalAmountPeriodsA.Min(totalAmountPeriodsB)
-		if amount.IsAllLTE(min) {
-			diff := min.Sub(amount...)
+		minAmt := totalAmountPeriodsA.Min(totalAmountPeriodsB)
+		if amount.IsAllLTE(minAmt) {
+			diff := minAmt.Sub(amount...)
 			if !diff.IsZero() {
 				emit(nextTime, diff)
 			}

@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -19,13 +20,13 @@ type EthVestingTransactionDecorator struct {
 	ek EVMKeeper
 }
 
-// ethVestingExpenseTracker tracks both the total transaction value to be sent across Ethereum
+// EthVestingExpenseTracker tracks both the total transaction value to be sent across Ethereum
 // messages and the maximum spendable value for a given account.
-type ethVestingExpenseTracker struct {
+type EthVestingExpenseTracker struct {
 	// total is the total value to be spent across a transaction with one or more Ethereum message calls
-	total *big.Int
+	Total *big.Int
 	// spendable is the maximum value that can be spent
-	spendable *big.Int
+	Spendable *big.Int
 }
 
 // NewEthVestingTransactionDecorator returns a new EthVestingTransactionDecorator.
@@ -47,10 +48,15 @@ func NewEthVestingTransactionDecorator(ak evmtypes.AccountKeeper, bk evmtypes.Ba
 func (vtd EthVestingTransactionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
 	// Track the total value to be spent by each address across all messages and ensure
 	// that no account can exceed its spendable balance.
-	accountExpenses := make(map[string]*ethVestingExpenseTracker)
+	accountExpenses := make(map[string]*EthVestingExpenseTracker)
 	denom := vtd.ek.GetParams(ctx).EvmDenom
 
-	for _, msg := range tx.GetMsgs() {
+	msgs := tx.GetMsgs()
+	if msgs == nil {
+		return ctx, errorsmod.Wrap(errortypes.ErrUnknownRequest, "invalid transaction. Transaction without messages")
+	}
+
+	for _, msg := range msgs {
 		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
 		if !ok {
 			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest,
@@ -80,8 +86,8 @@ func (vtd EthVestingTransactionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx,
 			return ctx, err
 		}
 
-		total := expenses.total
-		spendable := expenses.spendable
+		total := expenses.Total
+		spendable := expenses.Spendable
 
 		if total.Cmp(spendable) > 0 {
 			return ctx, errorsmod.Wrapf(vestingtypes.ErrInsufficientUnlockedCoins,
@@ -97,18 +103,18 @@ func (vtd EthVestingTransactionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx,
 // returns the new value.
 func (vtd EthVestingTransactionDecorator) updateAccountExpenses(
 	ctx sdk.Context,
-	accountExpenses map[string]*ethVestingExpenseTracker,
+	accountExpenses map[string]*EthVestingExpenseTracker,
 	account *vestingtypes.ClawbackVestingAccount,
 	addedExpense *big.Int,
 	denom string,
-) (*ethVestingExpenseTracker, error) {
+) (*EthVestingExpenseTracker, error) {
 	address := account.GetAddress()
 	addrStr := address.String()
 
 	expenses, ok := accountExpenses[addrStr]
 	// if an expense tracker is found for the address, add the expense and return
 	if ok {
-		expenses.total = expenses.total.Add(expenses.total, addedExpense)
+		expenses.Total = expenses.Total.Add(expenses.Total, addedExpense)
 		return expenses, nil
 	}
 
@@ -125,7 +131,7 @@ func (vtd EthVestingTransactionDecorator) updateAccountExpenses(
 	lockedBalances := account.LockedCoins(ctx.BlockTime())
 	ok, lockedBalance := lockedBalances.Find(denom)
 	if !ok {
-		lockedBalance = sdk.Coin{Denom: denom, Amount: sdk.ZeroInt()}
+		lockedBalance = sdk.Coin{Denom: denom, Amount: math.ZeroInt()}
 	}
 
 	spendableValue := big.NewInt(0)
@@ -133,9 +139,9 @@ func (vtd EthVestingTransactionDecorator) updateAccountExpenses(
 		spendableValue = spendableBalance.Amount.BigInt()
 	}
 
-	expenses = &ethVestingExpenseTracker{
-		total:     addedExpense,
-		spendable: spendableValue,
+	expenses = &EthVestingExpenseTracker{
+		Total:     addedExpense,
+		Spendable: spendableValue,
 	}
 
 	accountExpenses[addrStr] = expenses

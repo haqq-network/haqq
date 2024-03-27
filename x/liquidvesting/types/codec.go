@@ -28,7 +28,8 @@ func init() {
 // RegisterInterfaces associates protoName with AccountI and VestingAccount
 // Interfaces and creates a registry of it's concrete implementations
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
-	registry.RegisterImplementations((*sdk.Msg)(nil),
+	registry.RegisterImplementations(
+		(*sdk.Msg)(nil),
 		&MsgLiquidate{},
 		&MsgRedeem{},
 	)

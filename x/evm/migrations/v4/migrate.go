@@ -1,8 +1,8 @@
 package v4
 
 import (
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	v4types "github.com/haqq-network/haqq/x/evm/migrations/v4/types"

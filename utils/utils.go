@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"strings"
 
 	errorsmod "cosmossdk.io/errors"
@@ -9,6 +10,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 )
@@ -36,21 +39,6 @@ func IsTestEdge2Network(chainID string) bool {
 
 func IsLocalNetwork(chainID string) bool {
 	return strings.HasPrefix(chainID, LocalNetChainID)
-}
-
-func IsAllowedVestingFunderAccount(funder string) bool {
-	// allowed accounts for vesting funder
-	funders := map[string]bool{
-		"haqq1uu7epkq75j2qzqvlyzfkljc8h277gz7kxqah0v": true, // mainnet
-		"haqq185tcnd67yh9jngx090cggck0yrjsft9sj3lkht": true,
-		"haqq1527hg2arxkk0jd53pq80l0l9gjjlclsuxlwmq8": true,
-		"haqq1e666058j3ya392rspuxrt69tw6qhrxtxx8z9ha": true,
-	}
-
-	// check if funder account is allowed
-	_, ok := funders[funder]
-
-	return ok
 }
 
 // IsSupportedKey returns true if the pubkey type is supported by the chain
@@ -102,4 +90,65 @@ func GetHaqqAddressFromBech32(address string) (sdk.AccAddress, error) {
 	}
 
 	return sdk.AccAddress(addressBz), nil
+}
+
+// CreateAccAddressFromBech32 creates an AccAddress from a Bech32 string.
+func CreateAccAddressFromBech32(address string, bech32prefix string) (addr sdk.AccAddress, err error) {
+	if len(strings.TrimSpace(address)) == 0 {
+		return sdk.AccAddress{}, fmt.Errorf("empty address string is not allowed")
+	}
+
+	bz, err := sdk.GetFromBech32(address, bech32prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	err = sdk.VerifyAddressFormat(bz)
+	if err != nil {
+		return nil, err
+	}
+
+	return sdk.AccAddress(bz), nil
+}
+
+// GetIBCDenomAddress returns the address from the hash of the ICS20's DenomTrace Path.
+func GetIBCDenomAddress(denom string) (common.Address, error) {
+	if !strings.HasPrefix(denom, "ibc/") {
+		return common.Address{}, ibctransfertypes.ErrInvalidDenomForTransfer.Wrapf("coin %s does not have 'ibc/' prefix", denom)
+	}
+
+	if len(denom) < 5 || strings.TrimSpace(denom[4:]) == "" {
+		return common.Address{}, ibctransfertypes.ErrInvalidDenomForTransfer.Wrapf("coin %s does not a valid IBC voucher hash", denom)
+	}
+
+	// Get the address from the hash of the ICS20's DenomTrace Path
+	bz, err := ibctransfertypes.ParseHexHash(denom[4:])
+	if err != nil {
+		return common.Address{}, ibctransfertypes.ErrInvalidDenomForTransfer.Wrap(err.Error())
+	}
+
+	return common.BytesToAddress(bz), nil
+}
+
+// ComputeIBCDenomTrace compute the ibc voucher denom trace associated with
+// the portID, channelID, and the given a token denomination.
+func ComputeIBCDenomTrace(
+	portID, channelID,
+	denom string,
+) ibctransfertypes.DenomTrace {
+	denomTrace := ibctransfertypes.DenomTrace{
+		Path:      fmt.Sprintf("%s/%s", portID, channelID),
+		BaseDenom: denom,
+	}
+
+	return denomTrace
+}
+
+// ComputeIBCDenom compute the ibc voucher denom associated to
+// the portID, channelID, and the given a token denomination.
+func ComputeIBCDenom(
+	portID, channelID,
+	denom string,
+) string {
+	return ComputeIBCDenomTrace(portID, channelID, denom).IBCDenom()
 }

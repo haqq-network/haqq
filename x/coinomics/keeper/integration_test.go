@@ -10,7 +10,7 @@ import (
 	"github.com/haqq-network/haqq/testutil"
 )
 
-func setupCoinomicsParams(s *KeeperTestSuite, rewardCoefficient sdk.Dec) {
+func setupCoinomicsParams(s *KeeperTestSuite, rewardCoefficient math.LegacyDec) {
 	coinomicsParams := s.app.CoinomicsKeeper.GetParams(s.ctx)
 	coinomicsParams.RewardCoefficient = rewardCoefficient
 	s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
@@ -26,17 +26,18 @@ var _ = Describe("Coinomics", Ordered, func() {
 		s.SetupTest()
 
 		// set coinomics params
-		rewardCoefficient := sdk.NewDecWithPrec(78, 1) // 7.8%
+		rewardCoefficient := math.LegacyNewDecWithPrec(78, 1) // 7.8%
 		setupCoinomicsParams(s, rewardCoefficient)
 
 		// set distribution module params
-		distributionParams := s.app.DistrKeeper.GetParams(s.ctx)
-		distributionParams.CommunityTax = sdk.NewDecWithPrec(10, 2)
-		distributionParams.BaseProposerReward = sdk.NewDecWithPrec(1, 2)
-		distributionParams.BonusProposerReward = sdk.NewDecWithPrec(4, 2)
+		distributionParams, err := s.app.DistrKeeper.Params.Get(s.ctx)
+		s.Require().NoError(err)
+		distributionParams.CommunityTax = math.LegacyNewDecWithPrec(10, 2)
+		distributionParams.BaseProposerReward = math.LegacyNewDecWithPrec(1, 2)
+		distributionParams.BonusProposerReward = math.LegacyNewDecWithPrec(4, 2)
 		distributionParams.WithdrawAddrEnabled = true
 
-		err := s.app.DistrKeeper.SetParams(s.ctx, distributionParams)
+		err = s.app.DistrKeeper.Params.Set(s.ctx, distributionParams)
 		s.Require().NoError(err)
 	})
 
@@ -109,7 +110,8 @@ var _ = Describe("Coinomics", Ordered, func() {
 				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
 				s.Require().NoError(err)
 
-				totalBonded := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				totalBonded, err := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				s.Require().NoError(err)
 				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(10_000_001, 18))
 				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
 
@@ -129,10 +131,10 @@ var _ = Describe("Coinomics", Ordered, func() {
 				// check mint amount with 7.8% coefficient
 				totalSupplyAfterMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				diff7_8Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
-				Expect(diff7_8Coefficient10blocks.Amount).To(Equal(sdk.NewInt(1484018413245226480)))
+				Expect(diff7_8Coefficient10blocks.Amount).To(Equal(math.NewInt(1484018413245226480)))
 
 				// change params
-				rewardCoefficient := sdk.NewDecWithPrec(10, 1) // 10%
+				rewardCoefficient := math.LegacyNewDecWithPrec(10, 1) // 10%
 				setupCoinomicsParams(s, rewardCoefficient)
 
 				totalSupplyBeforeMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
@@ -149,7 +151,7 @@ var _ = Describe("Coinomics", Ordered, func() {
 				// check mint amount with 10.0% coefficient
 				totalSupplyAfterMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				diff10_0Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
-				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(sdk.NewInt(190258770928875190)))
+				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(math.NewInt(190258770928875190)))
 			})
 
 			It("check mint calculations for leap year", func() {
@@ -184,7 +186,8 @@ var _ = Describe("Coinomics", Ordered, func() {
 				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
 				s.Require().NoError(err)
 
-				totalBonded := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				totalBonded, err := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				s.Require().NoError(err)
 				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(10_000_001, 18))
 				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
 
@@ -204,10 +207,10 @@ var _ = Describe("Coinomics", Ordered, func() {
 				// check mint amount with 7.8% coefficient
 				totalSupplyAfterMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				diff7_8Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
-				Expect(diff7_8Coefficient10blocks.Amount).To(Equal(sdk.NewInt(1479963718122957010)))
+				Expect(diff7_8Coefficient10blocks.Amount).To(Equal(math.NewInt(1479963718122957010)))
 
 				// change params
-				rewardCoefficient := sdk.NewDecWithPrec(10, 1) // 10%
+				rewardCoefficient := math.LegacyNewDecWithPrec(10, 1) // 10%
 				setupCoinomicsParams(s, rewardCoefficient)
 
 				totalSupplyBeforeMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
@@ -224,11 +227,11 @@ var _ = Describe("Coinomics", Ordered, func() {
 				// check mint amount with 10.0% coefficient
 				totalSupplyAfterMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				diff10_0Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
-				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(sdk.NewInt(189738938220891920)))
+				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(math.NewInt(189738938220891920)))
 			})
 
 			It("check max supply limit", func() {
-				setupCoinomicsParams(s, sdk.NewDecWithPrec(15_000_000_000, 0)) // 15_000_000_000 %
+				setupCoinomicsParams(s, math.LegacyNewDecWithPrec(15_000_000_000, 0)) // 15_000_000_000 %
 
 				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
 				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
@@ -258,7 +261,8 @@ var _ = Describe("Coinomics", Ordered, func() {
 				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
 				s.Require().NoError(err)
 
-				totalBonded := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				totalBonded, err := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+				s.Require().NoError(err)
 				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(90_000_001, 18))
 				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
 

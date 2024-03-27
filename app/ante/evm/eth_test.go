@@ -4,6 +4,8 @@ import (
 	"math"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
@@ -19,13 +21,13 @@ import (
 
 func (suite *AnteTestSuite) TestNewEthAccountVerificationDecorator() {
 	dec := ethante.NewEthAccountVerificationDecorator(
-		suite.app.AccountKeeper, suite.app.EvmKeeper,
+		suite.GetNetwork().App.AccountKeeper, suite.GetNetwork().App.EvmKeeper,
 	)
 
 	addr := testutiltx.GenerateAddress()
 
 	ethContractCreationTxParams := &evmtypes.EvmTxArgs{
-		ChainID:  suite.app.EvmKeeper.ChainID(),
+		ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
 		Nonce:    1,
 		Amount:   big.NewInt(10),
 		GasLimit: 1000,
@@ -86,8 +88,8 @@ func (suite *AnteTestSuite) TestNewEthAccountVerificationDecorator() {
 			"success existing account",
 			tx,
 			func() {
-				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr.Bytes())
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				acc := suite.GetNetwork().App.AccountKeeper.NewAccountWithAddress(suite.GetNetwork().GetContext(), addr.Bytes())
+				suite.GetNetwork().App.AccountKeeper.SetAccount(suite.GetNetwork().GetContext(), acc)
 
 				vmdb.AddBalance(addr, big.NewInt(1000000))
 			},
@@ -98,11 +100,11 @@ func (suite *AnteTestSuite) TestNewEthAccountVerificationDecorator() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			vmdb = testutil.NewStateDB(suite.ctx, suite.app.EvmKeeper)
+			vmdb = testutil.NewStateDB(suite.GetNetwork().GetContext(), suite.GetNetwork().App.EvmKeeper)
 			tc.malleate()
 			suite.Require().NoError(vmdb.Commit())
 
-			_, err := dec.AnteHandle(suite.ctx.WithIsCheckTx(tc.checkTx), tc.tx, false, testutil.NextFn)
+			_, err := dec.AnteHandle(suite.GetNetwork().GetContext().WithIsCheckTx(tc.checkTx), tc.tx, false, testutil.NextFn)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -115,12 +117,12 @@ func (suite *AnteTestSuite) TestNewEthAccountVerificationDecorator() {
 
 func (suite *AnteTestSuite) TestEthNonceVerificationDecorator() {
 	suite.SetupTest()
-	dec := ethante.NewEthIncrementSenderSequenceDecorator(suite.app.AccountKeeper)
+	dec := ethante.NewEthIncrementSenderSequenceDecorator(suite.GetNetwork().App.AccountKeeper)
 
 	addr := testutiltx.GenerateAddress()
 
 	ethContractCreationTxParams := &evmtypes.EvmTxArgs{
-		ChainID:  suite.app.EvmKeeper.ChainID(),
+		ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
 		Nonce:    1,
 		Amount:   big.NewInt(10),
 		GasLimit: 1000,
@@ -144,8 +146,8 @@ func (suite *AnteTestSuite) TestEthNonceVerificationDecorator() {
 			"sender nonce missmatch",
 			tx,
 			func() {
-				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr.Bytes())
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				acc := suite.GetNetwork().App.AccountKeeper.NewAccountWithAddress(suite.GetNetwork().GetContext(), addr.Bytes())
+				suite.GetNetwork().App.AccountKeeper.SetAccount(suite.GetNetwork().GetContext(), acc)
 			},
 			false,
 			false,
@@ -154,9 +156,9 @@ func (suite *AnteTestSuite) TestEthNonceVerificationDecorator() {
 			"success",
 			tx,
 			func() {
-				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr.Bytes())
+				acc := suite.GetNetwork().App.AccountKeeper.NewAccountWithAddress(suite.GetNetwork().GetContext(), addr.Bytes())
 				suite.Require().NoError(acc.SetSequence(1))
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				suite.GetNetwork().App.AccountKeeper.SetAccount(suite.GetNetwork().GetContext(), acc)
 			},
 			false,
 			true,
@@ -166,7 +168,7 @@ func (suite *AnteTestSuite) TestEthNonceVerificationDecorator() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			tc.malleate()
-			_, err := dec.AnteHandle(suite.ctx.WithIsReCheckTx(tc.reCheckTx), tc.tx, false, testutil.NextFn)
+			_, err := dec.AnteHandle(suite.GetNetwork().GetContext().WithIsReCheckTx(tc.reCheckTx), tc.tx, false, testutil.NextFn)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -178,8 +180,19 @@ func (suite *AnteTestSuite) TestEthNonceVerificationDecorator() {
 }
 
 func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
-	chainID := suite.app.EvmKeeper.ChainID()
-	dec := ethante.NewEthGasConsumeDecorator(suite.app.BankKeeper, suite.app.DistrKeeper, suite.app.EvmKeeper, suite.app.StakingKeeper, config.DefaultMaxTxGasWanted)
+	suite.WithFeemarketEnabled(true)
+	defaultBaseFee := sdkmath.NewInt(1000000000)
+	suite.WithBaseFee(&defaultBaseFee)
+	suite.SetupTest()
+
+	chainID := suite.GetNetwork().App.EvmKeeper.ChainID()
+	dec := ethante.NewEthGasConsumeDecorator(
+		suite.GetNetwork().App.BankKeeper,
+		suite.GetNetwork().App.DistrKeeper,
+		suite.GetNetwork().App.EvmKeeper,
+		suite.GetNetwork().App.StakingKeeper,
+		config.DefaultMaxTxGasWanted,
+	)
 
 	addr := testutiltx.GenerateAddress()
 
@@ -196,9 +209,9 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 	tx := evmtypes.NewTx(ethContractCreationTxParams)
 	tx.From = addr.Hex()
 
-	ethCfg := suite.app.EvmKeeper.GetParams(suite.ctx).
+	ethCfg := suite.GetNetwork().App.EvmKeeper.GetParams(suite.GetNetwork().GetContext()).
 		ChainConfig.EthereumConfig(chainID)
-	baseFee := suite.app.EvmKeeper.GetBaseFee(suite.ctx, ethCfg)
+	baseFee := suite.GetNetwork().App.EvmKeeper.GetBaseFee(suite.GetNetwork().GetContext(), ethCfg)
 	suite.Require().Equal(int64(1000000000), baseFee.Int64())
 
 	gasPrice := new(big.Int).Add(baseFee, evmtypes.DefaultPriorityReduction.BigInt())
@@ -216,7 +229,7 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 	tx2.From = addr.Hex()
 	tx2Priority := int64(1)
 
-	tx3GasLimit := types.BlockGasLimit(suite.ctx) + uint64(1)
+	tx3GasLimit := types.BlockGasLimit(suite.GetNetwork().GetContext()) + uint64(1)
 	eth3TxContractParams := &evmtypes.EvmTxArgs{
 		ChainID:  chainID,
 		Nonce:    1,
@@ -322,7 +335,7 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 			0,
 			func(ctx sdk.Context) sdk.Context {
 				vmdb.AddBalance(addr, big.NewInt(1e6))
-				return ctx.WithBlockGasMeter(sdk.NewGasMeter(1))
+				return ctx.WithBlockGasMeter(storetypes.NewGasMeter(1))
 			},
 			false, true,
 			0,
@@ -334,7 +347,7 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 			tx2GasLimit, // it's capped
 			func(ctx sdk.Context) sdk.Context {
 				vmdb.AddBalance(addr, big.NewInt(1e16))
-				return ctx.WithBlockGasMeter(sdk.NewGasMeter(1e19))
+				return ctx.WithBlockGasMeter(storetypes.NewGasMeter(1e19))
 			},
 			true, false,
 			tx2Priority,
@@ -346,7 +359,7 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 			tx2GasLimit, // it's capped
 			func(ctx sdk.Context) sdk.Context {
 				vmdb.AddBalance(addr, big.NewInt(1e16))
-				return ctx.WithBlockGasMeter(sdk.NewGasMeter(1e19))
+				return ctx.WithBlockGasMeter(storetypes.NewGasMeter(1e19))
 			},
 			true, false,
 			dynamicFeeTxPriority,
@@ -370,23 +383,23 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 			tx2GasLimit, // it's capped
 			func(ctx sdk.Context) sdk.Context {
 				ctx, err := testutil.PrepareAccountsForDelegationRewards(
-					suite.T(), ctx, suite.app, sdk.AccAddress(addr.Bytes()), sdk.ZeroInt(), sdk.NewInt(1e16),
+					suite.T(), ctx, suite.GetNetwork().App, sdk.AccAddress(addr.Bytes()), sdkmath.ZeroInt(), sdkmath.NewInt(1e16),
 				)
 				suite.Require().NoError(err, "error while preparing accounts for delegation rewards")
 				return ctx.
-					WithBlockGasMeter(sdk.NewGasMeter(1e19)).
+					WithBlockGasMeter(storetypes.NewGasMeter(1e19)).
 					WithBlockHeight(ctx.BlockHeight() + 1)
 			},
 			true, false,
 			tx2Priority,
 			func(ctx sdk.Context) {
-				balance := suite.app.BankKeeper.GetBalance(ctx, sdk.AccAddress(addr.Bytes()), utils.BaseDenom)
+				balance := suite.GetNetwork().App.BankKeeper.GetBalance(ctx, sdk.AccAddress(addr.Bytes()), utils.BaseDenom)
 				suite.Require().False(
 					balance.Amount.IsZero(),
 					"the fees are paid after withdrawing (a surplus amount of) staking rewards, so it should be higher than the initial balance",
 				)
 
-				rewards, err := testutil.GetTotalDelegationRewards(ctx, suite.app.DistrKeeper, sdk.AccAddress(addr.Bytes()))
+				rewards, err := testutil.GetTotalDelegationRewards(ctx, suite.GetNetwork().App.DistrKeeper, sdk.AccAddress(addr.Bytes()))
 				suite.Require().NoError(err, "error while querying delegation total rewards")
 				suite.Require().Nil(rewards, "the total rewards should be nil after withdrawing all of them")
 			},
@@ -397,29 +410,29 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 			tx2GasLimit, // it's capped
 			func(ctx sdk.Context) sdk.Context {
 				ctx, err := testutil.PrepareAccountsForDelegationRewards(
-					suite.T(), ctx, suite.app, sdk.AccAddress(addr.Bytes()), sdk.NewInt(1e16), sdk.NewInt(1e16),
+					suite.T(), ctx, suite.GetNetwork().App, sdk.AccAddress(addr.Bytes()), sdkmath.NewInt(1e16), sdkmath.NewInt(1e16),
 				)
 				suite.Require().NoError(err, "error while preparing accounts for delegation rewards")
 				return ctx.
-					WithBlockGasMeter(sdk.NewGasMeter(1e19)).
+					WithBlockGasMeter(storetypes.NewGasMeter(1e19)).
 					WithBlockHeight(ctx.BlockHeight() + 1)
 			},
 			true, false,
 			tx2Priority,
 			func(ctx sdk.Context) {
-				balance := suite.app.BankKeeper.GetBalance(ctx, sdk.AccAddress(addr.Bytes()), utils.BaseDenom)
+				balance := suite.GetNetwork().App.BankKeeper.GetBalance(ctx, sdk.AccAddress(addr.Bytes()), utils.BaseDenom)
 				suite.Require().True(
-					balance.Amount.LT(sdk.NewInt(1e16)),
+					balance.Amount.LT(sdkmath.NewInt(1e16)),
 					"the fees are paid using the available balance, so it should be lower than the initial balance",
 				)
 
-				rewards, err := testutil.GetTotalDelegationRewards(ctx, suite.app.DistrKeeper, sdk.AccAddress(addr.Bytes()))
+				rewards, err := testutil.GetTotalDelegationRewards(ctx, suite.GetNetwork().App.DistrKeeper, sdk.AccAddress(addr.Bytes()))
 				suite.Require().NoError(err, "error while querying delegation total rewards")
 
 				// NOTE: the total rewards should be the same as after the setup, since
 				// the fees are paid using the account balance
 				suite.Require().Equal(
-					sdk.NewDecCoins(sdk.NewDecCoin(utils.BaseDenom, sdk.NewInt(1e16))),
+					sdk.NewDecCoins(sdk.NewDecCoin(utils.BaseDenom, sdkmath.NewInt(1e16))),
 					rewards,
 					"the total rewards should be the same as after the setup, since the fees are paid using the account balance",
 				)
@@ -429,20 +442,20 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			cacheCtx, _ := suite.ctx.CacheContext()
+			cacheCtx, _ := suite.GetNetwork().GetContext().CacheContext()
 			// Create new stateDB for each test case from the cached context
-			vmdb = testutil.NewStateDB(cacheCtx, suite.app.EvmKeeper)
+			vmdb = testutil.NewStateDB(cacheCtx, suite.GetNetwork().App.EvmKeeper)
 			cacheCtx = tc.malleate(cacheCtx)
 			suite.Require().NoError(vmdb.Commit())
 
 			if tc.expPanic {
 				suite.Require().Panics(func() {
-					_, _ = dec.AnteHandle(cacheCtx.WithIsCheckTx(true).WithGasMeter(sdk.NewGasMeter(1)), tc.tx, false, testutil.NextFn)
+					_, _ = dec.AnteHandle(cacheCtx.WithIsCheckTx(true).WithGasMeter(storetypes.NewGasMeter(1)), tc.tx, false, testutil.NextFn)
 				})
 				return
 			}
 
-			ctx, err := dec.AnteHandle(cacheCtx.WithIsCheckTx(true).WithGasMeter(sdk.NewInfiniteGasMeter()), tc.tx, false, testutil.NextFn)
+			ctx, err := dec.AnteHandle(cacheCtx.WithIsCheckTx(true).WithGasMeter(storetypes.NewInfiniteGasMeter()), tc.tx, false, testutil.NextFn)
 			if tc.expPass {
 				suite.Require().NoError(err)
 				suite.Require().Equal(tc.expPriority, ctx.Priority())
@@ -458,13 +471,14 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 }
 
 func (suite *AnteTestSuite) TestCanTransferDecorator() {
-	dec := ethante.NewCanTransferDecorator(suite.app.EvmKeeper)
+	dec := ethante.NewCanTransferDecorator(suite.GetNetwork().App.EvmKeeper)
 
 	addr, privKey := testutiltx.NewAddrKey()
+	ethSigner := ethtypes.LatestSignerForChainID(suite.GetNetwork().App.EvmKeeper.ChainID())
 
-	suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, big.NewInt(100))
+	suite.GetNetwork().App.FeeMarketKeeper.SetBaseFee(suite.GetNetwork().GetContext(), big.NewInt(100))
 	ethContractCreationTxParams := &evmtypes.EvmTxArgs{
-		ChainID:   suite.app.EvmKeeper.ChainID(),
+		ChainID:   suite.GetNetwork().App.EvmKeeper.ChainID(),
 		Nonce:     1,
 		Amount:    big.NewInt(10),
 		GasLimit:  1000,
@@ -479,7 +493,7 @@ func (suite *AnteTestSuite) TestCanTransferDecorator() {
 
 	tx.From = addr.Hex()
 
-	err := tx.Sign(suite.ethSigner, testutiltx.NewSigner(privKey))
+	err := tx.Sign(ethSigner, testutiltx.NewSigner(privKey))
 	suite.Require().NoError(err)
 
 	var vmdb *statedb.StateDB
@@ -496,8 +510,8 @@ func (suite *AnteTestSuite) TestCanTransferDecorator() {
 			"evm CanTransfer failed",
 			tx,
 			func() {
-				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr.Bytes())
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				acc := suite.GetNetwork().App.AccountKeeper.NewAccountWithAddress(suite.GetNetwork().GetContext(), addr.Bytes())
+				suite.GetNetwork().App.AccountKeeper.SetAccount(suite.GetNetwork().GetContext(), acc)
 			},
 			false,
 		},
@@ -505,8 +519,8 @@ func (suite *AnteTestSuite) TestCanTransferDecorator() {
 			"success",
 			tx,
 			func() {
-				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr.Bytes())
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				acc := suite.GetNetwork().App.AccountKeeper.NewAccountWithAddress(suite.GetNetwork().GetContext(), addr.Bytes())
+				suite.GetNetwork().App.AccountKeeper.SetAccount(suite.GetNetwork().GetContext(), acc)
 
 				vmdb.AddBalance(addr, big.NewInt(1000000))
 			},
@@ -516,11 +530,11 @@ func (suite *AnteTestSuite) TestCanTransferDecorator() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			vmdb = testutil.NewStateDB(suite.ctx, suite.app.EvmKeeper)
+			vmdb = testutil.NewStateDB(suite.GetNetwork().GetContext(), suite.GetNetwork().App.EvmKeeper)
 			tc.malleate()
 			suite.Require().NoError(vmdb.Commit())
 
-			_, err := dec.AnteHandle(suite.ctx.WithIsCheckTx(true), tc.tx, false, testutil.NextFn)
+			_, err := dec.AnteHandle(suite.GetNetwork().GetContext().WithIsCheckTx(true), tc.tx, false, testutil.NextFn)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -532,11 +546,12 @@ func (suite *AnteTestSuite) TestCanTransferDecorator() {
 }
 
 func (suite *AnteTestSuite) TestEthIncrementSenderSequenceDecorator() {
-	dec := ethante.NewEthIncrementSenderSequenceDecorator(suite.app.AccountKeeper)
+	dec := ethante.NewEthIncrementSenderSequenceDecorator(suite.GetNetwork().App.AccountKeeper)
 	addr, privKey := testutiltx.NewAddrKey()
+	ethSigner := ethtypes.LatestSignerForChainID(suite.GetNetwork().App.EvmKeeper.ChainID())
 
 	ethTxContractParamsNonce0 := &evmtypes.EvmTxArgs{
-		ChainID:  suite.app.EvmKeeper.ChainID(),
+		ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
 		Nonce:    0,
 		Amount:   big.NewInt(10),
 		GasLimit: 1000,
@@ -544,12 +559,12 @@ func (suite *AnteTestSuite) TestEthIncrementSenderSequenceDecorator() {
 	}
 	contract := evmtypes.NewTx(ethTxContractParamsNonce0)
 	contract.From = addr.Hex()
-	err := contract.Sign(suite.ethSigner, testutiltx.NewSigner(privKey))
+	err := contract.Sign(ethSigner, testutiltx.NewSigner(privKey))
 	suite.Require().NoError(err)
 
 	to := testutiltx.GenerateAddress()
 	ethTxParamsNonce0 := &evmtypes.EvmTxArgs{
-		ChainID:  suite.app.EvmKeeper.ChainID(),
+		ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
 		Nonce:    0,
 		To:       &to,
 		Amount:   big.NewInt(10),
@@ -558,11 +573,11 @@ func (suite *AnteTestSuite) TestEthIncrementSenderSequenceDecorator() {
 	}
 	tx := evmtypes.NewTx(ethTxParamsNonce0)
 	tx.From = addr.Hex()
-	err = tx.Sign(suite.ethSigner, testutiltx.NewSigner(privKey))
+	err = tx.Sign(ethSigner, testutiltx.NewSigner(privKey))
 	suite.Require().NoError(err)
 
 	ethTxParamsNonce1 := &evmtypes.EvmTxArgs{
-		ChainID:  suite.app.EvmKeeper.ChainID(),
+		ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
 		Nonce:    1,
 		To:       &to,
 		Amount:   big.NewInt(10),
@@ -571,7 +586,7 @@ func (suite *AnteTestSuite) TestEthIncrementSenderSequenceDecorator() {
 	}
 	tx2 := evmtypes.NewTx(ethTxParamsNonce1)
 	tx2.From = addr.Hex()
-	err = tx2.Sign(suite.ethSigner, testutiltx.NewSigner(privKey))
+	err = tx2.Sign(ethSigner, testutiltx.NewSigner(privKey))
 	suite.Require().NoError(err)
 
 	testCases := []struct {
@@ -603,8 +618,8 @@ func (suite *AnteTestSuite) TestEthIncrementSenderSequenceDecorator() {
 			"success - create contract",
 			contract,
 			func() {
-				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr.Bytes())
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				acc := suite.GetNetwork().App.AccountKeeper.NewAccountWithAddress(suite.GetNetwork().GetContext(), addr.Bytes())
+				suite.GetNetwork().App.AccountKeeper.SetAccount(suite.GetNetwork().GetContext(), acc)
 			},
 			true, false,
 		},
@@ -622,12 +637,12 @@ func (suite *AnteTestSuite) TestEthIncrementSenderSequenceDecorator() {
 
 			if tc.expPanic {
 				suite.Require().Panics(func() {
-					_, _ = dec.AnteHandle(suite.ctx, tc.tx, false, testutil.NextFn)
+					_, _ = dec.AnteHandle(suite.GetNetwork().GetContext(), tc.tx, false, testutil.NextFn)
 				})
 				return
 			}
 
-			_, err := dec.AnteHandle(suite.ctx, tc.tx, false, testutil.NextFn)
+			_, err := dec.AnteHandle(suite.GetNetwork().GetContext(), tc.tx, false, testutil.NextFn)
 
 			if tc.expPass {
 				suite.Require().NoError(err)
@@ -636,7 +651,7 @@ func (suite *AnteTestSuite) TestEthIncrementSenderSequenceDecorator() {
 				txData, err := evmtypes.UnpackTxData(msg.Data)
 				suite.Require().NoError(err)
 
-				nonce := suite.app.EvmKeeper.GetNonce(suite.ctx, addr)
+				nonce := suite.GetNetwork().App.EvmKeeper.GetNonce(suite.GetNetwork().GetContext(), addr)
 				suite.Require().Equal(txData.GetNonce()+1, nonce)
 			} else {
 				suite.Require().Error(err)

@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	protov2 "google.golang.org/protobuf/proto"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/utils"
@@ -17,7 +18,7 @@ import (
 
 var (
 	feeAmt     = math.Pow10(16)
-	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdk.NewIntFromUint64(uint64(feeAmt))) // 0.01 EVMOS
+	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdkmath.NewIntFromUint64(uint64(feeAmt))) // 0.01 ISLM
 )
 
 // CosmosTxArgs contains the params to create a cosmos tx
@@ -26,7 +27,7 @@ type CosmosTxArgs struct {
 	TxCfg client.TxConfig
 	// Priv is the private key that will be used to sign the tx
 	Priv cryptotypes.PrivKey
-	// ChainID is the chain's id on cosmos format, e.g. 'evmos_9000-1'
+	// ChainID is the chain's id on cosmos format, e.g. 'haqq_11235-1'
 	ChainID string
 	// Gas to be used on the tx
 	Gas uint64
@@ -44,7 +45,7 @@ type CosmosTxArgs struct {
 // It returns the signed transaction and an error
 func PrepareCosmosTx(
 	ctx sdk.Context,
-	appEvmos *app.Haqq,
+	haqqApp *app.Haqq,
 	args CosmosTxArgs,
 ) (authsigning.Tx, error) {
 	txBuilder := args.TxCfg.NewTxBuilder()
@@ -67,7 +68,7 @@ func PrepareCosmosTx(
 
 	return signCosmosTx(
 		ctx,
-		appEvmos,
+		haqqApp,
 		args,
 		txBuilder,
 	)
@@ -77,12 +78,17 @@ func PrepareCosmosTx(
 // the provided private key
 func signCosmosTx(
 	ctx sdk.Context,
-	appEvmos *app.Haqq,
+	haqqApp *app.Haqq,
 	args CosmosTxArgs,
 	txBuilder client.TxBuilder,
 ) (authsigning.Tx, error) {
 	addr := sdk.AccAddress(args.Priv.PubKey().Address().Bytes())
-	seq, err := appEvmos.AccountKeeper.GetSequence(ctx, addr)
+	seq, err := haqqApp.AccountKeeper.GetSequence(ctx, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	signMode, err := authsigning.APISignModeToInternal(args.TxCfg.SignModeHandler().DefaultMode())
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +98,7 @@ func signCosmosTx(
 	sigV2 := signing.SignatureV2{
 		PubKey: args.Priv.PubKey(),
 		Data: &signing.SingleSignatureData{
-			SignMode:  args.TxCfg.SignModeHandler().DefaultMode(),
+			SignMode:  signMode,
 			Signature: nil,
 		},
 		Sequence: seq,
@@ -105,14 +111,15 @@ func signCosmosTx(
 	}
 
 	// Second round: all signer infos are set, so each signer can sign.
-	accNumber := appEvmos.AccountKeeper.GetAccount(ctx, addr).GetAccountNumber()
+	accNumber := haqqApp.AccountKeeper.GetAccount(ctx, addr).GetAccountNumber()
 	signerData := authsigning.SignerData{
 		ChainID:       args.ChainID,
 		AccountNumber: accNumber,
 		Sequence:      seq,
 	}
 	sigV2, err = tx.SignWithPrivKey(
-		args.TxCfg.SignModeHandler().DefaultMode(),
+		ctx,
+		signMode,
 		signerData,
 		txBuilder, args.Priv, args.TxCfg,
 		seq,
@@ -136,6 +143,7 @@ var _ sdk.Tx = &InvalidTx{}
 // NOTE: This is used for testing purposes, to serve the edge case of invalid data being passed to functions.
 type InvalidTx struct{}
 
-func (InvalidTx) GetMsgs() []sdk.Msg { return []sdk.Msg{nil} }
+func (InvalidTx) GetMsgs() []sdk.Msg                    { return nil }
+func (InvalidTx) GetMsgsV2() ([]protov2.Message, error) { return nil, nil }
 
 func (InvalidTx) ValidateBasic() error { return nil }

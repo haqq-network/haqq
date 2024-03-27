@@ -1,13 +1,17 @@
 package ibc
 
 import (
+	"strings"
+
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	"github.com/haqq-network/haqq/utils"
+	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 )
 
 // GetTransferSenderRecipient returns the sender and recipient sdk.AccAddresses
@@ -56,7 +60,7 @@ func GetTransferAmount(packet channeltypes.Packet) (string, error) {
 		return "", errorsmod.Wrapf(errortypes.ErrInvalidCoins, "empty amount")
 	}
 
-	if _, ok := sdk.NewIntFromString(data.Amount); !ok {
+	if _, ok := math.NewIntFromString(data.Amount); !ok {
 		return "", errorsmod.Wrapf(errortypes.ErrInvalidCoins, "invalid amount")
 	}
 
@@ -70,7 +74,7 @@ func GetTransferAmount(packet channeltypes.Packet) (string, error) {
 // prefix path from the destination chain to the denom.
 func GetReceivedCoin(srcPort, srcChannel, dstPort, dstChannel, rawDenom, rawAmt string) sdk.Coin {
 	// NOTE: Denom and amount are already validated
-	amount, _ := sdk.NewIntFromString(rawAmt)
+	amount, _ := math.NewIntFromString(rawAmt)
 
 	if transfertypes.ReceiverChainIsSource(srcPort, srcChannel, rawDenom) {
 		// remove prefix added by sender chain
@@ -111,11 +115,58 @@ func GetReceivedCoin(srcPort, srcChannel, dstPort, dstChannel, rawDenom, rawAmt 
 // GetSentCoin returns the sent coin from an ICS20 FungibleTokenPacketData.
 func GetSentCoin(rawDenom, rawAmt string) sdk.Coin {
 	// NOTE: Denom and amount are already validated
-	amount, _ := sdk.NewIntFromString(rawAmt)
+	amount, _ := math.NewIntFromString(rawAmt)
 	trace := transfertypes.ParseDenomTrace(rawDenom)
 
 	return sdk.Coin{
 		Denom:  trace.IBCDenom(),
 		Amount: amount,
 	}
+}
+
+// GetDenomTrace returns the denomination trace from the corresponding IBC denomination. If the
+// denomination is not an IBC voucher or the trace is not found, it returns an error.
+func GetDenomTrace(
+	transferKeeper transferkeeper.Keeper,
+	ctx sdk.Context,
+	denom string,
+) (transfertypes.DenomTrace, error) {
+	if !strings.HasPrefix(denom, "ibc/") {
+		return transfertypes.DenomTrace{}, errorsmod.Wrapf(ErrNoIBCVoucherDenom, denom)
+	}
+
+	hash, err := transfertypes.ParseHexHash(denom[4:])
+	if err != nil {
+		return transfertypes.DenomTrace{}, err
+	}
+
+	denomTrace, found := transferKeeper.GetDenomTrace(ctx, hash)
+	if !found {
+		return transfertypes.DenomTrace{}, ErrDenomTraceNotFound
+	}
+
+	return denomTrace, nil
+}
+
+// DeriveDecimalsFromDenom returns the number of decimals of an IBC coin
+// depending on the prefix of the base denomination
+func DeriveDecimalsFromDenom(baseDenom string) (uint8, error) {
+	var decimals uint8
+	if len(baseDenom) == 0 {
+		return decimals, errorsmod.Wrapf(ErrInvalidBaseDenom, "Base denom cannot be an empty string")
+	}
+
+	switch baseDenom[0] {
+	case 'u': // micro (u) -> 6 decimals
+		decimals = 6
+	case 'a': // atto (a) -> 18 decimals
+		decimals = 18
+	default:
+		return decimals, errorsmod.Wrapf(
+			ErrInvalidBaseDenom,
+			"Should be either micro ('u[...]') or atto ('a[...]'); got: %q",
+			baseDenom,
+		)
+	}
+	return decimals, nil
 }

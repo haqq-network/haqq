@@ -3,6 +3,7 @@ package keeper_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -17,6 +18,7 @@ import (
 
 var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, func() {
 	var (
+		err              error
 		erc20Symbol      = "CTKN"
 		sender, receiver string
 		haqqDenom        string
@@ -54,11 +56,12 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 			sender = s.HaqqChain.SenderAccount.GetAddress().String()
 			receiverAcc = sdk.MustAccAddressFromBech32("haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq")
 			senderAcc = sdk.MustAccAddressFromBech32(sender)
-			haqqDenom = s.HaqqChain.App.(*app.Haqq).StakingKeeper.BondDenom(s.HaqqChain.GetContext())
+			haqqDenom, err = s.HaqqChain.App.(*app.Haqq).StakingKeeper.BondDenom(s.HaqqChain.GetContext())
+			s.Require().NoError(err)
 
 			erc20params := types.DefaultParams()
 			erc20params.EnableErc20 = false
-			err := s.app.Erc20Keeper.SetParams(s.HaqqChain.GetContext(), erc20params)
+			err = s.app.Erc20Keeper.SetParams(s.HaqqChain.GetContext(), erc20params)
 			s.Require().NoError(err)
 
 			// Send from osmosis to Haqq
@@ -85,7 +88,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 				// Convert ibc vouchers to erc20 tokens
 				msgConvertCoin := types.NewMsgConvertCoin(
-					sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+					sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 					common.BytesToAddress(senderAcc.Bytes()),
 					senderAcc,
 				)
@@ -93,7 +96,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				err := msgConvertCoin.ValidateBasic()
 				s.Require().NoError(err)
 
-				_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+				_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 				s.Require().NoError(err)
 
 				s.HaqqChain.Coordinator.CommitBlock()
@@ -105,7 +108,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().Equal(uosmoInternalBalanceBeforeConversion.Amount.Int64()-amount, uosmoInternalBalanceAfterConversion.Amount.Int64())
 			})
 			It("grpc - should be the same after conversion", func() {
-				uosmoGrpcBalanceBeforeConversion, err := bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+				uosmoGrpcBalanceBeforeConversion, err := bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 					Address: sender,
 					Denom:   teststypes.UosmoIbcdenom,
 				})
@@ -114,7 +117,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 				// Convert ibc vouchers to erc20 tokens
 				msgConvertCoin := types.NewMsgConvertCoin(
-					sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+					sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 					common.BytesToAddress(senderAcc.Bytes()),
 					senderAcc,
 				)
@@ -122,13 +125,13 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				err = msgConvertCoin.ValidateBasic()
 				s.Require().NoError(err)
 
-				_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+				_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 				s.Require().NoError(err)
 
 				s.HaqqChain.Coordinator.CommitBlock()
 
 				// Check balance after conversion
-				uosmoGrpcBalanceAfterConversion, err := bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+				uosmoGrpcBalanceAfterConversion, err := bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 					Address: sender,
 					Denom:   teststypes.UosmoIbcdenom,
 				})
@@ -136,7 +139,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().Equal(uosmoGrpcBalanceBeforeConversion.Balance.Amount.Int64(), uosmoGrpcBalanceAfterConversion.Balance.Amount.Int64())
 			})
 			It("grpc - should behave like internal if ERC20 is disabled", func() {
-				uosmoGrpcBalanceBeforeConversion, err := bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+				uosmoGrpcBalanceBeforeConversion, err := bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 					Address: sender,
 					Denom:   teststypes.UosmoIbcdenom,
 				})
@@ -145,7 +148,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 				// Convert ibc vouchers to erc20 tokens
 				msgConvertCoin := types.NewMsgConvertCoin(
-					sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+					sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 					common.BytesToAddress(senderAcc.Bytes()),
 					senderAcc,
 				)
@@ -153,7 +156,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				err = msgConvertCoin.ValidateBasic()
 				s.Require().NoError(err)
 
-				_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+				_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 				s.Require().NoError(err)
 
 				s.HaqqChain.Coordinator.CommitBlock()
@@ -164,7 +167,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().NoError(err)
 
 				// Check balance after conversion
-				uosmoGrpcBalanceAfterConversion, err := bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+				uosmoGrpcBalanceAfterConversion, err := bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 					Address: sender,
 					Denom:   teststypes.UosmoIbcdenom,
 				})
@@ -185,7 +188,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 				// Convert ibc vouchers to erc20 tokens
 				msgConvertCoin := types.NewMsgConvertCoin(
-					sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+					sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 					common.BytesToAddress(senderAcc.Bytes()),
 					senderAcc,
 				)
@@ -193,7 +196,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				err := msgConvertCoin.ValidateBasic()
 				s.Require().NoError(err)
 
-				_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+				_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 				s.Require().NoError(err)
 
 				s.HaqqChain.Coordinator.CommitBlock()
@@ -206,7 +209,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().False(found)
 			})
 			It("grpc - should be the same after conversion", func() {
-				grpcAllBalancesBeforeConversion, err := bankQueryClient.AllBalances(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryAllBalancesRequest{
+				grpcAllBalancesBeforeConversion, err := bankQueryClient.AllBalances(s.HaqqChain.GetContext(), &banktypes.QueryAllBalancesRequest{
 					Address: sender,
 				})
 				s.Require().NoError(err)
@@ -217,7 +220,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 				// Convert ibc vouchers to erc20 tokens
 				msgConvertCoin := types.NewMsgConvertCoin(
-					sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+					sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 					common.BytesToAddress(senderAcc.Bytes()),
 					senderAcc,
 				)
@@ -225,13 +228,13 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				err = msgConvertCoin.ValidateBasic()
 				s.Require().NoError(err)
 
-				_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+				_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 				s.Require().NoError(err)
 
 				s.HaqqChain.Coordinator.CommitBlock()
 
 				// Check balance after conversion
-				grpcAllBalancesAfterConversion, err := bankQueryClient.AllBalances(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryAllBalancesRequest{
+				grpcAllBalancesAfterConversion, err := bankQueryClient.AllBalances(s.HaqqChain.GetContext(), &banktypes.QueryAllBalancesRequest{
 					Address: sender,
 				})
 				s.Require().NoError(err)
@@ -241,7 +244,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().Equal(uosmoBefore.Amount.Int64(), uosmoAfter.Amount.Int64())
 			})
 			It("grpc - should behave like internal if ERC20 is disabled", func() {
-				grpcAllBalancesBeforeConversion, err := bankQueryClient.AllBalances(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryAllBalancesRequest{
+				grpcAllBalancesBeforeConversion, err := bankQueryClient.AllBalances(s.HaqqChain.GetContext(), &banktypes.QueryAllBalancesRequest{
 					Address: sender,
 				})
 				s.Require().NoError(err)
@@ -252,7 +255,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 				// Convert ibc vouchers to erc20 tokens
 				msgConvertCoin := types.NewMsgConvertCoin(
-					sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+					sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 					common.BytesToAddress(senderAcc.Bytes()),
 					senderAcc,
 				)
@@ -260,7 +263,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				err = msgConvertCoin.ValidateBasic()
 				s.Require().NoError(err)
 
-				_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+				_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 				s.Require().NoError(err)
 
 				s.HaqqChain.Coordinator.CommitBlock()
@@ -271,7 +274,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().NoError(err)
 
 				// Check balance after conversion
-				grpcAllBalancesAfterConversion, err := bankQueryClient.AllBalances(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryAllBalancesRequest{
+				grpcAllBalancesAfterConversion, err := bankQueryClient.AllBalances(s.HaqqChain.GetContext(), &banktypes.QueryAllBalancesRequest{
 					Address: sender,
 				})
 				s.Require().NoError(err)
@@ -292,7 +295,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 				// Convert ibc vouchers to erc20 tokens
 				msgConvertCoin := types.NewMsgConvertCoin(
-					sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+					sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 					common.BytesToAddress(senderAcc.Bytes()),
 					senderAcc,
 				)
@@ -300,7 +303,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				err := msgConvertCoin.ValidateBasic()
 				s.Require().NoError(err)
 
-				_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+				_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 				s.Require().NoError(err)
 
 				s.HaqqChain.Coordinator.CommitBlock()
@@ -313,7 +316,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().False(found)
 			})
 			It("grpc - should be the same after conversion", func() {
-				grpcSpendableBalancesBeforeConversion, err := bankQueryClient.SpendableBalances(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QuerySpendableBalancesRequest{
+				grpcSpendableBalancesBeforeConversion, err := bankQueryClient.SpendableBalances(s.HaqqChain.GetContext(), &banktypes.QuerySpendableBalancesRequest{
 					Address: sender,
 				})
 				s.Require().NoError(err)
@@ -324,7 +327,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 				// Convert ibc vouchers to erc20 tokens
 				msgConvertCoin := types.NewMsgConvertCoin(
-					sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+					sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 					common.BytesToAddress(senderAcc.Bytes()),
 					senderAcc,
 				)
@@ -332,13 +335,13 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				err = msgConvertCoin.ValidateBasic()
 				s.Require().NoError(err)
 
-				_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+				_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 				s.Require().NoError(err)
 
 				s.HaqqChain.Coordinator.CommitBlock()
 
 				// Check balance after conversion
-				grpcSpendableBalancesAfterConversion, err := bankQueryClient.SpendableBalances(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QuerySpendableBalancesRequest{
+				grpcSpendableBalancesAfterConversion, err := bankQueryClient.SpendableBalances(s.HaqqChain.GetContext(), &banktypes.QuerySpendableBalancesRequest{
 					Address: sender,
 				})
 				s.Require().NoError(err)
@@ -348,7 +351,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().Equal(uosmoBefore.Amount.Int64(), uosmoAfter.Amount.Int64())
 			})
 			It("grpc - should behave like internal if ERC20 is disabled", func() {
-				grpcSpendableBalancesBeforeConversion, err := bankQueryClient.SpendableBalances(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QuerySpendableBalancesRequest{
+				grpcSpendableBalancesBeforeConversion, err := bankQueryClient.SpendableBalances(s.HaqqChain.GetContext(), &banktypes.QuerySpendableBalancesRequest{
 					Address: sender,
 				})
 				s.Require().NoError(err)
@@ -359,7 +362,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 
 				// Convert ibc vouchers to erc20 tokens
 				msgConvertCoin := types.NewMsgConvertCoin(
-					sdk.NewCoin(pair.Denom, sdk.NewInt(amount)),
+					sdk.NewCoin(pair.Denom, math.NewInt(amount)),
 					common.BytesToAddress(senderAcc.Bytes()),
 					senderAcc,
 				)
@@ -367,7 +370,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				err = msgConvertCoin.ValidateBasic()
 				s.Require().NoError(err)
 
-				_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+				_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 				s.Require().NoError(err)
 
 				s.HaqqChain.Coordinator.CommitBlock()
@@ -378,7 +381,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().NoError(err)
 
 				// Check balance after conversion
-				grpcSpendableBalancesAfterConversion, err := bankQueryClient.SpendableBalances(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QuerySpendableBalancesRequest{
+				grpcSpendableBalancesAfterConversion, err := bankQueryClient.SpendableBalances(s.HaqqChain.GetContext(), &banktypes.QuerySpendableBalancesRequest{
 					Address: sender,
 				})
 				s.Require().NoError(err)
@@ -410,7 +413,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().True(aislmReceiverBalanceBefore.IsZero())
 
 				// Transfer Coins via DeliverTx
-				fiveUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewIntFromUint64(5))
+				fiveUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, math.NewIntFromUint64(5))
 				fiveIslm, err := sdk.ParseCoinNormalized("5000000000000000000aISLM")
 				s.Require().NoError(err)
 
@@ -446,7 +449,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				s.Require().True(aislmReceiverBalanceBefore.IsZero())
 
 				// Transfer Coins via DeliverTx
-				fiveUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewIntFromUint64(115))
+				fiveUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, math.NewIntFromUint64(115))
 				fiveIslm, err := sdk.ParseCoinNormalized("5000000000000000000aISLM")
 				s.Require().NoError(err)
 
@@ -457,7 +460,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				fee := sdk.Coins{sdk.NewInt64Coin(haqqDenom, ibctesting.DefaultFeeAmt)}
 
 				_, _, err = ibctesting.SignAndDeliver(
-					s.HaqqChain.T,
+					s.HaqqChain.TB,
 					s.HaqqChain.TxConfig,
 					s.HaqqChain.App.GetBaseApp(),
 					[]sdk.Msg{bankTransferMsg},
@@ -511,8 +514,8 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 				)
 
 				// prepare coins for transfers
-				fourUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewInt(4))
-				sixUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewInt(6))
+				fourUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, math.NewInt(4))
+				sixUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, math.NewInt(6))
 				fiveIslm, err := sdk.ParseCoinNormalized("5000000000000000000aISLM")
 				s.Require().NoError(err)
 
@@ -523,13 +526,13 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmSenderBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().False(aislmSenderBalanceBefore.IsZero())
 
-						uosmoSenderGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
 						s.Require().NoError(err)
 						s.Require().Equal(amount, uosmoSenderGrpcBalanceBefore.Balance.Amount.Int64())
-						aislmSenderGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -541,13 +544,13 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmReceiverBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceBefore.IsZero())
 
-						uosmoReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
 						s.Require().NoError(err)
 						s.Require().True(uosmoReceiverGrpcBalanceBefore.Balance.IsZero())
-						aislmReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -561,7 +564,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// receiver has zero balance for both uosmo and aislm
 
 						// Transfer Coins
-						fiveUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewInt(5))
+						fiveUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, math.NewInt(5))
 						transferCoins := sdk.NewCoins(fiveUosmo, fiveIslm)
 						bankTransferMsg := banktypes.NewMsgSend(senderAcc, receiverAcc, transferCoins)
 						_, err = ibctesting.SendMsgs(s.HaqqChain, ibctesting.DefaultFeeAmt, bankTransferMsg)
@@ -572,7 +575,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have zero uosmo on SDK layer and 5 uosmo on EVM
 						uosmoSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoSenderBalanceAfter.IsZero())
-						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -581,7 +584,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have less aislm tokens than before on transfer amount and fee
 						aislmSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().True(aislmSenderBalanceBefore.Sub(fiveIslm).IsGTE(aislmSenderBalanceAfter))
-						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -591,7 +594,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have zero uosmo on SDK layer and 5 uosmo on EVM
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoReceiverBalanceAfter.IsZero())
-						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -601,7 +604,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceBefore.Add(fiveIslm).IsGTE(aislmReceiverBalanceAfter))
 						s.Require().True(aislmReceiverBalanceAfter.IsGTE(aislmReceiverBalanceBefore.Add(fiveIslm)))
-						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -616,14 +619,14 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// receiver has zero balance for both uosmo and aislm
 
 						// Transfer Coins
-						fiveHundredUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewInt(500))
+						fiveHundredUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, math.NewInt(500))
 						transferCoins := sdk.NewCoins(fiveHundredUosmo, fiveIslm)
 						bankTransferMsg := banktypes.NewMsgSend(senderAcc, receiverAcc, transferCoins)
 
 						s.HaqqChain.Coordinator.UpdateTimeForChain(s.HaqqChain)
 						fee := sdk.NewInt64Coin(haqqDenom, ibctesting.DefaultFeeAmt)
 						_, _, err = ibctesting.SignAndDeliver(
-							s.HaqqChain.T,
+							s.HaqqChain.TB,
 							s.HaqqChain.TxConfig,
 							s.HaqqChain.App.GetBaseApp(),
 							[]sdk.Msg{bankTransferMsg},
@@ -642,7 +645,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have the same uosmo balance on both SDK and EVM layers as before
 						uosmoSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
 						s.Require().Equal(amount, uosmoSenderBalanceAfter.Amount.Int64())
-						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -652,7 +655,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have the same aislm balance (minus fee) on both SDK and EVM layers as before
 						aislmSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().True(aislmSenderBalanceBefore.Sub(fiveIslm).IsLT(aislmSenderBalanceAfter))
-						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -663,7 +666,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have the same uosmo balance on both SDK and EVM layers as before
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoReceiverBalanceAfter.IsZero())
-						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -672,7 +675,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have the same aislm balance on both SDK and EVM layers as before
 						aislmReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceAfter.IsZero())
-						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -696,7 +699,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						s.HaqqChain.Coordinator.UpdateTimeForChain(s.HaqqChain)
 
 						_, _, err = ibctesting.SignAndDeliver(
-							s.HaqqChain.T,
+							s.HaqqChain.TB,
 							s.HaqqChain.TxConfig,
 							s.HaqqChain.App.GetBaseApp(),
 							[]sdk.Msg{bankTransferMsg},
@@ -710,7 +713,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						s.Require().NoError(err)
 
 						_, _, err = ibctesting.SignAndDeliver(
-							s.HaqqChain.T,
+							s.HaqqChain.TB,
 							s.HaqqChain.TxConfig,
 							s.HaqqChain.App.GetBaseApp(),
 							[]sdk.Msg{bankTransferMsg},
@@ -731,7 +734,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have zero uosmo on SDK layer and 5 uosmo on EVM
 						uosmoSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoSenderBalanceAfter.IsZero())
-						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -740,7 +743,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have less aislm tokens than before on transfer amount and fee
 						aislmSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().True(aislmSenderBalanceBefore.Sub(fiveIslm).IsGTE(aislmSenderBalanceAfter))
-						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -750,7 +753,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have zero uosmo on SDK layer and 5 uosmo on EVM
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoReceiverBalanceAfter.IsZero())
-						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -760,7 +763,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceBefore.Add(fiveIslm).IsGTE(aislmReceiverBalanceAfter))
 						s.Require().True(aislmReceiverBalanceAfter.IsGTE(aislmReceiverBalanceBefore.Add(fiveIslm)))
-						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -778,7 +781,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						err := msgConvertCoin.ValidateBasic()
 						s.Require().NoError(err)
 
-						_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+						_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 						s.Require().NoError(err)
 
 						s.HaqqChain.Coordinator.CommitBlock()
@@ -789,13 +792,13 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmSenderBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().False(aislmSenderBalanceBefore.IsZero())
 
-						uosmoSenderGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
 						s.Require().NoError(err)
 						s.Require().Equal(amount, uosmoSenderGrpcBalanceBefore.Balance.Amount.Int64())
-						aislmSenderGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -807,13 +810,13 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmReceiverBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceBefore.IsZero())
 
-						uosmoReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
 						s.Require().NoError(err)
 						s.Require().True(uosmoReceiverGrpcBalanceBefore.Balance.IsZero())
-						aislmReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -839,7 +842,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have zero uosmo on SDK layer and 6 uosmo on EVM
 						uosmoSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoSenderBalanceAfter.IsZero())
-						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -848,7 +851,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have less aislm tokens than before on transfer amount and fee
 						aislmSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().True(aislmSenderBalanceBefore.Sub(fiveIslm).IsGTE(aislmSenderBalanceAfter))
-						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -858,7 +861,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have zero uosmo on SDK layer and 4 uosmo on EVM
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoReceiverBalanceAfter.IsZero())
-						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -868,7 +871,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceBefore.Add(fiveIslm).IsGTE(aislmReceiverBalanceAfter))
 						s.Require().True(aislmReceiverBalanceAfter.IsGTE(aislmReceiverBalanceBefore.Add(fiveIslm)))
-						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -884,14 +887,14 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Now we ganna transfer 500 uosmo to another account and expect fail
 
 						// Transfer Coins
-						fiveHundredUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewInt(500))
+						fiveHundredUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, math.NewInt(500))
 						transferCoins := sdk.NewCoins(fiveHundredUosmo, fiveIslm)
 						bankTransferMsg := banktypes.NewMsgSend(senderAcc, receiverAcc, transferCoins)
 
 						s.HaqqChain.Coordinator.UpdateTimeForChain(s.HaqqChain)
 						fee := sdk.NewInt64Coin(haqqDenom, ibctesting.DefaultFeeAmt)
 						_, _, err = ibctesting.SignAndDeliver(
-							s.HaqqChain.T,
+							s.HaqqChain.TB,
 							s.HaqqChain.TxConfig,
 							s.HaqqChain.App.GetBaseApp(),
 							[]sdk.Msg{bankTransferMsg},
@@ -910,7 +913,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have the same uosmo balance on both SDK and EVM layers as before
 						uosmoSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
 						s.Require().Equal(sixUosmo.Amount.Int64(), uosmoSenderBalanceAfter.Amount.Int64())
-						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -920,7 +923,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have the same aislm balance (minus fee) on both SDK and EVM layers as before
 						aislmSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().True(aislmSenderBalanceBefore.Sub(fiveIslm).IsLT(aislmSenderBalanceAfter))
-						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -931,7 +934,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have the same uosmo balance on both SDK and EVM layers as before
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoReceiverBalanceAfter.IsZero())
-						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -940,7 +943,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have the same aislm balance on both SDK and EVM layers as before
 						aislmReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceAfter.IsZero())
-						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -957,7 +960,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						err := msgConvertCoin.ValidateBasic()
 						s.Require().NoError(err)
 
-						_, err = s.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(s.HaqqChain.GetContext()), msgConvertCoin)
+						_, err = s.app.Erc20Keeper.ConvertCoin(s.HaqqChain.GetContext(), msgConvertCoin)
 						s.Require().NoError(err)
 
 						s.HaqqChain.Coordinator.CommitBlock()
@@ -968,13 +971,13 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmSenderBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().False(aislmSenderBalanceBefore.IsZero())
 
-						uosmoSenderGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
 						s.Require().NoError(err)
 						s.Require().Equal(amount, uosmoSenderGrpcBalanceBefore.Balance.Amount.Int64())
-						aislmSenderGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -986,13 +989,13 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmReceiverBalanceBefore = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceBefore.IsZero())
 
-						uosmoReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
 						s.Require().NoError(err)
 						s.Require().True(uosmoReceiverGrpcBalanceBefore.Balance.IsZero())
-						aislmReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceBefore, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -1018,7 +1021,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have zero uosmo on SDK layer and 6 uosmo on EVM
 						uosmoSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoSenderBalanceAfter.IsZero())
-						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -1027,7 +1030,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have less aislm tokens than before on transfer amount and fee
 						aislmSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().True(aislmSenderBalanceBefore.Sub(fiveIslm).IsGTE(aislmSenderBalanceAfter))
-						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -1037,7 +1040,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have zero uosmo on SDK layer and 4 uosmo on EVM
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoReceiverBalanceAfter.IsZero())
-						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -1047,7 +1050,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						aislmReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceBefore.Add(fiveIslm).IsGTE(aislmReceiverBalanceAfter))
 						s.Require().True(aislmReceiverBalanceAfter.IsGTE(aislmReceiverBalanceBefore.Add(fiveIslm)))
-						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -1063,14 +1066,14 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Now we ganna transfer 500 uosmo to another account and expect fail
 
 						// Transfer Coins
-						fiveHundredUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewInt(500))
+						fiveHundredUosmo := sdk.NewCoin(teststypes.UosmoIbcdenom, math.NewInt(500))
 						transferCoins := sdk.NewCoins(fiveHundredUosmo, fiveIslm)
 						bankTransferMsg := banktypes.NewMsgSend(senderAcc, receiverAcc, transferCoins)
 
 						s.HaqqChain.Coordinator.UpdateTimeForChain(s.HaqqChain)
 						fee := sdk.NewInt64Coin(haqqDenom, ibctesting.DefaultFeeAmt)
 						_, _, err = ibctesting.SignAndDeliver(
-							s.HaqqChain.T,
+							s.HaqqChain.TB,
 							s.HaqqChain.TxConfig,
 							s.HaqqChain.App.GetBaseApp(),
 							[]sdk.Msg{bankTransferMsg},
@@ -1089,7 +1092,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have the same uosmo balance on both SDK and EVM layers as before
 						uosmoSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, teststypes.UosmoIbcdenom)
 						s.Require().Equal(uosmoSenderBalanceBefore.Amount.Int64(), uosmoSenderBalanceAfter.Amount.Int64())
-						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -1099,7 +1102,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Sender must have the same aislm balance (minus fee) on both SDK and EVM layers as before
 						aislmSenderBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), senderAcc, haqqDenom)
 						s.Require().True(aislmSenderBalanceBefore.Sub(fiveIslm).IsLT(aislmSenderBalanceAfter))
-						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmSenderGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: senderAcc.String(),
 							Denom:   haqqDenom,
 						})
@@ -1110,7 +1113,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have the same uosmo balance on both SDK and EVM layers as before
 						uosmoReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, teststypes.UosmoIbcdenom)
 						s.Require().True(uosmoReceiverBalanceAfter.IsZero())
-						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						uosmoReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   teststypes.UosmoIbcdenom,
 						})
@@ -1119,7 +1122,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 						// Receiver must have the same aislm balance on both SDK and EVM layers as before
 						aislmReceiverBalanceAfter = s.app.BankKeeper.GetBalance(s.HaqqChain.GetContext(), receiverAcc, haqqDenom)
 						s.Require().True(aislmReceiverBalanceAfter.IsZero())
-						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(sdk.WrapSDKContext(s.HaqqChain.GetContext()), &banktypes.QueryBalanceRequest{
+						aislmReceiverGrpcBalanceAfter, err = bankQueryClient.Balance(s.HaqqChain.GetContext(), &banktypes.QueryBalanceRequest{
 							Address: receiverAcc.String(),
 							Denom:   haqqDenom,
 						})

@@ -9,17 +9,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibcgotesting "github.com/cosmos/ibc-go/v7/testing"
-	// ibcgotestinghelpers "github.com/cosmos/ibc-go/v7/testing/simapp/helpers"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	ibcgotesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -62,23 +62,24 @@ func CreatePacket(amount, denom, sender, receiver, srcPort, srcChannel, dstPort,
 func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	// account key
 	priv, err := ethsecp256k1.GenerateKey()
-	require.NoError(t, err)
+	suite.Require().NoError(err)
 	suite.priv = priv
 	suite.address = common.BytesToAddress(priv.PubKey().Address().Bytes())
 	suite.signer = utiltx.NewSigner(priv)
 
 	// consensus key
 	privCons, err := ethsecp256k1.GenerateKey()
-	require.NoError(t, err)
+	suite.Require().NoError(err)
 	consAddress := sdk.ConsAddress(privCons.PubKey().Address())
 	suite.consAddress = consAddress
 
 	// init app
-	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState())
+	chainID := utils.TestEdge2ChainID + "-3"
+	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
 	header := testutil.NewHeader(
-		1, time.Now().UTC(), "haqq_11235-1", consAddress, nil, nil,
+		1, time.Now().UTC(), chainID, consAddress, nil, nil,
 	)
-	suite.ctx = suite.app.BaseApp.NewContext(false, header)
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)
 
 	// query clients
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
@@ -90,28 +91,29 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.queryClientEvm = evm.NewQueryClient(queryHelperEvm)
 
 	// bond denom
-	stakingParams := suite.app.StakingKeeper.GetParams(suite.ctx)
+	stakingParams, err := suite.app.StakingKeeper.GetParams(suite.ctx)
+	suite.Require().NoError(err)
 	stakingParams.BondDenom = utils.BaseDenom
 	err = suite.app.StakingKeeper.SetParams(suite.ctx, stakingParams)
-	require.NoError(t, err)
+	suite.Require().NoError(err)
 
 	evmParams := suite.app.EvmKeeper.GetParams(suite.ctx)
 	evmParams.EvmDenom = utils.BaseDenom
 	err = suite.app.EvmKeeper.SetParams(suite.ctx, evmParams)
-	require.NoError(t, err)
+	suite.Require().NoError(err)
 
 	// Set Validator
 	valAddr := sdk.ValAddress(suite.address.Bytes())
-	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
-	require.NoError(t, err)
+	validator, err := stakingtypes.NewValidator(valAddr.String(), privCons.PubKey(), stakingtypes.Description{})
+	suite.Require().NoError(err)
 	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
-	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
-	require.NoError(t, err)
+	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, valAddr)
+	suite.Require().NoError(err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
-	require.NoError(t, err)
+	suite.Require().NoError(err)
 
 	// fund signer acc to pay for tx fees
-	amt := sdk.NewInt(int64(math.Pow10(18) * 2))
+	amt := sdkmath.NewInt(int64(math.Pow10(18) * 2))
 	err = testutil.FundAccount(
 		suite.ctx,
 		suite.app.BankKeeper,
@@ -121,7 +123,8 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.Require().NoError(err)
 
 	// TODO change to setup with 1 validator
-	validators := s.app.StakingKeeper.GetValidators(s.ctx, 2)
+	validators, err := s.app.StakingKeeper.GetValidators(s.ctx, 2)
+	suite.Require().NoError(err)
 	// set a bonded validator that takes part in consensus
 	if validators[0].Status == stakingtypes.Bonded {
 		suite.validator = validators[0]
@@ -154,14 +157,13 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 
 	// s.app.FeeMarketKeeper.SetBaseFee(s.HaqqChain.GetContext(), big.NewInt(1))
 
-	// Increase max gas
-	// ibcgotestinghelpers.DefaultGenTxGas = uint64(1_000_000_000)
-
 	// Set block proposer once, so its carried over on the ibc-go-testing suite
-	validators := s.app.StakingKeeper.GetValidators(suite.HaqqChain.GetContext(), 2)
+	validators, err := s.app.StakingKeeper.GetValidators(suite.HaqqChain.GetContext(), 2)
+	suite.Require().NoError(err)
+
 	cons, err := validators[0].GetConsAddr()
 	suite.Require().NoError(err)
-	suite.HaqqChain.CurrentHeader.ProposerAddress = cons.Bytes()
+	suite.HaqqChain.CurrentHeader.ProposerAddress = cons
 
 	err = s.app.StakingKeeper.SetValidatorByConsAddr(suite.HaqqChain.GetContext(), validators[0])
 	suite.Require().NoError(err)
@@ -169,7 +171,7 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	_, err = s.app.EvmKeeper.GetCoinbaseAddress(suite.HaqqChain.GetContext(), sdk.ConsAddress(suite.HaqqChain.CurrentHeader.ProposerAddress))
 	suite.Require().NoError(err)
 	// Mint coins locked on the Haqq Network account generated with secp.
-	amt, ok := sdk.NewIntFromString("1000000000000000000000")
+	amt, ok := sdkmath.NewIntFromString("1000000000000000000000")
 	suite.Require().True(ok)
 	coinIslm := sdk.NewCoin(utils.BaseDenom, amt)
 	coins := sdk.NewCoins(coinIslm)
@@ -179,15 +181,15 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	suite.Require().NoError(err)
 
 	// we need some coins in the bankkeeper to be able to register the coins later
-	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewInt(100)))
+	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UosmoIbcdenom, sdkmath.NewInt(100)))
 	err = s.app.BankKeeper.MintCoins(s.HaqqChain.GetContext(), types.ModuleName, coins)
 	s.Require().NoError(err)
-	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UatomIbcdenom, sdk.NewInt(100)))
+	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UatomIbcdenom, sdkmath.NewInt(100)))
 	err = s.app.BankKeeper.MintCoins(s.HaqqChain.GetContext(), types.ModuleName, coins)
 	s.Require().NoError(err)
 
 	// Mint coins on the osmosis side which we'll use to unlock our aISLM
-	coinOsmo := sdk.NewCoin("uosmo", sdk.NewInt(10000000))
+	coinOsmo := sdk.NewCoin("uosmo", sdkmath.NewInt(10000000))
 	coins = sdk.NewCoins(coinOsmo)
 	err = suite.IBCOsmosisChain.GetSimApp().BankKeeper.MintCoins(suite.IBCOsmosisChain.GetContext(), minttypes.ModuleName, coins)
 	suite.Require().NoError(err)
@@ -195,7 +197,7 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	suite.Require().NoError(err)
 
 	// Mint coins on the cosmos side which we'll use to unlock our aISLM
-	coinAtom := sdk.NewCoin("uatom", sdk.NewInt(10))
+	coinAtom := sdk.NewCoin("uatom", sdkmath.NewInt(10))
 	coins = sdk.NewCoins(coinAtom)
 	err = suite.IBCCosmosChain.GetSimApp().BankKeeper.MintCoins(suite.IBCCosmosChain.GetContext(), minttypes.ModuleName, coins)
 	suite.Require().NoError(err)
@@ -230,7 +232,7 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	suite.Require().Equal("connection-0", suite.pathOsmosisHaqq.EndpointA.ConnectionID)
 	suite.Require().Equal("channel-0", suite.pathOsmosisHaqq.EndpointA.ChannelID)
 
-	coinIslm = sdk.NewCoin(utils.BaseDenom, sdk.NewInt(1000000000000000000))
+	coinIslm = sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1000000000000000000))
 	coins = sdk.NewCoins(coinIslm)
 	err = s.app.BankKeeper.MintCoins(suite.HaqqChain.GetContext(), types.ModuleName, coins)
 	suite.Require().NoError(err)
@@ -241,7 +243,7 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 var timeoutHeight = clienttypes.NewHeight(1000, 1000)
 
 func (suite *KeeperTestSuite) StateDB() *statedb.StateDB {
-	return statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(suite.ctx.HeaderHash().Bytes())))
+	return statedb.New(suite.ctx, suite.app.EvmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(suite.ctx.HeaderHash())))
 }
 
 func (suite *KeeperTestSuite) MintFeeCollector(coins sdk.Coins) {
@@ -252,7 +254,7 @@ func (suite *KeeperTestSuite) MintFeeCollector(coins sdk.Coins) {
 }
 
 func (suite *KeeperTestSuite) sendTx(contractAddr, from common.Address, transferData []byte) *evm.MsgEthereumTx {
-	ctx := sdk.WrapSDKContext(suite.ctx)
+	ctx := suite.ctx
 	chainID := suite.app.EvmKeeper.ChainID()
 
 	args, err := json.Marshal(&evm.TransactionArgs{To: &contractAddr, From: &from, Data: (*hexutil.Bytes)(&transferData)})
@@ -267,7 +269,7 @@ func (suite *KeeperTestSuite) sendTx(contractAddr, from common.Address, transfer
 
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
 	evmParams := suite.app.EvmKeeper.GetParams(suite.ctx)
-	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmParams.EvmDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
+	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmParams.EvmDenom, sdkmath.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 	ercTransferTxParams := &evm.EvmTxArgs{
 		ChainID:   chainID,
 		Nonce:     nonce,
@@ -302,7 +304,7 @@ func (suite *KeeperTestSuite) Commit() {
 //  4. Commit
 func (suite *KeeperTestSuite) CommitAndBeginBlockAfter(t time.Duration) {
 	var err error
-	suite.ctx, err = testutil.Commit(suite.ctx, suite.app, t, nil)
+	suite.ctx, err = testutil.CommitAndCreateNewCtx(suite.ctx, suite.app, t, nil)
 	suite.Require().NoError(err)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
@@ -354,7 +356,7 @@ func (suite *KeeperTestSuite) DeployContractDirectBalanceManipulation() (common.
 }
 
 // DeployContractToChain deploys the ERC20MinterBurnerDecimalsContract
-// to the Haqq Network chain (used on IBC tests)
+// to the Evmos chain (used on IBC tests)
 func (suite *KeeperTestSuite) DeployContractToChain(name, symbol string, decimals uint8) (common.Address, error) {
 	return testutil.DeployContract(
 		s.HaqqChain.GetContext(),
@@ -363,6 +365,15 @@ func (suite *KeeperTestSuite) DeployContractToChain(name, symbol string, decimal
 		suite.queryClientEvm,
 		contracts.ERC20MinterBurnerDecimalsContract,
 		name, symbol, decimals,
+	)
+}
+
+func (suite *KeeperTestSuite) requireActivePrecompiles(precompiles []string) {
+	params := suite.app.EvmKeeper.GetParams(suite.ctx)
+	suite.Require().Equal(
+		precompiles,
+		params.ActivePrecompiles,
+		"expected different active precompiles",
 	)
 }
 
@@ -377,7 +388,7 @@ func (suite *KeeperTestSuite) sendAndReceiveMessage(
 	seq uint64,
 	ibcCoinMetadata string,
 ) {
-	transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID, sdk.NewCoin(coin, sdk.NewInt(amount)), sender, receiver, timeoutHeight, 0, "")
+	transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID, sdk.NewCoin(coin, sdkmath.NewInt(amount)), sender, receiver, timeoutHeight, 0, "")
 	_, err := ibctesting.SendMsgs(originChain, ibctesting.DefaultFeeAmt, transferMsg)
 	suite.Require().NoError(err) // message committed
 	// Recreate the packet that was sent

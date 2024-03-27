@@ -1,13 +1,15 @@
 package types
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethaccounts "github.com/ethereum/go-ethereum/accounts"
 )
 
 var (
+	// Bip44Purpose satisfies EIP84. See https://github.com/ethereum/EIPs/issues/84 for more info.
+	Bip44Purpose uint32 = sdk.Purpose
 	// Bip44CoinType satisfies EIP84. See https://github.com/ethereum/EIPs/issues/84 for more info.
 	Bip44CoinType uint32 = 60
-
 	// BIP44HDPath is the default BIP44 HD path used on Ethereum.
 	BIP44HDPath = ethaccounts.DefaultBaseDerivationPath.String()
 )

@@ -9,6 +9,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/haqq-network/haqq/types"
+	ethutils "github.com/haqq-network/haqq/utils/eth"
 )
 
 func NewLegacyTx(tx *ethtypes.Transaction) (*LegacyTx, error) {
@@ -66,7 +67,7 @@ func (tx *LegacyTx) Copy() TxData {
 // GetChainID returns the chain id field from the derived signature values
 func (tx *LegacyTx) GetChainID() *big.Int {
 	v, _, _ := tx.GetRawSignatureValues()
-	return DeriveChainID(v)
+	return ethutils.DeriveChainID(v)
 }
 
 // GetAccessList returns nil
@@ -122,7 +123,7 @@ func (tx *LegacyTx) GetTo() *common.Address {
 	return &to
 }
 
-// AsEthereumData returns an AccessListTx transaction tx from the proto-formatted
+// AsEthereumData returns an LegacyTx transaction tx from the proto-formatted
 // TxData defined on the Cosmos EVM.
 func (tx *LegacyTx) AsEthereumData() ethtypes.TxData {
 	v, r, s := tx.GetRawSignatureValues()
@@ -142,7 +143,7 @@ func (tx *LegacyTx) AsEthereumData() ethtypes.TxData {
 // GetRawSignatureValues returns the V, R, S signature values of the transaction.
 // The return values should not be modified by the caller.
 func (tx *LegacyTx) GetRawSignatureValues() (v, r, s *big.Int) {
-	return rawSignatureValues(tx.V, tx.R, tx.S)
+	return ethutils.RawSignatureValues(tx.V, tx.R, tx.S)
 }
 
 // SetSignatureValues sets the signature values to the transaction.
@@ -195,7 +196,7 @@ func (tx LegacyTx) Validate() error {
 	if chainID == nil {
 		return errorsmod.Wrap(
 			errortypes.ErrInvalidChainID,
-			"chain ID must be present on AccessList txs",
+			"chain ID must be derived from LegacyTx txs",
 		)
 	}
 

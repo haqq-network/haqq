@@ -11,11 +11,17 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/haqq-network/haqq/x/liquidvesting/client/cli"
+
 	"github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
-	"github.com/spf13/cobra"
+)
+
+var (
+	_ module.AppModule      = AppModule{}
+	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
 // ----------------------------------------------------------------------------
@@ -24,32 +30,17 @@ import (
 
 // AppModuleBasic implements the AppModuleBasic interface that defines the
 // independent methods a Cosmos SDK module needs to implement.
-type AppModuleBasic struct {
-	cdc codec.BinaryCodec
-}
-
-func NewAppModuleBasic(cdc codec.BinaryCodec) AppModuleBasic {
-	return AppModuleBasic{cdc: cdc}
-}
+type AppModuleBasic struct{}
 
 // Name returns the name of the module as a string.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
 
-// GetTxCmd returns the root tx command for the auth module.
-func (AppModuleBasic) GetTxCmd() *cobra.Command {
-	return cli.NewTxCmd()
+// RegisterLegacyAminoCodec registers the module's types with the given codec.
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(cdc)
 }
-
-// GetQueryCmd returns the module's root query command. Currently, this is a no-op.
-func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.GetQueryCmd()
-}
-
-// RegisterLegacyAminoCodec registers the amino codec for the module, which is used
-// to marshal and unmarshal structs to/from []byte in order to persist them in the module's KVStore.
-func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
 
 // RegisterInterfaces registers a module's interface types and their concrete implementations as proto.Message.
 func (a AppModuleBasic) RegisterInterfaces(reg cdctypes.InterfaceRegistry) {
@@ -79,13 +70,6 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *r
 	}
 }
 
-// GetTxCmd returns the root Tx command for the module.
-// These commands enrich the AutoCLI tx commands.
-// When creating non AutoCLI commands, add the following:
-// func (a AppModuleBasic) GetTxCmd() *cobra.Command {
-//    return cli.GetTxCmd()
-// }
-
 // ----------------------------------------------------------------------------
 // AppModule
 // ----------------------------------------------------------------------------
@@ -95,26 +79,29 @@ type AppModule struct {
 	AppModuleBasic
 
 	keeper        keeper.Keeper
-	accountKeeper types.AccountKeeper
-	bankKeeper    types.BankKeeper
+	accountKeeper authkeeper.AccountKeeper
+	bankKeeper    bankkeeper.Keeper
 	erc20Keeper   types.ERC20Keeper
 }
 
 // NewAppModule creates new AppModule
 func NewAppModule(
-	cdc codec.Codec,
 	keeper keeper.Keeper,
-	accountKeeper types.AccountKeeper,
-	bankKeeper types.BankKeeper,
+	accountKeeper authkeeper.AccountKeeper,
+	bankKeeper bankkeeper.Keeper,
 	erc20Keeper types.ERC20Keeper,
 ) AppModule {
 	return AppModule{
-		AppModuleBasic: NewAppModuleBasic(cdc),
+		AppModuleBasic: AppModuleBasic{},
 		keeper:         keeper,
 		accountKeeper:  accountKeeper,
 		bankKeeper:     bankKeeper,
 		erc20Keeper:    erc20Keeper,
 	}
+}
+
+func (AppModule) Name() string {
+	return types.ModuleName
 }
 
 // RegisterServices registers a gRPC query service to respond to the module-specific gRPC queries
@@ -146,18 +133,8 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 // To avoid wrong/empty versions, the initial version should be set to 1.
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
-// BeginBlock contains the logic that is automatically triggered at the beginning of each block.
-// The begin block implementation is optional.
-func (am AppModule) BeginBlock(_ context.Context) error {
-	return nil
-}
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
 
-// EndBlock contains the logic that is automatically triggered at the end of each block.
-// The end block implementation is optional.
-func (am AppModule) EndBlock(_ context.Context) error {
-	return nil
-}
-
-func (am AppModule) NewHandler() sdk.Handler {
-	return NewHandler(am.keeper)
-}
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() {}

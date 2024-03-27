@@ -6,10 +6,13 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/ibc/transfer/keeper"
@@ -21,6 +24,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 	mockChannelKeeper.On("GetNextSequenceSend", mock.Anything, mock.Anything, mock.Anything).Return(1, true)
 	mockChannelKeeper.On("GetChannel", mock.Anything, mock.Anything, mock.Anything).Return(channeltypes.Channel{Counterparty: channeltypes.NewCounterparty("transfer", "channel-1")}, true)
 	mockICS4Wrapper.On("SendPacket", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	authAddr := authtypes.NewModuleAddress(govtypes.ModuleName).String()
 
 	testCases := []struct {
 		name     string
@@ -31,9 +35,9 @@ func (suite *KeeperTestSuite) TestTransfer() {
 			"pass - no token pair",
 			func() *types.MsgTransfer {
 				senderAcc := sdk.AccAddress(suite.address.Bytes())
-				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin("aISLM", sdk.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
+				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin("aISLM", math.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
 
-				coins := sdk.NewCoins(sdk.NewCoin("aISLM", sdk.NewInt(10)))
+				coins := sdk.NewCoins(sdk.NewCoin("aISLM", math.NewInt(10)))
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 				suite.Require().NoError(err)
 				err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, senderAcc, coins)
@@ -52,7 +56,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				suite.Commit()
 
 				// senderAcc := sdk.MustAccAddressFromBech32(addr)
-				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin("erc20/"+contractAddr.String(), sdk.NewInt(10)), addr, "", timeoutHeight, 0, "")
+				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin("erc20/"+contractAddr.String(), math.NewInt(10)), addr, "", timeoutHeight, 0, "")
 				return transferMsg
 			},
 			false,
@@ -72,7 +76,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				suite.MintERC20Token(contractAddr, suite.address, suite.address, big.NewInt(10))
 				suite.Commit()
 
-				coin := sdk.NewCoin(pair.Denom, sdk.NewInt(10))
+				coin := sdk.NewCoin(pair.Denom, math.NewInt(10))
 				coins := sdk.NewCoins(coin)
 
 				err = suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
@@ -89,7 +93,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				suite.Require().NoError(err)
 				suite.Commit()
 
-				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, sdk.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
+				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, math.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
 
 				return transferMsg
 			},
@@ -116,7 +120,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				suite.Require().NoError(err)
 				suite.Commit()
 
-				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, sdk.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
+				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, math.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
 
 				return transferMsg
 			},
@@ -127,7 +131,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 			func() *types.MsgTransfer {
 				senderAcc := sdk.AccAddress(suite.address.Bytes())
 
-				coin := sdk.NewCoin("test", sdk.NewInt(10))
+				coin := sdk.NewCoin("test", math.NewInt(10))
 				coins := sdk.NewCoins(coin)
 
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
@@ -155,7 +159,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				pair.Enabled = false
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, *pair)
 
-				coin := sdk.NewCoin(pair.Denom, sdk.NewInt(10))
+				coin := sdk.NewCoin(pair.Denom, math.NewInt(10))
 				senderAcc := sdk.AccAddress(suite.address.Bytes())
 				transferMsg := types.NewMsgTransfer("transfer", "channel-0", coin, senderAcc.String(), "", timeoutHeight, 0, "")
 
@@ -171,31 +175,6 @@ func (suite *KeeperTestSuite) TestTransfer() {
 			},
 			true,
 		},
-		// { TODO Tested locally, all good, but can't be tested in CI due to distribution module crisis checks
-		//	"no-op - sender is a module account",
-		//	func() *types.MsgTransfer {
-		//		contractAddr, err := suite.DeployContract("coin", "token", uint8(6))
-		//		suite.Require().NoError(err)
-		//		suite.Commit()
-		//
-		//		pair, err := suite.app.Erc20Keeper.RegisterERC20(suite.ctx, contractAddr)
-		//		suite.Require().NoError(err)
-		//		suite.Commit()
-		//
-		//		// module account needs permission to send funds (perms set in allowedReceivingModAcc)
-		//		senderAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, "distribution")
-		//
-		//		err = testutil.FundModuleAccount(suite.ctx, suite.app.BankKeeper, senderAcc.GetName(), sdk.NewCoins(sdk.NewCoin(pair.Denom, sdk.NewInt(10))))
-		//		suite.Require().NoError(err)
-		//		transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, sdk.NewInt(10)), senderAcc.GetAddress().String(), "", timeoutHeight, 0, "")
-		//
-		//		suite.MintERC20Token(contractAddr, suite.address, suite.address, big.NewInt(10))
-		//		suite.Commit()
-		//
-		//		return transferMsg
-		//	},
-		//	true,
-		// },
 		{
 			"pass - has enough balance in erc20 - need to convert",
 			func() *types.MsgTransfer {
@@ -209,7 +188,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				suite.Require().Equal("erc20/"+pair.Erc20Address, pair.Denom)
 
 				senderAcc := sdk.AccAddress(suite.address.Bytes())
-				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, sdk.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
+				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, math.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
 
 				suite.MintERC20Token(contractAddr, suite.address, suite.address, big.NewInt(10))
 				suite.Commit()
@@ -229,9 +208,9 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				suite.Commit()
 
 				senderAcc := sdk.AccAddress(suite.address.Bytes())
-				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, sdk.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
+				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, math.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
 
-				coins := sdk.NewCoins(sdk.NewCoin(pair.Denom, sdk.NewInt(10)))
+				coins := sdk.NewCoins(sdk.NewCoin(pair.Denom, math.NewInt(10)))
 				err = suite.app.BankKeeper.MintCoins(suite.ctx, erc20types.ModuleName, coins)
 				suite.Require().NoError(err)
 				err = suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, erc20types.ModuleName, senderAcc, coins)
@@ -254,7 +233,7 @@ func (suite *KeeperTestSuite) TestTransfer() {
 				suite.Commit()
 
 				senderAcc := sdk.AccAddress(suite.address.Bytes())
-				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, sdk.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
+				transferMsg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pair.Denom, math.NewInt(10)), senderAcc.String(), "", timeoutHeight, 0, "")
 				return transferMsg
 			},
 			false,
@@ -270,13 +249,14 @@ func (suite *KeeperTestSuite) TestTransfer() {
 			suite.app.TransferKeeper = keeper.NewKeeper(
 				suite.app.AppCodec(), suite.app.GetKey(types.StoreKey), suite.app.GetSubspace(types.ModuleName),
 				&MockICS4Wrapper{}, // ICS4 Wrapper: claims IBC middleware
-				mockChannelKeeper, &suite.app.IBCKeeper.PortKeeper,
+				mockChannelKeeper, suite.app.IBCKeeper.PortKeeper,
 				suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.ScopedTransferKeeper,
 				suite.app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
+				authAddr,
 			)
 			msg := tc.malleate()
 
-			_, err = suite.app.TransferKeeper.Transfer(sdk.WrapSDKContext(suite.ctx), msg)
+			_, err = suite.app.TransferKeeper.Transfer(suite.ctx, msg)
 			if tc.expPass {
 				suite.Require().NoError(err)
 			} else {

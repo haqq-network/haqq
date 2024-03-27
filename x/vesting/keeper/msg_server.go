@@ -423,16 +423,38 @@ func (k Keeper) addGrant(
 	grantLockupPeriods, grantVestingPeriods sdkvesting.Periods,
 	grantCoins sdk.Coins,
 ) error {
+	// check if the clawback vesting account has only been initialized and not yet funded --
+	// in that case it's necessary to update the vesting account with the given start time because this is set to zero in the initialization
+	if len(va.LockupPeriods) == 0 && len(va.VestingPeriods) == 0 {
+		va.StartTime = time.Unix(grantStartTime, 0).UTC()
+	}
+
 	// how much is really delegated?
-	bondedAmt := k.stakingKeeper.GetDelegatorBonded(ctx, va.GetAddress())
-	unbondingAmt := k.stakingKeeper.GetDelegatorUnbonding(ctx, va.GetAddress())
+	vestingAddr := va.GetAddress()
+	bondedAmt, err := k.stakingKeeper.GetDelegatorBonded(ctx, vestingAddr)
+	if err != nil {
+		return err
+	}
+	unbondingAmt, err := k.stakingKeeper.GetDelegatorUnbonding(ctx, vestingAddr)
+	if err != nil {
+		return err
+	}
 	delegatedAmt := bondedAmt.Add(unbondingAmt)
-	delegated := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegatedAmt))
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	delegated := sdk.NewCoins(sdk.NewCoin(bondDenom, delegatedAmt))
 
 	// modify schedules for the new grant
-	newLockupStart, newLockupEnd, newLockupPeriods := types.DisjunctPeriods(va.GetStartTime(), grantStartTime, va.LockupPeriods, grantLockupPeriods)
-	newVestingStart, newVestingEnd, newVestingPeriods := types.DisjunctPeriods(va.GetStartTime(), grantStartTime,
-		va.GetVestingPeriods(), grantVestingPeriods)
+	accStartTime := va.GetStartTime()
+	newLockupStart, newLockupEnd, newLockupPeriods := types.DisjunctPeriods(accStartTime, grantStartTime, va.LockupPeriods, grantLockupPeriods)
+	newVestingStart, newVestingEnd, newVestingPeriods := types.DisjunctPeriods(
+		accStartTime,
+		grantStartTime,
+		va.GetVestingPeriods(),
+		grantVestingPeriods,
+	)
 
 	if newLockupStart != newVestingStart {
 		return errorsmod.Wrapf(
@@ -442,7 +464,7 @@ func (k Keeper) addGrant(
 		)
 	}
 
-	va.StartTime = time.Unix(newLockupStart, 0)
+	va.StartTime = time.Unix(newLockupStart, 0).UTC()
 	va.EndTime = types.Max64(newLockupEnd, newVestingEnd)
 	va.LockupPeriods = newLockupPeriods
 	va.VestingPeriods = newVestingPeriods
@@ -489,9 +511,9 @@ func (k Keeper) delegateVestedCoins(ctx sdk.Context, to sdk.AccAddress, msg *typ
 		return events, errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid validator address: %s", msg.ValidatorAddress)
 	}
 
-	validator, found := k.stakingKeeper.GetValidator(ctx, valAddress)
-	if !found {
-		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "validator %s not found", msg.ValidatorAddress)
+	validator, err := k.stakingKeeper.GetValidator(ctx, valAddress)
+	if err != nil {
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "validator %s not found: %s", msg.ValidatorAddress, err.Error())
 	}
 
 	newVestingStart, newVestingEnd, _ := types.DisjunctPeriods(
@@ -512,7 +534,10 @@ func (k Keeper) delegateVestedCoins(ctx sdk.Context, to sdk.AccAddress, msg *typ
 		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "no vested coins to delegate immediately, check your vesting schedule")
 	}
 
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return events, err
+	}
 	found, amountToDelegate := vestedCoins.Find(bondDenom)
 	if !found || amountToDelegate.IsZero() {
 		// Nothing to delegate

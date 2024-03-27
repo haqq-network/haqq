@@ -3,11 +3,11 @@ package backend
 import (
 	"fmt"
 
-	dbm "github.com/cometbft/cometbft-db"
+	tmlog "cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
-	tmlog "github.com/cometbft/cometbft/libs/log"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/crypto"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -54,7 +54,7 @@ func (suite *BackendTestSuite) TestTraceTransaction() {
 		name          string
 		registerMock  func()
 		block         *types.Block
-		responseBlock []*abci.ResponseDeliverTx
+		responseBlock []*abci.ExecTxResult
 		expResult     interface{}
 		expPass       bool
 	}{
@@ -62,7 +62,7 @@ func (suite *BackendTestSuite) TestTraceTransaction() {
 			"fail - tx not found",
 			func() {},
 			&types.Block{Header: types.Header{Height: 1}, Data: types.Data{Txs: []types.Tx{}}},
-			[]*abci.ResponseDeliverTx{
+			[]*abci.ExecTxResult{
 				{
 					Code: 0,
 					Events: []abci.Event{
@@ -88,7 +88,7 @@ func (suite *BackendTestSuite) TestTraceTransaction() {
 				RegisterBlockError(client, 1)
 			},
 			&types.Block{Header: types.Header{Height: 1}, Data: types.Data{Txs: []types.Tx{txBz}}},
-			[]*abci.ResponseDeliverTx{
+			[]*abci.ExecTxResult{
 				{
 					Code: 0,
 					Events: []abci.Event{
@@ -109,14 +109,18 @@ func (suite *BackendTestSuite) TestTraceTransaction() {
 		{
 			"pass - transaction found in a block with multiple transactions",
 			func() {
-				queryClient := suite.backend.queryClient.QueryClient.(*mocks.EVMQueryClient)
-				client := suite.backend.clientCtx.Client.(*mocks.Client)
-				_, err := RegisterBlockMultipleTxs(client, 1, []types.Tx{txBz, txBz2})
+				var (
+					queryClient       = suite.backend.queryClient.QueryClient.(*mocks.EVMQueryClient)
+					client            = suite.backend.clientCtx.Client.(*mocks.Client)
+					height      int64 = 1
+				)
+				_, err := RegisterBlockMultipleTxs(client, height, []types.Tx{txBz, txBz2})
 				suite.Require().NoError(err)
 				RegisterTraceTransactionWithPredecessors(queryClient, msgEthereumTx, []*evmtypes.MsgEthereumTx{msgEthereumTx})
+				RegisterConsensusParams(client, height)
 			},
 			&types.Block{Header: types.Header{Height: 1, ChainID: ChainID}, Data: types.Data{Txs: []types.Tx{txBz, txBz2}}},
-			[]*abci.ResponseDeliverTx{
+			[]*abci.ExecTxResult{
 				{
 					Code: 0,
 					Events: []abci.Event{
@@ -150,14 +154,18 @@ func (suite *BackendTestSuite) TestTraceTransaction() {
 		{
 			"pass - transaction found",
 			func() {
-				queryClient := suite.backend.queryClient.QueryClient.(*mocks.EVMQueryClient)
-				client := suite.backend.clientCtx.Client.(*mocks.Client)
-				_, err := RegisterBlock(client, 1, txBz)
+				var (
+					queryClient       = suite.backend.queryClient.QueryClient.(*mocks.EVMQueryClient)
+					client            = suite.backend.clientCtx.Client.(*mocks.Client)
+					height      int64 = 1
+				)
+				_, err := RegisterBlock(client, height, txBz)
 				suite.Require().NoError(err)
 				RegisterTraceTransaction(queryClient, msgEthereumTx)
+				RegisterConsensusParams(client, height)
 			},
 			&types.Block{Header: types.Header{Height: 1}, Data: types.Data{Txs: []types.Tx{txBz}}},
-			[]*abci.ResponseDeliverTx{
+			[]*abci.ExecTxResult{
 				{
 					Code: 0,
 					Events: []abci.Event{
@@ -228,7 +236,9 @@ func (suite *BackendTestSuite) TestTraceBlock() {
 			"fail - cannot unmarshal data",
 			func() {
 				queryClient := suite.backend.queryClient.QueryClient.(*mocks.EVMQueryClient)
+				client := suite.backend.clientCtx.Client.(*mocks.Client)
 				RegisterTraceBlock(queryClient, []*evmtypes.MsgEthereumTx{msgEthTx})
+				RegisterConsensusParams(client, 1)
 			},
 			[]*evmtypes.TxTraceResult{},
 			&resBlockFilled,
