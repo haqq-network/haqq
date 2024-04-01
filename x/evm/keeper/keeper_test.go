@@ -27,8 +27,8 @@ func (suite *KeeperTestSuite) TestWithChainID() {
 			true,
 		},
 		{
-			"fail - other chainID",
-			"chain_7701-1",
+			"fail - invalid chainID",
+			"chain12345",
 			0,
 			true,
 		},

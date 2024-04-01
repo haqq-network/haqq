@@ -644,7 +644,7 @@ func (suite *KeeperTestSuite) TestAddLog() {
 	addr, privKey := utiltx.NewAddrKey()
 	toAddr := suite.keyring.GetAddr(0)
 	ethTxParams := &types.EvmTxArgs{
-		ChainID:  big.NewInt(1),
+		ChainID:  big.NewInt(11235),
 		Nonce:    0,
 		To:       &toAddr,
 		Amount:   big.NewInt(1),
@@ -672,7 +672,7 @@ func (suite *KeeperTestSuite) TestAddLog() {
 	msg2.From = addr.Hex()
 
 	ethTx3Params := &types.EvmTxArgs{
-		ChainID:   big.NewInt(9001),
+		ChainID:   big.NewInt(11235),
 		Nonce:     0,
 		To:        &toAddr,
 		Amount:    big.NewInt(1),

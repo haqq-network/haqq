@@ -43,7 +43,7 @@ var (
 	// DefaultExtraEIPs defines the default extra EIPs to be included
 	// On v15, EIP 3855 was enabled
 	DefaultExtraEIPs   = []int64{3855}
-	DefaultEVMChannels = []string{}
+	DefaultEVMChannels []string
 )
 
 // NewParams creates a new Params instance
