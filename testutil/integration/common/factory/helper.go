@@ -11,6 +11,16 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
+// EncodeTx encodes the tx using the txConfig's encoder.
+func (tf *baseTxFactory) EncodeTx(tx sdktypes.Tx) ([]byte, error) {
+	txConfig := tf.ec.TxConfig
+	txBytes, err := txConfig.TxEncoder()(tx)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "failed to encode tx")
+	}
+	return txBytes, nil
+}
+
 // buildTx builds a tx with the provided private key and txArgs
 func (tf *baseTxFactory) buildTx(privKey cryptotypes.PrivKey, txArgs CosmosTxArgs) (client.TxBuilder, error) {
 	txConfig := tf.ec.TxConfig
@@ -100,14 +110,4 @@ func (tf *baseTxFactory) estimateGas(txArgs CosmosTxArgs, txBuilder client.TxBui
 		gasLimit = *txArgs.Gas
 	}
 	return gasLimit, nil
-}
-
-// encodeTx encodes the tx using the txConfig's encoder.
-func (tf *baseTxFactory) encodeTx(tx sdktypes.Tx) ([]byte, error) {
-	txConfig := tf.ec.TxConfig
-	txBytes, err := txConfig.TxEncoder()(tx)
-	if err != nil {
-		return nil, errorsmod.Wrap(err, "failed to encode tx")
-	}
-	return txBytes, nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
@@ -91,8 +92,8 @@ func New(opts ...ConfigOption) *IntegrationNetwork {
 }
 
 var (
-	// bondedAmt is the amount of tokens that each validator will have initially bonded
-	bondedAmt = sdktypes.TokensFromConsensusPower(1, types.PowerReduction)
+	// DefaultBondedAmount is the amount of tokens that each validator will have initially bonded
+	DefaultBondedAmount = sdktypes.TokensFromConsensusPower(1, types.PowerReduction)
 	// PrefundedAccountInitialBalance is the amount of tokens that each prefunded account has at genesis
 	PrefundedAccountInitialBalance, _ = sdkmath.NewIntFromString("100000000000000000000000") // 100k
 )
@@ -103,10 +104,10 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 	// Create validator set with the amount of validators specified in the config
 	// with the default power of 1.
 	valSet, valSigners := createValidatorSetAndSigners(n.cfg.amountOfValidators)
-	totalBonded := bondedAmt.Mul(sdkmath.NewInt(int64(n.cfg.amountOfValidators)))
+	totalBonded := DefaultBondedAmount.Mul(sdkmath.NewInt(int64(n.cfg.amountOfValidators)))
 
 	// Build staking type validators and delegations
-	validators, err := createStakingValidators(valSet.Validators, bondedAmt, n.cfg.operatorsAddrs)
+	validators, err := createStakingValidators(valSet.Validators, DefaultBondedAmount, n.cfg.operatorsAddrs)
 	if err != nil {
 		return err
 	}
@@ -122,7 +123,7 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 	delegations := createDelegations(validators, genAccounts[0].GetAddress())
 
 	// Create a new HaqqApp with the following params
-	haqqApp := createHaqqApp(n.cfg.chainID)
+	haqqApp := createHaqqApp(n.cfg.chainID, n.cfg.customBaseAppOpts...)
 
 	stakingParams := StakingCustomGenesisState{
 		denom:       n.cfg.denom,
@@ -176,8 +177,10 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		}
 	}
 
+	now := time.Now().UTC()
 	if _, err := haqqApp.InitChain(
 		&abcitypes.RequestInitChain{
+			Time:            now,
 			ChainId:         n.cfg.chainID,
 			Validators:      []abcitypes.ValidatorUpdate{},
 			ConsensusParams: consensusParams,
@@ -192,6 +195,7 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		Hash:               haqqApp.LastCommitID().Hash,
 		NextValidatorsHash: valSet.Hash(),
 		ProposerAddress:    valSet.Proposer.Address,
+		Time:               now,
 	}
 
 	if _, err := haqqApp.FinalizeBlock(req); err != nil {
@@ -202,6 +206,7 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		ChainID:            n.cfg.chainID,
 		Height:             req.Height,
 		AppHash:            req.Hash,
+		Time:               now,
 		ValidatorsHash:     req.NextValidatorsHash,
 		NextValidatorsHash: req.NextValidatorsHash,
 		ProposerAddress:    req.ProposerAddress,
@@ -280,6 +285,7 @@ func (n *IntegrationNetwork) GetValidators() []stakingtypes.Validator {
 // TODO - this should be change to gRPC
 func (n *IntegrationNetwork) BroadcastTxSync(txBytes []byte) (abcitypes.ExecTxResult, error) {
 	req := abcitypes.RequestFinalizeBlock{
+		Time:               n.ctx.BlockTime(),
 		Height:             n.app.LastBlockHeight() + 1,
 		Hash:               n.app.LastCommitID().Hash,
 		NextValidatorsHash: n.valSet.Hash(),
@@ -307,4 +313,14 @@ func (n *IntegrationNetwork) Simulate(txBytes []byte) (*txtypes.SimulateResponse
 		GasInfo: &gas,
 		Result:  result,
 	}, nil
+}
+
+// CheckTx calls the BaseApp's CheckTx method with the given txBytes to the network and returns the response.
+func (n *IntegrationNetwork) CheckTx(txBytes []byte) (*abcitypes.ResponseCheckTx, error) {
+	req := &abcitypes.RequestCheckTx{Tx: txBytes}
+	res, err := n.app.BaseApp.CheckTx(req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }

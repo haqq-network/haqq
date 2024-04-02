@@ -24,6 +24,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/gogoproto/proto"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/encoding"
@@ -103,9 +104,14 @@ func createValidatorSetAndSigners(numberOfValidators int) (*cmttypes.ValidatorSe
 func createGenesisAccounts(accounts []sdktypes.AccAddress) []authtypes.GenesisAccount {
 	numberOfAccounts := len(accounts)
 	genAccounts := make([]authtypes.GenesisAccount, 0, numberOfAccounts)
+	codeHash := crypto.Keccak256Hash(nil).String()
 	for _, acc := range accounts {
 		baseAcc := authtypes.NewBaseAccount(acc, nil, 0, 0)
-		genAccounts = append(genAccounts, baseAcc)
+		ethAcc := &types.EthAccount{
+			BaseAccount: baseAcc,
+			CodeHash:    codeHash,
+		}
+		genAccounts = append(genAccounts, ethAcc)
 	}
 	return genAccounts
 }
@@ -142,7 +148,7 @@ func createBalances(accounts []sdktypes.AccAddress, denoms []string) []banktypes
 }
 
 // createHaqqApp creates an Haqq app
-func createHaqqApp(chainID string) *app.Haqq {
+func createHaqqApp(chainID string, customBaseAppOptions ...func(*baseapp.BaseApp)) *app.Haqq {
 	// Create Haqq app
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
@@ -152,7 +158,7 @@ func createHaqqApp(chainID string) *app.Haqq {
 	invCheckPeriod := uint(5)
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	appOptions := simutils.NewAppOptionsWithFlagHome(app.DefaultNodeHome)
-	baseAppOptions := []func(*baseapp.BaseApp){baseapp.SetChainID(chainID)}
+	baseAppOptions := append(customBaseAppOptions, baseapp.SetChainID(chainID))
 
 	return app.NewHaqq(
 		logger,
