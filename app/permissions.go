@@ -7,6 +7,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
@@ -28,6 +29,7 @@ var (
 		erc20types.ModuleName:          {authtypes.Minter, authtypes.Burner},
 		coinomicstypes.ModuleName:      {authtypes.Minter},
 		vestingtypes.ModuleName:        nil, // Add vesting module account
+		liquidvestingtypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
 	}
 
 	// module accounts that are allowed to receive tokens
