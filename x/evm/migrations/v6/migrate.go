@@ -58,7 +58,7 @@ func MigrateStore(
 
 	// DefaultEVMChannels are for Haqq mainnet
 	// leave empty for testnet
-	if ctx.ChainID() == utils.TestEdge2ChainID+"-1" {
+	if ctx.ChainID() == utils.TestEdge2ChainID+"-3" {
 		params.EVMChannels = []string{}
 	}
 

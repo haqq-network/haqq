@@ -33,7 +33,7 @@ func MigrateStore(
 	cdc.MustUnmarshal(extraEIPsBz, &extraEIPs)
 
 	// revert ExtraEIP change for Haqq testnet
-	if ctx.ChainID() == utils.TestEdge2ChainID+"-1" {
+	if ctx.ChainID() == utils.TestEdge2ChainID+"-3" {
 		extraEIPs.EIPs = []int64{}
 	}
 

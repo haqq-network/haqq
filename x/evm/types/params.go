@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"golang.org/x/exp/slices"
 
+	"github.com/haqq-network/haqq/precompiles/p256"
 	"github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 )
@@ -30,7 +31,7 @@ var (
 	DefaultEnableCall = true
 	// AvailableEVMExtensions defines the default active precompiles
 	AvailableEVMExtensions = []string{
-		"0x0000000000000000000000000000000000000100", // P256 precompile
+		p256.PrecompileAddress,                       // P256 precompile
 		"0x0000000000000000000000000000000000000400", // Bech32 precompile
 		"0x0000000000000000000000000000000000000800", // Staking precompile
 		"0x0000000000000000000000000000000000000801", // Distribution precompile
