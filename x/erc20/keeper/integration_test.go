@@ -1,16 +1,17 @@
 package keeper_test
 
 import (
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"math/big"
 	"time"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -80,8 +81,8 @@ var _ = Describe("Performing EVM transactions", Ordered, func() {
 })
 
 var _ = Describe("ERC20:", Ordered, func() {
-	amt := sdk.NewInt(100)
-	fundsAmt, _ := sdk.NewIntFromString("100000000000000000000000")
+	amt := math.NewInt(100)
+	fundsAmt, _ := math.NewIntFromString("100000000000000000000000")
 
 	privKey, _ := ethsecp256k1.GenerateKey()
 	addrBz := privKey.PubKey().Address().Bytes()
@@ -99,9 +100,11 @@ var _ = Describe("ERC20:", Ordered, func() {
 	BeforeEach(func() {
 		s.SetupTest()
 
-		govParams := s.app.GovKeeper.GetParams(s.ctx)
+		govParams, err := s.app.GovKeeper.Params.Get(s.ctx)
+		Expect(err).To(BeNil())
+
 		govParams.Quorum = "0.0000000001"
-		err := s.app.GovKeeper.SetParams(s.ctx, govParams)
+		err = s.app.GovKeeper.Params.Set(s.ctx, govParams)
 		Expect(err).To(BeNil())
 	})
 
@@ -110,10 +113,10 @@ var _ = Describe("ERC20:", Ordered, func() {
 			BeforeEach(func() {
 				// Mint coins to pay gas fee, gov deposit and registering coins in Bankkeeper
 				coins := sdk.NewCoins(
-					sdk.NewCoin("aISLM", fundsAmt),
+					sdk.NewCoin(utils.BaseDenom, fundsAmt),
 					sdk.NewCoin(stakingtypes.DefaultParams().BondDenom, fundsAmt),
-					sdk.NewCoin(metadataIbc.Base, sdk.NewInt(1)),
-					sdk.NewCoin(metadataCoin.Base, sdk.NewInt(1)),
+					sdk.NewCoin(metadataIbc.Base, math.NewInt(1)),
+					sdk.NewCoin(metadataCoin.Base, math.NewInt(1)),
 				)
 				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, accAddr, coins)
 				s.Require().NoError(err)
@@ -124,10 +127,10 @@ var _ = Describe("ERC20:", Ordered, func() {
 					id, err := submitRegisterCoinProposal(s.ctx, s.app, privKey, []banktypes.Metadata{metadataIbc})
 					s.Require().NoError(err)
 
-					proposal, found := s.app.GovKeeper.GetProposal(s.ctx, id)
-					s.Require().True(found)
+					proposal, err := s.app.GovKeeper.Proposals.Get(s.ctx, id)
+					s.Require().NoError(err)
 
-					_, err = testutil.Delegate(s.ctx, s.app, privKey, sdk.NewCoin("aISLM", sdk.NewInt(500000000000000000)), s.validator)
+					_, err = testutil.Delegate(s.ctx, s.app, privKey, sdk.NewCoin(utils.BaseDenom, math.NewInt(500000000000000000)), s.validator)
 					s.Require().NoError(err)
 
 					_, err = testutil.Vote(s.ctx, s.app, privKey, id, govv1beta1.OptionYes)
@@ -136,8 +139,8 @@ var _ = Describe("ERC20:", Ordered, func() {
 					// Make proposal pass in EndBlocker
 					duration := proposal.VotingEndTime.Sub(s.ctx.BlockTime()) + time.Hour*1
 					s.CommitAndBeginBlockAfter(duration)
-					s.app.EndBlocker(s.ctx, abci.RequestEndBlock{Height: s.ctx.BlockHeight()})
-					proposal, _ = s.app.GovKeeper.GetProposal(s.ctx, id)
+					s.app.EndBlocker(s.ctx)
+					s.Commit()
 				})
 				It("should create a token pairs owned by the erc20 module", func() {
 					tokenPairs := s.app.Erc20Keeper.GetTokenPairs(s.ctx)
@@ -150,10 +153,10 @@ var _ = Describe("ERC20:", Ordered, func() {
 					id, err := submitRegisterCoinProposal(s.ctx, s.app, privKey, []banktypes.Metadata{metadataIbc, metadataCoin})
 					s.Require().NoError(err)
 
-					proposal, found := s.app.GovKeeper.GetProposal(s.ctx, id)
-					s.Require().True(found)
+					proposal, err := s.app.GovKeeper.Proposals.Get(s.ctx, id)
+					s.Require().NoError(err)
 
-					_, err = testutil.Delegate(s.ctx, s.app, privKey, sdk.NewCoin("aISLM", sdk.NewInt(500000000000000000)), s.validator)
+					_, err = testutil.Delegate(s.ctx, s.app, privKey, sdk.NewCoin(utils.BaseDenom, math.NewInt(500000000000000000)), s.validator)
 					s.Require().NoError(err)
 
 					_, err = testutil.Vote(s.ctx, s.app, privKey, id, govv1beta1.OptionYes)
@@ -162,7 +165,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 					// Make proposal pass in EndBlocker
 					duration := proposal.VotingEndTime.Sub(s.ctx.BlockTime()) + 1
 					s.CommitAndBeginBlockAfter(duration)
-					s.app.EndBlocker(s.ctx, abci.RequestEndBlock{Height: s.ctx.BlockHeight()})
+					s.app.EndBlocker(s.ctx)
 					s.Commit()
 				})
 				It("should create a token pairs owned by the erc20 module", func() {
@@ -182,7 +185,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 				s.Require().NoError(err)
 
 				coins := sdk.NewCoins(
-					sdk.NewCoin("aISLM", fundsAmt),
+					sdk.NewCoin(utils.BaseDenom, fundsAmt),
 					sdk.NewCoin(stakingtypes.DefaultParams().BondDenom, fundsAmt),
 				)
 				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, accAddr, coins)
@@ -195,10 +198,10 @@ var _ = Describe("ERC20:", Ordered, func() {
 					id, err := submitRegisterERC20Proposal(s.ctx, s.app, privKey, []string{contract.String()})
 					s.Require().NoError(err)
 
-					proposal, found := s.app.GovKeeper.GetProposal(s.ctx, id)
-					s.Require().True(found)
+					proposal, err := s.app.GovKeeper.Proposals.Get(s.ctx, id)
+					s.Require().NoError(err)
 
-					_, err = testutil.Delegate(s.ctx, s.app, privKey, sdk.NewCoin("aISLM", sdk.NewInt(500000000000000000)), s.validator)
+					_, err = testutil.Delegate(s.ctx, s.app, privKey, sdk.NewCoin(utils.BaseDenom, math.NewInt(500000000000000000)), s.validator)
 					s.Require().NoError(err)
 
 					_, err = testutil.Vote(s.ctx, s.app, privKey, id, govv1beta1.OptionYes)
@@ -207,7 +210,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 					// Make proposal pass in EndBlocker
 					duration := proposal.VotingEndTime.Sub(s.ctx.BlockTime()) + 1
 					s.CommitAndBeginBlockAfter(duration)
-					s.app.EndBlocker(s.ctx, abci.RequestEndBlock{Height: s.ctx.BlockHeight()})
+					s.app.EndBlocker(s.ctx)
 					s.Commit()
 				})
 				It("should create a token pairs owned by the contract deployer", func() {
@@ -221,10 +224,10 @@ var _ = Describe("ERC20:", Ordered, func() {
 					// register with sufficient deposit
 					id, err := submitRegisterERC20Proposal(s.ctx, s.app, privKey, []string{contract.String(), contract2.String()})
 					s.Require().NoError(err)
-					proposal, found := s.app.GovKeeper.GetProposal(s.ctx, id)
-					s.Require().True(found)
+					proposal, err := s.app.GovKeeper.Proposals.Get(s.ctx, id)
+					s.Require().NoError(err)
 
-					_, err = testutil.Delegate(s.ctx, s.app, privKey, sdk.NewCoin("aISLM", sdk.NewInt(500000000000000000)), s.validator)
+					_, err = testutil.Delegate(s.ctx, s.app, privKey, sdk.NewCoin(utils.BaseDenom, math.NewInt(500000000000000000)), s.validator)
 					s.Require().NoError(err)
 
 					_, err = testutil.Vote(s.ctx, s.app, privKey, id, govv1beta1.OptionYes)
@@ -233,7 +236,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 					// Make proposal pass in EndBlocker
 					duration := proposal.VotingEndTime.Sub(s.ctx.BlockTime()) + 1
 					s.CommitAndBeginBlockAfter(duration)
-					s.app.EndBlocker(s.ctx, abci.RequestEndBlock{Height: s.ctx.BlockHeight()})
+					s.app.EndBlocker(s.ctx)
 					s.Commit()
 				})
 				It("should create a token pairs owned by the contract deployer", func() {
@@ -332,7 +335,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 					Expect(balanceERC20.Int64()).To(Equal(amt.Int64()))
 				})
 
-				It("should send coins to the recevier account", func() {
+				It("should send coins to the receiver account", func() {
 					balanceCoin := s.app.BankKeeper.GetBalance(s.ctx, accAddr, pair.Denom)
 					Expect(balanceCoin).To(Equal(coin))
 				})
@@ -356,7 +359,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 					Expect(balanceERC20.Int64()).To(Equal(int64(0)))
 				})
 
-				It("should burn coins to the recevier account", func() {
+				It("should burn coins to the receiver account", func() {
 					balanceCoin := s.app.BankKeeper.GetBalance(s.ctx, accAddr, pair.Denom)
 					Expect(balanceCoin.IsZero()).To(BeTrue())
 				})

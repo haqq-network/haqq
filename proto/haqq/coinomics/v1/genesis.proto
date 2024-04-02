@@ -35,7 +35,7 @@ message Params {
 
   // current staking reward coefficient
   string reward_coefficient = 3 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false
   ];
 }

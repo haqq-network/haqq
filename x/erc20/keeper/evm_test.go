@@ -12,6 +12,7 @@ import (
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
 	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20mocks "github.com/haqq-network/haqq/x/erc20/types/mocks"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -52,7 +53,7 @@ func (suite *KeeperTestSuite) TestQueryERC20() {
 }
 
 func (suite *KeeperTestSuite) TestBalanceOf() {
-	var mockEVMKeeper *MockEVMKeeper
+	var mockEVMKeeper *erc20mocks.EVMKeeper
 	contract := utiltx.GenerateAddress()
 	testCases := []struct {
 		name       string
@@ -89,12 +90,14 @@ func (suite *KeeperTestSuite) TestBalanceOf() {
 	}
 	for _, tc := range testCases {
 		suite.SetupTest() // reset
-		mockEVMKeeper = &MockEVMKeeper{}
+		mockEVMKeeper = &erc20mocks.EVMKeeper{}
 		suite.app.Erc20Keeper = keeper.NewKeeper(
 			suite.app.GetKey("erc20"), suite.app.AppCodec(),
 			authtypes.NewModuleAddress(govtypes.ModuleName),
 			suite.app.AccountKeeper, suite.app.BankKeeper,
-			mockEVMKeeper, suite.app.StakingKeeper)
+			mockEVMKeeper, suite.app.StakingKeeper,
+			s.app.AuthzKeeper, &s.app.TransferKeeper,
+		)
 
 		tc.malleate()
 
@@ -239,7 +242,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 }
 
 func (suite *KeeperTestSuite) TestForceFail() {
-	var mockEVMKeeper *MockEVMKeeper
+	var mockEVMKeeper *erc20mocks.EVMKeeper
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
 	testCases := []struct {
 		name     string
@@ -250,7 +253,7 @@ func (suite *KeeperTestSuite) TestForceFail() {
 		{
 			"Force estimate gas error",
 			func() {
-				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced EstimateGas error"))
+				mockEVMKeeper.On("EstimateGasInternal", mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced EstimateGas error"))
 			},
 			true,
 			false,
@@ -258,7 +261,7 @@ func (suite *KeeperTestSuite) TestForceFail() {
 		{
 			"Force ApplyMessage error",
 			func() {
-				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				mockEVMKeeper.On("EstimateGasInternal", mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
 			},
 			true,
@@ -267,7 +270,7 @@ func (suite *KeeperTestSuite) TestForceFail() {
 		{
 			"Force ApplyMessage failed",
 			func() {
-				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				mockEVMKeeper.On("EstimateGasInternal", mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{VmError: "SomeError"}, nil)
 			},
 			true,
@@ -278,11 +281,13 @@ func (suite *KeeperTestSuite) TestForceFail() {
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
 			suite.SetupTest() // reset
-			mockEVMKeeper = &MockEVMKeeper{}
+			mockEVMKeeper = &erc20mocks.EVMKeeper{}
 			suite.app.Erc20Keeper = keeper.NewKeeper(
 				suite.app.GetKey("erc20"), suite.app.AppCodec(),
 				authtypes.NewModuleAddress(govtypes.ModuleName), suite.app.AccountKeeper,
-				suite.app.BankKeeper, mockEVMKeeper, suite.app.StakingKeeper)
+				suite.app.BankKeeper, mockEVMKeeper, suite.app.StakingKeeper,
+				s.app.AuthzKeeper, &s.app.TransferKeeper,
+			)
 
 			tc.malleate()
 
@@ -303,7 +308,7 @@ func (suite *KeeperTestSuite) TestForceFail() {
 }
 
 func (suite *KeeperTestSuite) TestQueryERC20ForceFail() {
-	var mockEVMKeeper *MockEVMKeeper
+	var mockEVMKeeper *erc20mocks.EVMKeeper
 	contract := utiltx.GenerateAddress()
 	testCases := []struct {
 		name     string
@@ -367,11 +372,15 @@ func (suite *KeeperTestSuite) TestQueryERC20ForceFail() {
 	}
 	for _, tc := range testCases {
 		suite.SetupTest() // reset
-		mockEVMKeeper = &MockEVMKeeper{}
+
+		// TODO: what's the reason we are using mockEVMKeeper here? Instead of just passing the suite.app.EvmKeeper?
+		mockEVMKeeper = &erc20mocks.EVMKeeper{}
 		suite.app.Erc20Keeper = keeper.NewKeeper(
 			suite.app.GetKey("erc20"), suite.app.AppCodec(),
 			authtypes.NewModuleAddress(govtypes.ModuleName), suite.app.AccountKeeper,
-			suite.app.BankKeeper, mockEVMKeeper, suite.app.StakingKeeper)
+			suite.app.BankKeeper, mockEVMKeeper, suite.app.StakingKeeper,
+			s.app.AuthzKeeper, &s.app.TransferKeeper,
+		)
 
 		tc.malleate()
 

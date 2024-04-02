@@ -11,18 +11,18 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"cosmossdk.io/simapp"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdktestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	// distcli "github.com/cosmos/cosmos-sdk/x/distribution/client/cli"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	paramsproposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	"github.com/haqq-network/haqq/testutil/network"
 	// haqqnetwork "github.com/haqq-network/haqq/testutil/network"
@@ -546,7 +546,7 @@ func (s *BurnCoinsTestSuite) TestCase4LowDeposit() {
 
 func TestBurnCoins(t *testing.T) {
 	cfg := network.HaqqNetworkConfigCoinomicsDisabled()
-	encCfg := simapp.MakeTestEncodingConfig()
+	encCfg := sdktestutil.MakeTestEncodingConfig()
 	cfg.AppConstructor = network.NewAppConstructor(encCfg)
 	cfg.NumValidators = 1
 

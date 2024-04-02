@@ -1,6 +1,9 @@
 package keeper_test
 
 import (
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"math"
 	"testing"
 	"time"
@@ -11,18 +14,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
@@ -70,13 +70,13 @@ func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
 	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
 
 	// Init app
-	suite.app, _ = app.Setup(false, nil)
+	suite.app, _ = app.Setup(false, nil, utils.MainNetChainID+"-1")
 
 	// Set Context
 	header := testutil.NewHeader(
 		1, time.Now().UTC(), utils.MainNetChainID+"-1", suite.consAddress, nil, nil,
 	)
-	suite.ctx = suite.app.BaseApp.NewContext(false, header)
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
 	types.RegisterQueryServer(queryHelper, suite.app.LiquidVestingKeeper)
@@ -94,19 +94,21 @@ func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
 	}
 
 	acc := &haqqtypes.EthAccount{
-		BaseAccount: authtypes.NewBaseAccount(suite.address.Bytes(), nil, 0, 0),
+		BaseAccount: authtypes.NewBaseAccount(suite.address.Bytes(), nil, 50, 0),
 		CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 	}
 
 	suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
 	// fund signer acc to pay for tx fees
-	amt := sdk.NewInt(int64(math.Pow10(18) * 2))
+	bondDenom, err := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	suite.Require().NoError(err)
+	amt := sdkmath.NewInt(int64(math.Pow10(18) * 2))
 	err = testutil.FundAccount(
 		suite.ctx,
 		suite.app.BankKeeper,
 		suite.priv.PubKey().Address().Bytes(),
-		sdk.NewCoins(sdk.NewCoin(suite.app.StakingKeeper.BondDenom(suite.ctx), amt)),
+		sdk.NewCoins(sdk.NewCoin(bondDenom, amt)),
 	)
 	suite.Require().NoError(err)
 
@@ -115,14 +117,15 @@ func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
 
 	// Set Validator
 	valAddr := sdk.ValAddress(suite.address.Bytes())
-	validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
+	validator, err := stakingtypes.NewValidator(valAddr.String(), priv.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
-	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
+	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, valAddr)
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
-	validators := s.app.StakingKeeper.GetValidators(s.ctx, 1)
+	validators, err := s.app.StakingKeeper.GetValidators(s.ctx, 1)
+	require.NoError(t, err)
 	suite.validator = validators[0]
 
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)

@@ -6,6 +6,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -53,7 +54,7 @@ func DecodeTransactionLogs(data []byte) (TransactionLogs, error) {
 	return logs, nil
 }
 
-// UnwrapEthereumMsg extract MsgEthereumTx from wrapping sdk.Tx
+// UnwrapEthereumMsg extracts MsgEthereumTx from wrapping sdk.Tx
 func UnwrapEthereumMsg(tx *sdk.Tx, ethHash common.Hash) (*MsgEthereumTx, error) {
 	if tx == nil {
 		return nil, fmt.Errorf("invalid tx: nil")
@@ -74,7 +75,29 @@ func UnwrapEthereumMsg(tx *sdk.Tx, ethHash common.Hash) (*MsgEthereumTx, error) 
 	return nil, fmt.Errorf("eth tx not found: %s", ethHash)
 }
 
-// BinSearch execute the binary search and hone in on an executable gas limit
+// UnpackEthMsg unpacks an Ethereum message from a Cosmos SDK message
+func UnpackEthMsg(msg sdk.Msg) (
+	ethMsg *MsgEthereumTx,
+	txData TxData,
+	from sdk.AccAddress,
+	err error,
+) {
+	msgEthTx, ok := msg.(*MsgEthereumTx)
+	if !ok {
+		return nil, nil, nil, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*MsgEthereumTx)(nil))
+	}
+
+	txData, err = UnpackTxData(msgEthTx.Data)
+	if err != nil {
+		return nil, nil, nil, errorsmod.Wrap(err, "failed to unpack tx data any for tx")
+	}
+
+	// sender address should be in the tx cache from the previous AnteHandle call
+	from = msgEthTx.GetFrom()
+	return msgEthTx, txData, from, nil
+}
+
+// BinSearch executes the binary search and hone in on an executable gas limit
 func BinSearch(lo, hi uint64, executable func(uint64) (bool, *MsgEthereumTxResponse, error)) (uint64, error) {
 	for lo+1 < hi {
 		mid := (hi + lo) / 2
@@ -94,7 +117,7 @@ func BinSearch(lo, hi uint64, executable func(uint64) (bool, *MsgEthereumTxRespo
 	return hi, nil
 }
 
-// EffectiveGasPrice compute the effective gas price based on eip-1159 rules
+// EffectiveGasPrice computes the effective gas price based on eip-1559 rules
 // `effectiveGasPrice = min(baseFee + tipCap, feeCap)`
 func EffectiveGasPrice(baseFee, feeCap, tipCap *big.Int) *big.Int {
 	return math.BigMin(new(big.Int).Add(tipCap, baseFee), feeCap)

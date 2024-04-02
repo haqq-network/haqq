@@ -52,6 +52,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				baseAccount.SetAccountNumber(101) //nolint:errcheck
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
@@ -67,6 +68,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				baseAccount.SetAccountNumber(101) //nolint:errcheck
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
@@ -82,6 +84,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				baseAccount.SetAccountNumber(101) //nolint:errcheck
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
@@ -98,6 +101,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				baseAccount.SetAccountNumber(101) //nolint:errcheck
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
@@ -114,6 +118,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				baseAccount.SetAccountNumber(101) //nolint:errcheck
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
@@ -130,6 +135,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				baseAccount.SetAccountNumber(101) //nolint:errcheck
 				startTime := suite.ctx.BlockTime().Add(-201 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
@@ -145,6 +151,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				baseAccount.SetAccountNumber(101) //nolint:errcheck
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, suite.ctx.BlockTime(), lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
@@ -159,6 +166,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				baseAccount.SetAccountNumber(101) //nolint:errcheck
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, suite.ctx.BlockTime(), lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
@@ -173,6 +181,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				baseAccount.SetAccountNumber(101) //nolint:errcheck
 				vestingPeriods := sdkvesting.Periods{{Length: 100, Amount: amount}}
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
@@ -246,6 +255,7 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	ctx := sdk.WrapSDKContext(suite.ctx)
 
 	baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+	baseAccount.SetAccountNumber(101) //nolint:errcheck
 	startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 	clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 	testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
@@ -342,8 +352,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 					LockupPeriods: lockupPeriods,
 				})
 				// create accounts
-				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr1))
-				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr2))
+				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccount(addr1, nil, 101, 0))
+				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccount(addr2, nil, 102, 0))
 				// fund account with liquid denom token
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
 				liquidTokenMetadata := banktypes.Metadata{
@@ -381,12 +391,12 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				})
 				// create accounts
 				acc1 := &haqqtypes.EthAccount{
-					BaseAccount: authtypes.NewBaseAccountWithAddress(addr1),
+					BaseAccount: authtypes.NewBaseAccount(addr1, nil, 101, 0),
 					CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 				}
 				s.app.AccountKeeper.SetAccount(s.ctx, acc1)
 				acc2 := &haqqtypes.EthAccount{
-					BaseAccount: authtypes.NewBaseAccountWithAddress(addr2),
+					BaseAccount: authtypes.NewBaseAccount(addr2, nil, 102, 0),
 					CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 				}
 				s.app.AccountKeeper.SetAccount(s.ctx, acc2)
@@ -425,12 +435,12 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				})
 				// create accounts
 				acc1 := &haqqtypes.EthAccount{
-					BaseAccount: authtypes.NewBaseAccountWithAddress(addr1),
+					BaseAccount: authtypes.NewBaseAccount(addr1, nil, 101, 0),
 					CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 				}
 				s.app.AccountKeeper.SetAccount(s.ctx, acc1)
 				acc2 := &haqqtypes.EthAccount{
-					BaseAccount: authtypes.NewBaseAccountWithAddress(addr2),
+					BaseAccount: authtypes.NewBaseAccount(addr2, nil, 102, 0),
 					CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 				}
 				s.app.AccountKeeper.SetAccount(s.ctx, acc2)
@@ -473,8 +483,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 					LockupPeriods: lockupPeriods,
 				})
 				// create accounts
-				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr1))
-				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr2))
+				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccount(addr1, nil, 101, 0))
+				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccount(addr2, nil, 102, 0))
 				// fund account with liquid denom token
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
 				liquidTokenMetadata := banktypes.Metadata{
@@ -507,8 +517,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 					LockupPeriods: lockupPeriods,
 				})
 				// create accounts
-				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr1))
-				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr2))
+				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccount(addr1, nil, 101, 0))
+				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccount(addr2, nil, 102, 0))
 				// fund account with liquid denom token
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
 				liquidTokenMetadata := banktypes.Metadata{

@@ -3,12 +3,10 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
@@ -20,7 +18,7 @@ type Keeper struct {
 
 	accountKeeper types.AccountKeeper
 	bankKeeper    types.BankKeeper
-	stakingKeeper stakingkeeper.Keeper
+	stakingKeeper types.StakingKeeper
 }
 
 // NewKeeper creates new instances of the vesting Keeper
@@ -29,7 +27,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
-	sk stakingkeeper.Keeper,
+	sk types.StakingKeeper,
 ) Keeper {
 	return Keeper{
 		storeKey:      storeKey,

@@ -8,12 +8,12 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	simappparams "cosmossdk.io/simapp/params"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdktestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	// "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	// "github.com/haqq-network/haqq/testutil/network"
 	network "github.com/haqq-network/haqq/testutil/network"
@@ -122,7 +122,7 @@ func (s *IntegrationTestSuite) TestCommunityProposals() {
 
 func TestDisabledCommunityProposals(t *testing.T) {
 	cfg := network.HaqqNetworkConfig()
-	encCfg := simappparams.MakeTestEncodingConfig()
+	encCfg := sdktestutil.MakeTestEncodingConfig()
 	cfg.AppConstructor = network.NewAppConstructor(encCfg)
 	cfg.NumValidators = 1
 

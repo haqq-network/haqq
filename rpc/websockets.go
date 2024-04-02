@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	rpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -93,10 +93,11 @@ func (s *websocketsServer) Start() {
 
 	go func() {
 		var err error
-		/* #nosec G114 -- http functions have no support for timeouts */
 		if s.certFile == "" || s.keyFile == "" {
+			//#nosec G114 -- http functions have no support for timeouts
 			err = http.ListenAndServe(s.wsAddr, ws)
 		} else {
+			//#nosec G114 -- http functions have no support for timeouts
 			err = http.ListenAndServeTLS(s.wsAddr, s.certFile, s.keyFile, ws)
 		}
 

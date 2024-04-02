@@ -38,7 +38,7 @@ func (suite *KeeperTestSuite) TestSetGetPrevBlockTs() {
 			if tc.ok {
 				suite.Require().Equal(expEra, prevBlockTS, tc.name)
 			} else {
-				suite.Require().Equal(sdk.ZeroInt(), prevBlockTS, tc.name)
+				suite.Require().Equal(math.ZeroInt(), prevBlockTS, tc.name)
 			}
 		})
 	}
