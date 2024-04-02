@@ -3,11 +3,6 @@ package distribution_test
 import (
 	"testing"
 
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
 	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
@@ -19,7 +14,6 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
-	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 
 type PrecompileTestSuite struct {
@@ -40,19 +34,10 @@ func TestPrecompileUnitTestSuite(t *testing.T) {
 	suite.Run(t, new(PrecompileTestSuite))
 }
 
-func TestPrecompileIntegrationTestSuite(t *testing.T) {
-	// Run Ginkgo integration tests
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Distribution Precompile Suite")
-}
-
 func (s *PrecompileTestSuite) SetupTest() {
 	keyring := testkeyring.New(2)
 	s.validatorsKeys = generateKeys(3)
-
-	// enable coinomics for staking rewards
 	customGen := network.CustomGenesisState{}
-	customGen[coinomicstypes.ModuleName] = coinomicstypes.DefaultGenesisState()
 
 	// set some slashing events for integration test
 	distrGen := distrtypes.DefaultGenesisState()
