@@ -1,6 +1,8 @@
 package v174
 
 import (
+	"time"
+
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -9,15 +11,9 @@ import (
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
-	"time"
 )
 
-// 1767225600 is timestamp for 2026-01-01
-var lockupThreshold = time.Unix(1767225600, 0)
-
-const threeYearsAsDays = 1095
-
-func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeeper) error {
+func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeeper, stretchLength int64, lockupLengthThreshold time.Time) error {
 	// Iterate all accounts
 	ak.IterateAccounts(ctx, func(acc authtypes.AccountI) (stop bool) {
 		// Check if acc is vesting account
@@ -27,15 +23,17 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 		}
 
 		// if end time for unlock account is after 2026-01-01 modify schedule
-		if time.Unix(vacc.GetEndTime(), 0).After(lockupThreshold) {
+		if time.Unix(vacc.GetEndTime(), 0).After(lockupLengthThreshold) {
 			upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
-			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, threeYearsAsDays)
+			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
 			pastPeriods := liquidvestingtypes.ExtractPastPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
 
 			// add 1095 days (three years to the end time)
-			vacc.EndTime = vacc.EndTime + 86_400*1095
+			newEndTime := vacc.EndTime + 86_400*stretchLength
+			vacc.EndTime = newEndTime
 			// set stretched lockup periods
-			vacc.LockupPeriods = append(pastPeriods, stretchedUpcomingPeriods...)
+			fullyUpdatedPeriods := append(pastPeriods, stretchedUpcomingPeriods...)
+			vacc.LockupPeriods = fullyUpdatedPeriods
 			ak.SetAccount(ctx, vacc)
 		}
 
@@ -45,19 +43,20 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 	return nil
 }
 
-func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvestingkeeper.Keeper) error {
+func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvestingkeeper.Keeper, stretchLength int64, lockupLengthThreshold time.Time) error {
 	// Iterate all denoms
 	lk.IterateDenoms(ctx, func(denom liquidvestingtypes.Denom) (stop bool) {
 		// if end time for liquid denom is after 2026-01-01 modify schedule
-		if denom.EndTime.After(lockupThreshold) {
+		if denom.EndTime.After(lockupLengthThreshold) {
 			upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
-			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, threeYearsAsDays)
+			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
 			pastPeriods := liquidvestingtypes.ExtractPastPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
 
 			// add 1095 days (three years to the end time)
-			denom.EndTime = time.Unix(denom.EndTime.Unix()+86_400*1095, 0)
+			denom.EndTime = time.Unix(denom.EndTime.Unix()+86_400*stretchLength, 0)
 			// set stretched lockup periods
-			denom.LockupPeriods = append(pastPeriods, stretchedUpcomingPeriods...)
+			fullyUpdatedPeriods := append(pastPeriods, stretchedUpcomingPeriods...)
+			denom.LockupPeriods = fullyUpdatedPeriods
 			lk.SetDenom(ctx, denom)
 		}
 
@@ -77,7 +76,7 @@ func stretchPeriods(periods sdkvesting.Periods, stretchDays int64) sdkvesting.Pe
 
 	// update amount of existing periods
 	updatedPeriods := make(sdkvesting.Periods, len(periods))
-	copy(periods, updatedPeriods)
+	copy(updatedPeriods, periods)
 	for _, period := range updatedPeriods {
 		newAmount := period.Amount.AmountOf(Denom).Mul(totalAmount.Sub(extraLengthAmount)).Quo(totalAmount)
 		for i, coin := range period.Amount {

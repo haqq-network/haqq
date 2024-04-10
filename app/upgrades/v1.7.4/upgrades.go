@@ -1,6 +1,8 @@
 package v174
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -19,11 +21,11 @@ func CreateUpgradeHandler(
 		logger := ctx.Logger()
 		logger.Info("run migration v1.7.4")
 
-		if err := StretchLockupScheduleForAccounts(ctx, ak); err != nil {
+		if err := StretchLockupScheduleForAccounts(ctx, ak, VestingStretchLength, time.Unix(LockupLengthThreshold, 0)); err != nil {
 			panic(err)
 		}
 
-		if err := StretchLockupScheduleForLiquidVestingTokens(ctx, lk); err != nil {
+		if err := StretchLockupScheduleForLiquidVestingTokens(ctx, lk, VestingStretchLength, time.Unix(LockupLengthThreshold, 0)); err != nil {
 			panic(err)
 		}
 
