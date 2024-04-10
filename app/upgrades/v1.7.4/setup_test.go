@@ -5,6 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -15,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/encoding"
@@ -24,10 +28,6 @@ import (
 	"github.com/haqq-network/haqq/utils"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 var s *UpgradeTestSuite
@@ -54,17 +54,11 @@ type UpgradeTestSuite struct {
 	clientCtx client.Context
 	// signer
 	ethSigner ethtypes.Signer
-	// contract
-	contractAddress common.Address
 }
 
 func TestUpgradeTestSuite(t *testing.T) {
 	s = new(UpgradeTestSuite)
 	suite.Run(t, s)
-
-	// Run Ginkgo integration tests
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Upgrade v1.7.4 (Revesting) Suite")
 }
 
 func (suite *UpgradeTestSuite) SetupTest() {

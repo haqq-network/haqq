@@ -8,6 +8,7 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -26,13 +27,13 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 		if time.Unix(vacc.GetEndTime(), 0).After(lockupLengthThreshold) {
 			upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
 			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
-			pastPeriods := liquidvestingtypes.ExtractPastPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
+			fullyUpdatedPeriods := liquidvestingtypes.ExtractPastPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
 
 			// add 1095 days (three years to the end time)
 			newEndTime := vacc.EndTime + 86_400*stretchLength
 			vacc.EndTime = newEndTime
 			// set stretched lockup periods
-			fullyUpdatedPeriods := append(pastPeriods, stretchedUpcomingPeriods...)
+			fullyUpdatedPeriods = append(fullyUpdatedPeriods, stretchedUpcomingPeriods...)
 			vacc.LockupPeriods = fullyUpdatedPeriods
 			ak.SetAccount(ctx, vacc)
 		}
@@ -50,12 +51,12 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 		if denom.EndTime.After(lockupLengthThreshold) {
 			upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
 			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
-			pastPeriods := liquidvestingtypes.ExtractPastPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
+			fullyUpdatedPeriods := liquidvestingtypes.ExtractPastPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
 
 			// add 1095 days (three years to the end time)
 			denom.EndTime = time.Unix(denom.EndTime.Unix()+86_400*stretchLength, 0)
 			// set stretched lockup periods
-			fullyUpdatedPeriods := append(pastPeriods, stretchedUpcomingPeriods...)
+			fullyUpdatedPeriods = append(fullyUpdatedPeriods, stretchedUpcomingPeriods...)
 			denom.LockupPeriods = fullyUpdatedPeriods
 			lk.SetDenom(ctx, denom)
 		}

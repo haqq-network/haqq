@@ -7,10 +7,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+
 	v174 "github.com/haqq-network/haqq/app/upgrades/v1.7.4"
 	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
-	"github.com/haqq-network/haqq/x/liquidvesting/types"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
@@ -45,7 +45,7 @@ func (suite *UpgradeTestSuite) TestStretchLockupScheduleForAccounts() {
 
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(
 					baseAccount,
-					sdk.AccAddress(types.ModuleName),
+					sdk.AccAddress(liquidvestingtypes.ModuleName),
 					amount1ISLM,
 					startTime,
 					sdkvesting.Periods{
@@ -83,7 +83,7 @@ func (suite *UpgradeTestSuite) TestStretchLockupScheduleForAccounts() {
 
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(
 					baseAccount,
-					sdk.AccAddress(types.ModuleName),
+					sdk.AccAddress(liquidvestingtypes.ModuleName),
 					amount30kISLM,
 					startTime,
 					sdkvesting.Periods{
@@ -121,7 +121,7 @@ func (suite *UpgradeTestSuite) TestStretchLockupScheduleForAccounts() {
 
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(
 					baseAccount,
-					sdk.AccAddress(types.ModuleName),
+					sdk.AccAddress(liquidvestingtypes.ModuleName),
 					amount10kkkISLM,
 					startTime,
 					sdkvesting.Periods{
@@ -172,7 +172,6 @@ func (suite *UpgradeTestSuite) TestStretchLockupScheduleForAccounts() {
 			suite.Require().True(isClawback)
 			suite.Require().Equal(tc.expectedLockupPeriods.String(), cva.LockupPeriods.String())
 			suite.Require().Equal(tc.expectedEndTime.Unix(), cva.EndTime)
-
 		})
 	}
 }
@@ -195,7 +194,7 @@ func (suite *UpgradeTestSuite) TestStretchLockupScheduleForLiquidVestingTokens()
 
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(
 					baseAccount,
-					sdk.AccAddress(types.ModuleName),
+					sdk.AccAddress(liquidvestingtypes.ModuleName),
 					amount30kISLM,
 					startTime,
 					sdkvesting.Periods{
