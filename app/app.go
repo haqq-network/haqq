@@ -114,6 +114,10 @@ import (
 	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
 
+	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
+	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/keeper"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
+
 	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
@@ -162,6 +166,7 @@ import (
 	v171 "github.com/haqq-network/haqq/app/upgrades/v1.7.1"
 	v172 "github.com/haqq-network/haqq/app/upgrades/v1.7.2"
 	v173 "github.com/haqq-network/haqq/app/upgrades/v1.7.3"
+	v174 "github.com/haqq-network/haqq/app/upgrades/v1.7.4"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -225,6 +230,7 @@ var (
 		ibc.AppModuleBasic{},
 		ibctm.AppModuleBasic{},
 		ica.AppModuleBasic{},
+		packetforward.AppModuleBasic{},
 		authzmodule.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
@@ -301,6 +307,7 @@ type Haqq struct {
 	AuthzKeeper           authzkeeper.Keeper
 	IBCKeeper             *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	ICAHostKeeper         icahostkeeper.Keeper
+	PacketForwardKeeper   *packetforwardkeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	TransferKeeper        transferkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
@@ -383,6 +390,7 @@ func NewHaqq(
 		feegrant.StoreKey, authzkeeper.StoreKey, crisistypes.StoreKey,
 		// ibc keys
 		ibcexported.StoreKey, ibctransfertypes.StoreKey,
+		packetforwardtypes.StoreKey,
 		// ica keys
 		icahosttypes.StoreKey,
 		// ethermint keys
@@ -561,6 +569,19 @@ func NewHaqq(
 		),
 	)
 
+	// Initialize the packet forward middleware Keeper
+	// It's important to note that the PFM Keeper must be initialized before the Transfer Keeper
+	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
+		appCodec,
+		keys[packetforwardtypes.StoreKey],
+		nil, // will be zero-value here, reference is set later on with SetTransferKeeper.
+		app.IBCKeeper.ChannelKeeper,
+		app.DistrKeeper,
+		app.BankKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
 	// Create Transfer Stack
 
 	// SendPacket, since it is originating from the application to core IBC:
@@ -571,11 +592,13 @@ func NewHaqq(
 
 	app.TransferKeeper = transferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, // ICS4 Wrapper
+		app.PacketForwardKeeper, // ICS4 Wrapper
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
 	)
+
+	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 
@@ -595,14 +618,21 @@ func NewHaqq(
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
 	// transfer stack contains (from top to bottom):
-	// - IBC Firewall Middleware
 	// - Transfer
+	// - Packet Forward Middleware
 	// - ERC20 Middleware
 
 	// create IBC module from bottom to top of stack
 	var transferStack porttypes.IBCModule
 
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = packetforward.NewIBCMiddleware(
+		transferStack,
+		app.PacketForwardKeeper,
+		0, // retries on timeout
+		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
+		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
+	)
 	transferStack = erc20.NewIBCMiddleware(app.Erc20Keeper, transferStack)
 
 	// // Create static IBC router, add transfer route, then set and seal it
@@ -655,6 +685,7 @@ func NewHaqq(
 		ibc.NewAppModule(app.IBCKeeper),
 		ica.NewAppModule(nil, &app.ICAHostKeeper),
 		transferModule,
+		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		// Ethermint app modules
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmtypes.ModuleName)),
 		feemarket.NewAppModule(app.FeeMarketKeeper, app.GetSubspace(feemarkettypes.ModuleName)),
@@ -689,6 +720,7 @@ func NewHaqq(
 		ibcexported.ModuleName,
 		// no-op modules
 		ibctransfertypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		icatypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -717,6 +749,7 @@ func NewHaqq(
 		// no-op modules
 		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		icatypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
@@ -765,6 +798,7 @@ func NewHaqq(
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		ibctransfertypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		icatypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
@@ -1129,6 +1163,7 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
+	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	// ethermint subspaces
 	paramsKeeper.Subspace(evmtypes.ModuleName).WithKeyTable(evmtypes.ParamKeyTable()) //nolint: staticcheck
 	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())
@@ -1227,6 +1262,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v173.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
+	// v1.7.4 Revesting upgrade + Packet Forward Middleware
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v174.UpgradeName,
+		v174.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.LiquidVestingKeeper),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1259,6 +1300,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{
 				liquidvestingtypes.ModuleName,
+			},
+		}
+	case v174.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{
+				packetforwardtypes.ModuleName,
 			},
 		}
 	}

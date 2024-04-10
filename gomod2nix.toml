@@ -159,6 +159,9 @@ schema = 3
   [mod."github.com/cosmos/iavl"]
     version = "v0.20.0"
     hash = "sha256-0399jJnl7pV5etL8aEZAhBeOrL1/rjc1ugV1Rj3qwXQ="
+  [mod."github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7"]
+    version = "v7.1.3"
+    hash = "sha256-XcJxMD7s5yI/QQRYczEU6PqABwp5RvM84I7nSbHUzkI="
   [mod."github.com/cosmos/ibc-go/v7"]
     version = "v7.3.1"
     hash = "sha256-5lRAQaQRscTMVKeKlsiWtLFauK/gjL9cD7gTJgUbddQ="
@@ -377,6 +380,9 @@ schema = 3
   [mod."github.com/huin/goupnp"]
     version = "v1.0.3"
     hash = "sha256-EMGmTdoQhP2bVbCPX37hes5krqXn6NFexfnKr9E5u8I="
+  [mod."github.com/iancoleman/orderedmap"]
+    version = "v0.2.0"
+    hash = "sha256-nAxjvteXTGj4pyunVqLpr+RLBdQfA7CQ74Lg+KavfEM="
   [mod."github.com/imdario/mergo"]
     version = "v0.3.13"
     hash = "sha256-03LKAZXgR5YUMeK5IRh2ds2GyV6uSbdq5QCPbAzlTus="
