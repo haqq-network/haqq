@@ -33,7 +33,7 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 			pastPeriods := liquidvestingtypes.ExtractPastPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
 
 			// streched upcoming periods
-			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
+			stretchedUpcomingPeriods := stretchPeriods(ctx, upcomingPeriods, stretchLength, "account", vacc.GetAddress().String())
 
 			// add 1095 days (three years to the end time)
 			oldEndTime := vacc.GetEndTime()
@@ -44,7 +44,7 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 			vacc.LockupPeriods = append(pastPeriods, stretchedUpcomingPeriods...)
 			ak.SetAccount(ctx, vacc)
 
-			logger.Info(fmt.Sprintf(" > %s — from %d to %d", vacc.GetAddress().String(), oldEndTime, newEndTime))
+			logger.Info(fmt.Sprintf(" > account: %s — from %d to %d", vacc.GetAddress().String(), oldEndTime, newEndTime))
 		}
 
 		return false
@@ -65,7 +65,7 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 			pastPeriods := liquidvestingtypes.ExtractPastPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
 
 			// streched upcoming periods
-			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
+			stretchedUpcomingPeriods := stretchPeriods(ctx, upcomingPeriods, stretchLength, "liquid", denom.DisplayDenom)
 
 			// add 1095 days (three years to the end time)
 			oldEndTime := denom.EndTime.Unix()
@@ -76,7 +76,7 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 			denom.LockupPeriods = append(pastPeriods, stretchedUpcomingPeriods...)
 			lk.SetDenom(ctx, denom)
 
-			logger.Info(fmt.Sprintf(" > %s — from %d to %d", denom.DisplayDenom, oldEndTime, newEndTime))
+			logger.Info(fmt.Sprintf(" > denom: %s — from %d to %d", denom.DisplayDenom, oldEndTime, newEndTime))
 		}
 
 		return false
@@ -85,12 +85,15 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 	return nil
 }
 
-func stretchPeriods(periods sdkvesting.Periods, stretchDays int64) sdkvesting.Periods {
+func stretchPeriods(ctx sdk.Context, periods sdkvesting.Periods, stretchDays int64, entityType string, entity string) sdkvesting.Periods {
 	const Denom = "aISLM"
+	logger := ctx.Logger()
 
 	periodsLengthInDays := periods.TotalLength() / OneDayInSeconds
 
 	totalAmount := periods.TotalAmount().AmountOf(Denom)
+
+	logger.Info(fmt.Sprintf(" > type: %s entity: %s — amount: %d", entityType, entity, totalAmount))
 
 	stretchedPerDayLockupAmount := totalAmount.Quo(sdkmath.NewInt(periodsLengthInDays + stretchDays))
 	extraLengthAmount := stretchedPerDayLockupAmount.Mul(sdkmath.NewInt(stretchDays))
