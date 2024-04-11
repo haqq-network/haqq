@@ -20,7 +20,10 @@ func CreateUpgradeHandler(
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger()
-		logger.Info("run migration v1.7.4")
+		logger.Info("##############################################")
+		logger.Info("############ Run migration v1.7.4 ############")
+		logger.Info("################ REVESTING V2 ################")
+		logger.Info("##############################################")
 
 		if err := StretchLockupScheduleForAccounts(ctx, ak, VestingStretchLength, time.Unix(LockupLengthThreshold, 0)); err != nil {
 			panic(err)
@@ -29,6 +32,10 @@ func CreateUpgradeHandler(
 		if err := StretchLockupScheduleForLiquidVestingTokens(ctx, lk, VestingStretchLength, time.Unix(LockupLengthThreshold, 0)); err != nil {
 			panic(err)
 		}
+
+		logger.Info("##############################################")
+		logger.Info("############# REVESTING COMPLETE #############")
+		logger.Info("##############################################")
 
 		return mm.RunMigrations(ctx, configurator, vm)
 	}

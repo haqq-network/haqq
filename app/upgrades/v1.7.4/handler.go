@@ -1,6 +1,7 @@
 package v174
 
 import (
+	"fmt"
 	"time"
 
 	sdkmath "cosmossdk.io/math"
@@ -15,6 +16,9 @@ import (
 )
 
 func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeeper, stretchLength int64, lockupLengthThreshold time.Time) error {
+	logger := ctx.Logger()
+	logger.Info("Stretching lockup schedules for accounts: ")
+
 	// Iterate all accounts
 	ak.IterateAccounts(ctx, func(acc authtypes.AccountI) (stop bool) {
 		// Check if acc is vesting account
@@ -30,12 +34,15 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 			fullyUpdatedPeriods := liquidvestingtypes.ExtractPastPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
 
 			// add 1095 days (three years to the end time)
-			newEndTime := vacc.EndTime + 86_400*stretchLength
+			oldEndTime := vacc.GetEndTime()
+			newEndTime := oldEndTime + 86_400*stretchLength
 			vacc.EndTime = newEndTime
 			// set stretched lockup periods
 			fullyUpdatedPeriods = append(fullyUpdatedPeriods, stretchedUpcomingPeriods...)
 			vacc.LockupPeriods = fullyUpdatedPeriods
 			ak.SetAccount(ctx, vacc)
+
+			logger.Info(fmt.Sprintf(" > %s — from %d to %d", vacc.GetAddress().String(), oldEndTime, newEndTime))
 		}
 
 		return false
@@ -45,6 +52,9 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 }
 
 func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvestingkeeper.Keeper, stretchLength int64, lockupLengthThreshold time.Time) error {
+	logger := ctx.Logger()
+	logger.Info("Stretching lockup schedules for liquid vesting tokens: ")
+
 	// Iterate all denoms
 	lk.IterateDenoms(ctx, func(denom liquidvestingtypes.Denom) (stop bool) {
 		// if end time for liquid denom is after 2026-01-01 modify schedule
@@ -54,11 +64,15 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 			fullyUpdatedPeriods := liquidvestingtypes.ExtractPastPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
 
 			// add 1095 days (three years to the end time)
-			denom.EndTime = time.Unix(denom.EndTime.Unix()+86_400*stretchLength, 0)
+			oldEndTime := denom.EndTime.Unix()
+			newEndTime := oldEndTime + 86_400*stretchLength
+			denom.EndTime = time.Unix(newEndTime, 0)
 			// set stretched lockup periods
 			fullyUpdatedPeriods = append(fullyUpdatedPeriods, stretchedUpcomingPeriods...)
 			denom.LockupPeriods = fullyUpdatedPeriods
 			lk.SetDenom(ctx, denom)
+
+			logger.Info(fmt.Sprintf(" > %s — from %d to %d", denom.DisplayDenom, oldEndTime, newEndTime))
 		}
 
 		return false
