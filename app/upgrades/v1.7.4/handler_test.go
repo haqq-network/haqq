@@ -110,7 +110,7 @@ func (suite *UpgradeTestSuite) TestStretchLockupScheduleForAccounts() {
 			},
 			stretchDays:     3,
 			threshold:       suite.ctx.BlockTime().Add(86_400 * 2 * time.Second),
-			expectedEndTime: suite.ctx.BlockTime().Add(10 + 86_400*6*time.Second),
+			expectedEndTime: suite.ctx.BlockTime().Add(86_400 * 6 * time.Second),
 		},
 		{
 			name: "stretch account with 10kkk ISLM by 3 days",
@@ -148,7 +148,7 @@ func (suite *UpgradeTestSuite) TestStretchLockupScheduleForAccounts() {
 			},
 			stretchDays:     3,
 			threshold:       suite.ctx.BlockTime().Add(86_400 * 2 * time.Second),
-			expectedEndTime: suite.ctx.BlockTime().Add(10 + 86_400*6*time.Second),
+			expectedEndTime: suite.ctx.BlockTime().Add(86_400 * 6 * time.Second),
 		},
 	}
 
