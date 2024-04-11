@@ -66,6 +66,7 @@ func (suite *UpgradeTestSuite) SetupTest() {
 }
 
 func (suite *UpgradeTestSuite) DoSetupTest(t require.TestingT) {
+	const fixedTimestamp = 1712842608
 	var err error
 	checkTx := false
 	suite.t = t
@@ -86,7 +87,7 @@ func (suite *UpgradeTestSuite) DoSetupTest(t require.TestingT) {
 	// Init app
 	suite.app, _ = app.Setup(checkTx, nil)
 	// Set Context
-	header := testutil.NewHeader(1, time.Now().UTC(), suite.chainID, suite.consAddress, nil, nil)
+	header := testutil.NewHeader(1, time.Unix(fixedTimestamp, 0).UTC(), suite.chainID, suite.consAddress, nil, nil)
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, header)
 	// Setup query helpers
 	queryHelperEvm := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
