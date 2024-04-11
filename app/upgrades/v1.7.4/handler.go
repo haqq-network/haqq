@@ -30,16 +30,18 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 		// if end time for unlock account is after 2026-01-01 modify schedule
 		if time.Unix(vacc.GetEndTime(), 0).After(lockupLengthThreshold) {
 			upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
+			pastPeriods := liquidvestingtypes.ExtractPastPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
+
+			// streched upcoming periods
 			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
-			fullyUpdatedPeriods := liquidvestingtypes.ExtractPastPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
 
 			// add 1095 days (three years to the end time)
 			oldEndTime := vacc.GetEndTime()
-			newEndTime := oldEndTime + 86_400*stretchLength
+			newEndTime := oldEndTime + OneDayInSeconds*stretchLength
 			vacc.EndTime = newEndTime
+
 			// set stretched lockup periods
-			fullyUpdatedPeriods = append(fullyUpdatedPeriods, stretchedUpcomingPeriods...)
-			vacc.LockupPeriods = fullyUpdatedPeriods
+			vacc.LockupPeriods = append(pastPeriods, stretchedUpcomingPeriods...)
 			ak.SetAccount(ctx, vacc)
 
 			logger.Info(fmt.Sprintf(" > %s — from %d to %d", vacc.GetAddress().String(), oldEndTime, newEndTime))
@@ -61,15 +63,15 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 		if denom.EndTime.After(lockupLengthThreshold) {
 			upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
 			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
-			fullyUpdatedPeriods := liquidvestingtypes.ExtractPastPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
+			pastPeriods := liquidvestingtypes.ExtractPastPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
 
 			// add 1095 days (three years to the end time)
 			oldEndTime := denom.EndTime.Unix()
-			newEndTime := oldEndTime + 86_400*stretchLength
+			newEndTime := oldEndTime + OneDayInSeconds*stretchLength
 			denom.EndTime = time.Unix(newEndTime, 0)
+
 			// set stretched lockup periods
-			fullyUpdatedPeriods = append(fullyUpdatedPeriods, stretchedUpcomingPeriods...)
-			denom.LockupPeriods = fullyUpdatedPeriods
+			denom.LockupPeriods = append(pastPeriods, stretchedUpcomingPeriods...)
 			lk.SetDenom(ctx, denom)
 
 			logger.Info(fmt.Sprintf(" > %s — from %d to %d", denom.DisplayDenom, oldEndTime, newEndTime))
@@ -84,16 +86,23 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 func stretchPeriods(periods sdkvesting.Periods, stretchDays int64) sdkvesting.Periods {
 	const Denom = "aISLM"
 
-	periodsLengthInDays := periods.TotalLength() / 86_400
-	stretchedPerDayLockupAmount := periods.TotalAmount().AmountOf(Denom).Quo(sdkmath.NewInt(periodsLengthInDays + stretchDays))
+	periodsLengthInDays := periods.TotalLength() / OneDayInSeconds
+
 	totalAmount := periods.TotalAmount().AmountOf(Denom)
+
+	stretchedPerDayLockupAmount := totalAmount.Quo(sdkmath.NewInt(periodsLengthInDays + stretchDays))
 	extraLengthAmount := stretchedPerDayLockupAmount.Mul(sdkmath.NewInt(stretchDays))
 
 	// update amount of existing periods
 	updatedPeriods := make(sdkvesting.Periods, len(periods))
 	copy(updatedPeriods, periods)
+
+	totalUpdatedAmount := totalAmount.Sub(extraLengthAmount)
+
 	for _, period := range updatedPeriods {
-		newAmount := period.Amount.AmountOf(Denom).Mul(totalAmount.Sub(extraLengthAmount)).Quo(totalAmount)
+		periodAmount := period.Amount.AmountOf(Denom)
+		newAmount := periodAmount.Mul(totalUpdatedAmount).Quo(totalAmount)
+
 		for i, coin := range period.Amount {
 			if coin.Denom == Denom {
 				period.Amount[i] = sdk.NewCoin(Denom, newAmount)
@@ -105,7 +114,7 @@ func stretchPeriods(periods sdkvesting.Periods, stretchDays int64) sdkvesting.Pe
 	extraPeriods := make(sdkvesting.Periods, stretchDays)
 	for i := range extraPeriods {
 		extraPeriods[i] = sdkvesting.Period{
-			Length: 86_400,
+			Length: OneDayInSeconds,
 			Amount: sdk.NewCoins(sdk.NewCoin(Denom, stretchedPerDayLockupAmount)),
 		}
 	}
@@ -113,6 +122,7 @@ func stretchPeriods(periods sdkvesting.Periods, stretchDays int64) sdkvesting.Pe
 	// calculate total remainder and add it to the last period of the stretched periods
 	updatedPeriodsAmount := updatedPeriods.TotalAmount().AmountOf(Denom)
 	extraPeriodsAmount := extraPeriods.TotalAmount().AmountOf(Denom)
+
 	calculationDiff := totalAmount.Sub(updatedPeriodsAmount.Add(extraPeriodsAmount))
 	extraPeriods[stretchDays-1].Amount.Add(sdk.NewCoin(Denom, calculationDiff))
 
