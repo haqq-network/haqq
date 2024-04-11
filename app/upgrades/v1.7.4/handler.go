@@ -62,8 +62,10 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 		// if end time for liquid denom is after 2026-01-01 modify schedule
 		if denom.EndTime.After(lockupLengthThreshold) {
 			upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
-			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
 			pastPeriods := liquidvestingtypes.ExtractPastPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
+
+			// streched upcoming periods
+			stretchedUpcomingPeriods := stretchPeriods(upcomingPeriods, stretchLength)
 
 			// add 1095 days (three years to the end time)
 			oldEndTime := denom.EndTime.Unix()
