@@ -41,7 +41,10 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 			vacc.EndTime = newEndTime
 
 			// set stretched lockup periods
-			vacc.LockupPeriods = append(pastPeriods, stretchedUpcomingPeriods...)
+			newLookupPeriods := make(sdkvesting.Periods, 0, len(pastPeriods)+len(stretchedUpcomingPeriods))
+			newLookupPeriods = append(newLookupPeriods, pastPeriods...)
+			newLookupPeriods = append(newLookupPeriods, stretchedUpcomingPeriods...)
+			vacc.LockupPeriods = newLookupPeriods
 			ak.SetAccount(ctx, vacc)
 
 			logger.Info(fmt.Sprintf(" > account: %s — from %d to %d", vacc.GetAddress().String(), oldEndTime, newEndTime))
@@ -73,7 +76,10 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 			denom.EndTime = time.Unix(newEndTime, 0)
 
 			// set stretched lockup periods
-			denom.LockupPeriods = append(pastPeriods, stretchedUpcomingPeriods...)
+			newLookupPeriods := make(sdkvesting.Periods, 0, len(pastPeriods)+len(stretchedUpcomingPeriods))
+			newLookupPeriods = append(newLookupPeriods, pastPeriods...)
+			newLookupPeriods = append(newLookupPeriods, stretchedUpcomingPeriods...)
+			denom.LockupPeriods = newLookupPeriods
 			lk.SetDenom(ctx, denom)
 
 			logger.Info(fmt.Sprintf(" > denom: %s — from %d to %d", denom.DisplayDenom, oldEndTime, newEndTime))
