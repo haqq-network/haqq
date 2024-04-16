@@ -75,6 +75,22 @@ func (k Keeper) SetDenom(ctx sdk.Context, denom types.Denom) {
 	store.Set([]byte(denom.GetBaseDenom()), b)
 }
 
+// GetAllGenesisAccount returns all genesisAccount
+func (k Keeper) GetAllDenoms(ctx sdk.Context) (list []types.Denom) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, types.DenomKeyPrefix)
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var denom types.Denom
+		k.cdc.MustUnmarshal(iterator.Value(), &denom)
+		list = append(list, denom)
+	}
+
+	return
+}
+
 // GetDenomCounter get the counter for denoms
 func (k Keeper) GetDenomCounter(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})

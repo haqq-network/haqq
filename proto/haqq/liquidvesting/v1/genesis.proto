@@ -2,6 +2,8 @@ syntax = "proto3";
 package haqq.liquidvesting.v1;
 
 import "gogoproto/gogo.proto";
+import "amino/amino.proto";
+import "haqq/liquidvesting/v1/liquidvesting.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
 
@@ -9,6 +11,13 @@ option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
 message GenesisState {
   // params defines all the paramaters of the module.
   Params params = 1 [ (gogoproto.nullable) = false ];
+
+  uint64 denomCounter = 2;
+
+  repeated Denom denoms = 3 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
 }
 
 // Params holds parameters for the liquidvesting module.
