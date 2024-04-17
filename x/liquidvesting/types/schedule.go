@@ -102,7 +102,7 @@ func CurrentPeriodShift(startTime, currentTime int64, periods sdkvesting.Periods
 	}
 	elapsedTime := startTime
 	for _, period := range periods {
-		if elapsedTime+period.Length >= currentTime {
+		if elapsedTime+period.Length > currentTime {
 			return currentTime - elapsedTime
 		}
 		elapsedTime += period.Length
