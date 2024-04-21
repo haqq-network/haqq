@@ -122,7 +122,7 @@ build-linux:
 	GOOS=linux GOARCH=amd64 LEDGER_ENABLED=false $(MAKE) build
 
 $(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	go $@ $(BUILD_FLAGS) $(BUILD_ARGS) ./...
+	CGO_ENABLED="1" go $@ $(BUILD_FLAGS) $(BUILD_ARGS) ./...
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
@@ -531,7 +531,7 @@ proto-check-breaking:
 ###############################################################################
 
 PACKAGE_NAME:=github.com/haqq-network/haqq
-GOLANG_CROSS_VERSION  = v1.21
+GOLANG_CROSS_VERSION  = v1.21.2
 GOPATH ?= '$(HOME)/go'
 release-dry-run:
 	docker run \
@@ -543,7 +543,7 @@ release-dry-run:
 		-v ${GOPATH}/pkg:/go/pkg \
 		-w /go/src/$(PACKAGE_NAME) \
 		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		--rm-dist --skip-validate --skip-publish --snapshot
+		--clean --skip-validate --skip-publish --snapshot
 
 release:
 	@if [ ! -f ".release-env" ]; then \
@@ -559,7 +559,8 @@ release:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		release --rm-dist --skip-validate
+		release \
+		--clean --skip-validate
 
 .PHONY: release-dry-run release
 
