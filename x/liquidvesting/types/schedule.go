@@ -71,6 +71,16 @@ func ExtractUpcomingPeriods(startDate, endDate int64, periods sdkvesting.Periods
 	return upcomingPeriods
 }
 
+// ExtractPastPeriods takes the list of periods with started time and
+// returns list of periods which are already in the past
+func ExtractPastPeriods(startDate, endDate int64, periods sdkvesting.Periods, readTime int64) sdkvesting.Periods {
+	pastPeriodsCount := vestingTypes.ReadPastPeriodCount(startDate, endDate, periods, readTime)
+	pastPeriods := make(sdkvesting.Periods, pastPeriodsCount)
+	copy(pastPeriods, periods[:pastPeriodsCount])
+
+	return pastPeriods
+}
+
 // ReplacePeriodsTail replaces the last N periods in original periods list with replacements period list
 // where N is length of replacement list
 func ReplacePeriodsTail(periods, replacement sdkvesting.Periods) sdkvesting.Periods {
@@ -92,7 +102,7 @@ func CurrentPeriodShift(startTime, currentTime int64, periods sdkvesting.Periods
 	}
 	elapsedTime := startTime
 	for _, period := range periods {
-		if elapsedTime+period.Length >= currentTime {
+		if elapsedTime+period.Length > currentTime {
 			return currentTime - elapsedTime
 		}
 		elapsedTime += period.Length

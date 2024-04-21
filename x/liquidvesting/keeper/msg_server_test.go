@@ -63,6 +63,21 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			expectPass: true,
 		},
 		{
+			name: "ok - block time matches end of current period",
+			malleate: func() {
+				funder := sdk.AccAddress(types.ModuleName)
+				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				startTime := suite.ctx.BlockTime().Add(-100 * time.Second)
+				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
+			},
+			from:       addr1,
+			to:         addr2,
+			amount:     sdk.NewCoin("aISLM", third.AmountOf("aISLM")),
+			expectPass: true,
+		},
+		{
 			name: "ok - standard liquidation full liquidation",
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
@@ -213,7 +228,12 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				suite.Require().NotNil(accIFrom)
 				cva, isClawback := accIFrom.(*vestingtypes.ClawbackVestingAccount)
 				suite.Require().True(isClawback)
-				suite.Require().Equal(cva.GetLockedOnly(suite.ctx.BlockTime()), lockupPeriods.TotalAmount().Sub(tc.amount))
+				suite.Require().Equal(cva.GetLockedOnly(suite.ctx.BlockTime()).Add(cva.GetUnlockedOnly(suite.ctx.BlockTime())...), lockupPeriods.TotalAmount().Sub(tc.amount))
+
+				// check newly created liquid denom
+				liquidDenom, found := suite.app.LiquidVestingKeeper.GetDenom(suite.ctx, types.DenomBaseNameFromID(0))
+				suite.Require().True(found)
+				suite.Require().Equal(cva.EndTime, liquidDenom.EndTime.Unix())
 
 				// check erc20 token contract
 				pairResp, err := s.app.Erc20Keeper.TokenPair(s.ctx, &erc20types.QueryTokenPairRequest{Token: types.DenomBaseNameFromID(0)})
