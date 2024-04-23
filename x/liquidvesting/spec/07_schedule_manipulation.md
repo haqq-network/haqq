@@ -32,7 +32,7 @@ These are our new periods. These new periods will be the new schedule of vesting
 
 Now we need to know periods for newly created liquid token. and this is simply a diff between original periods and decreased periods
 ```
-10,20,30 - original periods
-7,14,19 - decreased periods
-3,6,11 - liquid token periods
+10,20,30 - original amount in periods
+7,14,19 - decreased amount in periods
+3,6,11 - liquid token amount in periods
 ```
