@@ -1,7 +1,9 @@
 # Schedule manipulation
 
 This section describes in details how `x/liquidvesting` module handles operation with schedule mutation. Examples are provided.
+
 ## Liquidation
+
 For example we have an account this account has 3 days of vesting so each day represented as a period and has amount which be unlocked once period is passed. 
 Let's imagine every period has different amount 10,20 and 30 respectively
 ```

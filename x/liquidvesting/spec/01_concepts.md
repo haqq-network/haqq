@@ -4,6 +4,7 @@ order: 1
 # Concepts
 
 ## Liquidation
+
 Users with vesting accounts can make their locked ISLM tokens liquid. If vesting account contains only locked tokens user can use `Liquidate` transaction and next things will happen:
 
 1. Specified amount amount of locked ISLM token will be transfered from a user vesting account to `x/liquidvesting` module account

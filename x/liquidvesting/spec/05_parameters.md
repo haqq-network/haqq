@@ -6,8 +6,8 @@ order: 5
 
 The `x/liquidvesting` module contains the following parameters:
 
-| Key                        | Type       | Default Value       |
-|----------------------------|------------|---------------------|
+| Key                        | Type        | Default Value       |
+|----------------------------|-------------|---------------------|
 | `MinimumLiquidationAmount` | sdkmath.Int | `1000*10^18`        |
 
 ## Minimum liquidation amount

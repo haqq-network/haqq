@@ -2,14 +2,14 @@
 order: 0
 title: "Liquid vesting Overview"
 parent:
-  title: "liquidvesting"
+title: "liquidvesting"
 -->
 
 ## Abstract
 
-This document specifies the internal `x/liquid vesting` module of the Haqq Network.
+This document specifies the internal `x/liquidvesting` module of the Haqq Network.
 
-With the `x/erc20` users on Haqq Network can make their ISLM locked in vesting liquid.
+With the `x/liquidvesting` users on Haqq Network can make their ISLM locked in vesting liquid.
 
 ## Contents
 
@@ -17,6 +17,6 @@ With the `x/erc20` users on Haqq Network can make their ISLM locked in vesting l
 2. **[State](02_state.md)**
 3. **[State Transitions](03_state_transitions.md)**
 4. **[Transactions](04_transactions.md)**
-5.  **[Parameters](05_parameters.md)**
-6.  **[Clients](06_clients.md)**
-6.  **[Schedule Manipulation](07_schedule_manipulation.md)**
+5. **[Parameters](05_parameters.md)**
+6. **[Clients](06_clients.md)**
+7. **[Schedule Manipulation](07_schedule_manipulation.md)**
