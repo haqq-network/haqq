@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"io"
 	"net/http"
 	"os"
@@ -55,7 +54,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
-	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
@@ -161,10 +159,8 @@ import (
 	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
 )
 
-var (
-	// DefaultNodeHome default home directories for the application daemon
-	DefaultNodeHome string
-)
+// DefaultNodeHome default home directories for the application daemon
+var DefaultNodeHome string
 
 var (
 	_ servertypes.Application = (*Haqq)(nil)
@@ -198,7 +194,6 @@ type Haqq struct {
 	cdc               *codec.LegacyAmino
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
-	txConfig          client.TxConfig
 
 	invCheckPeriod uint
 
@@ -344,20 +339,15 @@ func NewHaqq(
 		authAddr,
 	)
 	// TODO upgrade HAQQ Bank keeper
-	haqqBankKeeper := haqqbankkeeper.NewBaseKeeper(
+	app.BankKeeper = haqqbankkeeper.NewBaseKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
-		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
-		app.AccountKeeper, app.DistrKeeper, app.BlockedAddrs(),
+		app.AccountKeeper, &app.Erc20Keeper, &app.DistrKeeper, app.BlockedAddrs(),
 		authAddr, logger,
-	)
-	app.BankKeeper = bankkeeper.NewBaseKeeper(
-		appCodec, runtime.NewKVStoreService(keys[banktypes.StoreKey]),
-		app.AccountKeeper, app.BlockedAddrs(), authAddr, logger,
 	)
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec, runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
-		app.AccountKeeper, &haqqBankKeeper, authAddr,
+		app.AccountKeeper, app.BankKeeper, authAddr,
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
@@ -419,7 +409,7 @@ func NewHaqq(
 	}
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, runtime.NewKVStoreService(keys[govtypes.StoreKey]),
-		app.AccountKeeper, &haqqBankKeeper,
+		app.AccountKeeper, app.BankKeeper,
 		stakingKeeper, app.DistrKeeper, app.MsgServiceRouter(),
 		govConfig, authAddr,
 	)
@@ -572,10 +562,7 @@ func NewHaqq(
 			app, encodingConfig.TxConfig,
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
-		haqqbank.NewAppModule(
-			bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
-			app.BankKeeper, app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName),
-		),
+		haqqbank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
@@ -725,8 +712,7 @@ func NewHaqq(
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
-	err := app.mm.RegisterServices(app.configurator)
-	if err != nil {
+	if err := app.mm.RegisterServices(app.configurator); err != nil {
 		panic(err)
 	}
 
@@ -1161,6 +1147,8 @@ func (app *Haqq) setupUpgradeHandlers() {
 	var storeUpgrades *storetypes.StoreUpgrades
 
 	switch upgradeInfo.Name {
+	case v180.UpgradeName:
+		// TODO add store upgrades for v0.50 if necessary
 	default:
 		// no-op
 	}

@@ -78,14 +78,16 @@ func EthSetupWithDB(isCheckTx bool, patchGenesis func(*Haqq, types.GenesisState)
 		}
 
 		// Initialize the chain
-		app.InitChain(
+		if _, err := app.InitChain(
 			&abci.RequestInitChain{
 				ChainId:         chainID,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
 			},
-		)
+		); err != nil {
+			panic(err)
+		}
 	}
 
 	return app

@@ -44,8 +44,8 @@ schema = 3
     version = "v1.0.2"
     hash = "sha256-mEaBNfU892M3V6qTMEDXb1GLaywlyouTRC5XfVqNSMs="
   [mod."cosmossdk.io/tools/confix"]
-    version = "v0.1.0"
-    hash = "sha256-PvIYbcjsATI+gP0+efJZjlGhaClx4SNfadlVY3Ok9TE="
+    version = "v0.1.1"
+    hash = "sha256-/Et2FFhb4XfakbLFvGQK3QxN5Y7alzO+DGfi2/EWbxo="
   [mod."cosmossdk.io/x/circuit"]
     version = "v0.1.0"
     hash = "sha256-yTy3jmjWin+imBvgGeJix4SE818/4fQjKgSUYZNiNnw="
@@ -59,8 +59,8 @@ schema = 3
     version = "v0.13.1"
     hash = "sha256-dHv2Zx8xbqfv1Gq0syh33G7TFJOVx4857QMH4b8Jj9k="
   [mod."cosmossdk.io/x/upgrade"]
-    version = "v0.1.0"
-    hash = "sha256-G+7fbkBXSOsL1HFrfFDEx9LI53+xc6PLfa9kFhTx2Qo="
+    version = "v0.1.1"
+    hash = "sha256-bM9ybpaibMH7k4M6/QAXCZ3fJcADfJHxvMgp4AVUihs="
   [mod."filippo.io/edwards25519"]
     version = "v1.0.0"
     hash = "sha256-APnPAcmItvtJ5Zsy863lzR2TjEBF9Y66TY1e4M1ap98="
@@ -98,9 +98,6 @@ schema = 3
   [mod."github.com/allegro/bigcache"]
     version = "v1.2.1"
     hash = "sha256-/DwqBxg75m1zzOB8BWbpjQ/jYnhoe/SMXc4310mOlMA="
-  [mod."github.com/armon/go-metrics"]
-    version = "v0.4.1"
-    hash = "sha256-usxTUHA0QQMdM6sHi2z51nmnEKMbA0qUilxJFpWHlYE="
   [mod."github.com/aws/aws-sdk-go"]
     version = "v1.44.224"
     hash = "sha256-zkewIYLOT+CvBDsxXnY2ZaFyoDdt/JCFQ2sCIdBmTFo="
@@ -278,8 +275,8 @@ schema = 3
     hash = "sha256-hHTSv2zX22f3aoOKR6E2xvGqO8gZqJxw1y9YIMavpXk="
     replaced = "github.com/evmos/go-ethereum"
   [mod."github.com/fatih/color"]
-    version = "v1.15.0"
-    hash = "sha256-7b+scFVQeEUoXfeCDd8X2gS8GMoWA+HxjK8wfbypa5s="
+    version = "v1.16.0"
+    hash = "sha256-Aq/SM28aPJVzvapllQ64R/DM4aZ5CHPewcm/AUJPyJQ="
   [mod."github.com/felixge/httpsnoop"]
     version = "v1.0.4"
     hash = "sha256-c1JKoRSndwwOyOxq9ddCe+8qn7mG9uRq2o/822x5O/c="
@@ -396,8 +393,8 @@ schema = 3
     version = "v0.5.2"
     hash = "sha256-N9GOKYo7tK6XQUFhvhImtL7PZW/mr4C4Manx/yPVvcQ="
   [mod."github.com/hashicorp/go-getter"]
-    version = "v1.7.1"
-    hash = "sha256-szIdn7GPvJ78gKKzQRWlx39X81QRDsXtJKo3P/4oMIg="
+    version = "v1.7.3"
+    hash = "sha256-z3zrjcOsgJrZkGLwaKVauq/MFAPtulXatV/RrkKNJv4="
   [mod."github.com/hashicorp/go-hclog"]
     version = "v1.5.0"
     hash = "sha256-u3Jqg7Qex11IZ7vbk4hRGgLy6e0cF70CCx7ERF0GUHo="
@@ -405,8 +402,8 @@ schema = 3
     version = "v1.3.1"
     hash = "sha256-65+A2HiVfS/GV9G+6/TkXXjzXhI/V98e6RlJWjxy+mg="
   [mod."github.com/hashicorp/go-metrics"]
-    version = "v0.5.1"
-    hash = "sha256-nQ+qduNhVwj+YIyPTuq8rytQYT3zWcEQM3zQ7LTegdI="
+    version = "v0.5.2"
+    hash = "sha256-ZAEqFwqGJC8DgdI8FxHV3XW64tnfTexXl52Yk/b2MO8="
   [mod."github.com/hashicorp/go-plugin"]
     version = "v1.5.2"
     hash = "sha256-bdBT9TyHUJkUogQZWj0waniVv/Qauy/iKEbegyK2HZA="
@@ -471,8 +468,8 @@ schema = 3
     version = "v0.2.0"
     hash = "sha256-fadcWxZOORv44oak3jTxm6YcITcFxdGt4bpn869HxUE="
   [mod."github.com/lib/pq"]
-    version = "v1.10.7"
-    hash = "sha256-YPUv1VBZNFVUjFxQKdYd0Djje6KYYE99Hz6FnTfrmMw="
+    version = "v1.10.9"
+    hash = "sha256-Gl6dLtL+yk6UrTTWfas43aM4lP/pNa2l7+ITXnjQyKs="
   [mod."github.com/libp2p/go-buffer-pool"]
     version = "v0.1.0"
     hash = "sha256-wQqGTtRWsfR9n0O/SXHVgECebbnNmHddxJIbG63OJBQ="
@@ -537,8 +534,8 @@ schema = 3
     version = "v1.1.0-rc2"
     hash = "sha256-833S8D86IumLRpfrKBzpZCtLsTEnGBWbI3dTYd6BdFg="
   [mod."github.com/opencontainers/runc"]
-    version = "v1.1.4"
-    hash = "sha256-+QKR6Drg2GAH0SDwv0TCNCEQnigMGesFPa99H+BvTsw="
+    version = "v1.1.12"
+    hash = "sha256-YM12Tl1/9dFV9dDAImg56Cf38R+8KsTWvDd1Kh7eD7Q="
   [mod."github.com/ory/dockertest/v3"]
     version = "v3.9.1"
     hash = "sha256-ZNHMW+cq5W4ilSsBxHZ7ZhXtOUBTca8rE4UE6EYv0Hw="
@@ -600,8 +597,8 @@ schema = 3
     version = "v3.21.4-0.20210419000835-c7a38de76ee5+incompatible"
     hash = "sha256-oqIqyFquWabIE6DID6uTEc8oFEmM1rVu2ATn3toiCEg="
   [mod."github.com/sirupsen/logrus"]
-    version = "v1.9.0"
-    hash = "sha256-xOwGFsYGIxNiurS8Zue8mhlFK/G7U1LVFFrv4vcr1GM="
+    version = "v1.9.3"
+    hash = "sha256-EnxsWdEUPYid+aZ9H4/iMTs1XMvCLbXZRDyvj89Ebms="
   [mod."github.com/sourcegraph/conc"]
     version = "v0.3.0"
     hash = "sha256-mIdMs9MLAOBKf3/0quf1iI3v8uNWydy7ae5MFa+F2Ko="

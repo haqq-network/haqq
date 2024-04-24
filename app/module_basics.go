@@ -38,44 +38,42 @@ import (
 	"github.com/haqq-network/haqq/x/vesting"
 )
 
-var (
-	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
-	// non-dependant module elements, such as codec registration
-	// and genesis verification.
-	ModuleBasics = module.NewBasicManager(
-		auth.AppModuleBasic{},
-		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
-		bank.AppModuleBasic{},
-		capability.AppModuleBasic{},
-		staking.AppModuleBasic{},
-		distr.AppModuleBasic{},
-		gov.NewAppModuleBasic(
-			[]govclient.ProposalHandler{
-				paramsclient.ProposalHandler,
-				// Evmos proposal types
-				erc20client.RegisterCoinProposalHandler,
-				erc20client.RegisterERC20ProposalHandler,
-				erc20client.ToggleTokenConversionProposalHandler,
-			},
-		),
-		params.AppModuleBasic{},
-		crisis.AppModuleBasic{},
-		slashing.AppModuleBasic{},
-		ibc.AppModuleBasic{},
-		ibctm.AppModuleBasic{},
-		ica.AppModuleBasic{},
-		authzmodule.AppModuleBasic{},
-		feegrantmodule.AppModuleBasic{},
-		upgrade.AppModuleBasic{},
-		evidence.AppModuleBasic{},
-		transfer.AppModuleBasic{AppModuleBasic: &ibctransfer.AppModuleBasic{}},
-		vesting.AppModuleBasic{},
-		liquidvesting.AppModuleBasic{},
-		evm.AppModuleBasic{},
-		feemarket.AppModuleBasic{},
-		coinomics.AppModuleBasic{},
-		erc20.AppModuleBasic{},
-		epochs.AppModuleBasic{},
-		consensus.AppModuleBasic{},
-	)
+// ModuleBasics defines the module BasicManager is in charge of setting up basic,
+// non-dependant module elements, such as codec registration
+// and genesis verification.
+var ModuleBasics = module.NewBasicManager(
+	auth.AppModuleBasic{},
+	genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+	bank.AppModuleBasic{},
+	capability.AppModuleBasic{},
+	staking.AppModuleBasic{},
+	distr.AppModuleBasic{},
+	gov.NewAppModuleBasic(
+		[]govclient.ProposalHandler{
+			paramsclient.ProposalHandler,
+			// Evmos proposal types
+			erc20client.RegisterCoinProposalHandler,
+			erc20client.RegisterERC20ProposalHandler,
+			erc20client.ToggleTokenConversionProposalHandler,
+		},
+	),
+	params.AppModuleBasic{},
+	crisis.AppModuleBasic{},
+	slashing.AppModuleBasic{},
+	ibc.AppModuleBasic{},
+	ibctm.AppModuleBasic{},
+	ica.AppModuleBasic{},
+	authzmodule.AppModuleBasic{},
+	feegrantmodule.AppModuleBasic{},
+	upgrade.AppModuleBasic{},
+	evidence.AppModuleBasic{},
+	transfer.AppModuleBasic{AppModuleBasic: &ibctransfer.AppModuleBasic{}},
+	vesting.AppModuleBasic{},
+	liquidvesting.AppModuleBasic{},
+	evm.AppModuleBasic{},
+	feemarket.AppModuleBasic{},
+	coinomics.AppModuleBasic{},
+	erc20.AppModuleBasic{},
+	epochs.AppModuleBasic{},
+	consensus.AppModuleBasic{},
 )

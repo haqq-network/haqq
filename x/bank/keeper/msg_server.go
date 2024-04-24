@@ -22,16 +22,16 @@ import (
 )
 
 type msgServer struct {
-	WrappedBaseKeeper
-}
-
-// NewMsgServerImpl returns an implementation of the bank MsgServer interface
-// for the provided Keeper.
-func NewMsgServerImpl(keeper WrappedBaseKeeper) types.MsgServer {
-	return &msgServer{WrappedBaseKeeper: keeper}
+	bankkeeper.Keeper
 }
 
 var _ types.MsgServer = msgServer{}
+
+// NewMsgServerImpl returns an implementation of the bank MsgServer interface
+// for the provided Keeper.
+func NewMsgServerImpl(keeper bankkeeper.Keeper) types.MsgServer {
+	return &msgServer{Keeper: keeper}
+}
 
 func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSendResponse, error) {
 	var (
@@ -39,12 +39,12 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 		err      error
 	)
 
-	if _, ok := k.Keeper.(bankkeeper.BaseKeeper); ok {
-		from, err = k.ak.AddressCodec().StringToBytes(msg.FromAddress)
+	if base, ok := k.Keeper.(BaseKeeper); ok {
+		from, err = base.ak.AddressCodec().StringToBytes(msg.FromAddress)
 		if err != nil {
 			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid from address: %s", err)
 		}
-		to, err = k.ak.AddressCodec().StringToBytes(msg.ToAddress)
+		to, err = base.ak.AddressCodec().StringToBytes(msg.ToAddress)
 		if err != nil {
 			return nil, sdkerrors.ErrInvalidAddress.Wrapf("invalid to address: %s", err)
 		}
@@ -138,6 +138,7 @@ func (k msgServer) MultiSend(goCtx context.Context, msg *types.MsgMultiSend) (*t
 	return &types.MsgMultiSendResponse{}, nil
 }
 
+// UpdateParams full copy of original bank msgServer UpdateParams method
 func (k msgServer) UpdateParams(goCtx context.Context, req *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
 	if k.GetAuthority() != req.Authority {
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.GetAuthority(), req.Authority)
@@ -155,6 +156,7 @@ func (k msgServer) UpdateParams(goCtx context.Context, req *types.MsgUpdateParam
 	return &types.MsgUpdateParamsResponse{}, nil
 }
 
+// SetSendEnabled full copy of original bank msgServer UpdateParams method
 func (k msgServer) SetSendEnabled(goCtx context.Context, msg *types.MsgSetSendEnabled) (*types.MsgSetSendEnabledResponse, error) {
 	if k.GetAuthority() != msg.Authority {
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.GetAuthority(), msg.Authority)
@@ -191,8 +193,13 @@ func (k msgServer) SetSendEnabled(goCtx context.Context, msg *types.MsgSetSendEn
 }
 
 func (k msgServer) sendCoinsWithERC20(ctx sdk.Context, from sdk.AccAddress, to sdk.AccAddress, amt sdk.Coins) error {
+	base, ok := k.Keeper.(BaseKeeper)
+	if !ok {
+		return sdkerrors.ErrInvalidRequest.Wrapf("invalid keeper type: %T", k.Keeper)
+	}
+
 	// Use original SendCoins method is ERC20 is disabled
-	if !k.ek.IsERC20Enabled(ctx) {
+	if !base.ek.IsERC20Enabled(ctx) {
 		return k.SendCoins(ctx, from, to, amt)
 	}
 
@@ -201,14 +208,14 @@ func (k msgServer) sendCoinsWithERC20(ctx sdk.Context, from sdk.AccAddress, to s
 
 	// Convert and transfer registered ERC20 tokens
 	for _, coin := range amt {
-		tokenPairID := k.ek.GetTokenPairID(sdkCtx, coin.Denom)
+		tokenPairID := base.ek.GetTokenPairID(sdkCtx, coin.Denom)
 		if len(tokenPairID) == 0 {
 			// If no such pair registered for the given denom, try to send as a native coin
 			nativeCoins = append(nativeCoins, coin)
 			continue
 		}
 
-		tokenPair, found := k.ek.GetTokenPair(sdkCtx, tokenPairID)
+		tokenPair, found := base.ek.GetTokenPair(sdkCtx, tokenPairID)
 		if !found || !tokenPair.Enabled {
 			// if tokenPair is Disabled or not found, try to transfer on Cosmos layer without conversion
 			nativeCoins = append(nativeCoins, coin)
@@ -223,10 +230,10 @@ func (k msgServer) sendCoinsWithERC20(ctx sdk.Context, from sdk.AccAddress, to s
 		//
 		// NOTE: This should ultimately be removed in favor a more flexible approach
 		// such as delegated fee messages.
-		accExists := k.ak.HasAccount(ctx, to)
+		accExists := base.ak.HasAccount(ctx, to)
 		if !accExists {
 			defer telemetry.IncrCounter(1, "new", "account")
-			k.ak.SetAccount(ctx, k.ak.NewAccountWithAddress(ctx, to))
+			base.ak.SetAccount(ctx, base.ak.NewAccountWithAddress(ctx, to))
 		}
 	}
 
@@ -235,6 +242,11 @@ func (k msgServer) sendCoinsWithERC20(ctx sdk.Context, from sdk.AccAddress, to s
 }
 
 func (k msgServer) subUnlockedERC20Tokens(ctx sdk.Context, tokenPair erc20types.TokenPair, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coin) error {
+	base, ok := k.Keeper.(BaseKeeper)
+	if !ok {
+		return sdkerrors.ErrInvalidRequest.Wrapf("invalid keeper type: %T", k.Keeper)
+	}
+
 	if !amt.IsValid() {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, amt.String())
 	}
@@ -249,7 +261,7 @@ func (k msgServer) subUnlockedERC20Tokens(ctx sdk.Context, tokenPair erc20types.
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
 	contract := tokenPair.GetERC20Contract()
 	evmFromAddr := common.BytesToAddress(fromAddr.Bytes())
-	evmFromBalanceToken := k.ek.BalanceOf(sdkCtx, erc20, contract, evmFromAddr)
+	evmFromBalanceToken := base.ek.BalanceOf(sdkCtx, erc20, contract, evmFromAddr)
 	if evmFromBalanceToken == nil {
 		return errorsmod.Wrap(erc20types.ErrEVMCall, "failed to retrieve sender's balance")
 	}
@@ -264,18 +276,18 @@ func (k msgServer) subUnlockedERC20Tokens(ctx sdk.Context, tokenPair erc20types.
 		// Build MsgConvertCoin, from recipient to recipient since IBC transfer already occurred
 		msg := erc20types.NewMsgConvertCoin(spendable, evmFromAddr, fromAddr)
 
-		if _, err := k.ek.ConvertCoin(sdk.WrapSDKContext(ctx), msg); err != nil {
+		if _, err := base.ek.ConvertCoin(sdk.WrapSDKContext(ctx), msg); err != nil {
 			return errorsmod.Wrap(err, "failed to convert coins")
 		}
 	}
 
 	evmToAddr := common.BytesToAddress(toAddr.Bytes())
-	evmToBalanceTokenBefore := k.ek.BalanceOf(sdkCtx, erc20, contract, evmToAddr)
+	evmToBalanceTokenBefore := base.ek.BalanceOf(sdkCtx, erc20, contract, evmToAddr)
 	if evmToBalanceTokenBefore == nil {
 		return errorsmod.Wrap(erc20types.ErrEVMCall, "failed to retrieve receiver's balance")
 	}
 	// Transfer Tokens to receiver
-	res, err := k.ek.CallEVM(ctx, erc20, evmFromAddr, contract, true, "transfer", evmToAddr, amt.Amount.BigInt())
+	res, err := base.ek.CallEVM(ctx, erc20, evmFromAddr, contract, true, "transfer", evmToAddr, amt.Amount.BigInt())
 	if err != nil {
 		return errorsmod.Wrap(err, "failed to transfer erc20 tokens: call evm")
 	}
@@ -291,7 +303,7 @@ func (k msgServer) subUnlockedERC20Tokens(ctx sdk.Context, tokenPair erc20types.
 	}
 
 	// Check expected balance after transfer execution
-	evmToBalanceTokenAfter := k.ek.BalanceOf(sdkCtx, erc20, contract, evmToAddr)
+	evmToBalanceTokenAfter := base.ek.BalanceOf(sdkCtx, erc20, contract, evmToAddr)
 	if evmToBalanceTokenAfter == nil {
 		return errorsmod.Wrap(erc20types.ErrEVMCall, "failed to retrieve receiver's balance")
 	}

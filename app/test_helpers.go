@@ -110,14 +110,16 @@ func Setup(
 		}
 
 		// Initialize the chain
-		app.InitChain(
+		if _, err := app.InitChain(
 			&abci.RequestInitChain{
 				ChainId:         chainID,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
 			},
-		)
+		); err != nil {
+			panic(err)
+		}
 	}
 
 	return app, pubKey.Bytes()

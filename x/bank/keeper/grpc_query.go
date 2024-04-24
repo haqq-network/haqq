@@ -16,8 +16,8 @@ import (
 var _ types.QueryServer = BaseKeeper{}
 
 // Balance implements the Query/Balance gRPC method
-func (k WrappedBaseKeeper) Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error) {
-	res, err := k.Keeper.Balance(ctx, req)
+func (k BaseKeeper) Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error) {
+	res, err := k.BaseKeeper.Balance(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -27,49 +27,43 @@ func (k WrappedBaseKeeper) Balance(ctx context.Context, req *types.QueryBalanceR
 		return nil, err
 	}
 
-	coin := res.Balance.Add(ercBalance)
-	res.Balance = &coin
+	if ercBalance.IsValid() {
+		coin := res.Balance.Add(ercBalance)
+		res.Balance = &coin
+	}
 
 	return res, nil
 }
 
 // AllBalances implements the Query/AllBalances gRPC method
-func (k WrappedBaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalancesRequest) (*types.QueryAllBalancesResponse, error) {
-	res, err := k.Keeper.AllBalances(ctx, req)
+func (k BaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalancesRequest) (*types.QueryAllBalancesResponse, error) {
+	res, err := k.BaseKeeper.AllBalances(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	ercBalances, err := k.getErc20Balances(ctx, req.Address)
-	if err != nil {
-		return nil, err
-	}
-
-	res.Balances = res.Balances.Add(ercBalances...)
+	ercBalances := k.getErc20Balances(ctx, req.Address)
+	res.Balances = res.Balances.Sort().Add(ercBalances.Sort()...)
 
 	return res, nil
 }
 
 // SpendableBalances implements a gRPC query handler for retrieving an account's
 // spendable balances.
-func (k WrappedBaseKeeper) SpendableBalances(ctx context.Context, req *types.QuerySpendableBalancesRequest) (*types.QuerySpendableBalancesResponse, error) {
-	res, err := k.Keeper.SpendableBalances(ctx, req)
+func (k BaseKeeper) SpendableBalances(ctx context.Context, req *types.QuerySpendableBalancesRequest) (*types.QuerySpendableBalancesResponse, error) {
+	res, err := k.BaseKeeper.SpendableBalances(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	ercBalances, err := k.getErc20Balances(ctx, req.Address)
-	if err != nil {
-		return nil, err
-	}
-
-	res.Balances = res.Balances.Add(ercBalances...)
+	ercBalances := k.getErc20Balances(ctx, req.Address)
+	res.Balances = res.Balances.Sort().Add(ercBalances.Sort()...)
 
 	return res, nil
 }
 
-func (k WrappedBaseKeeper) SpendableBalanceByDenom(ctx context.Context, req *types.QuerySpendableBalanceByDenomRequest) (*types.QuerySpendableBalanceByDenomResponse, error) {
-	res, err := k.Keeper.SpendableBalanceByDenom(ctx, req)
+func (k BaseKeeper) SpendableBalanceByDenom(ctx context.Context, req *types.QuerySpendableBalanceByDenomRequest) (*types.QuerySpendableBalanceByDenomResponse, error) {
+	res, err := k.BaseKeeper.SpendableBalanceByDenom(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -79,13 +73,15 @@ func (k WrappedBaseKeeper) SpendableBalanceByDenom(ctx context.Context, req *typ
 		return nil, err
 	}
 
-	coin := res.Balance.Add(ercBalance)
-	res.Balance = &coin
+	if ercBalance.IsValid() {
+		coin := res.Balance.Add(ercBalance)
+		res.Balance = &coin
+	}
 
 	return res, nil
 }
 
-func (k WrappedBaseKeeper) getErc20BalanceByDenom(ctx context.Context, addr, denom string) (sdk.Coin, error) {
+func (k BaseKeeper) getErc20BalanceByDenom(ctx context.Context, addr, denom string) (sdk.Coin, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if !k.ek.IsERC20Enabled(sdkCtx) {
 		return sdk.Coin{}, nil
@@ -114,10 +110,10 @@ func (k WrappedBaseKeeper) getErc20BalanceByDenom(ctx context.Context, addr, den
 	return sdk.NewCoin(tokenPair.Denom, sdkmath.NewIntFromBigInt(balanceToken)), nil
 }
 
-func (k WrappedBaseKeeper) getErc20Balances(ctx context.Context, addr string) (sdk.Coins, error) {
+func (k BaseKeeper) getErc20Balances(ctx context.Context, addr string) sdk.Coins {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if !k.ek.IsERC20Enabled(sdkCtx) {
-		return sdk.NewCoins(), nil
+		return sdk.NewCoins()
 	}
 
 	// AccAddressFromBech32 error check already handled above in original method
@@ -141,5 +137,5 @@ func (k WrappedBaseKeeper) getErc20Balances(ctx context.Context, addr string) (s
 		return false
 	})
 
-	return resCoins, nil
+	return resCoins
 }
