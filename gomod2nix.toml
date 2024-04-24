@@ -126,8 +126,9 @@ schema = 3
     version = "v0.7.9"
     hash = "sha256-ZWIXIXcHGjeCNgMrpXymry8/8esDDauGFfF/+gEoO1Y="
   [mod."github.com/cometbft/cometbft"]
-    version = "v0.37.3"
-    hash = "sha256-pN+YGODuB/KH36atofy9x4JzXSmnlw0mpPgQJDl7ZcQ="
+    version = "v0.37.4-haqq.0"
+    hash = "sha256-0USr7SopOAU1lwPDCSxYbQ8vQ7WLzu7WmaqeMepVG2s="
+    replaced = "github.com/haqq-network/cometbft"
   [mod."github.com/cometbft/cometbft-db"]
     version = "v0.8.0"
     hash = "sha256-Tlm2V9zDs/wVoFvMmJSdCzCdZKiFRC7Qk8FS3FaqQyk="
@@ -144,9 +145,9 @@ schema = 3
     version = "v1.0.0-beta.2"
     hash = "sha256-Am8A44NSxdY77GIEDx1AY+pLU0npeyuTlr3mc4stg3I="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.47.5-evmos"
-    hash = "sha256-j2bQXAz1w1eNBHzy1VFEYEsiZxg5FbqVc/JH6IZhIdU="
-    replaced = "github.com/evmos/cosmos-sdk"
+    version = "v0.47.5-haqq.1"
+    hash = "sha256-7OWzWAom9H2RCxrIJHocAa7OJL99TNNuq47cW3orR1E="
+    replaced = "github.com/haqq-network/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
