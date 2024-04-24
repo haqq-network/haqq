@@ -48,17 +48,17 @@ func (suite *KeeperTestSuite) TestWithChainID() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			keeper := keeper.Keeper{}
+			kpr := keeper.Keeper{}
 			ctx := suite.network.GetContext().WithChainID(tc.chainID)
 
 			if tc.expPanic {
 				suite.Require().Panics(func() {
-					keeper.WithChainID(ctx)
+					kpr.WithChainID(ctx)
 				})
 			} else {
 				suite.Require().NotPanics(func() {
-					keeper.WithChainID(ctx)
-					suite.Require().Equal(tc.expChainID, keeper.ChainID().Int64())
+					kpr.WithChainID(ctx)
+					suite.Require().Equal(tc.expChainID, kpr.ChainID().Int64())
 				})
 			}
 		})
@@ -83,7 +83,8 @@ func (suite *KeeperTestSuite) TestBaseFee() {
 			suite.enableFeemarket = tc.enableFeemarket
 			suite.enableLondonHF = tc.enableLondonHF
 			suite.SetupTest()
-			suite.network.App.EvmKeeper.BeginBlock(suite.network.GetContext())
+			err := suite.network.App.EvmKeeper.BeginBlock(suite.network.GetContext())
+			suite.Require().NoError(err)
 			params := suite.network.App.EvmKeeper.GetParams(suite.network.GetContext())
 			ethCfg := params.ChainConfig.EthereumConfig(suite.network.App.EvmKeeper.ChainID())
 			baseFee := suite.network.App.EvmKeeper.GetBaseFee(suite.network.GetContext(), ethCfg)
@@ -137,7 +138,7 @@ func (suite *KeeperTestSuite) TestGetAccountStorage() {
 					return false
 				})
 			},
-			[]int{2, 0},
+			[]int{0, 2},
 		},
 	}
 

@@ -66,10 +66,10 @@ func AvailablePrecompiles(
 		panic(fmt.Errorf("failed to instantiate ICS20 precompile: %w", err))
 	}
 
-	//vestingPrecompile, err := vestingprecompile.NewPrecompile(vestingKeeper, authzKeeper)
-	//if err != nil {
-	//	panic(fmt.Errorf("failed to instantiate vesting precompile: %w", err))
-	//}
+	// vestingPrecompile, err := vestingprecompile.NewPrecompile(vestingKeeper, authzKeeper)
+	// if err != nil {
+	// 	panic(fmt.Errorf("failed to instantiate vesting precompile: %w", err))
+	// }
 
 	bankPrecompile, err := bankprecompile.NewPrecompile(bankKeeper, erc20Keeper)
 	if err != nil {
@@ -83,7 +83,7 @@ func AvailablePrecompiles(
 	// Stateful precompiles
 	precompiles[stakingPrecompile.Address()] = stakingPrecompile
 	precompiles[distributionPrecompile.Address()] = distributionPrecompile
-	//precompiles[vestingPrecompile.Address()] = vestingPrecompile
+	// precompiles[vestingPrecompile.Address()] = vestingPrecompile
 	precompiles[ibcTransferPrecompile.Address()] = ibcTransferPrecompile
 	precompiles[bankPrecompile.Address()] = bankPrecompile
 

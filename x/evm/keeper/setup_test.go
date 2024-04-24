@@ -50,12 +50,12 @@ func TestKeeperTestSuite(t *testing.T) {
 	RunSpecs(t, "Keeper Suite")
 }
 
-func (s *KeeperTestSuite) SetupTest() {
+func (suite *KeeperTestSuite) SetupTest() {
 	keys := keyring.New(2)
 	// Set custom balance based on test params
 	customGenesis := network.CustomGenesisState{}
 	feemarketGenesis := feemarkettypes.DefaultGenesisState()
-	if s.enableFeemarket {
+	if suite.enableFeemarket {
 		feemarketGenesis.Params.EnableHeight = 1
 		feemarketGenesis.Params.NoBaseFee = false
 	} else {
@@ -63,7 +63,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	}
 	customGenesis[feemarkettypes.ModuleName] = feemarketGenesis
 
-	if !s.enableLondonHF {
+	if !suite.enableLondonHF {
 		evmGenesis := evmtypes.DefaultGenesisState()
 		maxInt := sdkmath.NewInt(math.MaxInt64)
 		evmGenesis.Params.ChainConfig.LondonBlock = &maxInt
@@ -75,7 +75,7 @@ func (s *KeeperTestSuite) SetupTest() {
 		customGenesis[evmtypes.ModuleName] = evmGenesis
 	}
 
-	if s.mintFeeCollector {
+	if suite.mintFeeCollector {
 		// mint some coin to fee collector
 		coins := sdk.NewCoins(sdk.NewCoin(evmtypes.DefaultEVMDenom, sdkmath.NewInt(int64(params.TxGas)-1)))
 		balances := []banktypes.Balance{
@@ -96,8 +96,8 @@ func (s *KeeperTestSuite) SetupTest() {
 	gh := grpc.NewIntegrationHandler(nw)
 	tf := factory.New(nw, gh)
 
-	s.network = nw
-	s.factory = tf
-	s.handler = gh
-	s.keyring = keys
+	suite.network = nw
+	suite.factory = tf
+	suite.handler = gh
+	suite.keyring = keys
 }

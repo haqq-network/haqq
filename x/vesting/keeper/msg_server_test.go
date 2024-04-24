@@ -449,7 +449,7 @@ func (suite *KeeperTestSuite) TestClawbackVestingAccountStore() {
 	suite.Require().Equal(acc.String(), acc2.String())
 }
 
-//func (suite *KeeperTestSuite) TestClawbackVestingAccountMarshal() {
+// func (suite *KeeperTestSuite) TestClawbackVestingAccountMarshal() {
 //	suite.SetupTest()
 //
 //	// Create and set clawback vesting account
@@ -470,7 +470,7 @@ func (suite *KeeperTestSuite) TestClawbackVestingAccountStore() {
 //	// error on bad bytes
 //	_, err = suite.app.AccountKeeper.UnmarshalAccount(bz[:len(bz)/2])
 //	suite.Require().Error(err)
-//}
+// }
 
 func (suite *KeeperTestSuite) TestConvertVestingAccount() {
 	startTime := s.ctx.BlockTime().Add(-5 * time.Second)
@@ -888,6 +888,7 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 				valAddr,
 			)
 			res, err := suite.app.VestingKeeper.ConvertIntoVestingAccount(ctx, msg)
+			suite.Require().NoError(err)
 
 			expRes := &types.MsgConvertIntoVestingAccountResponse{}
 			balanceSource := suite.app.BankKeeper.GetBalance(suite.ctx, tc.from, "aISLM")

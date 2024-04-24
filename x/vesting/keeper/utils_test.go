@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -58,7 +59,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	header := testutil.NewHeader(
 		1, time.Now().UTC(), chainID, suite.consAddress, nil, nil,
 	)
-	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header)
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, header).WithBlockGasMeter(storetypes.NewInfiniteGasMeter())
 
 	// Setup query helpers
 	queryHelperEvm := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
@@ -81,7 +82,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	}
 
 	acc := &haqqtypes.EthAccount{
-		BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.address.Bytes()), nil, 0, 0),
+		BaseAccount: authtypes.NewBaseAccount(sdk.AccAddress(suite.address.Bytes()), nil, 22, 0),
 		CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
 	}
 

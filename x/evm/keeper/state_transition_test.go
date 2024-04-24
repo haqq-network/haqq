@@ -86,7 +86,8 @@ func (suite *EvmKeeperTestSuite) TestGetHashFn() {
 			"case 2.2: height lower than current one, invalid hist info header",
 			1,
 			func() sdk.Context {
-				unitNetwork.App.StakingKeeper.SetHistoricalInfo(unitNetwork.GetContext(), 1, &stakingtypes.HistoricalInfo{})
+				err := unitNetwork.App.StakingKeeper.SetHistoricalInfo(unitNetwork.GetContext(), 1, &stakingtypes.HistoricalInfo{})
+				suite.Require().NoError(err)
 				return unitNetwork.GetContext().WithBlockHeight(10)
 			},
 			common.Hash{},
@@ -98,7 +99,8 @@ func (suite *EvmKeeperTestSuite) TestGetHashFn() {
 				histInfo := &stakingtypes.HistoricalInfo{
 					Header: header,
 				}
-				unitNetwork.App.StakingKeeper.SetHistoricalInfo(unitNetwork.GetContext(), 1, histInfo)
+				err := unitNetwork.App.StakingKeeper.SetHistoricalInfo(unitNetwork.GetContext(), 1, histInfo)
+				suite.Require().NoError(err)
 				return unitNetwork.GetContext().WithBlockHeight(10)
 			},
 			common.BytesToHash(hash),
@@ -266,10 +268,10 @@ func (suite *EvmKeeperTestSuite) TestGetEthIntrinsicGas() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			params := unitNetwork.App.EvmKeeper.GetParams(
+			prms := unitNetwork.App.EvmKeeper.GetParams(
 				unitNetwork.GetContext(),
 			)
-			ethCfg := params.ChainConfig.EthereumConfig(
+			ethCfg := prms.ChainConfig.EthereumConfig(
 				unitNetwork.App.EvmKeeper.ChainID(),
 			)
 			ethCfg.HomesteadBlock = big.NewInt(2)
@@ -654,10 +656,10 @@ func (suite *EvmKeeperTestSuite) TestApplyMessageWithConfig() {
 				suite.Require().NoError(err)
 				return msg
 			},
-			func() types.Params {
+			func() types.Params { // nolint: gocritic
 				return types.DefaultParams()
 			},
-			func() feemarkettypes.Params {
+			func() feemarkettypes.Params { // nolint: gocritic
 				return feemarkettypes.DefaultParams()
 			},
 			false,
@@ -681,7 +683,7 @@ func (suite *EvmKeeperTestSuite) TestApplyMessageWithConfig() {
 				defaultParams.EnableCall = false
 				return defaultParams
 			},
-			func() feemarkettypes.Params {
+			func() feemarkettypes.Params { // nolint: gocritic
 				return feemarkettypes.DefaultParams()
 			},
 			true,
@@ -703,7 +705,7 @@ func (suite *EvmKeeperTestSuite) TestApplyMessageWithConfig() {
 				defaultParams.EnableCreate = false
 				return defaultParams
 			},
-			func() feemarkettypes.Params {
+			func() feemarkettypes.Params { // nolint: gocritic
 				return feemarkettypes.DefaultParams()
 			},
 			true,
@@ -721,15 +723,15 @@ func (suite *EvmKeeperTestSuite) TestApplyMessageWithConfig() {
 				suite.Require().NoError(err)
 				return msg
 			},
-			func() types.Params {
+			func() types.Params { // nolint: gocritic
 				return types.DefaultParams()
 			},
 			func() feemarkettypes.Params {
 				paramsRes, err := grpcHandler.GetFeeMarketParams()
 				suite.Require().NoError(err)
-				params := paramsRes.GetParams()
-				params.MinGasMultiplier = sdkmath.LegacyNewDec(math.MaxInt64).MulInt64(100)
-				return params
+				prms := paramsRes.GetParams()
+				prms.MinGasMultiplier = sdkmath.LegacyNewDec(math.MaxInt64).MulInt64(100)
+				return prms
 			},
 			true,
 			0,
