@@ -118,3 +118,39 @@ func (tf *IntegrationTxFactory) GenerateGethCoreMsg(
 	)
 	return signedMsg.AsMessage(signer, baseFeeResp.BaseFee.BigInt())
 }
+
+// GenerateContractCallArgs generates the txArgs for a contract call.
+func (tf *IntegrationTxFactory) GenerateContractCallArgs(
+	txArgs evmtypes.EvmTxArgs,
+	callArgs CallArgs,
+) (evmtypes.EvmTxArgs, error) {
+	input, err := callArgs.ContractABI.Pack(callArgs.MethodName, callArgs.Args...)
+	if err != nil {
+		return evmtypes.EvmTxArgs{}, errorsmod.Wrap(err, "failed to pack contract arguments")
+	}
+	txArgs.Input = input
+	return txArgs, nil
+}
+
+// GenerateDeployContractArgs generates the txArgs for a contract deployment.
+func (tf *IntegrationTxFactory) GenerateDeployContractArgs(
+	from common.Address,
+	txArgs evmtypes.EvmTxArgs,
+	deploymentData ContractDeploymentData,
+) (evmtypes.EvmTxArgs, error) {
+	account, err := tf.grpcHandler.GetEvmAccount(from)
+	if err != nil {
+		return evmtypes.EvmTxArgs{}, errorsmod.Wrapf(err, "failed to get evm account: %s", from.String())
+	}
+	txArgs.Nonce = account.GetNonce()
+
+	ctorArgs, err := deploymentData.Contract.ABI.Pack("", deploymentData.ConstructorArgs...)
+	if err != nil {
+		return evmtypes.EvmTxArgs{}, errorsmod.Wrap(err, "failed to pack constructor arguments")
+	}
+	data := deploymentData.Contract.Bin
+	data = append(data, ctorArgs...)
+
+	txArgs.Input = data
+	return txArgs, nil
+}

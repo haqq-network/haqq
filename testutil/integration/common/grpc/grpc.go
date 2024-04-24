@@ -2,7 +2,6 @@ package grpc
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -26,8 +25,8 @@ type Handler interface {
 	GetGrantsByGranter(granter string) ([]*authz.GrantAuthorization, error)
 
 	// Bank methods
-	GetBalance(address sdktypes.AccAddress, denom string) (*banktypes.QueryBalanceResponse, error)
-	GetAllBalances(address sdktypes.AccAddress) (*banktypes.QueryAllBalancesResponse, error)
+	GetBalance(address sdk.AccAddress, denom string) (*banktypes.QueryBalanceResponse, error)
+	GetAllBalances(address sdk.AccAddress) (*banktypes.QueryAllBalancesResponse, error)
 	GetTotalSupply() (*banktypes.QueryTotalSupplyResponse, error)
 
 	// Staking methods
@@ -45,6 +44,7 @@ type Handler interface {
 	GetValidatorCommission(validatorAddress string) (*distrtypes.QueryValidatorCommissionResponse, error)
 	GetValidatorOutstandingRewards(validatorAddress string) (*distrtypes.QueryValidatorOutstandingRewardsResponse, error)
 	GetCommunityPool() (*distrtypes.QueryCommunityPoolResponse, error)
+	GetBondedValidators() (*stakingtypes.QueryValidatorsResponse, error)
 }
 
 var _ Handler = (*IntegrationHandler)(nil)
