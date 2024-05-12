@@ -69,7 +69,7 @@ func (suite *ScheduleTestSuite) TestSubtractAmountFromPeriods() {
 			subtrahend:        sdk.NewCoin("test", math.NewInt(0)),
 			expectedDecreased: []sdkvesting.Period{},
 			expectedDiff:      []sdkvesting.Period{},
-			expectError:       false,
+			expectError:       true,
 		},
 		{
 			name: "OK Standard subtraction with residue and little last period to hold whole residue",
