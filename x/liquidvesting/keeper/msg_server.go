@@ -151,6 +151,17 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 		return nil, errorsmod.Wrap(err, "failed to convert liquid tokens into erc20 tokens")
 	}
 
+	ctx.EventManager().EmitEvents(
+		sdk.Events{
+			sdk.NewEvent(
+				types.EventTypeLiquidate,
+				sdk.NewAttribute(sdk.AttributeKeySender, msg.LiquidateFrom),
+				sdk.NewAttribute(types.AttributeKeyDestination, msg.LiquidateTo),
+				sdk.NewAttribute(types.AttributeKeyAmount, liquidTokenCoin.String()),
+			),
+		},
+	)
+
 	return &types.MsgLiquidateResponse{}, nil
 }
 
@@ -269,6 +280,9 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 		funder := k.accountKeeper.GetModuleAddress(types.ModuleName)
 		// check if toAddress already a vesting account to apply current funder
 		toAccount := k.accountKeeper.GetAccount(ctx, toAddress)
+		if toAccount == nil {
+			return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", toAddress)
+		}
 		toVestingAcc, isClawback := toAccount.(*vestingtypes.ClawbackVestingAccount)
 		if isClawback {
 			funder = sdk.MustAccAddressFromBech32(toVestingAcc.FunderAddress)
@@ -288,6 +302,17 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to apply vesting schedule to account %s: %s", toAddress, err.Error())
 		}
 	}
+
+	ctx.EventManager().EmitEvents(
+		sdk.Events{
+			sdk.NewEvent(
+				types.EventTypeRedeem,
+				sdk.NewAttribute(sdk.AttributeKeySender, msg.RedeemFrom),
+				sdk.NewAttribute(types.AttributeKeyDestination, msg.RedeemTo),
+				sdk.NewAttribute(types.AttributeKeyAmount, msg.Amount.String()),
+			),
+		},
+	)
 
 	return &types.MsgRedeemResponse{}, nil
 }

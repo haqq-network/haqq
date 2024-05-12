@@ -50,7 +50,9 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 
 // RegisterLegacyAminoCodec registers the amino codec for the module, which is used
 // to marshal and unmarshal structs to/from []byte in order to persist them in the module's KVStore.
-func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(cdc)
+}
 
 // RegisterInterfaces registers a module's interface types and their concrete implementations as proto.Message.
 func (a AppModuleBasic) RegisterInterfaces(reg cdctypes.InterfaceRegistry) {
