@@ -12,7 +12,7 @@ message GenesisState {
   // params defines all the paramaters of the module.
   Params params = 1 [ (gogoproto.nullable) = false ];
 
-  uint64 denomCounter = 2;
+  uint64 denom_counter = 2;
 
   repeated Denom denoms = 3
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
