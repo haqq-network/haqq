@@ -30,10 +30,8 @@ message QueryDenomRequest {
 // QueryDenomResponse is response for Denom rpc method
 message QueryDenomResponse {
   // denom is liquidated vesting token
-  Denom denom = 1 [
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
+  Denom denom = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 // QueryDenomsRequest is request for Denoms rpc method
@@ -45,10 +43,8 @@ message QueryDenomsRequest {
 // QueryDenomsResponse is response for Denoms rpc method
 message QueryDenomsResponse {
   // denoms are liquidated vesting tokens
-  repeated Denom denoms = 1 [
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
+  repeated Denom denoms = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
   // pagination defines the pagination in the response.
   cosmos.base.query.v1beta1.PageResponse pagination = 2;

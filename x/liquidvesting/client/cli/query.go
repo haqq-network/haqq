@@ -5,8 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/haqq-network/haqq/x/liquidvesting/types"
 	"github.com/spf13/cobra"
+
+	"github.com/haqq-network/haqq/x/liquidvesting/types"
 )
 
 // GetQueryCmd returns the parent command for all liquidvesting CLI query commands.

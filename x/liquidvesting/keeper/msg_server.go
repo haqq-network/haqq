@@ -10,6 +10,7 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/haqq-network/haqq/contracts"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
@@ -21,6 +22,10 @@ var _ types.MsgServer = Keeper{}
 // Liquidate liquidates specified amount of token locked in vesting into liquid token
 func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*types.MsgLiquidateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if !k.IsLiquidVestingEnabled(ctx) {
+		return nil, errorsmod.Wrapf(types.ErrModuleIsDisabled, "liquid vesting module is disabled")
+	}
 
 	// check amount denom
 	if msg.Amount.Denom != "aISLM" {
@@ -153,6 +158,10 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgRedeemResponse, error) {
 	// get accounts
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if !k.IsLiquidVestingEnabled(ctx) {
+		return nil, errorsmod.Wrapf(types.ErrModuleIsDisabled, "liquid vesting module is disabled")
+	}
 
 	fromAddress := sdk.MustAccAddressFromBech32(msg.RedeemFrom)
 	fromAccount := k.accountKeeper.GetAccount(ctx, fromAddress)

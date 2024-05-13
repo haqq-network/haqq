@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -17,6 +18,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/encoding"
@@ -26,8 +30,6 @@ import (
 	"github.com/haqq-network/haqq/utils"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 type KeeperTestSuite struct {
@@ -111,7 +113,10 @@ func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
 	suite.Require().NoError(err)
 
 	// Set minimum liquidation amount to 10^6
-	suite.app.LiquidVestingKeeper.SetParams(suite.ctx, types.NewParams(sdkmath.NewInt(1_000_000)))
+	err = suite.app.LiquidVestingKeeper.SetParams(suite.ctx, types.NewParams(sdkmath.NewInt(1_000_000), true))
+	if err != nil {
+		panic(fmt.Errorf("error setting params %s", err))
+	}
 
 	// Set Validator
 	valAddr := sdk.ValAddress(suite.address.Bytes())

@@ -67,7 +67,7 @@ var (
 	// ErrInvalidBaseFee returns an error if a the base fee cap value is invalid
 	ErrInvalidBaseFee = errorsmod.Register(ModuleName, codeErrInvalidBaseFee, "invalid base fee")
 
-	// ErrGasOverflow returns an error if gas computation overlow/underflow
+	// ErrGasOverflow returns an error if gas computation overflow/underflow
 	ErrGasOverflow = errorsmod.Register(ModuleName, codeErrGasOverflow, "gas computation overflow/underflow")
 
 	// ErrInvalidAccount returns an error if the account is not an EVM compatible account

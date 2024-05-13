@@ -32,7 +32,7 @@ func StretchLockupScheduleForAccounts(ctx sdk.Context, ak authkeeper.AccountKeep
 			upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
 			pastPeriods := liquidvestingtypes.ExtractPastPeriods(vacc.GetStartTime(), vacc.GetEndTime(), vacc.LockupPeriods, ctx.BlockTime().Unix())
 
-			// streched upcoming periods
+			// stretched upcoming periods
 			stretchedUpcomingPeriods := stretchPeriods(ctx, upcomingPeriods, stretchLength, "account", vacc.GetAddress().String())
 
 			// add 1095 days (three years to the end time)
@@ -67,7 +67,7 @@ func StretchLockupScheduleForLiquidVestingTokens(ctx sdk.Context, lk liquidvesti
 			upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
 			pastPeriods := liquidvestingtypes.ExtractPastPeriods(denom.StartTime.Unix(), denom.EndTime.Unix(), denom.LockupPeriods, ctx.BlockTime().Unix())
 
-			// streched upcoming periods
+			// stretched upcoming periods
 			stretchedUpcomingPeriods := stretchPeriods(ctx, upcomingPeriods, stretchLength, "liquid", denom.DisplayDenom)
 
 			// add 1095 days (three years to the end time)

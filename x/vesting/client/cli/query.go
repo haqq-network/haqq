@@ -65,8 +65,8 @@ func GetBalancesCmd() *cobra.Command {
 func GetTotalLockedCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "total",
-		Short: "Gets total summary of locked, unvested and vested tokens for all acounts",
-		Long:  "Gets total summary of locked, unvested and vested tokens for all acounts",
+		Short: "Gets total summary of locked, unvested and vested tokens for all accounts",
+		Long:  "Gets total summary of locked, unvested and vested tokens for all accounts",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)

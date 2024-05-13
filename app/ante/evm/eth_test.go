@@ -141,7 +141,7 @@ func (suite *AnteTestSuite) TestEthNonceVerificationDecorator() {
 		{"invalid transaction type", &testutiltx.InvalidTx{}, func() {}, false, false},
 		{"sender account not found", tx, func() {}, false, false},
 		{
-			"sender nonce missmatch",
+			"sender nonce mismatch",
 			tx,
 			func() {
 				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr.Bytes())

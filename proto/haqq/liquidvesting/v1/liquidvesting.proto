@@ -7,7 +7,6 @@ import "cosmos/vesting/v1beta1/vesting.proto";
 import "google/protobuf/timestamp.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
-
 option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
 
 // Denom represents liquid token bonded to some specific vesting schedule
@@ -20,10 +19,10 @@ message Denom {
   string original_denom = 3;
   // start date
   google.protobuf.Timestamp start_time = 4
-  [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
   // end_date
   google.protobuf.Timestamp end_time = 5
-  [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
   // lockup periods
   repeated cosmos.vesting.v1beta1.Period lockup_periods = 6 [
     (gogoproto.nullable) = false,

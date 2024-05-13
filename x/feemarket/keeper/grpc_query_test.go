@@ -34,8 +34,8 @@ func (suite *KeeperTestSuite) TestQueryParams() {
 
 func (suite *KeeperTestSuite) TestQueryBaseFee() {
 	var (
-		aux    sdkmath.Int
-		expRes *types.QueryBaseFeeResponse
+		aux         sdkmath.Int
+		expResponse *types.QueryBaseFeeResponse
 	)
 
 	testCases := []struct {
@@ -47,7 +47,7 @@ func (suite *KeeperTestSuite) TestQueryBaseFee() {
 			"pass - default Base Fee",
 			func() {
 				initialBaseFee := sdkmath.NewInt(ethparams.InitialBaseFee)
-				expRes = &types.QueryBaseFeeResponse{BaseFee: &initialBaseFee}
+				expResponse = &types.QueryBaseFeeResponse{BaseFee: &initialBaseFee}
 			},
 			true,
 		},
@@ -58,7 +58,7 @@ func (suite *KeeperTestSuite) TestQueryBaseFee() {
 				suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, baseFee)
 
 				aux = sdkmath.NewIntFromBigInt(baseFee)
-				expRes = &types.QueryBaseFeeResponse{BaseFee: &aux}
+				expResponse = &types.QueryBaseFeeResponse{BaseFee: &aux}
 			},
 			true,
 		},
@@ -69,7 +69,7 @@ func (suite *KeeperTestSuite) TestQueryBaseFee() {
 		res, err := suite.queryClient.BaseFee(suite.ctx.Context(), &types.QueryBaseFeeRequest{})
 		if tc.expPass {
 			suite.Require().NotNil(res)
-			suite.Require().Equal(expRes, res, tc.name)
+			suite.Require().Equal(expResponse, res, tc.name)
 			suite.Require().NoError(err)
 		} else {
 			suite.Require().Error(err)

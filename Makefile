@@ -437,10 +437,15 @@ lint-fix-contracts:
 
 .PHONY: lint lint-fix
 
-format:
-	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs gofmt -w -s
-	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs misspell -w
-	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs goimports -w -local github.com/haqq-network/haqq
+# format:
+# 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' -not -path "./.direnv/*" | xargs gofmt -w -s
+# 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' -not -path "./.direnv/*" | xargs misspell -w
+# 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' -not -path "./.direnv/*" | xargs goimports -w -local github.com/haqq-network/haqq
+
+format: 
+	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs gofmt -w -s 
+	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs codespell -w 
+	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs goimports -w -local github.com/haqq-network/haqq
 .PHONY: format
 
 ###############################################################################
@@ -477,7 +482,7 @@ proto-swagger-gen:
 
 proto-format:
 	@echo "Formatting Protobuf files"
-	find ./ -not -path ".//.devenv/*" -not -path "./third_party/*" -name *.proto -exec clang-format -i {} \;
+	find ./ -not -path "./.devenv/*" -not -path "./third_party/*" -name *.proto -exec clang-format -i {} \;
 
 proto-lint:
 	@$(DOCKER_BUF) lint --error-format=json

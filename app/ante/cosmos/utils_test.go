@@ -53,11 +53,11 @@ func createNestedMsgExec(a sdk.AccAddress, nestedLvl int, lastLvlMsgs []sdk.Msg)
 	return msgs[nestedLvl-1]
 }
 
-func generatePrivKeyAddressPairs(accCount int) ([]*ethsecp256k1.PrivKey, []sdk.AccAddress, error) {
+func generatePrivKeyAddressPairs(account int) ([]*ethsecp256k1.PrivKey, []sdk.AccAddress, error) {
 	var (
 		err           error
-		testPrivKeys  = make([]*ethsecp256k1.PrivKey, accCount)
-		testAddresses = make([]sdk.AccAddress, accCount)
+		testPrivKeys  = make([]*ethsecp256k1.PrivKey, account)
+		testAddresses = make([]sdk.AccAddress, account)
 	)
 
 	for i := range testPrivKeys {

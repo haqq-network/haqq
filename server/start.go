@@ -123,7 +123,7 @@ which accepts a path for the resulting pprof file.
 
 			serverCtx.Logger.Info("Unlocking keyring")
 
-			// fire unlock precess for keyring
+			// fire unlock process for keyring
 			keyringBackend, _ := cmd.Flags().GetString(flags.FlagKeyringBackend)
 			if keyringBackend == keyring.BackendFile {
 				_, err = clientCtx.Keyring.List()

@@ -5,6 +5,7 @@
       protobuf
       buf
       clang-tools
+      codespell
 
       go
       (pkgsUnstable.gomod2nix.override {

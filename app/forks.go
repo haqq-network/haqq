@@ -2,6 +2,7 @@ package app
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/haqq-network/haqq/utils"
 )
 

@@ -11,13 +11,14 @@ import (
 	"github.com/cometbft/cometbft/version"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/haqq-network/haqq/app"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 	"github.com/haqq-network/haqq/x/liquidvesting"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
-	"github.com/stretchr/testify/suite"
 )
 
 type GenesisTestSuite struct {

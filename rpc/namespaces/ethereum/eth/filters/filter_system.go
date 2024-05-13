@@ -84,7 +84,7 @@ func NewEventSystem(logger log.Logger, tmWSClient *rpcclient.WSClient) *EventSys
 }
 
 // WithContext sets a new context to the EventSystem. This is required to set a timeout context when
-// a new filter is intantiated.
+// a new filter is instantiated.
 func (es *EventSystem) WithContext(ctx context.Context) {
 	es.ctx = ctx
 }

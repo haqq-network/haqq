@@ -11,8 +11,8 @@ import (
 
 func (suite *KeeperTestSuite) TestRewardCoefficient() {
 	var (
-		req    *types.QueryRewardCoefficientRequest
-		expRes *types.QueryRewardCoefficientResponse
+		req         *types.QueryRewardCoefficientRequest
+		expResponse *types.QueryRewardCoefficientResponse
 	)
 
 	testCases := []struct {
@@ -24,7 +24,7 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 			"default reward coefficient",
 			func() {
 				req = &types.QueryRewardCoefficientRequest{}
-				expRes = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(78, 1)}
+				expResponse = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(78, 1)}
 			},
 			true,
 		},
@@ -36,7 +36,7 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 				s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
 
 				req = &types.QueryRewardCoefficientRequest{}
-				expRes = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(10, 0)}
+				expResponse = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(10, 0)}
 			},
 			true,
 		},
@@ -51,7 +51,7 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 			res, err := suite.queryClient.RewardCoefficient(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResponse, res)
 			} else {
 				suite.Require().Error(err)
 			}
@@ -61,8 +61,8 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 
 func (suite *KeeperTestSuite) TestMaxSupply() {
 	var (
-		req    *types.QueryMaxSupplyRequest
-		expRes *types.QueryMaxSupplyResponse
+		req         *types.QueryMaxSupplyRequest
+		expResponse *types.QueryMaxSupplyResponse
 	)
 
 	testCases := []struct {
@@ -74,7 +74,7 @@ func (suite *KeeperTestSuite) TestMaxSupply() {
 			"default max supply",
 			func() {
 				req = &types.QueryMaxSupplyRequest{}
-				expRes = &types.QueryMaxSupplyResponse{MaxSupply: sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(100_000_000_000, 18)}}
+				expResponse = &types.QueryMaxSupplyResponse{MaxSupply: sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(100_000_000_000, 18)}}
 			},
 			true,
 		},
@@ -85,7 +85,7 @@ func (suite *KeeperTestSuite) TestMaxSupply() {
 				suite.app.CoinomicsKeeper.SetMaxSupply(suite.ctx, maxSupply)
 
 				req = &types.QueryMaxSupplyRequest{}
-				expRes = &types.QueryMaxSupplyResponse{MaxSupply: maxSupply}
+				expResponse = &types.QueryMaxSupplyResponse{MaxSupply: maxSupply}
 			},
 			true,
 		},
@@ -100,7 +100,7 @@ func (suite *KeeperTestSuite) TestMaxSupply() {
 			res, err := suite.queryClient.MaxSupply(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResponse, res)
 			} else {
 				suite.Require().Error(err)
 			}
