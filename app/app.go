@@ -1272,7 +1272,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	// v1.7.5 Turn off liquid vesting
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v175.UpgradeName,
-		v175.CreateUpgradeHandler(app.mm, app.configurator, app.BankKeeper, app.LiquidVestingKeeper),
+		v175.CreateUpgradeHandler(app.mm, app.configurator, app.BankKeeper, app.LiquidVestingKeeper, app.Erc20Keeper, *app.EvmKeeper, app.AccountKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic

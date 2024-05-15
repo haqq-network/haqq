@@ -6,6 +6,10 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+
+	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
+	evmkeeper "github.com/haqq-network/haqq/x/evm/keeper"
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 )
 
@@ -15,6 +19,9 @@ func CreateUpgradeHandler(
 	configurator module.Configurator,
 	bk bankkeeper.Keeper,
 	lk liquidvestingkeeper.Keeper,
+	erc20 erc20keeper.Keeper,
+	ek evmkeeper.Keeper,
+	ak authkeeper.AccountKeeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger()
@@ -24,7 +31,7 @@ func CreateUpgradeHandler(
 		logger.Info("##############################################")
 
 		logger.Info("Start turning off liquid vesting module")
-		if err := TurnOffLiquidVesting(ctx, bk, lk); err != nil {
+		if err := TurnOffLiquidVesting(ctx, bk, lk, erc20, ek, ak); err != nil {
 			panic(err)
 		}
 
