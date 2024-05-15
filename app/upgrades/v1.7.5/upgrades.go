@@ -30,7 +30,6 @@ func CreateUpgradeHandler(
 		logger.Info("############  RUN UPGRADE v1.7.5  ############")
 		logger.Info("##############################################")
 
-		logger.Info("Start turning off liquid vesting module")
 		if err := TurnOffLiquidVesting(ctx, bk, lk, erc20, ek, ak); err != nil {
 			panic(err)
 		}

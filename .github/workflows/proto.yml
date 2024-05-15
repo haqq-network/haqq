@@ -4,8 +4,6 @@ name: Protobuf
 on:
   workflow_dispatch:
   pull_request:
-    # paths:
-    #   - "proto/**"
 
 jobs:
   proto-pass:
@@ -14,12 +12,12 @@ jobs:
     needs:
       - build
       - lint
-      - break-check
+      # - break-check
     steps:
       - run: exit 0
   
   build:
-    name: Check that proto builds and commited
+    name: Check that proto builds and committed
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,13 +38,14 @@ jobs:
         with:
           input: "proto"
 
-  break-check:
-    name: Proto break-check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1.28.1
-      - uses: bufbuild/buf-breaking-action@v1
-        with:
-          input: "proto"
-          against: "https://github.com/${{ github.repository }}.git#branch=${{ github.event.pull_request.base.ref }},ref=HEAD~1,subdir=proto"
+  # NOTE: This is disabled as it is not useful for us
+  # break-check:
+  #   name: Proto break-check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: bufbuild/buf-setup-action@v1.28.1
+  #     - uses: bufbuild/buf-breaking-action@v1
+  #       with:
+  #         input: "proto"
+  #         against: "https://github.com/${{ github.repository }}.git#branch=${{ github.event.pull_request.base.ref }},ref=HEAD~1,subdir=proto"
