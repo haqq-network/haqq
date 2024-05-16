@@ -26,6 +26,8 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
+	sdkvestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+
 	"github.com/haqq-network/haqq/utils"
 )
 
@@ -39,6 +41,9 @@ func TurnOffLiquidVesting(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestin
 		lk.SetLiquidVestingEnabled(ctx, true)
 	}
 
+	// Fix liquid denoms periods
+	fixLiquidDenomsPeriods(ctx, lk, bk)
+
 	// Collect all storage entries for aLIQUID tokens
 	storageMap := collectStorageEntries(ctx, erc20, ek)
 	// Redeem's vector
@@ -50,11 +55,11 @@ func TurnOffLiquidVesting(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestin
 	worker := func() {
 		defer wg.Done()
 		for acc := range accChan {
-			processAccount(ctx, acc, storageMap, lk, &redeemsVector)
+			processAccount(ctx, acc, storageMap, &redeemsVector)
 		}
 	}
 
-	numWorkers := runtime.NumCPU() // Use all available CPUs for parallel processing
+	numWorkers := runtime.NumCPU()*2 - 1 // Use all available CPUs for parallel processing
 	wg.Add(numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		go worker()
@@ -112,7 +117,7 @@ func collectStorageEntries(ctx sdk.Context, erc20 erc20keeper.Keeper, ek evmkeep
 }
 
 // processAccount processes an account and creates a redeem message if the account has aLIQUID tokens
-func processAccount(ctx sdk.Context, acc authtypes.AccountI, storageMap map[string]map[erc20types.TokenPair]evmtypes.State, lk liquidvestingkeeper.Keeper, redeemsVector *[]liquidvestingtypes.MsgRedeem) {
+func processAccount(ctx sdk.Context, acc authtypes.AccountI, storageMap map[string]map[erc20types.TokenPair]evmtypes.State, redeemsVector *[]liquidvestingtypes.MsgRedeem) {
 	addrStr := common.BytesToAddress(acc.GetAddress().Bytes()).String()
 	if addrStr == "0x0000000000000000000000000000000000000000" {
 		return
@@ -133,15 +138,6 @@ func processAccount(ctx sdk.Context, acc authtypes.AccountI, storageMap map[stri
 
 				ownerAddr := sdk.AccAddress(common.HexToAddress(addrStr).Bytes())
 
-				// Get the liquid denom from liquid vesting keeper
-				liquidDenom, found := lk.GetDenom(ctx, tokenPair.Denom)
-				if !found {
-					log.Fatalf("Failed to get denom: %s", tokenPair.Denom)
-				}
-
-				// Adjust the balance to the maximum available amount that can be redeemed
-				evmBalance.Amount = adjustBalance(evmBalance.Amount, liquidDenom)
-
 				// Create a redeem message
 				redeemMsg := liquidvestingtypes.NewMsgRedeem(ownerAddr, ownerAddr, evmBalance)
 				// Append the redeem message to the vector
@@ -151,13 +147,28 @@ func processAccount(ctx sdk.Context, acc authtypes.AccountI, storageMap map[stri
 	}
 }
 
-// adjustBalance adjusts the balance to the maximum available amount that can be redeemed
-func adjustBalance(evmAmount sdk.Int, liquidDenom liquidvestingtypes.Denom) sdk.Int {
-	periodsAmount := liquidDenom.LockupPeriods.TotalAmount().AmountOf("aISLM")
-	if evmAmount.GT(periodsAmount) {
-		evmAmount = periodsAmount
-	}
-	return evmAmount
+func fixLiquidDenomsPeriods(ctx sdk.Context, lk liquidvestingkeeper.Keeper, bk bankkeeper.Keeper) {
+	lk.IterateDenoms(ctx, func(liquidDenom liquidvestingtypes.Denom) (stop bool) {
+		periodsAmount := liquidDenom.LockupPeriods.TotalAmount().AmountOf(liquidDenom.OriginalDenom)
+		supplyAmmount := bk.GetSupply(ctx, liquidDenom.BaseDenom)
+
+		if periodsAmount.LT(supplyAmmount.Amount) {
+			diff := supplyAmmount.Amount.Sub(periodsAmount)
+			lastPeriod := liquidDenom.LockupPeriods[len(liquidDenom.LockupPeriods)-1]
+			newAmountForLastPeriod := lastPeriod.Amount.Add(sdk.NewCoin(liquidDenom.OriginalDenom, diff))
+
+			updatedLastPeriod := sdkvestingtypes.Period{
+				Length: lastPeriod.Length,
+				Amount: newAmountForLastPeriod,
+			}
+
+			liquidDenom.LockupPeriods[len(liquidDenom.LockupPeriods)-1] = updatedLastPeriod
+
+			lk.SetDenom(ctx, liquidDenom)
+		}
+
+		return false
+	})
 }
 
 func logTokenInfo(ctx sdk.Context, addrStr string, tokenPair erc20types.TokenPair) {
