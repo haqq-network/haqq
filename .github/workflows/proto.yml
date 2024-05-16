@@ -38,7 +38,7 @@ jobs:
         with:
           input: "proto"
 
-  # NOTE: This is disabled as it is not useful for us
+  # NOTE: This is disabled only for this merge request, it will be enabled in master branch
   # break-check:
   #   name: Proto break-check
   #   runs-on: ubuntu-latest
