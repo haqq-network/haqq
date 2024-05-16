@@ -28,6 +28,8 @@ import (
 
 	sdkvestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
+	haqqvestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+
 	"github.com/haqq-network/haqq/utils"
 )
 
@@ -48,6 +50,8 @@ func TurnOffLiquidVesting(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestin
 	storageMap := collectStorageEntries(ctx, erc20, ek)
 	// Redeem's vector
 	redeemsVector := make([]liquidvestingtypes.MsgRedeem, 0)
+	// Updated vesting accounts
+	updatedVestingAccounts := make([]haqqvestingtypes.ClawbackVestingAccount, 0)
 
 	// Collect all reedem messages
 	var wg sync.WaitGroup
@@ -55,6 +59,7 @@ func TurnOffLiquidVesting(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestin
 	worker := func() {
 		defer wg.Done()
 		for acc := range accChan {
+			tryFoundFixScheduleForVestingAccount(acc, &updatedVestingAccounts)
 			processAccount(ctx, acc, storageMap, &redeemsVector)
 		}
 	}
@@ -72,6 +77,16 @@ func TurnOffLiquidVesting(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestin
 	close(accChan)
 
 	wg.Wait()
+
+	// Sort fixed vesting accounts vector to ensure determinism
+	sort.Slice(updatedVestingAccounts, func(i, j int) bool {
+		return bytes.Compare(updatedVestingAccounts[i].GetAddress().Bytes(), updatedVestingAccounts[j].GetAddress().Bytes()) < 0
+	})
+
+	// Write fixed vesting accounts to the store
+	for _, va := range updatedVestingAccounts {
+		ak.SetAccount(ctx, &va)
+	}
 
 	// Sort redeems vector to ensure determinism
 	sort.Slice(redeemsVector, func(i, j int) bool {
@@ -114,6 +129,28 @@ func collectStorageEntries(ctx sdk.Context, erc20 erc20keeper.Keeper, ek evmkeep
 		return false
 	})
 	return storageMap
+}
+
+func tryFoundFixScheduleForVestingAccount(acc authtypes.AccountI, vestingAccounts *[]haqqvestingtypes.ClawbackVestingAccount) {
+	va, ok := acc.(*haqqvestingtypes.ClawbackVestingAccount)
+	if !ok {
+		return
+	}
+
+	lp := va.LockupPeriods
+	vp := va.VestingPeriods
+
+	diff := sdk.NewCoins()
+
+	// should be equal
+	if !(lp.TotalAmount().IsAllGTE(vp.TotalAmount()) && vp.TotalAmount().IsAllGTE(lp.TotalAmount())) {
+		diff = vp.TotalAmount().Sub(lp.TotalAmount()...)
+	}
+
+	if !(va.OriginalVesting.IsAllGTE(lp.TotalAmount()) && lp.TotalAmount().IsAllGTE(va.OriginalVesting)) {
+		va.LockupPeriods[len(va.LockupPeriods)-1].Amount = va.LockupPeriods[len(va.LockupPeriods)-1].Amount.Add(diff...)
+		*vestingAccounts = append(*vestingAccounts, *va)
+	}
 }
 
 // processAccount processes an account and creates a redeem message if the account has aLIQUID tokens
