@@ -12,7 +12,7 @@ import (
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/encoding"
-	"github.com/haqq-network/haqq/x/erc20/migrations/v3"
+	v3 "github.com/haqq-network/haqq/x/erc20/migrations/v3"
 	v3types "github.com/haqq-network/haqq/x/erc20/migrations/v3/types"
 	"github.com/haqq-network/haqq/x/erc20/types"
 )

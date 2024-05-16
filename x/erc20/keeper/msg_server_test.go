@@ -171,7 +171,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
-			expRes := &types.MsgConvertCoinResponse{}
+			expResponse := &types.MsgConvertCoinResponse{}
 			suite.Commit()
 			balance := suite.BalanceOf(common.HexToAddress(pair.Erc20Address), suite.address)
 			cosmosBalance := suite.app.BankKeeper.GetBalance(suite.ctx, sender, metadataCoin.Base)
@@ -191,7 +191,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeCoin() {
 					_, found := suite.app.Erc20Keeper.GetTokenPair(suite.ctx, id)
 					suite.Require().False(found)
 				} else {
-					suite.Require().Equal(expRes, res)
+					suite.Require().Equal(expResponse, res)
 					suite.Require().Equal(cosmosBalance.Amount.Int64(), sdk.NewInt(tc.mint-tc.burn).Int64())
 					suite.Require().Equal(balance.(*big.Int).Int64(), big.NewInt(tc.burn).Int64())
 				}
@@ -364,13 +364,13 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeCoin() {
 
 			tc.malleate()
 			res, err := suite.app.Erc20Keeper.ConvertERC20(ctx, msgConvertERC20)
-			expRes := &types.MsgConvertERC20Response{}
+			expResponse := &types.MsgConvertERC20Response{}
 			suite.Commit()
 			balance = suite.BalanceOf(contractAddr, suite.address)
 			cosmosBalance = suite.app.BankKeeper.GetBalance(suite.ctx, sender, pair.Denom)
 			if tc.expPass {
 				suite.Require().NoError(err, tc.name)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResponse, res)
 				suite.Require().Equal(cosmosBalance.Amount.Int64(), sdk.NewInt(tc.mint-tc.burn+tc.reconvert).Int64())
 				suite.Require().Equal(balance.(*big.Int).Int64(), big.NewInt(tc.burn-tc.reconvert).Int64())
 			} else {
@@ -695,7 +695,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertERC20(ctx, msg)
 
-			expRes := &types.MsgConvertERC20Response{}
+			expResponse := &types.MsgConvertERC20Response{}
 			suite.Commit()
 			balance := suite.BalanceOf(contractAddr, suite.address)
 			cosmosBalance := suite.app.BankKeeper.GetBalance(suite.ctx, sender, coinName)
@@ -714,7 +714,7 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeERC20() {
 					_, found := suite.app.Erc20Keeper.GetTokenPair(suite.ctx, id)
 					suite.Require().False(found)
 				} else {
-					suite.Require().Equal(expRes, res)
+					suite.Require().Equal(expResponse, res)
 					suite.Require().Equal(cosmosBalance.Amount, sdk.NewInt(tc.transfer))
 					suite.Require().Equal(balance.(*big.Int).Int64(), big.NewInt(tc.mint-tc.transfer).Int64())
 				}
@@ -926,13 +926,13 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeERC20() {
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
 
-			expRes := &types.MsgConvertCoinResponse{}
+			expResponse := &types.MsgConvertCoinResponse{}
 			suite.Commit()
 			tokenBalance = suite.BalanceOf(contractAddr, suite.address)
 			cosmosBalance = suite.app.BankKeeper.GetBalance(suite.ctx, sender, coinName)
 			if tc.expPass {
 				suite.Require().NoError(err, tc.name)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResponse, res)
 				suite.Require().Equal(sdk.NewInt(tc.mint-tc.convert), cosmosBalance.Amount)
 				suite.Require().Equal(big.NewInt(tc.convert), tokenBalance.(*big.Int))
 			} else {
@@ -1149,7 +1149,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 
 			tc.extra()
 			res, err := suite.app.Erc20Keeper.ConvertCoin(ctx, msg)
-			expRes := &types.MsgConvertCoinResponse{}
+			expResponse := &types.MsgConvertCoinResponse{}
 			suite.Commit()
 			balance := suite.BalanceOf(common.HexToAddress(pair.Erc20Address), suite.address)
 			cosmosBalance := suite.app.BankKeeper.GetBalance(suite.ctx, sender, metadataIbc.Base)
@@ -1169,7 +1169,7 @@ func (suite *KeeperTestSuite) TestConvertCoinNativeIBCVoucher() {
 					_, found := suite.app.Erc20Keeper.GetTokenPair(suite.ctx, id)
 					suite.Require().False(found)
 				} else {
-					suite.Require().Equal(expRes, res)
+					suite.Require().Equal(expResponse, res)
 					suite.Require().Equal(cosmosBalance.Amount.Int64(), sdk.NewInt(tc.mint-tc.burn).Int64())
 					suite.Require().Equal(balance.(*big.Int).Int64(), big.NewInt(tc.burn).Int64())
 				}
@@ -1343,13 +1343,13 @@ func (suite *KeeperTestSuite) TestConvertERC20NativeIBCVoucher() {
 
 			tc.malleate()
 			res, err := suite.app.Erc20Keeper.ConvertERC20(ctx, msgConvertERC20)
-			expRes := &types.MsgConvertERC20Response{}
+			expResponse := &types.MsgConvertERC20Response{}
 			suite.Commit()
 			balance = suite.BalanceOf(contractAddr, suite.address)
 			cosmosBalance = suite.app.BankKeeper.GetBalance(suite.ctx, sender, pair.Denom)
 			if tc.expPass {
 				suite.Require().NoError(err, tc.name)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResponse, res)
 				suite.Require().Equal(cosmosBalance.Amount.Int64(), sdk.NewInt(tc.mint-tc.burn+tc.reconvert).Int64())
 				suite.Require().Equal(balance.(*big.Int).Int64(), big.NewInt(tc.burn-tc.reconvert).Int64())
 			} else {

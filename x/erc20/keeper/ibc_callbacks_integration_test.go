@@ -471,7 +471,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			err = path.RelayPacket(packet)
 			s.Require().Error(err)
 
-			// Check Balance didnt change
+			// Check Balance didn't change
 			balanceToken = s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(senderAcc.Bytes()))
 			s.Require().Equal(amount, balanceToken.Int64())
 		})
@@ -604,7 +604,7 @@ var _ = Describe("Convert outgoing ERC20 to IBC", Ordered, func() {
 			originChain.NextBlock()
 			originChain.Coordinator.IncrementTime()
 
-			// Check Balance didnt change
+			// Check Balance didn't change
 			ibcOsmosBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), receiverAcc, erc20Denomtrace.IBCDenom())
 			s.Require().Equal(int64(0), ibcOsmosBalance.Amount.Int64())
 			balanceToken = s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(senderAcc.Bytes()))

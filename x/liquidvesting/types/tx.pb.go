@@ -31,7 +31,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgLiquidate represents message to liquidate arbitrary amount of tokens locked in vesting
+// MsgLiquidate represents message to liquidate arbitrary amount of tokens
+// locked in vesting
 type MsgLiquidate struct {
 	// account for liquidation of locked vesting tokens
 	LiquidateFrom string `protobuf:"bytes,1,opt,name=liquidate_from,json=liquidateFrom,proto3" json:"liquidate_from,omitempty"`
@@ -132,7 +133,8 @@ func (m *MsgLiquidateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgLiquidateResponse proto.InternalMessageInfo
 
-// MsgLiquidate represents message to redeem arbitrary amount of liquid vesting tokens
+// MsgLiquidate represents message to redeem arbitrary amount of liquid vesting
+// tokens
 type MsgRedeem struct {
 	RedeemFrom string `protobuf:"bytes,1,opt,name=redeem_from,json=redeemFrom,proto3" json:"redeem_from,omitempty"`
 	// destination address for vesting tokens
@@ -285,9 +287,11 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// Liquidate transforms specified amount of tokens locked on vesting account into a new liquid token
+	// Liquidate transforms specified amount of tokens locked on vesting account
+	// into a new liquid token
 	Liquidate(ctx context.Context, in *MsgLiquidate, opts ...grpc.CallOption) (*MsgLiquidateResponse, error)
-	// Redeem burns liquid token and deposits corresponding amount of vesting token to the specified account
+	// Redeem burns liquid token and deposits corresponding amount of vesting
+	// token to the specified account
 	Redeem(ctx context.Context, in *MsgRedeem, opts ...grpc.CallOption) (*MsgRedeemResponse, error)
 }
 
@@ -319,9 +323,11 @@ func (c *msgClient) Redeem(ctx context.Context, in *MsgRedeem, opts ...grpc.Call
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// Liquidate transforms specified amount of tokens locked on vesting account into a new liquid token
+	// Liquidate transforms specified amount of tokens locked on vesting account
+	// into a new liquid token
 	Liquidate(context.Context, *MsgLiquidate) (*MsgLiquidateResponse, error)
-	// Redeem burns liquid token and deposits corresponding amount of vesting token to the specified account
+	// Redeem burns liquid token and deposits corresponding amount of vesting
+	// token to the specified account
 	Redeem(context.Context, *MsgRedeem) (*MsgRedeemResponse, error)
 }
 

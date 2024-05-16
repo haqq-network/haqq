@@ -66,7 +66,7 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 		return errors.Wrap(err, "failed mint coins")
 	}
 
-	// Allocate remaining coinomics module balance to destribution
+	// Allocate remaining coinomics module balance to distribution
 	err := k.bankKeeper.SendCoinsFromModuleToModule(
 		ctx,
 		types.ModuleName,

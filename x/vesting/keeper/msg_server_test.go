@@ -191,13 +191,13 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			)
 			res, err := suite.app.VestingKeeper.CreateClawbackVestingAccount(ctx, msg)
 
-			expRes := &types.MsgCreateClawbackVestingAccountResponse{}
+			expResponse := &types.MsgCreateClawbackVestingAccountResponse{}
 			balanceSource := suite.app.BankKeeper.GetBalance(suite.ctx, tc.from, "aISLM")
 			balanceDest := suite.app.BankKeeper.GetBalance(suite.ctx, tc.to, "aISLM")
 
 			if tc.expectPass {
 				suite.Require().NoError(err, tc.name)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResponse, res)
 
 				accI := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.to)
 				suite.Require().NotNil(accI)
@@ -309,7 +309,7 @@ func (suite *KeeperTestSuite) TestMsgClawback() {
 			msg := types.NewMsgClawback(tc.funder, tc.addr, tc.dest)
 			res, err := suite.app.VestingKeeper.Clawback(ctx, msg)
 
-			expRes := &types.MsgClawbackResponse{}
+			expResponse := &types.MsgClawbackResponse{}
 			balanceDest = suite.app.BankKeeper.GetBalance(suite.ctx, addr2, "aISLM")
 			balanceClaw := suite.app.BankKeeper.GetBalance(suite.ctx, tc.dest, "aISLM")
 			if len(tc.dest) == 0 {
@@ -318,7 +318,7 @@ func (suite *KeeperTestSuite) TestMsgClawback() {
 
 			if tc.expectedPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResponse, res)
 				suite.Require().Equal(sdk.NewInt64Coin("aISLM", 0), balanceDest)
 				suite.Require().Equal(balances[0], balanceClaw)
 			} else {
@@ -411,7 +411,7 @@ func (suite *KeeperTestSuite) TestMsgUpdateVestingFunder() {
 			msg := types.NewMsgUpdateVestingFunder(tc.funder, tc.newFunder, tc.vestingAcc)
 			res, err := suite.app.VestingKeeper.UpdateVestingFunder(ctx, msg)
 
-			expRes := &types.MsgUpdateVestingFunderResponse{}
+			expResponse := &types.MsgUpdateVestingFunderResponse{}
 
 			if tc.expectedPass {
 				// get the updated vesting account
@@ -420,7 +420,7 @@ func (suite *KeeperTestSuite) TestMsgUpdateVestingFunder() {
 				suite.Require().True(ok, "vesting account could not be casted to ClawbackVestingAccount")
 
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResponse, res)
 				suite.Require().Equal(va.FunderAddress, tc.newFunder.String())
 			} else {
 				suite.Require().Error(err)
@@ -885,14 +885,14 @@ func (suite *KeeperTestSuite) TestConvertIntoVestingAccount() {
 			)
 			res, err := suite.app.VestingKeeper.ConvertIntoVestingAccount(ctx, msg)
 
-			expRes := &types.MsgConvertIntoVestingAccountResponse{}
+			expResponse := &types.MsgConvertIntoVestingAccountResponse{}
 			balanceSource := suite.app.BankKeeper.GetBalance(suite.ctx, tc.from, "aISLM")
 			balanceDest := suite.app.BankKeeper.GetBalance(suite.ctx, tc.to, "aISLM")
 			balanceBonded := suite.app.StakingKeeper.GetDelegatorBonded(suite.ctx, tc.to)
 
 			if tc.expectPass {
 				suite.Require().NoError(err, tc.name)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResponse, res)
 
 				accI := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.to)
 				suite.Require().NotNil(accI)

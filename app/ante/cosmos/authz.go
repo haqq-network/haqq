@@ -42,7 +42,7 @@ func (ald AuthzLimiterDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate
 // maxNestedMsgs threshold. If there are more than that limit, it returns an error
 func (ald AuthzLimiterDecorator) checkDisabledMsgs(msgs []sdk.Msg, isAuthzInnerMsg bool, nestedLvl int) error {
 	if nestedLvl >= maxNestedMsgs {
-		return fmt.Errorf("found more nested msgs than permited. Limit is : %d", maxNestedMsgs)
+		return fmt.Errorf("found more nested msgs than permitted. Limit is : %d", maxNestedMsgs)
 	}
 	for _, msg := range msgs {
 		switch msg := msg.(type) {

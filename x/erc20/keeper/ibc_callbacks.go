@@ -58,7 +58,7 @@ func (k Keeper) OnRecvPacket(
 
 	senderAcc := k.accountKeeper.GetAccount(ctx, sender)
 
-	// return acknoledgement without conversion if sender is a module account
+	// return acknowledgement without conversion if sender is a module account
 	if types.IsModuleAccount(senderAcc) {
 		return ack
 	}

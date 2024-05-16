@@ -224,11 +224,11 @@ func TestRegisterBlockResults(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := client.BlockResults(rpc.ContextWithHeight(height), &height)
-	expRes := &tmrpctypes.ResultBlockResults{
+	expResponse := &tmrpctypes.ResultBlockResults{
 		Height:     height,
 		TxsResults: []*abci.ResponseDeliverTx{{Code: 0, GasUsed: 0}},
 	}
-	require.Equal(t, expRes, res)
+	require.Equal(t, expResponse, res)
 	require.NoError(t, err)
 }
 

@@ -12,10 +12,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
+
 	"github.com/haqq-network/haqq/x/liquidvesting/client/cli"
 	"github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
-	"github.com/spf13/cobra"
 )
 
 // ----------------------------------------------------------------------------

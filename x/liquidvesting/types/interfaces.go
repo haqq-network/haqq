@@ -11,6 +11,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )

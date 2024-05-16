@@ -11,6 +11,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
@@ -210,12 +211,12 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 
 			msg := types.NewMsgLiquidate(tc.from, tc.to, tc.amount)
 			resp, err := suite.app.LiquidVestingKeeper.Liquidate(ctx, msg)
-			expRes := &types.MsgLiquidateResponse{}
+			expResponse := &types.MsgLiquidateResponse{}
 
 			if tc.expectPass {
 				// check returns
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, resp)
+				suite.Require().Equal(expResponse, resp)
 
 				// check target account exists and has liquid token
 				accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.to)
@@ -274,11 +275,11 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	// FIRST LIQUIDATION
 	msg := types.NewMsgLiquidate(from, to, liquidationAmount)
 	resp, err := suite.app.LiquidVestingKeeper.Liquidate(ctx, msg)
-	expRes := &types.MsgLiquidateResponse{}
+	expResponse := &types.MsgLiquidateResponse{}
 
 	// check returns
 	suite.Require().NoError(err)
-	suite.Require().Equal(expRes, resp)
+	suite.Require().Equal(expResponse, resp)
 
 	// check target account exists and has liquid token
 	accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, to)
@@ -313,7 +314,7 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 
 	// check returns
 	suite.Require().NoError(err)
-	suite.Require().Equal(expRes, resp)
+	suite.Require().Equal(expResponse, resp)
 
 	// check target account exists and has liquid token
 	balanceTarget = suite.app.BankKeeper.GetBalance(suite.ctx, to, types.DenomBaseNameFromID(1))
@@ -559,11 +560,11 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			redeemCoin := sdk.NewInt64Coin("aLIQUID0", tc.redeemAmount)
 			msg := types.NewMsgRedeem(tc.redeemFrom, tc.redeemTo, redeemCoin)
 			resp, err := suite.app.LiquidVestingKeeper.Redeem(ctx, msg)
-			expRes := &types.MsgRedeemResponse{}
+			expResponse := &types.MsgRedeemResponse{}
 			if tc.expectPass {
 				// check returns
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, resp)
+				suite.Require().Equal(expResponse, resp)
 
 				// check target account has original tokens
 				accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.redeemTo)

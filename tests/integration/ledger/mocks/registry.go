@@ -44,7 +44,7 @@ func MGetAccount(m *AccountRetriever, acc client.Account, e error) {
 	m.On("GetAccount", mock.Anything, mock.Anything).Return(acc, e)
 }
 
-// original: EnsureExists(client.Context, ypes.AccAddress) error
+// original: EnsureExists(client.Context, types.AccAddress) error
 func MEnsureExist(m *AccountRetriever, e error) {
 	m.On("EnsureExists", mock.Anything, mock.Anything).Return(e)
 }

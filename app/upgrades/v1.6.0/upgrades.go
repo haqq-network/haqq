@@ -8,6 +8,7 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+
 	"github.com/haqq-network/haqq/utils"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"

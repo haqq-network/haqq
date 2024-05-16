@@ -129,7 +129,7 @@ func (suite *ProposalTestSuite) TestRegisterERC20Proposal() {
 	}{
 		// Valid tests
 		{msg: "Register token pair - valid pair enabled", title: "test", description: "test desc", pair: types.TokenPair{utiltx.GenerateAddress().String(), "test", true, types.OWNER_MODULE}, expectPass: true},
-		{msg: "Register token pair - valid pair dissabled", title: "test", description: "test desc", pair: types.TokenPair{utiltx.GenerateAddress().String(), "test", false, types.OWNER_MODULE}, expectPass: true},
+		{msg: "Register token pair - valid pair disabled", title: "test", description: "test desc", pair: types.TokenPair{utiltx.GenerateAddress().String(), "test", false, types.OWNER_MODULE}, expectPass: true},
 		// Missing params valid
 		{msg: "Register token pair - invalid missing title ", title: "", description: "test desc", pair: types.TokenPair{utiltx.GenerateAddress().String(), "test", false, types.OWNER_MODULE}, expectPass: false},
 		{msg: "Register token pair - invalid missing description ", title: "test", description: "", pair: types.TokenPair{utiltx.GenerateAddress().String(), "test", false, types.OWNER_MODULE}, expectPass: false},
@@ -210,7 +210,7 @@ func (suite *ProposalTestSuite) TestRegisterCoinProposal() {
 	}{
 		// Valid tests
 		{msg: "Register token pair - valid pair enabled", title: "test", description: "test desc", metadata: validMetadata, expectPass: true},
-		{msg: "Register token pair - valid pair dissabled", title: "test", description: "test desc", metadata: validMetadata, expectPass: true},
+		{msg: "Register token pair - valid pair disabled", title: "test", description: "test desc", metadata: validMetadata, expectPass: true},
 
 		// Invalid Regex (denom)
 		{msg: "Register token pair - invalid starts with number", title: "test", description: "test desc", metadata: createMetadata("1test", "test"), expectPass: false},

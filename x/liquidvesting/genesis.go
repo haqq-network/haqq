@@ -1,7 +1,10 @@
 package liquidvesting
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 )
@@ -9,8 +12,10 @@ import (
 // InitGenesis import module genesis
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, data types.GenesisState) {
 	// Set genesis state
-	params := data.Params
-	k.SetParams(ctx, params)
+	err := k.SetParams(ctx, data.Params)
+	if err != nil {
+		panic(fmt.Errorf("error setting params %s", err))
+	}
 
 	k.SetDenomCounter(ctx, data.DenomCounter)
 

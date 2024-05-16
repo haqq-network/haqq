@@ -47,7 +47,7 @@ func (s Storage) SortedKeys() []common.Hash {
 	return keys
 }
 
-// stateObject is the state of an acount
+// stateObject is the state of an account
 type stateObject struct {
 	db *StateDB
 

@@ -12,12 +12,10 @@ message GenesisState {
   // params defines all the paramaters of the module.
   Params params = 1 [ (gogoproto.nullable) = false ];
 
-  uint64 denomCounter = 2;
+  uint64 denom_counter = 2;
 
-  repeated Denom denoms = 3 [
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
+  repeated Denom denoms = 3
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 // Params holds parameters for the liquidvesting module.
@@ -26,4 +24,7 @@ message Params {
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
+
+  // parameter to enable liquid vesting
+  bool enable_liquid_vesting = 2;
 }
