@@ -1,6 +1,10 @@
 package utils
 
 import (
+	"encoding/hex"
+	"fmt"
+	"log"
+	"math/big"
 	"strings"
 
 	errorsmod "cosmossdk.io/errors"
@@ -9,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 )
@@ -102,4 +107,47 @@ func GetHaqqAddressFromBech32(address string) (sdk.AccAddress, error) {
 	}
 
 	return sdk.AccAddress(addressBz), nil
+}
+
+// parseHexValue -> parses a hex string into a big.Int
+func ParseHexValue(hexStr string) *big.Int {
+	hexStr = Remove0xPrefix(hexStr)
+
+	value := new(big.Int)
+	if _, ok := value.SetString(hexStr, 16); !ok {
+		log.Fatalf("Failed to parse hex string: %s", hexStr)
+	}
+
+	return value
+}
+
+// remove0xPrefix -> removes the 0x prefix from a hex string
+func Remove0xPrefix(s string) string {
+	if len(s) > 1 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X') {
+		return s[2:]
+	}
+	return s
+}
+
+// keccak256 -> calculates the keccak256 hash of a byte slice
+func Keccak256(data []byte) []byte {
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write(data)
+	return hash.Sum(nil)
+}
+
+// calculateStorageKey -> calculates the storage key for a given address and index
+func CalculateStorageKey(addr string, i int) string {
+	pos := fmt.Sprintf("%064x", i)
+	key := strings.ToLower(Remove0xPrefix(addr))
+	keyPadded := fmt.Sprintf("%064s", key)
+	combined := keyPadded + pos
+
+	combinedBytes, err := hex.DecodeString(combined)
+	if err != nil {
+		log.Fatalf("Failed to decode hex string: %v", err)
+	}
+
+	storageKey := Keccak256(combinedBytes)
+	return "0x" + hex.EncodeToString(storageKey)
 }

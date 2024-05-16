@@ -2,10 +2,8 @@ package v175
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"log"
-	"math/big"
 	"runtime"
 	"sort"
 	"strings"
@@ -13,7 +11,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	"golang.org/x/crypto/sha3"
 
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
@@ -28,6 +25,8 @@ import (
 
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+
+	"github.com/haqq-network/haqq/utils"
 )
 
 // TurnOffLiquidVesting turns off the liquid vesting module
@@ -40,13 +39,14 @@ func TurnOffLiquidVesting(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestin
 		lk.SetLiquidVestingEnabled(ctx, true)
 	}
 
+	// Collect all storage entries for aLIQUID tokens
+	storageMap := collectStorageEntries(ctx, erc20, ek)
+	// Redeem's vector
+	redeemsVector := make([]liquidvestingtypes.MsgRedeem, 0)
+
 	// Collect all reedem messages
 	var wg sync.WaitGroup
 	accChan := make(chan authtypes.AccountI, 100)
-
-	storageMap := collectStorageEntries(ctx, erc20, ek)
-	redeemsVector := make([]liquidvestingtypes.MsgRedeem, 0)
-
 	worker := func() {
 		defer wg.Done()
 		for acc := range accChan {
@@ -54,7 +54,7 @@ func TurnOffLiquidVesting(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestin
 		}
 	}
 
-	numWorkers := runtime.NumCPU()
+	numWorkers := runtime.NumCPU() // Use all available CPUs for parallel processing
 	wg.Add(numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		go worker()
@@ -73,6 +73,7 @@ func TurnOffLiquidVesting(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestin
 		return bytes.Compare(redeemsVector[i].GetSignBytes(), redeemsVector[j].GetSignBytes()) < 0
 	})
 
+	// Redeem all aLIQUID tokens
 	for _, redeemMsg := range redeemsVector {
 		if _, err := lk.Redeem(ctx, &redeemMsg); err != nil {
 			log.Fatalf("Failed to redeem: %v", err)
@@ -81,6 +82,7 @@ func TurnOffLiquidVesting(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestin
 
 	// Disable liquid vesting module
 	lk.SetLiquidVestingEnabled(ctx, false)
+
 	logger.Info("Finished turning off liquid vesting module")
 
 	return nil
@@ -116,28 +118,33 @@ func processAccount(ctx sdk.Context, acc authtypes.AccountI, storageMap map[stri
 		return
 	}
 
-	calculatedKey := calculateStorageKey(addrStr, 2)
+	calculatedKey := utils.CalculateStorageKey(addrStr, 2)
 
 	if storage, exists := storageMap[calculatedKey]; exists {
 		for tokenPair, state := range storage {
 			if state.Value != "0x0000000000000000000000000000000000000000000000000000000000000000" {
 				logTokenInfo(ctx, addrStr, tokenPair)
 
-				value := parseHexValue(state.Value)
+				// Parse the hex value to get the tokens balance of the account from the ERC20 EVM contract
+				value := utils.ParseHexValue(state.Value)
 				evmBalance := sdk.NewCoin(tokenPair.Denom, sdk.NewIntFromBigInt(value))
 
 				logBalanceInfo(ctx, evmBalance)
 
 				ownerAddr := sdk.AccAddress(common.HexToAddress(addrStr).Bytes())
 
+				// Get the liquid denom from liquid vesting keeper
 				liquidDenom, found := lk.GetDenom(ctx, tokenPair.Denom)
 				if !found {
 					log.Fatalf("Failed to get denom: %s", tokenPair.Denom)
 				}
 
+				// Adjust the balance to the maximum available amount that can be redeemed
 				evmBalance.Amount = adjustBalance(evmBalance.Amount, liquidDenom)
 
+				// Create a redeem message
 				redeemMsg := liquidvestingtypes.NewMsgRedeem(ownerAddr, ownerAddr, evmBalance)
+				// Append the redeem message to the vector
 				*redeemsVector = append(*redeemsVector, *redeemMsg)
 			}
 		}
@@ -165,47 +172,4 @@ func logBalanceInfo(ctx sdk.Context, evmBalance sdk.Coin) {
 	logger := ctx.Logger()
 
 	logger.Info(fmt.Sprintf("ERC20 value: %+v", evmBalance))
-}
-
-// parseHexValue -> parses a hex string into a big.Int
-func parseHexValue(hexStr string) *big.Int {
-	hexStr = remove0xPrefix(hexStr)
-
-	value := new(big.Int)
-	if _, ok := value.SetString(hexStr, 16); !ok {
-		log.Fatalf("Failed to parse hex string: %s", hexStr)
-	}
-
-	return value
-}
-
-// remove0xPrefix -> removes the 0x prefix from a hex string
-func remove0xPrefix(s string) string {
-	if len(s) > 1 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X') {
-		return s[2:]
-	}
-	return s
-}
-
-// keccak256 -> calculates the keccak256 hash of a byte slice
-func keccak256(data []byte) []byte {
-	hash := sha3.NewLegacyKeccak256()
-	hash.Write(data)
-	return hash.Sum(nil)
-}
-
-// calculateStorageKey -> calculates the storage key for a given address and index
-func calculateStorageKey(addr string, i int) string {
-	pos := fmt.Sprintf("%064x", i)
-	key := strings.ToLower(remove0xPrefix(addr))
-	keyPadded := fmt.Sprintf("%064s", key)
-	combined := keyPadded + pos
-
-	combinedBytes, err := hex.DecodeString(combined)
-	if err != nil {
-		log.Fatalf("Failed to decode hex string: %v", err)
-	}
-
-	storageKey := keccak256(combinedBytes)
-	return "0x" + hex.EncodeToString(storageKey)
 }
