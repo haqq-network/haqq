@@ -278,6 +278,10 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 	// if there are upcoming periods, apply vesting schedule on target account
 	if len(upcomingPeriods) > 0 {
 		funder := k.accountKeeper.GetModuleAddress(types.ModuleName)
+		if funder == nil {
+			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to get funder address")
+		}
+
 		// check if toAddress already a vesting account to apply current funder
 		toAccount := k.accountKeeper.GetAccount(ctx, toAddress)
 		if toAccount == nil {
