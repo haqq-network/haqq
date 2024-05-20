@@ -64,14 +64,6 @@ func (suite *ScheduleTestSuite) TestSubtractAmountFromPeriods() {
 			expectError: false,
 		},
 		{
-			name:              "OK Subtract zero from empty periods",
-			minuendPeriods:    []sdkvesting.Period{},
-			subtrahend:        sdk.NewCoin("test", math.NewInt(0)),
-			expectedDecreased: []sdkvesting.Period{},
-			expectedDiff:      []sdkvesting.Period{},
-			expectError:       false,
-		},
-		{
 			name: "OK Standard subtraction with residue and little last period to hold whole residue",
 			minuendPeriods: []sdkvesting.Period{
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(100)))},
@@ -98,6 +90,14 @@ func (suite *ScheduleTestSuite) TestSubtractAmountFromPeriods() {
 				{Amount: sdk.NewCoins(sdk.NewCoin("test", math.NewInt(20)))},
 			},
 			subtrahend:        sdk.NewCoin("test", math.NewInt(50)),
+			expectedDecreased: []sdkvesting.Period{},
+			expectedDiff:      []sdkvesting.Period{},
+			expectError:       true,
+		},
+		{
+			name:              "FAIL Subtract zero from empty periods",
+			minuendPeriods:    []sdkvesting.Period{},
+			subtrahend:        sdk.NewCoin("test", math.NewInt(0)),
 			expectedDecreased: []sdkvesting.Period{},
 			expectedDiff:      []sdkvesting.Period{},
 			expectError:       true,

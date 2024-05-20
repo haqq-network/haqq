@@ -20,7 +20,7 @@ func SubtractAmountFromPeriods(
 	minuendTotalAmount := minuendPeriods.TotalAmount().AmountOf(minuendDenom)
 	subtrahendAmount := subtrahend.Amount
 
-	if minuendTotalAmount.LT(subtrahendAmount) {
+	if minuendTotalAmount.LT(subtrahendAmount) || minuendTotalAmount.IsZero() {
 		return nil, nil, errors.New("insufficient locked up funds")
 	}
 
