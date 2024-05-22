@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/haqq-network/haqq/x/contractcheck"
+	contractcheckkeeper "github.com/haqq-network/haqq/x/contractcheck/keeper"
+	contractchecktypes "github.com/haqq-network/haqq/x/contractcheck/types"
+
 	"io"
 	"net/http"
 	"os"
@@ -245,6 +249,7 @@ var (
 		epochs.AppModuleBasic{},
 		consensus.AppModuleBasic{},
 		liquidvesting.AppModuleBasic{},
+		contractcheck.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -261,6 +266,7 @@ var (
 		coinomicstypes.ModuleName:      {authtypes.Minter},
 		vestingtypes.ModuleName:        nil, // Add vesting module account
 		liquidvestingtypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
+		contractchecktypes.ModuleName:  nil,
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -326,6 +332,8 @@ type Haqq struct {
 	EpochsKeeper        epochskeeper.Keeper
 	VestingKeeper       vestingkeeper.Keeper
 	LiquidVestingKeeper liquidvestingkeeper.Keeper
+
+	ContractcheckKeeper contractcheckkeeper.Keeper
 
 	// Haqq keepers
 	CoinomicsKeeper coinomicskeeper.Keeper
@@ -402,6 +410,7 @@ func NewHaqq(
 		// haqq keys
 		coinomicstypes.StoreKey,
 		liquidvestingtypes.StoreKey,
+		contractchecktypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
@@ -551,6 +560,8 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, app.Erc20Keeper, app.VestingKeeper,
 	)
 
+	app.ContractcheckKeeper = contractcheckkeeper.NewKeeper(keys[contractchecktypes.StoreKey], appCodec, app.EvmKeeper)
+
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
 		epochskeeper.NewMultiEpochHooks(
@@ -696,6 +707,7 @@ func NewHaqq(
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		liquidvesting.NewAppModule(appCodec, app.LiquidVestingKeeper, app.AccountKeeper, app.BankKeeper, app.Erc20Keeper),
+		contractcheck.NewAppModule(appCodec, app.ContractcheckKeeper),
 
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
@@ -736,6 +748,7 @@ func NewHaqq(
 		coinomicstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
+		contractchecktypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -772,6 +785,7 @@ func NewHaqq(
 		coinomicstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
+		contractchecktypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -811,6 +825,7 @@ func NewHaqq(
 		coinomicstypes.ModuleName,
 		erc20types.ModuleName,
 		epochstypes.ModuleName,
+		contractchecktypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 		consensusparamtypes.ModuleName,

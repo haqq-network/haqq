@@ -1,0 +1,8 @@
+syntax = "proto3";
+package haqq.contractcheck.v1;
+
+option go_package = "github.com/haqq-network/haqq/x/contractcheck/types";
+
+// GenesisState defines the liquidvesting module's genesis state.
+message GenesisState {}
+

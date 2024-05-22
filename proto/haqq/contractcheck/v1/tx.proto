@@ -1,0 +1,20 @@
+syntax = "proto3";
+package haqq.contractcheck.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/contractcheck/types";
+
+// Msg defines the Msg service.
+service Msg {
+  rpc Mint(MsgMint) returns (MsgMintResponse) {
+    option (google.api.http).post = "/haqq/contractcheck/v1/tx/mint";
+  };
+}
+
+message MsgMint {
+  string name = 1;
+}
+
+// MsgLiquidateResponse defines the Msg/Liquidate response type
+message MsgMintResponse {}
