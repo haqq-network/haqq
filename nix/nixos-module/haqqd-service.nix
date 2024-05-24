@@ -24,7 +24,6 @@ in
 {
   imports = [
     ./grafana-agent.nix
-    # ./nginx.nix
   ];
 
   options.services.haqqd-supervised =
@@ -32,6 +31,25 @@ in
       enable = lib.mkOption {
         type = lib.types.bool;
         default = false;
+      };
+
+      fetchTrustBlock = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Fetch the trust block from the network";
+      };
+
+      fetchTrustBlockUrl = lib.mkOption {
+        type = lib.types.str;
+        default = "https://rpc.tm.haqq.network";
+        description = "URL to fetch the trust block from";
+      };
+
+      fetchTrustBlockOffset = lib.mkOption {
+        type = lib.types.int;
+        # 21 days in block time
+        default = 21 * 24 * 60 * 60 / 5;
+        description = "Offset to fetch the trust block from";
       };
 
       deleteOldBackups = lib.mkOption {
@@ -161,9 +179,15 @@ in
                 appConfig = format.generate "app.toml" (lib.attrsets.recursiveUpdate defaultCfgAppToml cfg.app);
                 start = pkgs.writeShellApplication {
                   name = "haqqd-start";
+                  runtimeInputs = with pkgs; [ curl jq dasel ];
                   text = ''
-                    ln -snf ${tomlConfig} .haqqd/config/config.toml
-                    ln -snf ${appConfig} .haqqd/config/app.toml
+                    cp -f ${tomlConfig} .haqqd/config/config.toml
+                    cp -f ${appConfig} .haqqd/config/app.toml
+
+                    export RPC=${cfg.fetchTrustBlockUrl}
+                    export OFFSET=${toString cfg.fetchTrustBlockOffset}
+                    ${if cfg.fetchTrustBlock then "${./fetch-trust-block.sh} .haqqd/config/config.toml" else ""}
+                    
                     ${pkgs.cosmovisor}/bin/cosmovisor run start
                   '';
                 };
