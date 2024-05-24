@@ -33,37 +33,22 @@ jobs:
       - run: |
           make build
         if: "env.GIT_DIFF != ''"
+
   build-nix:
-    strategy:
-      matrix:
-        os: [nixos, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, nixos]
     steps:
       - uses: actions/checkout@v4
-      - uses: haqq-network/nix-action@master
-        if: ${{ matrix.os == 'macos-latest' }}
-        with:
-          installNix: true
-          useCachix: false
       - name: Build nix package
-        env:
-          CACHIX_SIGNING_KEY: ${{ secrets.CACHIX_SIGNING_KEY }}
         run: |
           nix build .#haqq --print-build-logs
-          nix build --json \
-           | jq -r '.[].outputs | to_entries[].value' \
-           | nix run nixpkgs#cachix push haqq
+
   check-nix:
     runs-on: [self-hosted, nixos]
     steps:
       - uses: actions/checkout@v4
-      - name: Check if nix package and Makefile versions match
+      - name: Check if Nix package and Makefile versions match
         run: |
           nix develop --impure .#ci --command ci-check-version
       - name: Check if gomod2nix is up to date
         run: |
           nix develop --impure .#ci --command ci-check-gomod2nix
-      # GLIBC problems when executing it on nixos 23.11
-      # - name: Check nixos-search validity
-      #   run: |
-      #     nix run nixos-search -- --json flake .

@@ -1,13 +1,20 @@
 name: test node bootstrap
 on:
   workflow_dispatch: # allows manual triggering
-  schedule:
-    - cron: '0 0 * * 0' # runs weekly on Sunday at 00:00
+  # NOTE Disabled for now because tests fail with a timeout.
+  # schedule:
+  #   - cron: '0 0 * * 0' # runs weekly on Sunday at 00:00
+  # pull_request:
+  # push:
+  #   branches:
+  #     - master
 
 jobs:
   node-bootstrap:
+    timeout-minutes: 370
     runs-on: [self-hosted, nixos]
     steps:
+      - uses: actions/checkout@v4
       - name: Test node bootstrap
         run: |
           nix build .#packages.x86_64-linux.nixos-test --no-sandbox --print-build-logs

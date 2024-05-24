@@ -66,6 +66,7 @@ jobs:
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   test-nix:
     runs-on: [self-hosted, nixos]
     steps:
