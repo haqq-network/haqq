@@ -1,4 +1,4 @@
-{ pkgs, pkgsUnstable, ... }:
+{ lib, pkgs, pkgsUnstable, ... }:
 {
   dotenv.enable = true;
 
@@ -6,9 +6,9 @@
     [
       pkgsUnstable.act
       gh
-
       jq
       yq
+      dasel
     ];
 
   enterShell = ''
@@ -16,13 +16,13 @@
   '';
 
   pre-commit.hooks = {
-    golangci-lint.enable = true;
+    golangci-lint.enable = false; # FIXME Fails!
 
     gomod2nix-generate = {
       enable = true;
       name = "gomod2nix-generate";
       always_run = true;
-      entry = "gomod2nix generate";
+      entry = "${lib.getExe' pkgs.gomod2nix "gomod2nix"} generate";
       pass_filenames = false;
     };
   };

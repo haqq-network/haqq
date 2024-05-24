@@ -2,24 +2,43 @@
   description = "A very basic flake";
 
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2311.*.tar.gz";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-23.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     flake-utils.url = "github:numtide/flake-utils";
 
     devenv.url = "github:cachix/devenv";
-    devenv.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    # NOTE Do not override inputs for devenv. It uses its own nixpkgs fork.
 
-    gomod2nix.url = "github:nix-community/gomod2nix/master";
+    gomod2nix.url = "github:nix-community/gomod2nix";
     gomod2nix.inputs.nixpkgs.follows = "nixpkgs-unstable";
     gomod2nix.inputs.flake-utils.follows = "flake-utils";
+
+    cosmos.url = "github:informalsystems/cosmos.nix";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, gomod2nix, ... }@inputs:
+  nixConfig = {
+    extra-trusted-public-keys = [
+      "cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk="
+      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
+      "haqq.cachix.org-1:m8QJypf2boIKRBz4BvVyGPo7gHQoj4D6iMGCmGozNEg="
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+    ];
+    extra-substituters = [
+      "https://cosmos-nix.cachix.org"
+      "https://devenv.cachix.org"
+      "https://haqq.cachix.org"
+      "https://nix-community.cachix.org"
+    ];
+  };
+
+  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, gomod2nix, cosmos, ... }@inputs:
     flake-utils.lib.eachDefaultSystem
       (system:
         let
-          overlays = [ gomod2nix.overlays.default ];
+          overlays = [
+            gomod2nix.overlays.default
+          ];
           pkgs = import nixpkgs { inherit system overlays; };
           pkgsUnstable = import nixpkgs-unstable { inherit system overlays; };
 
@@ -55,34 +74,29 @@
             default = haqq;
           };
 
-          devShells = {
+          devShells = let inherit (nixpkgs) lib; in {
             default = devenv.lib.mkShell {
               inherit inputs pkgs;
               modules = [
-                (import
-                  ./nix/devshell/common.nix
-                  { inherit pkgs pkgsUnstable go; })
-                (import ./nix/devshell { inherit pkgs pkgsUnstable; })
+                (import ./nix/devshell/common.nix { inherit pkgs pkgsUnstable go; })
+                (import ./nix/devshell { inherit lib pkgs pkgsUnstable; })
               ];
             };
 
             ci = devenv.lib.mkShell {
               inherit inputs pkgs;
               modules = [
-                (import
-                  ./nix/devshell/common.nix
-                  { inherit pkgs pkgsUnstable go; })
-                (import ./nix/devshell/ci.nix { inherit pkgs pkgsUnstable go; })
+                (import ./nix/devshell/common.nix { inherit pkgs pkgsUnstable go; })
+                (import ./nix/devshell/ci.nix { inherit lib pkgs pkgsUnstable go; })
               ];
             };
           };
         }
       ) // {
-
-      overlays.default = prev: final: {
-        inherit (inputs.cosmos.packages.${prev.system}) cosmovisor;
-        inherit (self.packages.${prev.system}) haqq;
-        grafana-agent-unstable = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.grafana-agent;
+      overlays.default = final: prev: {
+        inherit (inputs.cosmos.packages.${final.system}) cosmovisor;
+        inherit (self.packages.${final.system}) haqq;
+        grafana-agent-unstable = inputs.nixpkgs-unstable.legacyPackages.${final.system}.grafana-agent;
       };
 
       nixosModules = {
@@ -91,17 +105,6 @@
 
           nixpkgs.overlays = [ self.overlays.default ];
         };
-      };
-
-      nixConfig = {
-        extra-trusted-public-keys = [
-          "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
-          "haqq.cachix.org-1:m8QJypf2boIKRBz4BvVyGPo7gHQoj4D6iMGCmGozNEg="
-        ];
-        extra-substituters = [
-          "https://devenv.cachix.org"
-          "https://haqq.cachix.org"
-        ];
       };
     };
 }
