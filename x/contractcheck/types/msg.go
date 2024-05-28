@@ -9,9 +9,12 @@ const (
 )
 
 // NewMsgMint creates new instance of MsgMint
-func NewMsgMint(name string) *MsgMint {
+func NewMsgMint(address, to, from, uri string) *MsgMint {
 	return &MsgMint{
-		Name: name,
+		Address: address,
+		To:      to,
+		From:    from,
+		Uri:     uri,
 	}
 }
 
@@ -33,5 +36,6 @@ func (msg MsgMint) ValidateBasic() error {
 
 // GetSigners defines whose signature is required
 func (msg MsgMint) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{}
+	addr := sdk.MustAccAddressFromBech32(msg.From)
+	return []sdk.AccAddress{addr}
 }

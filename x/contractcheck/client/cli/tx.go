@@ -30,16 +30,17 @@ func NewTxCmd() *cobra.Command {
 // NewMsgLiquidateCmd returns command for composing MsgLiquidate and sending it to blockchain
 func NewMsgMintCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "mint [NAME]",
+		Use:   "mint [CONTRACT_ADDRESS] [TO] [URI]",
 		Short: "test mint call",
-		Args:  cobra.RangeArgs(1, 2),
+		Args:  cobra.RangeArgs(3, 3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
+			mintFrom := cliCtx.GetFromAddress().String()
 
-			msg := types.NewMsgMint(args[0])
+			msg := types.NewMsgMint(args[0], args[1], mintFrom, args[2])
 
 			return tx.GenerateOrBroadcastTxCLI(cliCtx, cmd.Flags(), msg)
 		},

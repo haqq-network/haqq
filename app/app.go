@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/haqq-network/haqq/x/contractcheck"
-	contractcheckkeeper "github.com/haqq-network/haqq/x/contractcheck/keeper"
-	contractchecktypes "github.com/haqq-network/haqq/x/contractcheck/types"
-
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/haqq-network/haqq/x/contractcheck"
+	contractcheckkeeper "github.com/haqq-network/haqq/x/contractcheck/keeper"
+	contractchecktypes "github.com/haqq-network/haqq/x/contractcheck/types"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -560,7 +560,7 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, app.Erc20Keeper, app.VestingKeeper,
 	)
 
-	app.ContractcheckKeeper = contractcheckkeeper.NewKeeper(keys[contractchecktypes.StoreKey], appCodec, app.EvmKeeper)
+	app.ContractcheckKeeper = contractcheckkeeper.NewKeeper(keys[contractchecktypes.StoreKey], appCodec, app.EvmKeeper, app.AccountKeeper)
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
@@ -707,7 +707,7 @@ func NewHaqq(
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		liquidvesting.NewAppModule(appCodec, app.LiquidVestingKeeper, app.AccountKeeper, app.BankKeeper, app.Erc20Keeper),
-		contractcheck.NewAppModule(appCodec, app.ContractcheckKeeper),
+		contractcheck.NewAppModule(appCodec, app.ContractcheckKeeper, app.AccountKeeper),
 
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
