@@ -10,6 +10,5 @@ func DefaultGenesisState() *GenesisState {
 
 // Validate genesis state
 func (gs GenesisState) Validate() error {
-
 	return nil
 }

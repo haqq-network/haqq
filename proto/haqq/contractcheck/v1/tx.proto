@@ -7,11 +7,13 @@ option go_package = "github.com/haqq-network/haqq/x/contractcheck/types";
 
 // Msg defines the Msg service.
 service Msg {
+  // Mint defines a method for minting a new NFT
   rpc Mint(MsgMint) returns (MsgMintResponse) {
     option (google.api.http).post = "/haqq/contractcheck/v1/tx/mint";
   };
 }
 
+// MsgMint defines the Msg/Mint request type
 message MsgMint {
   string address = 1;
   string to = 2;

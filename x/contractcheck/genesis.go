@@ -11,7 +11,8 @@ import (
 func InitGenesis(ctx sdk.Context,
 	_ keeper.Keeper,
 	accountKeeper authkeeper.AccountKeeper,
-	_ types.GenesisState) {
+	_ types.GenesisState,
+) {
 	// ensure erc20 module account is set on genesis
 	if acc := accountKeeper.GetModuleAccount(ctx, types.ModuleName); acc == nil {
 		// NOTE: shouldn't occur
