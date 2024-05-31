@@ -12,13 +12,6 @@
       };
       */
 
-  networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [
-      26656 # tendermint rpc
-    ];
-  };
-
   services.haqqd-supervised = {
     enable = true;
     deleteOldBackups = 7;
@@ -41,6 +34,7 @@
       api.enable = false;
       telemetry.prometheus-retention-time = 3600;
     };
+    openFirewall = true;
 
     # not testing grafana-agent here
     grafana.enable = false;

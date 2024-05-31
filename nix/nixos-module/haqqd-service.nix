@@ -81,6 +81,14 @@ in
           default = { };
         };
 
+      openFirewall = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Open ports needed for the functionality of the daemon.
+        '';
+      };
+
       grafana = {
         enable = lib.mkOption {
           type = lib.types.bool;
@@ -214,5 +222,9 @@ in
             requires = [ "haqqd-bootstrap.service" ];
           };
       };
+
+    networking.firewall = lib.mkIf cfg.openFirewall {
+      allowedTCPPorts = [ 26656 ];
+    };
   };
 }
