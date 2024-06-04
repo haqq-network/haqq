@@ -10,10 +10,6 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/haqq-network/haqq/x/contractcheck"
-	contractcheckkeeper "github.com/haqq-network/haqq/x/contractcheck/keeper"
-	contractchecktypes "github.com/haqq-network/haqq/x/contractcheck/types"
-
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
@@ -147,6 +143,10 @@ import (
 	"github.com/haqq-network/haqq/x/coinomics"
 	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	"github.com/haqq-network/haqq/x/contractcheck"
+	contractcheckclient "github.com/haqq-network/haqq/x/contractcheck/client"
+	contractcheckkeeper "github.com/haqq-network/haqq/x/contractcheck/keeper"
+	contractchecktypes "github.com/haqq-network/haqq/x/contractcheck/types"
 	"github.com/haqq-network/haqq/x/epochs"
 	epochskeeper "github.com/haqq-network/haqq/x/epochs/keeper"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
@@ -227,6 +227,7 @@ var (
 				erc20client.RegisterCoinProposalHandler,
 				erc20client.RegisterERC20ProposalHandler,
 				erc20client.ToggleTokenConversionProposalHandler,
+				contractcheckclient.MintNFTProposalHandler,
 			},
 		),
 		params.AppModuleBasic{},
@@ -514,7 +515,8 @@ func NewHaqq(
 		// AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
+		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper)).
+		AddRoute(contractchecktypes.RouterKey, contractcheck.NewContractCheckProposalHandler(&app.ContractcheckKeeper))
 
 	govConfig := govtypes.Config{
 		MaxMetadataLen: 10000,

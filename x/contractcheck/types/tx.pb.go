@@ -28,6 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// MsgMint defines the Msg/Mint request type
 type MsgMint struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	To      string `protobuf:"bytes,2,opt,name=to,proto3" json:"to,omitempty"`
@@ -174,6 +175,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
+	// Mint defines a method for minting a new NFT
 	Mint(ctx context.Context, in *MsgMint, opts ...grpc.CallOption) (*MsgMintResponse, error)
 }
 
@@ -196,6 +198,7 @@ func (c *msgClient) Mint(ctx context.Context, in *MsgMint, opts ...grpc.CallOpti
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
+	// Mint defines a method for minting a new NFT
 	Mint(context.Context, *MsgMint) (*MsgMintResponse, error)
 }
 

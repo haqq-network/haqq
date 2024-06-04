@@ -1,0 +1,22 @@
+syntax = "proto3";
+package haqq.contractcheck.v1;
+
+import "gogoproto/gogo.proto";
+option go_package = "github.com/haqq-network/haqq/x/contractcheck/types";
+
+
+// RegisterCoinProposal is a gov Content type to register a token pair for a
+// native Cosmos coin.
+message MintNFTProposal {
+  option (gogoproto.equal) = false;
+  // title of the proposal
+  string title = 1;
+  // description of the proposal
+  string description = 2;
+  // metadata slice of the native Cosmos coins
+  string contract_address = 3;
+  // nft url
+  string nft_url = 4;
+  // destination address
+  string destination_address = 5;
+}
