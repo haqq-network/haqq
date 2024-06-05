@@ -21,17 +21,17 @@ func (tf *IntegrationTxFactory) GenerateDefaultTxTypeArgs(sender common.Address,
 	defaultArgs := evmtypes.EvmTxArgs{}
 	switch txType {
 	case gethtypes.DynamicFeeTxType:
-		return tf.populateEvmTxArgs(sender, defaultArgs)
+		return tf.populateEvmTxArgsWithDefault(sender, defaultArgs)
 	case gethtypes.AccessListTxType:
 		defaultArgs.Accesses = &gethtypes.AccessList{{
 			Address:     sender,
 			StorageKeys: []common.Hash{{0}},
 		}}
 		defaultArgs.GasPrice = big.NewInt(1e9)
-		return tf.populateEvmTxArgs(sender, defaultArgs)
+		return tf.populateEvmTxArgsWithDefault(sender, defaultArgs)
 	case gethtypes.LegacyTxType:
 		defaultArgs.GasPrice = big.NewInt(1e9)
-		return tf.populateEvmTxArgs(sender, defaultArgs)
+		return tf.populateEvmTxArgsWithDefault(sender, defaultArgs)
 	default:
 		return evmtypes.EvmTxArgs{}, errors.New("tx type not supported")
 	}
@@ -59,14 +59,9 @@ func (tf *IntegrationTxFactory) EstimateGasLimit(from *common.Address, txArgs *e
 
 // GenerateSignedEthTx generates an Ethereum tx with the provided private key and txArgs but does not broadcast it.
 func (tf *IntegrationTxFactory) GenerateSignedEthTx(privKey cryptotypes.PrivKey, txArgs evmtypes.EvmTxArgs) (signing.Tx, error) {
-	msgEthereumTx, err := tf.GenerateMsgEthereumTx(privKey, txArgs)
+	signedMsg, err := tf.GenerateSignedMsgEthereumTx(privKey, txArgs)
 	if err != nil {
-		return nil, errorsmod.Wrap(err, "failed to create ethereum tx")
-	}
-
-	signedMsg, err := tf.SignMsgEthereumTx(privKey, msgEthereumTx)
-	if err != nil {
-		return nil, errorsmod.Wrap(err, "failed to sign ethereum tx")
+		return nil, errorsmod.Wrap(err, "failed to generate signed MsgEthereumTx")
 	}
 
 	// Validate the transaction to avoid unrealistic behavior
@@ -77,6 +72,16 @@ func (tf *IntegrationTxFactory) GenerateSignedEthTx(privKey cryptotypes.PrivKey,
 	return tf.buildSignedTx(signedMsg)
 }
 
+// GenerateSignedMsgEthereumTx generates an MsgEthereumTx signed with the provided private key and txArgs.
+func (tf *IntegrationTxFactory) GenerateSignedMsgEthereumTx(privKey cryptotypes.PrivKey, txArgs evmtypes.EvmTxArgs) (evmtypes.MsgEthereumTx, error) {
+	msgEthereumTx, err := tf.GenerateMsgEthereumTx(privKey, txArgs)
+	if err != nil {
+		return evmtypes.MsgEthereumTx{}, errorsmod.Wrap(err, "failed to create ethereum tx")
+	}
+
+	return tf.SignMsgEthereumTx(privKey, msgEthereumTx)
+}
+
 // GenerateMsgEthereumTx creates a new MsgEthereumTx with the provided arguments.
 // If any of the arguments are not provided, they will be populated with default values.
 func (tf *IntegrationTxFactory) GenerateMsgEthereumTx(
@@ -85,7 +90,7 @@ func (tf *IntegrationTxFactory) GenerateMsgEthereumTx(
 ) (evmtypes.MsgEthereumTx, error) {
 	fromAddr := common.BytesToAddress(privKey.PubKey().Address().Bytes())
 	// Fill TxArgs with default values
-	txArgs, err := tf.populateEvmTxArgs(fromAddr, txArgs)
+	txArgs, err := tf.populateEvmTxArgsWithDefault(fromAddr, txArgs)
 	if err != nil {
 		return evmtypes.MsgEthereumTx{}, errorsmod.Wrap(err, "failed to populate tx args")
 	}

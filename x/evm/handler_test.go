@@ -26,7 +26,6 @@ import (
 	"github.com/haqq-network/haqq/x/evm/keeper"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 	"github.com/haqq-network/haqq/x/evm/types"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
@@ -61,7 +60,7 @@ func (suite *EvmTestSuite) DoSetupTest(_ require.TestingT) {
 
 	// mint some coin to fee collector
 	// to pay gas refunds
-	coins := sdk.NewCoins(sdk.NewCoin(evmtypes.DefaultEVMDenom, sdkmath.NewIntFromUint64(math.MaxUint64)))
+	coins := sdk.NewCoins(sdk.NewCoin(types.DefaultEVMDenom, sdkmath.NewIntFromUint64(math.MaxUint64)))
 	balances := []banktypes.Balance{
 		{
 			Address: authtypes.NewModuleAddress(authtypes.FeeCollectorName).String(),

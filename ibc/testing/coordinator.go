@@ -134,6 +134,9 @@ func SendMsgs(chain *ibctesting.TestChain, feeAmt int64, msgs ...sdk.Msg) (*sdk.
 	} else {
 		bondDenom, err = chain.GetSimApp().StakingKeeper.BondDenom(chain.GetContext())
 	}
+	if err != nil {
+		return nil, err
+	}
 
 	fee := sdk.Coins{sdk.NewInt64Coin(bondDenom, feeAmt)}
 	_, r, err := SignAndDeliver(

@@ -356,7 +356,7 @@ contract StakingCaller {
 
                 // Load the function signature and argument data onto the stack
                 let x := mload(0x40) // Find empty storage location using "free memory pointer"
-                mstore(x, sig) // Place function signature at begining of empty storage
+                mstore(x, sig) // Place function signature at beginning of empty storage
                 mstore(add(x, 0x04), _addr) // Place the address (input param) after the function sig
                 mstore(add(x, 0x24), 0x40) // These are needed for
                 mstore(add(x, 0x44), 0x33) // bytes unpacking
@@ -392,7 +392,9 @@ contract StakingCaller {
                     revert(0, 0)
                 }
             }
-            coin = staking.Coin(denom, amt); // NOTE: this is returning a blank denom because unpacking the denom is not straightforward and hasn't been solved, which is okay for this generic test case
+            // NOTE: this is returning a blank denom because unpacking the denom is not
+            // straightforward and hasn't been solved, which is okay for this generic test case.
+            coin = staking.Coin(denom, amt);
         } else {
             revert("invalid calltype");
         }
@@ -400,7 +402,7 @@ contract StakingCaller {
         return (shares, coin);
     }
 
-    /// @dev This function showcased, that there was a bug in the EVM implementation, that occured when
+    /// @dev This function showcased, that there was a bug in the EVM implementation, that occurred when
     /// Cosmos state is modified in the same transaction as state information inside
     /// the EVM.
     /// @param _validatorAddr Address of the validator to delegate to

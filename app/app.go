@@ -43,6 +43,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	sdktestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
@@ -50,6 +51,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/posthandler"
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
@@ -99,6 +101,7 @@ import (
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
 	ibcclient "github.com/cosmos/ibc-go/v8/modules/core/02-client"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
@@ -115,7 +118,6 @@ import (
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 
 	ethante "github.com/haqq-network/haqq/app/ante/evm"
-	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/ethereum/eip712"
 	srvflags "github.com/haqq-network/haqq/server/flags"
 	ethermint "github.com/haqq-network/haqq/types"
@@ -147,6 +149,8 @@ import (
 	"github.com/haqq-network/haqq/x/vesting"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+
+	"github.com/haqq-network/haqq/precompiles/common"
 
 	v180 "github.com/haqq-network/haqq/app/upgrades/v1.8.0"
 
@@ -184,6 +188,12 @@ func init() {
 	stakingtypes.DefaultMinCommissionRate = MinStakingCommissionRate
 }
 
+var (
+	_ servertypes.Application = (*Haqq)(nil)
+	_ ibctesting.TestingApp   = (*Haqq)(nil)
+	_ runtime.AppI            = (*Haqq)(nil)
+)
+
 // Haqq implements an extended ABCI application. It is an application
 // that may process transactions through Ethereum's EVM running atop of
 // CometBFT consensus.
@@ -194,6 +204,7 @@ type Haqq struct {
 	cdc               *codec.LegacyAmino
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
+	txConfig          client.TxConfig
 
 	invCheckPeriod uint
 
@@ -338,13 +349,28 @@ func NewHaqq(
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		authAddr,
 	)
-	// TODO upgrade HAQQ Bank keeper
 	app.BankKeeper = haqqbankkeeper.NewBaseKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
 		app.AccountKeeper, &app.Erc20Keeper, &app.DistrKeeper, app.BlockedAddrs(),
 		authAddr, logger,
 	)
+
+	// optional: enable sign mode textual by overwriting the default tx config (after setting the bank keeper)
+	enabledSignModes := append(authtx.DefaultSignModes, sigtypes.SignMode_SIGN_MODE_TEXTUAL) // nolint: gocritic
+	txConfigOpts := authtx.ConfigOptions{
+		EnabledSignModes:           enabledSignModes,
+		TextualCoinMetadataQueryFn: txmodule.NewBankKeeperCoinMetadataQueryFn(app.BankKeeper),
+	}
+	txConfig, err := authtx.NewTxConfigWithOptions(
+		appCodec,
+		txConfigOpts,
+	)
+	if err != nil {
+		panic(err)
+	}
+	app.txConfig = txConfig
+
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec, runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
 		app.AccountKeeper, app.BankKeeper, authAddr,
@@ -600,7 +626,7 @@ func NewHaqq(
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
-	// there is nothing left over in the validator fee pool, so as to keep the
+	// there is nothing left over in the validator fee pool, to keep the
 	// CanWithdrawInvariant invariant.
 	// NOTE: upgrade module must go first to handle software upgrades.
 	// NOTE: staking module is required if HistoricalEntries param > 0.
@@ -777,7 +803,7 @@ func NewHaqq(
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			logger.Error("error on loading last version", "err", err)
-			tmos.Exit(err.Error())
+			os.Exit(1)
 		}
 
 		// queryMultiStore will be only defined when using versionDB
@@ -855,18 +881,20 @@ func (app *Haqq) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 
 // FinalizeBlock intentionally decomposed method to calculate the transactions per second.
 func (app *Haqq) FinalizeBlock(req *abci.RequestFinalizeBlock) (res *abci.ResponseFinalizeBlock, err error) {
-	defer func() {
-		// TODO: Record the count along with the code and or reason so as to display
-		// in the transactions per second live dashboards.
-		for _, txRes := range res.TxResults {
-			if txRes.IsErr() {
-				app.tpsCounter.incrementFailure()
-			} else {
-				app.tpsCounter.incrementSuccess()
-			}
-		}
-	}()
 	res, err = app.BaseApp.FinalizeBlock(req)
+	if res != nil {
+		defer func() {
+			// TODO: Record the count along with the code and or reason so as to display
+			// in the transactions per second live dashboards.
+			for _, txRes := range res.TxResults {
+				if txRes.IsErr() {
+					app.tpsCounter.incrementFailure()
+				} else {
+					app.tpsCounter.incrementSuccess()
+				}
+			}
+		}()
+	}
 	return
 }
 
@@ -921,6 +949,10 @@ func (app *Haqq) BlockedAddrs() map[string]bool {
 
 	for _, acc := range accs {
 		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
+	}
+
+	for _, precompile := range common.DefaultPrecompilesBech32 {
+		blockedAddrs[precompile] = true
 	}
 
 	return blockedAddrs
@@ -1050,13 +1082,12 @@ func (app *Haqq) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 // GetTxConfig implements the TestingApp interface.
 func (app *Haqq) GetTxConfig() client.TxConfig {
-	cfg := encoding.MakeConfig(ModuleBasics)
-	return cfg.TxConfig
+	return app.txConfig
 }
 
 // AutoCliOpts returns the autocli options for the app.
 func (app *Haqq) AutoCliOpts() autocli.AppOptions {
-	modules := make(map[string]appmodule.AppModule, 0)
+	modules := make(map[string]appmodule.AppModule)
 	for _, m := range app.mm.Modules {
 		if moduleWithName, ok := m.(module.HasName); ok {
 			moduleName := moduleWithName.Name()
@@ -1108,11 +1139,14 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(stakingtypes.ModuleName)
 	paramsKeeper.Subspace(distrtypes.ModuleName)
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
-	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govv1.ParamKeyTable())
+	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govv1.ParamKeyTable()) //nolint: staticcheck
 	paramsKeeper.Subspace(crisistypes.ModuleName)
-	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	paramsKeeper.Subspace(ibcexported.ModuleName)
-	paramsKeeper.Subspace(icahosttypes.SubModuleName)
+	// IBC subspaces
+	keyTable := ibcclienttypes.ParamKeyTable()
+	keyTable.RegisterParamSet(&ibcconnectiontypes.Params{})
+	paramsKeeper.Subspace(ibcexported.ModuleName).WithKeyTable(keyTable)
+	paramsKeeper.Subspace(ibctransfertypes.ModuleName).WithKeyTable(ibctransfertypes.ParamKeyTable())
+	paramsKeeper.Subspace(icahosttypes.SubModuleName).WithKeyTable(icahosttypes.ParamKeyTable())
 	// ethermint subspaces
 	paramsKeeper.Subspace(evmtypes.ModuleName).WithKeyTable(evmtypes.ParamKeyTable()) //nolint: staticcheck
 	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())

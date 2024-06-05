@@ -26,10 +26,21 @@ import (
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/staking"
 	"github.com/haqq-network/haqq/precompiles/testutil"
+	haqqtestutil "github.com/haqq-network/haqq/testutil"
+	cmnfactory "github.com/haqq-network/haqq/testutil/integration/common/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/utils"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+)
+
+// stipend to pay EVM tx fees
+var (
+	accountGasCoverage = sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, math.NewInt(1e16)))
+	gas                = uint64(200_000)
+	gasPrices          = accountGasCoverage.QuoInt(math.NewIntFromUint64(gas)).AmountOf(utils.BaseDenom)
 )
 
 // ApproveAndCheckAuthz is a helper function to approve a given authorization method and check if the authorization was created.
@@ -112,7 +123,7 @@ func CheckAuthorization(gh grpc.Handler, authorizationType stakingtypes.Authoriz
 func (s *PrecompileTestSuite) CreateAuthorization(ctx sdk.Context, granter, grantee sdk.AccAddress, authzType stakingtypes.AuthorizationType, coin *sdk.Coin) error {
 	// Get all available validators and filter out jailed validators
 	validators := make([]sdk.ValAddress, 0)
-	s.network.App.StakingKeeper.IterateValidators(
+	err := s.network.App.StakingKeeper.IterateValidators(
 		ctx, func(_ int64, validator stakingtypes.ValidatorI) (stop bool) {
 			if validator.IsJailed() {
 				return
@@ -121,6 +132,9 @@ func (s *PrecompileTestSuite) CreateAuthorization(ctx sdk.Context, granter, gran
 			return
 		},
 	)
+	if err != nil {
+		return err
+	}
 
 	stakingAuthz, err := stakingtypes.NewStakeAuthorization(validators, nil, authzType, coin)
 	if err != nil {
@@ -389,4 +403,51 @@ func (s *PrecompileTestSuite) CheckValidatorOutput(valOut staking.ValidatorInfo)
 
 	Expect(slices.Contains(validatorAddrs, operatorAddress)).To(BeTrue(), "operator address not found in test suite validators")
 	Expect(valOut.DelegatorShares).To(Equal(big.NewInt(1e18)), "expected different delegator shares")
+}
+
+// setupVestingAccount is a helper function used in integraiton tests to setup a vesting account
+// using the TestVestingSchedule. Also, funds the account with extra funds to pay for transaction fees
+func (s *PrecompileTestSuite) setupVestingAccount(funder, vestAcc testkeyring.Key) *vestingtypes.ClawbackVestingAccount {
+	vestingAmtTotal := haqqtestutil.TestVestingSchedule.TotalVestingCoins
+	ctx := s.network.GetContext()
+
+	// send some funds to the vesting account to pay for fees
+	err := s.factory.FundAccount(funder, vestAcc.AccAddr, accountGasCoverage)
+	Expect(err).To(BeNil())
+	Expect(s.network.NextBlock()).To(BeNil())
+
+	// 1. Create vesting account
+	createAccMsg := vestingtypes.NewMsgCreateClawbackVestingAccount(
+		funder.AccAddr,
+		vestAcc.AccAddr,
+		ctx.BlockTime(),
+		haqqtestutil.TestVestingSchedule.LockupPeriods,
+		haqqtestutil.TestVestingSchedule.VestingPeriods,
+		true,
+	)
+
+	_, err = s.factory.ExecuteCosmosTx(vestAcc.Priv, cmnfactory.CosmosTxArgs{Msgs: []sdk.Msg{createAccMsg}, Gas: &gas, GasPrice: &gasPrices})
+	Expect(err).To(BeNil())
+	Expect(s.network.NextBlock()).To(BeNil())
+
+	acc, err := s.grpcHandler.GetAccount(vestAcc.AccAddr.String())
+	Expect(err).To(BeNil())
+
+	clawbackAccount, ok := acc.(*vestingtypes.ClawbackVestingAccount)
+	Expect(ok).To(BeTrue(), "account should be a ClawbackVestingAccount")
+
+	// Check all coins are locked up
+	lockedUp := clawbackAccount.GetLockedOnly(ctx.BlockTime())
+	Expect(vestingAmtTotal).To(Equal(lockedUp))
+
+	// Grant gas stipend to cover EVM fees
+	err = s.factory.FundAccount(funder, vestAcc.AccAddr, accountGasCoverage)
+	Expect(err).To(BeNil())
+	Expect(s.network.NextBlock()).To(BeNil())
+
+	balRes, err := s.grpcHandler.GetBalance(clawbackAccount.GetAddress(), s.bondDenom)
+	Expect(err).To(BeNil())
+	Expect(*balRes.Balance).To(Equal(accountGasCoverage[0].Add(vestingAmtTotal[0])))
+
+	return clawbackAccount
 }

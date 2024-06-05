@@ -30,7 +30,7 @@ var defaultAllowanceCases = []allowanceTestCase{
 		func() []interface{} {
 			return []interface{}{}
 		},
-		func(data []byte, inputArgs []interface{}) {},
+		func([]byte, []interface{}) {},
 		200000,
 		true,
 		fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 5, 0),
@@ -62,7 +62,7 @@ var defaultAllowanceCases = []allowanceTestCase{
 				big.NewInt(1e18),
 			}
 		},
-		func(data []byte, inputArgs []interface{}) {},
+		func([]byte, []interface{}) {},
 		200000,
 		true,
 		"does not exist",
@@ -82,7 +82,7 @@ var defaultAllowanceCases = []allowanceTestCase{
 				big.NewInt(1e18),
 			}
 		},
-		func(data []byte, inputArgs []interface{}) {
+		func([]byte, []interface{}) {
 		},
 		200000,
 		true,
@@ -103,7 +103,7 @@ var defaultAllowanceCases = []allowanceTestCase{
 				big.NewInt(1e18),
 			}
 		},
-		func(data []byte, inputArgs []interface{}) {
+		func([]byte, []interface{}) {
 		},
 		200000,
 		true,
@@ -127,7 +127,7 @@ func (s *PrecompileTestSuite) TestApprove() {
 			func() []interface{} {
 				return []interface{}{}
 			},
-			func(data []byte, inputArgs []interface{}) {},
+			func([]byte, []interface{}) {},
 			200000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 2, 0),
@@ -147,7 +147,7 @@ func (s *PrecompileTestSuite) TestApprove() {
 					},
 				}
 			},
-			func(data []byte, inputArgs []interface{}) {},
+			func([]byte, []interface{}) {},
 			200000,
 			true,
 			channeltypes.ErrChannelNotFound.Error(),
@@ -334,7 +334,7 @@ func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 					big.NewInt(2e18),
 				}
 			},
-			func(data []byte, inputArgs []interface{}) {},
+			func([]byte, []interface{}) {},
 			200000,
 			true,
 			cmn.ErrIntegerOverflow,
@@ -356,7 +356,7 @@ func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 					big.NewInt(1e18),
 				}
 			},
-			func(data []byte, inputArgs []interface{}) {
+			func([]byte, []interface{}) {
 				transferAuthz := s.GetTransferAuthorization(s.ctx, differentAddress, s.address)
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit[0].Amount, math.NewInt(2e18))
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit[0].Denom, utils.BaseDenom)
@@ -382,7 +382,7 @@ func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 					big.NewInt(1e18),
 				}
 			},
-			func(data []byte, inputArgs []interface{}) {
+			func([]byte, []interface{}) {
 				transferAuthz := s.GetTransferAuthorization(s.ctx, differentAddress, s.address)
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit[1].Amount, math.NewInt(2e18))
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit[1].Denom, "uatom")
@@ -423,7 +423,7 @@ func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 					big.NewInt(1e18),
 				}
 			},
-			func(data []byte, inputArgs []interface{}) {
+			func([]byte, []interface{}) {
 				transferAuthz := s.GetTransferAuthorization(s.ctx, differentAddress, s.address)
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit, atomCoins)
 				s.Require().Equal(transferAuthz.Allocations[1].SpendLimit[0].Amount, math.NewInt(2e18))
@@ -478,7 +478,7 @@ func (s *PrecompileTestSuite) TestDecreaseAllowance() {
 					big.NewInt(2e18),
 				}
 			},
-			func(data []byte, inputArgs []interface{}) {},
+			func([]byte, []interface{}) {},
 			200000,
 			true,
 			cmn.ErrNegativeAmount,

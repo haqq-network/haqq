@@ -17,10 +17,13 @@ import (
 )
 
 func TestInitCmd(t *testing.T) {
+	target := t.TempDir()
+
 	rootCmd, _ := haqqd.NewRootCmd()
 	rootCmd.SetArgs([]string{
 		"init",      // Test the init cmd
 		"haqq-test", // Moniker
+		fmt.Sprintf("--home=%s", target),
 		fmt.Sprintf("--%s=%s", cli.FlagOverwrite, "true"), // Overwrite genesis.json, in case it already exists
 		fmt.Sprintf("--%s=%s", flags.FlagChainID, utils.TestEdge2ChainID+"-3"),
 	})

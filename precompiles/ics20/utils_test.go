@@ -147,7 +147,7 @@ func (s *PrecompileTestSuite) SetupWithGenesisValSet(valSet *cmttypes.ValidatorS
 	genesisState[feemarkettypes.ModuleName] = app.AppCodec().MustMarshalJSON(feeGenesis)
 
 	// init chain will set the validator set and initialize the genesis accounts
-	app.InitChain(
+	_, err = app.InitChain(
 		&abci.RequestInitChain{
 			ChainId:         cmn.DefaultChainID,
 			Validators:      []abci.ValidatorUpdate{},
@@ -155,9 +155,11 @@ func (s *PrecompileTestSuite) SetupWithGenesisValSet(valSet *cmttypes.ValidatorS
 			AppStateBytes:   stateBytes,
 		},
 	)
+	s.Require().NoError(err)
 
 	// commit genesis changes
-	app.Commit()
+	_, err = app.Commit()
+	s.Require().NoError(err)
 
 	// instantiate new header
 	header := haqqtestutil.NewHeader(
@@ -171,7 +173,8 @@ func (s *PrecompileTestSuite) SetupWithGenesisValSet(valSet *cmttypes.ValidatorS
 
 	// create Contexts
 	s.ctx = app.BaseApp.NewContextLegacy(false, header)
-	app.BeginBlocker(s.ctx)
+	_, err = app.BeginBlocker(s.ctx)
+	s.Require().NoError(err)
 	s.app = app
 }
 

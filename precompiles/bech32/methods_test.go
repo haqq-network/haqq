@@ -29,7 +29,7 @@ func (s *PrecompileTestSuite) TestHexToBech32() {
 			func() []interface{} {
 				return []interface{}{}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 2, 0),
 		},
@@ -41,7 +41,7 @@ func (s *PrecompileTestSuite) TestHexToBech32() {
 					"",
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			"invalid hex address",
 		},
@@ -53,7 +53,7 @@ func (s *PrecompileTestSuite) TestHexToBech32() {
 					"",
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			"invalid bech32 human readable prefix (HRP)",
 		},
@@ -115,7 +115,7 @@ func (s *PrecompileTestSuite) TestBech32ToHex() {
 			func() []interface{} {
 				return []interface{}{}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 1, 0),
 		},
@@ -126,7 +126,7 @@ func (s *PrecompileTestSuite) TestBech32ToHex() {
 					"",
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			"invalid bech32 address",
 		},
@@ -137,7 +137,7 @@ func (s *PrecompileTestSuite) TestBech32ToHex() {
 					config.Bech32Prefix,
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			fmt.Sprintf("invalid bech32 address: %s", config.Bech32Prefix),
 		},
@@ -148,7 +148,7 @@ func (s *PrecompileTestSuite) TestBech32ToHex() {
 					config.Bech32Prefix + "1",
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			"decoding bech32 failed",
 		},
@@ -159,7 +159,7 @@ func (s *PrecompileTestSuite) TestBech32ToHex() {
 					sdk.AccAddress(make([]byte, 256)).String(),
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			"address max length is 255",
 		},

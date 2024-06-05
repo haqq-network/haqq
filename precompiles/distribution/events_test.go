@@ -34,7 +34,7 @@ func (s *PrecompileTestSuite) TestSetWithdrawAddressEvent() {
 	}{
 		{
 			"success - the correct event is emitted",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{
 					s.keyring.GetAddr(0),
 					s.keyring.GetAddr(0).String(),
@@ -185,9 +185,11 @@ func (s *PrecompileTestSuite) TestWithdrawValidatorCommissionEvent() {
 				s.Require().NoError(err)
 				valCommission := sdk.DecCoins{sdk.NewDecCoinFromDec(utils.BaseDenom, math.LegacyNewDecFromInt(amt))}
 				// set outstanding rewards
-				s.network.App.DistrKeeper.SetValidatorOutstandingRewards(ctx, valAddr, types.ValidatorOutstandingRewards{Rewards: valCommission})
+				err = s.network.App.DistrKeeper.SetValidatorOutstandingRewards(ctx, valAddr, types.ValidatorOutstandingRewards{Rewards: valCommission})
+				s.Require().NoError(err)
 				// set commission
-				s.network.App.DistrKeeper.SetValidatorAccumulatedCommission(ctx, valAddr, types.ValidatorAccumulatedCommission{Commission: valCommission})
+				err = s.network.App.DistrKeeper.SetValidatorAccumulatedCommission(ctx, valAddr, types.ValidatorAccumulatedCommission{Commission: valCommission})
+				s.Require().NoError(err)
 				// set funds to distr mod to pay for commission
 				coins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, amt))
 				err = s.mintCoinsForDistrMod(ctx, coins)

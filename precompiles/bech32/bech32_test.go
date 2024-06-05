@@ -72,7 +72,7 @@ func (s *PrecompileTestSuite) TestRun() {
 				contract.Input = []byte("invalid")
 				return contract
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			false,
 			"no method with id",
 		},
@@ -83,7 +83,7 @@ func (s *PrecompileTestSuite) TestRun() {
 				contract.Input = s.precompile.Methods[bech32.HexToBech32Method].ID
 				return contract
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			false,
 			"abi: attempting to unmarshall an empty string while arguments are expected",
 		},
@@ -101,7 +101,7 @@ func (s *PrecompileTestSuite) TestRun() {
 				contract.Input = input
 				return contract
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			false,
 			"invalid bech32 human readable prefix (HRP)",
 		},

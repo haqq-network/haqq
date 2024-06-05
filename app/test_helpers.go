@@ -7,8 +7,8 @@ import (
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmtypes "github.com/cometbft/cometbft/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -38,19 +38,19 @@ func init() {
 
 // DefaultConsensusParams defines the default Tendermint consensus params used in
 // Evmos testing.
-var DefaultConsensusParams = &tmproto.ConsensusParams{
-	Block: &tmproto.BlockParams{
+var DefaultConsensusParams = &cmtproto.ConsensusParams{
+	Block: &cmtproto.BlockParams{
 		MaxBytes: 200000,
 		MaxGas:   -1, // no limit
 	},
-	Evidence: &tmproto.EvidenceParams{
+	Evidence: &cmtproto.EvidenceParams{
 		MaxAgeNumBlocks: 302400,
 		MaxAgeDuration:  504 * time.Hour, // 3 weeks is the max duration
 		MaxBytes:        10000,
 	},
-	Validator: &tmproto.ValidatorParams{
+	Validator: &cmtproto.ValidatorParams{
 		PubKeyTypes: []string{
-			tmtypes.ABCIPubKeyTypeEd25519,
+			cmttypes.ABCIPubKeyTypeEd25519,
 		},
 	},
 }
@@ -65,8 +65,8 @@ func Setup(
 	pubKey, _ := privVal.GetPubKey()
 
 	// create validator set with single validator
-	validator := tmtypes.NewValidator(pubKey, 1)
-	valSet := tmtypes.NewValidatorSet([]*tmtypes.Validator{validator})
+	validator := cmttypes.NewValidator(pubKey, 1)
+	valSet := cmttypes.NewValidatorSet([]*cmttypes.Validator{validator})
 
 	// generate genesis account
 	senderPrivKey := secp256k1.GenPrivKey()
@@ -84,8 +84,8 @@ func Setup(
 	db := dbm.NewMemDB()
 	app := NewHaqq(
 		log.NewNopLogger(),
-		db, nil, true,
-		map[int64]bool{}, DefaultNodeHome, 5,
+		db, nil, true, map[int64]bool{},
+		DefaultNodeHome, 5,
 		encoding.MakeConfig(ModuleBasics),
 		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
 		baseapp.SetChainID(chainID),
@@ -126,7 +126,7 @@ func Setup(
 }
 
 func GenesisStateWithValSet(app *Haqq, genesisState types.GenesisState,
-	valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount,
+	valSet *cmttypes.ValidatorSet, genAccs []authtypes.GenesisAccount,
 	balances ...banktypes.Balance,
 ) types.GenesisState {
 	// set genesis accounts
@@ -188,14 +188,18 @@ func GenesisStateWithValSet(app *Haqq, genesisState types.GenesisState,
 }
 
 // SetupTestingApp initializes the IBC-go testing application
+// need to keep this design to comply with the ibctesting SetupTestingApp func
+// and be able to set the chainID for the tests properly
 func SetupTestingApp(chainID string) func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		db := dbm.NewMemDB()
 		cfg := encoding.MakeConfig(ModuleBasics)
 		app := NewHaqq(
-			log.NewNopLogger(), db, nil, true,
-			map[int64]bool{}, DefaultNodeHome, 5,
-			cfg, simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
+			log.NewNopLogger(),
+			db, nil, true,
+			map[int64]bool{},
+			DefaultNodeHome, 5, cfg,
+			simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
 			baseapp.SetChainID(chainID),
 		)
 		return app, NewDefaultGenesisState()

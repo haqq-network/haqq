@@ -228,7 +228,7 @@ func (app *Haqq) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []st
 		addr := sdk.ValAddress(iter.Key()[1:])
 		validator, err := app.StakingKeeper.GetValidator(ctx, addr)
 		if err != nil {
-			return fmt.Errorf("expected validator %s not found", addr)
+			return fmt.Errorf("expected validator %s not found; error: %s", addr, err)
 		}
 
 		validator.UnbondingHeight = 0

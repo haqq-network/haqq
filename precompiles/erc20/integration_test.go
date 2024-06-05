@@ -213,7 +213,7 @@ var _ = Describe("ERC20 Extension -", func() {
 				res, ethRes, err := is.factory.CallContractAndCheckLogs(sender.Priv, txArgs, transferArgs, transferCheck)
 				Expect(err).ToNot(HaveOccurred(), "unexpected result calling contract")
 
-				is.network.NextBlock()
+				err = is.network.NextBlock()
 				Expect(err).ToNot(HaveOccurred(), "error on NextBlock call")
 
 				is.ExpectTrueToBeReturned(ethRes, erc20.TransferMethod)
@@ -253,7 +253,7 @@ var _ = Describe("ERC20 Extension -", func() {
 				_, ethRes, err := is.factory.CallContractAndCheckLogs(sender.Priv, txArgs, transferArgs, transferCheck)
 				Expect(err).ToNot(HaveOccurred(), "unexpected result calling contract")
 
-				is.network.NextBlock()
+				err = is.network.NextBlock()
 				Expect(err).ToNot(HaveOccurred(), "error on NextBlock call")
 
 				is.ExpectTrueToBeReturned(ethRes, erc20.TransferMethod)

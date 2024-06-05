@@ -51,7 +51,7 @@ func (k Keeper) OnRecvPacket(
 	}
 
 	// Get addresses in `haqq1` and the original bech32 format
-	sender, recipient, _, _, err := ibc.GetTransferSenderRecipient(packet)
+	sender, recipient, _, _, err := ibc.GetTransferSenderRecipient(data)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
@@ -131,7 +131,7 @@ func (k Keeper) OnRecvPacket(
 	return ack
 }
 
-// OnAcknowledgementPacket responds to the the success or failure of a packet
+// OnAcknowledgementPacket responds to the success or failure of a packet
 // acknowledgement written on the receiving chain. If the acknowledgement was a
 // success then nothing occurs. If the acknowledgement failed, then the sender
 // is refunded and then the IBC Coins are converted to ERC20.

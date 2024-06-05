@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	sdkmath "cosmossdk.io/math"
-	storetypes "cosmossdk.io/store/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,6 +24,7 @@ import (
 	ethparams "github.com/ethereum/go-ethereum/params"
 
 	haqqtypes "github.com/haqq-network/haqq/types"
+	evmante "github.com/haqq-network/haqq/x/evm/ante"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 	"github.com/haqq-network/haqq/x/evm/types"
 )
@@ -110,15 +110,12 @@ func (k Keeper) ValidatorAccount(c context.Context, req *types.QueryValidatorAcc
 
 	valAddr := validator.GetOperator()
 	addrBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(valAddr)
-
-	accValAddr := sdk.AccAddress(addrBz).String()
-
 	if err != nil {
 		return nil, fmt.Errorf("error while getting validator %s. %w", consAddr.String(), err)
 	}
 
 	res := types.QueryValidatorAccountResponse{
-		AccountAddress: accValAddr,
+		AccountAddress: sdk.AccAddress(addrBz).String(),
 	}
 
 	account := k.accountKeeper.GetAccount(ctx, addrBz)
@@ -375,9 +372,7 @@ func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest
 			}
 			// resetting the gasMeter after increasing the sequence to have an accurate gas estimation on EVM extensions transactions
 			gasMeter := haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas())
-			tmpCtx = tmpCtx.WithGasMeter(gasMeter).
-				WithKVGasConfig(storetypes.GasConfig{}).
-				WithTransientKVGasConfig(storetypes.GasConfig{})
+			tmpCtx = evmante.BuildEvmExecutionCtx(tmpCtx).WithGasMeter(gasMeter)
 		}
 		// pass false to not commit StateDB
 		rsp, err = k.ApplyMessageWithConfig(tmpCtx, msg, nil, false, cfg, txConfig)
@@ -478,7 +473,7 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 		txConfig.TxHash = ethTx.Hash()
 		txConfig.TxIndex = uint(i)
 		// reset gas meter for each transaction
-		ctx = ctx.WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
+		ctx = evmante.BuildEvmExecutionCtx(ctx).WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
 		rsp, err := k.ApplyMessageWithConfig(ctx, msg, types.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
 			continue
@@ -663,9 +658,8 @@ func (k *Keeper) traceTx(
 		}
 	}()
 
-	// reset gas meter for tx
-	// to be consistent with tx execution gas meter
-	ctx = ctx.WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
+	// Build EVM execution context
+	ctx = evmante.BuildEvmExecutionCtx(ctx).WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
 	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())

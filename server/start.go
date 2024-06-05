@@ -442,10 +442,7 @@ func startInProcess(svrCtx *server.Context, clientCtx client.Context, opts Start
 		defer grpcSrv.GracefulStop()
 	}
 
-	apiSrv, err := startAPIServer(ctx, svrCtx, clientCtx, g, config.Config, app, grpcSrv, metrics)
-	if err != nil {
-		return err
-	}
+	apiSrv := startAPIServer(ctx, svrCtx, clientCtx, g, config.Config, app, grpcSrv, metrics)
 	if apiSrv != nil {
 		defer apiSrv.Close()
 	}
@@ -584,9 +581,9 @@ func startAPIServer(
 	app types.Application,
 	grpcSrv *grpc.Server,
 	metrics *telemetry.Metrics,
-) (*api.Server, error) {
+) *api.Server {
 	if !svrCfg.API.Enable {
-		return nil, nil
+		return nil
 	}
 
 	apiSrv := api.New(clientCtx, svrCtx.Logger.With("server", "api"), grpcSrv)
@@ -599,7 +596,7 @@ func startAPIServer(
 	g.Go(func() error {
 		return apiSrv.Start(ctx, svrCfg)
 	})
-	return apiSrv, nil
+	return apiSrv
 }
 
 func startJSONRPCServer(
@@ -674,6 +671,7 @@ func startRosettaServer(
 		return err
 	}
 
+	// nolint: gocritic
 	g.Go(func() error {
 		return rosettaSrv.Start()
 	})

@@ -107,7 +107,7 @@ func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs 
 	require.NoError(t, err)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height:             app.LastBlockHeight(),
+		Height:             app.LastBlockHeight() + 1,
 		NextValidatorsHash: valSet.Hash(),
 	})
 	require.NoError(t, err)

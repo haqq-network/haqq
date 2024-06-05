@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
@@ -29,6 +30,7 @@ type Config struct {
 	otherCoinDenom     []string
 	operatorsAddrs     []sdktypes.AccAddress
 	customBaseAppOpts  []func(*baseapp.BaseApp)
+	startDate          time.Time
 }
 
 type CustomGenesisState map[string]interface{}
@@ -40,12 +42,13 @@ func DefaultConfig() Config {
 		chainID:            utils.MainNetChainID + "-1",
 		eip155ChainID:      big.NewInt(11235),
 		amountOfValidators: 3,
-		// No funded accounts besides the validators by default
+		// Only one account besides the validators
 		preFundedAccounts: []sdktypes.AccAddress{account},
 		// NOTE: Per default, the balances are left empty, and the pre-funded accounts are used.
 		balances:           nil,
 		denom:              utils.BaseDenom,
 		customGenesisState: nil,
+		startDate:          time.Now().UTC(),
 	}
 }
 
@@ -148,5 +151,12 @@ func WithValidatorOperators(keys []sdktypes.AccAddress) ConfigOption {
 func WithCustomBaseAppOpts(opts ...func(*baseapp.BaseApp)) ConfigOption {
 	return func(cfg *Config) {
 		cfg.customBaseAppOpts = opts
+	}
+}
+
+// WithStartDate sets custom start date for the network.
+func WithStartDate(start time.Time) ConfigOption {
+	return func(cfg *Config) {
+		cfg.startDate = start
 	}
 }

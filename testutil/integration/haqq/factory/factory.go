@@ -31,6 +31,8 @@ type TxFactory interface {
 	GenerateDefaultTxTypeArgs(sender common.Address, txType int) (evmtypes.EvmTxArgs, error)
 	// GenerateSignedEthTx generates an Ethereum tx with the provided private key and txArgs but does not broadcast it.
 	GenerateSignedEthTx(privKey cryptotypes.PrivKey, txArgs evmtypes.EvmTxArgs) (signing.Tx, error)
+	// GenerateSignedMsgEthereumTx generates an MsgEthereumTx signed with the provided private key and txArgs.
+	GenerateSignedMsgEthereumTx(privKey cryptotypes.PrivKey, txArgs evmtypes.EvmTxArgs) (evmtypes.MsgEthereumTx, error)
 
 	// SignMsgEthereumTx signs a MsgEthereumTx with the provided private key.
 	SignMsgEthereumTx(privKey cryptotypes.PrivKey, msgEthereumTx evmtypes.MsgEthereumTx) (evmtypes.MsgEthereumTx, error)
@@ -80,8 +82,9 @@ func New(
 	grpcHandler grpc.Handler,
 ) TxFactory {
 	ec := makeConfig(app.ModuleBasics)
+	cf := commonfactory.New(network, grpcHandler, &ec)
 	return &IntegrationTxFactory{
-		CoreTxFactory: commonfactory.New(network, grpcHandler, &ec),
+		CoreTxFactory: cf,
 		grpcHandler:   grpcHandler,
 		network:       network,
 		ec:            &ec,
@@ -109,9 +112,9 @@ func (tf *IntegrationTxFactory) GetEvmTransactionResponseFromTxResult(
 	return &evmRes, nil
 }
 
-// populateEvmTxArgs populates the missing fields in the provided EvmTxArgs with default values.
+// populateEvmTxArgsWithDefault populates the missing fields in the provided EvmTxArgs with default values.
 // If no GasLimit is present it will estimate the gas needed for the transaction.
-func (tf *IntegrationTxFactory) populateEvmTxArgs(
+func (tf *IntegrationTxFactory) populateEvmTxArgsWithDefault(
 	fromAddr common.Address,
 	txArgs evmtypes.EvmTxArgs,
 ) (evmtypes.EvmTxArgs, error) {

@@ -54,15 +54,6 @@ func (s *PrecompileTestSuite) mintAndSendXMPLCoin(ctx sdk.Context, addr sdk.AccA
 	return ctx
 }
 
-// mintAndSendXMPLCoin is a helper function to mint and send a coin to a given address.
-func (is *IntegrationTestSuite) mintAndSendXMPLCoin(addr sdk.AccAddress, amount math.Int) {
-	coins := sdk.NewCoins(sdk.NewCoin(is.tokenDenom, amount))
-	err := is.network.App.BankKeeper.MintCoins(is.network.GetContext(), coinomicstypes.ModuleName, coins)
-	Expect(err).ToNot(HaveOccurred())
-	err = is.network.App.BankKeeper.SendCoinsFromModuleToAccount(is.network.GetContext(), coinomicstypes.ModuleName, addr, coins)
-	Expect(err).ToNot(HaveOccurred())
-}
-
 // callType constants to differentiate between direct calls and calls through a contract.
 const (
 	directCall = iota + 1
@@ -139,9 +130,9 @@ var xmplMetadata = banktypes.Metadata{
 	Display: fmt.Sprintf("w%s", xmplDenom),
 }
 
-// EVMOS Token metadata to use on tests
+// ISLM Token metadata to use on tests
 var evmosMetadata = banktypes.Metadata{
-	Description: "The native token of Evmos",
+	Description: "The native token of Haqq Network",
 	Base:        utils.BaseDenom,
 	DenomUnits: []*banktypes.DenomUnit{
 		{
@@ -150,18 +141,18 @@ var evmosMetadata = banktypes.Metadata{
 			Aliases:  []string{utils.BaseDenom},
 		},
 		{
-			Denom:    "wevmos",
+			Denom:    "wISLM",
 			Exponent: 18,
 		},
 	},
-	Name:    "Wrapped Evmos",
-	Symbol:  "WEVMOS",
-	Display: "wevmos",
+	Name:    "Wrapped ISLM",
+	Symbol:  "WISLM",
+	Display: "wISLM",
 }
 
 var (
 	// defaultERC20Storage are the storage keys and values that are shared across the
-	// WEVMOS and XMPL erc20 contracts on genesis
+	// WISLM and XMPL erc20 contracts on genesis
 	defaultERC20Storage = []evmtypes.State{
 		{
 			Key:   "0x0000000000000000000000000000000000000000000000000000000000000007",

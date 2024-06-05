@@ -71,16 +71,16 @@ func (suite *GenesisTestSuite) TestERC20InitGenesis() {
 		genesisState types.GenesisState
 	}{
 		{
-			"empty genesis",
-			types.GenesisState{},
+			name:         "empty genesis",
+			genesisState: types.GenesisState{},
 		},
 		{
-			"default genesis",
-			*types.DefaultGenesisState(),
+			name:         "default genesis",
+			genesisState: *types.DefaultGenesisState(),
 		},
 		{
-			"custom genesis",
-			types.NewGenesisState(
+			name: "custom genesis",
+			genesisState: types.NewGenesisState(
 				types.DefaultParams(),
 				[]types.TokenPair{
 					{
@@ -89,15 +89,16 @@ func (suite *GenesisTestSuite) TestERC20InitGenesis() {
 						Enabled:       true,
 						ContractOwner: types.OWNER_MODULE,
 					},
-				}),
+				},
+			),
 		},
 	}
 
 	for _, tc := range testCases {
-
 		suite.Require().NotPanics(func() {
 			erc20.InitGenesis(suite.ctx, suite.app.Erc20Keeper, suite.app.AccountKeeper, tc.genesisState)
 		})
+
 		params := suite.app.Erc20Keeper.GetParams(suite.ctx)
 
 		tokenPairs := suite.app.Erc20Keeper.GetTokenPairs(suite.ctx)
@@ -116,16 +117,16 @@ func (suite *GenesisTestSuite) TestErc20ExportGenesis() {
 		genesisState types.GenesisState
 	}{
 		{
-			"empty genesis",
-			types.GenesisState{},
+			name:         "empty genesis",
+			genesisState: types.GenesisState{},
 		},
 		{
-			"default genesis",
-			*types.DefaultGenesisState(),
+			name:         "default genesis",
+			genesisState: *types.DefaultGenesisState(),
 		},
 		{
-			"custom genesis",
-			types.NewGenesisState(
+			name: "custom genesis",
+			genesisState: types.NewGenesisState(
 				types.DefaultParams(),
 				[]types.TokenPair{
 					{
@@ -134,7 +135,8 @@ func (suite *GenesisTestSuite) TestErc20ExportGenesis() {
 						Enabled:       true,
 						ContractOwner: types.OWNER_MODULE,
 					},
-				}),
+				},
+			),
 		},
 	}
 
@@ -152,6 +154,5 @@ func (suite *GenesisTestSuite) TestErc20ExportGenesis() {
 				suite.Require().Len(genesisExported.TokenPairs, 0)
 			}
 		})
-		// }
 	}
 }

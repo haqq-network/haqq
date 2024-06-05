@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (suite *KeeperTestSuite) TestSetGetPrevBlockTs() {
+func (s *KeeperTestSuite) TestSetGetPrevBlockTs() {
 	expEra := math.NewInt(100)
 
 	testCases := []struct {
@@ -23,28 +23,28 @@ func (suite *KeeperTestSuite) TestSetGetPrevBlockTs() {
 		{
 			"prevblockts set",
 			func() {
-				suite.app.CoinomicsKeeper.SetPrevBlockTS(suite.ctx, expEra)
+				s.network.App.CoinomicsKeeper.SetPrevBlockTS(s.network.GetContext(), expEra)
 			},
 			true,
 		},
 	}
 	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
+		s.Run(fmt.Sprintf("Case %s", tc.name), func() {
+			s.SetupTest() // reset
 
 			tc.malleate()
 
-			prevBlockTS := suite.app.CoinomicsKeeper.GetPrevBlockTS(suite.ctx)
+			prevBlockTS := s.network.App.CoinomicsKeeper.GetPrevBlockTS(s.network.GetContext())
 			if tc.ok {
-				suite.Require().Equal(expEra, prevBlockTS, tc.name)
+				s.Require().Equal(expEra.String(), prevBlockTS.String(), tc.name)
 			} else {
-				suite.Require().Equal(math.ZeroInt(), prevBlockTS, tc.name)
+				s.Require().Equal(s.network.GetContext().BlockTime().UnixMilli(), prevBlockTS.Int64(), tc.name)
 			}
 		})
 	}
 }
 
-func (suite *KeeperTestSuite) TestSetGetMaxSupply() {
+func (s *KeeperTestSuite) TestSetGetMaxSupply() {
 	defaultMaxSupply := sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(100_000_000_000, 18)}
 	expMaxSupply := sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(1337, 18)}
 
@@ -61,23 +61,23 @@ func (suite *KeeperTestSuite) TestSetGetMaxSupply() {
 		{
 			"MaxSupply set",
 			func() {
-				suite.app.CoinomicsKeeper.SetMaxSupply(suite.ctx, expMaxSupply)
+				s.network.App.CoinomicsKeeper.SetMaxSupply(s.network.GetContext(), expMaxSupply)
 			},
 			true,
 		},
 	}
 	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
+		s.Run(fmt.Sprintf("Case %s", tc.name), func() {
+			s.SetupTest() // reset
 
 			tc.malleate()
 
-			maxSupply := suite.app.CoinomicsKeeper.GetMaxSupply(suite.ctx)
+			maxSupply := s.network.App.CoinomicsKeeper.GetMaxSupply(s.network.GetContext())
 
 			if tc.ok {
-				suite.Require().Equal(expMaxSupply, maxSupply, tc.name)
+				s.Require().Equal(expMaxSupply, maxSupply, tc.name)
 			} else {
-				suite.Require().Equal(defaultMaxSupply, maxSupply, tc.name)
+				s.Require().Equal(defaultMaxSupply, maxSupply, tc.name)
 			}
 		})
 	}

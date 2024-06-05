@@ -7,8 +7,8 @@ import (
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmtypes "github.com/cometbft/cometbft/types"
+	cmttypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -29,19 +29,19 @@ import (
 
 // EthDefaultConsensusParams defines the default Tendermint consensus params used in
 // HaqqApp testing.
-var EthDefaultConsensusParams = &tmproto.ConsensusParams{
-	Block: &tmproto.BlockParams{
+var EthDefaultConsensusParams = &cmttypes.ConsensusParams{
+	Block: &cmttypes.BlockParams{
 		MaxBytes: 200000,
 		MaxGas:   -1, // no limit
 	},
-	Evidence: &tmproto.EvidenceParams{
+	Evidence: &cmttypes.EvidenceParams{
 		MaxAgeNumBlocks: 302400,
 		MaxAgeDuration:  504 * time.Hour, // 3 weeks is the max duration
 		MaxBytes:        10000,
 	},
-	Validator: &tmproto.ValidatorParams{
+	Validator: &cmttypes.ValidatorParams{
 		PubKeyTypes: []string{
-			tmtypes.ABCIPubKeyTypeEd25519,
+			cmtypes.ABCIPubKeyTypeEd25519,
 		},
 	},
 }
@@ -101,8 +101,8 @@ func NewTestGenesisState(codec codec.Codec) types.GenesisState {
 		panic(err)
 	}
 	// create validator set with single validator
-	validator := tmtypes.NewValidator(pubKey, 1)
-	valSet := tmtypes.NewValidatorSet([]*tmtypes.Validator{validator})
+	validator := cmtypes.NewValidator(pubKey, 1)
+	valSet := cmtypes.NewValidatorSet([]*cmtypes.Validator{validator})
 
 	// generate genesis account
 	senderPrivKey := secp256k1.GenPrivKey()
@@ -117,7 +117,7 @@ func NewTestGenesisState(codec codec.Codec) types.GenesisState {
 }
 
 func genesisStateWithValSet(codec codec.Codec, genesisState types.GenesisState,
-	valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount,
+	valSet *cmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount,
 	balances ...banktypes.Balance,
 ) types.GenesisState {
 	// set genesis accounts
@@ -152,7 +152,7 @@ func genesisStateWithValSet(codec codec.Codec, genesisState types.GenesisState,
 			MinSelfDelegation: math.ZeroInt(),
 		}
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), val.Address.String(), math.LegacyOneDec()))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), sdk.ValAddress(val.Address).String(), math.LegacyOneDec()))
 	}
 	// set validators and delegations
 	stakingGenesis := stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)

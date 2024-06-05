@@ -7,7 +7,7 @@ import (
 
 	cmtconfig "github.com/cometbft/cometbft/config"
 	sm "github.com/cometbft/cometbft/state"
-	tmstore "github.com/cometbft/cometbft/store"
+	cmtstore "github.com/cometbft/cometbft/store"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
 
@@ -49,11 +49,11 @@ func NewIndexTxCmd() *cobra.Command {
 			idxer := indexer.NewKVIndexer(idxDB, logger.With("module", "evmindex"), clientCtx)
 
 			// open local tendermint db, because the local rpc won't be available.
-			tmdb, err := cmtconfig.DefaultDBProvider(&cmtconfig.DBContext{ID: "blockstore", Config: cfg})
+			cmtdb, err := cmtconfig.DefaultDBProvider(&cmtconfig.DBContext{ID: "blockstore", Config: cfg})
 			if err != nil {
 				return err
 			}
-			blockStore := tmstore.NewBlockStore(tmdb)
+			blockStore := cmtstore.NewBlockStore(cmtdb)
 
 			stateDB, err := cmtconfig.DefaultDBProvider(&cmtconfig.DBContext{ID: "state", Config: cfg})
 			if err != nil {

@@ -1,19 +1,22 @@
 package keeper_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/testutil"
 )
 
-func setupCoinomicsParams(s *KeeperTestSuite, rewardCoefficient math.LegacyDec) {
-	coinomicsParams := s.app.CoinomicsKeeper.GetParams(s.ctx)
+func setupCoinomicsParams(it *IntegrationTestSuite, rewardCoefficient math.LegacyDec) {
+	coinomicsParams := it.network.App.CoinomicsKeeper.GetParams(it.network.GetContext())
 	coinomicsParams.RewardCoefficient = rewardCoefficient
-	s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
+	it.network.App.CoinomicsKeeper.SetParams(it.network.GetContext(), coinomicsParams)
 }
 
 func isLeapYear(ctx sdk.Context) bool {
@@ -23,285 +26,284 @@ func isLeapYear(ctx sdk.Context) bool {
 
 var _ = Describe("Coinomics", Ordered, func() {
 	BeforeEach(func() {
-		s.SetupTest()
+		it.SetupTest()
 
 		// set coinomics params
 		rewardCoefficient := math.LegacyNewDecWithPrec(78, 1) // 7.8%
-		setupCoinomicsParams(s, rewardCoefficient)
+		setupCoinomicsParams(it, rewardCoefficient)
 
 		// set distribution module params
-		distributionParams, err := s.app.DistrKeeper.Params.Get(s.ctx)
-		s.Require().NoError(err)
+		distributionParams, err := it.network.App.DistrKeeper.Params.Get(it.network.GetContext())
+		Expect(err).To(BeNil())
 		distributionParams.CommunityTax = math.LegacyNewDecWithPrec(10, 2)
 		distributionParams.BaseProposerReward = math.LegacyNewDecWithPrec(1, 2)
 		distributionParams.BonusProposerReward = math.LegacyNewDecWithPrec(4, 2)
 		distributionParams.WithdrawAddrEnabled = true
-
-		err = s.app.DistrKeeper.Params.Set(s.ctx, distributionParams)
-		s.Require().NoError(err)
+		err = it.network.App.DistrKeeper.Params.Set(it.network.GetContext(), distributionParams)
+		Expect(err).To(BeNil())
 	})
 
 	Describe("Check coinomics on regular year", func() {
 		Context("with coinomics disabled", func() {
 			BeforeEach(func() {
-				params := s.app.CoinomicsKeeper.GetParams(s.ctx)
+				params := it.network.App.CoinomicsKeeper.GetParams(it.network.GetContext())
 				params.EnableCoinomics = false
-
-				s.app.CoinomicsKeeper.SetParams(s.ctx, params)
+				it.network.App.CoinomicsKeeper.SetParams(it.network.GetContext(), params)
 			})
 
 			It("should not mint coins when coinomics is disabled", func() {
-				currentSupply := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				currentBlock := s.ctx.BlockHeight()
+				params := it.network.App.CoinomicsKeeper.GetParams(it.network.GetContext())
+				Expect(params.EnableCoinomics).To(Equal(false))
 
-				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
+				err := it.CommitNumBlocks(1)
+				Expect(err).To(BeNil())
 
-				Expect(startExpectedSupply.Amount).To(Equal(currentSupply.Amount))
+				params2 := it.network.App.CoinomicsKeeper.GetParams(it.network.GetContext())
+				Expect(params2.EnableCoinomics).To(Equal(false))
 
-				s.Commit(100)
+				startSupply := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				currentBlock := it.network.GetContext().BlockHeight()
 
-				currentBlockAfterCommins := s.ctx.BlockHeight()
+				err = it.CommitNumBlocks(100)
+				Expect(err).To(BeNil())
 
-				Expect(currentBlock + 100).To(Equal(currentBlockAfterCommins))
+				currentBlockAfterCommits := it.network.GetContext().BlockHeight()
+				Expect(currentBlock + 100).To(Equal(currentBlockAfterCommits))
 
-				currentSupply = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-
-				Expect(startExpectedSupply.Amount).To(Equal(currentSupply.Amount))
+				currentSupply := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				Expect(startSupply.Amount.String()).To(Equal(currentSupply.Amount.String()))
 			})
 		})
 
 		Context("with coinomics enabled", func() {
 			BeforeEach(func() {
-				params := s.app.CoinomicsKeeper.GetParams(s.ctx)
+				params := it.network.App.CoinomicsKeeper.GetParams(it.network.GetContext())
 				params.EnableCoinomics = true
-
-				s.app.CoinomicsKeeper.SetParams(s.ctx, params)
+				it.network.App.CoinomicsKeeper.SetParams(it.network.GetContext(), params)
 			})
 
 			It("check mint calculations on regular year", func() {
-				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
-
+				totalSupplyOnStart := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				startExpectedSupply := sdk.NewCoin(it.denom, math.NewIntWithDecimal(20_000_000_000, 18))
 				Expect(startExpectedSupply.Amount).To(Equal(totalSupplyOnStart.Amount))
 
 				accKey, err := ethsecp256k1.GenerateKey()
-				s.Require().NoError(err)
+				Expect(err).To(BeNil())
 				addr := sdk.AccAddress(accKey.PubKey().Address())
 
 				fundAmount := sdk.TokensFromConsensusPower(100_000_000, sdk.DefaultPowerReduction)
+				err = testutil.FundAccount(it.network.GetContext(), it.network.App.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(it.denom, fundAmount)))
+				Expect(err).To(BeNil())
 
-				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(denomMint, fundAmount)))
-				s.Require().NoError(err)
-
-				totalSupplyAfterFund := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_100_000_000, 18))
-
+				totalSupplyAfterFund := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				expectedSupply := sdk.NewCoin(it.denom, math.NewIntWithDecimal(20_100_000_000, 18))
 				Expect(totalSupplyAfterFund.Amount).To(Equal(expectedSupply.Amount))
 
-				s.Commit(1)
+				err = it.CommitNumBlocks(1)
+				Expect(err).To(BeNil())
 
-				isLeapYear := isLeapYear(s.ctx)
+				isLeapYear := isLeapYear(it.network.GetContext())
 				Expect(isLeapYear).To(Equal(false))
 
 				// delegation
 				delAmount := sdk.TokensFromConsensusPower(10_000_000, sdk.DefaultPowerReduction)
-				delCoin := sdk.NewCoin(denomMint, delAmount)
+				delCoin := sdk.NewCoin(it.denom, delAmount)
+				_, err = testutil.Delegate(it.network.GetContext(), it.network.App, accKey, delCoin, it.network.GetValidators()[0])
+				Expect(err).To(BeNil())
 
-				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
-				s.Require().NoError(err)
+				totalBonded, err := it.network.App.StakingKeeper.TotalBondedTokens(it.network.GetContext())
+				Expect(err).To(BeNil())
 
-				totalBonded, err := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
-				s.Require().NoError(err)
-				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(10_000_001, 18))
+				expectedTotalBonded := sdk.NewCoin(it.denom, math.NewIntWithDecimal(10_000_001, 18))
 				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
-
-				totalSupplyBeforeMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				heightBeforeMint := s.ctx.BlockHeight()
-				PrevTSBeforeMint := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+				totalSupplyBeforeMint10Blocks := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				heightBeforeMint := it.network.GetContext().BlockHeight()
+				PrevTSBeforeMint := it.network.App.CoinomicsKeeper.GetPrevBlockTS(it.network.GetContext())
 
 				// mint blocks
-				s.Commit(10)
+				err = it.CommitNumBlocks(10)
+				Expect(err).To(BeNil())
 
-				PrevTSAfter10Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+				PrevTSAfter10Blocks := it.network.App.CoinomicsKeeper.GetPrevBlockTS(it.network.GetContext())
 
 				// check commit height is changed and prev block ts is changed
-				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 10))
+				Expect(it.network.GetContext().BlockHeight()).To(Equal(heightBeforeMint + 10))
 				Expect(PrevTSAfter10Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(10 * 6 * 1000))))
 
 				// check mint amount with 7.8% coefficient
-				totalSupplyAfterMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				totalSupplyAfterMint10Blocks := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
 				diff7_8Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
 				Expect(diff7_8Coefficient10blocks.Amount).To(Equal(math.NewInt(1484018413245226480)))
 
 				// change params
 				rewardCoefficient := math.LegacyNewDecWithPrec(10, 1) // 10%
-				setupCoinomicsParams(s, rewardCoefficient)
+				setupCoinomicsParams(it, rewardCoefficient)
 
-				totalSupplyBeforeMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				totalSupplyBeforeMint10Blocks = it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
 
 				// mint blocks
-				s.Commit(10)
+				err = it.CommitNumBlocks(10)
+				Expect(err).To(BeNil())
 
-				PrevTSAfter20Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+				PrevTSAfter20Blocks := it.network.App.CoinomicsKeeper.GetPrevBlockTS(it.network.GetContext())
 
 				// check commit height is changed and prev block ts is changed
-				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 20))
+				Expect(it.network.GetContext().BlockHeight()).To(Equal(heightBeforeMint + 20))
 				Expect(PrevTSAfter20Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(20 * 6 * 1000))))
 
 				// check mint amount with 10.0% coefficient
-				totalSupplyAfterMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				totalSupplyAfterMint10Blocks = it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
 				diff10_0Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
 				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(math.NewInt(190258770928875190)))
 			})
 
 			It("check mint calculations for leap year", func() {
-				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
-
+				totalSupplyOnStart := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				startExpectedSupply := sdk.NewCoin(it.denom, math.NewIntWithDecimal(20_000_000_000, 18))
 				Expect(startExpectedSupply.Amount).To(Equal(totalSupplyOnStart.Amount))
 
 				accKey, err := ethsecp256k1.GenerateKey()
-				s.Require().NoError(err)
+				Expect(err).To(BeNil())
 				addr := sdk.AccAddress(accKey.PubKey().Address())
 
 				fundAmount := sdk.TokensFromConsensusPower(100_000_000, sdk.DefaultPowerReduction)
+				err = testutil.FundAccount(it.network.GetContext(), it.network.App.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(it.denom, fundAmount)))
+				Expect(err).To(BeNil())
 
-				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(denomMint, fundAmount)))
-				s.Require().NoError(err)
-
-				totalSupplyAfterFund := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_100_000_000, 18))
-
+				totalSupplyAfterFund := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				expectedSupply := sdk.NewCoin(it.denom, math.NewIntWithDecimal(20_100_000_000, 18))
 				Expect(totalSupplyAfterFund.Amount).To(Equal(expectedSupply.Amount))
 
-				s.CommitLeapYear()
+				leapYaerDate := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+				dateDiff := leapYaerDate.Sub(it.network.GetContext().BlockTime())
+				err = it.network.NextBlockAfter(dateDiff)
+				Expect(err).To(BeNil())
 
-				isLeapYear := isLeapYear(s.ctx)
+				isLeapYear := isLeapYear(it.network.GetContext())
 				Expect(isLeapYear).To(Equal(true))
 
 				// delegation
 				delAmount := sdk.TokensFromConsensusPower(10_000_000, sdk.DefaultPowerReduction)
-				delCoin := sdk.NewCoin(denomMint, delAmount)
+				delCoin := sdk.NewCoin(it.denom, delAmount)
+				_, err = testutil.Delegate(it.network.GetContext(), it.network.App, accKey, delCoin, it.network.GetValidators()[0])
+				Expect(err).To(BeNil())
 
-				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
-				s.Require().NoError(err)
-
-				totalBonded, err := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
-				s.Require().NoError(err)
-				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(10_000_001, 18))
+				totalBonded, err := it.network.App.StakingKeeper.TotalBondedTokens(it.network.GetContext())
+				Expect(err).To(BeNil())
+				expectedTotalBonded := sdk.NewCoin(it.denom, math.NewIntWithDecimal(10_000_001, 18))
 				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
 
-				totalSupplyBeforeMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				heightBeforeMint := s.ctx.BlockHeight()
-				PrevTSBeforeMint := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+				totalSupplyBeforeMint10Blocks := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				heightBeforeMint := it.network.GetContext().BlockHeight()
+				PrevTSBeforeMint := it.network.App.CoinomicsKeeper.GetPrevBlockTS(it.network.GetContext())
 
 				// mint blocks
-				s.Commit(10)
+				err = it.CommitNumBlocks(10)
+				Expect(err).To(BeNil())
 
-				PrevTSAfter10Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+				PrevTSAfter10Blocks := it.network.App.CoinomicsKeeper.GetPrevBlockTS(it.network.GetContext())
 
 				// check commit height is changed and prev block ts is changed
-				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 10))
+				Expect(it.network.GetContext().BlockHeight()).To(Equal(heightBeforeMint + 10))
 				Expect(PrevTSAfter10Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(10 * 6 * 1000))))
 
 				// check mint amount with 7.8% coefficient
-				totalSupplyAfterMint10Blocks := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				totalSupplyAfterMint10Blocks := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
 				diff7_8Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
 				Expect(diff7_8Coefficient10blocks.Amount).To(Equal(math.NewInt(1479963718122957010)))
 
 				// change params
 				rewardCoefficient := math.LegacyNewDecWithPrec(10, 1) // 10%
-				setupCoinomicsParams(s, rewardCoefficient)
+				setupCoinomicsParams(it, rewardCoefficient)
 
-				totalSupplyBeforeMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				totalSupplyBeforeMint10Blocks = it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
 
 				// mint blocks
-				s.Commit(10)
+				err = it.CommitNumBlocks(10)
+				Expect(err).To(BeNil())
 
-				PrevTSAfter20Blocks := s.app.CoinomicsKeeper.GetPrevBlockTS(s.ctx)
+				PrevTSAfter20Blocks := it.network.App.CoinomicsKeeper.GetPrevBlockTS(it.network.GetContext())
 
 				// check commit height is changed and prev block ts is changed
-				Expect(s.ctx.BlockHeight()).To(Equal(heightBeforeMint + 20))
+				Expect(it.network.GetContext().BlockHeight()).To(Equal(heightBeforeMint + 20))
 				Expect(PrevTSAfter20Blocks).To(Equal(PrevTSBeforeMint.Add(math.NewInt(20 * 6 * 1000))))
 
 				// check mint amount with 10.0% coefficient
-				totalSupplyAfterMint10Blocks = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				totalSupplyAfterMint10Blocks = it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
 				diff10_0Coefficient10blocks := totalSupplyAfterMint10Blocks.Sub(totalSupplyBeforeMint10Blocks)
 				Expect(diff10_0Coefficient10blocks.Amount).To(Equal(math.NewInt(189738938220891920)))
 			})
 
 			It("check max supply limit", func() {
-				setupCoinomicsParams(s, math.LegacyNewDecWithPrec(15_000_000_000, 0)) // 15_000_000_000 %
+				setupCoinomicsParams(it, math.LegacyNewDecWithPrec(15_000_000_000, 0)) // 15_000_000_000 %
 
-				totalSupplyOnStart := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				startExpectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_000_000_000, 18))
-
+				totalSupplyOnStart := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				startExpectedSupply := sdk.NewCoin(it.denom, math.NewIntWithDecimal(20_000_000_000, 18))
 				Expect(startExpectedSupply.Amount).To(Equal(totalSupplyOnStart.Amount))
 
 				accKey, err := ethsecp256k1.GenerateKey()
-				s.Require().NoError(err)
+				Expect(err).To(BeNil())
 				addr := sdk.AccAddress(accKey.PubKey().Address())
 
 				fundAmount := sdk.TokensFromConsensusPower(100_000_000, sdk.DefaultPowerReduction)
+				err = testutil.FundAccount(it.network.GetContext(), it.network.App.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(it.denom, fundAmount)))
+				Expect(err).To(BeNil())
 
-				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr, sdk.NewCoins(sdk.NewCoin(denomMint, fundAmount)))
-				s.Require().NoError(err)
-
-				totalSupplyAfterFund := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				expectedSupply := sdk.NewCoin(denomMint, math.NewIntWithDecimal(20_100_000_000, 18))
-
+				totalSupplyAfterFund := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				expectedSupply := sdk.NewCoin(it.denom, math.NewIntWithDecimal(20_100_000_000, 18))
 				Expect(totalSupplyAfterFund.Amount).To(Equal(expectedSupply.Amount))
 
-				s.Commit(1)
+				err = it.CommitNumBlocks(1)
+				Expect(err).To(BeNil())
 
 				// delegation
 				delAmount := sdk.TokensFromConsensusPower(90_000_000, sdk.DefaultPowerReduction)
-				delCoin := sdk.NewCoin(denomMint, delAmount)
+				delCoin := sdk.NewCoin(it.denom, delAmount)
 
-				_, err = testutil.Delegate(s.ctx, s.app, accKey, delCoin, s.validator)
-				s.Require().NoError(err)
+				_, err = testutil.Delegate(it.network.GetContext(), it.network.App, accKey, delCoin, it.network.GetValidators()[0])
+				Expect(err).To(BeNil())
 
-				totalBonded, err := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
-				s.Require().NoError(err)
-				expectedTotalBonded := sdk.NewCoin(denomMint, math.NewIntWithDecimal(90_000_001, 18))
+				totalBonded, err := it.network.App.StakingKeeper.TotalBondedTokens(it.network.GetContext())
+				Expect(err).To(BeNil())
+				expectedTotalBonded := sdk.NewCoin(it.denom, math.NewIntWithDecimal(90_000_001, 18))
 				Expect(totalBonded).To(Equal(expectedTotalBonded.Amount))
 
 				// mint blocks
-				s.Commit(10)
+				err = it.CommitNumBlocks(10)
+				Expect(err).To(BeNil())
 
-				maxSupply := s.app.CoinomicsKeeper.GetMaxSupply(s.ctx)
-				paramsAfterCommits := s.app.CoinomicsKeeper.GetParams(s.ctx)
-				totalSupplyAfterCommits := s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-
+				maxSupply := it.network.App.CoinomicsKeeper.GetMaxSupply(it.network.GetContext())
+				paramsAfterCommits := it.network.App.CoinomicsKeeper.GetParams(it.network.GetContext())
+				totalSupplyAfterCommits := it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
 				Expect(maxSupply.Amount).To(Not(Equal(totalSupplyAfterCommits.Amount)))
 				Expect(paramsAfterCommits.EnableCoinomics).To(Equal(true))
 
 				// mint blocks
-				s.Commit(60)
+				err = it.CommitNumBlocks(60)
+				Expect(err).To(BeNil())
 
-				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				paramsAfterCommits = s.app.CoinomicsKeeper.GetParams(s.ctx)
-
+				totalSupplyAfterCommits = it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				paramsAfterCommits = it.network.App.CoinomicsKeeper.GetParams(it.network.GetContext())
 				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
 				Expect(paramsAfterCommits.EnableCoinomics).To(Equal(false))
 
 				// double check
-				s.Commit(10)
+				err = it.CommitNumBlocks(10)
+				Expect(err).To(BeNil())
 
-				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
+				totalSupplyAfterCommits = it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
 				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
 
 				// check: not mint if coinomics enables back
-				params := s.app.CoinomicsKeeper.GetParams(s.ctx)
+				params := it.network.App.CoinomicsKeeper.GetParams(it.network.GetContext())
 				params.EnableCoinomics = true
+				it.network.App.CoinomicsKeeper.SetParams(it.network.GetContext(), params)
 
-				s.app.CoinomicsKeeper.SetParams(s.ctx, params)
+				err = it.CommitNumBlocks(10)
+				Expect(err).To(BeNil())
 
-				s.Commit(10)
-
-				totalSupplyAfterCommits = s.app.BankKeeper.GetSupply(s.ctx, denomMint)
-				paramsAfterCommits = s.app.CoinomicsKeeper.GetParams(s.ctx)
-
+				totalSupplyAfterCommits = it.network.App.BankKeeper.GetSupply(it.network.GetContext(), it.denom)
+				paramsAfterCommits = it.network.App.CoinomicsKeeper.GetParams(it.network.GetContext())
 				Expect(maxSupply.Amount).To(Equal(totalSupplyAfterCommits.Amount))
 				Expect(paramsAfterCommits.EnableCoinomics).To(Equal(false))
 			})

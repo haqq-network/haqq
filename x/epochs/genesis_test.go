@@ -1,7 +1,6 @@
 package epochs_test
 
 import (
-	"github.com/haqq-network/haqq/utils"
 	"testing"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	simapp "github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/epochs"
 	"github.com/haqq-network/haqq/x/epochs/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"

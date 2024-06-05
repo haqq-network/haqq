@@ -46,7 +46,7 @@ func (p Precompile) HexToBech32(
 		)
 	}
 
-	// NOTE: safety check, should not happen given that the address is is 20 bytes.
+	// NOTE: safety check, should not happen given that the address is 20 bytes.
 	if err := sdk.VerifyAddressFormat(address.Bytes()); err != nil {
 		return nil, err
 	}

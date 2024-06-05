@@ -141,7 +141,7 @@ func createTx(ctx context.Context, priv cryptotypes.PrivKey, msgs ...sdk.Msg) (s
 // setupDeductFeeDecoratorTestCase instantiates a new DeductFeeDecorator
 // and prepares the accounts with corresponding balance and staking rewards
 // Returns the decorator and the tx arguments to use on the test case
-func (suite *AnteTestSuite) setupDeductFeeDecoratorTestCase(addr sdk.AccAddress, priv *ethsecp256k1.PrivKey, tc deductFeeDecoratorTestCase) (sdk.Context, cosmosante.DeductFeeDecorator, factory.CosmosTxArgs) {
+func (suite *AnteTestSuite) setupDeductFeeDecoratorTestCase(addr sdk.AccAddress, _ *ethsecp256k1.PrivKey, tc deductFeeDecoratorTestCase) (sdk.Context, cosmosante.DeductFeeDecorator, factory.CosmosTxArgs) {
 	suite.SetupTest()
 	nw := suite.GetNetwork()
 	ctx := nw.GetContext()
@@ -167,13 +167,4 @@ func (suite *AnteTestSuite) setupDeductFeeDecoratorTestCase(addr sdk.AccAddress,
 		FeeGranter: tc.feeGranter,
 		Msgs:       []sdk.Msg{msg},
 	}
-}
-
-// intSlice creates a slice of sdkmath.Int with the specified size and same value
-func intSlice(size int, value sdkmath.Int) []sdkmath.Int {
-	slc := make([]sdkmath.Int, size)
-	for i := 0; i < len(slc); i++ {
-		slc[i] = value
-	}
-	return slc
 }

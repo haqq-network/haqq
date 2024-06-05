@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
-	haqqtesting "github.com/haqq-network/haqq/ibc/testing"
+	haqqibc "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/testutil/integration/common/network"
 	ibcchain "github.com/haqq-network/haqq/testutil/integration/ibc/chain"
 )
@@ -25,8 +25,8 @@ type Coordinator interface {
 	UpdateTimeForChain(chainID string)
 	// GetChain returns the TestChain for a given chainID.
 	GetChain(chainID string) ibcchain.Chain
-	// GetDummyChainsIds returns the chainIDs for all dummy chains.
-	GetDummyChainsIds() []string
+	// GetDummyChainsIDs returns the chainIDs for all dummy chains.
+	GetDummyChainsIDs() []string
 	// SetDefaultSignerForChain sets the default signer for the chain with the given chainID.
 	SetDefaultSignerForChain(chainID string, priv cryptotypes.PrivKey, acc sdk.AccountI)
 	// Setup constructs a TM client, connection, and channel on both chains provided. It will
@@ -39,11 +39,7 @@ type Coordinator interface {
 	CommitAll() error
 }
 
-// TODO: Replace for a config
-var (
-	AmountOfDummyChains = 2
-	GlobalTime          = time.Date(time.Now().Year()+1, 1, 2, 0, 0, 0, 0, time.UTC)
-)
+var AmountOfDummyChains = 2
 
 var _ Coordinator = (*IntegrationCoordinator)(nil)
 
@@ -54,22 +50,22 @@ var _ Coordinator = (*IntegrationCoordinator)(nil)
 // sync with the network interface.
 type IntegrationCoordinator struct {
 	coord          *ibctesting.Coordinator
-	dummyChainsIds []string
+	dummyChainsIDs []string
 }
 
 // NewIntegrationCoordinator returns a new IntegrationCoordinator with N TestChain's.
 func NewIntegrationCoordinator(t *testing.T, preConfiguredChains []network.Network) *IntegrationCoordinator {
 	coord := &ibctesting.Coordinator{
 		T:           t,
-		CurrentTime: GlobalTime,
+		CurrentTime: time.Now(),
 	}
 	ibcChains := getIBCChains(t, coord, preConfiguredChains)
-	dummyChains, dummyChainsIds := generateDummyChains(t, coord, AmountOfDummyChains)
+	dummyChains, dummyChainsIDs := generateDummyChains(t, coord, AmountOfDummyChains)
 	totalChains := mergeMaps(ibcChains, dummyChains)
 	coord.Chains = totalChains
 	return &IntegrationCoordinator{
 		coord:          coord,
-		dummyChainsIds: dummyChainsIds,
+		dummyChainsIDs: dummyChainsIDs,
 	}
 }
 
@@ -78,9 +74,9 @@ func (c *IntegrationCoordinator) GetChain(chainID string) ibcchain.Chain {
 	return c.coord.Chains[chainID]
 }
 
-// GetDummyChainsIds returns the chainIDs for all dummy chains.
-func (c *IntegrationCoordinator) GetDummyChainsIds() []string {
-	return c.dummyChainsIds
+// GetDummyChainsIDs returns the chainIDs for all dummy chains.
+func (c *IntegrationCoordinator) GetDummyChainsIDs() []string {
+	return c.dummyChainsIDs
 }
 
 // IncrementTime iterates through all the TestChain's and increments their current header time
@@ -115,8 +111,8 @@ func (c *IntegrationCoordinator) Setup(a, b string) IBCConnection {
 	chainA := c.coord.GetChain(a)
 	chainB := c.coord.GetChain(b)
 
-	path := haqqtesting.NewTransferPath(chainA, chainB)
-	haqqtesting.SetupPath(c.coord, path)
+	path := haqqibc.NewTransferPath(chainA, chainB)
+	haqqibc.SetupPath(c.coord, path)
 
 	return IBCConnection{
 		EndpointA: Endpoint{

@@ -104,12 +104,12 @@ func createValidatorSetAndSigners(numberOfValidators int) (*cmttypes.ValidatorSe
 func createGenesisAccounts(accounts []sdktypes.AccAddress) []authtypes.GenesisAccount {
 	numberOfAccounts := len(accounts)
 	genAccounts := make([]authtypes.GenesisAccount, 0, numberOfAccounts)
-	codeHash := crypto.Keccak256Hash(nil).String()
+	emptyCodeHash := crypto.Keccak256Hash(nil).String()
 	for _, acc := range accounts {
 		baseAcc := authtypes.NewBaseAccount(acc, nil, 0, 0)
 		ethAcc := &types.EthAccount{
 			BaseAccount: baseAcc,
-			CodeHash:    codeHash,
+			CodeHash:    emptyCodeHash,
 		}
 		genAccounts = append(genAccounts, ethAcc)
 	}
@@ -158,7 +158,7 @@ func createHaqqApp(chainID string, customBaseAppOptions ...func(*baseapp.BaseApp
 	invCheckPeriod := uint(5)
 	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	appOptions := simutils.NewAppOptionsWithFlagHome(app.DefaultNodeHome)
-	baseAppOptions := append(customBaseAppOptions, baseapp.SetChainID(chainID))
+	baseAppOptions := append(customBaseAppOptions, baseapp.SetChainID(chainID)) // nolint: gocritic
 
 	return app.NewHaqq(
 		logger,
@@ -434,7 +434,9 @@ func setDefaultGovGenesisState(haqqApp *app.Haqq, genesisState types.GenesisStat
 	govGen := govtypesv1.DefaultGenesisState()
 	updatedParams := govGen.Params
 	// set 'aISLM' as deposit denom
-	updatedParams.MinDeposit = sdktypes.NewCoins(sdktypes.NewCoin(haqqutils.BaseDenom, sdkmath.NewInt(1e18)))
+	minDepositAmt := sdkmath.NewInt(1e18)
+	updatedParams.MinDeposit = sdktypes.NewCoins(sdktypes.NewCoin(haqqutils.BaseDenom, minDepositAmt))
+	updatedParams.ExpeditedMinDeposit = sdktypes.NewCoins(sdktypes.NewCoin(haqqutils.BaseDenom, minDepositAmt))
 	govGen.Params = updatedParams
 	genesisState[govtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(govGen)
 	return genesisState

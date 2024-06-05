@@ -2,10 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"slices"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"golang.org/x/exp/slices"
 
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	haqqtypes "github.com/haqq-network/haqq/types"

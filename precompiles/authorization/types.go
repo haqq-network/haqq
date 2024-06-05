@@ -3,6 +3,7 @@ package authorization
 import (
 	"fmt"
 	"math/big"
+	"slices"
 	"time"
 
 	"cosmossdk.io/math"
@@ -12,7 +13,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"golang.org/x/exp/slices"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 )

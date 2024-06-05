@@ -195,7 +195,7 @@ func (suite *StateDBTestSuite) TestState() {
 		malleate  func(*statedb.StateDB)
 		expStates statedb.Storage
 	}{
-		{"empty state", func(db *statedb.StateDB) {
+		{"empty state", func(_ *statedb.StateDB) {
 		}, nil},
 		{"set empty value", func(db *statedb.StateDB) {
 			db.SetState(address, key1, common.Hash{})
@@ -441,6 +441,7 @@ func (suite *StateDBTestSuite) TestAccessList() {
 				Address:     address3,
 				StorageKeys: []common.Hash{value1},
 			}}
+
 			db.PrepareAccessList(address, &address2, vm.PrecompiledAddressesBerlin, al)
 
 			// check sender and dst

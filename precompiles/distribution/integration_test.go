@@ -476,7 +476,7 @@ var _ = Describe("Calling distribution precompile from EOA", func() {
 			queryRes, err = s.grpcHandler.GetBalance(s.keyring.GetAccAddr(0), s.bondDenom)
 			Expect(err).To(BeNil(), "error while calling GetBalance")
 
-			// get the fee paid and calulate the expFinalBalance
+			// get the fee paid and calculate the expFinalBalance
 			fee := gasPrice.Mul(math.NewInt(txRes.GasUsed))
 			accruedRewardsAmt := accruedRewards.AmountOf(s.bondDenom).TruncateInt()
 			// expected balance is initial + rewards - fee
