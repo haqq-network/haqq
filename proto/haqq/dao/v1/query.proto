@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package haqq.dao.v1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/query/v1/query.proto";
+import "amino/amino.proto";
+import "haqq/dao/v1/dao.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/dao/types";
+
+// Query defines the gRPC querier service for dao module
+service Query {
+  // Balance queries the balance of a single coin for a single account.
+  rpc Balance(QueryBalanceRequest) returns (QueryBalanceResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/haqq/dao/v1/balances/{address}/by_denom";
+  }
+
+  // AllBalances queries the balance of all coins for a single account.
+  //
+  // When called from another module, this query might consume a high amount of
+  // gas if the pagination field is incorrectly set.
+  rpc AllBalances(QueryAllBalancesRequest) returns (QueryAllBalancesResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/haqq/dao/v1/balances/{address}";
+  }
+
+  // TotalBalance queries the total balance of all coins locked in the module.
+  //
+  // When called from another module, this query might consume a high amount of
+  // gas if the pagination field is incorrectly set.
+  rpc TotalBalance(QueryTotalBalanceRequest) returns (QueryTotalBalanceResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/haqq/dao/v1/total_balance";
+  }
+
+  // Params queries the parameters of x/dao module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/haqq/dao/v1/params";
+  }
+}
+
+// QueryBalanceRequest is the request type for the Query/Balance RPC method.
+message QueryBalanceRequest {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // address is the address to query balances for.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // denom is the coin denom to query balances for.
+  string denom = 2;
+}
+
+// QueryBalanceResponse is the response type for the Query/Balance RPC method.
+message QueryBalanceResponse {
+  // balance is the balance of the coin.
+  cosmos.base.v1beta1.Coin balance = 1;
+}
+
+// QueryBalanceRequest is the request type for the Query/AllBalances RPC method.
+message QueryAllBalancesRequest {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // address is the address to query balances for.
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryAllBalancesResponse is the response type for the Query/AllBalances RPC
+// method.
+message QueryAllBalancesResponse {
+  // balances is the balances of all the coins.
+  repeated cosmos.base.v1beta1.Coin balances = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTotalBalanceRequest is the request type for the Query/TotalBalance RPC
+// method.
+message QueryTotalBalanceRequest {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // pagination defines an optional pagination for the request.
+  //
+  // Since: cosmos-sdk 0.43
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryTotalBalanceResponse is the response type for the Query/TotalBalance RPC
+// method
+message QueryTotalBalanceResponse {
+  // supply is the supply of the coins
+  repeated cosmos.base.v1beta1.Coin total_balance = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // pagination defines the pagination in the response.
+  //
+  // Since: cosmos-sdk 0.43
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryParamsRequest defines the request type for querying x/dao parameters.
+message QueryParamsRequest {}
+
+// QueryParamsResponse defines the response type for querying x/dao parameters.
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}

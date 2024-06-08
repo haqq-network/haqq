@@ -28,9 +28,9 @@ var (
 	liquidDenomAmount = sdk.NewCoins(sdk.NewInt64Coin("aLIQUID0", 3_000_000))
 
 	lockupPeriods = sdkvesting.Periods{
-		{Length: 100, Amount: third},
-		{Length: 100, Amount: third},
-		{Length: 100, Amount: third},
+		{Length: 100000, Amount: third},
+		{Length: 100000, Amount: third},
+		{Length: 100000, Amount: third},
 	}
 	vestingPeriods = sdkvesting.Periods{
 		{Length: 0, Amount: amount},
@@ -61,6 +61,21 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			from:       addr1,
 			to:         addr2,
 			amount:     sdk.NewCoin("aISLM", third.AmountOf("aISLM")),
+			expectPass: true,
+		},
+		{
+			name: "ok - standard liquidation two thirds",
+			malleate: func() {
+				funder := sdk.AccAddress(types.ModuleName)
+				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
+				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
+				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
+				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
+			},
+			from:       addr1,
+			to:         addr2,
+			amount:     sdk.NewCoin("aISLM", third.AmountOf("aISLM")).Add(sdk.NewCoin("aISLM", third.AmountOf("aISLM"))),
 			expectPass: true,
 		},
 		{
@@ -146,7 +161,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			malleate: func() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
-				startTime := suite.ctx.BlockTime().Add(-201 * time.Second)
+				startTime := suite.ctx.BlockTime().Add(-200001 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
 				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
@@ -209,14 +224,28 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 
 			tc.malleate()
 
+			accFrom := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.from)
+			vaFrom, ok := accFrom.(*vestingtypes.ClawbackVestingAccount)
+			if !ok {
+				suite.T().Fatal("account is not clawback vesting account")
+			}
+			suite.T().Logf("locked only coins: %s", vaFrom.GetLockedOnly(suite.ctx.BlockTime()).String())
+			suite.T().Logf("UN-locked only coins: %s", vaFrom.GetUnlockedOnly(suite.ctx.BlockTime()).String())
+			spendable := suite.app.BankKeeper.SpendableCoin(suite.ctx, tc.from, "aISLM")
+			suite.T().Logf("spendable coins: %s", spendable.String())
+			suite.T().Logf("liquidation amount: %s", tc.amount.String())
+
 			msg := types.NewMsgLiquidate(tc.from, tc.to, tc.amount)
 			resp, err := suite.app.LiquidVestingKeeper.Liquidate(ctx, msg)
-			expResponse := &types.MsgLiquidateResponse{}
+			expResponse := &types.MsgLiquidateResponse{
+				Minted: sdk.NewCoin(types.DenomBaseNameFromID(0), tc.amount.Amount),
+			}
 
 			if tc.expectPass {
 				// check returns
 				suite.Require().NoError(err)
-				suite.Require().Equal(expResponse, resp)
+				suite.Require().Equal(expResponse.Minted, resp.Minted)
+				suite.Require().NotEmpty(resp.ContractAddr)
 
 				// check target account exists and has liquid token
 				accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.to)
@@ -275,11 +304,14 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	// FIRST LIQUIDATION
 	msg := types.NewMsgLiquidate(from, to, liquidationAmount)
 	resp, err := suite.app.LiquidVestingKeeper.Liquidate(ctx, msg)
-	expResponse := &types.MsgLiquidateResponse{}
+	expResponse := &types.MsgLiquidateResponse{
+		Minted: sdk.NewCoin("aLIQUID0", liquidationAmount.Amount),
+	}
 
 	// check returns
 	suite.Require().NoError(err)
-	suite.Require().Equal(expResponse, resp)
+	suite.Require().Equal(expResponse.Minted, resp.Minted)
+	suite.Require().NotEmpty(resp.ContractAddr)
 
 	// check target account exists and has liquid token
 	accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, to)
@@ -312,9 +344,14 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	msg = types.NewMsgLiquidate(from, to, liquidationAmount)
 	resp, err = suite.app.LiquidVestingKeeper.Liquidate(ctx, msg)
 
+	expResponse = &types.MsgLiquidateResponse{
+		Minted: sdk.NewCoin("aLIQUID1", liquidationAmount.Amount),
+	}
+
 	// check returns
 	suite.Require().NoError(err)
-	suite.Require().Equal(expResponse, resp)
+	suite.Require().Equal(expResponse.Minted, resp.Minted)
+	suite.Require().NotEmpty(resp.ContractAddr)
 
 	// check target account exists and has liquid token
 	balanceTarget = suite.app.BankKeeper.GetBalance(suite.ctx, to, types.DenomBaseNameFromID(1))
@@ -391,7 +428,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
 				// create liquid vesting denom
 				// subs 150 second, it is the half of the second period now
-				startTime := s.ctx.BlockTime().Add(-150 * time.Second)
+				startTime := s.ctx.BlockTime().Add(-150000 * time.Second)
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
 					BaseDenom:     "aLIQUID0",
 					DisplayDenom:  "LIQUID0",

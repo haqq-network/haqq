@@ -6,7 +6,7 @@ import (
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 )
 
-var isTrue = []byte("0x01")
+// var isTrue = []byte("0x01")
 
 // GetParams returns the total set of liquidvesting parameters.
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
@@ -20,23 +20,29 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 		return err
 	}
 
-	k.SetLiquidVestingEnabled(ctx, params.EnableLiquidVesting)
-
 	k.paramstore.SetParamSet(ctx, &params)
 
 	return nil
 }
 
 func (k Keeper) IsLiquidVestingEnabled(ctx sdk.Context) bool {
-	store := ctx.KVStore(k.storeKey)
-	return store.Has(types.ParamStoreKeyEnableLiquidVesting)
+	params := k.GetParams(ctx)
+	return params.EnableLiquidVesting
 }
 
 func (k Keeper) SetLiquidVestingEnabled(ctx sdk.Context, enable bool) {
-	store := ctx.KVStore(k.storeKey)
-	if enable {
-		store.Set(types.ParamStoreKeyEnableLiquidVesting, isTrue)
-		return
+	params := k.GetParams(ctx)
+	params.EnableLiquidVesting = enable
+	err := k.SetParams(ctx, params)
+	if err != nil {
+		panic(err)
 	}
-	store.Delete(types.ParamStoreKeyEnableLiquidVesting)
+}
+
+func (k Keeper) ResetParamsToDefault(ctx sdk.Context) {
+	params := types.DefaultParams()
+	err := k.SetParams(ctx, params)
+	if err != nil {
+		panic(err)
+	}
 }

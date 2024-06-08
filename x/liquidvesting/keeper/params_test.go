@@ -14,6 +14,8 @@ func (suite *KeeperTestSuite) TestParams() {
 
 	suite.Require().Equal(expParams, params)
 
+	params.EnableLiquidVesting = false
+
 	err := suite.app.LiquidVestingKeeper.SetParams(suite.ctx, params)
 	if err != nil {
 		panic(fmt.Errorf("error setting params %s", err))

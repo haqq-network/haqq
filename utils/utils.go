@@ -15,6 +15,8 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"golang.org/x/crypto/sha3"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 )
 
@@ -41,21 +43,6 @@ func IsTestEdge2Network(chainID string) bool {
 
 func IsLocalNetwork(chainID string) bool {
 	return strings.HasPrefix(chainID, LocalNetChainID)
-}
-
-func IsAllowedVestingFunderAccount(funder string) bool {
-	// allowed accounts for vesting funder
-	funders := map[string]bool{
-		"haqq1uu7epkq75j2qzqvlyzfkljc8h277gz7kxqah0v": true, // mainnet
-		"haqq185tcnd67yh9jngx090cggck0yrjsft9sj3lkht": true,
-		"haqq1527hg2arxkk0jd53pq80l0l9gjjlclsuxlwmq8": true,
-		"haqq1e666058j3ya392rspuxrt69tw6qhrxtxx8z9ha": true,
-	}
-
-	// check if funder account is allowed
-	_, ok := funders[funder]
-
-	return ok
 }
 
 // IsSupportedKey returns true if the pubkey type is supported by the chain
@@ -107,6 +94,11 @@ func GetHaqqAddressFromBech32(address string) (sdk.AccAddress, error) {
 	}
 
 	return sdk.AccAddress(addressBz), nil
+}
+
+func GetAccAddrFromEthAddress(addrString string) sdk.AccAddress {
+	addr := common.HexToAddress(addrString).Bytes()
+	return sdk.AccAddress(addr)
 }
 
 // parseHexValue -> parses a hex string into a big.Int

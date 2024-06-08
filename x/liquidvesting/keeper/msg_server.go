@@ -138,7 +138,7 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	}
 
 	// bind newly created denom to erc20 token
-	_, err = k.erc20Keeper.RegisterCoin(ctx, liquidTokenMetadata)
+	tokenPair, err := k.erc20Keeper.RegisterCoin(ctx, liquidTokenMetadata)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to create erc20 token pair: %s", err.Error())
 	}
@@ -162,7 +162,12 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 		},
 	)
 
-	return &types.MsgLiquidateResponse{}, nil
+	responseMsg := &types.MsgLiquidateResponse{
+		Minted:       liquidTokenCoin,
+		ContractAddr: tokenPair.Erc20Address,
+	}
+
+	return responseMsg, nil
 }
 
 // Redeem redeems specified amount of liquid token into original locked token and adds them to account

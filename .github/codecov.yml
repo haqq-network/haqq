@@ -65,3 +65,4 @@ ignore:
   - "types/*.pb.go"
   - "x/**/*.pb.gw.go"
   - "scripts/"
+  - "x/dao/**"
