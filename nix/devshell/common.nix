@@ -15,5 +15,7 @@
       (callPackage ../grpc-gateway.nix {
         inherit pkgs;
       })
+
+      pkgsUnstable.golangci-lint
     ];
 }

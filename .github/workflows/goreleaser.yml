@@ -6,7 +6,7 @@ on:
       - "v*.*.*"
 jobs:
   goreleaser:
-    runs-on: ubuntu-cpu16-ram64
+    runs-on: [self-hosted, ubuntu]
     environment: release
     steps:
       - uses: actions/checkout@v4
