@@ -36,7 +36,14 @@ message MsgLiquidate {
 }
 
 // MsgLiquidateResponse defines the Msg/Liquidate response type
-message MsgLiquidateResponse {}
+message MsgLiquidateResponse {
+  // amount of liquid tokens minted
+  cosmos.base.v1beta1.Coin minted = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  // address of erc20 the liquidation denom contract
+  string contract_addr = 2;
+}
 
 // MsgLiquidate represents message to redeem arbitrary amount of liquid vesting
 // tokens

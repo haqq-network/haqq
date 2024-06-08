@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package haqq.dao.v1;
+
+import "gogoproto/gogo.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/dao/types";
+
+// Params defines the parameters for the dao module.
+message Params {
+  option(amino.name) = "haqq/x/dao/Params";
+  option(gogoproto.goproto_stringer) = false;
+  // enable_dao is the parameter to enable the module functionality.
+  bool enable_dao = 1;
+
+  // allowed_collaterals is the allowed collateral values.
+  repeated AllowedCollateral allowed_collaterals = 2;
+
+  // TODO More params for dao module is coming...
+}
+
+// CollateralValueType defines the type of collateral value.
+enum CollateralValueType {
+  // COLLATERAL_VALUE_TYPE_UNSPECIFIED is the unspecified collateral value type.
+  COLLATERAL_VALUE_TYPE_UNSPECIFIED = 0;
+  // COLLATERAL_VALUE_TYPE_STRICT is the strict collateral value type.
+  COLLATERAL_VALUE_TYPE_STRICT = 1; 
+  // COLLATERAL_VALUE_TYPE_MASK is the mask collateral value type.
+  COLLATERAL_VALUE_TYPE_MASK = 2;
+}
+
+message AllowedCollateral {
+  option(amino.name) = "haqq/x/dao/AllowedCollateral";
+  option(gogoproto.goproto_stringer) = false;
+
+  // value is the allowed collateral value.
+  string value = 1;
+  // type is the allowed collateral value type.
+  CollateralValueType type = 2;
+}
