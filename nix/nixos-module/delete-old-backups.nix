@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.services.haqqd-supervised;
+  cfg = config.services.haqqd;
 in
 {
   systemd.timers = lib.mkIf (cfg.enable && cfg.deleteOldBackups > 0) {

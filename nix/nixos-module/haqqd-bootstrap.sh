@@ -4,14 +4,11 @@ echo "Bootstrapping"
 HAQQD_DIR="$HOME"/.haqqd
 BIN_DIR="$HAQQD_DIR"/cosmovisor/genesis/bin
 
-if [ -f "$HAQQD_DIR"/.bootstrapped ]; then
-    echo "haqqd already bootstrapped"
-    exit 0
-fi
+# if [ -f "$HAQQD_DIR"/.bootstrapped ]; then
+#     echo "haqqd already bootstrapped"
+#     exit 0
+# fi
 echo "Bootstrapping ~/.haqqd"
-# cp -r ${haqqdBinary}/share/haqqd/init "$HAQQD_DIR"
-# chmod -R 0770 "$HAQQD_DIR"
-id
 
 mkdir -p "$BIN_DIR"
 

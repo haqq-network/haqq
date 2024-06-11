@@ -1,9 +1,9 @@
 {
-  rev,
-  nix-gitignore,
   buildGoApplication,
   go,
   lib,
+  nix-gitignore,
+  rev,
 }:
 let
   name = "haqq";
@@ -48,8 +48,17 @@ buildGoApplication rec {
 
   doCheck = false;
 
+  postInstall = ''
+    $out/bin/haqqd init default --home . --chain-id haqq_54211-3
+    install -Dm644 -t $out/share/haqqd/config config/app.toml
+    install -Dm644 -t $out/share/haqqd/config config/client.toml
+    install -Dm644 -t $out/share/haqqd/config config/config.toml
+  '';
+
   # tests require writeable $HOME
   preCheck = ''
     export HOME=$(mktemp -d)
   '';
+
+  meta.mainProgram = "haqqd";
 }

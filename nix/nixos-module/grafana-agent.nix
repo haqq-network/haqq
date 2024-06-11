@@ -5,7 +5,7 @@
   ...
 }:
 let
-  haqqCfg = config.services.haqqd-supervised;
+  haqqCfg = config.services.haqqd;
   cfg = haqqCfg.grafana;
 in
 {

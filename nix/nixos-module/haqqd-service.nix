@@ -4,217 +4,140 @@
   config,
   ...
 }:
+with lib;
 let
-  cfg = config.services.haqqd-supervised;
+  cfg = config.services.haqqd;
 
-  defaultCfg = pkgs.callPackage ./default-config.nix { haqqdPackage = cfg.initialPackage; };
+  # defaultCfg = pkgs.callPackage ./default-config.nix { haqqdPackage = cfg.initialPackage; };
 
-  haqqdUserName = "haqqd";
-  haqqdGroupName = haqqdUserName;
+  toml = pkgs.formats.toml { };
 
-  defaultCfgConfigToml = lib.recursiveUpdate (lib.importTOML "${defaultCfg}/config.toml") {
-    instrumentation.prometheus = true;
-    chain-id = "haqq_11235-1";
-    p2p.seeds = "c45991e0098b9cacb8603caf4e1cdb7e6e5f87c0@eu.seed.haqq.network:26656,e37cb47590ba46b503269ef255873e9698244d8b@us.seed.haqq.network:26656,c593e93e1fb8be8b48d4e7bab514a227aa620bf8@as.seed.haqq.network:26656,8542cd7e6bf9d260fef543bc49e59be5a3fa9074@seed.publicnode.com:26656,0533e20e65912f72f2ad88a4c91eefbc634212d7@haqq-sync.rpc.p2p.world:26656,20e1000e88125698264454a884812746c2eb4807@seeds.lavenderfive.com:24056";
-  };
-
-  defaultCfgAppToml = lib.recursiveUpdate (lib.importTOML "${defaultCfg}/app.toml") {
-    telemetry = {
-      enabled = true;
-    };
-  };
+  importConfigFile = name: importTOML "${cfg.package}/share/haqqd/config/${name}.toml";
+  defaultConfigTOML = importConfigFile "config";
+  defaultAppTOML = importConfigFile "app";
+  defaultClientTOML = importConfigFile "client";
 in
 {
-  imports = [ ./grafana-agent.nix ];
+  options.services.haqqd = {
+    enable = mkEnableOption "";
 
-  options.services.haqqd-supervised = {
-    enable = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
+    package = mkPackageOption pkgs "haqq" { };
+
+    settings = {
+      app = mkOption {
+        inherit (toml) type;
+        default = { };
+      };
+
+      config = mkOption {
+        inherit (toml) type;
+        default = { };
+      };
+
+      client = mkOption {
+        inherit (toml) type;
+        default = { };
+      };
     };
 
-    fetchTrustBlock = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Fetch the trust block from the network";
+    user = mkOption {
+      type = types.str;
+      default = "haqqd";
+      description = "User account under which haqqd runs";
     };
 
-    fetchTrustBlockUrl = lib.mkOption {
-      type = lib.types.str;
-      default = "https://rpc.tm.haqq.network";
-      description = "URL to fetch the trust block from";
+    group = mkOption {
+      type = types.str;
+      default = "haqqd";
+      description = "User group under which haqqd runs";
     };
 
-    fetchTrustBlockOffset = lib.mkOption {
-      type = lib.types.int;
-      # 21 days in block time
-      default = 21 * 24 * 60 * 60 / 5;
-      description = "Offset to fetch the trust block from";
-    };
-
-    deleteOldBackups = lib.mkOption {
-      type = lib.types.int;
-      default = 7;
-    };
-
-    initialPackage = lib.mkOption {
-      type = lib.types.package;
-      default = pkgs.haqq;
-      defaultText = lib.literalMD ''
-        `pkgs.haqq` where pkgs is the nixpkgs version used in this flake
-      '';
-    };
-
-    config = lib.mkOption {
-      type = lib.types.attrs;
-      default = { };
-    };
-
-    userHome = lib.mkOption {
-      type = lib.types.str;
+    userHome = mkOption {
+      type = types.str;
       default = "/var/lib/haqqd";
-    };
-
-    app = lib.mkOption {
-      type = lib.types.attrs;
-      default = { };
-    };
-
-    openFirewall = lib.mkOption {
-      type = lib.types.bool;
-      default = false;
-      description = ''
-        Open ports needed for the functionality of the daemon.
-      '';
-    };
-
-    grafana = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-      };
-
-      package = lib.mkOption {
-        type = lib.types.package;
-        default = pkgs.grafana-agent;
-      };
-
-      instance = lib.mkOption {
-        type = lib.types.str;
-        default = "haqqd";
-      };
-
-      metricsUrl = lib.mkOption { type = lib.types.str; };
-
-      logsUrl = lib.mkOption { type = lib.types.str; };
-
-      secretKeyPath = lib.mkOption { type = lib.types.path; };
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    # to support launching of binaries downloaded by cosmovisor from github releases
+  config = mkIf cfg.enable {
+    # FIXME: This is not ideal. We don't want to force the user to enable nix-ld
+    # globally. We should run dynamically linked libraries and cosmovisir with
+    # buildFHSEnv or some other kind of sandboxing/FHS-compatability layer.
     programs.nix-ld.enable = true;
 
-    users.users.${haqqdUserName} = {
-      isSystemUser = true;
-      home = cfg.userHome;
-      createHome = true;
-      group = haqqdGroupName;
-    };
-
-    users.groups.${haqqdGroupName} = { };
-
-    systemd.services = {
-      haqqd-bootstrap = {
-        serviceConfig =
-          let
-            haqqd-init = pkgs.writeShellApplication {
-              name = "haqqd-bootstrap";
-              runtimeInputs = with pkgs; [
-                cfg.initialPackage
-                curl
-                gnused
-                coreutils
-                which
-
-                dig.dnsutils
-              ];
-
-              text = builtins.readFile ./haqqd-bootstrap.sh;
-            };
-          in
-          {
-            User = haqqdUserName;
-            Type = "oneshot";
-            ExecStart = ''
-              ${haqqd-init}/bin/haqqd-bootstrap
-            '';
-            LimitNOFILE = "infinity";
-          };
-
-        environment = {
-          inherit (config.environment.variables) NIX_LD;
-        };
-
-        before = [ "haqqd.service" ];
-        after = [
-          "network.target"
-          "nss-lookup.target"
-        ];
+    users = {
+      users.${cfg.user} = {
+        isSystemUser = true;
+        home = cfg.userHome;
+        createHome = true;
+        inherit (cfg) group;
       };
 
+      groups.${cfg.group} = { };
+    };
+
+    systemd.services = {
       haqqd = {
-        serviceConfig =
+        path = with pkgs; [
+          coreutils
+          cosmovisor
+          curl
+          gnutar
+          gzip
+          haqq
+        ];
+        preStart =
           let
-            format = pkgs.formats.toml { };
-            tomlConfig = format.generate "config.toml" (
-              lib.attrsets.recursiveUpdate defaultCfgConfigToml cfg.config
-            );
-            appConfig = format.generate "app.toml" (lib.attrsets.recursiveUpdate defaultCfgAppToml cfg.app);
-            start = pkgs.writeShellApplication {
-              name = "haqqd-start";
-              runtimeInputs = with pkgs; [
-                curl
-                jq
-                dasel
-              ];
-              text = ''
-                cp -f ${tomlConfig} .haqqd/config/config.toml
-                cp -f ${appConfig} .haqqd/config/app.toml
-
-                export RPC=${cfg.fetchTrustBlockUrl}
-                export OFFSET=${toString cfg.fetchTrustBlockOffset}
-                ${if cfg.fetchTrustBlock then "${./fetch-trust-block.sh} .haqqd/config/config.toml" else ""}
-
-                ${pkgs.cosmovisor}/bin/cosmovisor run start
-              '';
-            };
+            generate =
+              name: default: toml.generate "${name}.toml" (recursiveUpdate default cfg.settings.${name});
+            appTOML = generate "app" defaultAppTOML;
+            configTOML = generate "config" defaultConfigTOML;
+            clientTOML = generate "client" defaultClientTOML;
           in
-          {
-            User = haqqdUserName;
-            ExecStart = ''${start}/bin/haqqd-start'';
-            WorkingDirectory = cfg.userHome;
-            Restart = "always";
-            RestartSec = 3;
-            LimitNOFILE = "infinity";
-          };
+          ''
+            if [ ! -f "$DAEMON_HOME/.bootstrapped" ]; then
+              haqqd config chain-id "haqq_11235-1"
+              haqqd init "haqq-node" --chain-id "haqq_11235-1"
 
+              # Download mainnet genesis manifest.
+              curl \
+                -s \
+                -L "https://raw.githubusercontent.com/haqq-network/mainnet/master/genesis.json" \
+                -o "$DAEMON_HOME/config/genesis.json"
+
+              # Download the genesis binary.
+              curl \
+                -s \
+                -L "https://github.com/haqq-network/haqq/releases/download/v1.0.2/haqq_1.0.2_Linux_x86_64.tar.gz" \
+                | tar xvz - -C /tmp \
+                && install -Dm755 -t "$DAEMON_HOME/cosmovisor/genesis/bin" /tmp/bin/haqqd
+
+              touch "$DAEMON_HOME/.bootstrapped"
+            fi
+
+            cp -f ${configTOML} "$DAMON_HOME/config/config.toml"
+            cp -f ${appTOML} "$DAMON_HOME/config/app.toml"
+            cp -f ${clientTOML} "$DAMON_HOME/config/client.toml"
+          '';
+        script = ''
+          cosmovisor run start
+        '';
         environment = {
           DAEMON_HOME = "${cfg.userHome}/.haqqd";
           DAEMON_NAME = "haqqd";
           DAEMON_ALLOW_DOWNLOAD_BINARIES = "true";
           DAEMON_RESTART_AFTER_UPGRADE = "true";
           UNSAFE_SKIP_BACKUP = "false";
-
           inherit (config.environment.variables) NIX_LD;
         };
-
-        wantedBy = [ "multi-user.target" ];
-        requires = [ "haqqd-bootstrap.service" ];
+        serviceConfig = {
+          User = cfg.user;
+          Group = cfg.group;
+          WorkingDirectory = cfg.userHome;
+          Restart = "always";
+          RestartSec = 5;
+          LimitNOFILE = "infinity";
+        };
       };
     };
-
-    networking.firewall = lib.mkIf cfg.openFirewall { allowedTCPPorts = [ 26656 ]; };
   };
 }
