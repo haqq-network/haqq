@@ -1,10 +1,10 @@
 { pkgs, haqqdPackage }:
 let
-  inherit (pkgs) stdenv callPackage;
+  inherit (pkgs) stdenv;
 in
 stdenv.mkDerivation {
   name = "haqqd-default-config";
-  version = haqqdPackage.version;
+  inherit (haqqdPackage) version;
 
   buildInputs = [ haqqdPackage ];
 

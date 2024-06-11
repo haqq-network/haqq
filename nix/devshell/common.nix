@@ -1,21 +1,13 @@
-{ pkgs, pkgsUnstable, go, ... }:
+{ pkgs, go, ... }:
 {
-  packages = with pkgs;
-    [
-      protobuf
-      buf
-      clang-tools
-      codespell
-
-      go
-      (pkgsUnstable.gomod2nix.override {
-        inherit go;
-      })
-
-      (callPackage ../grpc-gateway.nix {
-        inherit pkgs;
-      })
-
-      pkgsUnstable.golangci-lint
-    ];
+  packages = with pkgs; [
+    (gomod2nix.override { inherit go; })
+    buf
+    clang-tools
+    codespell
+    go
+    golangci-lint
+    grpc-gateway
+    protobuf
+  ];
 }

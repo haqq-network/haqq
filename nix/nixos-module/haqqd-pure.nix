@@ -1,4 +1,9 @@
-{ pkgs ? import <nixpkgs> { }, platform ? pkgs.stdenvNoCC.hostPlatform.system, version, ... }:
+{
+  pkgs ? import <nixpkgs> { },
+  platform ? pkgs.stdenvNoCC.hostPlatform.system,
+  version,
+  ...
+}:
 
 # Not being used right now, keeping it for future reference
 
@@ -16,7 +21,8 @@ let
   hashesLines = lib.lists.remove "" (lib.strings.splitString "\n" (builtins.readFile hashesFile));
 
   # Function to parse a line to an attribute set
-  parseLine = line:
+  parseLine =
+    line:
     let
       parts = builtins.split "[ \t]+" line;
 
@@ -26,11 +32,27 @@ let
       fileParts = builtins.split "_" fileName;
       os = builtins.elemAt fileParts 4;
       arch = if (builtins.elemAt fileParts 6) == "x86" then "x86_64" else "arm64";
-      name = builtins.replaceStrings [ "Darwin" "Linux" "Windows" "arm64" ] [ "darwin" "linux" "windows" "aarch64" ] "${arch}-${os}";
+      name =
+        builtins.replaceStrings
+          [
+            "Darwin"
+            "Linux"
+            "Windows"
+            "arm64"
+          ]
+          [
+            "darwin"
+            "linux"
+            "windows"
+            "aarch64"
+          ]
+          "${arch}-${os}";
     in
     {
       inherit name;
-      value = { inherit arch os hash; };
+      value = {
+        inherit arch os hash;
+      };
     };
   dists = builtins.listToAttrs (builtins.map parseLine hashesLines);
   dist = dists.${platform} or (throw "Unsupported platform ${platform}");

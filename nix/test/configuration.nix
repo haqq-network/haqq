@@ -1,16 +1,13 @@
-{ ... }:
-{
+_: {
   system.stateVersion = "23.11";
 
-  /*
-    sops.age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-      sops.secrets.grafana_secret_key = {
-      mode = "0400";
-      owner = config.users.users.grafana-agent.name;
-      sopsFile = config.services.haqqd.grafana.sopsFile;
-      restartUnits = [ "grafana-agent-flow.service" ];
-      };
-      */
+  # sops.age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+  # sops.secrets.grafana_secret_key = {
+  #   mode = "0400";
+  #   owner = config.users.users.grafana-agent.name;
+  #   sopsFile = config.services.haqqd.grafana.sopsFile;
+  #   restartUnits = [ "grafana-agent-flow.service" ];
+  # };
 
   services.haqqd-supervised = {
     enable = true;

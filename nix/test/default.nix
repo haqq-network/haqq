@@ -2,9 +2,9 @@
 pkgs.nixosTest rec {
   name = "service-test";
   enableOCR = true;
-  globalTimeout = 60 * 60 * 6; #  hours (statesync is very slow until we migrate to iavlv1)
+  globalTimeout = 60 * 60 * 6; # hours (statesync is very slow until we migrate to iavlv1)
 
-  nodes.machine = { config, ... }: {
+  nodes.machine = _: {
     virtualisation = {
       memorySize = 16 * 1024;
       diskSize = 50 * 1024;
@@ -58,14 +58,13 @@ pkgs.nixosTest rec {
     };
     users.groups.haqqer = { };
 
-    environment.systemPackages = with pkgs;
-      [
-        curl
-        dig.host
-        dig.dnsutils
-        inetutils
-        htop
-      ];
+    environment.systemPackages = with pkgs; [
+      curl
+      dig.host
+      dig.dnsutils
+      inetutils
+      htop
+    ];
   };
 
   # https://nix.dev/tutorials/nixos/integration-testing-using-virtual-machines.html
@@ -73,14 +72,14 @@ pkgs.nixosTest rec {
     machine.start()
 
     machine.wait_for_file("/var/lib/haqqd/.haqqd/.bootstrapped")
-    
+
     machine.wait_for_open_port(26656)
 
     timeout = 60 * 5 # 5 minutes
     text = "Applied snapshot chunk"
 
     machine.wait_until_succeeds(f"journalctl -u haqqd.service --since -1m --grep='{text}'", timeout= timeout)
-    
+
     timeout = ${toString globalTimeout}
     text = "commit synced commit"
 

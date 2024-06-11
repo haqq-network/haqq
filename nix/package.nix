@@ -1,15 +1,18 @@
-{ rev
-, nix-gitignore
-, buildGoApplication
-, go
-, lib
+{
+  rev,
+  nix-gitignore,
+  buildGoApplication,
+  go,
+  lib,
 }:
 let
   name = "haqq";
   pname = "${name}";
-  version =
-    (import ./version.nix { });
-  tags = [ "ledger" "netgo" ];
+  version = import ./version.nix;
+  tags = [
+    "ledger"
+    "netgo"
+  ];
   ldflags = [
     "-X github.com/cosmos/cosmos-sdk/version.Name=evmos"
     "-X github.com/cosmos/cosmos-sdk/version.AppName=${pname}"
@@ -20,7 +23,12 @@ let
   ];
 in
 buildGoApplication rec {
-  inherit name version go ldflags;
+  inherit
+    name
+    version
+    go
+    ldflags
+    ;
 
   modules = ../gomod2nix.toml;
   CGO_ENABLED = "1";

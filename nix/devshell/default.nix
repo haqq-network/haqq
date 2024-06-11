@@ -1,21 +1,28 @@
-{ lib, pkgs, pkgsUnstable, ... }:
+{ lib, pkgs, ... }:
 {
   dotenv.enable = true;
 
-  packages = with pkgs;
-    [
-      pkgsUnstable.act
-      gh
-      jq
-      yq
-      dasel
-    ];
+  packages = with pkgs; [
+    act
+    dasel
+    gh
+    jq
+    yq
+  ];
 
   enterShell = ''
     export PATH=node_modules/.bin:$PATH
   '';
 
   pre-commit.hooks = {
+    nil.enable = true;
+    deadnix.enable = true;
+    statix.enable = true;
+    nixfmt = {
+      enable = true;
+      package = pkgs.nixfmt-rfc-style;
+    };
+
     golangci-lint.enable = false; # FIXME Fails!
 
     gomod2nix-generate = {
