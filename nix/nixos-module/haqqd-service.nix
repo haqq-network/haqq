@@ -17,6 +17,7 @@ let
     chain-id = "haqq_11235-1";
     p2p.seeds = "c45991e0098b9cacb8603caf4e1cdb7e6e5f87c0@eu.seed.haqq.network:26656,e37cb47590ba46b503269ef255873e9698244d8b@us.seed.haqq.network:26656,c593e93e1fb8be8b48d4e7bab514a227aa620bf8@as.seed.haqq.network:26656,8542cd7e6bf9d260fef543bc49e59be5a3fa9074@seed.publicnode.com:26656,0533e20e65912f72f2ad88a4c91eefbc634212d7@haqq-sync.rpc.p2p.world:26656,20e1000e88125698264454a884812746c2eb4807@seeds.lavenderfive.com:24056";
   };
+
   defaultCfgAppToml = lib.recursiveUpdate (lib.importTOML "${defaultCfg}/app.toml") {
     telemetry = {
       enabled = true;
@@ -158,7 +159,7 @@ in
 
         before = [ "haqqd.service" ];
         after = [
-          "network-online.target"
+          "network.target"
           "nss-lookup.target"
         ];
       };
@@ -191,11 +192,11 @@ in
             };
           in
           {
-            User = haqqdUserName;
+            User = cfg.user;
             ExecStart = ''${start}/bin/haqqd-start'';
             WorkingDirectory = cfg.userHome;
-            Restart = "on-failure";
-            RestartSec = 30;
+            Restart = "always";
+            RestartSec = 3;
             LimitNOFILE = "infinity";
           };
 
@@ -203,6 +204,7 @@ in
           DAEMON_HOME = "${cfg.userHome}/.haqqd";
           DAEMON_NAME = "haqqd";
           DAEMON_ALLOW_DOWNLOAD_BINARIES = "true";
+          DAEMON_RESTART_AFTER_UPGRADE = "true";
           UNSAFE_SKIP_BACKUP = "false";
 
           inherit (config.environment.variables) NIX_LD;
