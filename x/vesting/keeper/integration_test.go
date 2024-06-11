@@ -2,33 +2,72 @@ package keeper_test
 
 import (
 	"math/big"
-	"strings"
+	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/stretchr/testify/suite"
+
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
-	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/testutil"
+	"github.com/haqq-network/haqq/testutil/integration/common/factory"
+	haqqfactory "github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/utils"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
-// TestClawbackAccount is a struct to store all relevant information that is corresponding
-// to a clawback vesting account.
-type TestClawbackAccount struct {
-	privKey         *ethsecp256k1.PrivKey
-	address         sdk.AccAddress
-	clawbackAccount *types.ClawbackVestingAccount
+type KeeperIntegrationTestSuite struct {
+	suite.Suite
+
+	network     *network.UnitTestNetwork
+	factory     haqqfactory.TxFactory
+	grpcHandler grpc.Handler
+	keyring     keyring.Keyring
+}
+
+func TestKeeperIntegrationTestSuite(t *testing.T) {
+	// Run Ginkgo integration tests
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Keeper Integration Test Suite")
 }
 
 // Initialize general error variable for easier handling in loops throughout this test suite.
-var err error
+var (
+	numTestMsgs                     = 3
+	vestingAccInitialBalance        = network.PrefundedAccountInitialBalance
+	remainingAmtToPayFees           = math.NewInt(1e16)
+	gasLimit                 uint64 = 500_000
+	gasPrice                        = remainingAmtToPayFees.QuoRaw(int64(gasLimit))
+	dest                            = utiltx.GenerateAddress()
+	stakeDenom                      = utils.BaseDenom
+	accountGasCoverage              = sdk.NewCoins(sdk.NewCoin(stakeDenom, remainingAmtToPayFees))
+	amt                             = testutil.TestVestingSchedule.VestedCoinsPerPeriod[0].Amount
+	cliff                           = testutil.TestVestingSchedule.CliffMonths
+	cliffLength                     = testutil.TestVestingSchedule.CliffPeriodLength
+	vestingAmtTotal                 = testutil.TestVestingSchedule.TotalVestingCoins
+	vestingLength                   = testutil.TestVestingSchedule.VestingPeriodLength
+	numLockupPeriods                = testutil.TestVestingSchedule.NumLockupPeriods
+	periodsTotal                    = testutil.TestVestingSchedule.NumVestingPeriods
+	lockup                          = testutil.TestVestingSchedule.LockupMonths
+	lockupLength                    = testutil.TestVestingSchedule.LockupPeriodLength
+	unlockedPerLockup               = testutil.TestVestingSchedule.UnlockedCoinsPerLockup
+	unlockedPerLockupAmt            = unlockedPerLockup[0].Amount
+)
 
 // Clawback vesting with Cliff and Lock. In this case the cliff is reached
 // before the lockup period is reached to represent the scenario in which an
@@ -40,184 +79,158 @@ var err error
 // 22/09 Cliff ends
 // 23/02 Lock ends
 var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
-	// Monthly vesting period
-	stakeDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
-	s.Require().NoError(err)
-	amt := math.NewInt(1e17)
-	vestingLength := int64(60 * 60 * 24 * 30) // in seconds
-	vestingAmt := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt))
-	vestingPeriod := sdkvesting.Period{Length: vestingLength, Amount: vestingAmt}
-
-	// 4 years vesting total
-	periodsTotal := int64(48)
-	vestingAmtTotal := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(periodsTotal))))
-
-	// 6 month cliff
-	cliff := int64(6)
-	cliffLength := vestingLength * cliff
-	cliffAmt := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(cliff))))
-	cliffPeriod := sdkvesting.Period{Length: cliffLength, Amount: cliffAmt}
-
-	// 12 month lockup
-	lockup := int64(12) // 12 months
-	lockupLength := vestingLength * lockup
-	// Unlock at 12 and 24 months
-	numLockupPeriods := int64(2)
-	// Unlock 1/4th of the total vest in each unlock event. By default, all tokens are
-	// unlocked after surpassing the final period.
-	unlockedPerLockup := vestingAmtTotal.QuoInt(math.NewInt(4))
-	unlockedPerLockupAmt := unlockedPerLockup[0].Amount
-	lockupPeriod := sdkvesting.Period{Length: lockupLength, Amount: unlockedPerLockup}
-	lockupPeriods := make(sdkvesting.Periods, numLockupPeriods)
-	for i := range lockupPeriods {
-		lockupPeriods[i] = lockupPeriod
-	}
-
-	// Create vesting periods with initial cliff
-	vestingPeriods := sdkvesting.Periods{cliffPeriod}
-	for p := int64(1); p <= periodsTotal-cliff; p++ {
-		vestingPeriods = append(vestingPeriods, vestingPeriod)
-	}
-
-	// Create test accounts with private keys for signing
-	numTestAccounts := 4
-	testAccounts := make([]TestClawbackAccount, numTestAccounts)
-	for i := range testAccounts {
-		address, privKey := utiltx.NewAddrKey()
-		testAccounts[i] = TestClawbackAccount{
-			privKey: privKey,
-			address: address.Bytes(),
-		}
-	}
-	numTestMsgs := 3
-
-	accountGasCoverage := sdk.NewCoins(sdk.NewCoin(stakeDenom, math.NewInt(1e16)))
-
 	var (
-		clawbackAccount *types.ClawbackVestingAccount
-		unvested        sdk.Coins
-		vested          sdk.Coins
+		s                 *KeeperIntegrationTestSuite
+		funder            keyring.Key
+		vestingAccs       []keyring.Key
+		clawbackAccount   *types.ClawbackVestingAccount
+		unvested          sdk.Coins
+		vested            sdk.Coins
+		freeCoins         sdk.Coins
+		twoThirdsOfVested sdk.Coins
+		initialFreeCoins  sdk.Coins
 	)
 
-	dest := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
-	funder := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
-
 	BeforeEach(func() {
-		s.SetupTest()
+		s = new(KeeperIntegrationTestSuite)
+		// create 5 prefunded accounts:
+		keys := keyring.New(5)
+		nw := network.NewUnitTestNetwork(
+			network.WithPreFundedAccounts(keys.GetAllAccAddrs()...),
+		)
+		gh := grpc.NewIntegrationHandler(nw)
+		tf := haqqfactory.New(nw, gh)
 
-		// Initialize all test accounts
-		for i, account := range testAccounts {
+		s.network = nw
+		s.factory = tf
+		s.grpcHandler = gh
+		s.keyring = keys
+
+		// index 0 will be the funder
+		// index 1-4 will be vesting accounts
+		funder = keys.GetKey(0)
+		vestingAccs = keys.GetKeys()[1:4]
+
+		// Initialize all vesting accounts
+		for _, account := range vestingAccs {
 			// Create and fund periodic vesting account
-			vestingStart := s.ctx.BlockTime()
-			baseAccount := authtypes.NewBaseAccountWithAddress(account.address)
-			clawbackAccount = types.NewClawbackVestingAccount(
-				baseAccount,
-				funder,
-				vestingAmtTotal,
-				vestingStart,
-				lockupPeriods,
-				vestingPeriods,
-				nil,
-			)
-
-			err := testutil.FundAccount(s.ctx, s.app.BankKeeper, account.address, vestingAmtTotal)
-			s.Require().NoError(err)
-			acc := s.app.AccountKeeper.NewAccount(s.ctx, clawbackAccount)
-			s.app.AccountKeeper.SetAccount(s.ctx, acc)
+			clawbackAccount = s.setupClawbackVestingAccount(account, funder, testutil.TestVestingSchedule.VestingPeriods, testutil.TestVestingSchedule.LockupPeriods)
 
 			// Check if all tokens are unvested at vestingStart
-			unvested = clawbackAccount.GetUnvestedOnly(s.ctx.BlockTime())
-			vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-			s.Require().Equal(vestingAmtTotal, unvested)
-			s.Require().True(vested.IsZero())
-
-			// Grant gas stipend to cover EVM fees
-			err = testutil.FundAccount(s.ctx, s.app.BankKeeper, clawbackAccount.GetAddress(), accountGasCoverage)
-			s.Require().NoError(err)
-			granteeBalance := s.app.BankKeeper.GetBalance(s.ctx, account.address, stakeDenom)
-			s.Require().Equal(granteeBalance, accountGasCoverage[0].Add(vestingAmtTotal[0]))
-
-			// Update testAccounts clawbackAccount reference
-			testAccounts[i].clawbackAccount = clawbackAccount
+			unvested = clawbackAccount.GetUnvestedOnly(s.network.GetContext().BlockTime())
+			vested = clawbackAccount.GetVestedOnly(s.network.GetContext().BlockTime())
+			Expect(vestingAmtTotal).To(Equal(unvested))
+			Expect(vested.IsZero()).To(BeTrue())
 		}
+
+		initialFreeCoins = sdk.NewCoins(sdk.NewCoin(stakeDenom, vestingAccInitialBalance.Sub(remainingAmtToPayFees)))
 	})
 
 	Context("before first vesting period", func() {
 		BeforeEach(func() {
-			// Add a commit to instantiate blocks
-			s.Commit()
-
 			// Ensure no tokens are vested
-			vested := clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-			unlocked := clawbackAccount.GetUnlockedOnly(s.ctx.BlockTime())
+			vested := clawbackAccount.GetVestedOnly(s.network.GetContext().BlockTime())
+			unlocked := clawbackAccount.GetUnlockedOnly(s.network.GetContext().BlockTime())
 			zeroCoins := sdk.NewCoins(sdk.NewCoin(stakeDenom, math.ZeroInt()))
-			s.Require().Equal(zeroCoins.String(), vested.String())
-			s.Require().Equal(zeroCoins.String(), unlocked.String())
+			Expect(zeroCoins).To(Equal(vested))
+			Expect(zeroCoins).To(Equal(unlocked))
 		})
 
 		It("cannot delegate unvested tokens", func() {
-			// Try to delegate more than available spendable balance
-			// All vesting tokens are unvested at this point
-			// Only 1e16 aISLM is available for gas coverage
-			err := delegate(clawbackAccount, math.NewInt(1e18), s.validator.GetOperator())
-			// Must fail due to insufficient balance
+			err := s.factory.Delegate(
+				vestingAccs[0].Priv,
+				s.network.GetValidators()[0].OperatorAddress,
+				sdk.NewCoin(stakeDenom, vestingAccInitialBalance.Add(math.NewInt(1))),
+			)
 			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("insufficient vested coins"))
 		})
 
 		It("can delegate spendable tokens", func() {
 			// Try to delegate available spendable balance
 			// All vesting tokens are unvested at this point
 			// Only 1e16 aISLM is available for gas coverage
-			err := delegate(clawbackAccount, math.NewInt(1e15), s.validator.GetOperator())
+			err := s.factory.Delegate(
+				vestingAccs[0].Priv,
+				s.network.GetValidators()[0].OperatorAddress,
+				sdk.NewCoin(stakeDenom, math.NewInt(1e15)),
+			)
 			// Must succeed as spendable balance is sufficient
 			Expect(err).To(BeNil())
 		})
 
 		It("can transfer spendable tokens", func() {
-			account := testAccounts[0]
-			// Fund account with new spendable tokens
-			err := testutil.FundAccount(s.ctx, s.app.BankKeeper, account.address, unvested)
+			account := vestingAccs[0]
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
 			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
 
-			err = s.app.BankKeeper.SendCoins(
-				s.ctx,
-				account.address,
-				dest,
-				unvested,
-			)
+			sendAmt := vestingAccInitialBalance.Sub(remainingAmtToPayFees.MulRaw(2))
+			spendableCoin := sdk.NewCoin(stakeDenom, sendAmt)
+			coins := sdk.NewCoins(spendableCoin)
+			msg := banktypes.NewMsgSend(account.AccAddr, dest.Bytes(), coins)
+			res, err := s.factory.ExecuteCosmosTx(account.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice, Gas: &gasLimit})
 			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			fees := gasPrice.Mul(math.NewInt(res.GasWanted))
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			Expect(balancePost.Amount).To(Equal(balancePrev.Amount.Sub(fees).Sub(sendAmt)))
+
+			balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(sendAmt))
 		})
 
 		It("cannot transfer unvested tokens", func() {
-			err := s.app.BankKeeper.SendCoins(
-				s.ctx,
-				clawbackAccount.GetAddress(),
-				dest,
-				unvested,
-			)
+			account := vestingAccs[0]
+			coins := unvested.Add(sdk.NewCoin(stakeDenom, vestingAccInitialBalance.Sub(remainingAmtToPayFees)))
+			msg := banktypes.NewMsgSend(account.AccAddr, dest.Bytes(), coins)
+			_, err := s.factory.ExecuteCosmosTx(account.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
 			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("spendable balance"))
+			Expect(err.Error()).To(ContainSubstring("is smaller than"))
 		})
 
 		It("can perform Ethereum tx with spendable balance", func() {
-			account := testAccounts[0]
-			// Fund account with new spendable tokens
-			err := testutil.FundAccount(s.ctx, s.app.BankKeeper, account.address, unlockedPerLockup)
-			Expect(err).To(BeNil())
+			account := vestingAccs[0]
 
-			txAmount := unlockedPerLockupAmt.BigInt()
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, 0)
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
 			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
 
-			assertEthSucceeds([]TestClawbackAccount{account}, funder, dest, unlockedPerLockupAmt, stakeDenom, msg)
+			sendAmt := vestingAccInitialBalance.Sub(remainingAmtToPayFees.MulRaw(2))
+
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), Amount: sendAmt.BigInt()})
+			Expect(err).To(BeNil())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			fees := gasPrice.Mul(math.NewInt(res.GasWanted))
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			Expect(balancePost.Amount).To(Equal(balancePrev.Amount.Sub(sendAmt).Sub(fees)))
+
+			balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(sendAmt))
 		})
 
 		It("cannot perform Ethereum tx with unvested balance", func() {
-			account := testAccounts[0]
-			txAmount := unlockedPerLockupAmt.BigInt()
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, 0)
-			Expect(err).To(BeNil())
+			account := vestingAccs[0]
+			txAmount := vestingAccInitialBalance.Sub(remainingAmtToPayFees).Add(unvested.AmountOf(stakeDenom)).BigInt()
 
-			assertEthFails(msg)
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), Amount: txAmount})
+			Expect(err).NotTo(BeNil())
+			Expect(err.Error()).To(ContainSubstring("clawback vesting account has insufficient unlocked tokens"))
+			Expect(res.IsOK()).To(BeFalse())
 		})
 	})
 
@@ -225,368 +238,817 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 		BeforeEach(func() {
 			// Surpass cliff but none of lockup duration
 			cliffDuration := time.Duration(cliffLength)
-			s.CommitAfter(cliffDuration * time.Second)
+			Expect(s.network.NextBlockAfter(cliffDuration * time.Second)).To(BeNil())
+
+			acc, err := s.grpcHandler.GetAccount(vestingAccs[0].AccAddr.String())
+			Expect(err).To(BeNil())
+			var ok bool
+			clawbackAccount, ok = acc.(*types.ClawbackVestingAccount)
+			Expect(ok).To(BeTrue())
 
 			// Check if some, but not all tokens are vested
-			vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-			unvested = clawbackAccount.GetUnvestedOnly(s.ctx.BlockTime())
+			vested = clawbackAccount.GetVestedOnly(s.network.GetContext().BlockTime())
 			expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(cliff))))
-			s.Require().NotEqual(vestingAmtTotal, vested)
-			s.Require().Equal(expVested, vested)
+			Expect(vestingAmtTotal).NotTo(Equal(vested))
+			Expect(expVested).To(Equal(vested))
+
+			// check the vested tokens are still locked
+			freeCoins = clawbackAccount.GetVestedCoins(s.network.GetContext().BlockTime())
+			Expect(freeCoins.IsZero()).To(BeTrue())
+
+			twoThirdsOfVested = vested.Sub(vested.QuoInt(math.NewInt(3))...)
+
+			qc := s.network.GetVestingClient()
+			res, err := qc.Balances(s.network.GetContext(), &types.QueryBalancesRequest{Address: clawbackAccount.Address})
+			Expect(err).To(BeNil())
+			Expect(res.Vested).To(Equal(expVested))
+			Expect(res.Unvested).To(Equal(vestingAmtTotal.Sub(expVested...)))
+			// All coins from vesting schedule should be locked
+			Expect(res.Locked).To(Equal(vestingAmtTotal))
 		})
 
-		It("can delegate vested tokens", func() {
-			err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator())
+		It("can delegate vested locked tokens", func() {
+			account := vestingAccs[0]
+			// Verify that the total spendable coins should only be coins
+			// not in the vesting schedule. Because all coins from the vesting
+			// schedule are still locked
+			res, err := s.grpcHandler.GetSpendableBalance(account.AccAddr, stakeDenom)
 			Expect(err).To(BeNil())
+			spendablePre := res.Balance
+			Expect(*spendablePre).To(Equal(initialFreeCoins[0]))
+
+			// delegate the vested locked coins.
+			err = s.factory.Delegate(account.Priv, s.network.GetValidators()[0].OperatorAddress, vested[0])
+			Expect(err).To(BeNil(), "expected no error during delegation")
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check spendable coins have only been reduced by the gas paid for the transaction to show that the delegated coins were taken from the locked but vested amount
+			res, err = s.grpcHandler.GetSpendableBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			spendablePost := res.Balance
+			Expect(*spendablePost).To(Equal(spendablePre.Sub(accountGasCoverage[0])))
+
+			// check delegation was created successfully
+			stkQuerier := s.network.GetStakingClient()
+			delRes, err := stkQuerier.DelegatorDelegations(s.network.GetContext(), &stakingtypes.QueryDelegatorDelegationsRequest{DelegatorAddr: account.AccAddr.String()})
+			Expect(err).To(BeNil())
+			Expect(delRes.DelegationResponses).To(HaveLen(1))
+			Expect(delRes.DelegationResponses[0].Balance.Amount).To(Equal(vested[0].Amount))
 		})
 
-		It("can delegate vested and own tokens", func() {
-			// Try to delegate more than vested amount
-			// 1e16 aISLM is available for gas coverage
-			// So there's enough to delegate vested and own tokens
-			vestedIslm := vested.AmountOf(stakeDenom)
-			unvestedIslm := unvested.AmountOf(stakeDenom)
-			// Fund account with new spendable tokens
-			err := testutil.FundAccount(s.ctx, s.app.BankKeeper, clawbackAccount.GetAddress(), unvested)
-			Expect(err).To(BeNil())
+		It("account with free balance - delegates the free balance amount. It is tracked as locked vested tokens for the spendable balance calculation", func() {
+			account := vestingAccs[0]
 
-			err = delegate(clawbackAccount, vestedIslm.Add(unvestedIslm), s.validator.GetOperator())
-			// Must succeed as spendable balance is sufficient
+			// vesting account has some initial balance
+			coinsToDelegate := sdk.NewCoins(sdk.NewCoin(stakeDenom, math.NewInt(1e18)))
+			// check that coins to delegate are greater than the locked up vested coins
+			Expect(coinsToDelegate.IsAllGT(vested)).To(BeTrue())
+
+			// the free coins delegated will be the delegatedCoins - lockedUp vested coins
+			freeCoinsDelegated := coinsToDelegate.Sub(vested...)
+
+			balRes, err := s.grpcHandler.GetAllBalances(account.AccAddr)
 			Expect(err).To(BeNil())
+			initialBalances := balRes.Balances
+			Expect(initialBalances).To(Equal(testutil.TestVestingSchedule.TotalVestingCoins.Add(initialFreeCoins...)))
+			// Verify that the total spendable coins should only be coins
+			// not in the vesting schedule. Because all coins from the vesting
+			// schedule are still locked up
+			spRes, err := s.grpcHandler.GetSpendableBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			spendablePre := spRes.Balance
+			Expect(*spendablePre).To(Equal(initialFreeCoins[0]))
+
+			// delegate funds - the delegation amount will be tracked as locked up vested coins delegated + some free coins
+			err = s.factory.Delegate(account.Priv, s.network.GetValidators()[0].OperatorAddress, coinsToDelegate[0])
+			Expect(err).NotTo(HaveOccurred(), "expected no error during delegation")
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check balances updated properly
+			balRes, err = s.grpcHandler.GetAllBalances(account.AccAddr)
+			Expect(err).To(BeNil())
+			finalBalances := balRes.Balances
+			Expect(finalBalances).To(Equal(initialBalances.Sub(coinsToDelegate...).Sub(accountGasCoverage...)))
+
+			// the expected spendable balance will be
+			// spendable = bank balances - (coins in vesting schedule - unlocked vested coins (0) - locked up vested coins delegated)
+			expSpendable := finalBalances.Sub(testutil.TestVestingSchedule.TotalVestingCoins...).Add(vested...)
+
+			// which should be equal to the initial freeCoins - freeCoins delegated
+			Expect(expSpendable).To(Equal(initialFreeCoins.Sub(freeCoinsDelegated...).Sub(accountGasCoverage...)))
+
+			// check spendable balance is updated properly
+			res, err := s.grpcHandler.GetSpendableBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			spendablePost := res.Balance
+			Expect(*spendablePost).To(Equal(expSpendable[0]))
 		})
 
-		It("cannot delegate unvested tokens", func() {
-			err := delegate(clawbackAccount, vestingAmtTotal.AmountOf(stakeDenom), s.validator.GetOperator())
+		It("cannot delegate unvested tokens in sequetial txs", func() {
+			coinsToDelegate := sdk.NewCoin(stakeDenom, vestingAccInitialBalance.Sub(remainingAmtToPayFees.MulRaw(2))).Add(twoThirdsOfVested[0])
+			err := s.factory.Delegate(vestingAccs[0].Priv, s.network.GetValidators()[0].OperatorAddress, coinsToDelegate)
+			Expect(err).To(BeNil(), "error while executing the delegate message")
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			err = s.factory.Delegate(vestingAccs[0].Priv, s.network.GetValidators()[0].OperatorAddress, twoThirdsOfVested[0])
 			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("cannot delegate unvested coins"))
 		})
 
-		It("cannot transfer vested tokens", func() {
-			err := s.app.BankKeeper.SendCoins(
-				s.ctx,
-				clawbackAccount.GetAddress(),
-				dest,
-				vested,
-			)
+		It("cannot delegate then send tokens", func() {
+			account := vestingAccs[0]
+			coinsToDelegate := sdk.NewCoin(stakeDenom, vestingAccInitialBalance.Sub(remainingAmtToPayFees.MulRaw(2))).Add(twoThirdsOfVested[0])
+			err := s.factory.Delegate(account.Priv, s.network.GetValidators()[0].OperatorAddress, coinsToDelegate)
+			Expect(err).To(BeNil())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			msg := banktypes.NewMsgSend(account.AccAddr, dest.Bytes(), twoThirdsOfVested)
+			_, err = s.factory.ExecuteCosmosTx(account.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
 			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("spendable balance"))
+			Expect(err.Error()).To(ContainSubstring("is smaller than"))
+		})
+
+		It("cannot delegate more than the locked vested tokens", func() {
+			coinsToDelegate := vested.Add(sdk.NewCoin(stakeDenom, vestingAccInitialBalance.Sub(remainingAmtToPayFees))).Add(sdk.NewCoin(stakeDenom, math.OneInt()))
+			err := s.factory.Delegate(vestingAccs[0].Priv, s.network.GetValidators()[0].OperatorAddress, coinsToDelegate[0])
+			Expect(err).NotTo(BeNil())
+			Expect(err.Error()).To(ContainSubstring("cannot delegate unvested coins"))
+		})
+
+		It("cannot delegate free tokens and then send locked/unvested tokens", func() {
+			account := vestingAccs[0]
+			// send some funds to the account to delegate
+			coinsToDelegate := vested.Add(initialFreeCoins...).Sub(accountGasCoverage...)
+
+			err := s.factory.Delegate(account.Priv, s.network.GetValidators()[0].OperatorAddress, coinsToDelegate[0])
+			Expect(err).To(BeNil())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			sendCoins := twoThirdsOfVested
+
+			msg := banktypes.NewMsgSend(account.AccAddr, dest.Bytes(), sendCoins)
+			_, err = s.factory.ExecuteCosmosTx(account.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("spendable balance"))
+			Expect(err.Error()).To(ContainSubstring("is smaller than"))
+		})
+
+		It("cannot transfer locked vested tokens", func() {
+			msg := banktypes.NewMsgSend(vestingAccs[0].AccAddr, dest.Bytes(), vested.Add(sdk.NewCoin(stakeDenom, vestingAccInitialBalance.Sub(remainingAmtToPayFees))))
+			_, err := s.factory.ExecuteCosmosTx(vestingAccs[0].Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("spendable balance"))
+			Expect(err.Error()).To(ContainSubstring("is smaller than"))
 		})
 
 		It("can perform Ethereum tx with spendable balance", func() {
-			account := testAccounts[0]
-			// Fund account with new spendable tokens
-			err := testutil.FundAccount(s.ctx, s.app.BankKeeper, account.address, unlockedPerLockup)
-			Expect(err).To(BeNil())
+			account := vestingAccs[0]
 
-			txAmount := unlockedPerLockupAmt.BigInt()
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, 0)
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
 			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
 
-			assertEthSucceeds([]TestClawbackAccount{account}, funder, dest, unlockedPerLockupAmt, stakeDenom, msg)
+			availableCoins := initialFreeCoins.Sub(accountGasCoverage...)
+			txAmount := availableCoins[0].Amount
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), Amount: txAmount.BigInt()})
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			fees := gasPrice.Mul(math.NewInt(res.GasWanted))
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			Expect(balancePost.Amount).To(Equal(balancePrev.Amount.Sub(fees).Sub(txAmount)))
+
+			balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(txAmount))
 		})
 
-		It("cannot perform Ethereum tx with locked balance", func() {
-			account := testAccounts[0]
-			txAmount := vested.AmountOf(stakeDenom).BigInt()
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, 0)
-			Expect(err).To(BeNil())
-
-			assertEthFails(msg)
+		It("cannot perform Ethereum tx with locked vested balance", func() {
+			account := vestingAccs[0]
+			txAmount := vestingAccInitialBalance.Add(vested.AmountOf(stakeDenom)).Sub(remainingAmtToPayFees)
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), Amount: txAmount.BigInt()})
+			Expect(err).NotTo(BeNil())
+			Expect(err.Error()).To(ContainSubstring("clawback vesting account has insufficient unlocked tokens to execute transaction"))
+			Expect(res.IsOK()).To(BeFalse())
 		})
 	})
 
 	Context("Between first and second lockup periods", func() {
 		BeforeEach(func() {
 			// Surpass first lockup
-			vestDuration := time.Duration(lockupLength)
-			s.CommitAfter(vestDuration * time.Second)
+			vestDuration := time.Duration(testutil.TestVestingSchedule.LockupPeriodLength)
+			Expect(s.network.NextBlockAfter(vestDuration * time.Second)).To(BeNil())
 
+			// after first lockup period
+			// half of total vesting tokens are unlocked
+			// but only 12 vesting periods passed
 			// Check if some, but not all tokens are vested and unlocked
-			for _, account := range testAccounts {
-				vested := account.clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-				unlocked := account.clawbackAccount.GetUnlockedOnly(s.ctx.BlockTime())
-				expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(lockup))))
+			for _, account := range vestingAccs {
+				acc, err := s.grpcHandler.GetAccount(account.AccAddr.String())
+				Expect(err).To(BeNil())
+				vestAcc, ok := acc.(*types.ClawbackVestingAccount)
+				Expect(ok).To(BeTrue())
 
-				s.Require().NotEqual(vestingAmtTotal, vested)
-				s.Require().Equal(expVested, vested)
-				s.Require().Equal(unlocked, unlockedPerLockup)
+				vested = vestAcc.GetVestedOnly(s.network.GetContext().BlockTime())
+				unlocked := vestAcc.GetUnlockedOnly(s.network.GetContext().BlockTime())
+				freeCoins = vestAcc.GetVestedCoins(s.network.GetContext().BlockTime())
+				expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(lockup))))
+				expUnlockedVested := expVested
+
+				Expect(vested).NotTo(Equal(vestingAmtTotal))
+				Expect(vested).To(Equal(expVested))
+				Expect(unlocked).To(Equal(unlockedPerLockup))
+				Expect(freeCoins).To(Equal(expUnlockedVested))
 			}
 		})
 
-		It("should enable access to unlocked EVM tokens (single-account, single-msg)", func() {
-			account := testAccounts[0]
+		It("delegate unlocked vested tokens and spendable balance is updated properly", func() {
+			account := vestingAccs[0]
 
-			txAmount := unlockedPerLockupAmt.BigInt()
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, 0)
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
 			Expect(err).To(BeNil())
+			balance := balRes.Balance
+			// the returned balance should be the account's initial balance and
+			// the total amount of the vesting schedule
+			Expect(balance.Amount).To(Equal(initialFreeCoins.Add(vestingAmtTotal...)[0].Amount))
 
-			assertEthSucceeds([]TestClawbackAccount{account}, funder, dest, unlockedPerLockupAmt, stakeDenom, msg)
+			spRes, err := s.grpcHandler.GetSpendableBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			// spendable balance should be the initial account balance + vested tokens
+			initialSpendableBalance := spRes.Balance
+			Expect(initialSpendableBalance.Amount).To(Equal(initialFreeCoins.Add(freeCoins...)[0].Amount))
+
+			// can delegate vested tokens
+			// fees paid is accountGasCoverage amount
+			coinsToDelegate := freeCoins.Add(initialFreeCoins...).Sub(accountGasCoverage...)
+			err = s.factory.Delegate(account.Priv, s.network.GetValidators()[0].OperatorAddress, coinsToDelegate[0])
+			Expect(err).ToNot(HaveOccurred(), "expected no error during delegation")
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// spendable balance should be updated to be prevSpendableBalance - delegatedAmt - fees
+			spRes, err = s.grpcHandler.GetSpendableBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			Expect(spRes.Balance.Amount.Int64()).To(Equal(int64(0)))
+
+			// try to send coins - should error
+			msg := banktypes.NewMsgSend(account.AccAddr, dest.Bytes(), vested)
+			_, err = s.factory.ExecuteCosmosTx(account.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
+			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("spendable balance"))
+			Expect(err.Error()).To(ContainSubstring("is smaller than"))
+		})
+
+		It("cannot delegate more than vested tokens", func() {
+			account := vestingAccs[0]
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balance := balRes.Balance
+			// the returned balance should be the account's initial balance and
+			// the total amount of the vesting schedule
+			Expect(balance.Amount).To(Equal(initialFreeCoins.Add(vestingAmtTotal...)[0].Amount))
+
+			spRes, err := s.grpcHandler.GetSpendableBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			// spendable balance should be the initial account balance + vested tokens
+			initialSpendableBalance := spRes.Balance
+			Expect(initialSpendableBalance.Amount).To(Equal(initialFreeCoins.Add(freeCoins...)[0].Amount))
+
+			// cannot delegate more than vested tokens
+			coinsToDelegate := freeCoins.Add(initialFreeCoins...).Add(sdk.NewCoin(stakeDenom, math.OneInt())).Sub(accountGasCoverage...)
+			err = s.factory.Delegate(account.Priv, s.network.GetValidators()[0].OperatorAddress, coinsToDelegate[0])
+			Expect(err).To(HaveOccurred(), "expected no error during delegation")
+			Expect(err.Error()).To(ContainSubstring("cannot delegate unvested coins"))
+		})
+
+		It("should enable access to unlocked and vested EVM tokens (single-account, single-msg)", func() {
+			account := vestingAccs[0]
+
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
+
+			// the freeCoins are the unlocked vested coins
+			txAmount := initialFreeCoins.Add(freeCoins...).Sub(accountGasCoverage...)[0].Amount
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), Amount: txAmount.BigInt()})
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			fees := gasPrice.Mul(math.NewInt(res.GasWanted))
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			Expect(balancePost.Amount).To(Equal(balancePrev.Amount.Sub(fees).Sub(txAmount)))
+
+			balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(txAmount))
 		})
 
 		It("should enable access to unlocked EVM tokens (single-account, multiple-msgs)", func() {
-			account := testAccounts[0]
+			account := vestingAccs[0]
+
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
 
 			// Split the total unlocked amount into numTestMsgs equally sized tx's
 			msgs := make([]sdk.Msg, numTestMsgs)
-			txAmount := unlockedPerLockupAmt.QuoRaw(int64(numTestMsgs)).BigInt()
+			// send all the account's spendable balance
+			// initial_balance + unlocked in several messages
+			totalSendAmt := initialFreeCoins.Add(freeCoins...)[0].Amount.Sub(remainingAmtToPayFees.MulRaw(2))
+			txAmount := totalSendAmt.QuoRaw(int64(numTestMsgs))
 
+			// update to the actual totalSendAmt to the sum of all sent txAmount
+			// to avoid errors due to rounding
+			totalSendAmt = math.ZeroInt()
 			for i := 0; i < numTestMsgs; i++ {
-				msgs[i], err = utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, i)
+				msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{Nonce: uint64(i + 1), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 				Expect(err).To(BeNil())
+				msgs[i] = &msg
+				totalSendAmt = totalSendAmt.Add(txAmount)
 			}
 
-			assertEthSucceeds([]TestClawbackAccount{account}, funder, dest, unlockedPerLockupAmt, stakeDenom, msgs...)
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			tx, err := utiltx.PrepareEthTx(txConfig, s.network.App, nil, msgs...)
+			Expect(err).To(BeNil())
+
+			txBytes, err := txConfig.TxEncoder()(tx)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			fees := gasPrice.Mul(math.NewInt(res.GasUsed))
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			Expect(balancePost.Amount).To(Equal(balancePrev.Amount.Sub(fees).Sub(totalSendAmt)))
+
+			balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(totalSendAmt))
 		})
 
-		It("should enable access to unlocked EVM tokens (multi-account, single-msg)", func() {
-			txAmount := unlockedPerLockupAmt.BigInt()
+		It("should enable access to unlocked EVM tokens (multi-account, single-tx)", func() {
+			spRes, err := s.grpcHandler.GetSpendableBalance(vestingAccs[0].AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			spendableBalance := spRes.Balance
+			// check that the spendable balance > than the initial free coins
+			Expect(spendableBalance.Sub(initialFreeCoins[0]).IsPositive()).To(BeTrue())
 
-			msgs := make([]sdk.Msg, numTestAccounts)
-			for i, grantee := range testAccounts {
-				msgs[i], err = utiltx.CreateEthTx(s.ctx, s.app, grantee.privKey, grantee.address, dest, txAmount, 0)
+			txAmount := spendableBalance.Amount.Sub(remainingAmtToPayFees)
+
+			msgs := make([]sdk.Msg, len(vestingAccs))
+			for i, grantee := range vestingAccs {
+				msg, err := s.factory.GenerateSignedMsgEthereumTx(grantee.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 				Expect(err).To(BeNil())
+				msgs[i] = &msg
 			}
 
-			assertEthSucceeds(testAccounts, funder, dest, unlockedPerLockupAmt, stakeDenom, msgs...)
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			tx, err := utiltx.PrepareEthTx(txConfig, s.network.App, nil, msgs...)
+			Expect(err).To(BeNil())
+
+			txBytes, err := txConfig.TxEncoder()(tx)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			balRes, err := s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(txAmount.MulRaw(int64(len(vestingAccs)))))
 		})
 
 		It("should enable access to unlocked EVM tokens (multi-account, multiple-msgs)", func() {
-			msgs := []sdk.Msg{}
-			txAmount := unlockedPerLockupAmt.QuoRaw(int64(numTestMsgs)).BigInt()
+			spRes, err := s.grpcHandler.GetSpendableBalance(vestingAccs[0].AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			spendableBalance := spRes.Balance
+			// check that the spendable balance > than the initial free coins
+			Expect(spendableBalance.Sub(initialFreeCoins[0]).IsPositive()).To(BeTrue())
 
-			for _, grantee := range testAccounts {
-				for j := 0; j < numTestMsgs; j++ {
-					addedMsg, err := utiltx.CreateEthTx(s.ctx, s.app, grantee.privKey, grantee.address, dest, txAmount, j)
+			amtSentByAcc := spendableBalance.Amount.Sub(remainingAmtToPayFees.MulRaw(int64(numTestMsgs)))
+			txAmount := amtSentByAcc.QuoRaw(int64(numTestMsgs))
+
+			msgs := []sdk.Msg{}
+			for _, grantee := range vestingAccs {
+				for i := 0; i < numTestMsgs; i++ {
+					msg, err := s.factory.GenerateSignedMsgEthereumTx(grantee.Priv, evmtypes.EvmTxArgs{Nonce: uint64(i + 1), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 					Expect(err).To(BeNil())
-					msgs = append(msgs, addedMsg)
+					msgs = append(msgs, &msg)
 				}
 			}
 
-			assertEthSucceeds(testAccounts, funder, dest, unlockedPerLockupAmt, stakeDenom, msgs...)
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			tx, err := utiltx.PrepareEthTx(txConfig, s.network.App, nil, msgs...)
+			Expect(err).To(BeNil())
+
+			txBytes, err := txConfig.TxEncoder()(tx)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			balRes, err := s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(amtSentByAcc.MulRaw(int64(len(vestingAccs)))))
 		})
 
 		It("should not enable access to locked EVM tokens (single-account, single-msg)", func() {
-			testAccount := testAccounts[0]
+			testAccount := vestingAccs[0]
 			// Attempt to spend entire vesting balance
-			txAmount := vestingAmtTotal.AmountOf(stakeDenom).BigInt()
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, testAccount.privKey, testAccount.address, dest, txAmount, 0)
+			txAmount := initialFreeCoins.Add(vestingAmtTotal...)[0].Amount.Sub(remainingAmtToPayFees)
+
+			msg, err := s.factory.GenerateSignedMsgEthereumTx(testAccount.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 			Expect(err).To(BeNil())
 
-			assertEthFails(msg)
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			tx, err := utiltx.PrepareEthTx(txConfig, s.network.App, nil, &msg)
+			Expect(err).To(BeNil())
+
+			txBytes, err := txConfig.TxEncoder()(tx)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsErr()).To(BeTrue())
+			Expect(res.Log).To(ContainSubstring("clawback vesting account has insufficient unlocked tokens to execute transaction"))
 		})
 
 		It("should not enable access to locked EVM tokens (single-account, multiple-msgs)", func() {
+			account := vestingAccs[0]
 			msgs := make([]sdk.Msg, numTestMsgs+1)
-			txAmount := unlockedPerLockupAmt.QuoRaw(int64(numTestMsgs)).BigInt()
-			testAccount := testAccounts[0]
+			amt := vestingAccInitialBalance.Sub(remainingAmtToPayFees).Add(unlockedPerLockupAmt)
+			txAmount := amt.QuoRaw(int64(numTestMsgs))
 
 			// Add additional message that exceeds unlocked balance
 			for i := 0; i < numTestMsgs+1; i++ {
-				msgs[i], err = utiltx.CreateEthTx(s.ctx, s.app, testAccount.privKey, testAccount.address, dest, txAmount, i)
+				msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{Nonce: uint64(i + 1), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 				Expect(err).To(BeNil())
+				msgs[i] = &msg
 			}
 
-			assertEthFails(msgs...)
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			tx, err := utiltx.PrepareEthTx(txConfig, s.network.App, nil, msgs...)
+			Expect(err).To(BeNil())
+
+			txBytes, err := txConfig.TxEncoder()(tx)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsErr()).To(BeTrue())
+			Expect(res.Log).To(ContainSubstring("clawback vesting account has insufficient unlocked tokens to execute transaction"))
 		})
 
 		It("should not enable access to locked EVM tokens (multi-account, single-msg)", func() {
-			msgs := make([]sdk.Msg, numTestAccounts+1)
-			txAmount := unlockedPerLockupAmt.BigInt()
+			numVestAccounts := len(vestingAccs)
+			msgs := make([]sdk.Msg, numVestAccounts+1)
+			txAmount := vestingAccInitialBalance.Sub(remainingAmtToPayFees).Add(unlockedPerLockupAmt)
 
-			for i, account := range testAccounts {
-				msgs[i], err = utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, 0)
+			for i, account := range vestingAccs {
+				msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 				Expect(err).To(BeNil())
+				msgs[i] = &msg
 			}
-
 			// Add additional message that exceeds unlocked balance
-			msgs[numTestAccounts], err = utiltx.CreateEthTx(s.ctx, s.app, testAccounts[0].privKey, testAccounts[0].address, dest, txAmount, 1)
+			msg, err := s.factory.GenerateSignedMsgEthereumTx(vestingAccs[0].Priv, evmtypes.EvmTxArgs{Nonce: uint64(2), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+			Expect(err).To(BeNil())
+			msgs[numVestAccounts] = &msg
+
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			tx, err := utiltx.PrepareEthTx(txConfig, s.network.App, nil, msgs...)
 			Expect(err).To(BeNil())
 
-			assertEthFails(msgs...)
+			txBytes, err := txConfig.TxEncoder()(tx)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsErr()).To(BeTrue())
+			Expect(res.Log).To(ContainSubstring("clawback vesting account has insufficient unlocked tokens to execute transaction"))
 		})
 
 		It("should not enable access to locked EVM tokens (multi-account, multiple-msgs)", func() {
 			msgs := []sdk.Msg{}
-			txAmount := unlockedPerLockupAmt.QuoRaw(int64(numTestMsgs)).BigInt()
-			var addedMsg sdk.Msg
+			amt := vestingAccInitialBalance.Sub(remainingAmtToPayFees).Add(unlockedPerLockupAmt)
+			txAmount := amt.QuoRaw(int64(numTestMsgs))
 
-			for _, account := range testAccounts {
-				for j := 0; j < numTestMsgs; j++ {
-					addedMsg, err = utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, j)
-					msgs = append(msgs, addedMsg)
+			for _, account := range vestingAccs {
+				for i := 0; i < numTestMsgs; i++ {
+					msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{Nonce: uint64(i + 1), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+					Expect(err).To(BeNil())
+					msgs = append(msgs, &msg)
 				}
 			}
-
 			// Add additional message that exceeds unlocked balance
-			addedMsg, err = utiltx.CreateEthTx(s.ctx, s.app, testAccounts[0].privKey, testAccounts[0].address, dest, txAmount, numTestMsgs)
+			msg, err := s.factory.GenerateSignedMsgEthereumTx(vestingAccs[0].Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 			Expect(err).To(BeNil())
-			msgs = append(msgs, addedMsg)
+			msgs = append(msgs, &msg)
 
-			assertEthFails(msgs...)
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			tx, err := utiltx.PrepareEthTx(txConfig, s.network.App, nil, msgs...)
+			Expect(err).To(BeNil())
+
+			txBytes, err := txConfig.TxEncoder()(tx)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsErr()).To(BeTrue())
+			Expect(res.Log).To(ContainSubstring("clawback vesting account has insufficient unlocked tokens to execute transaction"))
 		})
-
 		It("should not short-circuit with a normal account", func() {
-			account := testAccounts[0]
-			address, privKey := utiltx.NewAccAddressAndKey()
+			vestAcc := vestingAccs[0]
+			normalAcc := funder
 
-			txAmount := vestingAmtTotal.AmountOf(stakeDenom).BigInt()
+			txAmount := initialFreeCoins.Add(vestingAmtTotal...)[0].Amount.Sub(remainingAmtToPayFees)
 
-			// Fund a normal account to try to short-circuit the AnteHandler
-			err = testutil.FundAccount(s.ctx, s.app.BankKeeper, address, vestingAmtTotal.MulInt(math.NewInt(2)))
+			// Get message from a normal account to try to short-circuit the AnteHandler
+			normAccMsg, err := s.factory.GenerateSignedMsgEthereumTx(normalAcc.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: big.NewInt(100_000)})
 			Expect(err).To(BeNil())
-			normalAccMsg, err := utiltx.CreateEthTx(s.ctx, s.app, privKey, address, dest, txAmount, 0)
-			Expect(err).To(BeNil())
-
 			// Attempt to spend entire balance
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, 0)
+			vestAccMsg, err := s.factory.GenerateSignedMsgEthereumTx(vestAcc.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 			Expect(err).To(BeNil())
-			err = validateEthVestingTransactionDecorator(normalAccMsg, msg)
-			Expect(err).ToNot(BeNil())
 
-			_, err = testutil.DeliverEthTx(s.app, nil, msg)
-			Expect(err).ToNot(BeNil())
+			msgs := []sdk.Msg{&normAccMsg, &vestAccMsg}
+
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			tx, err := utiltx.PrepareEthTx(txConfig, s.network.App, nil, msgs...)
+			Expect(err).To(BeNil())
+
+			txBytes, err := txConfig.TxEncoder()(tx)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsErr()).To(BeTrue())
+			Expect(res.Log).To(ContainSubstring("clawback vesting account has insufficient unlocked tokens to execute transaction"))
 		})
 	})
 
 	Context("after first lockup and additional vest", func() {
 		BeforeEach(func() {
 			vestDuration := time.Duration(lockupLength + vestingLength)
-			s.CommitAfter(vestDuration * time.Second)
+			Expect(s.network.NextBlockAfter(vestDuration * time.Second)).To(BeNil())
 
-			vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
+			vested = clawbackAccount.GetVestedCoins(s.network.GetContext().BlockTime())
 			expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(lockup+1))))
 
-			unlocked := clawbackAccount.GetUnlockedOnly(s.ctx.BlockTime())
+			unlocked := clawbackAccount.GetUnlockedOnly(s.network.GetContext().BlockTime())
 			expUnlocked := unlockedPerLockup
 
-			s.Require().Equal(expVested, vested)
-			s.Require().Equal(expUnlocked, unlocked)
+			Expect(expVested).To(Equal(vested))
+			Expect(expUnlocked).To(Equal(unlocked))
 		})
 
 		It("should enable access to unlocked EVM tokens", func() {
-			testAccount := testAccounts[0]
-
-			txAmount := unlockedPerLockupAmt.BigInt()
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, testAccount.privKey, testAccount.address, dest, txAmount, 0)
+			account := vestingAccs[0]
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
 			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
 
-			assertEthSucceeds([]TestClawbackAccount{testAccount}, funder, dest, unlockedPerLockupAmt, stakeDenom, msg)
+			spRes, err := s.grpcHandler.GetSpendableBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			spendableBalance := spRes.Balance
+			// check that the spendable balance > than the initial free coins
+			Expect(spendableBalance.Sub(initialFreeCoins[0]).IsPositive()).To(BeTrue())
+
+			txAmount := spendableBalance.Amount.Sub(remainingAmtToPayFees)
+
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			fees := gasPrice.Mul(math.NewInt(res.GasUsed))
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			Expect(balancePost.Amount).To(Equal(balancePrev.Amount.Sub(fees).Sub(txAmount)))
+
+			balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(txAmount))
 		})
 
 		It("should not enable access to locked EVM tokens", func() {
-			testAccount := testAccounts[0]
+			account := vestingAccs[0]
 
-			txAmount := vested.AmountOf(stakeDenom).BigInt()
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, testAccount.privKey, testAccount.address, dest, txAmount, 0)
-			Expect(err).To(BeNil())
+			txAmount := initialFreeCoins.Add(vested...)[0].Amount.Sub(remainingAmtToPayFees).Add(math.OneInt())
 
-			assertEthFails(msg)
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+			Expect(err).NotTo(BeNil())
+			Expect(err.Error()).To(ContainSubstring("insufficient funds"))
+			Expect(res.IsErr()).To(BeTrue())
 		})
 	})
 
-	Context("after half of vesting period and both lockups", func() {
+	Context("after half of vesting period and half lockups", func() {
 		BeforeEach(func() {
-			// Surpass lockup duration
-			lockupDuration := time.Duration(lockupLength * numLockupPeriods)
-			s.CommitAfter(lockupDuration * time.Second)
+			// Surpass half lockup duration
+			passedLockups := numLockupPeriods / 2
+			twoLockupsDuration := time.Duration(lockupLength * passedLockups)
+			Expect(s.network.NextBlockAfter(twoLockupsDuration * time.Second)).To(BeNil())
 
 			// Check if some, but not all tokens are vested
-			unvested = clawbackAccount.GetUnvestedOnly(s.ctx.BlockTime())
-			vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-			expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(lockup*numLockupPeriods))))
-			s.Require().NotEqual(vestingAmtTotal, vested)
-			s.Require().Equal(expVested, vested)
+			unvested = clawbackAccount.GetVestingCoins(s.network.GetContext().BlockTime())
+			vested = clawbackAccount.GetVestedOnly(s.network.GetContext().BlockTime())
+			expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(lockup*passedLockups))))
+			Expect(vestingAmtTotal).NotTo(Equal(vested))
+			Expect(expVested).To(Equal(vested))
 		})
 
 		It("can delegate vested tokens", func() {
-			err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator())
+			account := vestingAccs[0]
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
 			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
+
+			ok, vestedCoin := vested.Find(utils.BaseDenom)
+			Expect(ok).To(BeTrue())
+			// save some balance to pay fees
+			delCoin := initialFreeCoins.Add(vestedCoin).Sub(accountGasCoverage...)[0]
+			err = s.factory.Delegate(
+				account.Priv,
+				s.network.GetValidators()[0].OperatorAddress,
+				delCoin,
+			)
+			Expect(err).To(BeNil())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			// remaining balance should be less than prevBalance - delegated amount
+			// cause should pay for fees too
+			Expect(balancePost.Amount.LT(balancePrev.Amount.Sub(delCoin.Amount))).To(BeTrue())
 		})
 
 		It("cannot delegate unvested tokens", func() {
-			err := delegate(clawbackAccount, vestingAmtTotal.AmountOf(stakeDenom), s.validator.GetOperator())
+			ok, vestedCoin := vestingAmtTotal.Find(utils.BaseDenom)
+			Expect(ok).To(BeTrue())
+			delCoin := vestedCoin.Add(sdk.NewCoin(stakeDenom, vestingAccInitialBalance.Sub(remainingAmtToPayFees)))
+			err := s.factory.Delegate(
+				vestingAccs[0].Priv,
+				s.network.GetValidators()[0].OperatorAddress,
+				delCoin,
+			)
 			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(ContainSubstring("cannot delegate unvested coins"))
 		})
 
 		It("can transfer vested tokens", func() {
-			err := s.app.BankKeeper.SendCoins(
-				s.ctx,
-				clawbackAccount.GetAddress(),
-				sdk.AccAddress(utiltx.GenerateAddress().Bytes()),
-				vested,
-			)
-			Expect(err).To(BeNil())
-		})
+			account := vestingAccs[0]
 
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
+
+			// save some balance to pay fees
+			coins := initialFreeCoins.Add(vested...).Sub(accountGasCoverage...)
+			sendAmt := coins[0].Amount
+
+			msg := banktypes.NewMsgSend(account.AccAddr, dest.Bytes(), coins)
+			res, err := s.factory.ExecuteCosmosTx(account.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			fees := gasPrice.Mul(math.NewInt(res.GasWanted))
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			Expect(balancePost.Amount).To(Equal(balancePrev.Amount.Sub(fees).Sub(sendAmt)))
+
+			balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(sendAmt))
+		})
 		It("cannot transfer unvested tokens", func() {
-			err := s.app.BankKeeper.SendCoins(
-				s.ctx,
-				clawbackAccount.GetAddress(),
-				sdk.AccAddress(utiltx.GenerateAddress().Bytes()),
-				vestingAmtTotal,
-			)
-			Expect(err).ToNot(BeNil())
+			account := vestingAccs[0]
+			// save some balance to pay fees
+			sendAmt := vestingAccInitialBalance.Sub(remainingAmtToPayFees)
+			coins := vestingAmtTotal.Add(sdk.NewCoin(stakeDenom, sendAmt))
+
+			msg := banktypes.NewMsgSend(account.AccAddr, dest.Bytes(), coins)
+			_, err := s.factory.ExecuteCosmosTx(account.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
+			Expect(err).NotTo(BeNil())
+			Expect(err.Error()).To(ContainSubstring("spendable balance"))
+			Expect(err.Error()).To(ContainSubstring("is smaller than"))
 		})
-
 		It("can perform Ethereum tx with spendable balance", func() {
-			account := testAccounts[0]
+			account := vestingAccs[0]
+			// save some balance to pay fees
+			ok, vestedCoin := vested.Find(utils.BaseDenom)
+			Expect(ok).To(BeTrue())
+			txAmount := initialFreeCoins.Add(vestedCoin).Sub(accountGasCoverage...)[0].Amount
 
-			txAmount := vested.AmountOf(stakeDenom).BigInt()
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount, 0)
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
 			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
 
-			assertEthSucceeds([]TestClawbackAccount{account}, funder, dest, vested.AmountOf(stakeDenom), stakeDenom, msg)
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			fees := gasPrice.Mul(math.NewInt(res.GasUsed))
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			Expect(balancePost.Amount).To(Equal(balancePrev.Amount.Sub(fees).Sub(txAmount)))
+
+			balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(txAmount))
 		})
 	})
 
-	Context("after entire vesting period and both lockups", func() {
+	Context("after entire vesting period and all lockups", func() {
 		BeforeEach(func() {
 			// Surpass vest duration
 			vestDuration := time.Duration(vestingLength * periodsTotal)
-			s.CommitAfter(vestDuration * time.Second)
+			Expect(s.network.NextBlockAfter(vestDuration * time.Second)).To(BeNil())
 
 			// Check that all tokens are vested and unlocked
-			unvested = clawbackAccount.GetUnvestedOnly(s.ctx.BlockTime())
-			vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-			locked := clawbackAccount.LockedCoins(s.ctx.BlockTime())
+			unvested = clawbackAccount.GetVestingCoins(s.network.GetContext().BlockTime())
+			vested = clawbackAccount.GetVestedOnly(s.network.GetContext().BlockTime())
+			unlocked := clawbackAccount.GetUnlockedOnly(s.network.GetContext().BlockTime())
+			unlockedVested := clawbackAccount.GetVestedCoins(s.network.GetContext().BlockTime())
+			notSpendable := clawbackAccount.LockedCoins(s.network.GetContext().BlockTime())
+
+			// all vested coins should be unlocked
+			Expect(vested).To(Equal(unlockedVested))
 
 			zeroCoins := sdk.NewCoins(sdk.NewCoin(stakeDenom, math.ZeroInt()))
-			s.Require().Equal(vestingAmtTotal, vested)
-			s.Require().Equal(zeroCoins, locked)
-			s.Require().Equal(zeroCoins, unvested)
+			Expect(vestingAmtTotal).To(Equal(vested))
+			Expect(vestingAmtTotal).To(Equal(unlocked))
+			Expect(zeroCoins).To(Equal(notSpendable))
+			Expect(zeroCoins).To(Equal(unvested))
 		})
 
 		It("can send entire balance", func() {
-			account := testAccounts[0]
+			account := vestingAccs[0]
 
-			txAmount := vestingAmtTotal.AmountOf(stakeDenom)
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount.BigInt(), 0)
+			balRes, err := s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
 			Expect(err).To(BeNil())
+			balancePrev := balRes.Balance
 
-			assertEthSucceeds([]TestClawbackAccount{account}, funder, dest, txAmount, stakeDenom, msg)
+			txAmount := initialFreeCoins.Add(vestingAmtTotal...).Sub(accountGasCoverage...)[0].Amount
+
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check final balance is as expected - transferred spendable tokens
+			fees := gasPrice.Mul(math.NewInt(res.GasUsed))
+			balRes, err = s.grpcHandler.GetBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			balancePost := balRes.Balance
+			Expect(balancePost.Amount).To(Equal(balancePrev.Amount.Sub(fees).Sub(txAmount)))
+
+			balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+			Expect(err).To(BeNil())
+			destBalance := balRes.Balance
+			Expect(destBalance.Amount).To(Equal(txAmount))
 		})
 
 		It("cannot exceed balance", func() {
-			account := testAccounts[0]
+			account := vestingAccs[0]
 
-			txAmount := vestingAmtTotal.AmountOf(stakeDenom).Mul(math.NewInt(2))
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, txAmount.BigInt(), 0)
-			Expect(err).To(BeNil())
-
-			assertEthFails(msg)
-		})
-
-		It("should short-circuit with zero balance", func() {
-			account := testAccounts[0]
-			balance := s.app.BankKeeper.GetBalance(s.ctx, account.address, stakeDenom)
-
-			// Drain account balance
-			err := s.app.BankKeeper.SendCoins(s.ctx, account.address, dest, sdk.NewCoins(balance))
-			Expect(err).To(BeNil())
-
-			msg, err := utiltx.CreateEthTx(s.ctx, s.app, account.privKey, account.address, dest, big.NewInt(0), 0)
-			Expect(err).To(BeNil())
-			err = validateEthVestingTransactionDecorator(msg)
-			Expect(err).ToNot(BeNil())
-			Expect(strings.Contains(err.Error(), "no balance")).To(BeTrue())
+			txAmount := vestingAmtTotal.AmountOf(stakeDenom).Add(vestingAccInitialBalance).Mul(math.NewInt(2))
+			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+			Expect(err).NotTo(BeNil())
+			Expect(err.Error()).To(ContainSubstring("sender balance < tx cost"))
+			Expect(res.IsErr()).To(BeTrue())
 		})
 	})
 })
@@ -596,154 +1058,169 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 // 22/03 Mainnet launch
 // 22/09 Cliff ends
 // 23/02 Lock ends
-var _ = Describe("Clawback Vesting Accounts - claw back tokens", Ordered, func() {
-	// Monthly vesting period
-	stakeDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
-	s.Require().NoError(err)
-	amt := math.NewInt(1)
-	vestingLength := int64(60 * 60 * 24 * 30) // in seconds
-	vestingAmt := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt))
-	vestingPeriod := sdkvesting.Period{Length: vestingLength, Amount: vestingAmt}
-
-	// 4 years vesting total
-	periodsTotal := int64(48)
-	vestingTotal := amt.Mul(math.NewInt(periodsTotal))
-	vestingAmtTotal := sdk.NewCoins(sdk.NewCoin(stakeDenom, vestingTotal))
-
-	// 6 month cliff
-	cliff := int64(6)
-	cliffLength := vestingLength * cliff
-	cliffAmt := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(cliff))))
-	cliffPeriod := sdkvesting.Period{Length: cliffLength, Amount: cliffAmt}
-
-	// 12 month lockup
-	lockup := int64(12) // 12 year
-	lockupLength := vestingLength * lockup
-	lockupPeriod := sdkvesting.Period{Length: lockupLength, Amount: vestingAmtTotal}
-	lockupPeriods := sdkvesting.Periods{lockupPeriod}
-
-	// Create vesting periods with initial cliff
-	vestingPeriods := sdkvesting.Periods{cliffPeriod}
-	for p := int64(1); p <= periodsTotal-cliff; p++ {
-		vestingPeriods = append(vestingPeriods, vestingPeriod)
-	}
-
+var _ = Describe("Clawback Vesting Accounts - claw back tokens", func() {
 	var (
+		s               *KeeperIntegrationTestSuite
+		funder          keyring.Key
+		vestingAcc      keyring.Key
 		clawbackAccount *types.ClawbackVestingAccount
 		vesting         sdk.Coins
 		vested          sdk.Coins
 		unlocked        sdk.Coins
 		free            sdk.Coins
 	)
-	grantee := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
-	funder := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
-	dest := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
 
 	BeforeEach(func() {
-		s.SetupTest()
-		ctx := sdk.WrapSDKContext(s.ctx)
+		s = new(KeeperIntegrationTestSuite)
+		// create 3 prefunded accounts:
+		// index 0 will be the funder and
+		// index 1 will be vesting account
+		// index 2 will be extra account for other test cases
+		keys := keyring.New(3)
 
-		// Create and fund periodic vesting account
-		vestingStart := s.ctx.BlockTime()
-		err := testutil.FundAccount(s.ctx, s.app.BankKeeper, funder, vestingAmtTotal)
-		s.Require().NoError(err)
+		// don't send inflation and fees tokens to community pool
+		// so we can check better when the claw backed tokens go to
+		// the community pool
+		customGen := network.CustomGenesisState{}
+		// inflation custom genesis
+		coinomicsGen := coinomicstypes.DefaultGenesisState()
+		coinomicsGen.Params.EnableCoinomics = false
+		customGen[coinomicstypes.ModuleName] = coinomicsGen
+		// distribution custom genesis
+		distrGen := distrtypes.DefaultGenesisState()
+		distrGen.Params.CommunityTax = math.LegacyZeroDec()
+		customGen[distrtypes.ModuleName] = distrGen
 
-		balanceFunder := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		balanceGrantee := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		balanceDest := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
-		s.Require().True(balanceFunder.IsGTE(vestingAmtTotal[0]))
-		s.Require().Equal(balanceGrantee, sdk.NewInt64Coin(stakeDenom, 0))
-		s.Require().Equal(balanceDest, sdk.NewInt64Coin(stakeDenom, 0))
+		nw := network.NewUnitTestNetwork(
+			network.WithPreFundedAccounts(keys.GetAllAccAddrs()...),
+			network.WithCustomGenesis(customGen),
+		)
+		gh := grpc.NewIntegrationHandler(nw)
+		tf := haqqfactory.New(nw, gh)
 
-		msg := types.NewMsgCreateClawbackVestingAccount(funder, grantee, vestingStart, lockupPeriods, vestingPeriods, true)
+		s.network = nw
+		s.factory = tf
+		s.grpcHandler = gh
+		s.keyring = keys
 
-		_, err = s.app.VestingKeeper.CreateClawbackVestingAccount(ctx, msg)
-		s.Require().NoError(err)
+		// index 0 will be the funder
+		// index 1 will be vesting account
+		funder = keys.GetKey(0)
+		vestingAcc = keys.GetKey(1)
 
-		acc := s.app.AccountKeeper.GetAccount(s.ctx, grantee)
-		clawbackAccount, _ = acc.(*types.ClawbackVestingAccount)
+		// Create vesting account at vesting address
+		clawbackAccount = s.setupClawbackVestingAccount(
+			vestingAcc,
+			funder,
+			testutil.TestVestingSchedule.VestingPeriods,
+			testutil.TestVestingSchedule.LockupPeriods,
+		)
 
 		// Check if all tokens are unvested and locked at vestingStart
-		vesting = clawbackAccount.GetVestingCoins(s.ctx.BlockTime())
-		vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-		unlocked = clawbackAccount.GetUnlockedOnly(s.ctx.BlockTime())
-		s.Require().Equal(vestingAmtTotal, vesting)
-		s.Require().True(vested.IsZero())
-		s.Require().True(unlocked.IsZero())
-
-		bF := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		balanceGrantee = s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		balanceDest = s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
-
-		s.Require().True(bF.IsGTE(balanceFunder.Sub(vestingAmtTotal[0])))
-		s.Require().True(balanceGrantee.IsGTE(vestingAmtTotal[0]))
-		s.Require().Equal(balanceDest, sdk.NewInt64Coin(stakeDenom, 0))
+		vesting = clawbackAccount.GetVestingCoins(s.network.GetContext().BlockTime())
+		vested = clawbackAccount.GetVestedOnly(s.network.GetContext().BlockTime())
+		unlocked = clawbackAccount.GetUnlockedOnly(s.network.GetContext().BlockTime())
+		Expect(vesting).To(Equal(vestingAmtTotal), "expected difference vesting tokens")
+		Expect(vested.IsZero()).To(BeTrue(), "expected no tokens to be vested")
+		Expect(unlocked.IsZero()).To(BeTrue(), "expected no tokens to be unlocked")
 	})
 
 	It("should claw back unvested amount before cliff", func() {
-		ctx := sdk.WrapSDKContext(s.ctx)
-
-		balanceFunder := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		balanceGrantee := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		balanceDest := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
+		balRes, err := s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceFunder := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceGrantee := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+		Expect(err).To(BeNil())
+		balanceDest := balRes.Balance
 
 		// Perform clawback before cliff
-		msg := types.NewMsgClawback(funder, grantee, dest)
-		_, err := s.app.VestingKeeper.Clawback(ctx, msg)
+		msg := types.NewMsgClawback(funder.AccAddr, vestingAcc.AccAddr, dest.Bytes())
+		res, err := s.factory.ExecuteCosmosTx(funder.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
 		Expect(err).To(BeNil())
+		Expect(res.IsOK()).To(BeTrue())
+		Expect(s.network.NextBlock()).To(BeNil())
 
 		// All initial vesting amount goes to dest
-		bF := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		bG := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		bD := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
+		balRes, err = s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bF := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bG := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+		Expect(err).To(BeNil())
+		bD := balRes.Balance
 
-		s.Require().Equal(bF, balanceFunder)
-		s.Require().Equal(balanceGrantee.Sub(vestingAmtTotal[0]).Amount.Uint64(), bG.Amount.Uint64())
-		s.Require().Equal(balanceDest.Add(vestingAmtTotal[0]).Amount.Uint64(), bD.Amount.Uint64())
+		// fees paid by funder
+		fees := gasPrice.Mul(math.NewInt(res.GasWanted))
+
+		Expect(bF.Amount).To(Equal(balanceFunder.Amount.Sub(fees)), "expected funder balance decrease due to fees")
+		Expect(bG.Amount).To(Equal(balanceGrantee.Sub(vestingAmtTotal[0]).Amount), "expected all tokens to be clawed back")
+		Expect(bD.Amount).To(Equal(balanceDest.Add(vestingAmtTotal[0]).Amount), "expected all tokens to be clawed back to the destination account")
 	})
 
 	It("should claw back any unvested amount after cliff before unlocking", func() {
 		// Surpass cliff but not lockup duration
 		cliffDuration := time.Duration(cliffLength)
-		s.CommitAfter(cliffDuration * time.Second)
+		Expect(s.network.NextBlockAfter(cliffDuration * time.Second)).To(BeNil())
+		blockTime := s.network.GetContext().BlockTime()
 
 		// Check that all tokens are locked and some, but not all tokens are vested
-		vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-		unlocked = clawbackAccount.GetUnlockedOnly(s.ctx.BlockTime())
-		free = clawbackAccount.GetVestedCoins(s.ctx.BlockTime())
-		vesting = clawbackAccount.GetVestingCoins(s.ctx.BlockTime())
+		vested = clawbackAccount.GetVestedCoins(blockTime)
+		unlocked = clawbackAccount.GetUnlockedOnly(blockTime)
+		lockedUp := clawbackAccount.LockedCoins(blockTime)
+		free = clawbackAccount.GetVestedCoins(blockTime)
+		vesting = clawbackAccount.GetVestingCoins(blockTime)
 		expVestedAmount := amt.Mul(math.NewInt(cliff))
 		expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, expVestedAmount))
+		unvested := vestingAmtTotal.Sub(vested...)
 
-		s.Require().Equal(expVested, vested)
-		s.Require().True(expVestedAmount.GT(math.NewInt(0)))
-		s.Require().True(free.IsZero())
-		s.Require().Equal(vesting, vestingAmtTotal)
+		Expect(expVested).To(Equal(vested))
+		Expect(expVestedAmount.GT(math.NewInt(0))).To(BeTrue())
+		Expect(free.IsZero()).To(BeTrue())
+		Expect(lockedUp).To(Equal(vestingAmtTotal))
+		Expect(vesting).To(Equal(unvested))
 
-		balanceFunder := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		balanceGrantee := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		balanceDest := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
-
-		// stake vested tokens
-		err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator())
+		balRes, err := s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
 		Expect(err).To(BeNil())
+		balanceFunder := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceGrantee := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+		Expect(err).To(BeNil())
+		balanceDest := balRes.Balance
 
 		// Perform clawback
-		msg := types.NewMsgClawback(funder, grantee, dest)
-		ctx := sdk.WrapSDKContext(s.ctx)
-		_, err = s.app.VestingKeeper.Clawback(ctx, msg)
+		msg := types.NewMsgClawback(funder.AccAddr, vestingAcc.AccAddr, dest.Bytes())
+		res, err := s.factory.ExecuteCosmosTx(funder.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
 		Expect(err).To(BeNil())
+		Expect(res.IsOK()).To(BeTrue())
+		Expect(s.network.NextBlock()).To(BeNil())
 
-		bF := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		bG := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		bD := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
+		// fees paid by funder
+		fees := gasPrice.Mul(math.NewInt(res.GasWanted))
 
-		expClawback := clawbackAccount.GetUnvestedOnly(s.ctx.BlockTime())
+		balRes, err = s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bF := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bG := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+		Expect(err).To(BeNil())
+		bD := balRes.Balance
+
+		expClawback := clawbackAccount.GetVestingCoins(s.network.GetContext().BlockTime())
+		Expect(expClawback).To(Equal(unvested))
 
 		// Any unvested amount is clawed back
-		s.Require().Equal(balanceFunder, bF)
-		s.Require().Equal(balanceGrantee.Sub(expClawback[0]).Amount.Uint64(), bG.Amount.Uint64())
-		s.Require().Equal(balanceDest.Add(expClawback[0]).Amount.Uint64(), bD.Amount.Uint64())
+		Expect(bF.Amount).To(Equal(balanceFunder.Amount.Sub(fees)))
+		Expect(bG.Amount).To(Equal(balanceGrantee.Sub(expClawback[0]).Amount))
+		Expect(bD.Amount).To(Equal(balanceDest.Add(expClawback[0]).Amount))
 	})
 
 	It("should claw back any unvested amount after cliff and unlocking", func() {
@@ -751,146 +1228,206 @@ var _ = Describe("Clawback Vesting Accounts - claw back tokens", Ordered, func()
 		// A strict `if t < clawbackTime` comparison is used in ComputeClawback
 		// so, we increment the duration with 1 for the free token calculation to match
 		lockupDuration := time.Duration(lockupLength + 1)
-		s.CommitAfter(lockupDuration * time.Second)
+		Expect(s.network.NextBlockAfter(lockupDuration * time.Second)).To(BeNil())
 
 		// Check if some, but not all tokens are vested and unlocked
-		vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-		unlocked = clawbackAccount.GetUnlockedOnly(s.ctx.BlockTime())
-		free = clawbackAccount.GetVestedCoins(s.ctx.BlockTime())
-		vesting = clawbackAccount.GetVestingCoins(s.ctx.BlockTime())
+		vested = clawbackAccount.GetVestedOnly(s.network.GetContext().BlockTime())
+		unlocked = clawbackAccount.GetUnlockedOnly(s.network.GetContext().BlockTime())
+		free = clawbackAccount.GetVestedCoins(s.network.GetContext().BlockTime())
+		vesting = clawbackAccount.GetVestingCoins(s.network.GetContext().BlockTime())
 		expVestedAmount := amt.Mul(math.NewInt(lockup))
 		expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, expVestedAmount))
 		unvested := vestingAmtTotal.Sub(vested...)
 
-		s.Require().Equal(free, vested)
-		s.Require().Equal(expVested, vested)
-		s.Require().True(expVestedAmount.GT(math.NewInt(0)))
-		s.Require().Equal(vesting, unvested)
+		Expect(free).To(Equal(vested))
+		Expect(expVested).To(Equal(vested))
+		Expect(expVestedAmount.GT(math.NewInt(0))).To(BeTrue())
+		Expect(vesting).To(Equal(unvested))
 
-		balanceFunder := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		balanceGrantee := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		balanceDest := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
-
-		// stake vested tokens
-		err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator())
+		balRes, err := s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
 		Expect(err).To(BeNil())
+		balanceFunder := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceGrantee := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+		Expect(err).To(BeNil())
+		balanceDest := balRes.Balance
 
 		// Perform clawback
-		msg := types.NewMsgClawback(funder, grantee, dest)
-		ctx := sdk.WrapSDKContext(s.ctx)
-		_, err = s.app.VestingKeeper.Clawback(ctx, msg)
+		msg := types.NewMsgClawback(funder.AccAddr, vestingAcc.AccAddr, dest.Bytes())
+		res, err := s.factory.ExecuteCosmosTx(funder.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
 		Expect(err).To(BeNil())
+		Expect(res.IsOK()).To(BeTrue())
+		Expect(s.network.NextBlock()).To(BeNil())
 
-		bF := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		bG := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		bD := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
+		// fees paid by funder
+		fees := gasPrice.Mul(math.NewInt(res.GasWanted))
+
+		balRes, err = s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bF := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bG := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+		Expect(err).To(BeNil())
+		bD := balRes.Balance
 
 		// Any unvested amount is clawed back
-		s.Require().Equal(balanceFunder, bF)
-		s.Require().Equal(balanceGrantee.Sub(vesting[0]).Amount.Uint64(), bG.Amount.Uint64())
-		s.Require().Equal(balanceDest.Add(vesting[0]).Amount.Uint64(), bD.Amount.Uint64())
+		Expect(bF.Amount).To(Equal(balanceFunder.Amount.Sub(fees)))
+		Expect(bG.Amount).To(Equal(balanceGrantee.Sub(vesting[0]).Amount))
+		Expect(bD.Amount).To(Equal(balanceDest.Add(vesting[0]).Amount))
 	})
 
 	It("should not claw back any amount after vesting periods end", func() {
 		// Surpass vesting periods
 		vestingDuration := time.Duration(periodsTotal*vestingLength + 1)
-		s.CommitAfter(vestingDuration * time.Second)
+		Expect(s.network.NextBlockAfter(vestingDuration * time.Second)).To(BeNil())
 
 		// Check if some, but not all tokens are vested and unlocked
-		vested = clawbackAccount.GetVestedOnly(s.ctx.BlockTime())
-		unlocked = clawbackAccount.GetUnlockedOnly(s.ctx.BlockTime())
-		free = clawbackAccount.GetVestedCoins(s.ctx.BlockTime())
-		vesting = clawbackAccount.GetVestingCoins(s.ctx.BlockTime())
+		vested = clawbackAccount.GetVestedOnly(s.network.GetContext().BlockTime())
+		unlocked = clawbackAccount.GetUnlockedOnly(s.network.GetContext().BlockTime())
+		free = clawbackAccount.GetVestedCoins(s.network.GetContext().BlockTime())
+		vesting = clawbackAccount.GetVestingCoins(s.network.GetContext().BlockTime())
 
 		expVested := sdk.NewCoins(sdk.NewCoin(stakeDenom, amt.Mul(math.NewInt(periodsTotal))))
 		unvested := vestingAmtTotal.Sub(vested...)
 
-		s.Require().Equal(free, vested)
-		s.Require().Equal(expVested, vested)
-		s.Require().Equal(expVested, vestingAmtTotal)
-		s.Require().Equal(unlocked, vestingAmtTotal)
-		s.Require().Equal(vesting, unvested)
-		s.Require().True(vesting.IsZero())
+		Expect(free).To(Equal(vested))
+		Expect(expVested).To(Equal(vested))
+		Expect(expVested).To(Equal(vestingAmtTotal))
+		Expect(unlocked).To(Equal(vestingAmtTotal))
+		Expect(vesting).To(Equal(unvested))
+		Expect(vesting.IsZero()).To(BeTrue())
 
-		balanceFunder := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		balanceGrantee := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		balanceDest := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
-
-		// stake vested tokens
-		err := delegate(clawbackAccount, vested.AmountOf(stakeDenom), s.validator.GetOperator())
+		balRes, err := s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
 		Expect(err).To(BeNil())
+		balanceFunder := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceGrantee := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+		Expect(err).To(BeNil())
+		balanceDest := balRes.Balance
 
 		// Perform clawback
-		msg := types.NewMsgClawback(funder, grantee, dest)
-		ctx := sdk.WrapSDKContext(s.ctx)
-		_, err = s.app.VestingKeeper.Clawback(ctx, msg)
+		msg := types.NewMsgClawback(funder.AccAddr, vestingAcc.AccAddr, dest.Bytes())
+		res, err := s.factory.ExecuteCosmosTx(funder.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
 		Expect(err).To(BeNil())
+		Expect(res.IsOK()).To(BeTrue())
+		Expect(s.network.NextBlock()).To(BeNil())
 
-		bF := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		bG := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
-		bD := s.app.BankKeeper.GetBalance(s.ctx, dest, stakeDenom)
+		// fees paid by funder
+		fees := gasPrice.Mul(math.NewInt(res.GasWanted))
+
+		balRes, err = s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bF := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bG := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(dest.Bytes(), stakeDenom)
+		Expect(err).To(BeNil())
+		bD := balRes.Balance
 
 		// No amount is clawed back
-		s.Require().Equal(balanceFunder, bF)
-		s.Require().Equal(balanceGrantee, bG)
-		s.Require().Equal(balanceDest, bD)
+		Expect(bF.Amount).To(Equal(balanceFunder.Amount.Sub(fees)))
+		Expect(bG.Amount).To(Equal(balanceGrantee.Amount))
+		Expect(bD.Amount).To(Equal(balanceDest.Amount))
 	})
 
 	It("should update vesting funder and claw back unvested amount before cliff", func() {
-		ctx := sdk.WrapSDKContext(s.ctx)
-		newFunder := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+		newFunder := s.keyring.GetKey(2)
 
-		balanceFunder := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		balanceNewFunder := s.app.BankKeeper.GetBalance(s.ctx, newFunder, stakeDenom)
-		balanceGrantee := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
+		balRes, err := s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceFunder := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(newFunder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceNewFunder := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceGrantee := balRes.Balance
 
 		// Update clawback vesting account funder
-		updateFunderMsg := types.NewMsgUpdateVestingFunder(funder, newFunder, grantee)
-		_, err := s.app.VestingKeeper.UpdateVestingFunder(ctx, updateFunderMsg)
-		s.Require().NoError(err)
+		updateFunderMsg := types.NewMsgUpdateVestingFunder(funder.AccAddr, newFunder.AccAddr, vestingAcc.AccAddr)
+		txRes, err := s.factory.ExecuteCosmosTx(funder.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{updateFunderMsg}, GasPrice: &gasPrice})
+		Expect(err).To(BeNil())
+		Expect(txRes.IsOK()).To(BeTrue())
+		Expect(s.network.NextBlock()).To(BeNil())
+
+		funderFees := gasPrice.Mul(math.NewInt(txRes.GasWanted))
 
 		// Perform clawback before cliff - funds should go to new funder (no dest address defined)
-		msg := types.NewMsgClawback(newFunder, grantee, sdk.AccAddress([]byte{}))
-		_, err = s.app.VestingKeeper.Clawback(ctx, msg)
-		s.Require().NoError(err)
+		msg := types.NewMsgClawback(newFunder.AccAddr, vestingAcc.AccAddr, sdk.AccAddress([]byte{}))
+		txRes, err = s.factory.ExecuteCosmosTx(newFunder.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
+		Expect(err).To(BeNil())
+		Expect(txRes.IsOK()).To(BeTrue())
+		Expect(s.network.NextBlock()).To(BeNil())
+
+		newFunderFees := gasPrice.Mul(math.NewInt(txRes.GasWanted))
 
 		// All initial vesting amount goes to funder
-		bF := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		bNewF := s.app.BankKeeper.GetBalance(s.ctx, newFunder, stakeDenom)
-		bG := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
+		balRes, err = s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bF := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(newFunder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bNewF := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bG := balRes.Balance
 
 		// Original funder balance should not change
-		s.Require().Equal(bF, balanceFunder)
+		Expect(bF.Amount).To(Equal(balanceFunder.Amount.Sub(funderFees)))
 		// New funder should get the vested tokens
-		s.Require().Equal(balanceNewFunder.Add(vestingAmtTotal[0]).Amount.Uint64(), bNewF.Amount.Uint64())
-		s.Require().Equal(balanceGrantee.Sub(vestingAmtTotal[0]).Amount.Uint64(), bG.Amount.Uint64())
+		Expect(bNewF.Amount).To(Equal(balanceNewFunder.Add(vestingAmtTotal[0]).Amount.Sub(newFunderFees)))
+		Expect(bG.Amount).To(Equal(balanceGrantee.Sub(vestingAmtTotal[0]).Amount))
 	})
 
 	It("should update vesting funder and first funder cannot claw back unvested before cliff", func() {
-		ctx := sdk.WrapSDKContext(s.ctx)
-		newFunder := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+		newFunder := s.keyring.GetKey(2)
 
-		balanceFunder := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		balanceNewFunder := s.app.BankKeeper.GetBalance(s.ctx, newFunder, stakeDenom)
-		balanceGrantee := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
+		balRes, err := s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceFunder := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(newFunder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceNewFunder := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		balanceGrantee := balRes.Balance
 
 		// Update clawback vesting account funder
-		updateFunderMsg := types.NewMsgUpdateVestingFunder(funder, newFunder, grantee)
-		_, err := s.app.VestingKeeper.UpdateVestingFunder(ctx, updateFunderMsg)
-		s.Require().NoError(err)
+		updateFunderMsg := types.NewMsgUpdateVestingFunder(funder.AccAddr, newFunder.AccAddr, vestingAcc.AccAddr)
+		txRes, err := s.factory.ExecuteCosmosTx(funder.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{updateFunderMsg}, GasPrice: &gasPrice})
+		Expect(err).To(BeNil())
+		Expect(txRes.IsOK()).To(BeTrue())
+		Expect(s.network.NextBlock()).To(BeNil())
 
 		// Original funder tries to perform clawback before cliff - is not the current funder
-		msg := types.NewMsgClawback(funder, grantee, sdk.AccAddress([]byte{}))
-		_, err = s.app.VestingKeeper.Clawback(ctx, msg)
-		s.Require().Error(err)
+		msg := types.NewMsgClawback(funder.AccAddr, vestingAcc.AccAddr, sdk.AccAddress([]byte{}))
+		_, err = s.factory.ExecuteCosmosTx(funder.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(ContainSubstring("clawback can only be requested by original funder"))
+		Expect(s.network.NextBlock()).To(BeNil())
+
+		fees := gasPrice.Mul(math.NewInt(txRes.GasWanted))
 
 		// All balances should remain the same
-		bF := s.app.BankKeeper.GetBalance(s.ctx, funder, stakeDenom)
-		bNewF := s.app.BankKeeper.GetBalance(s.ctx, newFunder, stakeDenom)
-		bG := s.app.BankKeeper.GetBalance(s.ctx, grantee, stakeDenom)
+		balRes, err = s.grpcHandler.GetBalance(funder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bF := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(newFunder.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bNewF := balRes.Balance
+		balRes, err = s.grpcHandler.GetBalance(vestingAcc.AccAddr, stakeDenom)
+		Expect(err).To(BeNil())
+		bG := balRes.Balance
 
-		s.Require().Equal(bF, balanceFunder)
-		s.Require().Equal(balanceNewFunder, bNewF)
-		s.Require().Equal(balanceGrantee, bG)
+		Expect(bF.Amount).To(Equal(balanceFunder.Amount.Sub(fees)))
+		Expect(balanceNewFunder).To(Equal(bNewF))
+		Expect(balanceGrantee).To(Equal(bG))
 	})
 })

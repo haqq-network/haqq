@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
@@ -44,10 +43,6 @@ func (n *IntegrationNetwork) finalizeBlockAndCommit(duration time.Duration, txBy
 
 	// FinalizeBlock to run endBlock, deliverTx & beginBlock logic
 	req := buildFinalizeBlockReq(header, n.valSet.Validators, txBytes...)
-
-	fmt.Printf("Finalizing block %d with %d txs\n", header.Height, len(req.Txs))
-	fmt.Printf("Data:\n %s\n", req.String())
-
 	res, err := n.app.FinalizeBlock(req)
 	if err != nil {
 		return nil, err

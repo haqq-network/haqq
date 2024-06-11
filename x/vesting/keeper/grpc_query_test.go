@@ -2,84 +2,106 @@ package keeper_test
 
 import (
 	"fmt"
+	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/stretchr/testify/require"
 
 	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
-func (suite *KeeperTestSuite) TestBalances() {
+func TestBalances(t *testing.T) {
 	var (
+		ctx    sdk.Context
+		nw     *network.UnitTestNetwork
 		req    *types.QueryBalancesRequest
 		expRes *types.QueryBalancesResponse
 	)
 	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 
 	testCases := []struct {
-		name     string
-		malleate func()
-		expPass  bool
+		name        string
+		malleate    func()
+		expPass     bool
+		errContains string
 	}{
 		{
-			"empty req",
-			func() {
-				req = &types.QueryBalancesRequest{}
+			name: "nil req",
+			malleate: func() {
+				req = nil
 			},
-			false,
+			expPass:     false,
+			errContains: "empty address string is not allowed",
 		},
 		{
-			"invalid address",
-			func() {
+			name: "empty req",
+			malleate: func() {
+				req = &types.QueryBalancesRequest{}
+			},
+			expPass:     false,
+			errContains: "empty address string is not allowed",
+		},
+		{
+			name: "invalid address",
+			malleate: func() {
 				req = &types.QueryBalancesRequest{
 					Address: "haqq1",
 				}
 			},
-			false,
+			expPass:     false,
+			errContains: "decoding bech32 failed: invalid bech32 string length 5",
 		},
 		{
-			"invalid account - not found",
-			func() {
+			name: "invalid account - not found",
+			malleate: func() {
 				req = &types.QueryBalancesRequest{
 					Address: addr.String(),
 				}
 			},
-			false,
+			expPass:     false,
+			errContains: fmt.Sprintf("rpc error: code = NotFound desc = account for address '%s'", addr.String()),
 		},
 		{
-			"invalid account - not clawback vesting account",
-			func() {
+			name: "invalid account - not clawback vesting account",
+			malleate: func() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr)
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				acc := nw.App.AccountKeeper.NewAccount(ctx, baseAccount)
+				nw.App.AccountKeeper.SetAccount(ctx, acc)
 
 				req = &types.QueryBalancesRequest{
 					Address: addr.String(),
 				}
 			},
-			false,
+			expPass:     false,
+			errContains: fmt.Sprintf("account at address '%s' is not a vesting account", addr.String()),
 		},
 		{
-			"valid",
-			func() {
-				vestingStart := s.ctx.BlockTime()
-				funder := sdk.AccAddress(types.ModuleName)
-				err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, funder, balances)
-				suite.Require().NoError(err)
+			name: "valid",
+			malleate: func() {
+				vestingStart := ctx.BlockTime()
+
+				funderAddr := sdk.AccAddress(tests.GenerateAddress().Bytes())
+				baseFunderAccount := authtypes.NewBaseAccountWithAddress(funderAddr)
+				funderAcc := nw.App.AccountKeeper.NewAccount(ctx, baseFunderAccount)
+				nw.App.AccountKeeper.SetAccount(ctx, funderAcc)
+
+				err := testutil.FundAccount(ctx, nw.App.BankKeeper, funderAddr, balances)
+				require.NoError(t, err, "error while sending coins to the funder account")
 
 				msg := types.NewMsgCreateClawbackVestingAccount(
-					funder,
+					funderAddr,
 					addr,
 					vestingStart,
 					lockupPeriods,
 					vestingPeriods,
 					false,
 				)
-				ctx := sdk.WrapSDKContext(suite.ctx)
-				_, err = suite.app.VestingKeeper.CreateClawbackVestingAccount(ctx, msg)
-				suite.Require().NoError(err)
+				_, err = nw.App.VestingKeeper.CreateClawbackVestingAccount(ctx, msg)
+				require.NoError(t, err, "error while creating the vesting account")
 
 				req = &types.QueryBalancesRequest{
 					Address: addr.String(),
@@ -90,23 +112,26 @@ func (suite *KeeperTestSuite) TestBalances() {
 					Vested:   nil,
 				}
 			},
-			true,
+			expPass: true,
 		},
 	}
 
 	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			tc.malleate()
-			suite.Commit()
+		t.Run(tc.name, func(t *testing.T) {
+			// reset
+			nw = network.NewUnitTestNetwork()
+			ctx = nw.GetContext()
+			qc := nw.GetVestingClient()
 
-			res, err := suite.queryClient.Balances(ctx, req)
+			tc.malleate()
+
+			res, err := qc.Balances(ctx, req)
 			if tc.expPass {
-				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				require.NoError(t, err)
+				require.Equal(t, expRes, res)
 			} else {
-				suite.Require().Error(err)
+				require.Error(t, err)
+				require.ErrorContains(t, err, tc.errContains)
 			}
 		})
 	}

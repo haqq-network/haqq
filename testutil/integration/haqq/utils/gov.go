@@ -83,7 +83,8 @@ func VoteOnProposal(tf factory.TxFactory, voterPriv cryptotypes.PrivKey, proposa
 	return res, err
 }
 
-// ApproveProposal is a helper function to vote 'yes' for it and wait till it passes.
+// ApproveProposal is a helper function to vote 'yes'
+// for it and wait till it passes.
 func ApproveProposal(tf factory.TxFactory, network network.Network, proposerPriv cryptotypes.PrivKey, proposalID uint64) error {
 	// Vote on proposal
 	if _, err := VoteOnProposal(tf, proposerPriv, proposalID, govv1.OptionYes); err != nil {
