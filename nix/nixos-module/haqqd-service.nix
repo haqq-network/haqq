@@ -192,7 +192,7 @@ in
             };
           in
           {
-            User = cfg.user;
+            User = haqqdUserName;
             ExecStart = ''${start}/bin/haqqd-start'';
             WorkingDirectory = cfg.userHome;
             Restart = "always";
