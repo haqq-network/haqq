@@ -1,5 +1,5 @@
 {
-  description = "A very basic flake";
+  description = "Shariah-compliant Web3 platform";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/release-24.05";
