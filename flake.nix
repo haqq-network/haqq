@@ -3,15 +3,12 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/release-24.05";
-
-    flake-utils.url = "github:numtide/flake-utils";
-
-    devenv.url = "github:cachix/devenv";
-    # NOTE Do not override inputs for devenv. It uses its own nixpkgs fork.
-
-    gomod2nix.url = "github:nix-community/gomod2nix";
-
     cosmos.url = "github:informalsystems/cosmos.nix";
+    devenv.url = "github:cachix/devenv";
+    gomod2nix.url = "github:nix-community/gomod2nix";
+    gitignore.url = "github:hercules-ci/gitignore.nix";
+    flake-utils.url = "github:numtide/flake-utils";
+    flake-compat.url = "github:edolstra/flake-compat";
   };
 
   nixConfig = {
@@ -37,64 +34,73 @@
       gomod2nix,
       nixpkgs,
       self,
+      gitignore,
       ...
     }@inputs:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        overlays = [ gomod2nix.overlays.default ];
-        pkgs = import nixpkgs { inherit system overlays; };
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ gomod2nix.overlays.default ];
+        };
 
-        # match go x.x in go.mod
-        gomod = builtins.readFile ./go.mod;
-        goVersion = builtins.match ".*[\n]go ([[:digit:]]*)\.([[:digit:]]*)[\n].*" gomod;
-
+        # Match Go version in the go.mod file.
+        goMod = builtins.readFile ./go.mod;
+        goVersion = builtins.match ".*[\n]go ([[:digit:]]*)\.([[:digit:]]*)[\n].*" goMod;
         go = pkgs."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
       in
       rec {
         apps.haqq = {
           type = "app";
-          program = "${packages.haqq}/bin/haqqd";
+          program = nixpkgs.lib.getExe packages.haqq;
         };
 
         packages = rec {
-          nixos-test = pkgs.callPackage ./nix/test { overlay = self.overlays.default; };
+          default = haqq;
           haqq = pkgs.callPackage ./nix/package.nix {
-            inherit (pkgs) buildGoApplication go;
             rev = if (self ? rev) then self.rev else self.dirtyRev;
+            inherit (pkgs) buildGoApplication;
+            inherit
+              haqq
+              haqq-module-test
+              gitignore
+              go
+              ;
           };
-          # for local development, to prevent recompiles on git tree changes
+
+          # For local development. Prevents recompiles on Git tree changes.
           haqq-no-rev = haqq.overrideAttrs (_: {
             rev = "norev";
           });
+
+          # Also runs the test suite.
           haqq-with-tests = haqq.overrideAttrs (_: {
             subPackages = null;
             doCheck = true;
           });
-          default = haqq;
+
+          # NixOS module test.
+          haqq-module-test = pkgs.callPackage ./nix/test { inherit self; };
         };
 
-        devShells =
-          let
-            inherit (nixpkgs) lib;
-          in
-          {
-            default = devenv.lib.mkShell {
-              inherit inputs pkgs;
-              modules = [
-                (import ./nix/devshell/common.nix { inherit pkgs go; })
-                (import ./nix/devshell { inherit lib pkgs; })
-              ];
-            };
-
-            ci = devenv.lib.mkShell {
-              inherit inputs pkgs;
-              modules = [
-                (import ./nix/devshell/common.nix { inherit pkgs go; })
-                (import ./nix/devshell/ci.nix { inherit lib pkgs go; })
-              ];
-            };
+        devShells = with devenv.lib; {
+          default = mkShell {
+            inherit pkgs inputs;
+            modules = [
+              (import ./nix/devshell/common.nix { inherit pkgs go; })
+              (import ./nix/devshell { inherit pkgs go; })
+            ];
           };
+
+          ci = mkShell {
+            inherit pkgs inputs;
+            modules = [
+              (import ./nix/devshell/common.nix { inherit pkgs go; })
+              (import ./nix/devshell/ci.nix { inherit pkgs go; })
+            ];
+          };
+        };
       }
     )
     // {
@@ -103,12 +109,9 @@
         inherit (self.packages.${final.system}) haqq;
       };
 
-      nixosModules = {
-        haqqdSupervised = {
-          imports = [ ./nix/nixos-module ];
-
-          nixpkgs.overlays = [ self.overlays.default ];
-        };
+      nixosModules.default = {
+        imports = [ ./nix/nixos-module ];
+        nixpkgs.overlays = [ self.overlays.default ];
       };
     };
 }

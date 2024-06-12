@@ -340,11 +340,11 @@
         "pre-commit-hooks": "pre-commit-hooks_2"
       },
       "locked": {
-        "lastModified": 1718090139,
-        "narHash": "sha256-ep5Ssb4bbtK3TfBA0fbLwSIKQkPZQFAbL2Z29mQdaps=",
+        "lastModified": 1718160687,
+        "narHash": "sha256-tSKbwF1JHUnjun6CyO5WLv+IIrEZ4CiNNe7mReoXg5U=",
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "5662dd266fc323785fc2119c40cb3fb6bbdefad9",
+        "rev": "bb177c4edbd388cfd2be45f8fc0a5c03bec908b8",
         "type": "github"
       },
       "original": {
@@ -465,6 +465,21 @@
     },
     "flake-compat_3": {
       "flake": false,
+      "locked": {
+        "lastModified": 1696426674,
+        "narHash": "sha256-kvjfFW7WAETZlt09AgDn1MrtKzP7t90Vf7vypd3OL1U=",
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "rev": "0f9255e01c2351cc7d116c072cb317785dd33b33",
+        "type": "github"
+      },
+      "original": {
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
+    "flake-compat_4": {
       "locked": {
         "lastModified": 1696426674,
         "narHash": "sha256-kvjfFW7WAETZlt09AgDn1MrtKzP7t90Vf7vypd3OL1U=",
@@ -955,6 +970,24 @@
         "type": "github"
       }
     },
+    "gitignore_3": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_8"
+      },
+      "locked": {
+        "lastModified": 1709087332,
+        "narHash": "sha256-HG2cCnktfHsKV0s4XW83gU3F57gaTljL9KNSuG6bnQs=",
+        "owner": "hercules-ci",
+        "repo": "gitignore.nix",
+        "rev": "637db329424fd7e46cf4185293b9cc8c88c95394",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "gitignore.nix",
+        "type": "github"
+      }
+    },
     "gomod2nix": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -1004,7 +1037,7 @@
     "gomod2nix_3": {
       "inputs": {
         "flake-utils": "flake-utils_10",
-        "nixpkgs": "nixpkgs_8"
+        "nixpkgs": "nixpkgs_9"
       },
       "locked": {
         "lastModified": 1717050755,
@@ -1633,6 +1666,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_10": {
+      "locked": {
+        "lastModified": 1718180914,
+        "narHash": "sha256-naU0Axo4G0N0q5016e5bJVO+sglUqS0IUsAB9Q9t0iE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "0cad9bca04f263ad6d021e4ac723c4308ec87a15",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "release-24.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "narHash": "sha256-LahKBAfGbY836gtpVNnWwBTIzN7yf/uYM/S0g393r0Y=",
@@ -1727,6 +1776,20 @@
     },
     "nixpkgs_8": {
       "locked": {
+        "lastModified": 1666603677,
+        "narHash": "sha256-apAEIj+z1iwMaMJ4tB21r/VTetfGDLDzuhXRHJknIAU=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "074da18a72269cc5a6cf444dce42daea5649b2fe",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
+    "nixpkgs_9": {
+      "locked": {
         "lastModified": 1658285632,
         "narHash": "sha256-zRS5S/hoeDGUbO+L95wXG9vJNwsSYcl93XiD0HQBXLk=",
         "owner": "NixOS",
@@ -1737,22 +1800,6 @@
       "original": {
         "owner": "NixOS",
         "ref": "master",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_9": {
-      "locked": {
-        "lastModified": 1718086528,
-        "narHash": "sha256-hoB7B7oPgypePz16cKWawPfhVvMSXj4G/qLsfFuhFjw=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "47b604b07d1e8146d5398b42d3306fdebd343986",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "release-24.05",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -1926,9 +1973,11 @@
       "inputs": {
         "cosmos": "cosmos",
         "devenv": "devenv_2",
+        "flake-compat": "flake-compat_4",
         "flake-utils": "flake-utils_9",
+        "gitignore": "gitignore_3",
         "gomod2nix": "gomod2nix_3",
-        "nixpkgs": "nixpkgs_9"
+        "nixpkgs": "nixpkgs_10"
       }
     },
     "rust-overlay": {

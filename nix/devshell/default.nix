@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ pkgs, ... }:
 {
   dotenv.enable = true;
 
@@ -24,12 +24,11 @@
     };
 
     golangci-lint.enable = false; # FIXME Fails!
-
     gomod2nix-generate = {
       enable = true;
       name = "gomod2nix-generate";
       always_run = true;
-      entry = "${lib.getExe' pkgs.gomod2nix "gomod2nix"} generate";
+      entry = "${pkgs.gomod2nix}/bin/gomod2nix generate";
       pass_filenames = false;
     };
   };

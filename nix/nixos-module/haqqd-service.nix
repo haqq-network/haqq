@@ -8,8 +8,6 @@ with lib;
 let
   cfg = config.services.haqqd;
 
-  # defaultCfg = pkgs.callPackage ./default-config.nix { haqqdPackage = cfg.initialPackage; };
-
   toml = pkgs.formats.toml { };
 
   importConfigFile = name: importTOML "${cfg.package}/share/haqqd/config/${name}.toml";
@@ -114,9 +112,9 @@ in
               touch "$DAEMON_HOME/.bootstrapped"
             fi
 
-            cp -f ${configTOML} "$DAMON_HOME/config/config.toml"
-            cp -f ${appTOML} "$DAMON_HOME/config/app.toml"
-            cp -f ${clientTOML} "$DAMON_HOME/config/client.toml"
+            cp -f ${configTOML} "$DAEMON_HOME/config/config.toml"
+            cp -f ${appTOML} "$DAEMON_HOME/config/app.toml"
+            cp -f ${clientTOML} "$DAEMON_HOME/config/client.toml"
           '';
         script = ''
           cosmovisor run start
