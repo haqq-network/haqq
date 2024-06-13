@@ -63,7 +63,7 @@
             inherit (pkgs) buildGoApplication;
             inherit
               haqq
-              haqq-module-test
+              haqq-nixos
               gitignore
               go
               ;
@@ -81,7 +81,7 @@
           });
 
           # NixOS module test.
-          haqq-module-test = pkgs.callPackage ./nix/test { inherit self; };
+          haqq-nixos = pkgs.callPackage ./nix/test { inherit self; };
         };
 
         devShells = with devenv.lib; {

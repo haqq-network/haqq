@@ -1,7 +1,7 @@
 {
-  pkgs,
-  lib,
   config,
+  lib,
+  pkgs,
   ...
 }:
 with lib;
@@ -57,11 +57,6 @@ in
   };
 
   config = mkIf cfg.enable {
-    # FIXME: This is not ideal. We don't want to force the user to enable nix-ld
-    # globally. We should run dynamically linked libraries and cosmovisir with
-    # buildFHSEnv or some other kind of sandboxing/FHS-compatability layer.
-    programs.nix-ld.enable = true;
-
     users = {
       users.${cfg.user} = {
         isSystemUser = true;
@@ -73,69 +68,126 @@ in
       groups.${cfg.group} = { };
     };
 
-    systemd.services = {
-      haqqd = {
-        path = with pkgs; [
-          coreutils
-          cosmovisor
-          curl
-          gnutar
-          gzip
-          haqq
-        ];
-        preStart =
-          let
-            generate =
-              name: default: toml.generate "${name}.toml" (recursiveUpdate default cfg.settings.${name});
-            appTOML = generate "app" defaultAppTOML;
-            configTOML = generate "config" defaultConfigTOML;
-            clientTOML = generate "client" defaultClientTOML;
-          in
-          ''
-            if [ ! -f "$DAEMON_HOME/.bootstrapped" ]; then
-              haqqd config chain-id "haqq_11235-1"
-              haqqd init "haqq-node" --chain-id "haqq_11235-1"
+    systemd = {
+      services = {
+        haqqd = {
+          path = with pkgs; [
+            coreutils
+            curl
+            gnutar
+            gzip
+            haqq
+          ];
+          # TODO Checksum validation for genesis.
+          preStart =
+            let
+              generate =
+                name: default: toml.generate "${name}.toml" (recursiveUpdate default cfg.settings.${name});
+              appTOML = generate "app" defaultAppTOML;
+              configTOML = generate "config" defaultConfigTOML;
+              clientTOML = generate "client" defaultClientTOML;
+            in
+            ''
+              set -euxo pipefail
 
-              # Download mainnet genesis manifest.
-              curl \
-                -s \
-                -L "https://raw.githubusercontent.com/haqq-network/mainnet/master/genesis.json" \
-                -o "$DAEMON_HOME/config/genesis.json"
+              if [ ! -f "$DAEMON_HOME/.bootstrapped" ]; then
+                haqqd config chain-id "haqq_11235-1"
+                haqqd init "haqq-node" --chain-id "haqq_11235-1"
 
-              # Download the genesis binary.
-              curl \
-                -s \
-                -L "https://github.com/haqq-network/haqq/releases/download/v1.0.2/haqq_1.0.2_Linux_x86_64.tar.gz" \
-                | tar xvz - -C /tmp \
-                && install -Dm755 -t "$DAEMON_HOME/cosmovisor/genesis/bin" /tmp/bin/haqqd
+                # Download mainnet genesis manifest.
+                curl \
+                  -s \
+                  -L "https://raw.githubusercontent.com/haqq-network/mainnet/master/genesis.json" \
+                  -o "$DAEMON_HOME/config/genesis.json"
 
-              touch "$DAEMON_HOME/.bootstrapped"
-            fi
+                # Download the genesis binary.
+                dir="$(mktemp -d)"
+                curl \
+                  -s \
+                  -L "https://github.com/haqq-network/haqq/releases/download/v1.0.2/haqq_1.0.2_Linux_x86_64.tar.gz" \
+                  -o - |
+                  tar xvz -C "$dir"
+                install -Dm755 -t "$DAEMON_HOME/cosmovisor/genesis/bin" "$dir/bin/haqqd"
+                rm -rf "$dir"
 
-            cp -f ${configTOML} "$DAEMON_HOME/config/config.toml"
-            cp -f ${appTOML} "$DAEMON_HOME/config/app.toml"
-            cp -f ${clientTOML} "$DAEMON_HOME/config/client.toml"
-          '';
-        script = ''
-          cosmovisor run start
-        '';
-        environment = {
-          DAEMON_HOME = "${cfg.userHome}/.haqqd";
-          DAEMON_NAME = "haqqd";
-          DAEMON_ALLOW_DOWNLOAD_BINARIES = "true";
-          DAEMON_RESTART_AFTER_UPGRADE = "true";
-          UNSAFE_SKIP_BACKUP = "false";
-          inherit (config.environment.variables) NIX_LD;
-        };
-        serviceConfig = {
-          User = cfg.user;
-          Group = cfg.group;
-          WorkingDirectory = cfg.userHome;
-          Restart = "always";
-          RestartSec = 5;
-          LimitNOFILE = "infinity";
+                touch "$DAEMON_HOME/.bootstrapped"
+              fi
+
+              cp -f ${configTOML} "$DAEMON_HOME/config/config.toml"
+              cp -f ${appTOML} "$DAEMON_HOME/config/app.toml"
+              cp -f ${clientTOML} "$DAEMON_HOME/config/client.toml"
+            '';
+          script =
+            let
+              cosmovisor = pkgs.buildFHSEnv {
+                name = "cosmovisor";
+                targetPkgs = _: [ pkgs.cosmovisor ];
+                runScript = "/bin/cosmovisor";
+              };
+            in
+            ''
+              set -euxo pipefail
+
+              ${cosmovisor}/bin/cosmovisor run start
+            '';
+          environment = {
+            DAEMON_HOME = "${cfg.userHome}/.haqqd";
+            DAEMON_NAME = "haqqd";
+            DAEMON_ALLOW_DOWNLOAD_BINARIES = "true";
+            DAEMON_RESTART_AFTER_UPGRADE = "true";
+            UNSAFE_SKIP_BACKUP = "false";
+          };
+          serviceConfig = {
+            User = cfg.user;
+            Group = cfg.group;
+            WorkingDirectory = cfg.userHome;
+            Restart = "always";
+            RestartSec = 5;
+            LimitNOFILE = "infinity";
+
+            # TODO Work more on hardening and security.
+            UMask = "0077";
+            RuntimeDirectoryMode = "700";
+            AmbientCapabilities = [ "" ];
+            CapabilityBoundingSet = [ "" ];
+            # BindReadOnlyPaths = [ builtins.storeDir ];
+            # MemoryDenyWriteExecute = true;
+            # NoNewPrivileges = true;
+            # PrivateDevices = true;
+            PrivateTmp = true;
+            PrivateUsers = true;
+            # ProcSubset = "pid";
+            # ProtectClock = true;
+            # ProtectControlGroups = true;
+            # ProtectHome = true;
+            # ProtectHostname = true;
+            ProtectKernelLogs = true;
+            ProtectKernelModules = true;
+            ProtectKernelTunables = true;
+            # ProtectProc = "noaccess";
+            # ProtectSystem = "strict";
+            RemoveIPC = true;
+            RestrictAddressFamilies = [
+              "AF_INET"
+              "AF_INET6"
+            ];
+            RestrictNamespaces = false; # Rquired for FHS emulation.
+            RestrictRealtime = true;
+            RestrictSUIDSGID = true;
+            SystemCallArchitectures = "native";
+            # TODO Figure out what syscalls cosmovisor uses.
+            # SystemCallFilter = [
+            #   "@system-service"
+            #   "~@privileged"
+            # ];
+          };
+          wantedBy = [ "multi-user.target" ];
+          wants = [ "network-online.target" ];
+          after = [ "network-online.target" ];
         };
       };
+
+      tmpfiles.rules = with cfg; [ "d '${userHome}' 0700 ${user} ${group} -" ];
     };
   };
 }

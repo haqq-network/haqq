@@ -3,7 +3,7 @@
   gitignore,
   go,
   haqq,
-  haqq-module-test,
+  haqq-nixos,
   lib,
   rev,
   testers,
@@ -66,7 +66,7 @@ buildGoApplication rec {
 
   passthru.tests = {
     version = testers.testVersion { package = haqq; };
-    haqq = haqq-module-test;
+    inherit haqq-nixos;
   };
 
   meta = with lib; {
