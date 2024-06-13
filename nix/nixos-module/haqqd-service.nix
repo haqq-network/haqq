@@ -146,40 +146,40 @@ in
             LimitNOFILE = "infinity";
 
             # TODO Work more on hardening and security.
-            UMask = "0077";
-            RuntimeDirectoryMode = "700";
-            AmbientCapabilities = [ "" ];
-            CapabilityBoundingSet = [ "" ];
-            # BindReadOnlyPaths = [ builtins.storeDir ];
-            # MemoryDenyWriteExecute = true;
-            # NoNewPrivileges = true;
-            # PrivateDevices = true;
-            PrivateTmp = true;
-            PrivateUsers = true;
-            # ProcSubset = "pid";
-            # ProtectClock = true;
-            # ProtectControlGroups = true;
-            # ProtectHome = true;
-            # ProtectHostname = true;
-            ProtectKernelLogs = true;
-            ProtectKernelModules = true;
-            ProtectKernelTunables = true;
-            # ProtectProc = "noaccess";
-            # ProtectSystem = "strict";
-            RemoveIPC = true;
-            RestrictAddressFamilies = [
-              "AF_INET"
-              "AF_INET6"
-            ];
-            RestrictNamespaces = false; # Rquired for FHS emulation.
-            RestrictRealtime = true;
-            RestrictSUIDSGID = true;
-            SystemCallArchitectures = "native";
-            # TODO Figure out what syscalls cosmovisor uses.
-            # SystemCallFilter = [
-            #   "@system-service"
-            #   "~@privileged"
+            # UMask = "0077";
+            # RuntimeDirectoryMode = "700";
+            # AmbientCapabilities = [ "" ];
+            # CapabilityBoundingSet = [ "" ];
+            # # BindReadOnlyPaths = [ builtins.storeDir ];
+            # # MemoryDenyWriteExecute = true;
+            # # NoNewPrivileges = true;
+            # # PrivateDevices = true;
+            # PrivateTmp = true;
+            # PrivateUsers = true;
+            # # ProcSubset = "pid";
+            # # ProtectClock = true;
+            # # ProtectControlGroups = true;
+            # # ProtectHome = true;
+            # # ProtectHostname = true;
+            # ProtectKernelLogs = true;
+            # ProtectKernelModules = true;
+            # ProtectKernelTunables = true;
+            # # ProtectProc = "noaccess";
+            # # ProtectSystem = "strict";
+            # RemoveIPC = true;
+            # RestrictAddressFamilies = [
+            #   "AF_INET"
+            #   "AF_INET6"
             # ];
+            # RestrictNamespaces = false; # Rquired for FHS emulation.
+            # RestrictRealtime = true;
+            # RestrictSUIDSGID = true;
+            # SystemCallArchitectures = "native";
+            # # TODO Figure out what syscalls cosmovisor uses.
+            # # SystemCallFilter = [
+            # #   "@system-service"
+            # #   "~@privileged"
+            # # ];
           };
           wantedBy = [ "multi-user.target" ];
           wants = [ "network-online.target" ];
