@@ -156,6 +156,10 @@ import (
 	"github.com/haqq-network/haqq/x/liquidvesting"
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	shariahoracle "github.com/haqq-network/haqq/x/shariahoracle"
+	shariahoracleclient "github.com/haqq-network/haqq/x/shariahoracle/client"
+	shariahoraclekeeper "github.com/haqq-network/haqq/x/shariahoracle/keeper"
+	shariahoracletypes "github.com/haqq-network/haqq/x/shariahoracle/types"
 	"github.com/haqq-network/haqq/x/vesting"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -227,6 +231,9 @@ var (
 				erc20client.RegisterCoinProposalHandler,
 				erc20client.RegisterERC20ProposalHandler,
 				erc20client.ToggleTokenConversionProposalHandler,
+				shariahoracleclient.MintCACProposalHandler,
+				shariahoracleclient.BurnCACProposalHandler,
+				shariahoracleclient.UpdateCACContractProposalHandler,
 			},
 		),
 		params.AppModuleBasic{},
@@ -250,6 +257,7 @@ var (
 		consensus.AppModuleBasic{},
 		liquidvesting.AppModuleBasic{},
 		dao.AppModuleBasic{},
+		shariahoracle.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -267,6 +275,7 @@ var (
 		vestingtypes.ModuleName:        nil, // Add vesting module account
 		liquidvestingtypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
 		daotypes.ModuleName:            nil,
+		shariahoracletypes.ModuleName:  nil,
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -334,8 +343,9 @@ type Haqq struct {
 	LiquidVestingKeeper liquidvestingkeeper.Keeper
 
 	// Haqq keepers
-	CoinomicsKeeper coinomicskeeper.Keeper
-	DaoKeeper       daokeeper.Keeper
+	CoinomicsKeeper    coinomicskeeper.Keeper
+	DaoKeeper          daokeeper.Keeper
+	ShariaOracleKeeper shariahoraclekeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -410,6 +420,7 @@ func NewHaqq(
 		coinomicstypes.StoreKey,
 		liquidvestingtypes.StoreKey,
 		daotypes.StoreKey,
+		shariahoracletypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
@@ -513,8 +524,8 @@ func NewHaqq(
 		// AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
-
+		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper)).
+		AddRoute(shariahoracletypes.RouterKey, shariahoracle.NewShariahOracleProposalHandler(&app.ShariaOracleKeeper))
 	govConfig := govtypes.Config{
 		MaxMetadataLen: 10000,
 	}
@@ -561,6 +572,11 @@ func NewHaqq(
 
 	app.DaoKeeper = daokeeper.NewBaseKeeper(
 		appCodec, keys[daotypes.StoreKey], app.AccountKeeper, app.BankKeeper, authAddr,
+	)
+
+	app.ShariaOracleKeeper = shariahoraclekeeper.NewKeeper(
+		keys[shariahoracletypes.StoreKey], appCodec, app.GetSubspace(shariahoracletypes.ModuleName),
+		app.EvmKeeper, app.AccountKeeper,
 	)
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
@@ -712,6 +728,7 @@ func NewHaqq(
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
 		dao.NewAppModule(appCodec, app.DaoKeeper, app.GetSubspace(daotypes.ModuleName)),
+		shariahoracle.NewAppModule(appCodec, app.ShariaOracleKeeper, app.AccountKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -750,6 +767,7 @@ func NewHaqq(
 		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
 		daotypes.ModuleName,
+		shariahoracletypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -787,6 +805,7 @@ func NewHaqq(
 		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
 		daotypes.ModuleName,
+		shariahoracletypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -827,6 +846,7 @@ func NewHaqq(
 		erc20types.ModuleName,
 		epochstypes.ModuleName,
 		daotypes.ModuleName,
+		shariahoracletypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 		consensusparamtypes.ModuleName,
@@ -1190,6 +1210,7 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(coinomicstypes.ModuleName)
 	paramsKeeper.Subspace(liquidvestingtypes.ModuleName)
 	paramsKeeper.Subspace(daotypes.ModuleName)
+	paramsKeeper.Subspace(shariahoracletypes.ModuleName)
 
 	return paramsKeeper
 }

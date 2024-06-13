@@ -1,0 +1,36 @@
+syntax = "proto3";
+package haqq.shariahoracle.v1;
+
+import "gogoproto/gogo.proto";
+option go_package = "github.com/haqq-network/haqq/x/shariahoracle/types";
+
+// RegisterMintCACProposal
+message MintCACProposal {
+  option (gogoproto.equal) = false;
+  // title of the proposal
+  string title = 1;
+  // description of the proposal
+  string description = 2;
+  // the addresses of cac grantees
+  repeated string grantees = 3;
+}
+
+message BurnCACProposal {
+  option (gogoproto.equal) = false;
+  // title of the proposal
+  string title = 1;
+  // description of the proposal
+  string description = 2;
+  // the addresses of cac grantees
+  repeated string grantees = 3;
+}
+
+message UpdateCACContractProposal {
+  option (gogoproto.equal) = false;
+  // title of the proposal
+  string title = 1;
+  // description of the proposal
+  string description = 2;
+  // the addresses of cac grantees
+  string new_implementation_address = 3;
+}
