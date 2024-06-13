@@ -2,6 +2,7 @@ package contractcheck
 
 import (
 	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/haqq-network/haqq/x/shariahoracle/keeper"

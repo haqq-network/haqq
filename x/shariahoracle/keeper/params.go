@@ -2,11 +2,8 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/haqq-network/haqq/x/shariahoracle/types"
 )
-
-// var isTrue = []byte("0x01")
 
 // GetParams returns the total set of liquidvesting parameters.
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
@@ -39,7 +36,6 @@ func (k Keeper) SetCACContractAddress(ctx sdk.Context, address string) {
 	if err != nil {
 		panic(err)
 	}
-
 }
 
 // ResetParamsToDefault resets the params to the default values

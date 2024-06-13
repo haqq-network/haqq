@@ -33,7 +33,6 @@ func handleMintCACProposal(
 ) error {
 	for _, grantee := range p.Grantees {
 		cacMinted, err := k.DoesAddressHaveCAC(ctx, grantee)
-
 		if err != nil {
 			return err
 		}
@@ -59,7 +58,6 @@ func handleBurnCACProposal(
 ) error {
 	for _, grantee := range p.Grantees {
 		cacMinted, err := k.DoesAddressHaveCAC(ctx, grantee)
-
 		if err != nil {
 			return err
 		}

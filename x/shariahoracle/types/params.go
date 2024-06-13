@@ -2,14 +2,12 @@ package types
 
 import (
 	"fmt"
+
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Parameter store key
-var (
-	ParamStoreKeyCACContractAddress = []byte("CACContractAddress")
-)
+var ParamStoreKeyCACContractAddress = []byte("CACContractAddress")
 
 // NewParams creates a new Params object
 func NewParams(
