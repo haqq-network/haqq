@@ -20,6 +20,6 @@ jobs:
         run: git lfs pull
       -
         name: Build docker
-        run:
+        run: |
           docker build . --file docker/build.Dockerfile
 

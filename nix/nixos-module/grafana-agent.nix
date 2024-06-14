@@ -1,6 +1,11 @@
-{ pkgs, config, lib, ... }:
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
 let
-  haqqCfg = config.services.haqqd-supervised;
+  haqqCfg = config.services.haqqd;
   cfg = haqqCfg.grafana;
 in
 {
@@ -32,7 +37,7 @@ in
         let
           configFile = pkgs.substituteAll {
             src = ./grafana-agent.river;
-            instance = cfg.instance;
+            inherit (cfg) instance;
           };
         in
         {

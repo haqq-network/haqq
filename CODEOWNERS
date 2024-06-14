@@ -1,0 +1,7 @@
+go.mod @haqq-network/node
+go.sum @haqq-network/node
+
+**/*.go @haqq-network/node
+
+**/*.nix @haqq-network/node-nix
+flake.lock @haqq-network/node-nix
