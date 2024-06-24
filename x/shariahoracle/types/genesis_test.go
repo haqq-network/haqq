@@ -3,9 +3,8 @@ package types_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	"github.com/haqq-network/haqq/x/shariahoracle/types"
+	"github.com/stretchr/testify/suite"
 )
 
 type GenesisTestSuite struct {
