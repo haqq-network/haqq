@@ -9,66 +9,7 @@ import (
 	"github.com/haqq-network/haqq/x/shariahoracle/types"
 )
 
-// MintCAC mints CAC
-func (k Keeper) MintCAC(ctx sdk.Context, to string) error {
-	// mint CAC
-	contract := common.HexToAddress(k.GetCACContractAddress(ctx))
-
-	_, err := k.CallEVM(ctx,
-		contracts.CommunityApprovalCertificatesContract.ABI,
-		types.ModuleAddress,
-		contract,
-		true,
-		"safeMint",
-		common.HexToAddress(to),
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// BurnCAC burns CAC
-func (k Keeper) BurnCAC(ctx sdk.Context, from string) error {
-	// burn CAC
-	contract := common.HexToAddress(k.GetCACContractAddress(ctx))
-
-	_, err := k.CallEVM(ctx,
-		contracts.CommunityApprovalCertificatesContract.ABI,
-		types.ModuleAddress,
-		contract,
-		true,
-		"burn",
-		common.HexToAddress(from),
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// UpdateCACContract updates CAC contract
-func (k Keeper) UpdateCACContract(ctx sdk.Context, newContractAddress string) error {
-	// burn CAC
-	contract := common.HexToAddress(k.GetCACContractAddress(ctx))
-
-	_, err := k.CallEVM(ctx,
-		contracts.CommunityApprovalCertificatesContract.ABI,
-		types.ModuleAddress,
-		contract,
-		true,
-		"upgradeTo",
-		common.HexToAddress(newContractAddress),
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
+// DoesAddressHaveCAC checks if an address has a Community Approval Certificate
 func (k Keeper) DoesAddressHaveCAC(ctx sdk.Context, address string) (bool, error) {
 	var (
 		contract = common.HexToAddress(k.GetCACContractAddress(ctx))

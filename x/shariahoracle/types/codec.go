@@ -21,6 +21,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		(*govv1beta1.Content)(nil),
 		&MintCACProposal{},
 		&BurnCACProposal{},
+		&UpdateCACContractProposal{},
 	)
 }
 

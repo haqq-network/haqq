@@ -1,4 +1,4 @@
-package contractcheck
+package shariahoracle
 
 import (
 	errorsmod "cosmossdk.io/errors"

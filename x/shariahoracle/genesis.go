@@ -1,4 +1,4 @@
-package contractcheck
+package shariahoracle
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ func InitGenesis(ctx sdk.Context,
 	// ensure shariah oracle module account is set on genesis
 	if acc := accountKeeper.GetModuleAccount(ctx, types.ModuleName); acc == nil {
 		// NOTE: shouldn't occur
-		panic("the erc20 module account has not been set")
+		panic("the shariah oracle module account has not been set")
 	}
 }
 
