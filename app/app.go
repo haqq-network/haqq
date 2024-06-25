@@ -343,9 +343,9 @@ type Haqq struct {
 	LiquidVestingKeeper liquidvestingkeeper.Keeper
 
 	// Haqq keepers
-	CoinomicsKeeper    coinomicskeeper.Keeper
-	DaoKeeper          daokeeper.Keeper
-	ShariaOracleKeeper shariahoraclekeeper.Keeper
+	CoinomicsKeeper     coinomicskeeper.Keeper
+	DaoKeeper           daokeeper.Keeper
+	ShariahOracleKeeper shariahoraclekeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -525,7 +525,7 @@ func NewHaqq(
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper)).
-		AddRoute(shariahoracletypes.RouterKey, shariahoracle.NewShariahOracleProposalHandler(&app.ShariaOracleKeeper))
+		AddRoute(shariahoracletypes.RouterKey, shariahoracle.NewShariahOracleProposalHandler(&app.ShariahOracleKeeper))
 	govConfig := govtypes.Config{
 		MaxMetadataLen: 10000,
 	}
@@ -574,7 +574,7 @@ func NewHaqq(
 		appCodec, keys[daotypes.StoreKey], app.AccountKeeper, app.BankKeeper, authAddr,
 	)
 
-	app.ShariaOracleKeeper = shariahoraclekeeper.NewKeeper(
+	app.ShariahOracleKeeper = shariahoraclekeeper.NewKeeper(
 		keys[shariahoracletypes.StoreKey], appCodec, app.GetSubspace(shariahoracletypes.ModuleName),
 		app.EvmKeeper, app.AccountKeeper,
 	)
@@ -728,7 +728,7 @@ func NewHaqq(
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
 		dao.NewAppModule(appCodec, app.DaoKeeper, app.GetSubspace(daotypes.ModuleName)),
-		shariahoracle.NewAppModule(appCodec, app.ShariaOracleKeeper, app.AccountKeeper),
+		shariahoracle.NewAppModule(appCodec, app.ShariahOracleKeeper, app.AccountKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that

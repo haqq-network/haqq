@@ -41,7 +41,7 @@ func (suite *KeeperTestSuite) TestCallEVM() {
 		suite.Require().NoError(err)
 		account := utiltx.GenerateAddress()
 
-		res, err := suite.app.ShariaOracleKeeper.CallEVM(suite.ctx, erc20, types.ModuleAddress, contract, true, tc.method, account)
+		res, err := suite.app.ShariahOracleKeeper.CallEVM(suite.ctx, erc20, types.ModuleAddress, contract, true, tc.method, account)
 		if tc.expPass {
 			suite.Require().IsTypef(&evmtypes.MsgEthereumTxResponse{}, res, tc.name)
 			suite.Require().NoError(err)
@@ -136,7 +136,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 
 			data, contract := tc.malleate()
 
-			res, err := suite.app.ShariaOracleKeeper.CallEVMWithData(suite.ctx, tc.from, contract, data, true)
+			res, err := suite.app.ShariahOracleKeeper.CallEVMWithData(suite.ctx, tc.from, contract, data, true)
 			if tc.expPass {
 				suite.Require().IsTypef(&evmtypes.MsgEthereumTxResponse{}, res, tc.name)
 				suite.Require().NoError(err)

@@ -6,7 +6,7 @@ import (
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"github.com/haqq-network/haqq/x/shariahoracle/keeper"
-	shariahoracletypes "github.com/haqq-network/haqq/x/shariahoracle/types"
+	"github.com/haqq-network/haqq/x/shariahoracle/types"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -48,17 +48,17 @@ func (suite *KeeperTestSuite) TestDoesAddressHaveCAC() {
 	for _, tc := range testCases {
 		suite.SetupTest() // reset
 		mockEVMKeeper = &MockEVMKeeper{}
-		suite.app.ShariaOracleKeeper = keeper.NewKeeper(
+		suite.app.ShariahOracleKeeper = keeper.NewKeeper(
 			suite.app.GetKey("shariahoracle"),
 			suite.app.AppCodec(),
-			suite.app.GetSubspace(shariahoracletypes.ModuleName),
+			suite.app.GetSubspace(types.ModuleName),
 			mockEVMKeeper,
 			suite.app.AccountKeeper,
 		)
 
 		tc.malleate()
 
-		doesHave, err := suite.app.ShariaOracleKeeper.DoesAddressHaveCAC(suite.ctx, utiltx.GenerateAddress().String())
+		doesHave, err := suite.app.ShariahOracleKeeper.DoesAddressHaveCAC(suite.ctx, utiltx.GenerateAddress().String())
 		if tc.res {
 			suite.Require().Equal(tc.expRes, doesHave)
 		} else {

@@ -80,9 +80,9 @@ func (suite *GenesisTestSuite) TestShariahOracleInitGenesis() {
 	for _, tc := range testCases {
 
 		suite.Require().NotPanics(func() {
-			shariahoracle.InitGenesis(suite.ctx, suite.app.ShariaOracleKeeper, suite.app.AccountKeeper, tc.genesisState)
+			shariahoracle.InitGenesis(suite.ctx, suite.app.ShariahOracleKeeper, suite.app.AccountKeeper, tc.genesisState)
 		})
-		params := suite.app.ShariaOracleKeeper.GetParams(suite.ctx)
+		params := suite.app.ShariahOracleKeeper.GetParams(suite.ctx)
 
 		suite.Require().Equal(tc.genesisState.Params, params)
 	}
@@ -104,10 +104,10 @@ func (suite *GenesisTestSuite) TestShariahOracleExportGenesis() {
 	}
 
 	for _, tc := range testGenCases {
-		shariahoracle.InitGenesis(suite.ctx, suite.app.ShariaOracleKeeper, suite.app.AccountKeeper, tc.genesisState)
+		shariahoracle.InitGenesis(suite.ctx, suite.app.ShariahOracleKeeper, suite.app.AccountKeeper, tc.genesisState)
 		suite.Require().NotPanics(func() {
-			genesisExported := shariahoracle.ExportGenesis(suite.ctx, suite.app.ShariaOracleKeeper)
-			params := suite.app.ShariaOracleKeeper.GetParams(suite.ctx)
+			genesisExported := shariahoracle.ExportGenesis(suite.ctx, suite.app.ShariahOracleKeeper)
+			params := suite.app.ShariahOracleKeeper.GetParams(suite.ctx)
 			suite.Require().Equal(genesisExported.Params, params)
 		})
 	}

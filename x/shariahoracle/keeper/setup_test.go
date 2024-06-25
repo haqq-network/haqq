@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/haqq-network/haqq/app"
-	ibctesting "github.com/haqq-network/haqq/ibc/testing"
 	evm "github.com/haqq-network/haqq/x/evm/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -22,28 +21,21 @@ import (
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx              sdk.Context
-	app              *app.Haqq
-	queryClientEvm   evm.QueryClient
-	address          common.Address
-	consAddress      sdk.ConsAddress
-	clientCtx        client.Context //nolint:unused
-	ethSigner        ethtypes.Signer
-	priv             cryptotypes.PrivKey
-	validator        stakingtypes.Validator
-	signer           keyring.Signer
-	mintFeeCollector bool
-
-	coordinator *ibcgotesting.Coordinator
+	ctx            sdk.Context
+	app            *app.Haqq
+	queryClientEvm evm.QueryClient
+	address        common.Address
+	consAddress    sdk.ConsAddress
+	clientCtx      client.Context //nolint:unused
+	ethSigner      ethtypes.Signer
+	priv           cryptotypes.PrivKey
+	validator      stakingtypes.Validator
+	signer         keyring.Signer
 
 	// testing chains used for convenience and readability
 	HaqqChain       *ibcgotesting.TestChain
 	IBCOsmosisChain *ibcgotesting.TestChain
 	IBCCosmosChain  *ibcgotesting.TestChain
-
-	pathOsmosisHaqq   *ibctesting.Path
-	pathCosmosHaqq    *ibctesting.Path
-	pathOsmosisCosmos *ibctesting.Path
 }
 
 var s *KeeperTestSuite

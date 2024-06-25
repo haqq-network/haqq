@@ -7,8 +7,8 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestParams() {
-	params := suite.app.ShariaOracleKeeper.GetParams(suite.ctx)
-	suite.app.ShariaOracleKeeper.SetParams(suite.ctx, params) //nolint:errcheck
+	params := suite.app.ShariahOracleKeeper.GetParams(suite.ctx)
+	suite.app.ShariahOracleKeeper.SetParams(suite.ctx, params) //nolint:errcheck
 
 	testCases := []struct {
 		name      string
@@ -22,7 +22,7 @@ func (suite *KeeperTestSuite) TestParams() {
 				return types.DefaultParams()
 			},
 			func() interface{} {
-				return suite.app.ShariaOracleKeeper.GetParams(suite.ctx)
+				return suite.app.ShariahOracleKeeper.GetParams(suite.ctx)
 			},
 			true,
 		},
