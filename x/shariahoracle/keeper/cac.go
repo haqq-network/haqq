@@ -3,6 +3,7 @@ package keeper
 import (
 	"math/big"
 
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/haqq-network/haqq/contracts"
@@ -17,18 +18,18 @@ func (k Keeper) DoesAddressHaveCAC(ctx sdk.Context, address string) (bool, error
 		account  = common.HexToAddress(address)
 	)
 
-	res, err := k.CallEVM(ctx, cac, types.ModuleAddress, contract, true, "balanceOf", account)
+	res, err := k.CallEVM(ctx, cac, types.ModuleAddress, contract, false, "balanceOf", account)
 	if err != nil {
 		return false, err
 	}
 	unpacked, err := cac.Unpack("balanceOf", res.Ret)
 	if err != nil || len(unpacked) == 0 {
-		return false, nil
+		return false, err
 	}
 
 	balance, ok := unpacked[0].(*big.Int)
 	if !ok {
-		return false, nil
+		return false, errors.Wrap(types.ErrInvalidEVMResponse, "failed to convert balance to *big.Int")
 	}
 
 	return balance.Cmp(big.NewInt(1)) == 0, nil
