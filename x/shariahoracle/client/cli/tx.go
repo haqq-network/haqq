@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewMintCACProposalCmd returns a command handler for submitting a mint community approval certificates proposal
-func NewMintCACProposalCmd() *cobra.Command {
+// NewGrantCACProposalCmd returns a command handler for submitting a mint community approval certificates proposal
+func NewGrantCACProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mint-cac GRANTEES...",
 		Short: "Submit a new mint community approval certificates proposal",
@@ -45,7 +45,7 @@ func NewMintCACProposalCmd() *cobra.Command {
 
 			grantees := args
 
-			content := types.NewMintCACProposal(title, description, grantees...)
+			content := types.NewGrantCACProposal(title, description, grantees...)
 
 			msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
@@ -71,8 +71,8 @@ func NewMintCACProposalCmd() *cobra.Command {
 	return cmd
 }
 
-// NewBurnCACProposalCmd returns a command handler for submitting a burn community approval certificates proposal
-func NewBurnCACProposalCmd() *cobra.Command {
+// NewRevokeCACProposalCmd returns a command handler for submitting a burn community approval certificates proposal
+func NewRevokeCACProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "burn-cac GRANTEES...",
 		Short: "Submit a new burn community approval certificates proposal",
@@ -106,7 +106,7 @@ func NewBurnCACProposalCmd() *cobra.Command {
 
 			grantees := args
 
-			content := types.NewBurnCACProposal(title, description, grantees...)
+			content := types.NewRevokeCACProposal(title, description, grantees...)
 
 			msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {

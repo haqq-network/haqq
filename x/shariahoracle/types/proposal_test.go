@@ -19,15 +19,15 @@ func TestProposalTestSuite(t *testing.T) {
 }
 
 func (suite *ProposalTestSuite) TestKeysTypes() {
-	suite.Require().Equal("shariahoracle", (&types.MintCACProposal{}).ProposalRoute())
-	suite.Require().Equal("MintCAC", (&types.MintCACProposal{}).ProposalType())
-	suite.Require().Equal("shariahoracle", (&types.BurnCACProposal{}).ProposalRoute())
-	suite.Require().Equal("BurnCAC", (&types.BurnCACProposal{}).ProposalType())
+	suite.Require().Equal("shariahoracle", (&types.GrantCACProposal{}).ProposalRoute())
+	suite.Require().Equal("GrantCAC", (&types.GrantCACProposal{}).ProposalType())
+	suite.Require().Equal("shariahoracle", (&types.RevokeCACProposal{}).ProposalRoute())
+	suite.Require().Equal("RevokeCAC", (&types.RevokeCACProposal{}).ProposalType())
 	suite.Require().Equal("shariahoracle", (&types.UpdateCACContractProposal{}).ProposalRoute())
 	suite.Require().Equal("UpdateCACContract", (&types.UpdateCACContractProposal{}).ProposalType())
 }
 
-func (suite *ProposalTestSuite) TestMintCACProposal() {
+func (suite *ProposalTestSuite) TestGrantCACProposal() {
 	testCases := []struct {
 		msg         string
 		title       string
@@ -36,18 +36,18 @@ func (suite *ProposalTestSuite) TestMintCACProposal() {
 		expectPass  bool
 	}{
 		// Valid tests
-		{msg: "Mint CAC - valid grantee address", title: "test", description: "test desc", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: true},
+		{msg: "Grant CAC - valid grantee address", title: "test", description: "test desc", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: true},
 		// Missing params valid
-		{msg: "Mint CAC - invalid missing title ", title: "", description: "test desc", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: false},
-		{msg: "Mint CAC - invalid missing description ", title: "test", description: "", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: false},
+		{msg: "Grant CAC - invalid missing title ", title: "", description: "test desc", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: false},
+		{msg: "Grant CAC - invalid missing description ", title: "test", description: "", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: false},
 		// Invalid address
-		{msg: "Mint CAC - invalid address (no hex)", title: "test", description: "test desc", grantees: []string{""}, expectPass: false},
-		{msg: "Mint CAC - invalid address (invalid length 1)", title: "test", description: "test desc", grantees: []string{"0x5dCA2483280D9727c80b5518faC4556617fb194FFF"}, expectPass: false},
-		{msg: "Mint CAC - invalid address (invalid prefix)", title: "test", description: "test desc", grantees: []string{"1x5dCA2483280D9727c80b5518faC4556617fb19F"}, expectPass: false},
+		{msg: "Grant CAC - invalid address (no hex)", title: "test", description: "test desc", grantees: []string{""}, expectPass: false},
+		{msg: "Grant CAC - invalid address (invalid length 1)", title: "test", description: "test desc", grantees: []string{"0x5dCA2483280D9727c80b5518faC4556617fb194FFF"}, expectPass: false},
+		{msg: "Grant CAC - invalid address (invalid prefix)", title: "test", description: "test desc", grantees: []string{"1x5dCA2483280D9727c80b5518faC4556617fb19F"}, expectPass: false},
 	}
 
 	for i, tc := range testCases {
-		tx := types.NewMintCACProposal(tc.title, tc.description, tc.grantees...)
+		tx := types.NewGrantCACProposal(tc.title, tc.description, tc.grantees...)
 		err := tx.ValidateBasic()
 
 		if tc.expectPass {
@@ -58,7 +58,7 @@ func (suite *ProposalTestSuite) TestMintCACProposal() {
 	}
 }
 
-func (suite *ProposalTestSuite) TestBurnCACProposal() {
+func (suite *ProposalTestSuite) TestRevokeCACProposal() {
 	testCases := []struct {
 		msg         string
 		title       string
@@ -67,18 +67,18 @@ func (suite *ProposalTestSuite) TestBurnCACProposal() {
 		expectPass  bool
 	}{
 		// Valid tests
-		{msg: "Burn CAC - valid grantee address", title: "test", description: "test desc", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: true},
+		{msg: "Revoke CAC - valid grantee address", title: "test", description: "test desc", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: true},
 		// Missing params valid
-		{msg: "Burn CAC - invalid missing title ", title: "", description: "test desc", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: false},
-		{msg: "Burn CAC - invalid missing description ", title: "test", description: "", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: false},
+		{msg: "Revoke CAC - invalid missing title ", title: "", description: "test desc", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: false},
+		{msg: "Revoke CAC - invalid missing description ", title: "test", description: "", grantees: []string{utiltx.GenerateAddress().String()}, expectPass: false},
 		// Invalid address
-		{msg: "Burn CAC - invalid address (no hex)", title: "test", description: "test desc", grantees: []string{""}, expectPass: false},
-		{msg: "Burn CAC - invalid address (invalid length 1)", title: "test", description: "test desc", grantees: []string{"0x5dCA2483280D9727c80b5518faC4556617fb194FFF"}, expectPass: false},
-		{msg: "Burn CAC - invalid address (invalid prefix)", title: "test", description: "test desc", grantees: []string{"1x5dCA2483280D9727c80b5518faC4556617fb19F"}, expectPass: false},
+		{msg: "Revoke CAC - invalid address (no hex)", title: "test", description: "test desc", grantees: []string{""}, expectPass: false},
+		{msg: "Revoke CAC - invalid address (invalid length 1)", title: "test", description: "test desc", grantees: []string{"0x5dCA2483280D9727c80b5518faC4556617fb194FFF"}, expectPass: false},
+		{msg: "Revoke CAC - invalid address (invalid prefix)", title: "test", description: "test desc", grantees: []string{"1x5dCA2483280D9727c80b5518faC4556617fb19F"}, expectPass: false},
 	}
 
 	for i, tc := range testCases {
-		tx := types.NewBurnCACProposal(tc.title, tc.description, tc.grantees...)
+		tx := types.NewRevokeCACProposal(tc.title, tc.description, tc.grantees...)
 		err := tx.ValidateBasic()
 
 		if tc.expectPass {

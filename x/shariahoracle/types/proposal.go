@@ -10,30 +10,30 @@ import (
 
 // constants
 const (
-	ProposalTypeMintCAC           string = "MintCAC"
-	ProposalTypeBurnCAC           string = "BurnCAC"
+	ProposalTypeGrantCAC          string = "GrantCAC"
+	ProposalTypeRevokeCAC         string = "RevokeCAC"
 	ProposalTypeUpdateCACContract string = "UpdateCACContract"
 )
 
 // Implements Proposal Interface
 var (
-	_ v1beta1.Content = &MintCACProposal{}
-	_ v1beta1.Content = &BurnCACProposal{}
+	_ v1beta1.Content = &GrantCACProposal{}
+	_ v1beta1.Content = &RevokeCACProposal{}
 	_ v1beta1.Content = &UpdateCACContractProposal{}
 )
 
 func init() {
-	v1beta1.RegisterProposalType(ProposalTypeMintCAC)
-	v1beta1.RegisterProposalType(ProposalTypeBurnCAC)
+	v1beta1.RegisterProposalType(ProposalTypeGrantCAC)
+	v1beta1.RegisterProposalType(ProposalTypeRevokeCAC)
 	v1beta1.RegisterProposalType(ProposalTypeUpdateCACContract)
-	govcdc.ModuleCdc.Amino.RegisterConcrete(&MintCACProposal{}, "shariahoracle/MintCACProposal", nil)
-	govcdc.ModuleCdc.Amino.RegisterConcrete(&BurnCACProposal{}, "shariahoracle/BurnCACProposal", nil)
+	govcdc.ModuleCdc.Amino.RegisterConcrete(&GrantCACProposal{}, "shariahoracle/GrantCACProposal", nil)
+	govcdc.ModuleCdc.Amino.RegisterConcrete(&RevokeCACProposal{}, "shariahoracle/RevokeCACProposal", nil)
 	govcdc.ModuleCdc.Amino.RegisterConcrete(&UpdateCACContractProposal{}, "shariahoracle/UpdateCACContractProposal", nil)
 }
 
 // NewRegisterCoinProposal returns new instance of RegisterCoinProposal
-func NewMintCACProposal(title, description string, granteeAddress ...string) v1beta1.Content {
-	return &MintCACProposal{
+func NewGrantCACProposal(title, description string, granteeAddress ...string) v1beta1.Content {
+	return &GrantCACProposal{
 		Title:       title,
 		Description: description,
 		Grantees:    granteeAddress,
@@ -41,15 +41,15 @@ func NewMintCACProposal(title, description string, granteeAddress ...string) v1b
 }
 
 // ProposalRoute returns router key for this proposal
-func (*MintCACProposal) ProposalRoute() string { return RouterKey }
+func (*GrantCACProposal) ProposalRoute() string { return RouterKey }
 
 // ProposalType returns proposal type for this proposal
-func (*MintCACProposal) ProposalType() string {
-	return ProposalTypeMintCAC
+func (*GrantCACProposal) ProposalType() string {
+	return ProposalTypeGrantCAC
 }
 
 // ValidateBasic performs a stateless check of the proposal fields
-func (rtbp *MintCACProposal) ValidateBasic() error {
+func (rtbp *GrantCACProposal) ValidateBasic() error {
 	for _, grantee := range rtbp.Grantees {
 		if !common.IsHexAddress(grantee) {
 			return errorsmod.Wrap(types.ErrInvalidProposalContent, "invalid contract address")
@@ -59,9 +59,9 @@ func (rtbp *MintCACProposal) ValidateBasic() error {
 	return v1beta1.ValidateAbstract(rtbp)
 }
 
-// NewBurnCACProposal returns new instance of RegisterCoinProposal
-func NewBurnCACProposal(title, description string, granteeAddress ...string) v1beta1.Content {
-	return &BurnCACProposal{
+// NewRevokeCACProposal returns new instance of RegisterCoinProposal
+func NewRevokeCACProposal(title, description string, granteeAddress ...string) v1beta1.Content {
+	return &RevokeCACProposal{
 		Title:       title,
 		Description: description,
 		Grantees:    granteeAddress,
@@ -69,15 +69,15 @@ func NewBurnCACProposal(title, description string, granteeAddress ...string) v1b
 }
 
 // ProposalRoute returns router key for this proposal
-func (*BurnCACProposal) ProposalRoute() string { return RouterKey }
+func (*RevokeCACProposal) ProposalRoute() string { return RouterKey }
 
 // ProposalType returns proposal type for this proposal
-func (*BurnCACProposal) ProposalType() string {
-	return ProposalTypeBurnCAC
+func (*RevokeCACProposal) ProposalType() string {
+	return ProposalTypeRevokeCAC
 }
 
 // ValidateBasic performs a stateless check of the proposal fields
-func (rtbp *BurnCACProposal) ValidateBasic() error {
+func (rtbp *RevokeCACProposal) ValidateBasic() error {
 	for _, grantee := range rtbp.Grantees {
 		if !common.IsHexAddress(grantee) {
 			return errorsmod.Wrap(types.ErrInvalidProposalContent, "invalid contract address")

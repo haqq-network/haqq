@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func (suite *KeeperTestSuite) TestMintCAC() { //nolint:govet // we can copy locks here because it is a test
+func (suite *KeeperTestSuite) TestGrantCAC() { //nolint:govet // we can copy locks here because it is a test
 
 	testCases := []struct {
 		name     string
@@ -45,7 +45,7 @@ func (suite *KeeperTestSuite) TestMintCAC() { //nolint:govet // we can copy lock
 				suite.Require().NoError(err)
 				params := types.NewParams(cacAddr.String())
 				suite.app.ShariahOracleKeeper.SetParams(suite.ctx, params) //nolint:errcheck
-				err = suite.app.ShariahOracleKeeper.MintCAC(suite.ctx, types.ModuleAddress.String())
+				err = suite.app.ShariahOracleKeeper.GrantCAC(suite.ctx, types.ModuleAddress.String())
 				suite.Require().NoError(err)
 			},
 			false,
@@ -74,7 +74,7 @@ func (suite *KeeperTestSuite) TestMintCAC() { //nolint:govet // we can copy lock
 
 			tc.malleate()
 
-			err := suite.app.ShariahOracleKeeper.MintCAC(suite.ctx, types.ModuleAddress.String())
+			err := suite.app.ShariahOracleKeeper.GrantCAC(suite.ctx, types.ModuleAddress.String())
 			suite.Commit()
 
 			if tc.expPass {
@@ -89,7 +89,7 @@ func (suite *KeeperTestSuite) TestMintCAC() { //nolint:govet // we can copy lock
 	}
 }
 
-func (suite *KeeperTestSuite) TestBurnCAC() { //nolint:govet // we can copy locks here because it is a test
+func (suite *KeeperTestSuite) TestRevokeCAC() { //nolint:govet // we can copy locks here because it is a test
 
 	testCases := []struct {
 		name     string
@@ -108,7 +108,7 @@ func (suite *KeeperTestSuite) TestBurnCAC() { //nolint:govet // we can copy lock
 				suite.Require().NoError(err)
 				params := types.NewParams(cacAddr.String())
 				suite.app.ShariahOracleKeeper.SetParams(suite.ctx, params) //nolint:errcheck
-				err = suite.app.ShariahOracleKeeper.MintCAC(suite.ctx, types.ModuleAddress.String())
+				err = suite.app.ShariahOracleKeeper.GrantCAC(suite.ctx, types.ModuleAddress.String())
 				suite.Require().NoError(err)
 			},
 			true,
@@ -152,7 +152,7 @@ func (suite *KeeperTestSuite) TestBurnCAC() { //nolint:govet // we can copy lock
 
 			tc.malleate()
 
-			err := suite.app.ShariahOracleKeeper.BurnCAC(suite.ctx, types.ModuleAddress.String())
+			err := suite.app.ShariahOracleKeeper.RevokeCAC(suite.ctx, types.ModuleAddress.String())
 			suite.Commit()
 
 			if tc.expPass {

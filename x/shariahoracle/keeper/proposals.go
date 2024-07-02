@@ -7,8 +7,8 @@ import (
 	"github.com/haqq-network/haqq/x/shariahoracle/types"
 )
 
-// MintCAC mints CAC
-func (k Keeper) MintCAC(ctx sdk.Context, to string) error {
+// GrantCAC mints CAC
+func (k Keeper) GrantCAC(ctx sdk.Context, to string) error {
 	// mint CAC
 	contract := common.HexToAddress(k.GetCACContractAddress(ctx))
 
@@ -27,8 +27,8 @@ func (k Keeper) MintCAC(ctx sdk.Context, to string) error {
 	return nil
 }
 
-// BurnCAC burns CAC
-func (k Keeper) BurnCAC(ctx sdk.Context, from string) error {
+// RevokeCAC burns CAC
+func (k Keeper) RevokeCAC(ctx sdk.Context, from string) error {
 	// burn CAC
 	contract := common.HexToAddress(k.GetCACContractAddress(ctx))
 

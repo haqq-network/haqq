@@ -13,10 +13,10 @@ import (
 func NewShariahOracleProposalHandler(k *keeper.Keeper) govv1beta1.Handler {
 	return func(ctx sdk.Context, content govv1beta1.Content) error {
 		switch c := content.(type) {
-		case *types.MintCACProposal:
-			return handleMintCACProposal(ctx, k, c)
-		case *types.BurnCACProposal:
-			return handleBurnCACProposal(ctx, k, c)
+		case *types.GrantCACProposal:
+			return handleGrantCACProposal(ctx, k, c)
+		case *types.RevokeCACProposal:
+			return handleRevokeCACProposal(ctx, k, c)
 		case *types.UpdateCACContractProposal:
 			return handleUpdateCACContractProposal(ctx, k, c)
 		default:
@@ -25,11 +25,11 @@ func NewShariahOracleProposalHandler(k *keeper.Keeper) govv1beta1.Handler {
 	}
 }
 
-// handleMintCACProposal
-func handleMintCACProposal(
+// handleGrantCACProposal
+func handleGrantCACProposal(
 	ctx sdk.Context,
 	k *keeper.Keeper,
-	p *types.MintCACProposal,
+	p *types.GrantCACProposal,
 ) error {
 	for _, grantee := range p.Grantees {
 		cacMinted, err := k.DoesAddressHaveCAC(ctx, grantee)
@@ -38,10 +38,10 @@ func handleMintCACProposal(
 		}
 
 		if cacMinted {
-			return errorsmod.Wrapf(types.ErrCACAlreadyMinted, "CAC already minted for address %s", grantee)
+			return errorsmod.Wrapf(types.ErrCACAlreadyGranted, "CAC already minted for address %s", grantee)
 		}
 
-		err = k.MintCAC(ctx, grantee)
+		err = k.GrantCAC(ctx, grantee)
 		if err != nil {
 			return err
 		}
@@ -50,11 +50,11 @@ func handleMintCACProposal(
 	return nil
 }
 
-// handleBurnCACProposal
-func handleBurnCACProposal(
+// handleRevokeCACProposal
+func handleRevokeCACProposal(
 	ctx sdk.Context,
 	k *keeper.Keeper,
-	p *types.BurnCACProposal,
+	p *types.RevokeCACProposal,
 ) error {
 	for _, grantee := range p.Grantees {
 		cacMinted, err := k.DoesAddressHaveCAC(ctx, grantee)
@@ -63,10 +63,10 @@ func handleBurnCACProposal(
 		}
 
 		if !cacMinted {
-			return errorsmod.Wrapf(types.ErrCACNotMinted, "CAC not minted for address %s", grantee)
+			return errorsmod.Wrapf(types.ErrCACNotGranted, "CAC not minted for address %s", grantee)
 		}
 
-		err = k.BurnCAC(ctx, grantee)
+		err = k.RevokeCAC(ctx, grantee)
 		if err != nil {
 			return err
 		}

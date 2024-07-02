@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	MintCACProposalHandler           = govclient.NewProposalHandler(cli.NewMintCACProposalCmd)
-	BurnCACProposalHandler           = govclient.NewProposalHandler(cli.NewBurnCACProposalCmd)
+	GrantCACProposalHandler          = govclient.NewProposalHandler(cli.NewGrantCACProposalCmd)
+	RevokeCACProposalHandler         = govclient.NewProposalHandler(cli.NewRevokeCACProposalCmd)
 	UpdateCACContractProposalHandler = govclient.NewProposalHandler(cli.NewUpdateCACContractProposalCmd)
 )

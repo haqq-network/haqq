@@ -24,7 +24,7 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // RegisterMintCACProposal
-type MintCACProposal struct {
+type GrantCACProposal struct {
 	// title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	// description of the proposal
@@ -33,18 +33,18 @@ type MintCACProposal struct {
 	Grantees []string `protobuf:"bytes,3,rep,name=grantees,proto3" json:"grantees,omitempty"`
 }
 
-func (m *MintCACProposal) Reset()         { *m = MintCACProposal{} }
-func (m *MintCACProposal) String() string { return proto.CompactTextString(m) }
-func (*MintCACProposal) ProtoMessage()    {}
-func (*MintCACProposal) Descriptor() ([]byte, []int) {
+func (m *GrantCACProposal) Reset()         { *m = GrantCACProposal{} }
+func (m *GrantCACProposal) String() string { return proto.CompactTextString(m) }
+func (*GrantCACProposal) ProtoMessage()    {}
+func (*GrantCACProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c8d2931d9601696d, []int{0}
 }
-func (m *MintCACProposal) XXX_Unmarshal(b []byte) error {
+func (m *GrantCACProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MintCACProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GrantCACProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MintCACProposal.Marshal(b, m, deterministic)
+		return xxx_messageInfo_GrantCACProposal.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -54,40 +54,40 @@ func (m *MintCACProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *MintCACProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MintCACProposal.Merge(m, src)
+func (m *GrantCACProposal) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GrantCACProposal.Merge(m, src)
 }
-func (m *MintCACProposal) XXX_Size() int {
+func (m *GrantCACProposal) XXX_Size() int {
 	return m.Size()
 }
-func (m *MintCACProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_MintCACProposal.DiscardUnknown(m)
+func (m *GrantCACProposal) XXX_DiscardUnknown() {
+	xxx_messageInfo_GrantCACProposal.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MintCACProposal proto.InternalMessageInfo
+var xxx_messageInfo_GrantCACProposal proto.InternalMessageInfo
 
-func (m *MintCACProposal) GetTitle() string {
+func (m *GrantCACProposal) GetTitle() string {
 	if m != nil {
 		return m.Title
 	}
 	return ""
 }
 
-func (m *MintCACProposal) GetDescription() string {
+func (m *GrantCACProposal) GetDescription() string {
 	if m != nil {
 		return m.Description
 	}
 	return ""
 }
 
-func (m *MintCACProposal) GetGrantees() []string {
+func (m *GrantCACProposal) GetGrantees() []string {
 	if m != nil {
 		return m.Grantees
 	}
 	return nil
 }
 
-type BurnCACProposal struct {
+type RevokeCACProposal struct {
 	// title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	// description of the proposal
@@ -96,18 +96,18 @@ type BurnCACProposal struct {
 	Grantees []string `protobuf:"bytes,3,rep,name=grantees,proto3" json:"grantees,omitempty"`
 }
 
-func (m *BurnCACProposal) Reset()         { *m = BurnCACProposal{} }
-func (m *BurnCACProposal) String() string { return proto.CompactTextString(m) }
-func (*BurnCACProposal) ProtoMessage()    {}
-func (*BurnCACProposal) Descriptor() ([]byte, []int) {
+func (m *RevokeCACProposal) Reset()         { *m = RevokeCACProposal{} }
+func (m *RevokeCACProposal) String() string { return proto.CompactTextString(m) }
+func (*RevokeCACProposal) ProtoMessage()    {}
+func (*RevokeCACProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_c8d2931d9601696d, []int{1}
 }
-func (m *BurnCACProposal) XXX_Unmarshal(b []byte) error {
+func (m *RevokeCACProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *BurnCACProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *RevokeCACProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_BurnCACProposal.Marshal(b, m, deterministic)
+		return xxx_messageInfo_RevokeCACProposal.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -117,33 +117,33 @@ func (m *BurnCACProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *BurnCACProposal) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BurnCACProposal.Merge(m, src)
+func (m *RevokeCACProposal) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RevokeCACProposal.Merge(m, src)
 }
-func (m *BurnCACProposal) XXX_Size() int {
+func (m *RevokeCACProposal) XXX_Size() int {
 	return m.Size()
 }
-func (m *BurnCACProposal) XXX_DiscardUnknown() {
-	xxx_messageInfo_BurnCACProposal.DiscardUnknown(m)
+func (m *RevokeCACProposal) XXX_DiscardUnknown() {
+	xxx_messageInfo_RevokeCACProposal.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_BurnCACProposal proto.InternalMessageInfo
+var xxx_messageInfo_RevokeCACProposal proto.InternalMessageInfo
 
-func (m *BurnCACProposal) GetTitle() string {
+func (m *RevokeCACProposal) GetTitle() string {
 	if m != nil {
 		return m.Title
 	}
 	return ""
 }
 
-func (m *BurnCACProposal) GetDescription() string {
+func (m *RevokeCACProposal) GetDescription() string {
 	if m != nil {
 		return m.Description
 	}
 	return ""
 }
 
-func (m *BurnCACProposal) GetGrantees() []string {
+func (m *RevokeCACProposal) GetGrantees() []string {
 	if m != nil {
 		return m.Grantees
 	}
@@ -214,37 +214,38 @@ func (m *UpdateCACContractProposal) GetNewImplementationAddress() string {
 }
 
 func init() {
-	proto.RegisterType((*MintCACProposal)(nil), "haqq.shariahoracle.v1.MintCACProposal")
-	proto.RegisterType((*BurnCACProposal)(nil), "haqq.shariahoracle.v1.BurnCACProposal")
+	proto.RegisterType((*GrantCACProposal)(nil), "haqq.shariahoracle.v1.GrantCACProposal")
+	proto.RegisterType((*RevokeCACProposal)(nil), "haqq.shariahoracle.v1.RevokeCACProposal")
 	proto.RegisterType((*UpdateCACContractProposal)(nil), "haqq.shariahoracle.v1.UpdateCACContractProposal")
 }
 
 func init() { proto.RegisterFile("haqq/shariahoracle/v1/cac.proto", fileDescriptor_c8d2931d9601696d) }
 
 var fileDescriptor_c8d2931d9601696d = []byte{
-	// 304 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x91, 0x31, 0x4b, 0xc3, 0x40,
-	0x1c, 0xc5, 0x13, 0xab, 0x62, 0xcf, 0x41, 0x08, 0x15, 0x62, 0x87, 0xb4, 0x38, 0x75, 0x31, 0x47,
-	0x75, 0x13, 0x97, 0x36, 0x93, 0xa0, 0x20, 0x05, 0x17, 0x97, 0x72, 0xbd, 0xfc, 0x49, 0x8e, 0xa6,
-	0x77, 0xd7, 0xbb, 0x7f, 0x5b, 0xfd, 0x16, 0x6e, 0xae, 0x7e, 0x1c, 0xc7, 0x8e, 0x8e, 0xd2, 0x2c,
-	0x7e, 0x0c, 0xb9, 0x04, 0xc4, 0xba, 0x0a, 0x6e, 0xf7, 0xfe, 0xef, 0x77, 0xbc, 0x07, 0x8f, 0x74,
-	0x72, 0x36, 0x9f, 0x53, 0x9b, 0x33, 0x23, 0x58, 0xae, 0x0c, 0xe3, 0x05, 0xd0, 0x65, 0x9f, 0x72,
-	0xc6, 0x63, 0x6d, 0x14, 0xaa, 0xe0, 0xd8, 0x01, 0xf1, 0x16, 0x10, 0x2f, 0xfb, 0xed, 0x56, 0xa6,
-	0x32, 0x55, 0x11, 0xd4, 0xbd, 0x6a, 0xf8, 0x74, 0x4a, 0x8e, 0x6e, 0x85, 0xc4, 0x64, 0x90, 0xdc,
-	0x19, 0xa5, 0x95, 0x65, 0x45, 0xd0, 0x22, 0x7b, 0x28, 0xb0, 0x80, 0xd0, 0xef, 0xfa, 0xbd, 0xe6,
-	0xa8, 0x16, 0x41, 0x97, 0x1c, 0xa6, 0x60, 0xb9, 0x11, 0x1a, 0x85, 0x92, 0xe1, 0x4e, 0xe5, 0xfd,
-	0x3c, 0x05, 0x6d, 0x72, 0x90, 0x19, 0x26, 0x11, 0xc0, 0x86, 0x8d, 0x6e, 0xa3, 0xd7, 0x1c, 0x7d,
-	0xeb, 0xcb, 0xdd, 0xcf, 0xd7, 0x8e, 0xe7, 0xc2, 0x86, 0x0b, 0x23, 0xff, 0x27, 0xec, 0xc5, 0x27,
-	0x27, 0xf7, 0x3a, 0x65, 0x08, 0xc9, 0x20, 0x49, 0x94, 0x44, 0xc3, 0x38, 0xfe, 0x39, 0xf7, 0x8a,
-	0xb4, 0x25, 0xac, 0xc6, 0x62, 0xa6, 0x0b, 0x98, 0x81, 0x44, 0xe6, 0xae, 0x63, 0x96, 0xa6, 0x06,
-	0xac, 0x6b, 0xe2, 0x3e, 0x84, 0x12, 0x56, 0xd7, 0x5b, 0xc0, 0xa0, 0xf6, 0xeb, 0x66, 0xc3, 0x9b,
-	0xb7, 0x4d, 0xe4, 0xaf, 0x37, 0x91, 0xff, 0xb1, 0x89, 0xfc, 0xe7, 0x32, 0xf2, 0xd6, 0x65, 0xe4,
-	0xbd, 0x97, 0x91, 0xf7, 0x70, 0x9e, 0x09, 0xcc, 0x17, 0x93, 0x98, 0xab, 0x19, 0x75, 0x2b, 0x9e,
-	0x49, 0xc0, 0x95, 0x32, 0xd3, 0x4a, 0xd0, 0xc7, 0x5f, 0xab, 0xe3, 0x93, 0x06, 0x3b, 0xd9, 0xaf,
-	0x86, 0xbc, 0xf8, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x97, 0x44, 0x8a, 0xbd, 0x18, 0x02, 0x00, 0x00,
+	// 307 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x91, 0xb1, 0x4b, 0xc3, 0x40,
+	0x14, 0xc6, 0x13, 0xab, 0x62, 0xcf, 0x45, 0x43, 0x85, 0xd8, 0x21, 0x2d, 0x9d, 0xba, 0x98, 0x50,
+	0xdd, 0xc4, 0xa5, 0x76, 0x10, 0xc1, 0x41, 0x0a, 0x2e, 0x2e, 0xe5, 0x9a, 0x3c, 0x92, 0xa3, 0xc9,
+	0xbd, 0xeb, 0xdd, 0xb3, 0xd5, 0xff, 0xc2, 0xcd, 0xd5, 0x3f, 0xc7, 0xb1, 0xa3, 0xa3, 0x34, 0x8b,
+	0x7f, 0x86, 0x5c, 0x02, 0x62, 0x5d, 0x05, 0xb7, 0xfb, 0xde, 0xfb, 0xdd, 0xfb, 0x3e, 0xf8, 0x58,
+	0x27, 0xe3, 0xf3, 0x79, 0x64, 0x32, 0xae, 0x05, 0xcf, 0x50, 0xf3, 0x38, 0x87, 0x68, 0x31, 0x88,
+	0x62, 0x1e, 0x87, 0x4a, 0x23, 0xa1, 0x77, 0x64, 0x81, 0x70, 0x03, 0x08, 0x17, 0x83, 0x76, 0x2b,
+	0xc5, 0x14, 0x2b, 0x22, 0xb2, 0xaf, 0x1a, 0xee, 0xe5, 0xec, 0xe0, 0x4a, 0x73, 0x49, 0xa3, 0xe1,
+	0xe8, 0x56, 0xa3, 0x42, 0xc3, 0x73, 0xaf, 0xc5, 0x76, 0x48, 0x50, 0x0e, 0xbe, 0xdb, 0x75, 0xfb,
+	0xcd, 0x71, 0x2d, 0xbc, 0x2e, 0xdb, 0x4f, 0xc0, 0xc4, 0x5a, 0x28, 0x12, 0x28, 0xfd, 0xad, 0x6a,
+	0xf7, 0x73, 0xe4, 0xb5, 0xd9, 0x5e, 0x6a, 0x6f, 0x01, 0x18, 0xbf, 0xd1, 0x6d, 0xf4, 0x9b, 0xe3,
+	0x6f, 0x7d, 0xbe, 0xfd, 0xf9, 0xda, 0x71, 0x7a, 0x05, 0x3b, 0x1c, 0xc3, 0x02, 0x67, 0xf0, 0x3f,
+	0x76, 0x2f, 0x2e, 0x3b, 0xbe, 0x53, 0x09, 0x27, 0xeb, 0x37, 0x42, 0x49, 0x9a, 0xc7, 0xf4, 0x67,
+	0xdf, 0x0b, 0xd6, 0x96, 0xb0, 0x9c, 0x88, 0x42, 0xe5, 0x50, 0x80, 0x24, 0x6e, 0xa7, 0x13, 0x9e,
+	0x24, 0x1a, 0x8c, 0x4d, 0x62, 0x3f, 0xf8, 0x12, 0x96, 0xd7, 0x1b, 0xc0, 0xb0, 0xde, 0xd7, 0xc9,
+	0x2e, 0x6f, 0xde, 0xd6, 0x81, 0xbb, 0x5a, 0x07, 0xee, 0xc7, 0x3a, 0x70, 0x9f, 0xcb, 0xc0, 0x59,
+	0x95, 0x81, 0xf3, 0x5e, 0x06, 0xce, 0xfd, 0x69, 0x2a, 0x28, 0x7b, 0x98, 0x86, 0x31, 0x16, 0x91,
+	0x2d, 0xf2, 0x44, 0x02, 0x2d, 0x51, 0xcf, 0x2a, 0x11, 0x3d, 0xfe, 0x2a, 0x9e, 0x9e, 0x14, 0x98,
+	0xe9, 0x6e, 0xd5, 0xe5, 0xd9, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0x29, 0xdb, 0xe6, 0x7a, 0x1b,
+	0x02, 0x00, 0x00,
 }
 
-func (m *MintCACProposal) Marshal() (dAtA []byte, err error) {
+func (m *GrantCACProposal) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -254,12 +255,12 @@ func (m *MintCACProposal) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MintCACProposal) MarshalTo(dAtA []byte) (int, error) {
+func (m *GrantCACProposal) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MintCACProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *GrantCACProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -290,7 +291,7 @@ func (m *MintCACProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *BurnCACProposal) Marshal() (dAtA []byte, err error) {
+func (m *RevokeCACProposal) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -300,12 +301,12 @@ func (m *BurnCACProposal) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *BurnCACProposal) MarshalTo(dAtA []byte) (int, error) {
+func (m *RevokeCACProposal) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *BurnCACProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *RevokeCACProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -391,7 +392,7 @@ func encodeVarintCac(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MintCACProposal) Size() (n int) {
+func (m *GrantCACProposal) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -414,7 +415,7 @@ func (m *MintCACProposal) Size() (n int) {
 	return n
 }
 
-func (m *BurnCACProposal) Size() (n int) {
+func (m *RevokeCACProposal) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -464,7 +465,7 @@ func sovCac(x uint64) (n int) {
 func sozCac(x uint64) (n int) {
 	return sovCac(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MintCACProposal) Unmarshal(dAtA []byte) error {
+func (m *GrantCACProposal) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -487,10 +488,10 @@ func (m *MintCACProposal) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MintCACProposal: wiretype end group for non-group")
+			return fmt.Errorf("proto: GrantCACProposal: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MintCACProposal: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GrantCACProposal: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -610,7 +611,7 @@ func (m *MintCACProposal) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *BurnCACProposal) Unmarshal(dAtA []byte) error {
+func (m *RevokeCACProposal) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -633,10 +634,10 @@ func (m *BurnCACProposal) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: BurnCACProposal: wiretype end group for non-group")
+			return fmt.Errorf("proto: RevokeCACProposal: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: BurnCACProposal: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RevokeCACProposal: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

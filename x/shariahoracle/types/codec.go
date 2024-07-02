@@ -19,8 +19,8 @@ func init() {
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*govv1beta1.Content)(nil),
-		&MintCACProposal{},
-		&BurnCACProposal{},
+		&GrantCACProposal{},
+		&RevokeCACProposal{},
 		&UpdateCACContractProposal{},
 	)
 }

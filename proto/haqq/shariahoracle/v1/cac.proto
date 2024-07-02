@@ -4,8 +4,8 @@ package haqq.shariahoracle.v1;
 import "gogoproto/gogo.proto";
 option go_package = "github.com/haqq-network/haqq/x/shariahoracle/types";
 
-// RegisterMintCACProposal
-message MintCACProposal {
+// RegisterGrantCACProposal
+message GrantCACProposal {
   option (gogoproto.equal) = false;
   // title of the proposal
   string title = 1;
@@ -15,7 +15,7 @@ message MintCACProposal {
   repeated string grantees = 3;
 }
 
-message BurnCACProposal {
+message RevokeCACProposal {
   option (gogoproto.equal) = false;
   // title of the proposal
   string title = 1;
