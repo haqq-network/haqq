@@ -576,7 +576,7 @@ func NewHaqq(
 
 	app.ShariahOracleKeeper = shariahoraclekeeper.NewKeeper(
 		keys[shariahoracletypes.StoreKey], appCodec, app.GetSubspace(shariahoracletypes.ModuleName),
-		app.EvmKeeper, app.AccountKeeper,
+		app.Erc20Keeper, app.AccountKeeper,
 	)
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])

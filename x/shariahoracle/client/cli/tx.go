@@ -13,8 +13,8 @@ import (
 // NewGrantCACProposalCmd returns a command handler for submitting a mint community approval certificates proposal
 func NewGrantCACProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "mint-cac GRANTEES...",
-		Short: "Submit a new mint community approval certificates proposal",
+		Use:   "grant-cac GRANTEES...",
+		Short: "Submit a new grant community approval certificates proposal",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -74,8 +74,8 @@ func NewGrantCACProposalCmd() *cobra.Command {
 // NewRevokeCACProposalCmd returns a command handler for submitting a burn community approval certificates proposal
 func NewRevokeCACProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "burn-cac GRANTEES...",
-		Short: "Submit a new burn community approval certificates proposal",
+		Use:   "revoke-cac GRANTEES...",
+		Short: "Submit a new revoke community approval certificates proposal",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cliCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {

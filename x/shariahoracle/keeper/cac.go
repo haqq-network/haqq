@@ -18,7 +18,7 @@ func (k Keeper) DoesAddressHaveCAC(ctx sdk.Context, address string) (bool, error
 		account  = common.HexToAddress(address)
 	)
 
-	res, err := k.CallEVM(ctx, cac, types.ModuleAddress, contract, false, "balanceOf", account)
+	res, err := k.erc20Keeper.CallEVM(ctx, cac, types.ModuleAddress, contract, false, "balanceOf", account)
 	if err != nil {
 		return false, err
 	}

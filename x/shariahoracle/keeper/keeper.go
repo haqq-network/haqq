@@ -13,7 +13,7 @@ type Keeper struct {
 	storeKey   storetypes.StoreKey
 	paramstore paramtypes.Subspace
 
-	evmKeeper     types.EVMKeeper
+	erc20Keeper   types.ERC20Keeper
 	accountKeeper types.AccountKeeper
 }
 
@@ -22,7 +22,7 @@ func NewKeeper(
 	storeKey storetypes.StoreKey,
 	cdc codec.BinaryCodec,
 	ps paramtypes.Subspace,
-	ek types.EVMKeeper,
+	ek types.ERC20Keeper,
 	ak types.AccountKeeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
@@ -34,7 +34,7 @@ func NewKeeper(
 		cdc:           cdc,
 		storeKey:      storeKey,
 		paramstore:    ps,
-		evmKeeper:     ek,
+		erc20Keeper:   ek,
 		accountKeeper: ak,
 	}
 }

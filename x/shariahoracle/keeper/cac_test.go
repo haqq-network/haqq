@@ -11,7 +11,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestDoesAddressHaveCAC() {
-	var mockEVMKeeper *MockEVMKeeper
+	var mockERC20Keeper *MockERC20Keeper
 	testCases := []struct {
 		name     string
 		malleate func()
@@ -21,7 +21,11 @@ func (suite *KeeperTestSuite) TestDoesAddressHaveCAC() {
 		{
 			"Failed to call Evm",
 			func() {
-				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
+				mockERC20Keeper.On("CallEVM",
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything).Return(nil, fmt.Errorf("something went wrong")).Once()
 			},
 			false,
 			false,
@@ -29,7 +33,11 @@ func (suite *KeeperTestSuite) TestDoesAddressHaveCAC() {
 		{
 			"Incorrect res",
 			func() {
-				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: []uint8{0, 0}}, nil).Once()
+				mockERC20Keeper.On("CallEVM",
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: []uint8{0, 0}}, nil).Once()
 			},
 			false,
 			false,
@@ -39,7 +47,11 @@ func (suite *KeeperTestSuite) TestDoesAddressHaveCAC() {
 			func() {
 				balance := make([]uint8, 32)
 				balance[31] = uint8(1)
-				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
+				mockERC20Keeper.On("CallEVM",
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything).Return(&evmtypes.MsgEthereumTxResponse{Ret: balance}, nil).Once()
 			},
 			true,
 			true,
@@ -47,12 +59,12 @@ func (suite *KeeperTestSuite) TestDoesAddressHaveCAC() {
 	}
 	for _, tc := range testCases {
 		suite.SetupTest() // reset
-		mockEVMKeeper = &MockEVMKeeper{}
+		mockERC20Keeper = &MockERC20Keeper{}
 		suite.app.ShariahOracleKeeper = keeper.NewKeeper(
 			suite.app.GetKey("shariahoracle"),
 			suite.app.AppCodec(),
 			suite.app.GetSubspace(types.ModuleName),
-			mockEVMKeeper,
+			mockERC20Keeper,
 			suite.app.AccountKeeper,
 		)
 

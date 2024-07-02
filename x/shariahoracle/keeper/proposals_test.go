@@ -5,7 +5,6 @@ import (
 
 	"github.com/haqq-network/haqq/contracts"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"github.com/haqq-network/haqq/x/shariahoracle/keeper"
 	"github.com/haqq-network/haqq/x/shariahoracle/types"
 	"github.com/stretchr/testify/mock"
@@ -53,17 +52,20 @@ func (suite *KeeperTestSuite) TestGrantCAC() { //nolint:govet // we can copy loc
 		{
 			"fail - force fail evm",
 			func() {
-				mockEVMKeeper := &MockEVMKeeper{}
+				mockERC20Keeper := &MockERC20Keeper{}
 
 				suite.app.ShariahOracleKeeper = keeper.NewKeeper(
 					suite.app.GetKey("shariahoracle"), suite.app.AppCodec(),
 					suite.app.GetSubspace(types.ModuleName),
-					mockEVMKeeper,
+					mockERC20Keeper,
 					suite.app.AccountKeeper,
 				)
 
-				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
-				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
+				mockERC20Keeper.On("CallEVM",
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything).Return(nil, fmt.Errorf("something went wrong"))
 			},
 			false,
 		},
@@ -131,17 +133,20 @@ func (suite *KeeperTestSuite) TestRevokeCAC() { //nolint:govet // we can copy lo
 		{
 			"fail - force fail evm",
 			func() {
-				mockEVMKeeper := &MockEVMKeeper{}
+				mockERC20Keeper := &MockERC20Keeper{}
 
 				suite.app.ShariahOracleKeeper = keeper.NewKeeper(
 					suite.app.GetKey("shariahoracle"), suite.app.AppCodec(),
 					suite.app.GetSubspace(types.ModuleName),
-					mockEVMKeeper,
+					mockERC20Keeper,
 					suite.app.AccountKeeper,
 				)
 
-				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
-				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
+				mockERC20Keeper.On("CallEVM",
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything).Return(nil, fmt.Errorf("something went wrong"))
 			},
 			false,
 		},
@@ -211,17 +216,20 @@ func (suite *KeeperTestSuite) TestUpdateCACContract() { //nolint:govet // we can
 		{
 			"fail - force fail evm",
 			func() string {
-				mockEVMKeeper := &MockEVMKeeper{}
+				mockERC20Keeper := &MockERC20Keeper{}
 
 				suite.app.ShariahOracleKeeper = keeper.NewKeeper(
 					suite.app.GetKey("shariahoracle"), suite.app.AppCodec(),
 					suite.app.GetSubspace(types.ModuleName),
-					mockEVMKeeper,
+					mockERC20Keeper,
 					suite.app.AccountKeeper,
 				)
 
-				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
-				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
+				mockERC20Keeper.On("CallEVM",
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything,
+					mock.Anything, mock.Anything).Return(nil, fmt.Errorf("something went wrong"))
 				return ""
 			},
 			false,

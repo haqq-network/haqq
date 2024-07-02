@@ -12,7 +12,7 @@ func (k Keeper) GrantCAC(ctx sdk.Context, to string) error {
 	// mint CAC
 	contract := common.HexToAddress(k.GetCACContractAddress(ctx))
 
-	_, err := k.CallEVM(ctx,
+	_, err := k.erc20Keeper.CallEVM(ctx,
 		contracts.CommunityApprovalCertificatesContract.ABI,
 		types.ModuleAddress,
 		contract,
@@ -32,7 +32,7 @@ func (k Keeper) RevokeCAC(ctx sdk.Context, from string) error {
 	// burn CAC
 	contract := common.HexToAddress(k.GetCACContractAddress(ctx))
 
-	_, err := k.CallEVM(ctx,
+	_, err := k.erc20Keeper.CallEVM(ctx,
 		contracts.CommunityApprovalCertificatesContract.ABI,
 		types.ModuleAddress,
 		contract,
@@ -52,7 +52,7 @@ func (k Keeper) UpdateCACContract(ctx sdk.Context, newContractAddress string) er
 	// burn CAC
 	contract := common.HexToAddress(k.GetCACContractAddress(ctx))
 
-	_, err := k.CallEVM(ctx,
+	_, err := k.erc20Keeper.CallEVM(ctx,
 		contracts.CommunityApprovalCertificatesContract.ABI,
 		types.ModuleAddress,
 		contract,
