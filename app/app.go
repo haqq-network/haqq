@@ -176,6 +176,7 @@ import (
 	v174 "github.com/haqq-network/haqq/app/upgrades/v1.7.4"
 	v175 "github.com/haqq-network/haqq/app/upgrades/v1.7.5"
 	v176 "github.com/haqq-network/haqq/app/upgrades/v1.7.6"
+	v177 "github.com/haqq-network/haqq/app/upgrades/v1.7.7"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -1319,6 +1320,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v176.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.DaoKeeper, app.LiquidVestingKeeper, app.Erc20Keeper),
 	)
 
+	// v1.7.7 Enable Shariah Oracle
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v177.UpgradeName,
+		v177.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1363,6 +1370,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{
 				daotypes.ModuleName,
+			},
+		}
+	case v177.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{
+				shariahoracletypes.ModuleName,
 			},
 		}
 	}
