@@ -1,0 +1,19 @@
+syntax = "proto3";
+package haqq.shariahoracle.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/shariahoracle/types";
+
+// GenesisState defines the module's genesis state.
+message GenesisState {
+  // params are the erc20 module parameters at genesis
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+// Params defines the erc20 module params
+message Params {
+  // enable_erc20 is the parameter to enable the conversion of Cosmos coins <-->
+  // ERC20 tokens.
+  string cac_contract_address = 1;
+}

@@ -156,6 +156,10 @@ import (
 	"github.com/haqq-network/haqq/x/liquidvesting"
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	shariahoracle "github.com/haqq-network/haqq/x/shariahoracle"
+	shariahoracleclient "github.com/haqq-network/haqq/x/shariahoracle/client"
+	shariahoraclekeeper "github.com/haqq-network/haqq/x/shariahoracle/keeper"
+	shariahoracletypes "github.com/haqq-network/haqq/x/shariahoracle/types"
 	"github.com/haqq-network/haqq/x/vesting"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -172,6 +176,7 @@ import (
 	v174 "github.com/haqq-network/haqq/app/upgrades/v1.7.4"
 	v175 "github.com/haqq-network/haqq/app/upgrades/v1.7.5"
 	v176 "github.com/haqq-network/haqq/app/upgrades/v1.7.6"
+	v177 "github.com/haqq-network/haqq/app/upgrades/v1.7.7"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -227,6 +232,9 @@ var (
 				erc20client.RegisterCoinProposalHandler,
 				erc20client.RegisterERC20ProposalHandler,
 				erc20client.ToggleTokenConversionProposalHandler,
+				shariahoracleclient.GrantCACProposalHandler,
+				shariahoracleclient.RevokeCACProposalHandler,
+				shariahoracleclient.UpdateCACContractProposalHandler,
 			},
 		),
 		params.AppModuleBasic{},
@@ -250,6 +258,7 @@ var (
 		consensus.AppModuleBasic{},
 		liquidvesting.AppModuleBasic{},
 		dao.AppModuleBasic{},
+		shariahoracle.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -267,6 +276,7 @@ var (
 		vestingtypes.ModuleName:        nil, // Add vesting module account
 		liquidvestingtypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
 		daotypes.ModuleName:            nil,
+		shariahoracletypes.ModuleName:  nil,
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -334,8 +344,9 @@ type Haqq struct {
 	LiquidVestingKeeper liquidvestingkeeper.Keeper
 
 	// Haqq keepers
-	CoinomicsKeeper coinomicskeeper.Keeper
-	DaoKeeper       daokeeper.Keeper
+	CoinomicsKeeper     coinomicskeeper.Keeper
+	DaoKeeper           daokeeper.Keeper
+	ShariahOracleKeeper shariahoraclekeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -410,6 +421,7 @@ func NewHaqq(
 		coinomicstypes.StoreKey,
 		liquidvestingtypes.StoreKey,
 		daotypes.StoreKey,
+		shariahoracletypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
@@ -513,8 +525,8 @@ func NewHaqq(
 		// AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
-
+		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper)).
+		AddRoute(shariahoracletypes.RouterKey, shariahoracle.NewShariahOracleProposalHandler(&app.ShariahOracleKeeper))
 	govConfig := govtypes.Config{
 		MaxMetadataLen: 10000,
 	}
@@ -561,6 +573,11 @@ func NewHaqq(
 
 	app.DaoKeeper = daokeeper.NewBaseKeeper(
 		appCodec, keys[daotypes.StoreKey], app.AccountKeeper, app.BankKeeper, authAddr,
+	)
+
+	app.ShariahOracleKeeper = shariahoraclekeeper.NewKeeper(
+		keys[shariahoracletypes.StoreKey], appCodec, app.GetSubspace(shariahoracletypes.ModuleName),
+		app.Erc20Keeper, app.AccountKeeper,
 	)
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
@@ -712,6 +729,7 @@ func NewHaqq(
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
 		dao.NewAppModule(appCodec, app.DaoKeeper, app.GetSubspace(daotypes.ModuleName)),
+		shariahoracle.NewAppModule(appCodec, app.ShariahOracleKeeper, app.AccountKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -750,6 +768,7 @@ func NewHaqq(
 		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
 		daotypes.ModuleName,
+		shariahoracletypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -787,6 +806,7 @@ func NewHaqq(
 		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
 		daotypes.ModuleName,
+		shariahoracletypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -827,6 +847,7 @@ func NewHaqq(
 		erc20types.ModuleName,
 		epochstypes.ModuleName,
 		daotypes.ModuleName,
+		shariahoracletypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 		consensusparamtypes.ModuleName,
@@ -1190,6 +1211,7 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(coinomicstypes.ModuleName)
 	paramsKeeper.Subspace(liquidvestingtypes.ModuleName)
 	paramsKeeper.Subspace(daotypes.ModuleName)
+	paramsKeeper.Subspace(shariahoracletypes.ModuleName)
 
 	return paramsKeeper
 }
@@ -1298,6 +1320,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v176.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.DaoKeeper, app.LiquidVestingKeeper, app.Erc20Keeper),
 	)
 
+	// v1.7.7 Enable Shariah Oracle
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v177.UpgradeName,
+		v177.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1342,6 +1370,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{
 				daotypes.ModuleName,
+			},
+		}
+	case v177.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{
+				shariahoracletypes.ModuleName,
 			},
 		}
 	}
