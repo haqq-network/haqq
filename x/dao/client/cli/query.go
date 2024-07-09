@@ -149,3 +149,40 @@ Example:
 
 	return cmd
 }
+
+func GetCmdQueryAllVoicePower() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "all-voice-power",
+		Short: "Query the total voice power of all accounts in the DAO",
+		Args:  cobra.NoArgs,
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the total voice power of all accounts in the DAO.
+
+Example:
+  $ %s query %s all-voice-power
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			res, err := queryClient.AllVoicePower(ctx, &types.QueryAllVoicePowerRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}

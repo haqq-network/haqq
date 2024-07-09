@@ -77,6 +77,30 @@ func (k BaseKeeper) TotalBalance(ctx context.Context, req *types.QueryTotalBalan
 	return &types.QueryTotalBalanceResponse{TotalBalance: totalBalance, Pagination: pageRes}, nil
 }
 
+func (k BaseKeeper) AllVoicePower(goCtx context.Context, req *types.QueryAllVoicePowerRequest) (*types.QueryAllVoicePowerResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	var voicePower []*types.VoicePower
+	allBalances := k.GetAccountsBalances(ctx)
+	for _, balance := range allBalances {
+		sumPower := sdk.ZeroInt()
+		for _, coin := range balance.Coins {
+			sumPower = sumPower.Add(coin.Amount)
+		}
+		power := &types.VoicePower{
+			Address: balance.Address,
+			Power:   sdk.NewCoin("aISLM", sumPower),
+		}
+		voicePower = append(voicePower, power)
+	}
+
+	return &types.QueryAllVoicePowerResponse{VoicePower: voicePower}, nil
+}
+
 // Params implements the gRPC service handler for querying x/bank parameters.
 func (k BaseKeeper) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	if req == nil {
