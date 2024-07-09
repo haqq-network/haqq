@@ -38,6 +38,7 @@ type Keeper interface {
 	Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error)
 	AllBalances(ctx context.Context, req *types.QueryAllBalancesRequest) (*types.QueryAllBalancesResponse, error)
 	TotalBalance(ctx context.Context, req *types.QueryTotalBalanceRequest) (*types.QueryTotalBalanceResponse, error)
+	AllVoicePower(goCtx context.Context, req *types.QueryAllVoicePowerRequest) (*types.QueryAllVoicePowerResponse, error)
 	Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error)
 
 	// genesis methods
