@@ -33,6 +33,7 @@ func GetQueryCmd() *cobra.Command {
 	cmd.AddCommand(
 		GetBalancesCmd(),
 		GetCmdQueryTotalBalance(),
+		GetCmdQueryAllVoicePower(),
 	)
 
 	return cmd
