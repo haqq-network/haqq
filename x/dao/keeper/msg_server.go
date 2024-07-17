@@ -33,3 +33,23 @@ func (k msgServer) Fund(goCtx context.Context, msg *types.MsgFund) (*types.MsgFu
 
 	return &types.MsgFundResponse{}, nil
 }
+
+func (k msgServer) TransferOwnership(goCtx context.Context, msg *types.MsgTransferOwnership) (*types.MsgTransferOwnershipResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	owner, err := sdk.AccAddressFromBech32(msg.Owner)
+	if err != nil {
+		return nil, err
+	}
+
+	newOwner, err := sdk.AccAddressFromBech32(msg.NewOwner)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := k.Keeper.TransferOwnership(ctx, owner, newOwner); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgTransferOwnershipResponse{}, nil
+}

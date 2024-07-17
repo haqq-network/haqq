@@ -51,6 +51,17 @@ func (k BaseKeeper) IterateAccountBalances(ctx sdk.Context, addr sdk.AccAddress,
 	}
 }
 
+func (k BaseKeeper) GetAccountBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	balances := sdk.NewCoins()
+
+	k.IterateAccountBalances(ctx, addr, func(balance sdk.Coin) bool {
+		balances = balances.Add(balance)
+		return false
+	})
+
+	return balances
+}
+
 // IterateAllBalances iterates over all the balances of all accounts and
 // denominations that are provided to a callback. If true is returned from the
 // callback, iteration is halted.

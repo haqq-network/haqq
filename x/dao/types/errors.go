@@ -6,4 +6,5 @@ var (
 	ErrInvalidKey     = sdkerrors.Register(ModuleName, 1, "invalid key")
 	ErrModuleDisabled = sdkerrors.Register(ModuleName, 2, "module is disabled")
 	ErrInvalidDenom   = sdkerrors.Register(ModuleName, 3, "invalid denom")
+	ErrNotEligible    = sdkerrors.Register(ModuleName, 4, "not eligible")
 )
