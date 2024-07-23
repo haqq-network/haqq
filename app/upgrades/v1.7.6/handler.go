@@ -18,11 +18,11 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	daokeeepr "github.com/haqq-network/haqq/x/dao/keeper"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	daokeeepr "github.com/haqq-network/haqq/x/ucdao/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 

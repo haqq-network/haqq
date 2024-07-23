@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/haqq-network/haqq/utils"
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 var _ Keeper = (*BaseKeeper)(nil)

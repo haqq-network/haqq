@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/haqq-network/haqq/utils"
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 // GetTotalBalance get the global total balance of dao module

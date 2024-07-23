@@ -10,9 +10,9 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
-	daokeeper "github.com/haqq-network/haqq/x/dao/keeper"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
+	daokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.7.6

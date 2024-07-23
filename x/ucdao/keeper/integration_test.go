@@ -13,7 +13,7 @@ import (
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/utils"
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 var _ = Describe("United Contributors DAO", func() {

@@ -8,7 +8,10 @@ import (
 
 const (
 	// ModuleName is the module name constant used in many places
-	ModuleName = "dao"
+	ModuleName = "ucdao"
+
+	// ModuleOldName is the module old name constant used for store migration
+	ModuleOldName = "dao"
 
 	// StoreKey is the store key string for distribution
 	StoreKey = ModuleName

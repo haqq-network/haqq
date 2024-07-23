@@ -5,11 +5,11 @@ package haqq.dao.v1;
 import "gogoproto/gogo.proto";
 import "amino/amino.proto";
 
-option go_package = "github.com/haqq-network/haqq/x/dao/types";
+option go_package = "github.com/haqq-network/haqq/x/ucdao/types";
 
 // Params defines the parameters for the dao module.
 message Params {
-  option(amino.name) = "haqq/x/dao/Params";
+  option(amino.name) = "haqq/x/ucdao/Params";
   option(gogoproto.goproto_stringer) = false;
   // enable_dao is the parameter to enable the module functionality.
   bool enable_dao = 1;
@@ -31,7 +31,7 @@ enum CollateralValueType {
 }
 
 message AllowedCollateral {
-  option(amino.name) = "haqq/x/dao/AllowedCollateral";
+  option(amino.name) = "haqq/x/ucdao/AllowedCollateral";
   option(gogoproto.goproto_stringer) = false;
 
   // value is the allowed collateral value.

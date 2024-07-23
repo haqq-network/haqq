@@ -12,7 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 // Transaction flags for the x/distribution module
@@ -29,7 +29,7 @@ const (
 func NewTxCmd() *cobra.Command {
 	distTxCmd := &cobra.Command{
 		Use:                        types.ModuleName,
-		Short:                      "Distribution transactions subcommands",
+		Short:                      "United Contributors DAO transactions subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
@@ -48,7 +48,7 @@ func NewFundDAOCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fund [amount]",
 		Args:  cobra.ExactArgs(1),
-		Short: "Funds the DAO with the specified amount",
+		Short: "Funds the United Contributors DAO with the specified amount",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Funds the dao with the specified amount
 
@@ -85,7 +85,7 @@ func NewTransferOwnershipCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "transfer-ownership [from_address] [to_address]",
 		Args:  cobra.ExactArgs(2),
-		Short: "Transfer all DAO shares from one address to another",
+		Short: "Transfer all United Contributors DAO shares from one address to another",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Transfer all DAO shares from one address to another
 

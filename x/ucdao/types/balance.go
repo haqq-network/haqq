@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/haqq-network/haqq/x/dao/exported"
+	"github.com/haqq-network/haqq/x/ucdao/exported"
 )
 
 var _ exported.GenesisBalance = (*Balance)(nil)

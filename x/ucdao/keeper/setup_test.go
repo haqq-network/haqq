@@ -29,8 +29,8 @@ import (
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
-	"github.com/haqq-network/haqq/x/dao/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 type KeeperTestSuite struct {
