@@ -11,7 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 const (
@@ -41,7 +41,7 @@ func GetQueryCmd() *cobra.Command {
 func GetBalancesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "balances [address]",
-		Short: "Query for account balances in the DAO by address",
+		Short: "Query for account balances in the United Contributors DAO by address",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query the total balance of an account or of a specific denomination.
 
@@ -110,7 +110,7 @@ Example:
 func GetCmdQueryTotalBalance() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "total-balance",
-		Short: "Query the total balances of coins in the DAO",
+		Short: "Query the total balances of coins in the United Contributors DAO",
 		Args:  cobra.NoArgs,
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query total balances of coins that are held by accounts in the DAO.

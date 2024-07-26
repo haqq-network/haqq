@@ -8,7 +8,7 @@ import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
 import "haqq/dao/v1/dao.proto";
 
-option go_package = "github.com/haqq-network/haqq/x/dao/types";
+option go_package = "github.com/haqq-network/haqq/x/ucdao/types";
 
 // GenesisState defines the gov module's genesis state.
 message GenesisState {

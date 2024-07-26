@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/address"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 // InitGenesis initializes the bank module's state from a given genesis state.

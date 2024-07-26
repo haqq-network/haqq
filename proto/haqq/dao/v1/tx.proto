@@ -8,7 +8,7 @@ import "cosmos_proto/cosmos.proto";
 import "cosmos/msg/v1/msg.proto";
 import "amino/amino.proto";
 
-option go_package = "github.com/haqq-network/haqq/x/dao/types";
+option go_package = "github.com/haqq-network/haqq/x/ucdao/types";
 
 // Msg defines the dao Msg service.
 service Msg {
@@ -16,6 +16,9 @@ service Msg {
 
   // Fund defines a method to allow an account to directly fund the dao.
   rpc Fund(MsgFund) returns (MsgFundResponse);
+
+  // TransferOwnership defines a method to allow an account to transfer the ownership of shares to another account.
+  rpc TransferOwnership(MsgTransferOwnership) returns (MsgTransferOwnershipResponse);
 }
 
 // MsgFund allows an account to directly fund the dao.
@@ -36,3 +39,21 @@ message MsgFund {
 
 // MsgFundResponse defines the Msg/Fund response type.
 message MsgFundResponse {}
+
+// MsgTransferOwnership allows an account transfer the ownership of shares to another account.
+message MsgTransferOwnership {
+  option (cosmos.msg.v1.signer) = "owner";
+  option (amino.name)           = "haqq/dao/MsgTransferOwnership";
+
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // owner is a current owner of the shares in dao.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // new_owner is a new owner of the shares in dao.
+  string new_owner = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgTransferOwnershipResponse defines the Msg/TransferOwnership response type.
+message MsgTransferOwnershipResponse {}

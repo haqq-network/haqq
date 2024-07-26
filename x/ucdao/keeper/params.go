@@ -3,7 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 // GetParams returns the total set of dao parameters.

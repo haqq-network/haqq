@@ -109,40 +109,126 @@ func (m *MsgFundResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgFundResponse proto.InternalMessageInfo
 
+// MsgTransferOwnership allows an account transfer the ownership of shares to another account.
+type MsgTransferOwnership struct {
+	// owner is a current owner of the shares in dao.
+	Owner string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	// new_owner is a new owner of the shares in dao.
+	NewOwner string `protobuf:"bytes,2,opt,name=new_owner,json=newOwner,proto3" json:"new_owner,omitempty"`
+}
+
+func (m *MsgTransferOwnership) Reset()         { *m = MsgTransferOwnership{} }
+func (m *MsgTransferOwnership) String() string { return proto.CompactTextString(m) }
+func (*MsgTransferOwnership) ProtoMessage()    {}
+func (*MsgTransferOwnership) Descriptor() ([]byte, []int) {
+	return fileDescriptor_32cf174189eaa32b, []int{2}
+}
+func (m *MsgTransferOwnership) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgTransferOwnership) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgTransferOwnership.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgTransferOwnership) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgTransferOwnership.Merge(m, src)
+}
+func (m *MsgTransferOwnership) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgTransferOwnership) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgTransferOwnership.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgTransferOwnership proto.InternalMessageInfo
+
+// MsgTransferOwnershipResponse defines the Msg/TransferOwnership response type.
+type MsgTransferOwnershipResponse struct {
+}
+
+func (m *MsgTransferOwnershipResponse) Reset()         { *m = MsgTransferOwnershipResponse{} }
+func (m *MsgTransferOwnershipResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgTransferOwnershipResponse) ProtoMessage()    {}
+func (*MsgTransferOwnershipResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_32cf174189eaa32b, []int{3}
+}
+func (m *MsgTransferOwnershipResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgTransferOwnershipResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgTransferOwnershipResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgTransferOwnershipResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgTransferOwnershipResponse.Merge(m, src)
+}
+func (m *MsgTransferOwnershipResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgTransferOwnershipResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgTransferOwnershipResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgTransferOwnershipResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgFund)(nil), "haqq.dao.v1.MsgFund")
 	proto.RegisterType((*MsgFundResponse)(nil), "haqq.dao.v1.MsgFundResponse")
+	proto.RegisterType((*MsgTransferOwnership)(nil), "haqq.dao.v1.MsgTransferOwnership")
+	proto.RegisterType((*MsgTransferOwnershipResponse)(nil), "haqq.dao.v1.MsgTransferOwnershipResponse")
 }
 
 func init() { proto.RegisterFile("haqq/dao/v1/tx.proto", fileDescriptor_32cf174189eaa32b) }
 
 var fileDescriptor_32cf174189eaa32b = []byte{
-	// 391 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0xc9, 0x48, 0x2c, 0x2c,
-	0xd4, 0x4f, 0x49, 0xcc, 0xd7, 0x2f, 0x33, 0xd4, 0x2f, 0xa9, 0xd0, 0x2b, 0x28, 0xca, 0x2f, 0xc9,
-	0x17, 0xe2, 0x06, 0x89, 0xea, 0xa5, 0x24, 0xe6, 0xeb, 0x95, 0x19, 0x4a, 0x89, 0xa4, 0xe7, 0xa7,
-	0xe7, 0x83, 0xc5, 0xf5, 0x41, 0x2c, 0x88, 0x12, 0x29, 0xb9, 0xe4, 0xfc, 0xe2, 0xdc, 0xfc, 0x62,
-	0xfd, 0xa4, 0xc4, 0xe2, 0x54, 0xfd, 0x32, 0xc3, 0xa4, 0xd4, 0x92, 0x44, 0x43, 0xfd, 0xe4, 0xfc,
-	0xcc, 0x3c, 0xa8, 0xbc, 0x24, 0x44, 0x3e, 0x1e, 0xa2, 0x11, 0xc2, 0x81, 0x4a, 0x89, 0x43, 0xb5,
-	0xe6, 0x16, 0xa7, 0x83, 0x6c, 0xcd, 0x2d, 0x4e, 0x87, 0x4a, 0x08, 0x26, 0xe6, 0x66, 0xe6, 0xe5,
-	0xeb, 0x83, 0x49, 0x88, 0x90, 0xd2, 0x0d, 0x46, 0x2e, 0x76, 0xdf, 0xe2, 0x74, 0xb7, 0xd2, 0xbc,
-	0x14, 0xa1, 0x0c, 0x2e, 0xb6, 0xc4, 0xdc, 0xfc, 0xd2, 0xbc, 0x12, 0x09, 0x46, 0x05, 0x66, 0x0d,
-	0x6e, 0x23, 0x49, 0x3d, 0xa8, 0xb1, 0x20, 0x37, 0xe8, 0x41, 0xdd, 0xa0, 0xe7, 0x9c, 0x9f, 0x99,
-	0xe7, 0x64, 0x7a, 0xe2, 0x9e, 0x3c, 0xc3, 0xaa, 0xfb, 0xf2, 0x1a, 0xe9, 0x99, 0x25, 0x19, 0xa5,
-	0x49, 0x7a, 0xc9, 0xf9, 0xb9, 0x50, 0x37, 0x40, 0x29, 0xdd, 0xe2, 0x94, 0x6c, 0xfd, 0x92, 0xca,
-	0x82, 0xd4, 0x62, 0xb0, 0x86, 0xe2, 0x15, 0xcf, 0x37, 0x68, 0x31, 0x06, 0x41, 0xcd, 0x17, 0x32,
-	0xe3, 0xe2, 0x4c, 0x49, 0x2d, 0xc8, 0x2f, 0xce, 0x2c, 0xc9, 0x2f, 0x92, 0x60, 0x52, 0x60, 0xd4,
-	0xe0, 0x74, 0x92, 0xb8, 0xb4, 0x45, 0x57, 0x04, 0x6a, 0x9f, 0x63, 0x4a, 0x4a, 0x51, 0x6a, 0x71,
-	0x71, 0x70, 0x49, 0x51, 0x66, 0x5e, 0x7a, 0x10, 0x42, 0xa9, 0x95, 0x76, 0xc7, 0x02, 0x79, 0x86,
-	0x17, 0x0b, 0xe4, 0x19, 0x9a, 0x9e, 0x6f, 0xd0, 0x42, 0x88, 0x77, 0x3d, 0xdf, 0xa0, 0x25, 0x00,
-	0x0f, 0x68, 0xa8, 0x77, 0x94, 0x04, 0xb9, 0xf8, 0xa1, 0xcc, 0xa0, 0xd4, 0xe2, 0x82, 0xfc, 0xbc,
-	0xe2, 0x54, 0x23, 0x0f, 0x2e, 0x66, 0xdf, 0xe2, 0x74, 0x21, 0x2b, 0x2e, 0x16, 0xb0, 0x87, 0x45,
-	0xf4, 0x90, 0xe2, 0x41, 0x0f, 0xaa, 0x58, 0x4a, 0x06, 0x9b, 0x28, 0xcc, 0x08, 0x29, 0xd6, 0x06,
-	0x90, 0x4f, 0x9c, 0x9c, 0x4e, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39,
-	0xc6, 0x09, 0x8f, 0xe5, 0x18, 0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0x0a, 0x39,
-	0x48, 0x40, 0x06, 0xe9, 0xe6, 0xa5, 0x96, 0x94, 0xe7, 0x17, 0x65, 0x83, 0x39, 0xfa, 0x15, 0x60,
-	0x27, 0x82, 0x03, 0x26, 0x89, 0x0d, 0x1c, 0x05, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x91,
-	0xd4, 0x66, 0x8c, 0x24, 0x02, 0x00, 0x00,
+	// 481 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x52, 0xb1, 0x6e, 0x13, 0x41,
+	0x10, 0xbd, 0x25, 0x24, 0xe0, 0x4d, 0x01, 0x3e, 0x59, 0xc2, 0x39, 0x85, 0x73, 0x70, 0x65, 0x8c,
+	0xbc, 0x2b, 0x07, 0x42, 0xe1, 0x0e, 0x23, 0xd1, 0x59, 0x48, 0x86, 0x8a, 0x26, 0x3a, 0xfb, 0x96,
+	0xf5, 0x29, 0xba, 0x9d, 0xcb, 0xcd, 0xda, 0x0e, 0x1d, 0xa2, 0x42, 0x54, 0x7c, 0x42, 0x4a, 0x04,
+	0x8d, 0x25, 0xf8, 0x88, 0x94, 0x11, 0x55, 0x2a, 0x40, 0x76, 0x61, 0x3e, 0x03, 0xdd, 0xde, 0x9a,
+	0x58, 0x71, 0x24, 0x37, 0xf6, 0xce, 0x9b, 0x99, 0x37, 0x6f, 0xe6, 0x1e, 0x2d, 0x0d, 0x82, 0xe3,
+	0x63, 0x1e, 0x06, 0xc0, 0x47, 0x4d, 0xae, 0x4f, 0x58, 0x92, 0x82, 0x06, 0x77, 0x3b, 0x43, 0x59,
+	0x18, 0x00, 0x1b, 0x35, 0xbd, 0x92, 0x04, 0x09, 0x06, 0xe7, 0xd9, 0x2b, 0x2f, 0xf1, 0xfc, 0x3e,
+	0x60, 0x0c, 0xc8, 0x7b, 0x01, 0x0a, 0x3e, 0x6a, 0xf6, 0x84, 0x0e, 0x9a, 0xbc, 0x0f, 0x91, 0xb2,
+	0xf9, 0x9d, 0x3c, 0x7f, 0x98, 0x37, 0xe6, 0x81, 0x4d, 0xdd, 0xb3, 0xad, 0x31, 0xca, 0x6c, 0x6a,
+	0x8c, 0xd2, 0x26, 0x8a, 0x41, 0x1c, 0x29, 0xe0, 0xe6, 0x37, 0x87, 0xaa, 0x17, 0x84, 0xde, 0xea,
+	0xa0, 0x7c, 0x31, 0x54, 0xa1, 0x3b, 0xa0, 0x5b, 0x41, 0x0c, 0x43, 0xa5, 0xcb, 0x64, 0x6f, 0xa3,
+	0xb6, 0xbd, 0xbf, 0xc3, 0x2c, 0x6d, 0xa6, 0x81, 0x59, 0x0d, 0xec, 0x39, 0x44, 0xaa, 0x7d, 0x70,
+	0xf6, 0xab, 0xe2, 0x7c, 0xfd, 0x5d, 0xa9, 0xc9, 0x48, 0x0f, 0x86, 0x3d, 0xd6, 0x87, 0xd8, 0x6a,
+	0xb0, 0x7f, 0x0d, 0x0c, 0x8f, 0xb8, 0x7e, 0x97, 0x08, 0x34, 0x0d, 0xf8, 0x65, 0x3e, 0xa9, 0x93,
+	0xae, 0xe5, 0x77, 0x9f, 0xd2, 0x42, 0x28, 0x12, 0xc0, 0x48, 0x43, 0x5a, 0xbe, 0xb1, 0x47, 0x6a,
+	0x85, 0x76, 0xf9, 0xe7, 0x8f, 0x46, 0xc9, 0xce, 0x7b, 0x16, 0x86, 0xa9, 0x40, 0x7c, 0xa5, 0xd3,
+	0x48, 0xc9, 0xee, 0x65, 0x69, 0xeb, 0xd1, 0xc7, 0xd3, 0x8a, 0xf3, 0xf7, 0xb4, 0xe2, 0x7c, 0x98,
+	0x4f, 0xea, 0x97, 0xf8, 0xa7, 0xf9, 0xa4, 0x7e, 0xf7, 0xff, 0xa1, 0xed, 0x3a, 0xd5, 0x22, 0xbd,
+	0x63, 0x9f, 0x5d, 0x81, 0x09, 0x28, 0x14, 0xd5, 0xef, 0x84, 0x96, 0x3a, 0x28, 0x5f, 0xa7, 0x81,
+	0xc2, 0xb7, 0x22, 0x7d, 0x39, 0x56, 0x22, 0xc5, 0x41, 0x94, 0xb8, 0x8c, 0x6e, 0x42, 0x16, 0x94,
+	0xc9, 0x1a, 0x31, 0x79, 0x99, 0x7b, 0x40, 0x0b, 0x4a, 0x8c, 0x0f, 0xf3, 0x9e, 0x75, 0x0b, 0xdc,
+	0x56, 0x62, 0x6c, 0x46, 0xb5, 0x9e, 0x2c, 0xeb, 0xcf, 0xa9, 0x32, 0xed, 0xf7, 0x97, 0xb5, 0xaf,
+	0x88, 0xab, 0xfa, 0x74, 0xf7, 0x3a, 0x7c, 0xb1, 0xd5, 0xfe, 0x37, 0x42, 0x37, 0x3a, 0x28, 0xdd,
+	0x16, 0xbd, 0x69, 0xbe, 0x63, 0x89, 0x2d, 0xd9, 0x8b, 0xd9, 0x1b, 0x78, 0xbb, 0xd7, 0xa1, 0x0b,
+	0x0e, 0x37, 0xa0, 0xc5, 0xd5, 0xab, 0x3c, 0xb8, 0xda, 0xb2, 0x52, 0xe2, 0x3d, 0x5c, 0x5b, 0xb2,
+	0x18, 0xe1, 0x6d, 0xbe, 0xcf, 0x3c, 0xd0, 0x6e, 0x9f, 0x4d, 0x7d, 0x72, 0x3e, 0xf5, 0xc9, 0x9f,
+	0xa9, 0x4f, 0x3e, 0xcf, 0x7c, 0xe7, 0x7c, 0xe6, 0x3b, 0x17, 0x33, 0xdf, 0x79, 0xb3, 0x6c, 0xa6,
+	0x8c, 0xb5, 0xa1, 0x84, 0x1e, 0x43, 0x7a, 0x64, 0x02, 0x7e, 0x62, 0x0e, 0x64, 0x2c, 0xd5, 0xdb,
+	0x32, 0xe6, 0x7d, 0xfc, 0x2f, 0x00, 0x00, 0xff, 0xff, 0x44, 0xa1, 0xe5, 0x5b, 0x5e, 0x03, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -159,6 +245,8 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	// Fund defines a method to allow an account to directly fund the dao.
 	Fund(ctx context.Context, in *MsgFund, opts ...grpc.CallOption) (*MsgFundResponse, error)
+	// TransferOwnership defines a method to allow an account to transfer the ownership of shares to another account.
+	TransferOwnership(ctx context.Context, in *MsgTransferOwnership, opts ...grpc.CallOption) (*MsgTransferOwnershipResponse, error)
 }
 
 type msgClient struct {
@@ -178,10 +266,21 @@ func (c *msgClient) Fund(ctx context.Context, in *MsgFund, opts ...grpc.CallOpti
 	return out, nil
 }
 
+func (c *msgClient) TransferOwnership(ctx context.Context, in *MsgTransferOwnership, opts ...grpc.CallOption) (*MsgTransferOwnershipResponse, error) {
+	out := new(MsgTransferOwnershipResponse)
+	err := c.cc.Invoke(ctx, "/haqq.dao.v1.Msg/TransferOwnership", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	// Fund defines a method to allow an account to directly fund the dao.
 	Fund(context.Context, *MsgFund) (*MsgFundResponse, error)
+	// TransferOwnership defines a method to allow an account to transfer the ownership of shares to another account.
+	TransferOwnership(context.Context, *MsgTransferOwnership) (*MsgTransferOwnershipResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -190,6 +289,9 @@ type UnimplementedMsgServer struct {
 
 func (*UnimplementedMsgServer) Fund(ctx context.Context, req *MsgFund) (*MsgFundResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Fund not implemented")
+}
+func (*UnimplementedMsgServer) TransferOwnership(ctx context.Context, req *MsgTransferOwnership) (*MsgTransferOwnershipResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TransferOwnership not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -214,6 +316,24 @@ func _Msg_Fund_Handler(srv interface{}, ctx context.Context, dec func(interface{
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_TransferOwnership_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgTransferOwnership)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).TransferOwnership(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/haqq.dao.v1.Msg/TransferOwnership",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).TransferOwnership(ctx, req.(*MsgTransferOwnership))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "haqq.dao.v1.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -221,6 +341,10 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Fund",
 			Handler:    _Msg_Fund_Handler,
+		},
+		{
+			MethodName: "TransferOwnership",
+			Handler:    _Msg_TransferOwnership_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -294,6 +418,66 @@ func (m *MsgFundResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *MsgTransferOwnership) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgTransferOwnership) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgTransferOwnership) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.NewOwner) > 0 {
+		i -= len(m.NewOwner)
+		copy(dAtA[i:], m.NewOwner)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.NewOwner)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Owner) > 0 {
+		i -= len(m.Owner)
+		copy(dAtA[i:], m.Owner)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Owner)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgTransferOwnershipResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgTransferOwnershipResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgTransferOwnershipResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -325,6 +509,32 @@ func (m *MsgFund) Size() (n int) {
 }
 
 func (m *MsgFundResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgTransferOwnership) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Owner)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.NewOwner)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgTransferOwnershipResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -482,6 +692,170 @@ func (m *MsgFundResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgFundResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgTransferOwnership) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgTransferOwnership: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgTransferOwnership: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Owner", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Owner = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NewOwner", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NewOwner = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgTransferOwnershipResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgTransferOwnershipResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgTransferOwnershipResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

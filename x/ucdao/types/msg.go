@@ -7,12 +7,14 @@ import (
 )
 
 const (
-	TypeMsgFund = "fund_dao"
+	TypeMsgFund              = "fund_dao"
+	TypeMsgTransferOwnership = "transfer_ownership"
 )
 
 // Verify interface at compile time
 var (
 	_ sdk.Msg = (*MsgFund)(nil)
+	_ sdk.Msg = (*MsgTransferOwnership)(nil)
 )
 
 // NewMsgFund returns a new MsgFund with a sender and
@@ -57,4 +59,43 @@ func (msg MsgFund) ValidateBasic() error {
 
 func (m *AllowedCollateral) String() string {
 	return proto.CompactTextString(m)
+}
+
+// NewMsgTransferOwnership returns a new MsgTransferOwnership with an old and new owner addresses.
+func NewMsgTransferOwnership(owner, newOwner sdk.AccAddress) *MsgTransferOwnership {
+	return &MsgTransferOwnership{
+		Owner:    owner.String(),
+		NewOwner: newOwner.String(),
+	}
+}
+
+// Route returns the MsgTransferOwnership message route.
+func (msg MsgTransferOwnership) Route() string { return ModuleName }
+
+// Type returns the MsgTransferOwnership message type.
+func (msg MsgTransferOwnership) Type() string { return TypeMsgTransferOwnership }
+
+// GetSigners returns the signer addresses that are expected to sign the result
+// of GetSignBytes.
+func (msg MsgTransferOwnership) GetSigners() []sdk.AccAddress {
+	owner, _ := sdk.AccAddressFromBech32(msg.Owner)
+	return []sdk.AccAddress{owner}
+}
+
+// GetSignBytes returns the raw bytes for a MsgTransferOwnership message that
+// the expected signer needs to sign.
+func (msg MsgTransferOwnership) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic performs basic MsgTransferOwnership message validation.
+func (msg MsgTransferOwnership) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid owner address: %s", err)
+	}
+	if _, err := sdk.AccAddressFromBech32(msg.NewOwner); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid new owner address: %s", err)
+	}
+	return nil
 }

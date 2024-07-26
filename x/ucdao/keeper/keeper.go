@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/haqq-network/haqq/utils"
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 var _ Keeper = (*BaseKeeper)(nil)
@@ -29,10 +29,12 @@ type Keeper interface {
 	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	HasBalance(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coin) bool
 	IterateAccountBalances(ctx sdk.Context, addr sdk.AccAddress, cb func(sdk.Coin) bool)
+	GetAccountBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 	IterateAllBalances(ctx sdk.Context, cb func(sdk.AccAddress, sdk.Coin) bool)
 	GetAccountsBalances(ctx sdk.Context) []types.Balance
 
 	Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
+	TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress) error
 
 	// grpc query endpoints
 	Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error)
@@ -104,6 +106,32 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 		bal := k.GetTotalBalanceOf(ctx, coin.Denom)
 		bal = bal.Add(coin)
 		k.setTotalBalanceOfCoin(ctx, bal)
+	}
+
+	return nil
+}
+
+func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress) error {
+	if !k.IsModuleEnabled(ctx) {
+		return types.ErrModuleDisabled
+	}
+
+	coins := k.GetAccountBalances(ctx, owner)
+	if coins.IsZero() {
+		return types.ErrNotEligible
+	}
+
+	// Add coins to new owner
+	err := k.addCoinsToAccount(ctx, newOwner, coins)
+	if err != nil {
+		return err
+	}
+
+	// Remove coins from old owner
+	for _, coin := range coins {
+		if err := k.setBalance(ctx, owner, sdk.NewCoin(coin.Denom, sdk.ZeroInt())); err != nil {
+			return err
+		}
 	}
 
 	return nil

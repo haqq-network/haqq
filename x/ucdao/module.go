@@ -1,4 +1,4 @@
-package dao
+package ucdao
 
 import (
 	"context"
@@ -23,10 +23,10 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/haqq-network/haqq/x/dao/client/cli"
-	"github.com/haqq-network/haqq/x/dao/exported"
-	"github.com/haqq-network/haqq/x/dao/keeper"
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/client/cli"
+	"github.com/haqq-network/haqq/x/ucdao/exported"
+	"github.com/haqq-network/haqq/x/ucdao/keeper"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 // ConsensusVersion defines the current x/dao module consensus version.

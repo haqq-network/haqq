@@ -143,9 +143,6 @@ import (
 	"github.com/haqq-network/haqq/x/coinomics"
 	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
-	"github.com/haqq-network/haqq/x/dao"
-	daokeeper "github.com/haqq-network/haqq/x/dao/keeper"
-	daotypes "github.com/haqq-network/haqq/x/dao/types"
 	"github.com/haqq-network/haqq/x/epochs"
 	epochskeeper "github.com/haqq-network/haqq/x/epochs/keeper"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
@@ -156,6 +153,9 @@ import (
 	"github.com/haqq-network/haqq/x/liquidvesting"
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	"github.com/haqq-network/haqq/x/ucdao"
+	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 	"github.com/haqq-network/haqq/x/vesting"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -172,6 +172,7 @@ import (
 	v174 "github.com/haqq-network/haqq/app/upgrades/v1.7.4"
 	v175 "github.com/haqq-network/haqq/app/upgrades/v1.7.5"
 	v176 "github.com/haqq-network/haqq/app/upgrades/v1.7.6"
+	v177 "github.com/haqq-network/haqq/app/upgrades/v1.7.7"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -249,7 +250,7 @@ var (
 		epochs.AppModuleBasic{},
 		consensus.AppModuleBasic{},
 		liquidvesting.AppModuleBasic{},
-		dao.AppModuleBasic{},
+		ucdao.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -266,7 +267,7 @@ var (
 		coinomicstypes.ModuleName:      {authtypes.Minter},
 		vestingtypes.ModuleName:        nil, // Add vesting module account
 		liquidvestingtypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
-		daotypes.ModuleName:            nil,
+		ucdaotypes.ModuleName:          nil,
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -335,7 +336,7 @@ type Haqq struct {
 
 	// Haqq keepers
 	CoinomicsKeeper coinomicskeeper.Keeper
-	DaoKeeper       daokeeper.Keeper
+	DaoKeeper       ucdaokeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -409,7 +410,7 @@ func NewHaqq(
 		// haqq keys
 		coinomicstypes.StoreKey,
 		liquidvestingtypes.StoreKey,
-		daotypes.StoreKey,
+		ucdaotypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
@@ -559,8 +560,8 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, app.Erc20Keeper, app.VestingKeeper,
 	)
 
-	app.DaoKeeper = daokeeper.NewBaseKeeper(
-		appCodec, keys[daotypes.StoreKey], app.AccountKeeper, app.BankKeeper, authAddr,
+	app.DaoKeeper = ucdaokeeper.NewBaseKeeper(
+		appCodec, keys[ucdaotypes.StoreKey], app.AccountKeeper, app.BankKeeper, authAddr,
 	)
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
@@ -711,7 +712,7 @@ func NewHaqq(
 
 		// Haqq app modules
 		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
-		dao.NewAppModule(appCodec, app.DaoKeeper, app.GetSubspace(daotypes.ModuleName)),
+		ucdao.NewAppModule(appCodec, app.DaoKeeper, app.GetSubspace(ucdaotypes.ModuleName)),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -749,7 +750,7 @@ func NewHaqq(
 		coinomicstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
-		daotypes.ModuleName,
+		ucdaotypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -786,7 +787,7 @@ func NewHaqq(
 		coinomicstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
-		daotypes.ModuleName,
+		ucdaotypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -826,7 +827,7 @@ func NewHaqq(
 		coinomicstypes.ModuleName,
 		erc20types.ModuleName,
 		epochstypes.ModuleName,
-		daotypes.ModuleName,
+		ucdaotypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 		consensusparamtypes.ModuleName,
@@ -1189,7 +1190,7 @@ func initParamsKeeper(
 	// haqq subspaces
 	paramsKeeper.Subspace(coinomicstypes.ModuleName)
 	paramsKeeper.Subspace(liquidvestingtypes.ModuleName)
-	paramsKeeper.Subspace(daotypes.ModuleName)
+	paramsKeeper.Subspace(ucdaotypes.ModuleName)
 
 	return paramsKeeper
 }
@@ -1298,6 +1299,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v176.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.DaoKeeper, app.LiquidVestingKeeper, app.Erc20Keeper),
 	)
 
+	// v1.7.7 Rename DAO module to United Contributors DAO
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v177.UpgradeName,
+		v177.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1341,7 +1348,16 @@ func (app *Haqq) setupUpgradeHandlers() {
 	case v176.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{
-				daotypes.ModuleName,
+				ucdaotypes.ModuleOldName,
+			},
+		}
+	case v177.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Renamed: []storetypes.StoreRename{
+				{
+					OldKey: ucdaotypes.ModuleOldName,
+					NewKey: ucdaotypes.ModuleName,
+				},
 			},
 		}
 	}

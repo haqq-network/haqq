@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/address"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/haqq-network/haqq/x/dao/types"
+	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 // GetBalance returns the balance of a specific denomination for a given account
@@ -49,6 +49,17 @@ func (k BaseKeeper) IterateAccountBalances(ctx sdk.Context, addr sdk.AccAddress,
 			break
 		}
 	}
+}
+
+func (k BaseKeeper) GetAccountBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+	balances := sdk.NewCoins()
+
+	k.IterateAccountBalances(ctx, addr, func(balance sdk.Coin) bool {
+		balances = balances.Add(balance)
+		return false
+	})
+
+	return balances
 }
 
 // IterateAllBalances iterates over all the balances of all accounts and
