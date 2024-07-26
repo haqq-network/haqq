@@ -1301,8 +1301,8 @@ func (app *Haqq) setupUpgradeHandlers() {
 
 	// v1.7.7 Rename DAO module to United Contributors DAO
 	app.UpgradeKeeper.SetUpgradeHandler(
-		v176.UpgradeName,
-		v176.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.DaoKeeper, app.LiquidVestingKeeper, app.Erc20Keeper),
+		v177.UpgradeName,
+		v177.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
 	// When a planned update height is reached, the old binary will panic
