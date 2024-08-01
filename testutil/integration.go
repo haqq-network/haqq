@@ -6,6 +6,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -31,7 +32,7 @@ func SubmitProposal(
 	if err != nil {
 		return id, err
 	}
-	res, err := DeliverTx(ctx, appHaqq, pk, nil, msg)
+	res, err := DeliverTx(ctx, appHaqq, pk, nil, signing.SignMode_SIGN_MODE_DIRECT, msg)
 	if err != nil {
 		return id, err
 	}
@@ -60,7 +61,7 @@ func Delegate(
 	}
 
 	delegateMsg := stakingtypes.NewMsgDelegate(accountAddress, val, delegateAmount)
-	return DeliverTx(ctx, appHaqq, priv, nil, delegateMsg)
+	return DeliverTx(ctx, appHaqq, priv, nil, signing.SignMode_SIGN_MODE_DIRECT, delegateMsg)
 }
 
 // Vote delivers a vote tx with the VoteOption "yes"
@@ -74,5 +75,5 @@ func Vote(
 	accountAddress := sdk.AccAddress(priv.PubKey().Address().Bytes())
 
 	voteMsg := govv1beta1.NewMsgVote(accountAddress, proposalID, voteOption)
-	return DeliverTx(ctx, appHaqq, priv, nil, voteMsg)
+	return DeliverTx(ctx, appHaqq, priv, nil, signing.SignMode_SIGN_MODE_DIRECT, voteMsg)
 }

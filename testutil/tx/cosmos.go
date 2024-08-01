@@ -46,6 +46,7 @@ func PrepareCosmosTx(
 	ctx sdk.Context,
 	appEvmos *app.Haqq,
 	args CosmosTxArgs,
+	signMode signing.SignMode,
 ) (authsigning.Tx, error) {
 	txBuilder := args.TxCfg.NewTxBuilder()
 
@@ -70,6 +71,7 @@ func PrepareCosmosTx(
 		appEvmos,
 		args,
 		txBuilder,
+		signMode,
 	)
 }
 
@@ -80,6 +82,7 @@ func signCosmosTx(
 	appEvmos *app.Haqq,
 	args CosmosTxArgs,
 	txBuilder client.TxBuilder,
+	signMode signing.SignMode,
 ) (authsigning.Tx, error) {
 	addr := sdk.AccAddress(args.Priv.PubKey().Address().Bytes())
 	seq, err := appEvmos.AccountKeeper.GetSequence(ctx, addr)
@@ -92,7 +95,7 @@ func signCosmosTx(
 	sigV2 := signing.SignatureV2{
 		PubKey: args.Priv.PubKey(),
 		Data: &signing.SingleSignatureData{
-			SignMode:  args.TxCfg.SignModeHandler().DefaultMode(),
+			SignMode:  signMode,
 			Signature: nil,
 		},
 		Sequence: seq,
@@ -111,8 +114,13 @@ func signCosmosTx(
 		AccountNumber: accNumber,
 		Sequence:      seq,
 	}
+
+	if signMode == signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON {
+		signerData.Address = addr.String()
+	}
+
 	sigV2, err = tx.SignWithPrivKey(
-		args.TxCfg.SignModeHandler().DefaultMode(),
+		signMode,
 		signerData,
 		txBuilder, args.Priv, args.TxCfg,
 		seq,

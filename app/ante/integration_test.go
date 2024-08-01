@@ -8,6 +8,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
@@ -16,12 +17,16 @@ import (
 	"github.com/haqq-network/haqq/utils"
 )
 
-var _ = Describe("when sending a Cosmos transaction", func() {
+var _ = DescribeTableSubtree("when sending a Cosmos transaction", func(signMode signing.SignMode) {
 	var (
 		addr sdk.AccAddress
 		priv *ethsecp256k1.PrivKey
 		msg  sdk.Msg
 	)
+
+	BeforeEach(func() {
+		s.SetupTest()
+	})
 
 	Context("and the sender account has enough balance to pay for the transaction cost", Ordered, func() {
 		var (
@@ -48,7 +53,7 @@ var _ = Describe("when sending a Cosmos transaction", func() {
 		})
 
 		It("should succeed & not withdraw any staking rewards", func() {
-			res, err := testutil.DeliverTx(s.ctx, s.app, priv, nil, msg)
+			res, err := testutil.DeliverTx(s.ctx, s.app, priv, nil, signMode, msg)
 			Expect(err).To(BeNil())
 			Expect(res.IsOK()).To(BeTrue())
 
@@ -83,7 +88,7 @@ var _ = Describe("when sending a Cosmos transaction", func() {
 		})
 
 		It("should fail", func() {
-			res, err := testutil.DeliverTx(s.ctx, s.app, priv, nil, msg)
+			res, err := testutil.DeliverTx(s.ctx, s.app, priv, nil, signMode, msg)
 			Expect(res.IsOK()).To(BeTrue())
 			Expect(err).To(HaveOccurred())
 		})
@@ -126,9 +131,12 @@ var _ = Describe("when sending a Cosmos transaction", func() {
 			balance := s.app.BankKeeper.GetBalance(s.ctx, addr, utils.BaseDenom)
 			Expect(balance.Amount).To(Equal(sdk.NewInt(0)))
 
-			res, err := testutil.DeliverTx(s.ctx, s.app, priv, nil, msg)
+			res, err := testutil.DeliverTx(s.ctx, s.app, priv, nil, signMode, msg)
 			Expect(res.IsOK()).To(BeTrue())
 			Expect(err).To(BeNil())
 		})
 	})
-})
+},
+	Entry("Direct sign mode", signing.SignMode_SIGN_MODE_DIRECT),
+	Entry("Legacy Amino JSON sign mode", signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON),
+)

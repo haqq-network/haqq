@@ -10,6 +10,7 @@ import (
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -245,7 +246,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 		})
 	})
 
-	Describe("Converting", func() {
+	DescribeTableSubtree("Converting", func(signMode signing.SignMode) {
 		Context("with a registered coin", func() {
 			BeforeEach(func() {
 				pair = s.setupRegisterCoin(metadataCoin)
@@ -259,7 +260,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 
 			Describe("a Cosmos coin into an ERC20 token", func() {
 				BeforeEach(func() {
-					convertCoin(s.ctx, s.app, privKey, coin)
+					convertCoin(s.ctx, s.app, privKey, coin, signMode)
 				})
 
 				It("should decrease coins on the sender account", func() {
@@ -280,9 +281,9 @@ var _ = Describe("ERC20:", Ordered, func() {
 
 			Describe("an ERC20 token into a Cosmos coin", func() {
 				BeforeEach(func() {
-					convertCoin(s.ctx, s.app, privKey, coin)
+					convertCoin(s.ctx, s.app, privKey, coin, signMode)
 					s.Commit()
-					convertERC20(s.ctx, s.app, privKey, amt, pair.GetERC20Contract())
+					convertERC20(s.ctx, s.app, privKey, amt, pair.GetERC20Contract(), signMode)
 				})
 
 				It("should increase coins on the sender account", func() {
@@ -318,7 +319,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 
 			Describe("an ERC20 token into a Cosmos coin", func() {
 				BeforeEach(func() {
-					convertERC20(s.ctx, s.app, privKey, amt, pair.GetERC20Contract())
+					convertERC20(s.ctx, s.app, privKey, amt, pair.GetERC20Contract(), signMode)
 				})
 
 				It("should decrease tokens on the sender account", func() {
@@ -340,9 +341,9 @@ var _ = Describe("ERC20:", Ordered, func() {
 
 			Describe("a Cosmos coin into an ERC20 token", func() {
 				BeforeEach(func() {
-					convertERC20(s.ctx, s.app, privKey, amt, pair.GetERC20Contract())
+					convertERC20(s.ctx, s.app, privKey, amt, pair.GetERC20Contract(), signMode)
 					s.Commit()
-					convertCoin(s.ctx, s.app, privKey, coin)
+					convertCoin(s.ctx, s.app, privKey, coin, signMode)
 				})
 
 				It("should increase tokens on the sender account", func() {
@@ -362,7 +363,10 @@ var _ = Describe("ERC20:", Ordered, func() {
 				})
 			})
 		})
-	})
+	},
+		Entry("Direct sign mode", signing.SignMode_SIGN_MODE_DIRECT),
+		Entry("Legacy Amino JSON sign mode", signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON),
+	)
 })
 
 func submitRegisterCoinProposal(ctx sdk.Context, appHaqq *app.Haqq, pk *ethsecp256k1.PrivKey, metadata []banktypes.Metadata) (id uint64, err error) {
@@ -375,21 +379,21 @@ func submitRegisterERC20Proposal(ctx sdk.Context, appHaqq *app.Haqq, pk *ethsecp
 	return testutil.SubmitProposal(ctx, appHaqq, pk, content, 8)
 }
 
-func convertCoin(ctx sdk.Context, appHaqq *app.Haqq, pk *ethsecp256k1.PrivKey, coin sdk.Coin) {
+func convertCoin(ctx sdk.Context, appHaqq *app.Haqq, pk *ethsecp256k1.PrivKey, coin sdk.Coin, signMode signing.SignMode) {
 	addrBz := pk.PubKey().Address().Bytes()
 
 	convertCoinMsg := types.NewMsgConvertCoin(coin, common.BytesToAddress(addrBz), sdk.AccAddress(addrBz))
-	res, err := testutil.DeliverTx(ctx, appHaqq, pk, nil, convertCoinMsg)
+	res, err := testutil.DeliverTx(ctx, appHaqq, pk, nil, signMode, convertCoinMsg)
 	s.Require().NoError(err)
 
 	Expect(res.IsOK()).To(BeTrue(), "failed to convert coin: %s", res.Log)
 }
 
-func convertERC20(ctx sdk.Context, appHaqq *app.Haqq, pk *ethsecp256k1.PrivKey, amt math.Int, contract common.Address) {
+func convertERC20(ctx sdk.Context, appHaqq *app.Haqq, pk *ethsecp256k1.PrivKey, amt math.Int, contract common.Address, signMode signing.SignMode) {
 	addrBz := pk.PubKey().Address().Bytes()
 
 	convertERC20Msg := types.NewMsgConvertERC20(amt, sdk.AccAddress(addrBz), contract, common.BytesToAddress(addrBz))
-	res, err := testutil.DeliverTx(ctx, appHaqq, pk, nil, convertERC20Msg)
+	res, err := testutil.DeliverTx(ctx, appHaqq, pk, nil, signMode, convertERC20Msg)
 	s.Require().NoError(err)
 	Expect(res.IsOK()).To(BeTrue(), "failed to convert ERC20: %s", res.Log)
 }

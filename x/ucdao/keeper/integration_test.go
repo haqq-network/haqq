@@ -8,6 +8,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
@@ -33,7 +34,7 @@ var _ = Describe("United Contributors DAO", func() {
 	nineLiquidInvalid := sdk.NewInt64Coin("aLIQUID", 9000000000000000000)
 	gasPrice := sdkmath.NewInt(1000000000)
 
-	Describe("Fund transactions", func() {
+	DescribeTableSubtree("Fund transactions", func(signMode signing.SignMode) {
 		Context("with invalid denom", func() {
 			BeforeEach(func() {
 				s.SetupTest()
@@ -68,7 +69,7 @@ var _ = Describe("United Contributors DAO", func() {
 						sdk.NewCoins(threeInvalid, fiveLiquid1),
 						s.address,
 					)
-					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, fundMsg)
+					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, fundMsg)
 					Expect(err).NotTo(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -109,7 +110,7 @@ var _ = Describe("United Contributors DAO", func() {
 						sdk.NewCoins(oneIslm, nineLiquidInvalid),
 						s.address,
 					)
-					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, fundMsg)
+					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, fundMsg)
 					Expect(err).NotTo(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -161,7 +162,7 @@ var _ = Describe("United Contributors DAO", func() {
 						sdk.NewCoins(sevenLiquid75),
 						s.address,
 					)
-					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, fundMsg)
+					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, fundMsg)
 					Expect(err).To(BeNil(), "transaction should have succeed")
 					s.Commit()
 
@@ -202,7 +203,7 @@ var _ = Describe("United Contributors DAO", func() {
 						sdk.NewCoins(oneIslm),
 						s.address,
 					)
-					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, fundMsg)
+					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, fundMsg)
 					Expect(err).To(BeNil(), "transaction should have succeed")
 					s.Commit()
 
@@ -254,7 +255,7 @@ var _ = Describe("United Contributors DAO", func() {
 						sdk.NewCoins(oneIslm, fiveLiquid1),
 						s.address,
 					)
-					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, fundMsg)
+					_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, fundMsg)
 					Expect(err).To(BeNil(), "transaction should have succeed")
 					s.Commit()
 
@@ -291,9 +292,12 @@ var _ = Describe("United Contributors DAO", func() {
 				})
 			})
 		})
-	})
+	},
+		Entry("Direct sign mode", signing.SignMode_SIGN_MODE_DIRECT),
+		Entry("Legacy Amino JSON sign mode", signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON),
+	)
 
-	Describe("Transfer Ownership transactions", func() {
+	DescribeTableSubtree("Transfer Ownership transactions", func(signMode signing.SignMode) {
 		newOwnerPriv, err := ethsecp256k1.GenerateKey()
 		newOwnerAddr := sdk.AccAddress(newOwnerPriv.PubKey().Address().Bytes())
 
@@ -314,7 +318,7 @@ var _ = Describe("United Contributors DAO", func() {
 					NewOwner: newOwnerAddr.String(),
 				}
 
-				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, transferOwnershipMsg)
+				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, transferOwnershipMsg)
 				Expect(err).NotTo(BeNil(), "transaction should fail")
 				Expect(err.Error()).To(ContainSubstring("invalid owner address"))
 				s.Commit()
@@ -327,7 +331,7 @@ var _ = Describe("United Contributors DAO", func() {
 					NewOwner: "haqq1",
 				}
 
-				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, transferOwnershipMsg)
+				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, transferOwnershipMsg)
 				Expect(err).NotTo(BeNil(), "transaction should fail")
 				Expect(err.Error()).To(ContainSubstring("invalid new owner address"))
 				s.Commit()
@@ -356,7 +360,7 @@ var _ = Describe("United Contributors DAO", func() {
 				// TX Process
 				transferOwnershipMsg = types.NewMsgTransferOwnership(s.address, newOwnerAddr)
 
-				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, transferOwnershipMsg)
+				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, transferOwnershipMsg)
 				Expect(err).NotTo(BeNil(), "transaction should fail")
 				Expect(err.Error()).To(ContainSubstring("not eligible"), "error message should be correct")
 				s.Commit()
@@ -390,7 +394,7 @@ var _ = Describe("United Contributors DAO", func() {
 					sdk.NewCoins(oneIslm, fiveLiquid1),
 					s.address,
 				)
-				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, fundMsg)
+				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, fundMsg)
 				Expect(err).To(BeNil(), "transaction should have succeed")
 				s.Commit()
 
@@ -434,7 +438,7 @@ var _ = Describe("United Contributors DAO", func() {
 
 				// Transfer TX Process
 				transferOwnershipMsg = types.NewMsgTransferOwnership(s.address, newOwnerAddr)
-				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, transferOwnershipMsg)
+				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, transferOwnershipMsg)
 				Expect(err).To(BeNil(), "transaction should succeed")
 				s.Commit()
 
@@ -512,7 +516,7 @@ var _ = Describe("United Contributors DAO", func() {
 					sdk.NewCoins(oneIslm, fiveLiquid1),
 					s.address,
 				)
-				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, fundMsg)
+				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, fundMsg)
 				Expect(err).To(BeNil(), "transaction should have succeed")
 				s.Commit()
 
@@ -522,7 +526,7 @@ var _ = Describe("United Contributors DAO", func() {
 					sdk.NewCoins(twoIslm),
 					newOwnerAddr,
 				)
-				_, err = testutil.DeliverTx(s.ctx, s.app, newOwnerPriv, &gasPrice, fundMsg)
+				_, err = testutil.DeliverTx(s.ctx, s.app, newOwnerPriv, &gasPrice, signMode, fundMsg)
 				Expect(err).To(BeNil(), "transaction should have succeed")
 				s.Commit()
 
@@ -568,7 +572,7 @@ var _ = Describe("United Contributors DAO", func() {
 
 				// Transfer TX Process
 				transferOwnershipMsg = types.NewMsgTransferOwnership(s.address, newOwnerAddr)
-				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, transferOwnershipMsg)
+				_, err = testutil.DeliverTx(s.ctx, s.app, s.priv, &gasPrice, signMode, transferOwnershipMsg)
 				Expect(err).To(BeNil(), "transaction should succeed")
 				s.Commit()
 
@@ -613,5 +617,8 @@ var _ = Describe("United Contributors DAO", func() {
 				Expect(daoNewOwnerAddressLiquidBalanceAfterTransfer.Balance.String()).To(Equal(fiveLiquid1.String()))
 			})
 		})
-	})
+	},
+		Entry("Direct sign mode", signing.SignMode_SIGN_MODE_DIRECT),
+		Entry("Legacy Amino JSON sign mode", signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON),
+	)
 })
