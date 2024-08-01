@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package haqq.dao.v1;
+package haqq.ucdao.v1;
 
 import "gogoproto/gogo.proto";
 import "amino/amino.proto";
