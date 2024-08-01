@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package haqq.dao.v1;
+package haqq.ucdao.v1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
@@ -9,16 +9,16 @@ import "cosmos/base/v1beta1/coin.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/query/v1/query.proto";
 import "amino/amino.proto";
-import "haqq/dao/v1/dao.proto";
+import "haqq/ucdao/v1/ucdao.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/ucdao/types";
 
-// Query defines the gRPC querier service for dao module
+// Query defines the gRPC querier service for ucdao module
 service Query {
   // Balance queries the balance of a single coin for a single account.
   rpc Balance(QueryBalanceRequest) returns (QueryBalanceResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get               = "/haqq/dao/v1/balances/{address}/by_denom";
+    option (google.api.http).get               = "/haqq/ucdao/v1/balances/{address}/by_denom";
   }
 
   // AllBalances queries the balance of all coins for a single account.
@@ -27,7 +27,7 @@ service Query {
   // gas if the pagination field is incorrectly set.
   rpc AllBalances(QueryAllBalancesRequest) returns (QueryAllBalancesResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get               = "/haqq/dao/v1/balances/{address}";
+    option (google.api.http).get               = "/haqq/ucdao/v1/balances/{address}";
   }
 
   // TotalBalance queries the total balance of all coins locked in the module.
@@ -36,13 +36,13 @@ service Query {
   // gas if the pagination field is incorrectly set.
   rpc TotalBalance(QueryTotalBalanceRequest) returns (QueryTotalBalanceResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get               = "/haqq/dao/v1/total_balance";
+    option (google.api.http).get               = "/haqq/ucdao/v1/total_balance";
   }
 
-  // Params queries the parameters of x/dao module.
+  // Params queries the parameters of x/ucdao module.
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get               = "/haqq/dao/v1/params";
+    option (google.api.http).get               = "/haqq/ucdao/v1/params";
   }
 }
 
@@ -118,10 +118,10 @@ message QueryTotalBalanceResponse {
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-// QueryParamsRequest defines the request type for querying x/dao parameters.
+// QueryParamsRequest defines the request type for querying x/ucdao parameters.
 message QueryParamsRequest {}
 
-// QueryParamsResponse defines the response type for querying x/dao parameters.
+// QueryParamsResponse defines the response type for querying x/ucdao parameters.
 message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }

@@ -160,11 +160,6 @@ import (
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
-	v160 "github.com/haqq-network/haqq/app/upgrades/v1.6.0"
-	v161 "github.com/haqq-network/haqq/app/upgrades/v1.6.1"
-	v162 "github.com/haqq-network/haqq/app/upgrades/v1.6.2"
-	v163 "github.com/haqq-network/haqq/app/upgrades/v1.6.3"
-	v164 "github.com/haqq-network/haqq/app/upgrades/v1.6.4"
 	v170 "github.com/haqq-network/haqq/app/upgrades/v1.7.0"
 	v171 "github.com/haqq-network/haqq/app/upgrades/v1.7.1"
 	v172 "github.com/haqq-network/haqq/app/upgrades/v1.7.2"
@@ -173,6 +168,7 @@ import (
 	v175 "github.com/haqq-network/haqq/app/upgrades/v1.7.5"
 	v176 "github.com/haqq-network/haqq/app/upgrades/v1.7.6"
 	v177 "github.com/haqq-network/haqq/app/upgrades/v1.7.7"
+	v178 "github.com/haqq-network/haqq/app/upgrades/v1.7.8"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -1196,60 +1192,6 @@ func initParamsKeeper(
 }
 
 func (app *Haqq) setupUpgradeHandlers() {
-	// v1.6.0 Security upgrade
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v160.UpgradeName,
-		v160.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-			app.AccountKeeper,
-			app.StakingKeeper,
-			app.SlashingKeeper,
-			app.BankKeeper,
-		),
-	)
-
-	// v1.6.1 Security upgrade
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v161.UpgradeName,
-		v161.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-			app.AccountKeeper,
-		),
-	)
-
-	// v1.6.2 Evergreen fix
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v162.UpgradeName,
-		v162.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-			app.AccountKeeper,
-			app.BankKeeper,
-			app.DistrKeeper,
-		),
-	)
-
-	// v1.6.3 RPC Balances fix
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v163.UpgradeName,
-		v163.CreateUpgradeHandler(app.mm, app.configurator),
-	)
-
-	// v1.6.4 Coinomics v2
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v164.UpgradeName,
-		v164.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-			app.GetKey(coinomicstypes.StoreKey),
-			app.GetKey(paramstypes.StoreKey),
-			app.DistrKeeper,
-			app.CoinomicsKeeper,
-		),
-	)
-
 	// v1.7.0 Upgrade SDK, CometBFT and IBC
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v170.UpgradeName,
@@ -1305,6 +1247,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v177.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
+	// v1.7.8 Fix Amino codec in United Contributors DAO module and improve integration tests
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v178.UpgradeName,
+		v178.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1320,12 +1268,6 @@ func (app *Haqq) setupUpgradeHandlers() {
 	var storeUpgrades *storetypes.StoreUpgrades
 
 	switch upgradeInfo.Name {
-	case v160.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{
-				icahosttypes.SubModuleName,
-			},
-		}
 	case v170.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{

@@ -10,6 +10,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/encoding"
@@ -57,6 +58,7 @@ func DeliverTx(
 	appEvmos *app.Haqq,
 	priv cryptotypes.PrivKey,
 	gasPrice *sdkmath.Int,
+	signMode signing.SignMode,
 	msgs ...sdk.Msg,
 ) (abci.ResponseDeliverTx, error) {
 	txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
@@ -71,6 +73,7 @@ func DeliverTx(
 			GasPrice: gasPrice,
 			Msgs:     msgs,
 		},
+		signMode,
 	)
 	if err != nil {
 		return abci.ResponseDeliverTx{}, err
@@ -101,6 +104,7 @@ func CheckTx(
 	appEvmos *app.Haqq,
 	priv cryptotypes.PrivKey,
 	gasPrice *sdkmath.Int,
+	signMode signing.SignMode,
 	msgs ...sdk.Msg,
 ) (abci.ResponseCheckTx, error) {
 	txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
@@ -116,6 +120,7 @@ func CheckTx(
 			Gas:      10_000_000,
 			Msgs:     msgs,
 		},
+		signMode,
 	)
 	if err != nil {
 		return abci.ResponseCheckTx{}, err

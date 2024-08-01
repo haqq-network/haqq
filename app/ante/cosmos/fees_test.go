@@ -7,6 +7,7 @@ import (
 	"cosmossdk.io/math"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 
 	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
@@ -311,7 +312,7 @@ func (suite *AnteTestSuite) TestDeductFeeDecorator() {
 			suite.ctx = suite.ctx.WithIsCheckTx(tc.checkTx)
 
 			// Create a transaction out of the message
-			tx, err := testutiltx.PrepareCosmosTx(suite.ctx, suite.app, args)
+			tx, err := testutiltx.PrepareCosmosTx(suite.ctx, suite.app, args, signing.SignMode_SIGN_MODE_DIRECT)
 			suite.Require().NoError(err, "failed to create transaction")
 
 			// run the ante handler

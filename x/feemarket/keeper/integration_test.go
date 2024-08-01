@@ -9,6 +9,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
@@ -23,7 +24,7 @@ var _ = Describe("Feemarket", func() {
 		msg     banktypes.MsgSend
 	)
 
-	Describe("Performing Cosmos transactions", func() {
+	DescribeTableSubtree("Performing Cosmos transactions", func(signMode signing.SignMode) {
 		Context("with min-gas-prices (local) < MinGasPrices (feemarket param)", func() {
 			BeforeEach(func() {
 				privKey, msg = setupTestWithContext("1", sdk.NewDec(3), sdk.ZeroInt())
@@ -32,7 +33,7 @@ var _ = Describe("Feemarket", func() {
 			Context("during CheckTx", func() {
 				It("should reject transactions with gasPrice < MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(2)
-					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).ToNot(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -42,7 +43,7 @@ var _ = Describe("Feemarket", func() {
 
 				It("should accept transactions with gasPrice >= MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(3)
-					res, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					res, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(Equal(true), "transaction should have succeeded", res.GetLog())
 				})
@@ -51,7 +52,7 @@ var _ = Describe("Feemarket", func() {
 			Context("during DeliverTx", func() {
 				It("should reject transactions with gasPrice < MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(2)
-					_, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					_, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).NotTo(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -61,7 +62,7 @@ var _ = Describe("Feemarket", func() {
 
 				It("should accept transactions with gasPrice >= MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(3)
-					res, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					res, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					s.Require().NoError(err)
 					Expect(res.IsOK()).To(Equal(true), "transaction should have succeeded", res.GetLog())
 				})
@@ -76,7 +77,7 @@ var _ = Describe("Feemarket", func() {
 			Context("during CheckTx", func() {
 				It("should reject transactions with gasPrice < min-gas-prices", func() {
 					gasPrice := sdkmath.NewInt(2)
-					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).ToNot(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -86,7 +87,7 @@ var _ = Describe("Feemarket", func() {
 
 				It("should accept transactions with gasPrice >= MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(3)
-					res, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					res, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(Equal(true), "transaction should have succeeded", res.GetLog())
 				})
@@ -95,7 +96,7 @@ var _ = Describe("Feemarket", func() {
 			Context("during DeliverTx", func() {
 				It("should reject transactions with gasPrice < MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(2)
-					_, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					_, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).NotTo(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -105,7 +106,7 @@ var _ = Describe("Feemarket", func() {
 
 				It("should accept transactions with gasPrice >= MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(3)
-					res, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					res, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(Equal(true), "transaction should have succeeded", res.GetLog())
 				})
@@ -121,7 +122,7 @@ var _ = Describe("Feemarket", func() {
 			Context("during CheckTx", func() {
 				It("should reject transactions with gasPrice < MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(2)
-					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).ToNot(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -131,7 +132,7 @@ var _ = Describe("Feemarket", func() {
 
 				It("should reject transactions with MinGasPrices < gasPrice < baseFee", func() {
 					gasPrice := sdkmath.NewInt(4)
-					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).ToNot(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -141,7 +142,7 @@ var _ = Describe("Feemarket", func() {
 
 				It("should accept transactions with gasPrice >= baseFee", func() {
 					gasPrice := sdkmath.NewInt(5)
-					res, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					res, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(Equal(true), "transaction should have succeeded", res.GetLog())
 				})
@@ -151,7 +152,7 @@ var _ = Describe("Feemarket", func() {
 			Context("during DeliverTx", func() {
 				It("should reject transactions with gasPrice < MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(2)
-					_, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					_, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).NotTo(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -161,7 +162,7 @@ var _ = Describe("Feemarket", func() {
 
 				It("should reject transactions with MinGasPrices < gasPrice < baseFee", func() {
 					gasPrice := sdkmath.NewInt(4)
-					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					_, err := testutil.CheckTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).ToNot(BeNil(), "transaction should have failed")
 					Expect(
 						strings.Contains(err.Error(),
@@ -170,13 +171,16 @@ var _ = Describe("Feemarket", func() {
 				})
 				It("should accept transactions with gasPrice >= baseFee", func() {
 					gasPrice := sdkmath.NewInt(5)
-					res, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, &msg)
+					res, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(Equal(true), "transaction should have succeeded", res.GetLog())
 				})
 			})
 		})
-	})
+	},
+		Entry("Direct sign mode", signing.SignMode_SIGN_MODE_DIRECT),
+		Entry("Legacy Amino JSON sign mode", signing.SignMode_SIGN_MODE_LEGACY_AMINO_JSON),
+	)
 
 	Describe("Performing EVM transactions", func() {
 		type txParams struct {
