@@ -6827,6 +6827,298 @@
         ]
       }
     },
+    "/haqq/liquidvesting/v1/denom": {
+      "get": {
+        "summary": "Denom queries liquid vesting token info by denom",
+        "operationId": "Denom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/haqq.liquidvesting.v1.QueryDenomResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "denom",
+            "description": "denom is liquidated vesting token",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/haqq/liquidvesting/v1/denoms": {
+      "get": {
+        "summary": "Denoms queries liquid vesting tokens info",
+        "operationId": "Denoms",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/haqq.liquidvesting.v1.QueryDenomsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\nSince: cosmos-sdk 0.43",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/haqq/ucdao/v1/balances/{address}": {
+      "get": {
+        "summary": "AllBalances queries the balance of all coins for a single account.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
+        "operationId": "AllBalances",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/haqq.ucdao.v1.QueryAllBalancesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the address to query balances for.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\nSince: cosmos-sdk 0.43",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/haqq/ucdao/v1/balances/{address}/by_denom": {
+      "get": {
+        "summary": "Balance queries the balance of a single coin for a single account.",
+        "operationId": "Balance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/haqq.ucdao.v1.QueryBalanceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "description": "address is the address to query balances for.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "denom",
+            "description": "denom is the coin denom to query balances for.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/haqq/ucdao/v1/params": {
+      "get": {
+        "summary": "Params queries the parameters of x/ucdao module.",
+        "operationId": "Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/haqq.ucdao.v1.QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/haqq/ucdao/v1/total_balance": {
+      "get": {
+        "summary": "TotalBalance queries the total balance of all coins locked in the module.",
+        "description": "When called from another module, this query might consume a high amount of\ngas if the pagination field is incorrectly set.",
+        "operationId": "TotalBalance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/haqq.ucdao.v1.QueryTotalBalanceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\nSince: cosmos-sdk 0.43",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
     "/haqq/vesting/v1/balances/{address}": {
       "get": {
         "summary": "Balances retrieves the unvested, vested and locked tokens for a vesting\naccount",
@@ -13513,6 +13805,23 @@
       },
       "description": "QueryUpgradedConsensusStateResponse is the response type for the Query/UpgradedConsensusState\nRPC method."
     },
+    "cosmos.vesting.v1beta1.Period": {
+      "type": "object",
+      "properties": {
+        "length": {
+          "type": "string",
+          "format": "int64"
+        },
+        "amount": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
+          }
+        }
+      },
+      "description": "Period defines a length of time and amount of coins that will vest."
+    },
     "ethermint.evm.v1.ChainConfig": {
       "type": "object",
       "properties": {
@@ -14220,6 +14529,166 @@
           "title": "rate by which the total supply increases within one era"
         }
       }
+    },
+    "haqq.liquidvesting.v1.Denom": {
+      "type": "object",
+      "properties": {
+        "baseDenom": {
+          "type": "string",
+          "description": "base_denom main identifier for the denom, used to query it from store."
+        },
+        "displayDenom": {
+          "type": "string",
+          "title": "display_denom identifier used for display name for broad audience"
+        },
+        "originalDenom": {
+          "type": "string",
+          "title": "original_denom which liquid denom derived from"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "start date"
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "end_date"
+        },
+        "lockupPeriods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.vesting.v1beta1.Period"
+          },
+          "title": "lockup periods"
+        }
+      },
+      "title": "Denom represents liquid token bonded to some specific vesting schedule"
+    },
+    "haqq.liquidvesting.v1.QueryDenomResponse": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "$ref": "#/definitions/haqq.liquidvesting.v1.Denom",
+          "title": "denom is liquidated vesting token"
+        }
+      },
+      "title": "QueryDenomResponse is response for Denom rpc method"
+    },
+    "haqq.liquidvesting.v1.QueryDenomsResponse": {
+      "type": "object",
+      "properties": {
+        "denoms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/haqq.liquidvesting.v1.Denom"
+          },
+          "title": "denoms are liquidated vesting tokens"
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response."
+        }
+      },
+      "title": "QueryDenomsResponse is response for Denoms rpc method"
+    },
+    "haqq.ucdao.v1.AllowedCollateral": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "value is the allowed collateral value."
+        },
+        "type": {
+          "$ref": "#/definitions/haqq.ucdao.v1.CollateralValueType",
+          "description": "type is the allowed collateral value type."
+        }
+      }
+    },
+    "haqq.ucdao.v1.CollateralValueType": {
+      "type": "string",
+      "enum": [
+        "COLLATERAL_VALUE_TYPE_UNSPECIFIED",
+        "COLLATERAL_VALUE_TYPE_STRICT",
+        "COLLATERAL_VALUE_TYPE_MASK"
+      ],
+      "default": "COLLATERAL_VALUE_TYPE_UNSPECIFIED",
+      "description": "CollateralValueType defines the type of collateral value.\n\n - COLLATERAL_VALUE_TYPE_UNSPECIFIED: COLLATERAL_VALUE_TYPE_UNSPECIFIED is the unspecified collateral value type.\n - COLLATERAL_VALUE_TYPE_STRICT: COLLATERAL_VALUE_TYPE_STRICT is the strict collateral value type.\n - COLLATERAL_VALUE_TYPE_MASK: COLLATERAL_VALUE_TYPE_MASK is the mask collateral value type."
+    },
+    "haqq.ucdao.v1.Params": {
+      "type": "object",
+      "properties": {
+        "enableDao": {
+          "type": "boolean",
+          "description": "enable_dao is the parameter to enable the module functionality."
+        },
+        "allowedCollaterals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/haqq.ucdao.v1.AllowedCollateral"
+          },
+          "description": "allowed_collaterals is the allowed collateral values."
+        }
+      },
+      "description": "Params defines the parameters for the dao module."
+    },
+    "haqq.ucdao.v1.QueryAllBalancesResponse": {
+      "type": "object",
+      "properties": {
+        "balances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
+          },
+          "description": "balances is the balances of all the coins."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response."
+        }
+      },
+      "description": "QueryAllBalancesResponse is the response type for the Query/AllBalances RPC\nmethod."
+    },
+    "haqq.ucdao.v1.QueryBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "$ref": "#/definitions/cosmos.base.v1beta1.Coin",
+          "description": "balance is the balance of the coin."
+        }
+      },
+      "description": "QueryBalanceResponse is the response type for the Query/Balance RPC method."
+    },
+    "haqq.ucdao.v1.QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/haqq.ucdao.v1.Params"
+        }
+      },
+      "description": "QueryParamsResponse defines the response type for querying x/ucdao parameters."
+    },
+    "haqq.ucdao.v1.QueryTotalBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "totalBalance": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
+          },
+          "title": "supply is the supply of the coins"
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response.\n\nSince: cosmos-sdk 0.43"
+        }
+      },
+      "title": "QueryTotalBalanceResponse is the response type for the Query/TotalBalance RPC\nmethod"
     },
     "haqq.vesting.v1.QueryBalancesResponse": {
       "type": "object",
