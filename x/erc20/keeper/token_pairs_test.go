@@ -11,14 +11,14 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestGetTokenPairs() {
-	var expResponse []types.TokenPair
+	var expRes []types.TokenPair
 
 	testCases := []struct {
 		name     string
 		malleate func()
 	}{
 		{
-			"no pair registered", func() { expResponse = []types.TokenPair{} },
+			"no pair registered", func() { expRes = []types.TokenPair{} },
 		},
 		{
 			"1 pair registered",
@@ -26,7 +26,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
-				expResponse = []types.TokenPair{pair}
+				expRes = []types.TokenPair{pair}
 			},
 		},
 		{
@@ -37,7 +37,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair2)
 
-				expResponse = []types.TokenPair{pair, pair2}
+				expRes = []types.TokenPair{pair, pair2}
 			},
 		},
 	}
@@ -48,7 +48,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 			tc.malleate()
 			res := suite.app.Erc20Keeper.GetTokenPairs(suite.ctx)
 
-			suite.Require().ElementsMatch(expResponse, res, tc.name)
+			suite.Require().ElementsMatch(expRes, res, tc.name)
 		})
 	}
 }
@@ -230,5 +230,58 @@ func (suite *KeeperTestSuite) TestIsDenomRegistered() {
 		} else {
 			suite.Require().False(found, tc.name)
 		}
+	}
+}
+
+func (suite *KeeperTestSuite) TestGetTokenDenom() {
+	tokenAddress := utiltx.GenerateAddress()
+	tokenDenom := "token"
+
+	testCases := []struct {
+		name        string
+		tokenDenom  string
+		malleate    func()
+		expError    bool
+		errContains string
+	}{
+		{
+			"denom found",
+			tokenDenom,
+			func() {
+				pair := types.NewTokenPair(tokenAddress, tokenDenom, types.OWNER_MODULE)
+				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
+				suite.app.Erc20Keeper.SetERC20Map(suite.ctx, tokenAddress, pair.GetID())
+			},
+			true,
+			"",
+		},
+		{
+			"denom not found",
+			tokenDenom,
+			func() {
+				address := utiltx.GenerateAddress()
+				pair := types.NewTokenPair(address, tokenDenom, types.OWNER_MODULE)
+				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
+				suite.app.Erc20Keeper.SetERC20Map(suite.ctx, address, pair.GetID())
+			},
+			false,
+			fmt.Sprintf("token '%s' not registered", tokenAddress),
+		},
+	}
+	for _, tc := range testCases {
+		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
+			suite.SetupTest() // reset
+
+			tc.malleate()
+			res, err := suite.app.Erc20Keeper.GetTokenDenom(suite.ctx, tokenAddress)
+
+			if tc.expError {
+				suite.Require().NoError(err)
+				suite.Require().Equal(res, tokenDenom)
+			} else {
+				suite.Require().Error(err, "expected an error while getting the token denom")
+				suite.Require().ErrorContains(err, tc.errContains)
+			}
+		})
 	}
 }

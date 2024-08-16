@@ -82,14 +82,15 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.denom = types.DefaultMintDenom
 
 	// setup context
-	app, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState())
+	chainID := haqqtypes.MainNetChainID + "-1"
+	app, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
 
 	startTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	suite.app = app
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
-		ChainID:         haqqtypes.MainNetChainID + "-1",
+		ChainID:         chainID,
 		Time:            startTime,
 		ProposerAddress: valAddr1,
 
@@ -128,7 +129,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 
-	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
+	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper.Keeper, suite.ctx, validator, true)
 	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)

@@ -15,6 +15,7 @@ import (
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
 	"github.com/haqq-network/haqq/x/erc20/types"
+	erc20mocks "github.com/haqq-network/haqq/x/erc20/types/mocks"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -199,14 +200,16 @@ func (suite KeeperTestSuite) TestRegisterCoin() { //nolint:govet // we can copy 
 				err := suite.app.BankKeeper.MintCoins(suite.ctx, coinomicstypes.ModuleName, sdk.Coins{sdk.NewInt64Coin(metadata.Base, 1)})
 				suite.Require().NoError(err)
 
-				mockEVMKeeper := &MockEVMKeeper{}
+				mockEVMKeeper := &erc20mocks.EVMKeeper{}
 
 				suite.app.Erc20Keeper = keeper.NewKeeper(
 					suite.app.GetKey("erc20"), suite.app.AppCodec(),
 					authtypes.NewModuleAddress(govtypes.ModuleName), suite.app.AccountKeeper,
-					suite.app.BankKeeper, mockEVMKeeper, suite.app.StakingKeeper)
+					suite.app.BankKeeper, mockEVMKeeper, suite.app.StakingKeeper,
+					suite.app.AuthzKeeper, &suite.app.TransferKeeper,
+				)
 
-				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				mockEVMKeeper.On("EstimateGasInternal", mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
 			},
 			false,
@@ -289,14 +292,16 @@ func (suite KeeperTestSuite) TestRegisterERC20() { //nolint:govet // we can copy
 		{
 			"force fail evm",
 			func() {
-				mockEVMKeeper := &MockEVMKeeper{}
+				mockEVMKeeper := &erc20mocks.EVMKeeper{}
 
 				suite.app.Erc20Keeper = keeper.NewKeeper(
 					suite.app.GetKey("erc20"), suite.app.AppCodec(),
 					authtypes.NewModuleAddress(govtypes.ModuleName), suite.app.AccountKeeper,
-					suite.app.BankKeeper, mockEVMKeeper, suite.app.StakingKeeper)
+					suite.app.BankKeeper, mockEVMKeeper, suite.app.StakingKeeper,
+					suite.app.AuthzKeeper, &suite.app.TransferKeeper,
+				)
 
-				mockEVMKeeper.On("EstimateGas", mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
+				mockEVMKeeper.On("EstimateGasInternal", mock.Anything, mock.Anything, mock.Anything).Return(&evmtypes.EstimateGasResponse{Gas: uint64(200)}, nil)
 				mockEVMKeeper.On("ApplyMessage", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, fmt.Errorf("forced ApplyMessage error"))
 			},
 			false,

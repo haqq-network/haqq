@@ -85,10 +85,11 @@ func (suite *LedgerTestSuite) SetupHaqqApp() {
 	consAddress := sdk.ConsAddress(utiltx.GenerateAddress().Bytes())
 
 	// init app
-	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState())
+	chainID := utils.MainNetChainID + "-1"
+	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
-		ChainID:         "haqq_11235-1",
+		ChainID:         chainID,
 		Time:            time.Now().UTC(),
 		ProposerAddress: consAddress.Bytes(),
 

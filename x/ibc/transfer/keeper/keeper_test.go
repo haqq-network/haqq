@@ -7,13 +7,16 @@ import (
 	"testing"
 	"time"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -92,10 +95,9 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.consAddress = consAddress
 
 	// init app
-	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState())
-	header := testutil.NewHeader(
-		1, time.Now().UTC(), "haqq_11235-1", suite.consAddress, nil, nil,
-	)
+	chainID := utils.TestEdge2ChainID + "-3"
+	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
+	header := testutil.NewHeader(1, time.Now().UTC(), chainID, suite.consAddress, nil, nil)
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
 
 	// query clients
@@ -117,14 +119,14 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	valAddr := sdk.ValAddress(suite.address.Bytes())
 	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
-	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
+	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper.Keeper, suite.ctx, validator, true)
 	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
 	require.NoError(t, err)
 
 	// fund signer acc to pay for tx fees
-	amt := sdk.NewInt(int64(math.Pow10(18) * 2))
+	amt := sdkmath.NewInt(int64(math.Pow10(18) * 2))
 	err = testutil.FundAccount(
 		suite.ctx,
 		suite.app.BankKeeper,
@@ -171,7 +173,7 @@ func (suite *KeeperTestSuite) Commit() {
 //  4. Commit
 func (suite *KeeperTestSuite) CommitAndBeginBlockAfter(t time.Duration) {
 	var err error
-	suite.ctx, err = testutil.Commit(suite.ctx, suite.app, t, nil)
+	suite.ctx, err = testutil.CommitAndCreateNewCtx(suite.ctx, suite.app, t, nil)
 	suite.Require().NoError(err)
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
 	evm.RegisterQueryServer(queryHelper, suite.app.EvmKeeper)
@@ -196,9 +198,9 @@ func (b *MockChannelKeeper) GetNextSequenceSend(ctx sdk.Context, portID, channel
 	return 1, true
 }
 
+//nolint:revive // allow unused parameters to indicate expected signature
 func (b *MockChannelKeeper) GetAllChannelsWithPortPrefix(ctx sdk.Context, portPrefix string) []channeltypes.IdentifiedChannel {
-	args := b.Called(mock.Anything, mock.Anything, mock.Anything)
-	return []channeltypes.IdentifiedChannel{args.Get(0).(channeltypes.IdentifiedChannel)}
+	return []channeltypes.IdentifiedChannel{}
 }
 
 var _ porttypes.ICS4Wrapper = &MockICS4Wrapper{}
@@ -266,7 +268,7 @@ func (suite *KeeperTestSuite) sendTx(contractAddr, from common.Address, transfer
 	nonce := suite.app.EvmKeeper.GetNonce(suite.ctx, suite.address)
 
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
-	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evm.DefaultEVMDenom, sdk.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
+	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evm.DefaultEVMDenom, sdkmath.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 
 	ethTxParams := evm.EvmTxArgs{
 		ChainID:   chainID,

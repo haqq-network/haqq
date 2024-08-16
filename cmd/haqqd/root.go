@@ -41,6 +41,7 @@ import (
 
 	"github.com/haqq-network/haqq/app"
 	haqqclient "github.com/haqq-network/haqq/client"
+	"github.com/haqq-network/haqq/client/block"
 	"github.com/haqq-network/haqq/client/debug"
 	cmdcfg "github.com/haqq-network/haqq/cmd/config"
 	haqqkr "github.com/haqq-network/haqq/crypto/keyring"
@@ -124,6 +125,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		config.Cmd(),
 		pruning.PruningCmd(a.newApp),
 		snapshot.Cmd(a.newApp),
+		block.Cmd(),
 	)
 
 	haqqserver.AddCommands(
@@ -199,6 +201,9 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 		authcmd.GetAuxToFeeCommand(),
 	)
+
+	// DefaultGasAdjustment value to use as default in gas-adjustment flag
+	flags.DefaultGasAdjustment = servercfg.DefaultGasAdjustment
 
 	app.ModuleBasics.AddTxCommands(cmd)
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")

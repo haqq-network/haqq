@@ -17,7 +17,7 @@ import (
 
 var (
 	feeAmt     = math.Pow10(16)
-	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdk.NewIntFromUint64(uint64(feeAmt))) // 0.01 EVMOS
+	DefaultFee = sdk.NewCoin(utils.BaseDenom, sdkmath.NewIntFromUint64(uint64(feeAmt))) // 0.01 ISLM
 )
 
 // CosmosTxArgs contains the params to create a cosmos tx
@@ -44,7 +44,7 @@ type CosmosTxArgs struct {
 // It returns the signed transaction and an error
 func PrepareCosmosTx(
 	ctx sdk.Context,
-	appEvmos *app.Haqq,
+	haqqApp *app.Haqq,
 	args CosmosTxArgs,
 	signMode signing.SignMode,
 ) (authsigning.Tx, error) {
@@ -68,7 +68,7 @@ func PrepareCosmosTx(
 
 	return signCosmosTx(
 		ctx,
-		appEvmos,
+		haqqApp,
 		args,
 		txBuilder,
 		signMode,
@@ -79,13 +79,13 @@ func PrepareCosmosTx(
 // the provided private key
 func signCosmosTx(
 	ctx sdk.Context,
-	appEvmos *app.Haqq,
+	haqqApp *app.Haqq,
 	args CosmosTxArgs,
 	txBuilder client.TxBuilder,
 	signMode signing.SignMode,
 ) (authsigning.Tx, error) {
 	addr := sdk.AccAddress(args.Priv.PubKey().Address().Bytes())
-	seq, err := appEvmos.AccountKeeper.GetSequence(ctx, addr)
+	seq, err := haqqApp.AccountKeeper.GetSequence(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func signCosmosTx(
 	}
 
 	// Second round: all signer infos are set, so each signer can sign.
-	accNumber := appEvmos.AccountKeeper.GetAccount(ctx, addr).GetAccountNumber()
+	accNumber := haqqApp.AccountKeeper.GetAccount(ctx, addr).GetAccountNumber()
 	signerData := authsigning.SignerData{
 		ChainID:       args.ChainID,
 		AccountNumber: accNumber,

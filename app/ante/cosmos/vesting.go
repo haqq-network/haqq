@@ -94,7 +94,7 @@ func (vdd VestingDelegationDecorator) validateMsg(ctx sdk.Context, msg sdk.Msg) 
 		// error if bond amount is > vested coins
 		bondDenom := vdd.sk.BondDenom(ctx)
 		balance := vdd.bk.GetBalance(ctx, addr, bondDenom)
-		unvestedOnly := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
+		unvestedOnly := clawbackAccount.GetVestingCoins(ctx.BlockTime())
 		spendable, hasNeg := sdk.Coins{balance}.SafeSub(unvestedOnly...)
 		if hasNeg {
 			spendable = sdk.NewCoins()

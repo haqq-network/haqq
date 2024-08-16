@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -57,11 +58,11 @@ var (
 	s *KeeperTestSuite
 	// sendAndReceiveMsgFee corresponds to the fees paid on Haqq Network chain when calling the SendAndReceive function
 	// This function makes 3 cosmos txs under the hood
-	sendAndReceiveMsgFee = sdk.NewInt(ibctesting.DefaultFeeAmt * 3)
+	sendAndReceiveMsgFee = math.NewInt(ibctesting.DefaultFeeAmt * 3)
 	// sendBackCoinsFee corresponds to the fees paid on Haqq Network chain when calling the SendBackCoins function
 	// or calling the SendAndReceive from another chain to Haqq Network
 	// This function makes 2 cosmos txs under the hood
-	sendBackCoinsFee = sdk.NewInt(ibctesting.DefaultFeeAmt * 2)
+	sendBackCoinsFee = math.NewInt(ibctesting.DefaultFeeAmt * 2)
 )
 
 func TestKeeperTestSuite(t *testing.T) {

@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
@@ -19,10 +20,10 @@ func FundAccount(ctx sdk.Context, bankKeeper bankkeeper.Keeper, addr sdk.AccAddr
 }
 
 // FundAccountWithBaseDenom is a utility function that uses the FundAccount function
-// to fund an account with the default Evmos denomination.
+// to fund an account with the default Haqq denomination.
 func FundAccountWithBaseDenom(ctx sdk.Context, bankKeeper bankkeeper.Keeper, addr sdk.AccAddress, amount int64) error {
 	coins := sdk.NewCoins(
-		sdk.NewCoin(utils.BaseDenom, sdk.NewInt(amount)),
+		sdk.NewCoin(utils.BaseDenom, math.NewInt(amount)),
 	)
 	return FundAccount(ctx, bankKeeper, addr, coins)
 }

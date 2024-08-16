@@ -98,19 +98,19 @@ type Config struct {
 // testing requirements.
 func DefaultConfig() Config {
 	encCfg := encoding.MakeConfig(app.ModuleBasics)
-
+	chainID := fmt.Sprintf("evmos_%d-1", tmrand.Int63n(9999999999999)+1)
 	return Config{
 		Codec:             encCfg.Codec,
 		TxConfig:          encCfg.TxConfig,
 		LegacyAmino:       encCfg.Amino,
 		InterfaceRegistry: encCfg.InterfaceRegistry,
 		AccountRetriever:  authtypes.AccountRetriever{},
-		AppConstructor:    NewAppConstructor(encCfg),
+		AppConstructor:    NewAppConstructor(encCfg, chainID),
 		GenesisState:      app.ModuleBasics.DefaultGenesis(encCfg.Codec),
 		TimeoutCommit:     3 * time.Second,
-		ChainID:           fmt.Sprintf("haqq_%d-1", tmrand.Int63n(9999999999999)+1),
+		ChainID:           chainID,
 		NumValidators:     4,
-		BondDenom:         "aISLM",
+		BondDenom:         haqqtypes.AttoDenom,
 		MinGasPrices:      fmt.Sprintf("0.000006%s", haqqtypes.AttoDenom),
 		AccountTokens:     sdk.TokensFromConsensusPower(1000000000000000000, haqqtypes.PowerReduction),
 		StakingTokens:     sdk.TokensFromConsensusPower(500000000000000000, haqqtypes.PowerReduction),
@@ -124,7 +124,7 @@ func DefaultConfig() Config {
 }
 
 // NewAppConstructor returns a new Haqq AppConstructor
-func NewAppConstructor(encodingCfg params.EncodingConfig) AppConstructor {
+func NewAppConstructor(encodingCfg params.EncodingConfig, chainID string) AppConstructor {
 	return func(val Validator) servertypes.Application {
 		return app.NewHaqq(
 			val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
@@ -132,7 +132,7 @@ func NewAppConstructor(encodingCfg params.EncodingConfig) AppConstructor {
 			simutils.NewAppOptionsWithFlagHome(val.Ctx.Config.RootDir),
 			baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 			baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
-			baseapp.SetChainID(val.ClientCtx.ChainID),
+			baseapp.SetChainID(chainID),
 		)
 	}
 }
@@ -418,7 +418,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
 		})
 
-		commission, err := sdk.NewDecFromStr("0.5")
+		commission, err := math.LegacyNewDecFromStr("0.5")
 		if err != nil {
 			return nil, err
 		}
@@ -428,8 +428,8 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			valPubKeys[i],
 			sdk.NewCoin(cfg.BondDenom, cfg.BondedTokens),
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
-			stakingtypes.NewCommissionRates(commission, sdk.OneDec(), sdk.OneDec()),
-			sdk.OneInt(),
+			stakingtypes.NewCommissionRates(commission, math.LegacyOneDec(), math.LegacyOneDec()),
+			math.OneInt(),
 		)
 		if err != nil {
 			return nil, err
@@ -441,7 +441,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 		}
 
 		memo := fmt.Sprintf("%s@%s:%s", nodeIDs[i], p2pURL.Hostname(), p2pURL.Port())
-		fee := sdk.NewCoins(sdk.NewCoin(cfg.BondDenom, sdk.NewInt(0)))
+		fee := sdk.NewCoins(sdk.NewCoin(cfg.BondDenom, math.NewInt(0)))
 		txBuilder := cfg.TxConfig.NewTxBuilder()
 		err = txBuilder.SetMsgs(createValMsg)
 		if err != nil {

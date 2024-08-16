@@ -187,7 +187,7 @@ func RegisterBlockResultsWithEventLog(client *mocks.Client, height int64) (*tmrp
 				Type: evmtypes.EventTypeTxLog,
 				Attributes: []abci.EventAttribute{{
 					Key:   evmtypes.AttributeKeyTxLog,
-					Value: "{\"test\": \"hello\"}",
+					Value: "{\"test\": \"hello\"}", // TODO refactor the value to unmarshall to a evmtypes.Log struct successfully
 					Index: true,
 				}},
 			}}},
@@ -224,11 +224,11 @@ func TestRegisterBlockResults(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := client.BlockResults(rpc.ContextWithHeight(height), &height)
-	expResponse := &tmrpctypes.ResultBlockResults{
+	expRes := &tmrpctypes.ResultBlockResults{
 		Height:     height,
 		TxsResults: []*abci.ResponseDeliverTx{{Code: 0, GasUsed: 0}},
 	}
-	require.Equal(t, expResponse, res)
+	require.Equal(t, expRes, res)
 	require.NoError(t, err)
 }
 

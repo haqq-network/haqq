@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"math/big"
 
+	"cosmossdk.io/math"
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmlog "github.com/cometbft/cometbft/libs/log"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"google.golang.org/grpc/metadata"
@@ -98,7 +98,7 @@ func (suite *BackendTestSuite) TestGetTransactionByHash() {
 				suite.Require().NoError(err)
 				_, err = RegisterBlockResults(client, 1)
 				suite.Require().NoError(err)
-				RegisterBaseFee(queryClient, sdk.NewInt(1))
+				RegisterBaseFee(queryClient, math.NewInt(1))
 			},
 			msgEthereumTx,
 			rpcTransaction,
@@ -356,7 +356,7 @@ func (suite *BackendTestSuite) TestGetTransactionByBlockAndIndex() {
 				suite.Require().NoError(err)
 				_, err = RegisterBlockResults(client, 1)
 				suite.Require().NoError(err)
-				RegisterBaseFee(queryClient, sdk.NewInt(1))
+				RegisterBaseFee(queryClient, math.NewInt(1))
 			},
 			&tmrpctypes.ResultBlock{Block: defaultBlock},
 			0,
@@ -370,7 +370,7 @@ func (suite *BackendTestSuite) TestGetTransactionByBlockAndIndex() {
 				client := suite.backend.clientCtx.Client.(*mocks.Client)
 				_, err := RegisterBlockResults(client, 1)
 				suite.Require().NoError(err)
-				RegisterBaseFee(queryClient, sdk.NewInt(1))
+				RegisterBaseFee(queryClient, math.NewInt(1))
 			},
 			&tmrpctypes.ResultBlock{Block: defaultBlock},
 			0,
@@ -435,7 +435,7 @@ func (suite *BackendTestSuite) TestGetTransactionByBlockNumberAndIndex() {
 				suite.Require().NoError(err)
 				_, err = RegisterBlockResults(client, 1)
 				suite.Require().NoError(err)
-				RegisterBaseFee(queryClient, sdk.NewInt(1))
+				RegisterBaseFee(queryClient, math.NewInt(1))
 			},
 			0,
 			0,

@@ -13,11 +13,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/crypto/sha3"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	haqqtypes "github.com/haqq-network/haqq/types"
 )
 
 const (
@@ -83,7 +85,16 @@ func GetHaqqAddressFromBech32(address string) (sdk.AccAddress, error) {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid bech32 address: %s", address)
 	}
 
-	addressBz, err := sdk.GetFromBech32(address, bech32Prefix)
+	return CreateAccAddressFromBech32(address, bech32Prefix)
+}
+
+// CreateAccAddressFromBech32 creates an AccAddress from a Bech32 string.
+func CreateAccAddressFromBech32(address string, bech32prefix string) (sdk.AccAddress, error) {
+	if len(strings.TrimSpace(address)) == 0 {
+		return sdk.AccAddress{}, fmt.Errorf("empty address string is not allowed")
+	}
+
+	addressBz, err := sdk.GetFromBech32(address, bech32prefix)
 	if err != nil {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid address %s, %s", address, err.Error())
 	}
@@ -96,12 +107,48 @@ func GetHaqqAddressFromBech32(address string) (sdk.AccAddress, error) {
 	return sdk.AccAddress(addressBz), nil
 }
 
-func GetAccAddrFromEthAddress(addrString string) sdk.AccAddress {
+func GetAccAddressFromEthAddress(addrString string) sdk.AccAddress {
 	addr := common.HexToAddress(addrString).Bytes()
 	return sdk.AccAddress(addr)
 }
 
-// parseHexValue -> parses a hex string into a big.Int
+// GetIBCDenomAddress returns the address from the hash of the ICS20's DenomTrace Path.
+func GetIBCDenomAddress(denom string) (common.Address, error) {
+	if !strings.HasPrefix(denom, "ibc/") {
+		return common.Address{}, ibctransfertypes.ErrInvalidDenomForTransfer.Wrapf("coin %s does not have 'ibc/' prefix", denom)
+	}
+
+	if len(denom) < 5 || strings.TrimSpace(denom[4:]) == "" {
+		return common.Address{}, ibctransfertypes.ErrInvalidDenomForTransfer.Wrapf("coin %s does not a valid IBC voucher hash", denom)
+	}
+
+	// Get the address from the hash of the ICS20's DenomTrace Path
+	bz, err := ibctransfertypes.ParseHexHash(denom[4:])
+	if err != nil {
+		return common.Address{}, ibctransfertypes.ErrInvalidDenomForTransfer.Wrap(err.Error())
+	}
+
+	return common.BytesToAddress(bz), nil
+}
+
+// ComputeIBCDenomTrace compute the ibc voucher denom trace associated with
+// the portID, channelID, and the given a token denomination.
+func ComputeIBCDenomTrace(portID, channelID, denom string) ibctransfertypes.DenomTrace {
+	denomTrace := ibctransfertypes.DenomTrace{
+		Path:      fmt.Sprintf("%s/%s", portID, channelID),
+		BaseDenom: denom,
+	}
+
+	return denomTrace
+}
+
+// ComputeIBCDenom compute the ibc voucher denom associated to
+// the portID, channelID, and the given a token denomination.
+func ComputeIBCDenom(portID, channelID, denom string) string {
+	return ComputeIBCDenomTrace(portID, channelID, denom).IBCDenom()
+}
+
+// ParseHexValue parses a hex string into a big.Int
 func ParseHexValue(hexStr string) *big.Int {
 	hexStr = Remove0xPrefix(hexStr)
 
@@ -113,7 +160,7 @@ func ParseHexValue(hexStr string) *big.Int {
 	return value
 }
 
-// remove0xPrefix -> removes the 0x prefix from a hex string
+// Remove0xPrefix removes the 0x prefix from a hex string
 func Remove0xPrefix(s string) string {
 	if len(s) > 1 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X') {
 		return s[2:]
@@ -121,14 +168,14 @@ func Remove0xPrefix(s string) string {
 	return s
 }
 
-// keccak256 -> calculates the keccak256 hash of a byte slice
+// Keccak256 calculates the keccak256 hash of a byte slice
 func Keccak256(data []byte) []byte {
 	hash := sha3.NewLegacyKeccak256()
 	hash.Write(data)
 	return hash.Sum(nil)
 }
 
-// calculateStorageKey -> calculates the storage key for a given address and index
+// CalculateStorageKey calculates the storage key for a given address and index
 func CalculateStorageKey(addr string, i int) string {
 	pos := fmt.Sprintf("%064x", i)
 	key := strings.ToLower(Remove0xPrefix(addr))
@@ -142,4 +189,17 @@ func CalculateStorageKey(addr string, i int) string {
 
 	storageKey := Keccak256(combinedBytes)
 	return "0x" + hex.EncodeToString(storageKey)
+}
+
+// IsContractAccount checks if the given account is a contract account
+func IsContractAccount(acc authtypes.AccountI) error {
+	contractETHAccount, ok := acc.(haqqtypes.EthAccountI)
+	if !ok {
+		return fmt.Errorf("account is not an eth account")
+	}
+
+	if contractETHAccount.Type() != haqqtypes.AccountTypeContract {
+		return fmt.Errorf("account is not a contract account")
+	}
+	return nil
 }

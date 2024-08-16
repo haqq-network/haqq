@@ -22,6 +22,9 @@ import (
 	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
+// consensusVersion defines the current x/erc20 module consensus version.
+const consensusVersion = 3
+
 // type check to ensure the interface is properly implemented
 var (
 	_ module.AppModule           = AppModule{}
@@ -43,7 +46,7 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // ConsensusVersion returns the consensus state-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
-	return 3
+	return consensusVersion
 }
 
 // RegisterInterfaces registers interfaces and implementations of the erc20 module.
@@ -133,13 +136,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	}
 }
 
-func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {
-}
-
-func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
-}
-
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 
@@ -154,10 +150,6 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 func (am AppModule) GenerateGenesisState(_ *module.SimulationState) {
-}
-
-func (am AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
-	return []simtypes.WeightedProposalContent{}
 }
 
 func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {

@@ -3,6 +3,7 @@ package utils_test
 import (
 	"time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	anteutils "github.com/haqq-network/haqq/app/ante/utils"
@@ -33,13 +34,13 @@ func (suite *AnteTestSuite) TestClaimStakingRewardsIfNecessary() {
 			malleate: func(addr sdk.AccAddress) {
 				var err error
 				suite.ctx, err = testutil.PrepareAccountsForDelegationRewards(
-					suite.T(), suite.ctx, suite.app, addr, sdk.ZeroInt(), sdk.NewInt(1e18),
+					suite.T(), suite.ctx, suite.app, addr, math.ZeroInt(), math.NewInt(1e18),
 				)
 				suite.Require().NoError(err, "failed to prepare accounts for delegation rewards")
 				suite.ctx, err = testutil.Commit(suite.ctx, suite.app, time.Second*0, nil)
 				suite.Require().NoError(err)
 			},
-			amount: sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: sdk.NewInt(1000)}},
+			amount: sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: math.NewInt(1000)}},
 			expErr: false,
 			postCheck: func(addr sdk.AccAddress) {
 				// Check that the necessary rewards are withdrawn, which means that there are no outstanding
@@ -56,17 +57,17 @@ func (suite *AnteTestSuite) TestClaimStakingRewardsIfNecessary() {
 				// assigned rewards, of which one is sufficient to cover the transaction fees and the other
 				// is not. This is because the iteration over rewards is done in a non-deterministic fashion,
 				// This means, that e.g. if reward C is sufficient, but A and B are not,
-				// all of the options [A], [B-A], [B-C-A] or [C-A] are possible to be withdrawn, which
+				// all the options [A], [B-A], [B-C-A] or [C-A] are possible to be withdrawn, which
 				// increases the complexity of assertions.
 				var err error
 				suite.ctx, err = testutil.PrepareAccountsForDelegationRewards(
-					suite.T(), suite.ctx, suite.app, addr, sdk.ZeroInt(), sdk.NewInt(1e14), sdk.NewInt(2e14),
+					suite.T(), suite.ctx, suite.app, addr, math.ZeroInt(), math.NewInt(1e14), math.NewInt(2e14),
 				)
 				suite.Require().NoError(err, "failed to prepare accounts for delegation rewards")
 				suite.ctx, err = testutil.Commit(suite.ctx, suite.app, time.Second*0, nil)
 				suite.Require().NoError(err)
 			},
-			amount: sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: sdk.NewInt(2e14)}},
+			amount: sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: math.NewInt(2e14)}},
 			expErr: false,
 			postCheck: func(addr sdk.AccAddress) {
 				balance := suite.app.BankKeeper.GetBalance(suite.ctx, addr, utils.BaseDenom)
@@ -77,13 +78,13 @@ func (suite *AnteTestSuite) TestClaimStakingRewardsIfNecessary() {
 				// are a balance of 2e14 (only withdraw reward B) or 3e14 (A+B), which is why we check for both of them.
 				// Any other balance fails the test.
 				switch {
-				case balance.Amount.Equal(sdk.NewInt(2e14)):
+				case balance.Amount.Equal(math.NewInt(2e14)):
 					suite.Require().Equal(
-						sdk.DecCoins{sdk.DecCoin{Denom: utils.BaseDenom, Amount: sdk.NewDec(1e14)}},
+						sdk.DecCoins{sdk.DecCoin{Denom: utils.BaseDenom, Amount: math.LegacyNewDec(1e14)}},
 						rewards,
 						"expected total rewards with an amount of 1e14 yet to be withdrawn",
 					)
-				case balance.Amount.Equal(sdk.NewInt(3e14)):
+				case balance.Amount.Equal(math.NewInt(3e14)):
 					suite.Require().Empty(rewards, "expected no rewards left to withdraw")
 				default:
 					suite.Require().Fail("unexpected balance", "balance: %v", balance)
@@ -95,24 +96,24 @@ func (suite *AnteTestSuite) TestClaimStakingRewardsIfNecessary() {
 			malleate: func(addr sdk.AccAddress) {
 				var err error
 				suite.ctx, err = testutil.PrepareAccountsForDelegationRewards(
-					suite.T(), suite.ctx, suite.app, addr, sdk.NewInt(1e15), sdk.NewInt(1e18),
+					suite.T(), suite.ctx, suite.app, addr, math.NewInt(1e15), math.NewInt(1e18),
 				)
 				suite.Require().NoError(err, "failed to prepare accounts for delegation rewards")
 				suite.ctx, err = testutil.Commit(suite.ctx, suite.app, time.Second*0, nil)
 				suite.Require().NoError(err)
 			},
-			amount: sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: sdk.NewInt(1000)}},
+			amount: sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: math.NewInt(1000)}},
 			expErr: false,
 			postCheck: func(addr sdk.AccAddress) {
 				// balance should be unchanged as no rewards should have been withdrawn
 				balance := suite.app.BankKeeper.GetBalance(suite.ctx, addr, utils.BaseDenom)
-				suite.Require().Equal(sdk.NewInt(1e15), balance.Amount, "expected balance to be unchanged")
+				suite.Require().Equal(math.NewInt(1e15), balance.Amount, "expected balance to be unchanged")
 
 				// No rewards should be withdrawn
 				rewards, err := testutil.GetTotalDelegationRewards(suite.ctx, suite.app.DistrKeeper, addr)
 				suite.Require().NoError(err, "failed to query delegation total rewards")
 				suite.Require().Equal(
-					sdk.DecCoins{sdk.DecCoin{Denom: utils.BaseDenom, Amount: sdk.NewDec(1e18)}},
+					sdk.DecCoins{sdk.DecCoin{Denom: utils.BaseDenom, Amount: math.LegacyNewDec(1e18)}},
 					rewards,
 					"expected total rewards with an amount of 1e18 yet to be withdrawn",
 				)
@@ -121,20 +122,20 @@ func (suite *AnteTestSuite) TestClaimStakingRewardsIfNecessary() {
 		{
 			name:        "fail - insufficient staking rewards to withdraw",
 			malleate:    func(addr sdk.AccAddress) {},
-			amount:      sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: sdk.NewInt(1000)}},
+			amount:      sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: math.NewInt(1000)}},
 			expErr:      true,
 			errContains: "insufficient staking rewards to cover transaction fees",
 		},
 		{
 			name:     "pass - zero amount to be claimed",
 			malleate: func(addr sdk.AccAddress) {},
-			amount:   sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: sdk.ZeroInt()}},
+			amount:   sdk.Coins{sdk.Coin{Denom: utils.BaseDenom, Amount: math.ZeroInt()}},
 			expErr:   false,
 		},
 		{
 			name:        "fail - wrong coin denom",
 			malleate:    func(addr sdk.AccAddress) {},
-			amount:      sdk.Coins{sdk.Coin{Denom: "wrongCoin", Amount: sdk.NewInt(1000)}},
+			amount:      sdk.Coins{sdk.Coin{Denom: "wrongCoin", Amount: math.NewInt(1000)}},
 			expErr:      true,
 			errContains: "wrong fee denomination",
 		},

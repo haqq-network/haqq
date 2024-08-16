@@ -22,6 +22,9 @@ import (
 	"github.com/haqq-network/haqq/x/epochs/types"
 )
 
+// consensusVersion defines the current x/epochs module consensus version.
+const consensusVersion = 1
+
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
@@ -148,23 +151,12 @@ func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 	am.keeper.BeginBlocker(ctx)
 }
 
-// EndBlock executes all ABCI EndBlock logic respective to the epochs module. It
-// returns no validator updates.
-func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
-}
-
 // ___________________________________________________________________________
 
 // AppModuleSimulation functions
 
 // GenerateGenesisState creates a randomized GenState of theepochs module.
 func (AppModule) GenerateGenesisState(_ *module.SimulationState) {}
-
-// ProposalContents doesn't return any content functions for governance proposals.
-func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
-	return []simtypes.WeightedProposalContent{}
-}
 
 // RegisterStoreDecoder registers a decoder for supply module's types
 func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {
@@ -176,4 +168,4 @@ func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.Weig
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+func (AppModule) ConsensusVersion() uint64 { return consensusVersion }

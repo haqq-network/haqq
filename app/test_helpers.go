@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"cosmossdk.io/math"
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
@@ -56,16 +57,17 @@ var DefaultConsensusParams = &tmproto.ConsensusParams{
 }
 
 func init() {
-	feemarkettypes.DefaultMinGasPrice = sdk.ZeroDec()
+	feemarkettypes.DefaultMinGasPrice = math.LegacyZeroDec()
 	cfg := sdk.GetConfig()
 	config.SetBech32Prefixes(cfg)
 	config.SetBip44CoinType(cfg)
 }
 
-// Setup initializes a new Evmos. A Nop logger is set in Evmos.
+// Setup initializes a new Haqq. A Nop logger is set in Haqq.
 func Setup(
 	isCheckTx bool,
 	feemarketGenesis *feemarkettypes.GenesisState,
+	chainID string,
 ) (*Haqq, []byte) {
 	privVal := mock.NewPV()
 	pubKey, _ := privVal.GetPubKey()
@@ -80,19 +82,18 @@ func Setup(
 
 	mintAmount := sdk.TokensFromConsensusPower(PremintAmount, sdk.DefaultPowerReduction)
 	mintAmount = mintAmount.Sub(sdk.DefaultPowerReduction) // for delegation
-	mintCoin := sdk.NewCoin("aISLM", mintAmount)
+	mintCoin := sdk.NewCoin(utils.BaseDenom, mintAmount)
 
 	balance := banktypes.Balance{
 		Address: acc.GetAddress().String(),
 		Coins:   sdk.NewCoins(mintCoin),
 	}
 
-	chainID := utils.MainNetChainID + "-1"
 	db := dbm.NewMemDB()
 	app := NewHaqq(
 		log.NewNopLogger(),
-		db, nil, true,
-		map[int64]bool{}, DefaultNodeHome, 5,
+		db, nil, true, map[int64]bool{},
+		DefaultNodeHome, 5,
 		encoding.MakeConfig(ModuleBasics),
 		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
 		baseapp.SetChainID(chainID),
@@ -152,15 +153,15 @@ func GenesisStateWithValSet(app *Haqq, genesisState types.GenesisState,
 			Jailed:            false,
 			Status:            stakingtypes.Bonded,
 			Tokens:            bondAmt,
-			DelegatorShares:   sdk.OneDec(),
+			DelegatorShares:   math.LegacyOneDec(),
 			Description:       stakingtypes.Description{},
 			UnbondingHeight:   int64(0),
 			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
+			Commission:        stakingtypes.NewCommission(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
+			MinSelfDelegation: math.ZeroInt(),
 		}
 		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), math.LegacyOneDec()))
 
 	}
 	// set validators and delegations
@@ -194,14 +195,18 @@ func GenesisStateWithValSet(app *Haqq, genesisState types.GenesisState,
 }
 
 // SetupTestingApp initializes the IBC-go testing application
+// need to keep this design to comply with the ibctesting SetupTestingApp func
+// and be able to set the chainID for the tests properly
 func SetupTestingApp(chainID string) func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		db := dbm.NewMemDB()
 		cfg := encoding.MakeConfig(ModuleBasics)
 		app := NewHaqq(
-			log.NewNopLogger(), db, nil, true,
-			map[int64]bool{}, DefaultNodeHome, 5,
-			cfg, simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
+			log.NewNopLogger(),
+			db, nil, true,
+			map[int64]bool{},
+			DefaultNodeHome, 5, cfg,
+			simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
 			baseapp.SetChainID(chainID),
 		)
 		return app, NewDefaultGenesisState()

@@ -1,6 +1,7 @@
 package evm_test
 
 import (
+	"math"
 	"math/big"
 
 	sdkmath "cosmossdk.io/math"
@@ -39,7 +40,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"invalid tx type",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.NewDec(10)
+				params.MinGasPrice = sdkmath.LegacyNewDec(10)
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -52,7 +53,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"wrong tx type",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.NewDec(10)
+				params.MinGasPrice = sdkmath.LegacyNewDec(10)
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 				testMsg := banktypes.MsgSend{
@@ -70,7 +71,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"valid: invalid tx type with MinGasPrices = 0",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.ZeroDec()
+				params.MinGasPrice = sdkmath.LegacyZeroDec()
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 				return &testutiltx.InvalidTx{}
@@ -82,7 +83,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"valid legacy tx with MinGasPrices = 0, gasPrice = 0",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.ZeroDec()
+				params.MinGasPrice = sdkmath.LegacyZeroDec()
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -96,7 +97,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"valid legacy tx with MinGasPrices = 0, gasPrice > 0",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.ZeroDec()
+				params.MinGasPrice = sdkmath.LegacyZeroDec()
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -110,7 +111,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"valid legacy tx with MinGasPrices = 10, gasPrice = 10",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.NewDec(10)
+				params.MinGasPrice = sdkmath.LegacyNewDec(10)
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -124,7 +125,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"invalid legacy tx with MinGasPrices = 10, gasPrice = 0",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.NewDec(10)
+				params.MinGasPrice = sdkmath.LegacyNewDec(10)
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -138,7 +139,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"valid dynamic tx with MinGasPrices = 0, EffectivePrice = 0",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.ZeroDec()
+				params.MinGasPrice = sdkmath.LegacyZeroDec()
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -152,7 +153,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"valid dynamic tx with MinGasPrices = 0, EffectivePrice > 0",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.ZeroDec()
+				params.MinGasPrice = sdkmath.LegacyZeroDec()
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -166,7 +167,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"valid dynamic tx with MinGasPrices < EffectivePrice",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.NewDec(10)
+				params.MinGasPrice = sdkmath.LegacyNewDec(10)
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -180,7 +181,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"invalid dynamic tx with MinGasPrices > EffectivePrice",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.NewDec(10)
+				params.MinGasPrice = sdkmath.LegacyNewDec(10)
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -194,7 +195,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"invalid dynamic tx with MinGasPrices > BaseFee, MinGasPrices > EffectivePrice",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.NewDec(100)
+				params.MinGasPrice = sdkmath.LegacyNewDec(100)
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -213,7 +214,7 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			"valid dynamic tx with MinGasPrices > BaseFee, MinGasPrices < EffectivePrice (big GasTipCap)",
 			func() sdk.Tx {
 				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
-				params.MinGasPrice = sdk.NewDec(100)
+				params.MinGasPrice = sdkmath.LegacyNewDec(100)
 				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
 				suite.Require().NoError(err)
 
@@ -227,6 +228,20 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 			},
 			true,
 			"",
+		},
+		{
+			"panic bug, requiredFee > math.MaxInt64",
+			func() sdk.Tx {
+				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params.MinGasPrice = sdkmath.LegacyNewDec(math.MaxInt64)
+				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				suite.Require().NoError(err)
+
+				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), nil, big.NewInt(math.MaxInt64), big.NewInt(100), &emptyAccessList)
+				return suite.CreateTestTx(msg, privKey, 1, false)
+			},
+			false,
+			"provided fee < minimum global fee",
 		},
 	}
 

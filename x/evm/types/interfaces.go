@@ -41,11 +41,12 @@ type StakingKeeper interface {
 	GetValidatorByConsAddr(ctx sdk.Context, consAddr sdk.ConsAddress) (validator stakingtypes.Validator, found bool)
 }
 
-// FeeMarketKeeper
+// FeeMarketKeeper defines the expected interface of feemarket keeper
 type FeeMarketKeeper interface {
 	GetBaseFee(ctx sdk.Context) *big.Int
 	GetParams(ctx sdk.Context) feemarkettypes.Params
 	AddTransientGasWanted(ctx sdk.Context, gasWanted uint64) (uint64, error)
+	CalculateBaseFee(ctx sdk.Context) *big.Int
 }
 
 // Event Hooks

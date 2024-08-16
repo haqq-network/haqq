@@ -46,7 +46,7 @@ func (app *Haqq) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	validators, err := staking.WriteValidators(ctx, &app.StakingKeeper)
+	validators, err := staking.WriteValidators(ctx, app.StakingKeeper.Keeper)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
@@ -66,7 +66,7 @@ func (app *Haqq) ExportAppStateAndValidators(
 func (app *Haqq) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) error {
 	applyAllowedAddrs := false
 
-	// check if there is a allowed address list
+	// check if there is an allowed address list
 	if len(jailAllowedAddrs) > 0 {
 		applyAllowedAddrs = true
 	}

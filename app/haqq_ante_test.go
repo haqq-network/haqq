@@ -72,7 +72,7 @@ func TestHaqqAnteHandlerDecorator(t *testing.T) {
 	)
 	app.Commit()
 
-	handler := NewHaqqAnteHandlerDecorator(app.StakingKeeper, func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
+	handler := NewHaqqAnteHandlerDecorator(*app.StakingKeeper.Keeper, func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
 		return ctx, nil
 	})
 

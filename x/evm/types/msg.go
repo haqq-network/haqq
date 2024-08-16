@@ -73,16 +73,7 @@ func newMsgEthereumTx(
 	}
 
 	switch {
-	case tx.Accesses == nil:
-		txData = &LegacyTx{
-			To:       toAddr,
-			Amount:   amt,
-			GasPrice: gp,
-			Nonce:    tx.Nonce,
-			GasLimit: tx.GasLimit,
-			Data:     tx.Input,
-		}
-	case tx.Accesses != nil && tx.GasFeeCap != nil && tx.GasTipCap != nil:
+	case tx.GasFeeCap != nil:
 		gtc := sdkmath.NewIntFromBigInt(tx.GasTipCap)
 		gfc := sdkmath.NewIntFromBigInt(tx.GasFeeCap)
 
@@ -109,6 +100,14 @@ func newMsgEthereumTx(
 			Accesses: NewAccessList(tx.Accesses),
 		}
 	default:
+		txData = &LegacyTx{
+			To:       toAddr,
+			Amount:   amt,
+			GasPrice: gp,
+			Nonce:    tx.Nonce,
+			GasLimit: tx.GasLimit,
+			Data:     tx.Input,
+		}
 	}
 
 	dataAny, err := PackTxData(txData)

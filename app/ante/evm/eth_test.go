@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
@@ -196,6 +197,9 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 	tx := evmtypes.NewTx(ethContractCreationTxParams)
 	tx.From = addr.Hex()
 
+	ethContractCreationTxParams.GasLimit = 55000
+	zeroFeeTx := makeZeroFeeTx(addr, *ethContractCreationTxParams)
+
 	ethCfg := suite.app.EvmKeeper.GetParams(suite.ctx).
 		ChainConfig.EthereumConfig(chainID)
 	baseFee := suite.app.EvmKeeper.GetBaseFee(suite.ctx, ethCfg)
@@ -241,6 +245,8 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 	dynamicFeeTxPriority := int64(1)
 
 	var vmdb *statedb.StateDB
+
+	initialBalance := suite.app.BankKeeper.GetBalance(suite.ctx, addr.Bytes(), utils.BaseDenom)
 
 	testCases := []struct {
 		name        string
@@ -369,13 +375,12 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 			tx2,
 			tx2GasLimit, // it's capped
 			func(ctx sdk.Context) sdk.Context {
-				ctx, err := testutil.PrepareAccountsForDelegationRewards(
-					suite.T(), ctx, suite.app, sdk.AccAddress(addr.Bytes()), sdk.ZeroInt(), sdk.NewInt(1e16),
+				return suite.prepareAccount(
+					ctx,
+					addr.Bytes(),
+					sdkmath.ZeroInt(),
+					sdkmath.NewInt(1e16),
 				)
-				suite.Require().NoError(err, "error while preparing accounts for delegation rewards")
-				return ctx.
-					WithBlockGasMeter(sdk.NewGasMeter(1e19)).
-					WithBlockHeight(ctx.BlockHeight() + 1)
 			},
 			true, false,
 			tx2Priority,
@@ -396,20 +401,19 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 			tx2,
 			tx2GasLimit, // it's capped
 			func(ctx sdk.Context) sdk.Context {
-				ctx, err := testutil.PrepareAccountsForDelegationRewards(
-					suite.T(), ctx, suite.app, sdk.AccAddress(addr.Bytes()), sdk.NewInt(1e16), sdk.NewInt(1e16),
+				return suite.prepareAccount(
+					ctx,
+					addr.Bytes(),
+					sdkmath.NewInt(1e16),
+					sdkmath.NewInt(1e16),
 				)
-				suite.Require().NoError(err, "error while preparing accounts for delegation rewards")
-				return ctx.
-					WithBlockGasMeter(sdk.NewGasMeter(1e19)).
-					WithBlockHeight(ctx.BlockHeight() + 1)
 			},
 			true, false,
 			tx2Priority,
 			func(ctx sdk.Context) {
 				balance := suite.app.BankKeeper.GetBalance(ctx, sdk.AccAddress(addr.Bytes()), utils.BaseDenom)
 				suite.Require().True(
-					balance.Amount.LT(sdk.NewInt(1e16)),
+					balance.Amount.LT(sdkmath.NewInt(1e16)),
 					"the fees are paid using the available balance, so it should be lower than the initial balance",
 				)
 
@@ -419,10 +423,40 @@ func (suite *AnteTestSuite) TestEthGasConsumeDecorator() {
 				// NOTE: the total rewards should be the same as after the setup, since
 				// the fees are paid using the account balance
 				suite.Require().Equal(
-					sdk.NewDecCoins(sdk.NewDecCoin(utils.BaseDenom, sdk.NewInt(1e16))),
+					sdk.NewDecCoins(sdk.NewDecCoin(utils.BaseDenom, sdkmath.NewInt(1e16))),
 					rewards,
 					"the total rewards should be the same as after the setup, since the fees are paid using the account balance",
 				)
+			},
+		},
+		{
+			"success - zero fees (no base fee)",
+			zeroFeeTx,
+			zeroFeeTx.GetGas(),
+			func(ctx sdk.Context) sdk.Context {
+				suite.disableBaseFee(ctx)
+				return ctx
+			},
+			true, false,
+			0,
+			func(ctx sdk.Context) {
+				finalBalance := suite.app.BankKeeper.GetBalance(ctx, addr.Bytes(), utils.BaseDenom)
+				suite.Require().Equal(initialBalance, finalBalance)
+			},
+		},
+		{
+			"success - zero fees (no base fee) - legacy tx",
+			makeZeroFeeTx(addr, *eth2TxContractParams),
+			tx2GasLimit,
+			func(ctx sdk.Context) sdk.Context {
+				suite.disableBaseFee(ctx)
+				return ctx
+			},
+			true, false,
+			0,
+			func(ctx sdk.Context) {
+				finalBalance := suite.app.BankKeeper.GetBalance(ctx, addr.Bytes(), utils.BaseDenom)
+				suite.Require().Equal(initialBalance, finalBalance)
 			},
 		},
 	}

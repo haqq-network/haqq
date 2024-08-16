@@ -27,7 +27,7 @@ func TestSanitizeERC20Name(t *testing.T) {
 		{"name contains '/'", "USD/Coin", "USD/Coin", true},
 		{"name contains '/'", "/SlashCoin", "SlashCoin", true},
 		{"name contains '/'", "O/letter", "O/letter", true},
-		{"name contains '/'", "Or/2letters", "Or/2letters", true},
+		{"name contains '/'", "Ot/2letters", "Ot/2letters", true},
 		{"name contains '/'", "ibc/valid", "valid", true},
 		{"name contains '/'", "erc20/valid", "valid", true},
 		{"name contains '/'", "ibc/erc20/valid", "valid", true},

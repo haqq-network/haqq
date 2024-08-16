@@ -72,11 +72,12 @@ func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
 	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
 
 	// Init app
-	suite.app, _ = app.Setup(false, nil)
+	chainID := utils.MainNetChainID + "-1"
+	suite.app, _ = app.Setup(false, nil, chainID)
 
 	// Set Context
 	header := testutil.NewHeader(
-		1, time.Now().UTC(), utils.MainNetChainID+"-1", suite.consAddress, nil, nil,
+		1, time.Now().UTC(), chainID, suite.consAddress, nil, nil,
 	)
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
 
@@ -122,7 +123,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t *testing.T) {
 	valAddr := sdk.ValAddress(suite.address.Bytes())
 	validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
-	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
+	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper.Keeper, suite.ctx, validator, true)
 	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)

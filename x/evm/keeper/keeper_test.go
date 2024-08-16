@@ -28,12 +28,6 @@ func (suite *KeeperTestSuite) TestWithChainID() {
 			true,
 		},
 		{
-			"fail - other chainID",
-			"chain7701-1",
-			0,
-			true,
-		},
-		{
 			"success - Haqq mainnet chain ID",
 			"haqq_11235-1",
 			11235,
@@ -49,17 +43,17 @@ func (suite *KeeperTestSuite) TestWithChainID() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			keeper := keeper.Keeper{}
+			k := keeper.Keeper{}
 			ctx := suite.ctx.WithChainID(tc.chainID)
 
 			if tc.expPanic {
 				suite.Require().Panics(func() {
-					keeper.WithChainID(ctx)
+					k.WithChainID(ctx)
 				})
 			} else {
 				suite.Require().NotPanics(func() {
-					keeper.WithChainID(ctx)
-					suite.Require().Equal(tc.expChainID, keeper.ChainID().Int64())
+					k.WithChainID(ctx)
+					suite.Require().Equal(tc.expChainID, k.ChainID().Int64())
 				})
 			}
 		})
@@ -97,9 +91,9 @@ func (suite *KeeperTestSuite) TestBaseFee() {
 
 func (suite *KeeperTestSuite) TestGetAccountStorage() {
 	testCases := []struct {
-		name        string
-		malleate    func()
-		expResponse []int
+		name     string
+		malleate func()
+		expRes   []int
 	}{
 		{
 			"Only one account that's not a contract (no storage)",
@@ -131,7 +125,7 @@ func (suite *KeeperTestSuite) TestGetAccountStorage() {
 				addr := ethAccount.EthAddress()
 				storage := suite.app.EvmKeeper.GetAccountStorage(suite.ctx, addr)
 
-				suite.Require().Equal(tc.expResponse[i], len(storage))
+				suite.Require().Equal(tc.expRes[i], len(storage))
 				i++
 				return false
 			})

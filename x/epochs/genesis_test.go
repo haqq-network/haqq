@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	simapp "github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/epochs"
 	"github.com/haqq-network/haqq/x/epochs/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
@@ -19,7 +20,8 @@ func TestEpochsExportGenesis(t *testing.T) {
 	feemarketGenesis.Params.EnableHeight = 1
 	feemarketGenesis.Params.NoBaseFee = false
 
-	app, _ := simapp.Setup(false, feemarketGenesis)
+	chainID := utils.TestEdge2ChainID + "-3"
+	app, _ := simapp.Setup(false, feemarketGenesis, chainID)
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 
 	chainStartTime := ctx.BlockTime()
@@ -50,7 +52,8 @@ func TestEpochsInitGenesis(t *testing.T) {
 	feemarketGenesis.Params.EnableHeight = 1
 	feemarketGenesis.Params.NoBaseFee = false
 
-	app, _ := simapp.Setup(false, feemarketGenesis)
+	chainID := utils.TestEdge2ChainID + "-3"
+	app, _ := simapp.Setup(false, feemarketGenesis, chainID)
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 
 	// On init genesis, default epochs information is set
