@@ -14,6 +14,24 @@ import (
 )
 
 const (
+	// DefaultAPIEnable is the default value for the parameter that defines if the cosmos REST API server is enabled
+	DefaultAPIEnable = false
+
+	// DefaultGRPCEnable is the default value for the parameter that defines if the gRPC server is enabled
+	DefaultGRPCEnable = false
+
+	// DefaultGRPCWebEnable is the default value for the parameter that defines if the gRPC web server is enabled
+	DefaultGRPCWebEnable = false
+
+	// DefaultJSONRPCEnable is the default value for the parameter that defines if the JSON-RPC server is enabled
+	DefaultJSONRPCEnable = false
+
+	// DefaultRosettaEnable is the default value for the parameter that defines if the Rosetta API server is enabled
+	DefaultRosettaEnable = false
+
+	// DefaultTelemetryEnable is the default value for the parameter that defines if the telemetry is enabled
+	DefaultTelemetryEnable = false
+
 	// DefaultGRPCAddress is the default address the gRPC server binds to.
 	DefaultGRPCAddress = "0.0.0.0:9900"
 
@@ -37,6 +55,9 @@ const (
 
 	// DefaultGasCap is the default cap on gas that can be used in eth_call/estimateGas
 	DefaultGasCap uint64 = 25000000
+
+	// DefaultJSONRPCAllowInsecureUnlock is true
+	DefaultJSONRPCAllowInsecureUnlock bool = true
 
 	// DefaultFilterCap is the default cap for total number of filters that can be created
 	DefaultFilterCap int32 = 200
@@ -67,6 +88,9 @@ const (
 
 	// DefaultMaxOpenConnections represents the amount of open connections (unlimited = 0)
 	DefaultMaxOpenConnections = 0
+
+	// DefaultGasAdjustment value to use as default in gas-adjustment flag
+	DefaultGasAdjustment = 1.3
 )
 
 var evmTracers = []string{"json", "markdown", "struct", "access_list"}

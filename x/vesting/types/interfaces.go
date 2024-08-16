@@ -6,19 +6,33 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
+
+type VestingKeeper interface {
+	ApplyVestingSchedule(
+		ctx sdk.Context,
+		funder, funded sdk.AccAddress,
+		coins sdk.Coins,
+		startTime time.Time,
+		lockupPeriods, vestingPeriods sdkvesting.Periods,
+		merge bool,
+	) (vestingAcc *ClawbackVestingAccount, newAccountCreated, wasMerged bool, err error)
+}
 
 // AccountKeeper defines the expected interface contract the vesting module
 // requires for storing accounts.
 type AccountKeeper interface {
 	GetAllAccounts(ctx sdk.Context) (accounts []authtypes.AccountI)
 	GetModuleAccount(ctx sdk.Context, moduleName string) authtypes.ModuleAccountI
+	GetModuleAddress(name string) sdk.AccAddress
 	GetAccount(sdk.Context, sdk.AccAddress) authtypes.AccountI
 	SetAccount(sdk.Context, authtypes.AccountI)
 	NewAccount(ctx sdk.Context, acc authtypes.AccountI) authtypes.AccountI
 	NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI
-	IterateAccounts(ctx sdk.Context, cb func(account authtypes.AccountI) bool)
+	IterateAccounts(ctx sdk.Context, process func(authtypes.AccountI) bool)
+	RemoveAccount(ctx sdk.Context, acc authtypes.AccountI)
 }
 
 // BankKeeper defines the expected interface contract the vesting module requires
@@ -56,7 +70,7 @@ type StakingKeeper interface {
 	SetDelegation(ctx sdk.Context, delegation stakingtypes.Delegation)
 	RemoveDelegation(ctx sdk.Context, delegation stakingtypes.Delegation) error
 	GetRedelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) []stakingtypes.Redelegation
-	SetRedelegationEntry(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorSrcAddr, validatorDstAddr sdk.ValAddress, creationHeight int64, minTime time.Time, balance math.Int, sharesSrc, sharesDst sdk.Dec) stakingtypes.Redelegation
+	SetRedelegationEntry(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorSrcAddr, validatorDstAddr sdk.ValAddress, creationHeight int64, minTime time.Time, balance math.Int, sharesSrc, sharesDst math.LegacyDec) stakingtypes.Redelegation
 	InsertRedelegationQueue(ctx sdk.Context, red stakingtypes.Redelegation, completionTime time.Time)
 	SetRedelegation(ctx sdk.Context, red stakingtypes.Redelegation)
 	RemoveRedelegation(ctx sdk.Context, red stakingtypes.Redelegation)

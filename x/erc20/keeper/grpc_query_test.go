@@ -12,8 +12,8 @@ import (
 
 func (suite *KeeperTestSuite) TestTokenPairs() {
 	var (
-		req         *types.QueryTokenPairsRequest
-		expResponse *types.QueryTokenPairsResponse
+		req    *types.QueryTokenPairsRequest
+		expRes *types.QueryTokenPairsResponse
 	)
 
 	testCases := []struct {
@@ -25,7 +25,7 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 			"no pairs registered",
 			func() {
 				req = &types.QueryTokenPairsRequest{}
-				expResponse = &types.QueryTokenPairsResponse{Pagination: &query.PageResponse{}}
+				expRes = &types.QueryTokenPairsResponse{Pagination: &query.PageResponse{}}
 			},
 			true,
 		},
@@ -38,7 +38,7 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
-				expResponse = &types.QueryTokenPairsResponse{
+				expRes = &types.QueryTokenPairsResponse{
 					Pagination: &query.PageResponse{Total: 1},
 					TokenPairs: []types.TokenPair{pair},
 				}
@@ -54,7 +54,7 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair2)
 
-				expResponse = &types.QueryTokenPairsResponse{
+				expRes = &types.QueryTokenPairsResponse{
 					Pagination: &query.PageResponse{Total: 2},
 					TokenPairs: []types.TokenPair{pair, pair2},
 				}
@@ -72,8 +72,8 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 			res, err := suite.queryClient.TokenPairs(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(expResponse.Pagination, res.Pagination)
-				suite.Require().ElementsMatch(expResponse.TokenPairs, res.TokenPairs)
+				suite.Require().Equal(expRes.Pagination, res.Pagination)
+				suite.Require().ElementsMatch(expRes.TokenPairs, res.TokenPairs)
 			} else {
 				suite.Require().Error(err)
 			}
@@ -83,8 +83,8 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 
 func (suite *KeeperTestSuite) TestTokenPair() {
 	var (
-		req     *types.QueryTokenPairRequest
-		express *types.QueryTokenPairResponse
+		req    *types.QueryTokenPairRequest
+		expRes *types.QueryTokenPairResponse
 	)
 
 	testCases := []struct {
@@ -96,7 +96,7 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 			"invalid token address",
 			func() {
 				req = &types.QueryTokenPairRequest{}
-				express = &types.QueryTokenPairResponse{}
+				expRes = &types.QueryTokenPairResponse{}
 			},
 			false,
 		},
@@ -106,7 +106,7 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 				req = &types.QueryTokenPairRequest{
 					Token: utiltx.GenerateAddress().Hex(),
 				}
-				express = &types.QueryTokenPairResponse{}
+				expRes = &types.QueryTokenPairResponse{}
 			},
 			false,
 		},
@@ -122,7 +122,7 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 				req = &types.QueryTokenPairRequest{
 					Token: pair.Erc20Address,
 				}
-				express = &types.QueryTokenPairResponse{TokenPair: pair}
+				expRes = &types.QueryTokenPairResponse{TokenPair: pair}
 			},
 			true,
 		},
@@ -137,7 +137,7 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 				req = &types.QueryTokenPairRequest{
 					Token: pair.Erc20Address,
 				}
-				express = &types.QueryTokenPairResponse{TokenPair: pair}
+				expRes = &types.QueryTokenPairResponse{TokenPair: pair}
 			},
 			false,
 		},
@@ -152,7 +152,7 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 			res, err := suite.queryClient.TokenPair(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(express, res)
+				suite.Require().Equal(expRes, res)
 			} else {
 				suite.Require().Error(err)
 			}

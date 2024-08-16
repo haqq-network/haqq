@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/spf13/cobra"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/simapp/params"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -173,7 +175,7 @@ var _ = Describe("Ledger CLI and keyring functionality: ", func() {
 						s.app.BankKeeper,
 						s.accAddr,
 						sdk.NewCoins(
-							sdk.NewCoin("aISLM", sdk.NewInt(100000000000000)),
+							sdk.NewCoin("aISLM", math.NewInt(100000000000000)),
 						),
 					)
 					s.Require().NoError(err)
@@ -198,7 +200,7 @@ var _ = Describe("Ledger CLI and keyring functionality: ", func() {
 					cmd.SetArgs([]string{
 						ledgerKey,
 						receiverAccAddr.String(),
-						sdk.NewCoin("aISLM", sdk.NewInt(1000)).String(),
+						sdk.NewCoin("aISLM", math.NewInt(1000)).String(),
 						s.FormatFlag(flags.FlagUseLedger),
 						s.FormatFlag(flags.FlagSkipConfirmation),
 					})
@@ -216,7 +218,7 @@ var _ = Describe("Ledger CLI and keyring functionality: ", func() {
 					cmd.SetArgs([]string{
 						ledgerKey,
 						receiverAccAddr.String(),
-						sdk.NewCoin("aISLM", sdk.NewInt(1000)).String(),
+						sdk.NewCoin("aISLM", math.NewInt(1000)).String(),
 						s.FormatFlag(flags.FlagUseLedger),
 						s.FormatFlag(flags.FlagSkipConfirmation),
 					})

@@ -11,7 +11,7 @@ import (
 
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
+	proto "github.com/cosmos/gogoproto/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -176,7 +176,7 @@ func (m *ExtraEIPs) GetEIPs() []int64 {
 	return nil
 }
 
-// V4ChainConfig defines the Ethereum V4ChainConfig parameters using *sdk.Int values
+// V4ChainConfig defines the Ethereum V4ChainConfig parameters using *sdkmath.Int values
 // instead of *big.Int.
 type V4ChainConfig struct {
 	// homestead_block switch (nil no fork, 0 = already homestead)

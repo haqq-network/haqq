@@ -33,6 +33,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 
+	"cosmossdk.io/math"
 	simappparams "cosmossdk.io/simapp/params"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/store/streaming"
@@ -86,8 +87,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	sdkstaking "github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
@@ -153,12 +153,16 @@ import (
 	"github.com/haqq-network/haqq/x/liquidvesting"
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	"github.com/haqq-network/haqq/x/staking"
+	stakingkeeper "github.com/haqq-network/haqq/x/staking/keeper"
 	"github.com/haqq-network/haqq/x/ucdao"
 	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 	"github.com/haqq-network/haqq/x/vesting"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+
+	"github.com/haqq-network/haqq/precompiles/common"
 
 	v170 "github.com/haqq-network/haqq/app/upgrades/v1.7.0"
 	v171 "github.com/haqq-network/haqq/app/upgrades/v1.7.1"
@@ -169,6 +173,7 @@ import (
 	v176 "github.com/haqq-network/haqq/app/upgrades/v1.7.6"
 	v177 "github.com/haqq-network/haqq/app/upgrades/v1.7.7"
 	v178 "github.com/haqq-network/haqq/app/upgrades/v1.7.8"
+	v180 "github.com/haqq-network/haqq/app/upgrades/v1.8.0"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -193,7 +198,7 @@ func init() {
 	feemarkettypes.DefaultMinGasPrice = MinGasPrices
 	feemarkettypes.DefaultMinGasMultiplier = MinGasMultiplier
 	// modify default min commission to 5%
-	stakingtypes.DefaultMinCommissionRate = sdk.NewDecWithPrec(5, 2)
+	stakingtypes.DefaultMinCommissionRate = math.LegacyNewDecWithPrec(5, 2)
 }
 
 const (
@@ -214,11 +219,11 @@ var (
 		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
-		staking.AppModuleBasic{},
+		staking.AppModuleBasic{AppModuleBasic: &sdkstaking.AppModuleBasic{}},
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
 			[]govclient.ProposalHandler{
-				paramsclient.ProposalHandler /*distrclient.ProposalHandler, */, upgradeclient.LegacyProposalHandler, upgradeclient.LegacyCancelProposalHandler,
+				paramsclient.ProposalHandler, upgradeclient.LegacyProposalHandler, upgradeclient.LegacyCancelProposalHandler,
 				ibcclientclient.UpdateClientProposalHandler, ibcclientclient.UpgradeProposalHandler,
 				// Evmos proposal types
 				erc20client.RegisterCoinProposalHandler,
@@ -264,11 +269,6 @@ var (
 		vestingtypes.ModuleName:        nil, // Add vesting module account
 		liquidvestingtypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
 		ucdaotypes.ModuleName:          nil,
-	}
-
-	// module accounts that are allowed to receive tokens
-	allowedReceivingModAcc = map[string]bool{
-		distrtypes.ModuleName: true,
 	}
 )
 
@@ -492,11 +492,13 @@ func NewHaqq(
 		app.GetSubspace(feemarkettypes.ModuleName),
 	)
 
-	app.EvmKeeper = evmkeeper.NewKeeper(
+	evmKeeper := evmkeeper.NewKeeper(
 		appCodec, keys[evmtypes.StoreKey], tkeys[evmtypes.TransientKey], authtypes.NewModuleAddress(govtypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, stakingKeeper, app.FeeMarketKeeper,
 		tracer, app.GetSubspace(evmtypes.ModuleName),
 	)
+
+	app.EvmKeeper = evmKeeper
 
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -507,7 +509,6 @@ func NewHaqq(
 	govRouter := govv1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
-		// AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(&app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper))
@@ -539,16 +540,18 @@ func NewHaqq(
 			app.SlashingKeeper.Hooks(),
 		),
 	)
+
 	app.StakingKeeper = *stakingKeeper
 
 	app.VestingKeeper = vestingkeeper.NewKeeper(
 		keys[vestingtypes.StoreKey], appCodec,
-		app.AccountKeeper, app.BankKeeper, app.StakingKeeper,
+		app.AccountKeeper, app.BankKeeper, *app.StakingKeeper.Keeper,
 	)
 
 	app.Erc20Keeper = erc20keeper.NewKeeper(
 		keys[erc20types.StoreKey], appCodec, authtypes.NewModuleAddress(govtypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, app.EvmKeeper, app.StakingKeeper,
+		app.AuthzKeeper, &app.TransferKeeper,
 	)
 
 	app.LiquidVestingKeeper = liquidvestingkeeper.NewKeeper(
@@ -608,6 +611,22 @@ func NewHaqq(
 		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
 	)
 
+	chainID := bApp.ChainID()
+	// We call this after setting the hooks to ensure that the hooks are set on the keeper
+	evmKeeper.WithPrecompiles(
+		evmkeeper.AvailablePrecompiles(
+			chainID,
+			*stakingKeeper,
+			app.DistrKeeper,
+			app.BankKeeper,
+			app.Erc20Keeper,
+			app.VestingKeeper,
+			app.AuthzKeeper,
+			app.TransferKeeper,
+			app.IBCKeeper.ChannelKeeper,
+		),
+	)
+
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
@@ -645,11 +664,12 @@ func NewHaqq(
 	)
 	transferStack = erc20.NewIBCMiddleware(app.Erc20Keeper, transferStack)
 
-	// // Create static IBC router, add transfer route, then set and seal it
+	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, transferStack)
+
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -703,16 +723,16 @@ func NewHaqq(
 		// Evmos app modules
 		erc20.NewAppModule(app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(erc20types.ModuleName)),
 		epochs.NewAppModule(appCodec, app.EpochsKeeper),
-		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper.Keeper),
 		liquidvesting.NewAppModule(appCodec, app.LiquidVestingKeeper, app.AccountKeeper, app.BankKeeper, app.Erc20Keeper),
 
 		// Haqq app modules
-		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, app.StakingKeeper),
+		coinomics.NewAppModule(app.CoinomicsKeeper, app.AccountKeeper, *app.StakingKeeper.Keeper),
 		ucdao.NewAppModule(appCodec, app.DaoKeeper, app.GetSubspace(ucdaotypes.ModuleName)),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
-	// there is nothing left over in the validator fee pool, so as to keep the
+	// there is nothing left over in the validator fee pool, to keep the
 	// CanWithdrawInvariant invariant.
 	// NOTE: upgrade module must go first to handle software upgrades.
 	// NOTE: staking module is required if HistoricalEntries param > 0.
@@ -744,9 +764,9 @@ func NewHaqq(
 		vestingtypes.ModuleName,
 		erc20types.ModuleName,
 		coinomicstypes.ModuleName,
-		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
 		ucdaotypes.ModuleName,
+		consensusparamtypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -781,15 +801,15 @@ func NewHaqq(
 
 		// Haqq modules
 		coinomicstypes.ModuleName,
-		consensusparamtypes.ModuleName,
 		liquidvestingtypes.ModuleName,
 		ucdaotypes.ModuleName,
+		consensusparamtypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
 	// NOTE: Capability module must occur first so that it can initialize any capabilities
-	// so that other modules that want to create or claim capabilities afterwards in InitChain
+	// so that other modules that want to create or claim capabilities afterward in InitChain
 	// can do so safely.
 	app.mm.SetOrderInitGenesis(
 		// SDK modules
@@ -797,7 +817,6 @@ func NewHaqq(
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
-		// NOTE: staking requires the claiming hook
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
@@ -883,7 +902,7 @@ func NewHaqq(
 	// Finally start the tpsCounter.
 	app.tpsCounter = newTPSCounter(logger)
 	go func() {
-		// Unfortunately golangci-lint is so pedantic
+		// Unfortunately golangci-lint is so pedantic,
 		// so we have to ignore this error explicitly.
 		_ = app.tpsCounter.start(context.Background())
 	}()
@@ -911,11 +930,12 @@ func (app *Haqq) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
 		MaxTxGasWanted:         maxGasWanted,
 		TxFeeChecker:           ethante.NewDynamicFeeChecker(app.EvmKeeper),
 	}
+
 	if err := options.Validate(); err != nil {
 		panic(err)
 	}
 
-	app.SetAnteHandler(NewHaqqAnteHandlerDecorator(app.StakingKeeper, ante.NewAnteHandler(options)))
+	app.SetAnteHandler(NewHaqqAnteHandlerDecorator(*app.StakingKeeper.Keeper, ante.NewAnteHandler(options)))
 }
 
 func (app *Haqq) setPostHandler() {
@@ -942,7 +962,7 @@ func (app *Haqq) EndBlocker(ctx sdk.Context, req abci.RequestEndBlock) abci.Resp
 	return app.mm.EndBlock(ctx, req)
 }
 
-// We are intentionally decomposing the DeliverTx method so as to calculate the transactions per second.
+// DeliverTx We are intentionally decomposing this method to calculate the transactions per second.
 func (app *Haqq) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliverTx) {
 	defer func() {
 		// TODO: Record the count along with the code and or reason so as to display
@@ -953,7 +973,6 @@ func (app *Haqq) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliverT
 			app.tpsCounter.incrementSuccess()
 		}
 	}()
-
 	return app.BaseApp.DeliverTx(req)
 }
 
@@ -977,12 +996,11 @@ func (app *Haqq) LoadHeight(height int64) error {
 // ModuleAccountAddrs returns all the app's module account addresses.
 func (app *Haqq) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
-	accs := make([]string, 0, len(maccPerms))
 
+	accs := make([]string, 0, len(maccPerms))
 	for k := range maccPerms {
 		accs = append(accs, k)
 	}
-
 	sort.Strings(accs)
 
 	for _, acc := range accs {
@@ -996,16 +1014,19 @@ func (app *Haqq) ModuleAccountAddrs() map[string]bool {
 // allowed to receive external tokens.
 func (app *Haqq) BlockedAddrs() map[string]bool {
 	blockedAddrs := make(map[string]bool)
-	accs := make([]string, 0, len(maccPerms))
 
+	accs := make([]string, 0, len(maccPerms))
 	for k := range maccPerms {
 		accs = append(accs, k)
 	}
-
 	sort.Strings(accs)
 
 	for _, acc := range accs {
-		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
+		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = true
+	}
+
+	for _, precompile := range common.DefaultPrecompilesBech32 {
+		blockedAddrs[precompile] = true
 	}
 
 	return blockedAddrs
@@ -1091,6 +1112,7 @@ func (app *Haqq) RegisterTxService(clientCtx client.Context) {
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
 }
 
+// RegisterTendermintService implements the Application.RegisterTendermintService method.
 func (app *Haqq) RegisterTendermintService(clientCtx client.Context) {
 	tmservice.RegisterTendermintService(
 		clientCtx,
@@ -1238,7 +1260,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	// v1.7.6 Turn off liquid vesting
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v176.UpgradeName,
-		v176.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.DaoKeeper, app.LiquidVestingKeeper, app.Erc20Keeper),
+		v176.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper.Keeper, app.DaoKeeper, app.LiquidVestingKeeper, app.Erc20Keeper),
 	)
 
 	// v1.7.7 Rename DAO module to United Contributors DAO
@@ -1251,6 +1273,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v178.UpgradeName,
 		v178.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
+	// v1.8.0 Add and enable EVM Extensions (Precompiled contracts).
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v180.UpgradeName,
+		v180.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic

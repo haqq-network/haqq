@@ -29,7 +29,7 @@ const (
 	FlagValidator = "validator"
 )
 
-// NewTxCmd returns a root CLI command handler for certain modules/vesting
+// NewTxCmd returns a root CLI command handler for vesting
 // transaction commands.
 func NewTxCmd() *cobra.Command {
 	txCmd := &cobra.Command{
@@ -52,7 +52,7 @@ func NewTxCmd() *cobra.Command {
 }
 
 // NewMsgCreateClawbackVestingAccountCmd returns a CLI command handler for creating a
-// MsgCreateClawbackVestingAccount transaction.
+// clawback vesting account.
 func NewMsgCreateClawbackVestingAccountCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create-clawback-vesting-account TO_ADDRESS",
@@ -132,8 +132,7 @@ with a start time and an array of coins strings and durations relative to the st
 	return cmd
 }
 
-// NewMsgClawbackCmd returns a CLI command handler for creating a
-// MsgClawback transaction.
+// NewMsgClawbackCmd returns a CLI command handler for clawing back unvested funds.
 func NewMsgClawbackCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clawback ADDRESS",
@@ -164,6 +163,9 @@ func NewMsgClawbackCmd() *cobra.Command {
 			}
 
 			msg := types.NewMsgClawback(clientCtx.GetFromAddress(), addr, dest)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
@@ -200,6 +202,9 @@ func NewMsgUpdateVestingFunderCmd() *cobra.Command {
 			}
 
 			msg := types.NewMsgUpdateVestingFunder(clientCtx.GetFromAddress(), newFunder, vestingAcc)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
@@ -208,8 +213,8 @@ func NewMsgUpdateVestingFunderCmd() *cobra.Command {
 	return cmd
 }
 
-// NewMsgConvertVestingAccountCmd returns a CLI command handler for creating a
-// MsgConvertVestingAccount transaction.
+// NewMsgConvertVestingAccountCmd returns a CLI command handler for converting
+// a clawback vesting account into a non-vesting account.
 func NewMsgConvertVestingAccountCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "convert VESTING_ACCOUNT_ADDRESS",
@@ -230,6 +235,9 @@ func NewMsgConvertVestingAccountCmd() *cobra.Command {
 			}
 
 			msg := types.NewMsgConvertVestingAccount(addr)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
@@ -238,8 +246,8 @@ func NewMsgConvertVestingAccountCmd() *cobra.Command {
 	return cmd
 }
 
-// NewMsgConvertIntoVestingAccountCmd returns a CLI command handler for creating a
-// MsgConvertIntoVestingAccount transaction.
+// NewMsgConvertIntoVestingAccountCmd returns a CLI command handler for converting
+// // a non-vesting account into a clawback vesting account.
 func NewMsgConvertIntoVestingAccountCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "convert-into [to-address]",

@@ -10,6 +10,6 @@ const (
 	// LockupLengthThreshold defines threshold parameter as 1767225600 is timestamp for 2026-01-01
 	LockupLengthThreshold = 1767225600
 
-	// One day in seconds
+	// OneDayInSeconds defines one day in seconds
 	OneDayInSeconds = int64(86_400)
 )

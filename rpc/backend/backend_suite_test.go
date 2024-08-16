@@ -42,7 +42,7 @@ func TestBackendTestSuite(t *testing.T) {
 	suite.Run(t, new(BackendTestSuite))
 }
 
-const ChainID = utils.TestEdge2ChainID + "-1"
+const ChainID = utils.TestEdge2ChainID + "-3"
 
 // SetupTest is executed before every BackendTestSuite test
 func (suite *BackendTestSuite) SetupTest() {
@@ -83,6 +83,9 @@ func (suite *BackendTestSuite) SetupTest() {
 	idxer := indexer.NewKVIndexer(dbm.NewMemDB(), ctx.Logger, clientCtx)
 
 	suite.backend = NewBackend(ctx, ctx.Logger, clientCtx, allowUnprotectedTxs, idxer)
+	suite.backend.cfg.JSONRPC.GasCap = 0
+	suite.backend.cfg.JSONRPC.EVMTimeout = 0
+	// suite.backend.cfg.JSONRPC.AllowInsecureUnlock = true // TODO Add this param
 	suite.backend.queryClient.QueryClient = mocks.NewEVMQueryClient(suite.T())
 	suite.backend.clientCtx.Client = mocks.NewClient(suite.T())
 	suite.backend.queryClient.FeeMarket = mocks.NewFeeMarketQueryClient(suite.T())

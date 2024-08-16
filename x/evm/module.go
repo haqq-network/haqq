@@ -21,6 +21,9 @@ import (
 	"github.com/haqq-network/haqq/x/evm/types"
 )
 
+// consensusVersion defines the current x/evm module consensus version.
+const consensusVersion = 6
+
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
@@ -43,7 +46,7 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // ConsensusVersion returns the consensus state-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
-	return 5
+	return consensusVersion
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the evm
@@ -126,12 +129,15 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
 	m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
-	err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4)
-	if err != nil {
+	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
 		panic(err)
 	}
 
 	if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
+		panic(err)
+	}
+
+	if err := cfg.RegisterMigration(types.ModuleName, 5, m.Migrate5to6); err != nil {
 		panic(err)
 	}
 }
@@ -165,11 +171,6 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 
 // RegisterStoreDecoder registers a decoder for evm module's types
 func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {
-}
-
-// ProposalContents doesn't return any content functions for governance proposals.
-func (AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
-	return nil
 }
 
 // GenerateGenesisState creates a randomized GenState of the evm module.

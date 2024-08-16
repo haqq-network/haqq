@@ -82,12 +82,13 @@ func (suite *TransferETHTestSuite) DoSetupTest(t require.TestingT) {
 	suite.denom = "aISLM"
 
 	// setup context
-	haqqApp, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState())
+	chainID := haqqtypes.MainNetChainID + "-1"
+	haqqApp, valAddr1 := app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
 	suite.valAddr1 = valAddr1
 	suite.app = haqqApp
 	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
 		Height:          1,
-		ChainID:         haqqtypes.MainNetChainID + "-1",
+		ChainID:         chainID,
 		Time:            time.Now().UTC(),
 		ProposerAddress: consAddress.Bytes(),
 
@@ -125,7 +126,7 @@ func (suite *TransferETHTestSuite) DoSetupTest(t require.TestingT) {
 	valAddr := sdk.ValAddress(suite.address.Bytes())
 	validator, err := stakingtypes.NewValidator(valAddr, privCons.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
-	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
+	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper.Keeper, suite.ctx, validator, true)
 	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)

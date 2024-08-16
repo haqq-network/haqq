@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -415,7 +416,7 @@ func (suite *AnteTestSuite) TestRejectMsgsInAuthz() {
 			)
 
 			if tc.isEIP712 {
-				coinAmount := sdk.NewCoin(evmtypes.DefaultEVMDenom, sdk.NewInt(20))
+				coinAmount := sdk.NewCoin(evmtypes.DefaultEVMDenom, math.NewInt(20))
 				fees := sdk.NewCoins(coinAmount)
 				cosmosTxArgs := utiltx.CosmosTxArgs{
 					TxCfg:   suite.clientCtx.TxConfig,

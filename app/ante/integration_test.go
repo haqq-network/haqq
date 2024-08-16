@@ -3,7 +3,9 @@ package ante_test
 import (
 	"time"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	sdkmath "cosmossdk.io/math"
@@ -30,8 +32,8 @@ var _ = DescribeTableSubtree("when sending a Cosmos transaction", func(signMode 
 
 	Context("and the sender account has enough balance to pay for the transaction cost", Ordered, func() {
 		var (
-			rewardsAmt = sdk.NewInt(1e5)
-			balance    = sdk.NewInt(1e18)
+			rewardsAmt = sdkmath.NewInt(1e5)
+			balance    = sdkmath.NewInt(1e18)
 		)
 
 		BeforeEach(func() {
@@ -48,7 +50,7 @@ var _ = DescribeTableSubtree("when sending a Cosmos transaction", func(signMode 
 			)
 
 			var err error
-			s.ctx, err = testutil.Commit(s.ctx, s.app, time.Second*0, nil)
+			s.ctx, err = testutil.CommitAndCreateNewCtx(s.ctx, s.app, time.Second*0, nil)
 			Expect(err).To(BeNil())
 		})
 
@@ -65,8 +67,8 @@ var _ = DescribeTableSubtree("when sending a Cosmos transaction", func(signMode 
 
 	Context("and the sender account neither has enough balance nor sufficient staking rewards to pay for the transaction cost", func() {
 		var (
-			rewardsAmt = sdk.NewInt(0)
-			balance    = sdk.NewInt(0)
+			rewardsAmt = sdkmath.NewInt(0)
+			balance    = sdkmath.NewInt(0)
 		)
 
 		BeforeEach(func() {
@@ -83,7 +85,7 @@ var _ = DescribeTableSubtree("when sending a Cosmos transaction", func(signMode 
 			)
 
 			var err error
-			s.ctx, err = testutil.Commit(s.ctx, s.app, time.Second*0, nil)
+			s.ctx, err = testutil.CommitAndCreateNewCtx(s.ctx, s.app, time.Second*0, nil)
 			Expect(err).To(BeNil())
 		})
 
@@ -102,8 +104,8 @@ var _ = DescribeTableSubtree("when sending a Cosmos transaction", func(signMode 
 
 	Context("and the sender account has not enough balance but sufficient staking rewards to pay for the transaction cost", func() {
 		var (
-			rewardsAmt = sdk.NewInt(1e18)
-			balance    = sdk.NewInt(0)
+			rewardsAmt = sdkmath.NewInt(1e18)
+			balance    = sdkmath.NewInt(0)
 		)
 
 		BeforeEach(func() {
@@ -119,7 +121,7 @@ var _ = DescribeTableSubtree("when sending a Cosmos transaction", func(signMode 
 				s.T(), s.ctx, s.app, addr, balance, rewardsAmt,
 			)
 			var err error
-			s.ctx, err = testutil.Commit(s.ctx, s.app, time.Second*0, nil)
+			s.ctx, err = testutil.CommitAndCreateNewCtx(s.ctx, s.app, time.Second*0, nil)
 			Expect(err).To(BeNil())
 		})
 
@@ -129,7 +131,7 @@ var _ = DescribeTableSubtree("when sending a Cosmos transaction", func(signMode 
 			Expect(rewards).To(Equal(sdk.NewDecCoins(sdk.NewDecCoin(utils.BaseDenom, rewardsAmt))))
 
 			balance := s.app.BankKeeper.GetBalance(s.ctx, addr, utils.BaseDenom)
-			Expect(balance.Amount).To(Equal(sdk.NewInt(0)))
+			Expect(balance.Amount).To(Equal(sdkmath.NewInt(0)))
 
 			res, err := testutil.DeliverTx(s.ctx, s.app, priv, nil, signMode, msg)
 			Expect(res.IsOK()).To(BeTrue())

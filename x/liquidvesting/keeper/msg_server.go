@@ -58,12 +58,12 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	}
 
 	// check there is not vesting periods on the schedule
-	if !va.GetUnvestedOnly(ctx.BlockTime()).IsZero() {
+	if !va.GetVestingCoins(ctx.BlockTime()).IsZero() {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s has vesting ongoing periods, unable to liquidate unvested coins", msg.LiquidateFrom)
 	}
 
 	// check account has liquidation target denom locked in vesting
-	hasTargetDenom, lockedBalance := va.GetLockedOnly(ctx.BlockTime()).Find(msg.Amount.Denom)
+	hasTargetDenom, lockedBalance := va.GetLockedUpCoins(ctx.BlockTime()).Find(msg.Amount.Denom)
 	if !(hasTargetDenom) {
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s doesn't contain coin specified as liquidation target", msg.LiquidateFrom)
 	}

@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"testing"
 
-	sdkmath "cosmossdk.io/math"
+	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	teststaking "github.com/cosmos/cosmos-sdk/x/staking/testutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -17,6 +21,23 @@ import (
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 )
+
+// CreateValidator creates a validator with the provided public key and stake amount
+func CreateValidator(ctx sdk.Context, t *testing.T, pubKey cryptotypes.PubKey, sk stakingkeeper.Keeper, stakeAmt math.Int) {
+	zeroDec := math.LegacyZeroDec()
+	stakingParams := sk.GetParams(ctx)
+	stakingParams.BondDenom = sk.BondDenom(ctx)
+	stakingParams.MinCommissionRate = zeroDec
+	err := sk.SetParams(ctx, stakingParams)
+	require.NoError(t, err)
+
+	stakingHelper := teststaking.NewHelper(t, ctx, &sk)
+	stakingHelper.Commission = stakingtypes.NewCommissionRates(zeroDec, zeroDec, zeroDec)
+	stakingHelper.Denom = sk.BondDenom(ctx)
+
+	valAddr := sdk.ValAddress(pubKey.Address())
+	stakingHelper.CreateValidator(valAddr, pubKey, stakeAmt, true)
+}
 
 // PrepareAccountsForDelegationRewards prepares the test suite for testing to withdraw delegation rewards.
 //
@@ -33,10 +54,10 @@ import (
 //   - Allocate rewards to the validator.
 //
 // The function returns the updated context along with a potential error.
-func PrepareAccountsForDelegationRewards(t *testing.T, ctx sdk.Context, app *app.Haqq, addr sdk.AccAddress, balance sdkmath.Int, rewards ...sdkmath.Int) (sdk.Context, error) {
+func PrepareAccountsForDelegationRewards(t *testing.T, ctx sdk.Context, app *app.Haqq, addr sdk.AccAddress, balance math.Int, rewards ...math.Int) (sdk.Context, error) {
 	// Calculate the necessary amount of tokens to fund the account in order for the desired residual balance to
 	// be left after creating validators and delegating to them.
-	totalRewards := sdk.ZeroInt()
+	totalRewards := math.ZeroInt()
 	for _, reward := range rewards {
 		totalRewards = totalRewards.Add(reward)
 	}
@@ -81,15 +102,14 @@ func PrepareAccountsForDelegationRewards(t *testing.T, ctx sdk.Context, app *app
 			return sdk.Context{}, fmt.Errorf("failed to fund validator account: %s", err.Error())
 		}
 
-		zeroDec := sdk.ZeroDec()
+		zeroDec := math.LegacyZeroDec()
 		stakingParams := app.StakingKeeper.GetParams(ctx)
 		stakingParams.BondDenom = utils.BaseDenom
 		stakingParams.MinCommissionRate = zeroDec
-		if err := app.StakingKeeper.SetParams(ctx, stakingParams); err != nil {
-			return sdk.Context{}, fmt.Errorf("failed to set staking params: %s", err.Error())
-		}
+		err = app.StakingKeeper.SetParams(ctx, stakingParams)
+		require.NoError(t, err)
 
-		stakingHelper := teststaking.NewHelper(t, ctx, &app.StakingKeeper)
+		stakingHelper := teststaking.NewHelper(t, ctx, app.StakingKeeper.Keeper)
 		stakingHelper.Commission = stakingtypes.NewCommissionRates(zeroDec, zeroDec, zeroDec)
 		stakingHelper.Denom = utils.BaseDenom
 
@@ -101,11 +121,11 @@ func PrepareAccountsForDelegationRewards(t *testing.T, ctx sdk.Context, app *app
 
 		// end block to bond validator and increase block height
 		// Not using Commit() here because code panics due to invalid block height
-		staking.EndBlocker(ctx, &app.StakingKeeper)
+		staking.EndBlocker(ctx, app.StakingKeeper.Keeper)
 
 		// allocate rewards to validator (of these 50% will be paid out to the delegator)
 		validator := app.StakingKeeper.Validator(ctx, valAddr)
-		allocatedRewards := sdk.NewDecCoins(sdk.NewDecCoin(utils.BaseDenom, reward.Mul(sdk.NewInt(2))))
+		allocatedRewards := sdk.NewDecCoins(sdk.NewDecCoin(utils.BaseDenom, reward.Mul(math.NewInt(2))))
 		app.DistrKeeper.AllocateTokensToValidator(ctx, validator, allocatedRewards)
 	}
 

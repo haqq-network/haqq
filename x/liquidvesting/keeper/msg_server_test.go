@@ -229,8 +229,8 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			if !ok {
 				suite.T().Fatal("account is not clawback vesting account")
 			}
-			suite.T().Logf("locked only coins: %s", vaFrom.GetLockedOnly(suite.ctx.BlockTime()).String())
-			suite.T().Logf("UN-locked only coins: %s", vaFrom.GetUnlockedOnly(suite.ctx.BlockTime()).String())
+			suite.T().Logf("locked only coins: %s", vaFrom.GetLockedUpCoins(suite.ctx.BlockTime()).String())
+			suite.T().Logf("UN-locked only coins: %s", vaFrom.GetUnlockedCoins(suite.ctx.BlockTime()).String())
 			spendable := suite.app.BankKeeper.SpendableCoin(suite.ctx, tc.from, "aISLM")
 			suite.T().Logf("spendable coins: %s", spendable.String())
 			suite.T().Logf("liquidation amount: %s", tc.amount.String())
@@ -258,7 +258,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				suite.Require().NotNil(accIFrom)
 				cva, isClawback := accIFrom.(*vestingtypes.ClawbackVestingAccount)
 				suite.Require().True(isClawback)
-				suite.Require().Equal(cva.GetLockedOnly(suite.ctx.BlockTime()).Add(cva.GetUnlockedOnly(suite.ctx.BlockTime())...), lockupPeriods.TotalAmount().Sub(tc.amount))
+				suite.Require().Equal(cva.GetLockedUpCoins(suite.ctx.BlockTime()).Add(cva.GetUnlockedCoins(suite.ctx.BlockTime())...), lockupPeriods.TotalAmount().Sub(tc.amount))
 
 				// check newly created liquid denom
 				liquidDenom, found := suite.app.LiquidVestingKeeper.GetDenom(suite.ctx, types.DenomBaseNameFromID(0))
@@ -324,7 +324,7 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.Require().NotNil(accIFrom)
 	cva, isClawback := accIFrom.(*vestingtypes.ClawbackVestingAccount)
 	suite.Require().True(isClawback)
-	suite.Require().Equal(cva.GetLockedOnly(suite.ctx.BlockTime()), lockupPeriods.TotalAmount().Sub(liquidationAmount))
+	suite.Require().Equal(cva.GetLockedUpCoins(suite.ctx.BlockTime()), lockupPeriods.TotalAmount().Sub(liquidationAmount))
 
 	// check erc20 token contract
 	pair0Resp, err := s.app.Erc20Keeper.TokenPair(s.ctx, &erc20types.QueryTokenPairRequest{Token: types.DenomBaseNameFromID(0)})
@@ -362,7 +362,7 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.Require().NotNil(accIFrom)
 	cva, isClawback = accIFrom.(*vestingtypes.ClawbackVestingAccount)
 	suite.Require().True(isClawback)
-	suite.Require().Equal(cva.GetLockedOnly(suite.ctx.BlockTime()), sdk.NewCoins(liquidationAmount))
+	suite.Require().Equal(cva.GetLockedUpCoins(suite.ctx.BlockTime()), sdk.NewCoins(liquidationAmount))
 
 	// check erc20 token contract
 	pair1Resp, err := s.app.Erc20Keeper.TokenPair(s.ctx, &erc20types.QueryTokenPairRequest{Token: types.DenomBaseNameFromID(1)})
@@ -612,7 +612,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 					cva, isClawback := accIto.(*vestingtypes.ClawbackVestingAccount)
 					suite.Require().True(isClawback)
 					expectedLockedCoins := sdk.NewCoins(sdk.NewInt64Coin("aISLM", tc.expectedLockedAmount))
-					actualLockedCoins := cva.GetLockedOnly(s.ctx.BlockTime())
+					actualLockedCoins := cva.GetLockedUpCoins(s.ctx.BlockTime())
 					s.Require().Equal(expectedLockedCoins.String(), actualLockedCoins.String())
 				}
 

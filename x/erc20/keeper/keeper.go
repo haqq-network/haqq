@@ -7,8 +7,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 
 	"github.com/haqq-network/haqq/x/erc20/types"
+	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 )
 
 // Keeper of this module maintains collections of erc20.
@@ -18,10 +20,12 @@ type Keeper struct {
 	// the address capable of executing a MsgUpdateParams message. Typically, this should be the x/gov module account.
 	authority sdk.AccAddress
 
-	accountKeeper types.AccountKeeper
-	bankKeeper    types.BankKeeper
-	evmKeeper     types.EVMKeeper
-	stakingKeeper types.StakingKeeper
+	accountKeeper  types.AccountKeeper
+	bankKeeper     types.BankKeeper
+	evmKeeper      types.EVMKeeper
+	stakingKeeper  types.StakingKeeper
+	authzKeeper    authzkeeper.Keeper
+	transferKeeper *transferkeeper.Keeper
 }
 
 // NewKeeper creates new instances of the erc20 Keeper
@@ -33,6 +37,8 @@ func NewKeeper(
 	bk types.BankKeeper,
 	evmKeeper types.EVMKeeper,
 	sk types.StakingKeeper,
+	authzKeeper authzkeeper.Keeper,
+	transferKeeper *transferkeeper.Keeper,
 ) Keeper {
 	// ensure gov module account is set and is not nil
 	if err := sdk.VerifyAddressFormat(authority); err != nil {
@@ -40,13 +46,15 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		authority:     authority,
-		storeKey:      storeKey,
-		cdc:           cdc,
-		accountKeeper: ak,
-		bankKeeper:    bk,
-		evmKeeper:     evmKeeper,
-		stakingKeeper: sk,
+		authority:      authority,
+		storeKey:       storeKey,
+		cdc:            cdc,
+		accountKeeper:  ak,
+		bankKeeper:     bk,
+		evmKeeper:      evmKeeper,
+		stakingKeeper:  sk,
+		authzKeeper:    authzKeeper,
+		transferKeeper: transferKeeper,
 	}
 }
 

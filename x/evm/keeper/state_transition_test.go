@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	tmtypes "github.com/cometbft/cometbft/types"
@@ -335,8 +336,8 @@ func (suite *KeeperTestSuite) TestGasToRefund() {
 			vmdb.AddRefund(10)
 
 			if tc.expPanic {
-				//nolint:all
 				panicF := func() {
+					//nolint:staticcheck
 					keeper.GasToRefund(vmdb.GetRefund(), tc.gasconsumed, tc.refundQuotient)
 				}
 				suite.Require().Panics(panicF)
@@ -519,13 +520,13 @@ func (suite *KeeperTestSuite) TestResetGasMeterAndConsumeGas() {
 
 func (suite *KeeperTestSuite) TestEVMConfig() {
 	proposerAddress := suite.ctx.BlockHeader().ProposerAddress
-	cfg, err := suite.app.EvmKeeper.EVMConfig(suite.ctx, proposerAddress, big.NewInt(9000))
+	cfg, err := suite.app.EvmKeeper.EVMConfig(suite.ctx, proposerAddress, big.NewInt(54211))
 	suite.Require().NoError(err)
 	suite.Require().Equal(types.DefaultParams(), cfg.Params)
 	// london hardfork is enabled by default
 	suite.Require().Equal(big.NewInt(0), cfg.BaseFee)
 	suite.Require().Equal(suite.address, cfg.CoinBase)
-	suite.Require().Equal(types.DefaultParams().ChainConfig.EthereumConfig(big.NewInt(9000)), cfg.ChainConfig)
+	suite.Require().Equal(types.DefaultParams().ChainConfig.EthereumConfig(big.NewInt(54211)), cfg.ChainConfig)
 }
 
 func (suite *KeeperTestSuite) TestContractDeployment() {
@@ -539,7 +540,7 @@ func (suite *KeeperTestSuite) TestApplyMessage() {
 	var msg core.Message
 
 	proposerAddress := suite.ctx.BlockHeader().ProposerAddress
-	config, err := suite.app.EvmKeeper.EVMConfig(suite.ctx, proposerAddress, big.NewInt(9000))
+	config, err := suite.app.EvmKeeper.EVMConfig(suite.ctx, proposerAddress, big.NewInt(54211))
 	suite.Require().NoError(err)
 
 	keeperParams := suite.app.EvmKeeper.GetParams(suite.ctx)
@@ -632,6 +633,28 @@ func (suite *KeeperTestSuite) TestApplyMessageWithConfig() {
 			},
 			true,
 		},
+		{
+			"fix panic when minimumGasUsed is not uint64",
+			func() {
+				msg, err = newNativeMessage(
+					vmdb.GetNonce(suite.address),
+					suite.ctx.BlockHeight(),
+					suite.address,
+					chainCfg,
+					suite.signer,
+					signer,
+					ethtypes.AccessListTxType,
+					nil,
+					nil,
+				)
+				suite.Require().NoError(err)
+				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params.MinGasMultiplier = sdkmath.LegacyNewDec(math.MaxInt64).MulInt64(100)
+				err = suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				suite.Require().NoError(err)
+			},
+			true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -640,7 +663,7 @@ func (suite *KeeperTestSuite) TestApplyMessageWithConfig() {
 			expectedGasUsed = params.TxGas
 
 			proposerAddress := suite.ctx.BlockHeader().ProposerAddress
-			config, err = suite.app.EvmKeeper.EVMConfig(suite.ctx, proposerAddress, big.NewInt(9000))
+			config, err = suite.app.EvmKeeper.EVMConfig(suite.ctx, proposerAddress, big.NewInt(54211))
 			suite.Require().NoError(err)
 
 			keeperParams = suite.app.EvmKeeper.GetParams(suite.ctx)

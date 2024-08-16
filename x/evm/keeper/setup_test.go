@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	"github.com/stretchr/testify/require"
@@ -76,22 +78,24 @@ func TestKeeperTestSuite(t *testing.T) {
 
 func (suite *KeeperTestSuite) SetupTest() {
 	checkTx := false
-	suite.app, _ = app.Setup(checkTx, nil)
-	suite.SetupApp(checkTx)
+	chainID := utils.TestEdge2ChainID + "-3"
+	suite.app, _ = app.Setup(checkTx, nil, chainID)
+	suite.SetupApp(checkTx, chainID)
 }
 
 func (suite *KeeperTestSuite) SetupTestWithT(t require.TestingT) {
 	checkTx := false
-	suite.app, _ = app.Setup(checkTx, nil)
-	suite.SetupAppWithT(checkTx, t)
+	chainID := utils.TestEdge2ChainID + "-3"
+	suite.app, _ = app.Setup(checkTx, nil, chainID)
+	suite.SetupAppWithT(checkTx, t, chainID)
 }
 
-func (suite *KeeperTestSuite) SetupApp(checkTx bool) {
-	suite.SetupAppWithT(checkTx, suite.T())
+func (suite *KeeperTestSuite) SetupApp(checkTx bool, chainID string) {
+	suite.SetupAppWithT(checkTx, suite.T(), chainID)
 }
 
 // SetupAppWithT setup test environment, it uses`require.TestingT` to support both `testing.T` and `testing.B`.
-func (suite *KeeperTestSuite) SetupAppWithT(checkTx bool, t require.TestingT) {
+func (suite *KeeperTestSuite) SetupAppWithT(checkTx bool, t require.TestingT, chainID string) {
 	// account key, use a constant account to keep unit test deterministic.
 	ecdsaPriv, err := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	require.NoError(t, err)
@@ -153,7 +157,7 @@ func (suite *KeeperTestSuite) SetupAppWithT(checkTx bool, t require.TestingT) {
 		// Initialize the chain
 		suite.app.InitChain(
 			abci.RequestInitChain{
-				ChainId:         "haqq_54211-3",
+				ChainId:         chainID,
 				Validators:      []abci.ValidatorUpdate{},
 				ConsensusParams: app.DefaultConsensusParams,
 				AppStateBytes:   stateBytes,
@@ -162,7 +166,7 @@ func (suite *KeeperTestSuite) SetupAppWithT(checkTx bool, t require.TestingT) {
 	}
 
 	header := testutil.NewHeader(
-		1, time.Now().UTC(), "haqq_54211-3", suite.consAddress,
+		1, time.Now().UTC(), chainID, suite.consAddress,
 		tmhash.Sum([]byte("app")), tmhash.Sum([]byte("validators")),
 	)
 	suite.ctx = suite.app.NewContext(checkTx, header)

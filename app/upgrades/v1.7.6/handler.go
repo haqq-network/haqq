@@ -61,7 +61,7 @@ func TurnOnDAO(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestingkeeper.Kee
 		}
 
 		// -- Locked only
-		lockedAmounts := clawbackAccount.GetLockedOnly(ctx.BlockTime())
+		lockedAmounts := clawbackAccount.GetLockedUpCoins(ctx.BlockTime())
 		lockedOnlyAmount := sdk.ZeroInt()
 		for _, lockedAmount := range lockedAmounts {
 			if lockedAmount.Denom == "aISLM" {
@@ -70,7 +70,7 @@ func TurnOnDAO(ctx sdk.Context, bk bankkeeper.Keeper, lk liquidvestingkeeper.Kee
 		}
 
 		// -- Total unvested
-		vestingAmounts := clawbackAccount.GetUnvestedOnly(ctx.BlockTime())
+		vestingAmounts := clawbackAccount.GetVestingCoins(ctx.BlockTime())
 		totalUnvested := sdk.ZeroInt()
 		for _, unvestedAmount := range vestingAmounts {
 			if unvestedAmount.Denom == "aISLM" {

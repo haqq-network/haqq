@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	"github.com/stretchr/testify/require"
@@ -39,11 +41,11 @@ func (suite *AnteTestSuite) SetupTest() {
 	consAddress := sdk.ConsAddress(privCons.PubKey().Address())
 
 	isCheckTx := false
-	suite.app, _ = app.Setup(isCheckTx, feemarkettypes.DefaultGenesisState())
+	chainID := utils.MainNetChainID + "-1"
+	suite.app, _ = app.Setup(isCheckTx, feemarkettypes.DefaultGenesisState(), chainID)
 	suite.Require().NotNil(suite.app.AppCodec())
 
-	header := testutil.NewHeader(
-		1, time.Now().UTC(), utils.MainNetChainID+"-1", consAddress, nil, nil)
+	header := testutil.NewHeader(1, time.Now().UTC(), chainID, consAddress, nil, nil)
 	suite.ctx = suite.app.BaseApp.NewContext(isCheckTx, header)
 
 	suite.denom = utils.BaseDenom

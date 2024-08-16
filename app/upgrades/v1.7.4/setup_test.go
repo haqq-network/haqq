@@ -85,7 +85,7 @@ func (suite *UpgradeTestSuite) DoSetupTest(t require.TestingT) {
 	suite.consAddress = sdk.ConsAddress(consPrivateKey.PubKey().Address())
 
 	// Init app
-	suite.app, _ = app.Setup(checkTx, nil)
+	suite.app, _ = app.Setup(checkTx, nil, suite.chainID)
 	// Set Context
 	header := testutil.NewHeader(1, time.Unix(fixedTimestamp, 0).UTC(), suite.chainID, suite.consAddress, nil, nil)
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, header)
@@ -125,7 +125,7 @@ func (suite *UpgradeTestSuite) DoSetupTest(t require.TestingT) {
 	suite.valAddr = sdk.ValAddress(suite.accAddress)
 	validator, err := stakingtypes.NewValidator(suite.valAddr, consPrivateKey.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
-	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
+	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper.Keeper, suite.ctx, validator, true)
 	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)

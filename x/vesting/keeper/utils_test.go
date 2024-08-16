@@ -21,7 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/haqq-network/haqq/app"
-	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
 	evmante "github.com/haqq-network/haqq/app/ante/evm"
 	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
@@ -51,11 +50,12 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
 
 	// Init app
-	suite.app, _ = app.Setup(checkTx, nil)
+	chainID := utils.MainNetChainID + "-1"
+	suite.app, _ = app.Setup(checkTx, nil, chainID)
 
 	// Set Context
 	header := testutil.NewHeader(
-		1, time.Now().UTC(), utils.MainNetChainID+"-1", suite.consAddress, nil, nil,
+		1, time.Now().UTC(), chainID, suite.consAddress, nil, nil,
 	)
 	suite.ctx = suite.app.BaseApp.NewContext(false, header)
 
@@ -100,7 +100,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	valAddr := sdk.ValAddress(suite.address.Bytes())
 	validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
-	validator = stakingkeeper.TestingUpdateValidator(&suite.app.StakingKeeper, suite.ctx, validator, true)
+	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper.Keeper, suite.ctx, validator, true)
 	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
 	require.NoError(t, err)
 	err = suite.app.StakingKeeper.SetValidatorByConsAddr(suite.ctx, validator)
@@ -127,7 +127,7 @@ func (suite *KeeperTestSuite) Commit() {
 // Commit commits a block at a given time.
 func (suite *KeeperTestSuite) CommitAfter(t time.Duration) {
 	var err error
-	suite.ctx, err = testutil.Commit(suite.ctx, suite.app, t, nil)
+	suite.ctx, err = testutil.CommitAndCreateNewCtx(suite.ctx, suite.app, t, nil)
 	suite.Require().NoError(err)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
@@ -210,21 +210,6 @@ func assertEthSucceeds(testAccounts []TestClawbackAccount, funder sdk.AccAddress
 		// Use GreaterOrEqual because the gas fee is non-recoverable
 		s.Require().GreaterOrEqual(granteeBalances[i].SubAmount(amount).Amount.Uint64(), gb.Amount.Uint64())
 	}
-}
-
-// delegate is a helper function which creates a message to delegate a given amount of tokens
-// to a validator and checks if the Cosmos vesting delegation decorator returns no error.
-func delegate(clawbackAccount *types.ClawbackVestingAccount, amount sdkmath.Int, addrvalop string) error {
-	addr, err := sdk.AccAddressFromBech32(clawbackAccount.Address)
-	s.Require().NoError(err)
-
-	val, err := sdk.ValAddressFromBech32(addrvalop)
-	s.Require().NoError(err)
-	delegateMsg := stakingtypes.NewMsgDelegate(addr, val, sdk.NewCoin(s.app.StakingKeeper.BondDenom(s.ctx), amount))
-
-	dec := cosmosante.NewVestingDelegationDecorator(s.app.AccountKeeper, s.app.StakingKeeper, s.app.BankKeeper, types.ModuleCdc)
-	err = testutil.ValidateAnteForMsgs(s.ctx, dec, delegateMsg)
-	return err
 }
 
 // validateEthVestingTransactionDecorator is a helper function to execute the eth vesting transaction decorator

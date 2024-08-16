@@ -7,6 +7,7 @@ import (
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/testutil"
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/epochs/types"
 	evm "github.com/haqq-network/haqq/x/evm/types"
 )
@@ -16,11 +17,12 @@ func (suite *KeeperTestSuite) DoSetupTest() {
 	checkTx := false
 
 	// init app
-	suite.app, _ = app.Setup(checkTx, nil)
+	chainID := utils.TestEdge2ChainID + "-3"
+	suite.app, _ = app.Setup(checkTx, nil, chainID)
 
 	// setup context
 	header := testutil.NewHeader(
-		1, time.Now().UTC(), "haqq_11235-1", suite.consAddress, nil, nil,
+		1, time.Now().UTC(), chainID, suite.consAddress, nil, nil,
 	)
 	suite.ctx = suite.app.BaseApp.NewContext(checkTx, header)
 

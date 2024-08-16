@@ -34,7 +34,7 @@ func (esc EthSetupContextDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 		return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType, "invalid transaction type %T, expected GasTx", tx)
 	}
 
-	// We need to setup an empty gas config so that the gas is consistent with Ethereum.
+	// We need to set up an empty gas config so that the gas is consistent with Ethereum.
 	newCtx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter()).
 		WithKVGasConfig(storetypes.GasConfig{}).
 		WithTransientKVGasConfig(storetypes.GasConfig{})

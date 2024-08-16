@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
@@ -54,17 +55,25 @@ func (msg MsgCreateClawbackVestingAccount) Type() string { return TypeMsgCreateC
 // ValidateBasic runs stateless checks on the message
 func (msg MsgCreateClawbackVestingAccount) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.FromAddress); err != nil {
-		return errorsmod.Wrapf(err, "invalid from address")
+		return errorsmod.Wrapf(err, "invalid funder address")
 	}
 
-	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {
-		return errorsmod.Wrapf(err, "invalid to address")
+	vestingAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	if err != nil {
+		return errorsmod.Wrapf(err, "invalid vesting address")
+	}
+
+	if equal := bytes.Compare(vestingAddr.Bytes(), common.Address{}.Bytes()); equal == 0 {
+		return errorsmod.Wrapf(errortypes.ErrInvalidAddress, "vesting address cannot be the zero address")
 	}
 
 	lockupCoins := sdk.NewCoins()
 	for i, period := range msg.LockupPeriods {
 		if period.Length < 1 {
 			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
+		}
+		if !period.Amount.IsValid() {
+			return errortypes.ErrInvalidCoins.Wrap(period.Amount.String())
 		}
 		lockupCoins = lockupCoins.Add(period.Amount...)
 	}
@@ -74,13 +83,20 @@ func (msg MsgCreateClawbackVestingAccount) ValidateBasic() error {
 		if period.Length < 1 {
 			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
 		}
+		if !period.Amount.IsValid() {
+			return errortypes.ErrInvalidCoins.Wrap(period.Amount.String())
+		}
 		vestingCoins = vestingCoins.Add(period.Amount...)
 	}
 
-	// If both schedules are present, the must describe the same total amount.
+	// If neither schedule is present, the message is invalid.
+	if len(lockupCoins) == 0 && len(vestingCoins) == 0 {
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "vesting and/or lockup schedules must be present")
+	}
+
+	// If both schedules are present, they must describe the same total amount.
 	// IsEqual can panic, so use (a == b) <=> (a <= b && b <= a).
-	if len(msg.LockupPeriods) > 0 && len(msg.VestingPeriods) > 0 &&
-		!(lockupCoins.IsAllLTE(vestingCoins) && vestingCoins.IsAllLTE(lockupCoins)) {
+	if len(msg.LockupPeriods) > 0 && len(msg.VestingPeriods) > 0 && !CoinEq(lockupCoins, vestingCoins) {
 		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "vesting and lockup schedules must have same total coins")
 	}
 
@@ -105,6 +121,7 @@ func NewMsgClawback(funder, addr, dest sdk.AccAddress) *MsgClawback {
 	if dest != nil {
 		destString = dest.String()
 	}
+
 	return &MsgClawback{
 		FunderAddress:  funder.String(),
 		AccountAddress: addr.String(),
@@ -169,8 +186,13 @@ func (msg MsgUpdateVestingFunder) ValidateBasic() error {
 		return errorsmod.Wrapf(err, "invalid funder address")
 	}
 
-	if _, err := sdk.AccAddressFromBech32(msg.GetNewFunderAddress()); err != nil {
+	newFunderAddr, err := sdk.AccAddressFromBech32(msg.GetNewFunderAddress())
+	if err != nil {
 		return errorsmod.Wrapf(err, "invalid new funder address")
+	}
+
+	if equal := bytes.Compare(newFunderAddr.Bytes(), common.Address{}.Bytes()); equal == 0 {
+		return errorsmod.Wrapf(errortypes.ErrInvalidAddress, "new funder address cannot be the zero address")
 	}
 
 	// New funder address can not be equal to current funder address
@@ -259,23 +281,30 @@ func (msg MsgConvertIntoVestingAccount) Type() string { return TypeMsgConvertInt
 // ValidateBasic runs stateless checks on the message
 func (msg MsgConvertIntoVestingAccount) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.FromAddress); err != nil {
-		return errorsmod.Wrapf(err, "invalid from address")
+		return errorsmod.Wrapf(err, "invalid funder address")
 	}
 
-	to, err := sdk.AccAddressFromBech32(msg.ToAddress)
+	vestingAddr, err := sdk.AccAddressFromBech32(msg.ToAddress)
 	if err != nil {
 		hexTargetAddr := common.HexToAddress(msg.ToAddress)
-		to = hexTargetAddr.Bytes()
+		vestingAddr = hexTargetAddr.Bytes()
 	}
 
-	if err := sdk.VerifyAddressFormat(to); err != nil {
-		return errorsmod.Wrapf(err, "invalid to address")
+	if err := sdk.VerifyAddressFormat(vestingAddr); err != nil {
+		return errorsmod.Wrapf(err, "invalid vesting address")
+	}
+
+	if equal := bytes.Compare(vestingAddr.Bytes(), common.Address{}.Bytes()); equal == 0 {
+		return errorsmod.Wrapf(errortypes.ErrInvalidAddress, "vesting address cannot be the zero address")
 	}
 
 	lockupCoins := sdk.NewCoins()
 	for i, period := range msg.LockupPeriods {
 		if period.Length < 1 {
 			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
+		}
+		if !period.Amount.IsValid() {
+			return errortypes.ErrInvalidCoins.Wrap(period.Amount.String())
 		}
 		lockupCoins = lockupCoins.Add(period.Amount...)
 	}
@@ -285,13 +314,20 @@ func (msg MsgConvertIntoVestingAccount) ValidateBasic() error {
 		if period.Length < 1 {
 			return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "invalid period length of %d in period %d, length must be greater than 0", period.Length, i)
 		}
+		if !period.Amount.IsValid() {
+			return errortypes.ErrInvalidCoins.Wrap(period.Amount.String())
+		}
 		vestingCoins = vestingCoins.Add(period.Amount...)
 	}
 
-	// If both schedules are present, the must describe the same total amount.
+	// If neither schedule is present, the message is invalid.
+	if len(lockupCoins) == 0 && len(vestingCoins) == 0 {
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "vesting and/or lockup schedules must be present")
+	}
+
+	// If both schedules are present, they must describe the same total amount.
 	// IsEqual can panic, so use (a == b) <=> (a <= b && b <= a).
-	if len(msg.LockupPeriods) > 0 && len(msg.VestingPeriods) > 0 &&
-		!(lockupCoins.IsAllLTE(vestingCoins) && vestingCoins.IsAllLTE(lockupCoins)) {
+	if len(msg.LockupPeriods) > 0 && len(msg.VestingPeriods) > 0 && !CoinEq(lockupCoins, vestingCoins) {
 		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "vesting and lockup schedules must have same total coins")
 	}
 
