@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -23,6 +24,7 @@ func CreateUpgradeHandler(
 	ek evmkeeper.Keeper,
 	bk bankkeeper.Keeper,
 	dk ucdaokeeper.Keeper,
+	ucDaoStoreKey storetypes.StoreKey,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		logger := ctx.Logger().With("upgrade", UpgradeName)
@@ -34,7 +36,7 @@ func CreateUpgradeHandler(
 		}
 
 		logger.Info("fix UC DAO total ISLM balance")
-		if err := fixUCDAOTotalBalance(ctx, dk); err != nil {
+		if err := fixUCDAOTotalBalance(ctx, dk, ucDaoStoreKey); err != nil {
 			logger.Error("error while reducing ucdao total ISLM balance", "error", err)
 			return nil, err
 		}
@@ -65,11 +67,11 @@ func migrateUCDAObalance(ctx sdk.Context, bk bankkeeper.Keeper) error {
 	return bk.SendCoinsFromAccountToModule(ctx, oldDaoAccAddr, ucdaotypes.ModuleName, oldDaoBalances)
 }
 
-func fixUCDAOTotalBalance(ctx sdk.Context, dk ucdaokeeper.Keeper) error {
+func fixUCDAOTotalBalance(ctx sdk.Context, dk ucdaokeeper.Keeper, ucDaoStoreKey storetypes.StoreKey) error {
 	// Reduce total balance for 20000000000000000000aISLM
 	logger := ctx.Logger().With("upgrade", UpgradeName)
 	balISLM := dk.GetTotalBalanceOf(ctx, utils.BaseDenom)
-	logger.Info("Old ISLM balance in UC DAO: %s", balISLM.String())
+	logger.Info(fmt.Sprintf("Old ISLM balance in UC DAO: %s", balISLM.String()))
 
 	amt, err := sdk.ParseCoinNormalized("20000000000000000000aISLM")
 	if err != nil {
@@ -82,7 +84,7 @@ func fixUCDAOTotalBalance(ctx sdk.Context, dk ucdaokeeper.Keeper) error {
 		panic(fmt.Errorf("unable to marshal amount value %v", err))
 	}
 
-	store := ctx.KVStore(sdk.NewKVStoreKey(ucdaotypes.StoreKey))
+	store := ctx.KVStore(ucDaoStoreKey)
 	supplyStore := prefix.NewStore(store, ucdaotypes.TotalBalanceKey)
 
 	// Bank invariants and IBC requires to remove zero coins.
@@ -93,7 +95,7 @@ func fixUCDAOTotalBalance(ctx sdk.Context, dk ucdaokeeper.Keeper) error {
 	}
 
 	newBalISLM := dk.GetTotalBalanceOf(ctx, utils.BaseDenom)
-	logger.Info("New ISLM balance in UC DAO: %s", newBalISLM.String())
+	logger.Info(fmt.Sprintf("New ISLM balance in UC DAO: %s", newBalISLM.String()))
 
 	return nil
 }

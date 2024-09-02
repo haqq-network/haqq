@@ -888,7 +888,7 @@ func NewHaqq(
 	app.setAnteHandler(encodingConfig.TxConfig, maxGasWanted)
 	app.setPostHandler()
 	app.SetEndBlocker(app.EndBlocker)
-	app.setupUpgradeHandlers()
+	app.setupUpgradeHandlers(keys)
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
@@ -1213,7 +1213,7 @@ func initParamsKeeper(
 	return paramsKeeper
 }
 
-func (app *Haqq) setupUpgradeHandlers() {
+func (app *Haqq) setupUpgradeHandlers(keys map[string]*storetypes.KVStoreKey) {
 	// v1.7.0 Upgrade SDK, CometBFT and IBC
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v170.UpgradeName,
@@ -1278,7 +1278,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	// v1.8.0 Add and enable EVM Extensions (Precompiled contracts).
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v180.UpgradeName,
-		v180.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.BankKeeper, app.DaoKeeper),
+		v180.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.BankKeeper, app.DaoKeeper, keys[ucdaotypes.StoreKey]),
 	)
 
 	// When a planned update height is reached, the old binary will panic

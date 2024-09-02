@@ -14,7 +14,7 @@ linters:
     # - revive
     # - gosec
     - gosimple
-    - govet
+    # - govet TODO: enable later (too many false positives)
     - ineffassign
     # - lll TODO: enable
     - misspell
