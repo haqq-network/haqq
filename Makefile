@@ -532,7 +532,7 @@ proto-check-breaking:
 ###############################################################################
 
 PACKAGE_NAME:=github.com/haqq-network/haqq
-GOLANG_CROSS_VERSION  = v1.22.5
+GOLANG_CROSS_VERSION  = v1.22
 GOPATH ?= '$(HOME)/go'
 release-dry-run:
 	docker run \
