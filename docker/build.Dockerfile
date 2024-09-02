@@ -1,5 +1,5 @@
 ### build stage
-FROM golang:1.21-bookworm AS build-env
+FROM golang:1.22-bookworm AS build-env
 
 WORKDIR /go/src/github.com/haqq-network/haqq
 
