@@ -1278,7 +1278,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	// v1.8.0 Add and enable EVM Extensions (Precompiled contracts).
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v180.UpgradeName,
-		v180.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper),
+		v180.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.BankKeeper, app.DaoKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic
