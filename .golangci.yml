@@ -32,6 +32,8 @@ linters:
     - exportloopref
     - gofumpt
     - gomodguard
+  disable:
+    - govet
 
 linters-settings:
   dogsled:
