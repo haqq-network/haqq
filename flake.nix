@@ -15,60 +15,64 @@
     gomod2nix.inputs.flake-utils.follows = "flake-utils";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils, devenv, gomod2nix, ... }@inputs:
-    flake-utils.lib.eachDefaultSystem
-      (system:
-        let
-          overlays = [ gomod2nix.overlays.default ];
-          pkgs = import nixpkgs { inherit system overlays; };
-          pkgsUnstable = import nixpkgs-unstable { inherit system overlays; };
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixpkgs-unstable,
+      flake-utils,
+      devenv,
+      gomod2nix,
+      ...
+    }@inputs:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        overlays = [ gomod2nix.overlays.default ];
+        pkgs = import nixpkgs { inherit system overlays; };
+        pkgsUnstable = import nixpkgs-unstable { inherit system overlays; };
 
-          # match go x.x in go.mod
-          gomod = builtins.readFile ./go.mod;
-          goVersion = builtins.match ".*[\n]go ([[:digit:]]*)\.([[:digit:]]*)[\n].*" gomod;
+        # match go x.x in go.mod
+        gomod = builtins.readFile ./go.mod;
+        goVersion = builtins.match ".*[\n]go ([[:digit:]]*)\.([[:digit:]]*)[\.]*([[:digit:]]*)[\n].*" gomod;
 
-          go = pkgs."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
-        in
-        {
-          packages = rec {
-            nixos-test = pkgs.callPackage ./nix/test {
-              overlay = self.overlays.default;
-            };
-            haqq = pkgsUnstable.callPackage ./nix/package.nix {
-              inherit (pkgsUnstable) buildGoApplication;
-              inherit go;
-              rev = if (self ? rev) then self.rev else self.dirtyRev;
-            };
-            haqq-with-tests = haqq.overrideAttrs (_: {
-              subPackages = null;
-              doCheck = true;
-            });
-            default = haqq;
+        go = pkgs."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
+      in
+      {
+        packages = rec {
+          nixos-test = pkgs.callPackage ./nix/test { overlay = self.overlays.default; };
+          haqq = pkgsUnstable.callPackage ./nix/package.nix {
+            inherit (pkgsUnstable) buildGoApplication;
+            inherit go;
+            rev = if (self ? rev) then self.rev else self.dirtyRev;
+          };
+          haqq-with-tests = haqq.overrideAttrs (_: {
+            subPackages = null;
+            doCheck = true;
+          });
+          default = haqq;
+        };
+
+        devShells = {
+          default = devenv.lib.mkShell {
+            inherit inputs pkgs;
+            modules = [
+              (import ./nix/devshell/common.nix { inherit pkgs pkgsUnstable go; })
+              (import ./nix/devshell { inherit pkgs pkgsUnstable; })
+            ];
           };
 
-          devShells = {
-            default = devenv.lib.mkShell {
-              inherit inputs pkgs;
-              modules = [
-                (import
-                  ./nix/devshell/common.nix
-                  { inherit pkgs pkgsUnstable go; })
-                (import ./nix/devshell { inherit pkgs pkgsUnstable; })
-              ];
-            };
-
-            ci = devenv.lib.mkShell {
-              inherit inputs pkgs;
-              modules = [
-                (import
-                  ./nix/devshell/common.nix
-                  { inherit pkgs pkgsUnstable go; })
-                (import ./nix/devshell/ci.nix { inherit pkgs pkgsUnstable go; })
-              ];
-            };
+          ci = devenv.lib.mkShell {
+            inherit inputs pkgs;
+            modules = [
+              (import ./nix/devshell/common.nix { inherit pkgs pkgsUnstable go; })
+              (import ./nix/devshell/ci.nix { inherit pkgs pkgsUnstable go; })
+            ];
           };
-        }
-      ) // {
+        };
+      }
+    )
+    // {
 
       overlays.default = prev: final: {
         inherit (inputs.cosmos.packages.${prev.system}) cosmovisor;
