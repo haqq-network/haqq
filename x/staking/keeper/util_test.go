@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"errors"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -34,7 +33,7 @@ func setupClawbackVestingAccount(ctx sdk.Context, nw *network.UnitTestNetwork, v
 	msgConv := types.NewMsgConvertIntoVestingAccount(
 		funderAcc,
 		vestingAcc,
-		time.Now(),
+		ctx.BlockTime(),
 		testutil.TestVestingSchedule.LockupPeriods,
 		testutil.TestVestingSchedule.VestingPeriods,
 		true, false, nil,
