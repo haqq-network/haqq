@@ -65,7 +65,7 @@ func GetTokenPairsCmd() *cobra.Command {
 	return cmd
 }
 
-// GetTokenPairsCmd queries a registered token pair
+// GetTokenPairCmd queries a registered token pair
 func GetTokenPairCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token-pair TOKEN",
