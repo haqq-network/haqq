@@ -10,7 +10,7 @@ on:
 
 jobs:
   push:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu]
     steps:
       - uses: actions/checkout@v4
       - uses: bufbuild/buf-setup-action@v1.28.1
