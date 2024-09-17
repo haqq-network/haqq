@@ -34,7 +34,7 @@ type Keeper interface {
 	GetAccountsBalances(ctx sdk.Context) []types.Balance
 
 	Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
-	TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress) error
+	TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress, amount sdk.Coins) (sdk.Coins, error)
 
 	// grpc query endpoints
 	Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error)
@@ -111,30 +111,49 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 	return nil
 }
 
-func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress) error {
+func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress, amount sdk.Coins) (sdk.Coins, error) {
 	if !k.IsModuleEnabled(ctx) {
-		return types.ErrModuleDisabled
+		return nil, types.ErrModuleDisabled
 	}
 
-	coins := k.GetAccountBalances(ctx, owner)
-	if coins.IsZero() {
-		return types.ErrNotEligible
+	balances := k.GetAccountBalances(ctx, owner)
+	if balances.IsZero() {
+		return nil, types.ErrNotEligible
+	}
+
+	leftovers := sdk.NewCoins()
+	for _, coin := range amount {
+		if coin.IsZero() {
+			// should not happen
+			continue
+		}
+
+		ok, foundInBalance := balances.Find(coin.Denom)
+		if !ok {
+			return nil, sdkerrors.Wrapf(types.ErrInsufficientFunds, "zero balance of %s", coin.Denom)
+		}
+		leftCoin, err := foundInBalance.SafeSub(coin)
+		if err != nil {
+			return nil, sdkerrors.Wrapf(types.ErrInsufficientFunds, "%s on balance is lower than %s to transfer", foundInBalance, coin)
+		}
+
+		leftovers = append(leftovers, leftCoin)
 	}
 
 	// Add coins to new owner
-	err := k.addCoinsToAccount(ctx, newOwner, coins)
+	err := k.addCoinsToAccount(ctx, newOwner, amount)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Remove coins from old owner
-	for _, coin := range coins {
-		if err := k.setBalance(ctx, owner, sdk.NewCoin(coin.Denom, sdk.ZeroInt())); err != nil {
-			return err
+	for _, coin := range leftovers {
+		if err := k.setBalance(ctx, owner, coin); err != nil {
+			return nil, err
 		}
 	}
 
-	return nil
+	return amount, nil
 }
 
 // Logger returns a module-specific logger.
