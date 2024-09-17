@@ -19,7 +19,10 @@ var (
 // RegisterLegacyAminoCodec registers all the necessary types and interfaces for the dao module.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgFund{}, "haqq/ucdao/MsgFund")
+	legacy.RegisterAminoMsg(cdc, &MsgFundLegacy{}, "haqq/dao/MsgFund")
 	legacy.RegisterAminoMsg(cdc, &MsgTransferOwnership{}, "haqq/ucdao/MsgTransferOwnership")
+	legacy.RegisterAminoMsg(cdc, &MsgTransferOwnershipWithRatio{}, "haqq/ucdao/MsgTransferOwnershipWithRatio")
+	legacy.RegisterAminoMsg(cdc, &MsgTransferOwnershipWithAmount{}, "haqq/ucdao/MsgTransferOwnershipWithAmount")
 
 	cdc.RegisterConcrete(Params{}, "haqq/x/ucdao/Params", nil)
 }
@@ -30,6 +33,8 @@ func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 		(*sdk.Msg)(nil),
 		&MsgFund{},
 		&MsgTransferOwnership{},
+		&MsgTransferOwnershipWithRatio{},
+		&MsgTransferOwnershipWithAmount{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
