@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -24,7 +25,17 @@ func (k BaseKeeper) Balance(ctx context.Context, req *types.QueryBalanceRequest)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	address, err := sdk.AccAddressFromBech32(req.Address)
+	var (
+		address []byte
+		err     error
+	)
+
+	if common.IsHexAddress(req.Address) {
+		hexAddr := common.HexToAddress(req.Address)
+		address = hexAddr.Bytes()
+	} else {
+		address, err = sdk.AccAddressFromBech32(req.Address)
+	}
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
 	}
@@ -40,7 +51,17 @@ func (k BaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalances
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	addr, err := sdk.AccAddressFromBech32(req.Address)
+	var (
+		address []byte
+		err     error
+	)
+
+	if common.IsHexAddress(req.Address) {
+		hexAddr := common.HexToAddress(req.Address)
+		address = hexAddr.Bytes()
+	} else {
+		address, err = sdk.AccAddressFromBech32(req.Address)
+	}
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
 	}
@@ -48,7 +69,7 @@ func (k BaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalances
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	balances := sdk.NewCoins()
-	accountStore := k.getAccountStore(sdkCtx, addr)
+	accountStore := k.getAccountStore(sdkCtx, address)
 
 	pageRes, err := query.Paginate(accountStore, req.Pagination, func(key, value []byte) error {
 		denom := string(key)
