@@ -69,8 +69,11 @@ func (k Keeper) ApplyVestingSchedule(
 			vestingPeriods,
 			&codeHash,
 		)
-		acc := k.accountKeeper.NewAccount(ctx, vestingAcc)
-		k.accountKeeper.SetAccount(ctx, acc)
+		bondedAmt := k.stakingKeeper.GetDelegatorBonded(ctx, vestingAcc.GetAddress())
+		unbondingAmt := k.stakingKeeper.GetDelegatorUnbonding(ctx, vestingAcc.GetAddress())
+		delegatedAmt := bondedAmt.Add(unbondingAmt)
+		vestingAcc.DelegatedFree = sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegatedAmt))
+		k.accountKeeper.SetAccount(ctx, vestingAcc)
 		return vestingAcc, false, false, nil
 	case isClawback && merge:
 		if funder.String() != vestingAcc.FunderAddress {

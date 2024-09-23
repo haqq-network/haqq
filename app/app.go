@@ -174,6 +174,7 @@ import (
 	v177 "github.com/haqq-network/haqq/app/upgrades/v1.7.7"
 	v178 "github.com/haqq-network/haqq/app/upgrades/v1.7.8"
 	v180 "github.com/haqq-network/haqq/app/upgrades/v1.8.0"
+	v181 "github.com/haqq-network/haqq/app/upgrades/v1.8.1"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -1279,6 +1280,12 @@ func (app *Haqq) setupUpgradeHandlers(keys map[string]*storetypes.KVStoreKey) {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v180.UpgradeName,
 		v180.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.BankKeeper, app.DaoKeeper, keys[ucdaotypes.StoreKey]),
+	)
+
+	// v1.8.1 Fix delegations tracking on Vesting accounts
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v181.UpgradeName,
+		v181.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, *app.StakingKeeper.Keeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic
