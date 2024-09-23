@@ -438,7 +438,6 @@ func (k Keeper) addGrant(
 	bondedAmt := k.stakingKeeper.GetDelegatorBonded(ctx, vestingAddr)
 	unbondingAmt := k.stakingKeeper.GetDelegatorUnbonding(ctx, vestingAddr)
 	delegatedAmt := bondedAmt.Add(unbondingAmt)
-	delegated := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegatedAmt))
 
 	// modify schedules for the new grant
 	accStartTime := va.GetStartTime()
@@ -459,10 +458,9 @@ func (k Keeper) addGrant(
 	va.VestingPeriods = newVestingPeriods
 	va.OriginalVesting = va.OriginalVesting.Add(grantCoins...)
 
-	// cap DV at the current unvested amount, DF rounds out to current delegated
-	unvested := va.GetVestingCoins(ctx.BlockTime())
-	va.DelegatedVesting = delegated.Min(unvested)
-	va.DelegatedFree = delegated.Sub(va.DelegatedVesting...)
+	// DF rounds out to current delegated
+	va.DelegatedVesting = sdk.NewCoins()
+	va.DelegatedFree = sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegatedAmt))
 	return nil
 }
 
