@@ -1249,3 +1249,123 @@ var _ = Describe("Clawback Vesting Account - Barberry bug", func() {
 		}
 	})
 })
+
+var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
+	// Create test accounts with private keys for signing
+	numTestAccounts := 4
+	testAccounts := make([]TestClawbackAccount, numTestAccounts)
+	for i := range testAccounts {
+		address, privKey := utiltx.NewAddrKey()
+		testAccounts[i] = TestClawbackAccount{
+			privKey: privKey,
+			address: address.Bytes(),
+		}
+	}
+
+	var (
+		clawbackAccount *types.ClawbackVestingAccount
+		isClawback      bool
+	)
+
+	// Prepare custom test amounts
+	initialFreeBalance := sdk.NewCoins(sdk.NewCoin(stakeDenom, math.NewInt(1e18).MulRaw(10)))
+
+	BeforeEach(func() {
+		s.SetupTest()
+
+		// Initialize all test accounts
+		for _, account := range testAccounts {
+			err := testutil.FundAccount(s.ctx, s.app.BankKeeper, account.address, initialFreeBalance)
+			Expect(err).To(BeNil())
+			accBal := s.app.BankKeeper.GetBalance(s.ctx, account.address, stakeDenom)
+			Expect(accBal).To(Equal(initialFreeBalance[0]))
+		}
+
+		// Add a commit to instantiate blocks
+		s.Commit()
+	})
+
+	It("Has delegation before conversion and free spendable coins", func() {
+		vacc := testAccounts[0]
+		vaccAddr := vacc.address
+		vaccPrivKey := vacc.privKey
+
+		// Add coins to be delegated
+		err := testutil.FundAccount(s.ctx, s.app.BankKeeper, vaccAddr, initialFreeBalance)
+		Expect(err).To(BeNil())
+		s.Commit()
+
+		// Should be doubled initialFreeBalance
+		vaccBal := s.app.BankKeeper.GetBalance(s.ctx, vaccAddr, stakeDenom)
+		Expect(vaccBal).To(Equal(initialFreeBalance.Add(initialFreeBalance...)[0]))
+
+		// should be equal to account balance
+		vaccSpendableCoins := s.app.BankKeeper.SpendableCoins(s.ctx, vaccAddr)
+		Expect(vaccSpendableCoins).ToNot(BeNil())
+		Expect(vaccSpendableCoins[0]).To(Equal(vaccBal))
+
+		// delegate half of the balance
+		_, err = testutil.Delegate(s.ctx, s.app, vaccPrivKey, initialFreeBalance[0], s.validator)
+		Expect(err).To(BeNil())
+		s.Commit()
+
+		// Check delegation
+		vaccBalAfterDelegation := s.app.BankKeeper.GetBalance(s.ctx, vaccAddr, stakeDenom)
+		Expect(vaccBalAfterDelegation.IsLT(initialFreeBalance[0])).To(BeTrue())
+
+		bondedAmt := s.app.StakingKeeper.GetDelegatorBonded(s.ctx, vaccAddr)
+		unbondingAmt := s.app.StakingKeeper.GetDelegatorUnbonding(s.ctx, vaccAddr)
+		delegatedAmt := bondedAmt.Add(unbondingAmt)
+		Expect(delegatedAmt).To(Equal(initialFreeBalance[0].Amount))
+
+		vaccSpendableCoinsAfterDelegation := s.app.BankKeeper.SpendableCoins(s.ctx, vaccAddr)
+		Expect(vaccSpendableCoinsAfterDelegation).ToNot(BeNil())
+		Expect(vaccSpendableCoinsAfterDelegation[0].IsLT(initialFreeBalance[0])).To(BeTrue())
+
+		// test vesting account creation
+		vaccBalBeforeVesting := s.app.BankKeeper.GetBalance(s.ctx, vaccAddr, stakeDenom)
+		Expect(vaccBalBeforeVesting).To(Equal(vaccBalAfterDelegation))
+
+		vaccSpendableCoinsBeforeVesting := s.app.BankKeeper.SpendableCoins(s.ctx, vaccAddr)
+		Expect(vaccSpendableCoinsBeforeVesting).To(Equal(vaccSpendableCoinsAfterDelegation))
+
+		vestingStart := s.ctx.BlockTime()
+		msg := types.NewMsgConvertIntoVestingAccount(
+			testAccounts[1].address,
+			vaccAddr,
+			vestingStart,
+			testutil.TestVestingSchedule.LockupPeriods,
+			testutil.TestVestingSchedule.VestingPeriods,
+			true, false, nil,
+		)
+		_, err = testutil.DeliverTx(s.ctx, s.app, testAccounts[1].privKey, nil, signing.SignMode_SIGN_MODE_DIRECT, msg)
+		Expect(err).ToNot(HaveOccurred(), "expected creating clawback vesting account to succeed")
+		s.Commit()
+
+		funderAccBalAfterVesting := s.app.BankKeeper.GetBalance(s.ctx, testAccounts[1].address, stakeDenom)
+		Expect(funderAccBalAfterVesting.IsLT(initialFreeBalance[0].Sub(vestingAmtTotal[0]))).To(BeTrue())
+
+		vaccBalAfterVesting := s.app.BankKeeper.GetBalance(s.ctx, vaccAddr, stakeDenom)
+		Expect(vaccBalAfterVesting).To(Equal(vaccBalBeforeVesting.Add(vestingAmtTotal[0])))
+
+		vaccSpendableCoinsAfterVesting := s.app.BankKeeper.SpendableCoins(s.ctx, vaccAddr)
+		Expect(vaccSpendableCoinsAfterVesting).To(Equal(vaccSpendableCoinsBeforeVesting))
+
+		acc := s.app.AccountKeeper.GetAccount(s.ctx, testAccounts[0].address)
+		clawbackAccount, isClawback = acc.(*types.ClawbackVestingAccount)
+		Expect(isClawback).To(BeTrue(), "expected account to be clawback vesting account")
+
+		Expect(clawbackAccount.DelegatedVesting).To(BeNil())
+		Expect(clawbackAccount.DelegatedFree).ToNot(BeNil())
+		Expect(clawbackAccount.DelegatedFree[0]).To(Equal(initialFreeBalance[0]))
+
+		// test spendable coins after vesting cliff
+		s.CommitAfter(time.Duration(cliffLength)*time.Second + 1)
+
+		vaccBalAfterCliff := s.app.BankKeeper.GetBalance(s.ctx, vaccAddr, stakeDenom)
+		Expect(vaccBalAfterCliff).To(Equal(vaccBalAfterVesting))
+
+		vaccSpendableCoinsAfterCliff := s.app.BankKeeper.SpendableCoins(s.ctx, vaccAddr)
+		Expect(vaccSpendableCoinsAfterCliff).To(Equal(vaccSpendableCoinsAfterVesting.Add(clawbackAccount.GetLockedUpVestedCoins(s.ctx.BlockTime())...)))
+	})
+})

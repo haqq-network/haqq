@@ -12,6 +12,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -45,9 +46,9 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.priv = priv
 
 	// consensus key
-	priv, err = ethsecp256k1.GenerateKey()
+	consPrivKey := ed25519.GenPrivKey()
 	require.NoError(t, err)
-	suite.consAddress = sdk.ConsAddress(priv.PubKey().Address())
+	suite.consAddress = sdk.ConsAddress(consPrivKey.PubKey().Address())
 
 	// Init app
 	chainID := utils.MainNetChainID + "-1"
@@ -98,7 +99,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 
 	// Set Validator
 	valAddr := sdk.ValAddress(suite.address.Bytes())
-	validator, err := stakingtypes.NewValidator(valAddr, priv.PubKey(), stakingtypes.Description{})
+	validator, err := stakingtypes.NewValidator(valAddr, consPrivKey.PubKey(), stakingtypes.Description{})
 	require.NoError(t, err)
 	validator = stakingkeeper.TestingUpdateValidator(suite.app.StakingKeeper.Keeper, suite.ctx, validator, true)
 	err = suite.app.StakingKeeper.Hooks().AfterValidatorCreated(suite.ctx, validator.GetOperator())
