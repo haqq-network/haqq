@@ -98,6 +98,20 @@ func (k BaseKeeper) TotalBalance(ctx context.Context, req *types.QueryTotalBalan
 	return &types.QueryTotalBalanceResponse{TotalBalance: totalBalance, Pagination: pageRes}, nil
 }
 
+func (k BaseKeeper) Holders(ctx context.Context, req *types.QueryHoldersRequest) (*types.QueryHoldersResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	balances, pageRes, err := k.GetPaginatedAccountsBalances(sdkCtx, req.Pagination)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryHoldersResponse{Balances: balances, Pagination: pageRes}, nil
+}
+
 // Params implements the gRPC service handler for querying x/bank parameters.
 func (k BaseKeeper) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	if req == nil {

@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/haqq-network/haqq/x/ucdao/types"
 )
@@ -118,6 +119,36 @@ func (k BaseKeeper) GetAccountsBalances(ctx sdk.Context) []types.Balance {
 	return balances
 }
 
+// GetPaginatedAccountsBalances returns all the accounts balances from the store paginated by accounts.
+func (k BaseKeeper) GetPaginatedAccountsBalances(ctx sdk.Context, pagination *query.PageRequest) ([]types.Balance, *query.PageResponse, error) {
+	holdersStore := k.getHoldersStore(ctx)
+	balances := make([]types.Balance, 0)
+	pageRes, err := query.Paginate(holdersStore, pagination, func(key, value []byte) error {
+		addr, err := types.AddressFromHoldersStore(key)
+		if err != nil {
+			k.Logger(ctx).With("key", key, "err", err).Error("failed to get address from holders store key")
+			// TODO: revisit, for now, panic here to keep same behavior as in 0.42
+			// ref: https://github.com/cosmos/cosmos-sdk/issues/7409
+			panic(err)
+		}
+
+		coins := k.GetAccountBalances(ctx, addr)
+		balance := types.Balance{
+			Address: addr.String(),
+			Coins:   coins,
+		}
+
+		balances = append(balances, balance)
+
+		return nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return balances, pageRes, nil
+}
+
 // UnmarshalBalanceCompat unmarshal balance amount from storage, it's backward-compatible with the legacy format.
 func UnmarshalBalanceCompat(cdc codec.BinaryCodec, bz []byte, denom string) (sdk.Coin, error) {
 	if err := sdk.ValidateDenom(denom); err != nil {
@@ -150,11 +181,12 @@ func (k BaseKeeper) setBalance(ctx sdk.Context, addr sdk.AccAddress, balance sdk
 
 	accountStore := k.getAccountStore(ctx, addr)
 	denomPrefixStore := k.getDenomAddressPrefixStore(ctx, balance.Denom)
+	addrKey := address.MustLengthPrefix(addr)
 
 	// x/bank invariants prohibit persistence of zero balances
 	if balance.IsZero() {
 		accountStore.Delete([]byte(balance.Denom))
-		denomPrefixStore.Delete(address.MustLengthPrefix(addr))
+		denomPrefixStore.Delete(addrKey)
 	} else {
 		amount, err := balance.Amount.Marshal()
 		if err != nil {
@@ -165,9 +197,8 @@ func (k BaseKeeper) setBalance(ctx sdk.Context, addr sdk.AccAddress, balance sdk
 
 		// Store a reverse index from denomination to account address with a
 		// sentinel value.
-		denomAddrKey := address.MustLengthPrefix(addr)
-		if !denomPrefixStore.Has(denomAddrKey) {
-			denomPrefixStore.Set(denomAddrKey, []byte{0})
+		if !denomPrefixStore.Has(addrKey) {
+			denomPrefixStore.Set(addrKey, []byte{0})
 		}
 	}
 
@@ -194,4 +225,20 @@ func (k BaseKeeper) addCoinsToAccount(ctx sdk.Context, addr sdk.AccAddress, amt 
 	// TODO emit coin received event
 
 	return nil
+}
+
+func (k BaseKeeper) setHoldersIndex(ctx sdk.Context, addr sdk.AccAddress) {
+	holdersStore := k.getHoldersStore(ctx)
+	addrKey := address.MustLengthPrefix(addr)
+
+	// Delete value from holders store if all balances is zero.
+	allBalances := k.GetAccountBalances(ctx, addr)
+	if allBalances.IsZero() && holdersStore.Has(addrKey) {
+		holdersStore.Delete(addrKey)
+	}
+
+	// Store an index of account address with a sentinel value.
+	if !holdersStore.Has(addrKey) && !allBalances.IsZero() {
+		holdersStore.Set(addrKey, []byte{0})
+	}
 }

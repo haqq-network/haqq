@@ -40,6 +40,7 @@ type Keeper interface {
 	Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error)
 	AllBalances(ctx context.Context, req *types.QueryAllBalancesRequest) (*types.QueryAllBalancesResponse, error)
 	TotalBalance(ctx context.Context, req *types.QueryTotalBalanceRequest) (*types.QueryTotalBalanceResponse, error)
+	Holders(ctx context.Context, req *types.QueryHoldersRequest) (*types.QueryHoldersResponse, error)
 	Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error)
 
 	// genesis methods
@@ -108,6 +109,9 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 		k.setTotalBalanceOfCoin(ctx, bal)
 	}
 
+	// Update holders index
+	k.setHoldersIndex(ctx, sender)
+
 	return nil
 }
 
@@ -152,6 +156,10 @@ func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAd
 			return nil, err
 		}
 	}
+
+	// Update holders index
+	k.setHoldersIndex(ctx, newOwner)
+	k.setHoldersIndex(ctx, owner)
 
 	return amount, nil
 }
