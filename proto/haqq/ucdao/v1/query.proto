@@ -10,6 +10,7 @@ import "cosmos_proto/cosmos.proto";
 import "cosmos/query/v1/query.proto";
 import "amino/amino.proto";
 import "haqq/ucdao/v1/ucdao.proto";
+import "haqq/ucdao/v1/genesis.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/ucdao/types";
 
@@ -37,6 +38,15 @@ service Query {
   rpc TotalBalance(QueryTotalBalanceRequest) returns (QueryTotalBalanceResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get               = "/haqq/ucdao/v1/total_balance";
+  }
+
+  // TokenHolders queries the all balances of all coins locked in the module and group them by account address.
+  //
+  // When called from another module, this query might consume a high amount of
+  // gas if the pagination field is incorrectly set.
+  rpc Holders(QueryHoldersRequest) returns (QueryHoldersResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/haqq/ucdao/v1/holders";
   }
 
   // Params queries the parameters of x/ucdao module.
@@ -124,4 +134,26 @@ message QueryParamsRequest {}
 // QueryParamsResponse defines the response type for querying x/ucdao parameters.
 message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryHoldersRequest is the request type for the Query/Holders RPC method.
+message QueryHoldersRequest {
+  option (gogoproto.equal)           = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // pagination defines an optional pagination for the request.
+  //
+  // Since: cosmos-sdk 0.43
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryHoldersResponse is the response type for the Query/Holders RPC method.
+message QueryHoldersResponse {
+  // balances is the balances of all the coins.
+  repeated Balance balances = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // pagination defines the pagination in the response.
+  //
+  // Since: cosmos-sdk 0.43
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }

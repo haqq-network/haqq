@@ -18,3 +18,8 @@ func (k BaseKeeper) getAccountStore(ctx sdk.Context, addr sdk.AccAddress) prefix
 func (k BaseKeeper) getDenomAddressPrefixStore(ctx sdk.Context, denom string) prefix.Store {
 	return prefix.NewStore(ctx.KVStore(k.storeKey), types.CreateDenomAddressPrefix(denom))
 }
+
+// getHoldersStore gets the holders store.
+func (k BaseKeeper) getHoldersStore(ctx sdk.Context) prefix.Store {
+	return prefix.NewStore(ctx.KVStore(k.storeKey), types.HoldersPrefix)
+}

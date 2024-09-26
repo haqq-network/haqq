@@ -27,6 +27,7 @@ var (
 	// (instead of `[]byte("balances")` to save some disk space).
 	BalancesPrefix     = []byte{0x01}
 	DenomAddressPrefix = []byte{0x02}
+	HoldersPrefix      = []byte{0x04} // 3 is already occupied by the params key
 
 	ParamsKey = []byte{0x03} // key for dao module params
 )
@@ -67,4 +68,23 @@ func AddressAndDenomFromBalancesStore(key []byte) (sdk.AccAddress, string, error
 	}
 
 	return key[1 : addrBound+1], string(key[addrBound+1:]), nil
+}
+
+// AddressFromHoldersStore returns an account address from a holders prefix store.
+// The key must not contain the prefix HoldersPrefix as the prefix store
+// iterator discards the actual prefix.
+func AddressFromHoldersStore(key []byte) (sdk.AccAddress, error) {
+	if len(key) == 0 {
+		return nil, ErrInvalidKey
+	}
+
+	kv.AssertKeyAtLeastLength(key, 1)
+
+	addrBound := int(key[0])
+
+	if len(key)-1 < addrBound {
+		return nil, ErrInvalidKey
+	}
+
+	return key[1 : addrBound+1], nil
 }
