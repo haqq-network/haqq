@@ -28,6 +28,13 @@ func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 
 		totalBalance = totalBalance.Add(balance.Coins...)
+
+		// Set the holders store if the balance is not zero
+		holdersStore := k.getHoldersStore(ctx)
+		addrKey := address.MustLengthPrefix(addr)
+		if !balance.Coins.IsZero() && !holdersStore.Has(addrKey) {
+			holdersStore.Set(addrKey, []byte{0})
+		}
 	}
 
 	if !genState.TotalBalance.Empty() && !genState.TotalBalance.IsEqual(totalBalance) {

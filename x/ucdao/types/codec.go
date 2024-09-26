@@ -21,8 +21,8 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgFund{}, "haqq/ucdao/MsgFund")
 	legacy.RegisterAminoMsg(cdc, &MsgFundLegacy{}, "haqq/dao/MsgFund")
 	legacy.RegisterAminoMsg(cdc, &MsgTransferOwnership{}, "haqq/ucdao/MsgTransferOwnership")
-	legacy.RegisterAminoMsg(cdc, &MsgTransferOwnershipWithRatio{}, "haqq/ucdao/MsgTransferOwnershipWithRatio")
-	legacy.RegisterAminoMsg(cdc, &MsgTransferOwnershipWithAmount{}, "haqq/ucdao/MsgTransferOwnershipWithAmount")
+	legacy.RegisterAminoMsg(cdc, &MsgTransferOwnershipWithRatio{}, "haqq/ucdao/MsgTransferWithRatio")
+	legacy.RegisterAminoMsg(cdc, &MsgTransferOwnershipWithAmount{}, "haqq/ucdao/MsgTransferOwnershipAmount")
 
 	cdc.RegisterConcrete(Params{}, "haqq/x/ucdao/Params", nil)
 }
