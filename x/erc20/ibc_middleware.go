@@ -43,6 +43,14 @@ func (im IBCMiddleware) OnRecvPacket(
 ) exported.Acknowledgement {
 	ack := im.Module.OnRecvPacket(ctx, packet, relayer)
 
+	// returning nil ack will prevent WriteAcknowledgement from occurring for forwarded packet.
+	// This is intentional so that the acknowledgement will be written later based on the ack/timeout of the forwarded packet.
+	//
+	// As the packet is forwarded, there no need to execute ERC20 module logic.
+	if ack == nil {
+		return nil
+	}
+
 	// return if the acknowledgement is an error ACK
 	if !ack.Success() {
 		return ack
