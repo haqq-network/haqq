@@ -29,6 +29,11 @@ func NewMsgFund(amount sdk.Coins, depositor sdk.AccAddress) *MsgFund {
 	}
 }
 
+func init() {
+	// Register the MsgFundLegacy type with the old name to support history data reading.
+	proto.RegisterType((*MsgFundLegacy)(nil), "haqq.dao.v1.MsgFund")
+}
+
 // Route returns the MsgFundCommunityPool message route.
 func (msg MsgFund) Route() string { return ModuleName }
 

@@ -85,7 +85,7 @@ message MsgTransferOwnershipResponse {}
 // MsgTransferOwnershipWithRatio allows an account transfer the ownership of shares to another account with ratio.
 message MsgTransferOwnershipWithRatio {
   option (cosmos.msg.v1.signer) = "owner";
-  option (amino.name)           = "haqq/ucdao/MsgTransferOwnershipWithRatio";
+  option (amino.name)           = "haqq/ucdao/MsgTransferWithRatio";
 
   option (gogoproto.equal)           = false;
   option (gogoproto.goproto_getters) = false;
@@ -109,7 +109,7 @@ message MsgTransferOwnershipWithRatioResponse {
 // with certain amount of coins.
 message MsgTransferOwnershipWithAmount {
   option (cosmos.msg.v1.signer) = "owner";
-  option (amino.name)           = "haqq/ucdao/MsgTransferOwnershipWithAmount";
+  option (amino.name)           = "haqq/ucdao/MsgTransferWithAmount";
 
   option (gogoproto.equal)           = false;
   option (gogoproto.goproto_getters) = false;
