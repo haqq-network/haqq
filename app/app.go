@@ -175,6 +175,7 @@ import (
 	v178 "github.com/haqq-network/haqq/app/upgrades/v1.7.8"
 	v180 "github.com/haqq-network/haqq/app/upgrades/v1.8.0"
 	v181 "github.com/haqq-network/haqq/app/upgrades/v1.8.1"
+	v182 "github.com/haqq-network/haqq/app/upgrades/v1.8.2"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -1286,6 +1287,12 @@ func (app *Haqq) setupUpgradeHandlers(keys map[string]*storetypes.KVStoreKey) {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v181.UpgradeName,
 		v181.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, *app.StakingKeeper.Keeper),
+	)
+
+	// v1.8.2 Add partial transfer ownership in UC DAO module, improve integration tests and fix IBC Forwarding
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v182.UpgradeName,
+		v182.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
 	// When a planned update height is reached, the old binary will panic
