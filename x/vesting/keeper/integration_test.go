@@ -334,7 +334,7 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			Expect(spendablePost).To(Equal(spendablePre.Sub(amt...).Sub(accountGasCoverage...)))
 		})
 
-		It("cannot delegate unvested tokens in sequetial txs", func() {
+		It("cannot delegate unvested tokens in sequential txs", func() {
 			_, err := testutil.Delegate(s.ctx, s.app, testAccounts[0].privKey, twoThirdsOfVested[0], s.validator)
 			Expect(err).To(BeNil(), "error while executing the delegate message")
 			_, err = testutil.Delegate(s.ctx, s.app, testAccounts[0].privKey, twoThirdsOfVested[0], s.validator)

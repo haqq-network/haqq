@@ -439,7 +439,7 @@ lint-fix-contracts:
 
 format: 
 	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs gofmt -w -s 
-	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs codespell -w 
+#	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs codespell -w 
 	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs goimports -w -local github.com/haqq-network/haqq
 
 .PHONY: format

@@ -13,8 +13,8 @@ import (
 
 func (suite *KeeperTestSuite) TestBalances() {
 	var (
-		req    *types.QueryBalancesRequest
-		expRes *types.QueryBalancesResponse
+		req       *types.QueryBalancesRequest
+		expResult *types.QueryBalancesResponse
 	)
 	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 
@@ -97,7 +97,7 @@ func (suite *KeeperTestSuite) TestBalances() {
 				req = &types.QueryBalancesRequest{
 					Address: addr.String(),
 				}
-				expRes = &types.QueryBalancesResponse{
+				expResult = &types.QueryBalancesResponse{
 					Locked:   balances,
 					Unvested: balances,
 					Vested:   nil,
@@ -117,7 +117,7 @@ func (suite *KeeperTestSuite) TestBalances() {
 			res, err := suite.queryClient.Balances(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResult, res)
 			} else {
 				suite.Require().Error(err)
 				suite.Require().ErrorContains(err, tc.errContains)

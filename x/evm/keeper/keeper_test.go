@@ -91,9 +91,9 @@ func (suite *KeeperTestSuite) TestBaseFee() {
 
 func (suite *KeeperTestSuite) TestGetAccountStorage() {
 	testCases := []struct {
-		name     string
-		malleate func()
-		expRes   []int
+		name      string
+		malleate  func()
+		expResult []int
 	}{
 		{
 			"Only one account that's not a contract (no storage)",
@@ -125,7 +125,7 @@ func (suite *KeeperTestSuite) TestGetAccountStorage() {
 				addr := ethAccount.EthAddress()
 				storage := suite.app.EvmKeeper.GetAccountStorage(suite.ctx, addr)
 
-				suite.Require().Equal(tc.expRes[i], len(storage))
+				suite.Require().Equal(tc.expResult[i], len(storage))
 				i++
 				return false
 			})

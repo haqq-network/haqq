@@ -19,8 +19,8 @@ import (
 
 func (suite *KeeperTestSuite) TestBalances() {
 	var (
-		req    *types.QueryBalanceRequest
-		expRes *types.QueryBalanceResponse
+		req       *types.QueryBalanceRequest
+		expResult *types.QueryBalanceResponse
 	)
 	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 	daoAmount := int64(1000)
@@ -68,7 +68,7 @@ func (suite *KeeperTestSuite) TestBalances() {
 				}
 
 				zeroCoin := sdk.NewCoin(utils.BaseDenom, sdk.ZeroInt())
-				expRes = &types.QueryBalanceResponse{
+				expResult = &types.QueryBalanceResponse{
 					Balance: &zeroCoin,
 				}
 			},
@@ -95,7 +95,7 @@ func (suite *KeeperTestSuite) TestBalances() {
 					Denom:   utils.BaseDenom,
 				}
 				_, islmBal := balances.Find(utils.BaseDenom)
-				expRes = &types.QueryBalanceResponse{
+				expResult = &types.QueryBalanceResponse{
 					Balance: &islmBal,
 				}
 			},
@@ -123,7 +123,7 @@ func (suite *KeeperTestSuite) TestBalances() {
 					Denom:   utils.BaseDenom,
 				}
 				_, islmBal := balances.Find(utils.BaseDenom)
-				expRes = &types.QueryBalanceResponse{
+				expResult = &types.QueryBalanceResponse{
 					Balance: &islmBal,
 				}
 			},
@@ -141,7 +141,7 @@ func (suite *KeeperTestSuite) TestBalances() {
 			res, err := suite.queryClient.Balance(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResult, res)
 			} else {
 				suite.Require().Error(err)
 				suite.Require().ErrorContains(err, tc.errContains)
@@ -166,8 +166,8 @@ func (ta testAccountsList) Swap(i, j int) {
 
 func (suite *KeeperTestSuite) TestHolders() {
 	var (
-		req    *types.QueryHoldersRequest
-		expRes *types.QueryHoldersResponse
+		req       *types.QueryHoldersRequest
+		expResult *types.QueryHoldersResponse
 	)
 
 	testAccountsCount := 5
@@ -190,7 +190,7 @@ func (suite *KeeperTestSuite) TestHolders() {
 			name: "nil req",
 			malleate: func() {
 				req = nil
-				expRes = &types.QueryHoldersResponse{
+				expResult = &types.QueryHoldersResponse{
 					Pagination: &query.PageResponse{
 						NextKey: nil,
 						Total:   0,
@@ -204,7 +204,7 @@ func (suite *KeeperTestSuite) TestHolders() {
 			name: "valid - no holders",
 			malleate: func() {
 				req = &types.QueryHoldersRequest{}
-				expRes = &types.QueryHoldersResponse{
+				expResult = &types.QueryHoldersResponse{
 					Pagination: &query.PageResponse{
 						NextKey: nil,
 						Total:   0,
@@ -230,7 +230,7 @@ func (suite *KeeperTestSuite) TestHolders() {
 				suite.Require().NoError(err, "error while funding the UC DAO account")
 
 				req = &types.QueryHoldersRequest{}
-				expRes = &types.QueryHoldersResponse{
+				expResult = &types.QueryHoldersResponse{
 					Balances: []types.Balance{
 						{
 							Address: acc.GetAddress().String(),
@@ -271,7 +271,7 @@ func (suite *KeeperTestSuite) TestHolders() {
 				}
 
 				req = &types.QueryHoldersRequest{}
-				expRes = &types.QueryHoldersResponse{
+				expResult = &types.QueryHoldersResponse{
 					Balances: holders,
 					Pagination: &query.PageResponse{
 						NextKey: nil,
@@ -318,7 +318,7 @@ func (suite *KeeperTestSuite) TestHolders() {
 						CountTotal: true,
 					},
 				}
-				expRes = &types.QueryHoldersResponse{
+				expResult = &types.QueryHoldersResponse{
 					Balances: holders,
 					Pagination: &query.PageResponse{
 						NextKey: nextKey,
@@ -366,7 +366,7 @@ func (suite *KeeperTestSuite) TestHolders() {
 						CountTotal: true,
 					},
 				}
-				expRes = &types.QueryHoldersResponse{
+				expResult = &types.QueryHoldersResponse{
 					Balances: holders,
 					Pagination: &query.PageResponse{
 						NextKey: nextKey,
@@ -400,7 +400,7 @@ func (suite *KeeperTestSuite) TestHolders() {
 				suite.Require().NoError(err, "error while transfer ownership to new account")
 
 				req = &types.QueryHoldersRequest{}
-				expRes = &types.QueryHoldersResponse{
+				expResult = &types.QueryHoldersResponse{
 					Balances: []types.Balance{
 						{
 							Address: acc2.GetAddress().String(),
@@ -439,7 +439,7 @@ func (suite *KeeperTestSuite) TestHolders() {
 				suite.Require().NoError(err, "error while transfer ownership to new account")
 
 				req = &types.QueryHoldersRequest{}
-				expRes = &types.QueryHoldersResponse{
+				expResult = &types.QueryHoldersResponse{
 					Balances: []types.Balance{
 						{
 							Address: acc.GetAddress().String(),
@@ -470,7 +470,7 @@ func (suite *KeeperTestSuite) TestHolders() {
 			res, err := suite.queryClient.Holders(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResult, res)
 			} else {
 				suite.Require().Error(err)
 				suite.Require().ErrorContains(err, tc.errContains)

@@ -17,12 +17,14 @@ import (
 	bankprecompile "github.com/haqq-network/haqq/precompiles/bank"
 	"github.com/haqq-network/haqq/precompiles/bech32"
 	distprecompile "github.com/haqq-network/haqq/precompiles/distribution"
+
 	// erc20precompile "github.com/haqq-network/haqq/precompiles/erc20"
 	ics20precompile "github.com/haqq-network/haqq/precompiles/ics20"
 	// osmosisoutpost "github.com/haqq-network/haqq/precompiles/outposts/osmosis"
 	// strideoutpost "github.com/haqq-network/haqq/precompiles/outposts/stride"
 	"github.com/haqq-network/haqq/precompiles/p256"
 	stakingprecompile "github.com/haqq-network/haqq/precompiles/staking"
+
 	// vestingprecompile "github.com/haqq-network/haqq/precompiles/vesting"
 	erc20Keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"

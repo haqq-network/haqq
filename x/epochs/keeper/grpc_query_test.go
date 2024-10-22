@@ -12,8 +12,8 @@ import (
 
 func (suite *KeeperTestSuite) TestEpochInfo() {
 	var (
-		req    *types.QueryEpochsInfoRequest
-		expRes *types.QueryEpochsInfoResponse
+		req       *types.QueryEpochsInfoRequest
+		expResult *types.QueryEpochsInfoResponse
 	)
 
 	testCases := []struct {
@@ -50,7 +50,7 @@ func (suite *KeeperTestSuite) TestEpochInfo() {
 				week.StartTime = suite.ctx.BlockTime()
 				week.CurrentEpochStartHeight = suite.ctx.BlockHeight()
 
-				expRes = &types.QueryEpochsInfoResponse{
+				expResult = &types.QueryEpochsInfoResponse{
 					Epochs: []types.EpochInfo{day, week},
 					Pagination: &query.PageResponse{
 						NextKey: nil,
@@ -102,7 +102,7 @@ func (suite *KeeperTestSuite) TestEpochInfo() {
 				suite.Commit()
 
 				req = &types.QueryEpochsInfoRequest{}
-				expRes = &types.QueryEpochsInfoResponse{
+				expResult = &types.QueryEpochsInfoResponse{
 					Epochs: []types.EpochInfo{day, quarter, week},
 					Pagination: &query.PageResponse{
 						NextKey: nil,
@@ -123,7 +123,7 @@ func (suite *KeeperTestSuite) TestEpochInfo() {
 			res, err := suite.queryClient.EpochInfos(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResult, res)
 			} else {
 				suite.Require().Error(err)
 			}
@@ -133,8 +133,8 @@ func (suite *KeeperTestSuite) TestEpochInfo() {
 
 func (suite *KeeperTestSuite) TestCurrentEpoch() {
 	var (
-		req    *types.QueryCurrentEpochRequest
-		expRes *types.QueryCurrentEpochResponse
+		req       *types.QueryCurrentEpochRequest
+		expResult *types.QueryCurrentEpochResponse
 	)
 
 	testCases := []struct {
@@ -147,7 +147,7 @@ func (suite *KeeperTestSuite) TestCurrentEpoch() {
 			func() {
 				defaultCurrentEpoch := int64(0)
 				req = &types.QueryCurrentEpochRequest{Identifier: "second"}
-				expRes = &types.QueryCurrentEpochResponse{
+				expResult = &types.QueryCurrentEpochResponse{
 					CurrentEpoch: defaultCurrentEpoch,
 				}
 			},
@@ -158,7 +158,7 @@ func (suite *KeeperTestSuite) TestCurrentEpoch() {
 			func() {
 				defaultCurrentEpoch := int64(0)
 				req = &types.QueryCurrentEpochRequest{Identifier: types.WeekEpochID}
-				expRes = &types.QueryCurrentEpochResponse{
+				expResult = &types.QueryCurrentEpochResponse{
 					CurrentEpoch: defaultCurrentEpoch,
 				}
 			},
@@ -169,7 +169,7 @@ func (suite *KeeperTestSuite) TestCurrentEpoch() {
 			func() {
 				defaultCurrentEpoch := int64(0)
 				req = &types.QueryCurrentEpochRequest{Identifier: types.DayEpochID}
-				expRes = &types.QueryCurrentEpochResponse{
+				expResult = &types.QueryCurrentEpochResponse{
 					CurrentEpoch: defaultCurrentEpoch,
 				}
 			},
@@ -186,7 +186,7 @@ func (suite *KeeperTestSuite) TestCurrentEpoch() {
 			res, err := suite.queryClient.CurrentEpoch(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResult, res)
 			} else {
 				suite.Require().Error(err)
 			}

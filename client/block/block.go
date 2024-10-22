@@ -29,7 +29,7 @@ func Cmd() *cobra.Command {
 
 			store, err := newStore(home, server.GetAppDBBackend(serverCtx.Viper))
 			if err != nil {
-				return fmt.Errorf("error while openning db: %w", err)
+				return fmt.Errorf("error while opening db: %w", err)
 			}
 
 			state, err := store.state()

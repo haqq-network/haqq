@@ -199,13 +199,13 @@ func (suite *KeeperTestSuite) TestMsgCreateClawbackVestingAccount() {
 			)
 			res, err := suite.app.VestingKeeper.CreateClawbackVestingAccount(ctx, msg)
 
-			expRes := &types.MsgCreateClawbackVestingAccountResponse{}
+			expResult := &types.MsgCreateClawbackVestingAccountResponse{}
 			balanceFunder := suite.app.BankKeeper.GetBalance(suite.ctx, tc.funder, "aISLM")
 			balanceVestingAddr := suite.app.BankKeeper.GetBalance(suite.ctx, tc.vestingAddr, "aISLM")
 
 			if tc.expPass {
 				suite.Require().NoError(err, tc.name)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResult, res)
 
 				accI := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.vestingAddr)
 				suite.Require().NotNil(accI)
@@ -350,8 +350,8 @@ func (suite *KeeperTestSuite) TestMsgClawback() {
 			if tc.expPass {
 				suite.Require().NoError(err)
 
-				expRes := &types.MsgClawbackResponse{}
-				suite.Require().Equal(expRes, res, "expected full balances to be clawed back")
+				expResult := &types.MsgClawbackResponse{}
+				suite.Require().Equal(expResult, res, "expected full balances to be clawed back")
 				suite.Require().Equal(sdk.NewInt64Coin("aISLM", 0), balanceDest)
 				suite.Require().Equal(balances[0], balanceClaw)
 			} else {
@@ -452,7 +452,7 @@ func (suite *KeeperTestSuite) TestMsgUpdateVestingFunder() {
 			msg := types.NewMsgUpdateVestingFunder(tc.funder, tc.newFunder, tc.vestingAcc)
 			res, err := suite.app.VestingKeeper.UpdateVestingFunder(ctx, msg)
 
-			expRes := &types.MsgUpdateVestingFunderResponse{}
+			expResult := &types.MsgUpdateVestingFunderResponse{}
 
 			if tc.expPass {
 				// get the updated vesting account
@@ -461,7 +461,7 @@ func (suite *KeeperTestSuite) TestMsgUpdateVestingFunder() {
 				suite.Require().True(ok, "vesting account could not be casted to ClawbackVestingAccount")
 
 				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				suite.Require().Equal(expResult, res)
 				suite.Require().Equal(va.FunderAddress, tc.newFunder.String())
 			} else {
 				suite.Require().Error(err)
