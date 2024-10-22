@@ -136,7 +136,7 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 	if ctx.IsReCheckTx() {
 		// Use new context with gasWanted = 0
 		// Otherwise, there's an error on txmempool.postCheck (tendermint)
-		// that is not bubbled up. Thus, the Tx never runs on deliverymode
+		// that is not bubbled up. Thus, the Tx never runs on 'DeliverMode'
 		// Error: "gas wanted -1 is negative"
 		// For more information, see issue #1554
 		// https://github.com/evmos/ethermint/issues/1554
