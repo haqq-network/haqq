@@ -1308,7 +1308,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 					// finalBalance := s.app.BankKeeper.GetBalance(s.chainA.GetContext(), s.address.Bytes(), s.bondDenom)
 					// Expect(finalBalance.Amount).To(Equal(initialBalance.Amount.Sub(fees)))
 
-					// check IBC coins balance remains unchaged
+					// check IBC coins balance remains unchanged
 					finalOsmoBalance := s.app.BankKeeper.GetBalance(s.chainA.GetContext(), s.address.Bytes(), ibcDenom)
 					Expect(finalOsmoBalance.Amount).To(Equal(initialOsmoBalance.Amount))
 				})
@@ -1407,7 +1407,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 					// finalBalance := s.app.BankKeeper.GetBalance(s.chainA.GetContext(), s.address.Bytes(), s.bondDenom)
 					// Expect(finalBalance.Amount).To(Equal(initialBalance.Amount.Sub(fees)))
 
-					// check Erc20 balance remained unchaged by sent amount
+					// check Erc20 balance remained unchanged by sent amount
 					balance := s.app.Erc20Keeper.BalanceOf(
 						s.chainA.GetContext(),
 						haqqcontracts.ERC20MinterBurnerDecimalsContract.ABI,
@@ -1492,7 +1492,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 		})
 	})
 
-	Context("tranfer a contract's funds", func() {
+	Context("transfer a contract's funds", func() {
 		var defaultTransferArgs contracts.CallArgs
 
 		BeforeEach(func() {

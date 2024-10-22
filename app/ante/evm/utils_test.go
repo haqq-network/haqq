@@ -651,7 +651,7 @@ func (suite *AnteTestSuite) CreateTestSingleSignedTx(privKey cryptotypes.PrivKey
 	return txBuilder
 }
 
-// prepareAccount is a helper function that asigns the corresponding
+// prepareAccount is a helper function that assigns the corresponding
 // balance and rewards to the provided account
 func (suite *AnteTestSuite) prepareAccount(ctx sdk.Context, addr sdk.AccAddress, balance, rewards math.Int) sdk.Context {
 	ctx, err := testutil.PrepareAccountsForDelegationRewards(

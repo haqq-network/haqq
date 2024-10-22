@@ -1220,8 +1220,8 @@ func (suite *KeeperTestSuite) TestNonceInQuery() {
 
 func (suite *KeeperTestSuite) TestQueryBaseFee() {
 	var (
-		aux    sdkmath.Int
-		expRes *types.QueryBaseFeeResponse
+		aux       sdkmath.Int
+		expResult *types.QueryBaseFeeResponse
 	)
 
 	testCases := []struct {
@@ -1235,7 +1235,7 @@ func (suite *KeeperTestSuite) TestQueryBaseFee() {
 			"pass - default Base Fee",
 			func() {
 				initialBaseFee := sdkmath.NewInt(ethparams.InitialBaseFee)
-				expRes = &types.QueryBaseFeeResponse{BaseFee: &initialBaseFee}
+				expResult = &types.QueryBaseFeeResponse{BaseFee: &initialBaseFee}
 			},
 			true, true, true,
 		},
@@ -1246,7 +1246,7 @@ func (suite *KeeperTestSuite) TestQueryBaseFee() {
 				suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, baseFee)
 
 				aux = sdkmath.NewIntFromBigInt(baseFee)
-				expRes = &types.QueryBaseFeeResponse{BaseFee: &aux}
+				expResult = &types.QueryBaseFeeResponse{BaseFee: &aux}
 			},
 			true, true, true,
 		},
@@ -1256,7 +1256,7 @@ func (suite *KeeperTestSuite) TestQueryBaseFee() {
 				baseFee := sdkmath.OneInt().BigInt()
 				suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, baseFee)
 
-				expRes = &types.QueryBaseFeeResponse{}
+				expResult = &types.QueryBaseFeeResponse{}
 			},
 			true, true, false,
 		},
@@ -1264,7 +1264,7 @@ func (suite *KeeperTestSuite) TestQueryBaseFee() {
 			"pass - zero Base Fee when feemarket not activated",
 			func() {
 				baseFee := sdkmath.ZeroInt()
-				expRes = &types.QueryBaseFeeResponse{BaseFee: &baseFee}
+				expResult = &types.QueryBaseFeeResponse{BaseFee: &baseFee}
 			},
 			true, false, true,
 		},
@@ -1280,7 +1280,7 @@ func (suite *KeeperTestSuite) TestQueryBaseFee() {
 			res, err := suite.queryClient.BaseFee(suite.ctx.Context(), &types.QueryBaseFeeRequest{})
 			if tc.expPass {
 				suite.Require().NotNil(res)
-				suite.Require().Equal(expRes, res, tc.name)
+				suite.Require().Equal(expResult, res, tc.name)
 				suite.Require().NoError(err)
 			} else {
 				suite.Require().Error(err)

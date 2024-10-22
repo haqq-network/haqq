@@ -2,8 +2,10 @@ package cli
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
+	"cosmossdk.io/math"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -38,6 +40,8 @@ func NewTxCmd() *cobra.Command {
 	distTxCmd.AddCommand(
 		NewFundDAOCmd(),
 		NewTransferOwnershipCmd(),
+		NewTransferOwnershipAmountCmd(),
+		NewTransferOwnershipRatioCmd(),
 	)
 
 	return distTxCmd
@@ -111,6 +115,103 @@ $ %s tx %s transfer-ownership haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92 haqq1h
 			}
 
 			msg := types.NewMsgTransferOwnership(owner, newOwner)
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func NewTransferOwnershipAmountCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "transfer-ownership-amount [from_address] [to_address] [amount]",
+		Args:  cobra.ExactArgs(3),
+		Short: "Transfer a specific amount of United Contributors DAO shares from one address to another",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Transfer a specific amount of United Contributors DAO shares from one address to another
+
+Example:
+$ %s tx %s transfer-ownership-amount haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92 haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq 100aISLM --from mykey
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			owner, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			receiver, err := sdk.AccAddressFromBech32(args[1])
+			if err != nil {
+				return err
+			}
+
+			amount, err := sdk.ParseCoinsNormalized(args[2])
+			if err != nil {
+				return err
+			}
+
+			msg := types.NewMsgTransferOwnershipWithAmount(owner, receiver, amount)
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func NewTransferOwnershipRatioCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "transfer-ownership-ratio [from_address] [to_address] [ratio]",
+		Args:  cobra.ExactArgs(3),
+		Short: "Transfer a specific ratio(0.0%-100.0%) of United Contributors DAO shares from one address to another",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Transfer a specific ratio of United Contributors DAO shares from one address to another
+
+Example:
+$ %s tx %s transfer-ownership-ratio haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92 haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq 1 --from mykey
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			owner, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			receiver, err := sdk.AccAddressFromBech32(args[1])
+			if err != nil {
+				return err
+			}
+
+			ratio, err := strconv.ParseFloat(args[2], 64)
+			if err != nil {
+				return err
+			}
+			if ratio < 0.0 || ratio > 100.0 {
+				return fmt.Errorf("ratio must be between 0.0 and 100.0")
+			}
+
+			ratioDec := math.LegacyMustNewDecFromStr(fmt.Sprintf("%f", ratio/100.0))
+
+			msg := types.NewMsgTransferOwnershipWithRatio(owner, receiver, ratioDec)
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},

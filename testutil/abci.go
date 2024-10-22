@@ -46,7 +46,7 @@ func CommitAndCreateNewCtx(ctx sdk.Context, app *app.Haqq, t time.Duration, vs *
 	// but resets other context fields
 	// GasMeter is set as InfiniteGasMeter
 	newCtx := app.BaseApp.NewContext(false, header)
-	// set the reseted fields to keep the current ctx settings
+	// reset fields to keep the current ctx settings
 	newCtx = newCtx.WithMinGasPrices(ctx.MinGasPrices())
 	newCtx = newCtx.WithEventManager(ctx.EventManager())
 	newCtx = newCtx.WithKVGasConfig(ctx.KVGasConfig())

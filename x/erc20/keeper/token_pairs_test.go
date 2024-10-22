@@ -11,14 +11,14 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestGetTokenPairs() {
-	var expRes []types.TokenPair
+	var expResult []types.TokenPair
 
 	testCases := []struct {
 		name     string
 		malleate func()
 	}{
 		{
-			"no pair registered", func() { expRes = []types.TokenPair{} },
+			"no pair registered", func() { expResult = []types.TokenPair{} },
 		},
 		{
 			"1 pair registered",
@@ -26,7 +26,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 
-				expRes = []types.TokenPair{pair}
+				expResult = []types.TokenPair{pair}
 			},
 		},
 		{
@@ -37,7 +37,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair)
 				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, pair2)
 
-				expRes = []types.TokenPair{pair, pair2}
+				expResult = []types.TokenPair{pair, pair2}
 			},
 		},
 	}
@@ -48,7 +48,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 			tc.malleate()
 			res := suite.app.Erc20Keeper.GetTokenPairs(suite.ctx)
 
-			suite.Require().ElementsMatch(expRes, res, tc.name)
+			suite.Require().ElementsMatch(expResult, res, tc.name)
 		})
 	}
 }

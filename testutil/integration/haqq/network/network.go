@@ -172,7 +172,7 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 
 	// Set networks global parameters
 	n.app = haqqApp
-	// TODO - this might not be the best way to initilize the context
+	// TODO - this might not be the best way to initialize the context
 	n.ctx = haqqApp.BaseApp.NewContext(false, header)
 	n.validators = validators
 	n.valSet = valSet
