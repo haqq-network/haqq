@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/haqq-network/haqq/contracts"
+	utilstx "github.com/haqq-network/haqq/utils/tx"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
@@ -66,6 +67,11 @@ func (k msgServer) Send(goCtx context.Context, msg *types.MsgSend) (*types.MsgSe
 			}
 		}
 	}()
+
+	if err := utilstx.InjectEthereumTxEvents(ctx, k.decoder); err != nil {
+		// Debug log
+		ctx.Logger().Error("Failed to inject Ethereum tx events", "error", err)
+	}
 
 	return &types.MsgSendResponse{}, nil
 }

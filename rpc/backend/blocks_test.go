@@ -1094,7 +1094,12 @@ func (suite *BackendTestSuite) TestGetEthBlockFromTendermint() {
 
 			if tc.expTxs {
 				if tc.fullTx {
+					var from common.Address
+					if msgEthereumTx.From != "" {
+						from = common.HexToAddress(msgEthereumTx.From)
+					}
 					rpcTx, err := ethrpc.NewRPCTransaction(
+						&from,
 						msgEthereumTx.AsTransaction(),
 						common.BytesToHash(header.Hash()),
 						uint64(header.Height),

@@ -73,7 +73,7 @@ var _ = Describe("Check balance of IBC tokens registered as ERC20", Ordered, fun
 			s.Require().NoError(err)
 
 			bankQueryHelper := baseapp.NewQueryServerTestHelper(s.HaqqChain.GetContext(), s.app.InterfaceRegistry())
-			wrappedBankKeeper := haqqbankkeeper.NewWrappedBaseKeeper(s.app.BankKeeper, s.app.Erc20Keeper, s.app.AccountKeeper)
+			wrappedBankKeeper := haqqbankkeeper.NewWrappedBaseKeeper(s.app.BankKeeper, s.app.Erc20Keeper, s.app.AccountKeeper, s.decoder)
 			banktypes.RegisterQueryServer(bankQueryHelper, wrappedBankKeeper)
 			bankQueryClient = banktypes.NewQueryClient(bankQueryHelper)
 		})

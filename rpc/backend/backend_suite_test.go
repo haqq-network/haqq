@@ -136,11 +136,15 @@ func (suite *BackendTestSuite) buildFormattedBlock(
 	root := common.Hash{}.Bytes()
 	receipt := ethtypes.NewReceipt(root, false, gasUsed.Uint64())
 	bloom := ethtypes.CreateBloom(ethtypes.Receipts{receipt})
-
+	var from common.Address
+	if tx.From != "" {
+		from = common.HexToAddress(tx.From)
+	}
 	ethRPCTxs := []interface{}{}
 	if tx != nil {
 		if fullTx {
 			rpcTx, err := rpctypes.NewRPCTransaction(
+				&from,
 				tx.AsTransaction(),
 				common.BytesToHash(header.Hash()),
 				uint64(header.Height),

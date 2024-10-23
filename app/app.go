@@ -698,6 +698,7 @@ func NewHaqq(
 		haqqbank.NewAppModule(
 			bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 			app.BankKeeper, app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName),
+			encodingConfig.TxConfig.TxDecoder(),
 		),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),

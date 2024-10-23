@@ -9,6 +9,7 @@ import (
 	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -17,6 +18,7 @@ import (
 
 	rpctypes "github.com/haqq-network/haqq/rpc/types"
 	"github.com/haqq-network/haqq/types"
+	utilstx "github.com/haqq-network/haqq/utils/tx"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -40,9 +42,21 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*rpctypes.RPCTransac
 	}
 
 	// the `res.MsgIndex` is inferred from tx index, should be within the bound.
-	msg, ok := tx.GetMsgs()[res.MsgIndex].(*evmtypes.MsgEthereumTx)
-	if !ok {
+	if len(tx.GetMsgs()) > 1 {
+		return nil, errors.New("invalid ethereum tx, more than 1 message in transaction")
+	}
+
+	msg, isEth := tx.GetMsgs()[res.MsgIndex].(*evmtypes.MsgEthereumTx)
+	_, isBankSend := tx.GetMsgs()[res.MsgIndex].(*banktypes.MsgSend)
+	if !isEth && !isBankSend {
 		return nil, errors.New("invalid ethereum tx")
+	}
+
+	if isBankSend {
+		msg, err = utilstx.BankSendTxAsEthereumTx(tx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	blockRes, err := b.TendermintBlockResultByNumber(&block.Block.Height)
@@ -156,7 +170,19 @@ func (b *Backend) GetTransactionReceipt(hash common.Hash) (map[string]interface{
 		b.logger.Debug("decoding failed", "error", err.Error())
 		return nil, fmt.Errorf("failed to decode tx: %w", err)
 	}
-	ethMsg := tx.GetMsgs()[res.MsgIndex].(*evmtypes.MsgEthereumTx)
+
+	ethMsg, isEth := tx.GetMsgs()[res.MsgIndex].(*evmtypes.MsgEthereumTx)
+	_, isBankSend := tx.GetMsgs()[res.MsgIndex].(*banktypes.MsgSend)
+	if !isEth && !isBankSend {
+		return nil, errors.New("invalid ethereum tx")
+	}
+
+	if isBankSend {
+		ethMsg, err = utilstx.BankSendTxAsEthereumTx(tx)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	txData, err := evmtypes.UnpackTxData(ethMsg.Data)
 	if err != nil {
@@ -186,9 +212,14 @@ func (b *Backend) GetTransactionReceipt(hash common.Hash) (map[string]interface{
 		return nil, err
 	}
 
-	from, err := ethMsg.GetSender(chainID.ToInt())
-	if err != nil {
-		return nil, err
+	var from common.Address
+	if isBankSend {
+		from = common.HexToAddress(ethMsg.From)
+	} else {
+		from, err = ethMsg.GetSender(chainID.ToInt())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// parse tx logs from events
@@ -384,12 +415,19 @@ func (b *Backend) GetTransactionByBlockAndIndex(block *tmrpctypes.ResultBlock, i
 			return nil, nil
 		}
 
-		var ok bool
+		var isEth bool
 		// msgIndex is inferred from tx events, should be within bound.
-		msg, ok = tx.GetMsgs()[res.MsgIndex].(*evmtypes.MsgEthereumTx)
-		if !ok {
-			b.logger.Debug("invalid ethereum tx", "height", block.Block.Header, "index", idx)
-			return nil, nil
+		msg, isEth = tx.GetMsgs()[res.MsgIndex].(*evmtypes.MsgEthereumTx)
+		_, isBankSend := tx.GetMsgs()[res.MsgIndex].(*banktypes.MsgSend)
+		if !isEth && !isBankSend {
+			return nil, errors.New("invalid ethereum tx")
+		}
+
+		if isBankSend {
+			msg, err = utilstx.BankSendTxAsEthereumTx(tx)
+			if err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		i := int(idx) // #nosec G701

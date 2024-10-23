@@ -10,6 +10,7 @@ import (
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -19,6 +20,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	rpctypes "github.com/haqq-network/haqq/rpc/types"
+	utilstx "github.com/haqq-network/haqq/utils/tx"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -274,14 +276,27 @@ func (b *Backend) EthMsgsFromTendermintBlock(
 			continue
 		}
 
+		// EthereumTx can't contain more than 1 message
+		if len(tx.GetMsgs()) > 1 {
+			continue
+		}
+
 		for _, msg := range tx.GetMsgs() {
-			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
-			if !ok {
+			ethMsg, isEth := msg.(*evmtypes.MsgEthereumTx)
+			_, isBankSend := msg.(*banktypes.MsgSend)
+			switch {
+			case isEth:
+				ethMsg.Hash = ethMsg.AsTransaction().Hash().Hex()
+				result = append(result, ethMsg)
+			case isBankSend:
+				fakeMsgEthTx, err := utilstx.BankSendTxAsEthereumTx(tx)
+				if err != nil {
+					continue
+				}
+				result = append(result, fakeMsgEthTx)
+			default:
 				continue
 			}
-
-			ethMsg.Hash = ethMsg.AsTransaction().Hash().Hex()
-			result = append(result, ethMsg)
 		}
 	}
 
@@ -392,7 +407,12 @@ func (b *Backend) RPCBlockFromTendermintBlock(
 		tx := ethMsg.AsTransaction()
 		height := uint64(block.Height) //#nosec G701 -- checked for int overflow already
 		index := uint64(txIndex)       //#nosec G701 -- checked for int overflow already
+		var from common.Address
+		if ethMsg.From != "" {
+			from = common.HexToAddress(ethMsg.From)
+		}
 		rpcTx, err := rpctypes.NewRPCTransaction(
+			&from,
 			tx,
 			common.BytesToHash(block.Hash()),
 			height,

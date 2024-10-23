@@ -43,7 +43,11 @@ func (suite *BackendTestSuite) TestGetTransactionByHash() {
 		},
 	}
 
-	rpcTransaction, _ := rpctypes.NewRPCTransaction(msgEthereumTx.AsTransaction(), common.Hash{}, 0, 0, big.NewInt(1), suite.backend.chainID)
+	var from common.Address
+	if msgEthereumTx.From != "" {
+		from = common.HexToAddress(msgEthereumTx.From)
+	}
+	rpcTransaction, _ := rpctypes.NewRPCTransaction(&from, msgEthereumTx.AsTransaction(), common.Hash{}, 0, 0, big.NewInt(1), suite.backend.chainID)
 
 	testCases := []struct {
 		name         string
@@ -130,7 +134,11 @@ func (suite *BackendTestSuite) TestGetTransactionByHash() {
 
 func (suite *BackendTestSuite) TestGetTransactionsByHashPending() {
 	msgEthereumTx, bz := suite.buildEthereumTx()
-	rpcTransaction, _ := rpctypes.NewRPCTransaction(msgEthereumTx.AsTransaction(), common.Hash{}, 0, 0, big.NewInt(1), suite.backend.chainID)
+	var from common.Address
+	if msgEthereumTx.From != "" {
+		from = common.HexToAddress(msgEthereumTx.From)
+	}
+	rpcTransaction, _ := rpctypes.NewRPCTransaction(&from, msgEthereumTx.AsTransaction(), common.Hash{}, 0, 0, big.NewInt(1), suite.backend.chainID)
 
 	testCases := []struct {
 		name         string
@@ -190,7 +198,11 @@ func (suite *BackendTestSuite) TestGetTransactionsByHashPending() {
 
 func (suite *BackendTestSuite) TestGetTxByEthHash() {
 	msgEthereumTx, bz := suite.buildEthereumTx()
-	rpcTransaction, _ := rpctypes.NewRPCTransaction(msgEthereumTx.AsTransaction(), common.Hash{}, 0, 0, big.NewInt(1), suite.backend.chainID)
+	var from common.Address
+	if msgEthereumTx.From != "" {
+		from = common.HexToAddress(msgEthereumTx.From)
+	}
+	rpcTransaction, _ := rpctypes.NewRPCTransaction(&from, msgEthereumTx.AsTransaction(), common.Hash{}, 0, 0, big.NewInt(1), suite.backend.chainID)
 
 	testCases := []struct {
 		name         string

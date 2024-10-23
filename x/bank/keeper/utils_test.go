@@ -26,6 +26,7 @@ import (
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
+	"github.com/haqq-network/haqq/encoding"
 	ibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
@@ -72,6 +73,8 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	suite.consAddress = consAddress
 
 	// init app
+	encConfig := encoding.MakeConfig(app.ModuleBasics)
+	suite.decoder = encConfig.TxConfig.TxDecoder()
 	chainID := utils.MainNetChainID + "-1"
 	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
 	header := testutil.NewHeader(

@@ -8,10 +8,12 @@ import (
 	tmrpcclient "github.com/cometbft/cometbft/rpc/client"
 	tmrpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 
 	rpctypes "github.com/haqq-network/haqq/rpc/types"
+	utilstx "github.com/haqq-network/haqq/utils/tx"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -54,9 +56,18 @@ func (b *Backend) TraceTransaction(hash common.Hash, config *evmtypes.TraceConfi
 			continue
 		}
 		for _, msg := range tx.GetMsgs() {
-			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
-			if !ok {
+			ethMsg, isEth := msg.(*evmtypes.MsgEthereumTx)
+			_, isBankSend := msg.(*banktypes.MsgSend)
+			if !isEth && !isBankSend {
 				continue
+			}
+
+			if isBankSend {
+				ethMsg, err = utilstx.BankSendTxAsEthereumTx(tx)
+				if err != nil {
+					b.logger.Debug("failed to convert bank send transaction into eth tx", "height", blk.Block.Height, "error", err.Error())
+					continue
+				}
 			}
 
 			predecessors = append(predecessors, ethMsg)
@@ -72,17 +83,35 @@ func (b *Backend) TraceTransaction(hash common.Hash, config *evmtypes.TraceConfi
 	// add predecessor messages in current cosmos tx
 	index := int(transaction.MsgIndex) // #nosec G701
 	for i := 0; i < index; i++ {
-		ethMsg, ok := tx.GetMsgs()[i].(*evmtypes.MsgEthereumTx)
-		if !ok {
+		ethMsg, isEth := tx.GetMsgs()[i].(*evmtypes.MsgEthereumTx)
+		_, isBankSend := tx.GetMsgs()[i].(*banktypes.MsgSend)
+		if !isEth && !isBankSend {
 			continue
 		}
+
+		if isBankSend {
+			ethMsg, err = utilstx.BankSendTxAsEthereumTx(tx)
+			if err != nil {
+				b.logger.Debug("failed to convert bank send transaction into eth tx", "height", blk.Block.Height, "error", err.Error())
+				continue
+			}
+		}
+
 		predecessors = append(predecessors, ethMsg)
 	}
 
-	ethMessage, ok := tx.GetMsgs()[transaction.MsgIndex].(*evmtypes.MsgEthereumTx)
-	if !ok {
-		b.logger.Debug("invalid transaction type", "type", fmt.Sprintf("%T", tx))
+	ethMessage, isEth := tx.GetMsgs()[transaction.MsgIndex].(*evmtypes.MsgEthereumTx)
+	_, isBankSend := tx.GetMsgs()[transaction.MsgIndex].(*banktypes.MsgSend)
+	if !isEth && !isBankSend {
 		return nil, fmt.Errorf("invalid transaction type %T", tx)
+	}
+
+	if isBankSend {
+		ethMessage, err = utilstx.BankSendTxAsEthereumTx(tx)
+		if err != nil {
+			b.logger.Debug("failed to convert bank send transaction into eth tx", "height", blk.Block.Height, "error", err.Error())
+			return nil, err
+		}
 	}
 
 	nc, ok := b.clientCtx.Client.(tmrpcclient.NetworkClient)
@@ -158,11 +187,20 @@ func (b *Backend) TraceBlock(height rpctypes.BlockNumber,
 		}
 
 		for _, msg := range decodedTx.GetMsgs() {
-			ethMessage, ok := msg.(*evmtypes.MsgEthereumTx)
-			if !ok {
-				// Just considers Ethereum transactions
+			ethMessage, isEth := msg.(*evmtypes.MsgEthereumTx)
+			_, isBankSend := msg.(*banktypes.MsgSend)
+			if !isEth && !isBankSend {
 				continue
 			}
+
+			if isBankSend {
+				ethMessage, err = utilstx.BankSendTxAsEthereumTx(decodedTx)
+				if err != nil {
+					b.logger.Debug("failed to convert bank send transaction into eth tx", "hash", txs[i].Hash(), "error", err.Error())
+					continue
+				}
+			}
+
 			txsMessages = append(txsMessages, ethMessage)
 		}
 	}
