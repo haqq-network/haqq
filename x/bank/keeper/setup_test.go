@@ -37,6 +37,7 @@ type KeeperTestSuite struct {
 	priv           cryptotypes.PrivKey
 	validator      stakingtypes.Validator
 	signer         keyring.Signer
+	decoder        sdk.TxDecoder
 
 	coordinator *ibcgotesting.Coordinator
 

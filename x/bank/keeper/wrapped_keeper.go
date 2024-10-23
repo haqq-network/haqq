@@ -34,19 +34,22 @@ type AccountKeeper interface {
 
 type WrappedBaseKeeper struct {
 	bankkeeper.Keeper
-	ek ERC20Keeper
-	ak AccountKeeper
+	ek      ERC20Keeper
+	ak      AccountKeeper
+	decoder sdk.TxDecoder
 }
 
 func NewWrappedBaseKeeper(
 	bk bankkeeper.Keeper,
 	ek ERC20Keeper,
 	ak AccountKeeper,
+	decoder sdk.TxDecoder,
 ) WrappedBaseKeeper {
 	return WrappedBaseKeeper{
-		Keeper: bk,
-		ek:     ek,
-		ak:     ak,
+		Keeper:  bk,
+		ek:      ek,
+		ak:      ak,
+		decoder: decoder,
 	}
 }
 

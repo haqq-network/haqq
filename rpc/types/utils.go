@@ -157,12 +157,17 @@ func NewTransactionFromMsg(
 	chainID *big.Int,
 ) (*RPCTransaction, error) {
 	tx := msg.AsTransaction()
-	return NewRPCTransaction(tx, blockHash, blockNumber, index, baseFee, chainID)
+	var from common.Address
+	if msg.From != "" {
+		from = common.HexToAddress(msg.From)
+	}
+	return NewRPCTransaction(&from, tx, blockHash, blockNumber, index, baseFee, chainID)
 }
 
 // NewRPCTransaction returns a transaction that will serialize to the RPC
 // representation, with the given location metadata set (if available).
 func NewRPCTransaction(
+	from *common.Address,
 	tx *ethtypes.Transaction, blockHash common.Hash, blockNumber, index uint64, baseFee *big.Int,
 	chainID *big.Int,
 ) (*RPCTransaction, error) {
@@ -176,11 +181,16 @@ func NewRPCTransaction(
 	} else {
 		signer = ethtypes.HomesteadSigner{}
 	}
-	from, _ := ethtypes.Sender(signer, tx) // #nosec G703
+	var fromAddr common.Address
+	if from == nil {
+		fromAddr, _ = ethtypes.Sender(signer, tx) // #nosec G703
+	} else {
+		fromAddr = *from
+	}
 	v, r, s := tx.RawSignatureValues()
 	result := &RPCTransaction{
 		Type:     hexutil.Uint64(tx.Type()),
-		From:     from,
+		From:     fromAddr,
 		Gas:      hexutil.Uint64(tx.Gas()),
 		GasPrice: (*hexutil.Big)(tx.GasPrice()),
 		Hash:     tx.Hash(),

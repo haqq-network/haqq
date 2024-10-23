@@ -3,6 +3,7 @@ package bank
 import (
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/bank/exported"
@@ -22,8 +23,8 @@ type AppModule struct {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(module bank.AppModule, keeper bankkeeper.Keeper, erc20keeper haqqbankkeeper.ERC20Keeper, accountKeeper haqqbankkeeper.AccountKeeper, ss exported.Subspace) AppModule {
-	wrappedBankKeeper := haqqbankkeeper.NewWrappedBaseKeeper(keeper, erc20keeper, accountKeeper)
+func NewAppModule(module bank.AppModule, keeper bankkeeper.Keeper, erc20keeper haqqbankkeeper.ERC20Keeper, accountKeeper haqqbankkeeper.AccountKeeper, ss exported.Subspace, decoder types.TxDecoder) AppModule {
+	wrappedBankKeeper := haqqbankkeeper.NewWrappedBaseKeeper(keeper, erc20keeper, accountKeeper, decoder)
 	return AppModule{
 		AppModule:   module,
 		keeper:      keeper,
