@@ -262,6 +262,8 @@ replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	// replace broken goleveldb
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+	// fix build for Nix (https://github.com/Zondax/hid/issues/7)
+	github.com/zondax/hid => github.com/karalabe/hid v1.0.0
 	// need this replace with cosmos-sdk v0.47.11 (more info here https://github.com/cosmos/cosmos-sdk/issues/20159)
 	golang.org/x/exp => golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
 )

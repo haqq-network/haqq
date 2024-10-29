@@ -619,8 +619,9 @@ schema = 3
     version = "v1.2.0"
     hash = "sha256-1ERBEvxj3pvHkMS2mvmvmYRi8jgAaTquo5hwjDLAEdc="
   [mod."github.com/zondax/hid"]
-    version = "v0.9.2"
-    hash = "sha256-9h1gEJ/loyaJvu9AsmslztiA8U9ixDTC6TBw9lCU2BE="
+    version = "v1.0.0"
+    hash = "sha256-VbpQPrdEK4fny8hZ4BkNrrDQv/ww/yatLrAtVm4Xdyg="
+    replaced = "github.com/karalabe/hid"
   [mod."github.com/zondax/ledger-go"]
     version = "v0.14.3"
     hash = "sha256-tldEok5ebZ4R4B7H8dSlYS5oVuLvh89n9wUaVlDjYwg="
