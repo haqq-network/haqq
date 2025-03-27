@@ -176,6 +176,7 @@ import (
 	v180 "github.com/haqq-network/haqq/app/upgrades/v1.8.0"
 	v181 "github.com/haqq-network/haqq/app/upgrades/v1.8.1"
 	v182 "github.com/haqq-network/haqq/app/upgrades/v1.8.2"
+	v190 "github.com/haqq-network/haqq/app/upgrades/v1.9.0"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -1293,6 +1294,12 @@ func (app *Haqq) setupUpgradeHandlers(keys map[string]*storetypes.KVStoreKey) {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v182.UpgradeName,
 		v182.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
+	// v1.9.0 Convert ClawbackVestingAccount's back into EthAccount.
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v190.UpgradeName,
+		v190.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.VestingKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic
