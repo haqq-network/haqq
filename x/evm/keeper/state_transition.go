@@ -320,7 +320,10 @@ func (k *Keeper) ApplyMessageWithConfig(ctx sdk.Context,
 
 	// set the custom precompiles to the EVM (if any)
 	if cfg.Params.HasCustomPrecompiles() {
-		customPrecompiles := cfg.Params.GetActivePrecompilesAddrs()
+		// Temporary turn down custom precompiles due to critical security issue
+		// Read: https://github.com/cosmos/evm/security/advisories/GHSA-mjfq-3qr2-6g84
+		// customPrecompiles := cfg.Params.GetActivePrecompilesAddrs()
+		customPrecompiles := make([]common.Address, 0)
 
 		activePrecompiles := make([]common.Address, len(vm.PrecompiledAddressesBerlin)+len(customPrecompiles))
 		copy(activePrecompiles[:len(vm.PrecompiledAddressesBerlin)], vm.PrecompiledAddressesBerlin)
