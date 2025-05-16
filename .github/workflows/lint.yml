@@ -10,7 +10,7 @@ on:
 jobs:
   golangci:
     name: Run golangci-lint
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu]
     timeout-minutes: 10
     steps:
       - uses: actions/setup-go@v5
