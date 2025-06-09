@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package common
 
 import (
@@ -19,25 +22,16 @@ var (
 	DefaultExpirationDuration = time.Hour * 24 * 365
 	// DefaultChainID is the standard chain id used for testing purposes
 	DefaultChainID = utils.MainNetChainID + "-1"
-	// DefaultPrecompilesBech32 is the standard bech32 address for the precompiles
-	DefaultPrecompilesBech32 = []string{
-		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqgqj6krnj", // secp256r1 curve precompile ??? 0x0000000000000000000000000000000000000100
-		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqqnxumqn", // bech32 precompile 0x0000000000000000000000000000000000000400
-		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqq4q8tzj", // Staking precompile 0x0000000000000000000000000000000000000800
-		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqpgkn7lq", // Distribution precompile 0x0000000000000000000000000000000000000801
-		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqzx9xg3l", // ICS20 transfer precompile 0x0000000000000000000000000000000000000802
-		// "haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrmnjavd", // Vesting precompile 0x0000000000000000000000000000000000000803
-		"haqq1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqy629ddg", // Bank precompile 0x0000000000000000000000000000000000000804
-	}
 )
 
 // ICS20Allocation defines the spend limit for a particular port and channel.
 // We need this to be able to unpack to big.Int instead of math.Int.
 type ICS20Allocation struct {
-	SourcePort    string
-	SourceChannel string
-	SpendLimit    []Coin
-	AllowList     []string
+	SourcePort        string
+	SourceChannel     string
+	SpendLimit        []Coin
+	AllowList         []string
+	AllowedPacketData []string
 }
 
 // Coin defines a struct that stores all needed information about a coin

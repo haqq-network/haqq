@@ -1,3 +1,5 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package types
 
 import (
@@ -6,7 +8,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
+
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 // EvmTxArgs encapsulates all possible params to create all EVM txs types.
@@ -22,6 +25,12 @@ type EvmTxArgs struct {
 	GasTipCap *big.Int
 	To        *common.Address
 	Accesses  *ethtypes.AccessList
+}
+
+// ToTxData converts the EvmTxArgs to TxData
+func (args *EvmTxArgs) ToTxData() (TxData, error) {
+	ethTx := NewTx(args).AsTransaction()
+	return NewTxDataFromTx(ethTx)
 }
 
 // GetTxPriority returns the priority of a given Ethereum tx. It relies of the

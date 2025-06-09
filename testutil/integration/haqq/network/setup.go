@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"time"
 
 	sdkmath "cosmossdk.io/math"
@@ -15,13 +16,19 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/encoding"
 	haqqtypes "github.com/haqq-network/haqq/types"
+	evmosutil "github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // createValidatorSetAndSigners creates validator set with the amount of validators specified
@@ -175,8 +182,8 @@ type StakingCustomGenesisState struct {
 	delegations []stakingtypes.Delegation
 }
 
-// setStakingGenesisState sets the staking genesis state
-func setStakingGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, overwriteParams StakingCustomGenesisState) haqqtypes.GenesisState {
+// setDefaultStakingGenesisState sets the staking genesis state
+func setDefaultStakingGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, overwriteParams StakingCustomGenesisState) haqqtypes.GenesisState {
 	// Set staking params
 	stakingParams := stakingtypes.DefaultParams()
 	stakingParams.BondDenom = overwriteParams.denom
@@ -186,15 +193,8 @@ func setStakingGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisSta
 	return genesisState
 }
 
-// setAuthGenesisState sets the auth genesis state
-func setAuthGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, genAccounts []authtypes.GenesisAccount) haqqtypes.GenesisState {
-	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccounts)
-	genesisState[authtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(authGenesis)
-	return genesisState
-}
-
-// setCoinomicsGenesisState sets the coinomics genesis state
-func setCoinomicsGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState) haqqtypes.GenesisState {
+// setDefaultCoinomicsGenesisState sets the coinomics genesis state
+func setDefaultCoinomicsGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState) haqqtypes.GenesisState {
 	coinomicsParams := coinomicstypes.DefaultParams()
 	coinomicsParams.EnableCoinomics = false
 
@@ -208,8 +208,8 @@ type BankCustomGenesisState struct {
 	balances    []banktypes.Balance
 }
 
-// setBankGenesisState sets the bank genesis state
-func setBankGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, overwriteParams BankCustomGenesisState) haqqtypes.GenesisState {
+// setDefaultBankGenesisState sets the bank genesis state
+func setDefaultBankGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, overwriteParams BankCustomGenesisState) haqqtypes.GenesisState {
 	bankGenesis := banktypes.NewGenesisState(
 		banktypes.DefaultGenesisState().Params,
 		overwriteParams.balances,
@@ -219,6 +219,112 @@ func setBankGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState,
 	)
 	genesisState[banktypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(bankGenesis)
 	return genesisState
+}
+
+// genSetupFn is the type for the module genesis setup functions
+type genSetupFn func(
+	haqqApp *app.Haqq,
+	genesisState haqqtypes.GenesisState,
+	customGenesis interface{},
+) (haqqtypes.GenesisState, error)
+
+// defaultGenesisParams contains the params that are needed to
+// setup the default genesis for the testing setup
+type defaultGenesisParams struct {
+	genAccounts []authtypes.GenesisAccount
+	staking     StakingCustomGenesisState
+	bank        BankCustomGenesisState
+}
+
+// genStateSetter is a generic function to set module-specific genesis state
+func genStateSetter[T proto.Message](moduleName string) genSetupFn {
+	return func(
+		haqqApp *app.Haqq,
+		genesisState haqqtypes.GenesisState,
+		customGenesis interface{},
+	) (haqqtypes.GenesisState, error) {
+		moduleGenesis, ok := customGenesis.(T)
+		if !ok {
+			return nil, fmt.Errorf("invalid type %T for %s module genesis state", customGenesis, moduleName)
+		}
+
+		genesisState[moduleName] = haqqApp.AppCodec().MustMarshalJSON(moduleGenesis)
+		return genesisState, nil
+	}
+}
+
+// genesisSetupFunctions contains the available genesis setup functions
+// that can be used to customize the network genesis
+var genesisSetupFunctions = map[string]genSetupFn{
+	authtypes.ModuleName:      genStateSetter[*authtypes.GenesisState](authtypes.ModuleName),
+	evmtypes.ModuleName:       genStateSetter[*evmtypes.GenesisState](evmtypes.ModuleName),
+	govtypes.ModuleName:       genStateSetter[*govtypesv1.GenesisState](govtypes.ModuleName),
+	coinomicstypes.ModuleName: genStateSetter[*coinomicstypes.GenesisState](coinomicstypes.ModuleName),
+	erc20types.ModuleName:     genStateSetter[*erc20types.GenesisState](erc20types.ModuleName),
+}
+
+// setDefaultAuthGenesisState sets the default auth genesis state
+func setDefaultAuthGenesisState(
+	haqqApp *app.Haqq,
+	genesisState haqqtypes.GenesisState,
+	genAccs []authtypes.GenesisAccount,
+) haqqtypes.GenesisState {
+	defaultAuthGen := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
+	genesisState[authtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(defaultAuthGen)
+	return genesisState
+}
+
+// setDefaultGovGenesisState sets the default gov genesis state
+func setDefaultGovGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState) haqqtypes.GenesisState {
+	govGen := govtypesv1.DefaultGenesisState()
+	updatedParams := govGen.Params
+	// set 'aevmos' as deposit denom
+	updatedParams.MinDeposit = sdktypes.NewCoins(sdktypes.NewCoin(evmosutil.BaseDenom, sdkmath.NewInt(1e18)))
+	govGen.Params = updatedParams
+	genesisState[govtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(govGen)
+	return genesisState
+}
+
+func setDefaultErc20GenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState) haqqtypes.GenesisState {
+	erc20Gen := erc20types.DefaultGenesisState()
+	genesisState[erc20types.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(erc20Gen)
+	return genesisState
+}
+
+// defaultAuthGenesisState sets the default genesis state
+// for the testing setup
+func newDefaultGenesisState(haqqApp *app.Haqq, params defaultGenesisParams) haqqtypes.GenesisState {
+	genesisState := app.NewDefaultGenesisState()
+
+	genesisState = setDefaultAuthGenesisState(haqqApp, genesisState, params.genAccounts)
+	genesisState = setDefaultStakingGenesisState(haqqApp, genesisState, params.staking)
+	genesisState = setDefaultBankGenesisState(haqqApp, genesisState, params.bank)
+	genesisState = setDefaultCoinomicsGenesisState(haqqApp, genesisState)
+	genesisState = setDefaultGovGenesisState(haqqApp, genesisState)
+	genesisState = setDefaultErc20GenesisState(haqqApp, genesisState)
+
+	return genesisState
+}
+
+// customizeGenesis modifies genesis state if there're any custom genesis state
+// for specific modules
+func customizeGenesis(
+	haqqApp *app.Haqq,
+	customGen CustomGenesisState,
+	genesisState haqqtypes.GenesisState,
+) (haqqtypes.GenesisState, error) {
+	var err error
+	for mod, modGenState := range customGen {
+		if fn, found := genesisSetupFunctions[mod]; found {
+			genesisState, err = fn(haqqApp, genesisState, modGenState)
+			if err != nil {
+				return genesisState, err
+			}
+		} else {
+			panic(fmt.Sprintf("module %s not found in genesis setup functions", mod))
+		}
+	}
+	return genesisState, err
 }
 
 // calculateTotalSupply calculates the total supply from the given balances

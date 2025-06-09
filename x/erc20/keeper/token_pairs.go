@@ -1,14 +1,35 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package keeper
 
 import (
 	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/erc20/types"
 )
+
+// CreateNewTokenPair creates a new token pair and stores it in the state.
+func (k *Keeper) CreateNewTokenPair(ctx sdk.Context, denom string) (types.TokenPair, error) {
+	pair, err := types.NewTokenPairSTRv2(denom)
+	if err != nil {
+		return types.TokenPair{}, err
+	}
+	k.SetToken(ctx, pair)
+	return pair, nil
+}
+
+// SetToken stores a token pair, denom map and erc20 map.
+func (k *Keeper) SetToken(ctx sdk.Context, pair types.TokenPair) {
+	k.SetTokenPair(ctx, pair)
+	k.SetDenomMap(ctx, pair.Denom, pair.GetID())
+	k.SetERC20Map(ctx, pair.GetERC20Contract(), pair.GetID())
+}
 
 // GetTokenPairs gets all registered token tokenPairs.
 func (k Keeper) GetTokenPairs(ctx sdk.Context) []types.TokenPair {
@@ -25,7 +46,7 @@ func (k Keeper) GetTokenPairs(ctx sdk.Context) []types.TokenPair {
 // IterateTokenPairs iterates over all the stored token pairs.
 func (k Keeper) IterateTokenPairs(ctx sdk.Context, cb func(tokenPair types.TokenPair) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.KeyPrefixTokenPair)
+	iterator := storetypes.KVStorePrefixIterator(store, types.KeyPrefixTokenPair)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
@@ -38,8 +59,8 @@ func (k Keeper) IterateTokenPairs(ctx sdk.Context, cb func(tokenPair types.Token
 	}
 }
 
-// GetTokenPairID returns the pair id from either of the registered tokens.
-// Hex address or Denom can be used as token argument.
+// GetTokenPairID returns the pair id for the specified token. Hex address or Denom can be used as token argument.
+// If the token is not registered empty bytes are returned.
 func (k Keeper) GetTokenPairID(ctx sdk.Context, token string) []byte {
 	if common.IsHexAddress(token) {
 		addr := common.HexToAddress(token)

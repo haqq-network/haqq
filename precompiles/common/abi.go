@@ -1,7 +1,9 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package common
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"math/big"
@@ -12,6 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	contractutils "github.com/haqq-network/haqq/contracts/utils"
 )
 
 // MakeTopic converts a filter query argument into a filter topic.
@@ -135,9 +139,10 @@ func LoadABI(fs embed.FS, path string) (abi.ABI, error) {
 		return abi.ABI{}, fmt.Errorf("error loading the ABI %s", err)
 	}
 
-	newAbi, err := abi.JSON(bytes.NewReader(abiBz))
+	contract, err := contractutils.ConvertPrecompileHardhatBytesToCompiledContract(abiBz)
 	if err != nil {
 		return abi.ABI{}, fmt.Errorf(ErrInvalidABI, err)
 	}
-	return newAbi, nil
+
+	return contract.ABI, nil
 }

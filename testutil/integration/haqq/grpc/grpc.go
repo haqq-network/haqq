@@ -22,6 +22,7 @@ type Handler interface {
 
 	// FeeMarket methods
 	GetBaseFee() (*feemarkettypes.QueryBaseFeeResponse, error)
+	GetFeeMarketParams() (*feemarkettypes.QueryParamsResponse, error)
 
 	// Gov methods
 	GetProposal(proposalID uint64) (*govtypes.QueryProposalResponse, error)

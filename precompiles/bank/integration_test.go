@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/bank"
@@ -22,6 +21,7 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
+	integrationutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
@@ -46,8 +46,10 @@ type IntegrationTestSuite struct {
 
 func (is *IntegrationTestSuite) SetupTest() {
 	keyring := keyring.New(2)
+	genesis := integrationutils.CreateGenesisWithTokenPairs(keyring)
 	integrationNetwork := network.NewUnitTestNetwork(
 		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),
+		network.WithCustomGenesis(genesis),
 	)
 	grpcHandler := grpc.NewIntegrationHandler(integrationNetwork)
 	txFactory := factory.New(integrationNetwork, grpcHandler)
@@ -64,42 +66,18 @@ func (is *IntegrationTestSuite) SetupTest() {
 	is.keyring = keyring
 	is.network = integrationNetwork
 
-	// Register ISLM
-	evmosMetadata, found := is.network.App.BankKeeper.GetDenomMetaData(is.network.GetContext(), is.bondDenom)
-	Expect(found).To(BeTrue(), "failed to get denom metadata")
-
-	tokenPair, err := is.network.App.Erc20Keeper.RegisterCoin(is.network.GetContext(), evmosMetadata)
-	Expect(err).ToNot(HaveOccurred(), "failed to register coin")
-
+	tokenPairID := is.network.App.Erc20Keeper.GetTokenPairID(is.network.GetContext(), is.bondDenom)
+	tokenPair, found := is.network.App.Erc20Keeper.GetTokenPair(is.network.GetContext(), tokenPairID)
+	Expect(found).To(BeTrue(), "failed to register token erc20 extension")
 	is.evmosAddr = common.HexToAddress(tokenPair.Erc20Address)
 
 	// Mint and register a second coin for testing purposes
-	err = is.network.App.BankKeeper.MintCoins(is.network.GetContext(), coinomicstypes.ModuleName, sdk.Coins{{Denom: is.tokenDenom, Amount: sdk.NewInt(1e18)}})
+	err := is.network.App.BankKeeper.MintCoins(is.network.GetContext(), coinomicstypes.ModuleName, sdk.Coins{{Denom: is.tokenDenom, Amount: sdk.NewInt(1e18)}})
 	Expect(err).ToNot(HaveOccurred(), "failed to mint coin")
 
-	xmplMetadata := banktypes.Metadata{
-		Description: "An exemplary token",
-		Base:        is.tokenDenom,
-		// NOTE: Denom units MUST be increasing
-		DenomUnits: []*banktypes.DenomUnit{
-			{
-				Denom:    is.tokenDenom,
-				Exponent: 0,
-				Aliases:  []string{is.tokenDenom},
-			},
-			{
-				Denom:    is.tokenDenom,
-				Exponent: 18,
-			},
-		},
-		Name:    "Exemplary",
-		Symbol:  "XMPL",
-		Display: is.tokenDenom,
-	}
-
-	tokenPair, err = is.network.App.Erc20Keeper.RegisterCoin(is.network.GetContext(), xmplMetadata)
-	Expect(err).ToNot(HaveOccurred(), "failed to register coin")
-
+	tokenPairID = is.network.App.Erc20Keeper.GetTokenPairID(is.network.GetContext(), is.tokenDenom)
+	tokenPair, found = is.network.App.Erc20Keeper.GetTokenPair(is.network.GetContext(), tokenPairID)
+	Expect(found).To(BeTrue(), "failed to register token erc20 extension")
 	is.xmplAddr = common.HexToAddress(tokenPair.Erc20Address)
 	is.precompile = is.setupBankPrecompile()
 }
@@ -115,9 +93,11 @@ func TestIntegrationSuite(t *testing.T) {
 var _ = Describe("Bank Extension -", func() {
 	var (
 		bankCallerContractAddr common.Address
-		err                    error
-		sender                 keyring.Key
-		amount                 *big.Int
+		bankCallerContract     evmtypes.CompiledContract
+
+		err    error
+		sender keyring.Key
+		amount *big.Int
 
 		// contractData is a helper struct to hold the addresses and ABIs for the
 		// different contract instances that are subject to testing here.
@@ -132,11 +112,14 @@ var _ = Describe("Bank Extension -", func() {
 		sender = is.keyring.GetKey(0)
 		amount = big.NewInt(1e18)
 
+		bankCallerContract, err = testdata.LoadBankCallerContract()
+		Expect(err).ToNot(HaveOccurred(), "failed to load BankCaller contract")
+
 		bankCallerContractAddr, err = is.factory.DeployContract(
 			sender.Priv,
 			evmtypes.EvmTxArgs{}, // NOTE: passing empty struct to use default values
 			factory.ContractDeploymentData{
-				Contract: testdata.BankCallerContract,
+				Contract: bankCallerContract,
 			},
 		)
 		Expect(err).ToNot(HaveOccurred(), "failed to deploy ERC20 minter burner contract")
@@ -146,7 +129,7 @@ var _ = Describe("Bank Extension -", func() {
 			precompileAddr: is.precompile.Address(),
 			precompileABI:  is.precompile.ABI,
 			contractAddr:   bankCallerContractAddr,
-			contractABI:    testdata.BankCallerContract.ABI,
+			contractABI:    bankCallerContract.ABI,
 		}
 
 		passCheck = testutil.LogCheckArgs{}.WithExpPass(true)

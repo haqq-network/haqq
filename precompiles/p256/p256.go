@@ -20,9 +20,9 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/crypto/secp256r1"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 var _ vm.PrecompiledContract = &Precompile{}

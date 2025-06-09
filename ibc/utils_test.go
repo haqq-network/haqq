@@ -22,112 +22,77 @@ func init() {
 func TestGetTransferSenderRecipient(t *testing.T) {
 	testCases := []struct {
 		name         string
-		packet       channeltypes.Packet
+		data         transfertypes.FungibleTokenPacketData
 		expSender    string
 		expRecipient string
 		expError     bool
 	}{
 		{
-			"empty packet",
-			channeltypes.Packet{},
-			"", "",
-			true,
+			name:         "empty FungibleTokenPacketData",
+			data:         transfertypes.FungibleTokenPacketData{},
+			expSender:    "",
+			expRecipient: "",
+			expError:     true,
 		},
 		{
-			"invalid packet data",
-			channeltypes.Packet{
-				Data: ibctesting.MockFailPacketData,
+			name: "invalid sender",
+			data: transfertypes.FungibleTokenPacketData{
+				Sender:   "cosmos1",
+				Receiver: "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
+				Amount:   "123456",
 			},
-			"", "",
-			true,
+			expSender:    "",
+			expRecipient: "",
+			expError:     true,
 		},
 		{
-			"empty FungibleTokenPacketData",
-			channeltypes.Packet{
-				Data: transfertypes.ModuleCdc.MustMarshalJSON(
-					&transfertypes.FungibleTokenPacketData{},
-				),
+			name: "invalid recipient",
+			data: transfertypes.FungibleTokenPacketData{
+				Sender:   "cosmos1tjdjfavsy956d25hvhs3p0nw9a7pfghqegfjmu",
+				Receiver: "haqq1",
+				Amount:   "123456",
 			},
-			"", "",
-			true,
+			expSender:    "",
+			expRecipient: "",
+			expError:     true,
 		},
 		{
-			"invalid sender",
-			channeltypes.Packet{
-				Data: transfertypes.ModuleCdc.MustMarshalJSON(
-					&transfertypes.FungibleTokenPacketData{
-						Sender:   "cosmos1",
-						Receiver: "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
-						Amount:   "123456",
-					},
-				),
+			name: "valid - cosmos sender, haqq recipient",
+			data: transfertypes.FungibleTokenPacketData{
+				Sender:   "cosmos1tjdjfavsy956d25hvhs3p0nw9a7pfghqegfjmu",
+				Receiver: "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
+				Amount:   "123456",
 			},
-			"", "",
-			true,
+			expSender:    "haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92",
+			expRecipient: "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
+			expError:     false,
 		},
 		{
-			"invalid recipient",
-			channeltypes.Packet{
-				Data: transfertypes.ModuleCdc.MustMarshalJSON(
-					&transfertypes.FungibleTokenPacketData{
-						Sender:   "cosmos1tjdjfavsy956d25hvhs3p0nw9a7pfghqegfjmu",
-						Receiver: "haqq1",
-						Amount:   "123456",
-					},
-				),
+			name: "valid - haqq sender, cosmos recipient",
+			data: transfertypes.FungibleTokenPacketData{
+				Sender:   "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
+				Receiver: "cosmos1tjdjfavsy956d25hvhs3p0nw9a7pfghqegfjmu",
+				Amount:   "123456",
 			},
-			"", "",
-			true,
+			expSender:    "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
+			expRecipient: "haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92",
+			expError:     false,
 		},
 		{
-			"valid - cosmos sender, haqq recipient",
-			channeltypes.Packet{
-				Data: transfertypes.ModuleCdc.MustMarshalJSON(
-					&transfertypes.FungibleTokenPacketData{
-						Sender:   "cosmos1tjdjfavsy956d25hvhs3p0nw9a7pfghqegfjmu",
-						Receiver: "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
-						Amount:   "123456",
-					},
-				),
+			name: "valid - osmosis sender, haqq recipient",
+			data: transfertypes.FungibleTokenPacketData{
+				Sender:   "osmo1tjdjfavsy956d25hvhs3p0nw9a7pfghq3n6zdw",
+				Receiver: "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
+				Amount:   "123456",
 			},
-			"haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92",
-			"haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
-			false,
-		},
-		{
-			"valid - haqq sender, cosmos recipient",
-			channeltypes.Packet{
-				Data: transfertypes.ModuleCdc.MustMarshalJSON(
-					&transfertypes.FungibleTokenPacketData{
-						Sender:   "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
-						Receiver: "cosmos1tjdjfavsy956d25hvhs3p0nw9a7pfghqegfjmu",
-						Amount:   "123456",
-					},
-				),
-			},
-			"haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
-			"haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92",
-			false,
-		},
-		{
-			"valid - osmosis sender, haqq recipient",
-			channeltypes.Packet{
-				Data: transfertypes.ModuleCdc.MustMarshalJSON(
-					&transfertypes.FungibleTokenPacketData{
-						Sender:   "osmo1tjdjfavsy956d25hvhs3p0nw9a7pfghq3n6zdw",
-						Receiver: "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
-						Amount:   "123456",
-					},
-				),
-			},
-			"haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92",
-			"haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
-			false,
+			expSender:    "haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92",
+			expRecipient: "haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq",
+			expError:     false,
 		},
 	}
 
 	for _, tc := range testCases {
-		sender, recipient, _, _, err := GetTransferSenderRecipient(tc.packet)
+		sender, recipient, _, _, err := GetTransferSenderRecipient(tc.data)
 		if tc.expError {
 			require.Error(t, err, tc.name)
 		} else {
@@ -146,22 +111,20 @@ func TestGetTransferAmount(t *testing.T) {
 		expError  bool
 	}{
 		{
-			"empty packet",
-			channeltypes.Packet{},
-			"",
-			true,
+			name:      "empty packet",
+			packet:    channeltypes.Packet{},
+			expAmount: "",
+			expError:  true,
 		},
 		{
-			"invalid packet data",
-			channeltypes.Packet{
-				Data: ibctesting.MockFailPacketData,
-			},
-			"",
-			true,
+			name:      "invalid packet data",
+			packet:    channeltypes.Packet{Data: ibctesting.MockFailPacketData},
+			expAmount: "",
+			expError:  true,
 		},
 		{
-			"invalid amount - empty",
-			channeltypes.Packet{
+			name: "invalid amount - empty",
+			packet: channeltypes.Packet{
 				Data: transfertypes.ModuleCdc.MustMarshalJSON(
 					&transfertypes.FungibleTokenPacketData{
 						Sender:   "cosmos1tjdjfavsy956d25hvhs3p0nw9a7pfghqegfjmu",
@@ -170,12 +133,12 @@ func TestGetTransferAmount(t *testing.T) {
 					},
 				),
 			},
-			"",
-			true,
+			expAmount: "",
+			expError:  true,
 		},
 		{
-			"invalid amount - non-int",
-			channeltypes.Packet{
+			name: "invalid amount - non-int",
+			packet: channeltypes.Packet{
 				Data: transfertypes.ModuleCdc.MustMarshalJSON(
 					&transfertypes.FungibleTokenPacketData{
 						Sender:   "cosmos1tjdjfavsy956d25hvhs3p0nw9a7pfghqegfjmu",
@@ -184,12 +147,12 @@ func TestGetTransferAmount(t *testing.T) {
 					},
 				),
 			},
-			"test",
-			true,
+			expAmount: "test",
+			expError:  true,
 		},
 		{
-			"valid",
-			channeltypes.Packet{
+			name: "valid",
+			packet: channeltypes.Packet{
 				Data: transfertypes.ModuleCdc.MustMarshalJSON(
 					&transfertypes.FungibleTokenPacketData{
 						Sender:   "cosmos1tjdjfavsy956d25hvhs3p0nw9a7pfghqegfjmu",
@@ -198,8 +161,8 @@ func TestGetTransferAmount(t *testing.T) {
 					},
 				),
 			},
-			"10000",
-			false,
+			expAmount: "10000",
+			expError:  false,
 		},
 	}
 
@@ -315,5 +278,91 @@ func TestGetSentCoin(t *testing.T) {
 	for _, tc := range testCases {
 		coin := GetSentCoin(tc.rawDenom, tc.rawAmount)
 		require.Equal(t, tc.expCoin, coin)
+	}
+}
+
+func TestDeriveDecimalsFromDenom(t *testing.T) {
+	testCases := []struct {
+		name      string
+		baseDenom string
+		expDec    uint8
+		expFail   bool
+		expErrMsg string
+	}{
+		{
+			name:      "fail: empty string",
+			baseDenom: "",
+			expDec:    0,
+			expFail:   true,
+			expErrMsg: "Base denom cannot be an empty string",
+		},
+		{
+			name:      "fail: invalid prefix",
+			baseDenom: "nISLM",
+			expDec:    0,
+			expFail:   true,
+			expErrMsg: "Should be either micro ('u[...]') or atto ('a[...]'); got: \"nISLM\"",
+		},
+		{
+			name:      "success: micro 'u' prefix",
+			baseDenom: "uISLM",
+			expDec:    6,
+			expFail:   false,
+			expErrMsg: "",
+		},
+		{
+			name:      "success: atto 'a' prefix",
+			baseDenom: "aISLM",
+			expDec:    18,
+			expFail:   false,
+			expErrMsg: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		dec, err := DeriveDecimalsFromDenom(tc.baseDenom)
+		if tc.expFail {
+			require.Error(t, err, tc.expErrMsg)
+			require.Contains(t, err.Error(), tc.expErrMsg)
+		} else {
+			require.NoError(t, err)
+		}
+		require.Equal(t, tc.expDec, dec)
+	}
+}
+
+func TestIsBaseDenomFromSourceChain(t *testing.T) {
+	tests := []struct {
+		name     string
+		denom    string
+		expected bool
+	}{
+		{
+			name:     "one hop",
+			denom:    "transfer/channel-0/uatom",
+			expected: false,
+		},
+		{
+			name:     "no hop with factory prefix",
+			denom:    "factory/owner/uatom",
+			expected: false,
+		},
+		{
+			name:     "multi hop",
+			denom:    "transfer/channel-0/transfer/channel-1/uatom",
+			expected: false,
+		},
+		{
+			name:     "no hop",
+			denom:    "uatom",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsBaseDenomFromSourceChain(tt.denom)
+			require.Equal(t, tt.expected, result)
+		})
 	}
 }

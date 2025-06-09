@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package bech32
 
 import (
@@ -46,7 +49,7 @@ func (p Precompile) HexToBech32(
 		)
 	}
 
-	// NOTE: safety check, should not happen given that the address is is 20 bytes.
+	// NOTE: safety check, should not happen given that the address is 20 bytes.
 	if err := sdk.VerifyAddressFormat(address.Bytes()); err != nil {
 		return nil, err
 	}

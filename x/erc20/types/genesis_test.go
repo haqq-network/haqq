@@ -20,7 +20,7 @@ func TestGenesisTestSuite(t *testing.T) {
 }
 
 func (suite *GenesisTestSuite) TestValidateGenesis() {
-	newGen := types.NewGenesisState(types.DefaultParams(), []types.TokenPair{})
+	newGen := types.NewGenesisState(types.DefaultParams(), types.DefaultTokenPairs)
 
 	testCases := []struct {
 		name     string
@@ -41,7 +41,7 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 			name: "valid genesis",
 			genState: &types.GenesisState{
 				Params:     types.DefaultParams(),
-				TokenPairs: []types.TokenPair{},
+				TokenPairs: types.DefaultTokenPairs,
 			},
 			expPass: true,
 		},

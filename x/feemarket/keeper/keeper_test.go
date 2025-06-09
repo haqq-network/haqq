@@ -1,10 +1,9 @@
 package keeper_test
 
 import (
-	_ "embed"
 	"math/big"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"cosmossdk.io/math"
 )
 
 func (suite *KeeperTestSuite) TestSetGetBlockGasWanted() {
@@ -38,9 +37,9 @@ func (suite *KeeperTestSuite) TestSetGetGasFee() {
 		{
 			"with last block given",
 			func() {
-				suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, sdk.OneDec().BigInt())
+				suite.app.FeeMarketKeeper.SetBaseFee(suite.ctx, math.LegacyOneDec().BigInt())
 			},
-			sdk.OneDec().BigInt(),
+			math.LegacyOneDec().BigInt(),
 		},
 	}
 

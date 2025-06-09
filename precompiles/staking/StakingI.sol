@@ -12,10 +12,17 @@ StakingI constant STAKING_CONTRACT = StakingI(STAKING_PRECOMPILE_ADDRESS);
 
 /// @dev Define all the available staking methods.
 string constant MSG_CREATE_VALIDATOR = "/cosmos.staking.v1beta1.MsgCreateValidator";
+string constant MSG_EDIT_VALIDATOR = "/cosmos.staking.v1beta1.MsgEditValidator";
 string constant MSG_DELEGATE = "/cosmos.staking.v1beta1.MsgDelegate";
 string constant MSG_UNDELEGATE = "/cosmos.staking.v1beta1.MsgUndelegate";
 string constant MSG_REDELEGATE = "/cosmos.staking.v1beta1.MsgBeginRedelegate";
 string constant MSG_CANCEL_UNDELEGATION = "/cosmos.staking.v1beta1.MsgCancelUnbondingDelegation";
+
+/// @dev Constant used in flags to indicate that commission rate field should not be updated
+int256 constant DO_NOT_MODIFY_COMMISSION_RATE = -1;
+
+/// @dev Constant used in flags to indicate that min self delegation field should not be updated
+int256 constant DO_NOT_MODIFY_MIN_SELF_DELEGATION = -1;
 
 /// @dev Defines the initial description to be used for creating
 /// a validator.
@@ -40,7 +47,6 @@ struct Commission {
     CommissionRates commissionRates;
     uint256 updateTime;
 }
-
 
 /// @dev Represents a validator in the staking module.
 struct Validator {
@@ -129,7 +135,6 @@ interface StakingI is authorization.AuthorizationI {
     /// @param description The initial description
     /// @param commissionRates The initial commissionRates
     /// @param minSelfDelegation The validator's self declared minimum self delegation
-    /// @param delegatorAddress The delegator address
     /// @param validatorAddress The validator address
     /// @param pubkey The consensus public key of the validator
     /// @param value The amount of the coin to be self delegated to the validator
@@ -138,10 +143,24 @@ interface StakingI is authorization.AuthorizationI {
         Description calldata description,
         CommissionRates calldata commissionRates,
         uint256 minSelfDelegation,
-        address delegatorAddress,
-        string memory validatorAddress,
+        address validatorAddress,
         string memory pubkey,
         uint256 value
+    ) external returns (bool success);
+
+    /// @dev Defines a method for edit a validator.
+    /// @param description Description parameter to be updated. Use the string "[do-not-modify]"
+    /// as the value of fields that should not be updated.
+    /// @param commissionRate CommissionRate parameter to be updated.
+    /// Use commissionRate = -1 to keep the current value and not update it.
+    /// @param minSelfDelegation MinSelfDelegation parameter to be updated.
+    /// Use minSelfDelegation = -1 to keep the current value and not update it.
+    /// @return success Whether or not edit validator was successful.
+    function editValidator(
+        Description calldata description,
+        address validatorAddress,
+        int256 commissionRate,
+        int256 minSelfDelegation
     ) external returns (bool success);
 
     /// @dev Defines a method for performing a delegation of coins from a delegator to a validator.
@@ -212,13 +231,16 @@ interface StakingI is authorization.AuthorizationI {
     function unbondingDelegation(
         address delegatorAddress,
         string memory validatorAddress
-    ) external view returns (UnbondingDelegationOutput calldata unbondingDelegation);
+    )
+        external
+        view
+        returns (UnbondingDelegationOutput calldata unbondingDelegation);
 
     /// @dev Queries validator info for a given validator address.
     /// @param validatorAddress The address of the validator.
     /// @return validator The validator info for the given validator address.
     function validator(
-        string memory validatorAddress
+        address validatorAddress
     ) external view returns (Validator calldata validator);
 
     /// @dev Queries all validators that match the given status.
@@ -239,7 +261,8 @@ interface StakingI is authorization.AuthorizationI {
     /// @param delegatorAddress The address of the delegator.
     /// @param srcValidatorAddress Defines the validator address to redelegate from.
     /// @param dstValidatorAddress Defines the validator address to redelegate to.
-    /// @return redelegation The active redelegations for the given delegator, source and destination validator combination.
+    /// @return redelegation The active redelegations for the given delegator, source and destination
+    /// validator combination.
     function redelegation(
         address delegatorAddress,
         string memory srcValidatorAddress,
@@ -269,13 +292,18 @@ interface StakingI is authorization.AuthorizationI {
         );
 
     /// @dev CreateValidator defines an Event emitted when a create a new validator.
-    /// @param delegatorAddress The address of the delegator
     /// @param validatorAddress The address of the validator
     /// @param value The amount of coin being self delegated
-    event CreateValidator(
-        address indexed delegatorAddress,
+    event CreateValidator(address indexed validatorAddress, uint256 value);
+
+    /// @dev EditValidator defines an Event emitted when edit a validator.
+    /// @param validatorAddress The address of the validator.
+    /// @param commissionRate The commission rate.
+    /// @param minSelfDelegation The min self delegation.
+    event EditValidator(
         address indexed validatorAddress,
-        uint256 value
+        int256 commissionRate,
+        int256 minSelfDelegation
     );
 
     /// @dev Delegate defines an Event emitted when a given amount of tokens are delegated from the

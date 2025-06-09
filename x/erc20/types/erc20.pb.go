@@ -5,18 +5,21 @@ package types
 
 import (
 	fmt "fmt"
-	types "github.com/cosmos/cosmos-sdk/x/bank/types"
-	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+
+	types "github.com/cosmos/cosmos-sdk/x/bank/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	proto "github.com/cosmos/gogoproto/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
-var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+var (
+	_ = proto.Marshal
+	_ = fmt.Errorf
+	_ = math.Inf
+)
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -32,7 +35,7 @@ const (
 	OWNER_UNSPECIFIED Owner = 0
 	// OWNER_MODULE - erc20 is owned by the erc20 module account.
 	OWNER_MODULE Owner = 1
-	// OWNER_EXTERNAL - erc20 is owned by an external account.
+	// OWNER_EXTERNAL - erc20 is owned by an external owned account.
 	OWNER_EXTERNAL Owner = 2
 )
 
@@ -65,7 +68,7 @@ type TokenPair struct {
 	Denom string `protobuf:"bytes,2,opt,name=denom,proto3" json:"denom,omitempty"`
 	// enabled defines the token mapping enable status
 	Enabled bool `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	// contract_owner is the an ENUM specifying the type of ERC20 owner (0 invalid, 1 ModuleAccount, 2 external address)
+	// contract_owner is an enum specifying the type of ERC20 owner (0 invalid, 1 ModuleAccount, 2 external address)
 	ContractOwner Owner `protobuf:"varint,4,opt,name=contract_owner,json=contractOwner,proto3,enum=evmos.erc20.v1.Owner" json:"contract_owner,omitempty"`
 }
 
@@ -75,9 +78,11 @@ func (*TokenPair) ProtoMessage()    {}
 func (*TokenPair) Descriptor() ([]byte, []int) {
 	return fileDescriptor_668d5dc537f45142, []int{0}
 }
+
 func (m *TokenPair) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *TokenPair) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_TokenPair.Marshal(b, m, deterministic)
@@ -90,12 +95,15 @@ func (m *TokenPair) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
+
 func (m *TokenPair) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_TokenPair.Merge(m, src)
 }
+
 func (m *TokenPair) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *TokenPair) XXX_DiscardUnknown() {
 	xxx_messageInfo_TokenPair.DiscardUnknown(m)
 }
@@ -130,8 +138,9 @@ func (m *TokenPair) GetContractOwner() Owner {
 	return OWNER_UNSPECIFIED
 }
 
-// RegisterCoinProposal is a gov Content type to register a token pair for a
-// native Cosmos coin.
+// Deprecated: RegisterCoinProposal is a gov Content type to register a token pair for a
+// native Cosmos coin. We're keeping it to remove the existing proposals from
+// store. After that, remove this message.
 type RegisterCoinProposal struct {
 	// title of the proposal
 	Title string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
@@ -147,9 +156,11 @@ func (*RegisterCoinProposal) ProtoMessage()    {}
 func (*RegisterCoinProposal) Descriptor() ([]byte, []int) {
 	return fileDescriptor_668d5dc537f45142, []int{1}
 }
+
 func (m *RegisterCoinProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *RegisterCoinProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_RegisterCoinProposal.Marshal(b, m, deterministic)
@@ -162,12 +173,15 @@ func (m *RegisterCoinProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
+
 func (m *RegisterCoinProposal) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_RegisterCoinProposal.Merge(m, src)
 }
+
 func (m *RegisterCoinProposal) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *RegisterCoinProposal) XXX_DiscardUnknown() {
 	xxx_messageInfo_RegisterCoinProposal.DiscardUnknown(m)
 }
@@ -195,6 +209,59 @@ func (m *RegisterCoinProposal) GetMetadata() []types.Metadata {
 	return nil
 }
 
+// Deprecated: ProposalMetadata is used to parse a slice of denom metadata and generate
+// the RegisterCoinProposal content. We're keeping it to remove the existing proposals from
+// store. After that, remove this message.
+type ProposalMetadata struct {
+	// metadata slice of the native Cosmos coins
+	Metadata []types.Metadata `protobuf:"bytes,1,rep,name=metadata,proto3" json:"metadata"`
+}
+
+func (m *ProposalMetadata) Reset()         { *m = ProposalMetadata{} }
+func (m *ProposalMetadata) String() string { return proto.CompactTextString(m) }
+func (*ProposalMetadata) ProtoMessage()    {}
+func (*ProposalMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_668d5dc537f45142, []int{2}
+}
+
+func (m *ProposalMetadata) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+
+func (m *ProposalMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ProposalMetadata.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+
+func (m *ProposalMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProposalMetadata.Merge(m, src)
+}
+
+func (m *ProposalMetadata) XXX_Size() int {
+	return m.Size()
+}
+
+func (m *ProposalMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProposalMetadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProposalMetadata proto.InternalMessageInfo
+
+func (m *ProposalMetadata) GetMetadata() []types.Metadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
 // RegisterERC20Proposal is a gov Content type to register a token pair for an
 // ERC20 token
 type RegisterERC20Proposal struct {
@@ -210,11 +277,13 @@ func (m *RegisterERC20Proposal) Reset()         { *m = RegisterERC20Proposal{} }
 func (m *RegisterERC20Proposal) String() string { return proto.CompactTextString(m) }
 func (*RegisterERC20Proposal) ProtoMessage()    {}
 func (*RegisterERC20Proposal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_668d5dc537f45142, []int{2}
+	return fileDescriptor_668d5dc537f45142, []int{3}
 }
+
 func (m *RegisterERC20Proposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *RegisterERC20Proposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_RegisterERC20Proposal.Marshal(b, m, deterministic)
@@ -227,12 +296,15 @@ func (m *RegisterERC20Proposal) XXX_Marshal(b []byte, deterministic bool) ([]byt
 		return b[:n], nil
 	}
 }
+
 func (m *RegisterERC20Proposal) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_RegisterERC20Proposal.Merge(m, src)
 }
+
 func (m *RegisterERC20Proposal) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *RegisterERC20Proposal) XXX_DiscardUnknown() {
 	xxx_messageInfo_RegisterERC20Proposal.DiscardUnknown(m)
 }
@@ -276,11 +348,13 @@ func (m *ToggleTokenConversionProposal) Reset()         { *m = ToggleTokenConver
 func (m *ToggleTokenConversionProposal) String() string { return proto.CompactTextString(m) }
 func (*ToggleTokenConversionProposal) ProtoMessage()    {}
 func (*ToggleTokenConversionProposal) Descriptor() ([]byte, []int) {
-	return fileDescriptor_668d5dc537f45142, []int{3}
+	return fileDescriptor_668d5dc537f45142, []int{4}
 }
+
 func (m *ToggleTokenConversionProposal) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *ToggleTokenConversionProposal) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_ToggleTokenConversionProposal.Marshal(b, m, deterministic)
@@ -293,12 +367,15 @@ func (m *ToggleTokenConversionProposal) XXX_Marshal(b []byte, deterministic bool
 		return b[:n], nil
 	}
 }
+
 func (m *ToggleTokenConversionProposal) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ToggleTokenConversionProposal.Merge(m, src)
 }
+
 func (m *ToggleTokenConversionProposal) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *ToggleTokenConversionProposal) XXX_DiscardUnknown() {
 	xxx_messageInfo_ToggleTokenConversionProposal.DiscardUnknown(m)
 }
@@ -326,98 +403,51 @@ func (m *ToggleTokenConversionProposal) GetToken() string {
 	return ""
 }
 
-// ProposalMetadata is used to parse a slice of denom metadata and generate
-// the RegisterCoinProposal content.
-type ProposalMetadata struct {
-	// metadata slice of the native Cosmos coins
-	Metadata []types.Metadata `protobuf:"bytes,1,rep,name=metadata,proto3" json:"metadata"`
-}
-
-func (m *ProposalMetadata) Reset()         { *m = ProposalMetadata{} }
-func (m *ProposalMetadata) String() string { return proto.CompactTextString(m) }
-func (*ProposalMetadata) ProtoMessage()    {}
-func (*ProposalMetadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_668d5dc537f45142, []int{4}
-}
-func (m *ProposalMetadata) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ProposalMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ProposalMetadata.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ProposalMetadata) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProposalMetadata.Merge(m, src)
-}
-func (m *ProposalMetadata) XXX_Size() int {
-	return m.Size()
-}
-func (m *ProposalMetadata) XXX_DiscardUnknown() {
-	xxx_messageInfo_ProposalMetadata.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ProposalMetadata proto.InternalMessageInfo
-
-func (m *ProposalMetadata) GetMetadata() []types.Metadata {
-	if m != nil {
-		return m.Metadata
-	}
-	return nil
-}
-
 func init() {
 	proto.RegisterEnum("evmos.erc20.v1.Owner", Owner_name, Owner_value)
 	proto.RegisterType((*TokenPair)(nil), "evmos.erc20.v1.TokenPair")
 	proto.RegisterType((*RegisterCoinProposal)(nil), "evmos.erc20.v1.RegisterCoinProposal")
+	proto.RegisterType((*ProposalMetadata)(nil), "evmos.erc20.v1.ProposalMetadata")
 	proto.RegisterType((*RegisterERC20Proposal)(nil), "evmos.erc20.v1.RegisterERC20Proposal")
 	proto.RegisterType((*ToggleTokenConversionProposal)(nil), "evmos.erc20.v1.ToggleTokenConversionProposal")
-	proto.RegisterType((*ProposalMetadata)(nil), "evmos.erc20.v1.ProposalMetadata")
 }
 
 func init() { proto.RegisterFile("evmos/erc20/v1/erc20.proto", fileDescriptor_668d5dc537f45142) }
 
 var fileDescriptor_668d5dc537f45142 = []byte{
-	// 508 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0x4f, 0x6b, 0x13, 0x41,
-	0x1c, 0xdd, 0x69, 0x53, 0x6d, 0xa6, 0x6d, 0x58, 0x87, 0x04, 0x96, 0x40, 0xb7, 0x4b, 0x04, 0x09,
-	0x05, 0x77, 0x9b, 0x78, 0x13, 0x41, 0xda, 0x64, 0x85, 0x4a, 0x9b, 0x84, 0x6d, 0x8a, 0xe2, 0x25,
-	0xcc, 0xee, 0x0e, 0xdb, 0x25, 0xc9, 0x4c, 0x3a, 0x33, 0x6e, 0xf5, 0xe0, 0xdd, 0xa3, 0x17, 0xef,
-	0x82, 0x7e, 0x98, 0x1e, 0x7b, 0xf4, 0x24, 0x92, 0x5c, 0xfc, 0x18, 0xb2, 0x33, 0xbb, 0x62, 0x3d,
-	0xda, 0xdb, 0xef, 0xbd, 0xdf, 0x9f, 0x7d, 0xfb, 0x1e, 0x03, 0x9b, 0x24, 0x9b, 0x33, 0xe1, 0x11,
-	0x1e, 0x75, 0x0f, 0xbc, 0xac, 0xa3, 0x0b, 0x77, 0xc1, 0x99, 0x64, 0xa8, 0xa6, 0x7a, 0xae, 0xa6,
-	0xb2, 0x4e, 0xd3, 0x8e, 0x98, 0xc8, 0x87, 0x43, 0x4c, 0xa7, 0x5e, 0xd6, 0x09, 0x89, 0xc4, 0x1d,
-	0x05, 0xf4, 0x7c, 0xb3, 0x9e, 0xb0, 0x84, 0xa9, 0xd2, 0xcb, 0x2b, 0xcd, 0xb6, 0xbe, 0x01, 0x58,
-	0x1d, 0xb3, 0x29, 0xa1, 0x23, 0x9c, 0x72, 0xf4, 0x10, 0xee, 0xa8, 0x7b, 0x13, 0x1c, 0xc7, 0x9c,
-	0x08, 0x61, 0x01, 0x07, 0xb4, 0xab, 0xc1, 0xb6, 0x22, 0x0f, 0x35, 0x87, 0xea, 0x70, 0x23, 0x26,
-	0x94, 0xcd, 0xad, 0x35, 0xd5, 0xd4, 0x00, 0x59, 0xf0, 0x3e, 0xa1, 0x38, 0x9c, 0x91, 0xd8, 0x5a,
-	0x77, 0x40, 0x7b, 0x33, 0x28, 0x21, 0x7a, 0x06, 0x6b, 0x11, 0xa3, 0x92, 0xe3, 0x48, 0x4e, 0xd8,
-	0x15, 0x25, 0xdc, 0xaa, 0x38, 0xa0, 0x5d, 0xeb, 0x36, 0xdc, 0xdb, 0x7f, 0xe0, 0x0e, 0xf3, 0x66,
-	0xb0, 0x53, 0x0e, 0x2b, 0xf8, 0xb4, 0xf2, 0xeb, 0xcb, 0x1e, 0x68, 0x7d, 0x06, 0xb0, 0x1e, 0x90,
-	0x24, 0x15, 0x92, 0xf0, 0x1e, 0x4b, 0xe9, 0x88, 0xb3, 0x05, 0x13, 0x78, 0x96, 0x8b, 0x91, 0xa9,
-	0x9c, 0x91, 0x42, 0xa9, 0x06, 0xc8, 0x81, 0x5b, 0x31, 0x11, 0x11, 0x4f, 0x17, 0x32, 0x65, 0xb4,
-	0x10, 0xfa, 0x37, 0x85, 0x9e, 0xc3, 0xcd, 0x39, 0x91, 0x38, 0xc6, 0x12, 0x5b, 0xeb, 0xce, 0x7a,
-	0x7b, 0xab, 0xbb, 0xeb, 0x6a, 0x03, 0x5d, 0xe5, 0x59, 0x61, 0xa0, 0x7b, 0x5a, 0x0c, 0x1d, 0x55,
-	0xae, 0x7f, 0xec, 0x19, 0xc1, 0x9f, 0x25, 0xa5, 0xcb, 0x68, 0x7d, 0x80, 0x8d, 0x52, 0x96, 0x1f,
-	0xf4, 0xba, 0x07, 0x77, 0xd6, 0xf5, 0x08, 0xd6, 0x94, 0x1f, 0x45, 0x00, 0x44, 0x28, 0x75, 0xd5,
-	0xe0, 0x1f, 0xb6, 0xf8, 0xbc, 0x80, 0xbb, 0x63, 0x96, 0x24, 0x33, 0xa2, 0x22, 0xec, 0x31, 0x9a,
-	0x11, 0x2e, 0x52, 0x76, 0x77, 0x7b, 0xf2, 0xbd, 0xfc, 0xa4, 0xca, 0x32, 0xdf, 0xcb, 0x41, 0x91,
-	0xc5, 0x19, 0x34, 0xcb, 0xfb, 0xa5, 0x3b, 0xb7, 0xec, 0x04, 0xff, 0x61, 0xe7, 0xfe, 0x4b, 0xb8,
-	0xa1, 0xf2, 0x46, 0x0d, 0xf8, 0x60, 0xf8, 0x6a, 0xe0, 0x07, 0x93, 0xf3, 0xc1, 0xd9, 0xc8, 0xef,
-	0x1d, 0xbf, 0x38, 0xf6, 0xfb, 0xa6, 0x81, 0x4c, 0xb8, 0xad, 0xe9, 0xd3, 0x61, 0xff, 0xfc, 0xc4,
-	0x37, 0x01, 0x42, 0xb0, 0xa6, 0x19, 0xff, 0xf5, 0xd8, 0x0f, 0x06, 0x87, 0x27, 0xe6, 0x5a, 0xb3,
-	0xf2, 0xf1, 0xab, 0x6d, 0x1c, 0xf5, 0xaf, 0x97, 0x36, 0xb8, 0x59, 0xda, 0xe0, 0xe7, 0xd2, 0x06,
-	0x9f, 0x56, 0xb6, 0x71, 0xb3, 0xb2, 0x8d, 0xef, 0x2b, 0xdb, 0x78, 0xb3, 0x9f, 0xa4, 0xf2, 0xe2,
-	0x6d, 0xe8, 0x46, 0x6c, 0xee, 0x5d, 0xe0, 0xcb, 0xcb, 0xc7, 0x94, 0xc8, 0x2b, 0xc6, 0xa7, 0x0a,
-	0x78, 0xef, 0x8a, 0x87, 0x26, 0xdf, 0x2f, 0x88, 0x08, 0xef, 0xa9, 0x07, 0xf2, 0xe4, 0x77, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0xc7, 0x57, 0x6b, 0x4c, 0x84, 0x03, 0x00, 0x00,
+	// 505 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0xcf, 0x6b, 0xd4, 0x40,
+	0x14, 0xce, 0x74, 0xb7, 0xda, 0x9d, 0xb6, 0x21, 0x0e, 0xbb, 0x10, 0x16, 0x9a, 0x86, 0x15, 0x24,
+	0x78, 0x48, 0x9a, 0xf5, 0x22, 0x22, 0x48, 0x77, 0x1b, 0xa1, 0xd2, 0xee, 0x2e, 0xe9, 0x16, 0xc5,
+	0xcb, 0x32, 0x49, 0x86, 0x18, 0xba, 0x9b, 0x59, 0x66, 0xc6, 0xa8, 0x07, 0xef, 0x1e, 0xbd, 0x78,
+	0x17, 0xf4, 0x8f, 0xe9, 0xb1, 0x47, 0x4f, 0x22, 0xbb, 0x17, 0xff, 0x0c, 0xc9, 0x4c, 0x22, 0xd6,
+	0x63, 0x7b, 0x19, 0xde, 0xf7, 0xbd, 0x1f, 0xbc, 0xf7, 0xbd, 0x79, 0xb0, 0x4b, 0x8a, 0x05, 0xe5,
+	0x1e, 0x61, 0x71, 0xff, 0xc0, 0x2b, 0x7c, 0x65, 0xb8, 0x4b, 0x46, 0x05, 0x45, 0xba, 0xf4, 0xb9,
+	0x8a, 0x2a, 0xfc, 0xae, 0x15, 0x53, 0x5e, 0x06, 0x47, 0x38, 0xbf, 0xf0, 0x0a, 0x3f, 0x22, 0x02,
+	0xfb, 0x12, 0xa8, 0xf8, 0x6e, 0x3b, 0xa5, 0x29, 0x95, 0xa6, 0x57, 0x5a, 0x8a, 0xed, 0x7d, 0x07,
+	0xb0, 0x35, 0xa5, 0x17, 0x24, 0x9f, 0xe0, 0x8c, 0xa1, 0xfb, 0x70, 0x57, 0xd6, 0x9b, 0xe1, 0x24,
+	0x61, 0x84, 0x73, 0x13, 0xd8, 0xc0, 0x69, 0x85, 0x3b, 0x92, 0x3c, 0x54, 0x1c, 0x6a, 0xc3, 0xcd,
+	0x84, 0xe4, 0x74, 0x61, 0x6e, 0x48, 0xa7, 0x02, 0xc8, 0x84, 0x77, 0x49, 0x8e, 0xa3, 0x39, 0x49,
+	0xcc, 0x86, 0x0d, 0x9c, 0xad, 0xb0, 0x86, 0xe8, 0x29, 0xd4, 0x63, 0x9a, 0x0b, 0x86, 0x63, 0x31,
+	0xa3, 0xef, 0x72, 0xc2, 0xcc, 0xa6, 0x0d, 0x1c, 0xbd, 0xdf, 0x71, 0xaf, 0x4f, 0xe0, 0x8e, 0x4b,
+	0x67, 0xb8, 0x5b, 0x07, 0x4b, 0xf8, 0xa4, 0xf9, 0xfb, 0xeb, 0x3e, 0xe8, 0x7d, 0x01, 0xb0, 0x1d,
+	0x92, 0x34, 0xe3, 0x82, 0xb0, 0x21, 0xcd, 0xf2, 0x09, 0xa3, 0x4b, 0xca, 0xf1, 0xbc, 0x6c, 0x46,
+	0x64, 0x62, 0x4e, 0xaa, 0x4e, 0x15, 0x40, 0x36, 0xdc, 0x4e, 0x08, 0x8f, 0x59, 0xb6, 0x14, 0x19,
+	0xcd, 0xab, 0x46, 0xff, 0xa5, 0xd0, 0x33, 0xb8, 0xb5, 0x20, 0x02, 0x27, 0x58, 0x60, 0xb3, 0x61,
+	0x37, 0x9c, 0xed, 0xfe, 0x9e, 0xab, 0x04, 0x74, 0xa5, 0x66, 0x95, 0x80, 0xee, 0x69, 0x15, 0x34,
+	0x68, 0x5e, 0xfe, 0xdc, 0xd7, 0xc2, 0xbf, 0x49, 0xb2, 0x2f, 0xad, 0x77, 0x06, 0x8d, 0xba, 0x95,
+	0x3a, 0xf2, 0x5a, 0x69, 0x70, 0x83, 0xd2, 0xbd, 0x8f, 0xb0, 0x53, 0xcf, 0x1a, 0x84, 0xc3, 0xfe,
+	0xc1, 0xad, 0x87, 0x7d, 0x00, 0x75, 0x29, 0x72, 0xb5, 0x55, 0xc2, 0xe5, 0xc8, 0xad, 0xf0, 0x3f,
+	0xb6, 0x9a, 0x89, 0xc3, 0xbd, 0x29, 0x4d, 0xd3, 0x39, 0x91, 0xff, 0x62, 0x48, 0xf3, 0x82, 0x30,
+	0x9e, 0xd1, 0xdb, 0x6b, 0x5e, 0xe6, 0x95, 0x25, 0xe5, 0x07, 0x29, 0xf3, 0x4a, 0xa0, 0x16, 0xfc,
+	0xf0, 0x05, 0xdc, 0x94, 0xfb, 0x46, 0x1d, 0x78, 0x6f, 0xfc, 0x72, 0x14, 0x84, 0xb3, 0xf3, 0xd1,
+	0xd9, 0x24, 0x18, 0x1e, 0x3f, 0x3f, 0x0e, 0x8e, 0x0c, 0x0d, 0x19, 0x70, 0x47, 0xd1, 0xa7, 0xe3,
+	0xa3, 0xf3, 0x93, 0xc0, 0x00, 0x08, 0x41, 0x5d, 0x31, 0xc1, 0xab, 0x69, 0x10, 0x8e, 0x0e, 0x4f,
+	0x8c, 0x8d, 0x6e, 0xf3, 0xd3, 0x37, 0x4b, 0x1b, 0x0c, 0x2e, 0x57, 0x16, 0xb8, 0x5a, 0x59, 0xe0,
+	0xd7, 0xca, 0x02, 0x9f, 0xd7, 0x96, 0x76, 0xb5, 0xb6, 0xb4, 0x1f, 0x6b, 0x4b, 0x7b, 0xed, 0xa4,
+	0x99, 0x78, 0xf3, 0x36, 0x72, 0x63, 0xba, 0xf0, 0xaa, 0xd3, 0x92, 0x6f, 0xe1, 0x3f, 0xf6, 0xde,
+	0x57, 0x67, 0x26, 0x3e, 0x2c, 0x09, 0x8f, 0xee, 0xc8, 0xf3, 0x78, 0xf4, 0x27, 0x00, 0x00, 0xff,
+	0xff, 0x19, 0x11, 0xfb, 0x31, 0x82, 0x03, 0x00, 0x00,
 }
 
 func (this *TokenPair) Equal(that interface{}) bool {
@@ -453,6 +483,7 @@ func (this *TokenPair) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (this *ToggleTokenConversionProposal) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -483,6 +514,7 @@ func (this *ToggleTokenConversionProposal) Equal(that interface{}) bool {
 	}
 	return true
 }
+
 func (m *TokenPair) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -586,6 +618,43 @@ func (m *RegisterCoinProposal) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *ProposalMetadata) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ProposalMetadata) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ProposalMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Metadata) > 0 {
+		for iNdEx := len(m.Metadata) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Metadata[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintErc20(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *RegisterERC20Proposal) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -676,43 +745,6 @@ func (m *ToggleTokenConversionProposal) MarshalToSizedBuffer(dAtA []byte) (int, 
 	return len(dAtA) - i, nil
 }
 
-func (m *ProposalMetadata) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ProposalMetadata) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ProposalMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Metadata) > 0 {
-		for iNdEx := len(m.Metadata) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Metadata[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintErc20(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
 func encodeVarintErc20(dAtA []byte, offset int, v uint64) int {
 	offset -= sovErc20(v)
 	base := offset
@@ -724,6 +756,7 @@ func encodeVarintErc20(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+
 func (m *TokenPair) Size() (n int) {
 	if m == nil {
 		return 0
@@ -761,6 +794,21 @@ func (m *RegisterCoinProposal) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovErc20(uint64(l))
 	}
+	if len(m.Metadata) > 0 {
+		for _, e := range m.Metadata {
+			l = e.Size()
+			n += 1 + l + sovErc20(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *ProposalMetadata) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	if len(m.Metadata) > 0 {
 		for _, e := range m.Metadata {
 			l = e.Size()
@@ -814,27 +862,14 @@ func (m *ToggleTokenConversionProposal) Size() (n int) {
 	return n
 }
 
-func (m *ProposalMetadata) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Metadata) > 0 {
-		for _, e := range m.Metadata {
-			l = e.Size()
-			n += 1 + l + sovErc20(uint64(l))
-		}
-	}
-	return n
-}
-
 func sovErc20(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
+
 func sozErc20(x uint64) (n int) {
 	return sovErc20(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+
 func (m *TokenPair) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -988,6 +1023,7 @@ func (m *TokenPair) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *RegisterCoinProposal) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1136,6 +1172,92 @@ func (m *RegisterCoinProposal) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
+func (m *ProposalMetadata) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowErc20
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProposalMetadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProposalMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowErc20
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthErc20
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthErc20
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Metadata = append(m.Metadata, types.Metadata{})
+			if err := m.Metadata[len(m.Metadata)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipErc20(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthErc20
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
 func (m *RegisterERC20Proposal) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1282,6 +1404,7 @@ func (m *RegisterERC20Proposal) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *ToggleTokenConversionProposal) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1428,90 +1551,7 @@ func (m *ToggleTokenConversionProposal) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ProposalMetadata) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowErc20
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ProposalMetadata: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProposalMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowErc20
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthErc20
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthErc20
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Metadata = append(m.Metadata, types.Metadata{})
-			if err := m.Metadata[len(m.Metadata)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipErc20(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthErc20
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
 
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func skipErc20(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0

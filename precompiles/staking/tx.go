@@ -1,6 +1,10 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package staking
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -8,16 +12,18 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
-	"github.com/haqq-network/haqq/x/evm/statedb"
+	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	stakingkeeper "github.com/haqq-network/haqq/x/staking/keeper"
 )
 
 const (
 	// CreateValidatorMethod defines the ABI method name for the staking create validator transaction
 	CreateValidatorMethod = "createValidator"
+	// EditValidatorMethod defines the ABI method name for the staking edit validator transaction
+	EditValidatorMethod = "editValidator"
 	// DelegateMethod defines the ABI method name for the staking Delegate
 	// transaction.
 	DelegateMethod = "delegate"
@@ -47,12 +53,12 @@ const (
 func (p Precompile) CreateValidator(
 	ctx sdk.Context,
 	origin common.Address,
-	_ *vm.Contract,
+	contract *vm.Contract,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
 ) ([]byte, error) {
-	msg, delegatorHexAddr, err := NewMsgCreateValidator(args, p.stakingKeeper.BondDenom(ctx))
+	msg, validatorHexAddr, err := NewMsgCreateValidator(args, p.stakingKeeper.BondDenom(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -62,15 +68,21 @@ func (p Precompile) CreateValidator(
 		"method", method.Name,
 		"commission", msg.Commission.String(),
 		"min_self_delegation", msg.MinSelfDelegation.String(),
-		"delegator_address", delegatorHexAddr.String(),
-		"validator_address", msg.ValidatorAddress,
+		"validator_address", validatorHexAddr.String(),
 		"pubkey", msg.Pubkey.String(),
 		"value", msg.Value.Amount.String(),
 	)
 
+	// ATM there's no authorization type for the MsgCreateValidator
+	// and MsgEditValidator (source: https://github.com/cosmos/cosmos-sdk/blob/4bd73b667f8aed50ad4602ddf862a4ed6e1450a8/x/staking/proto/cosmos/staking/v1beta1/authz.proto#L39-L50)
+	// so, for the time being, we won't allow calls from smart contracts
+	if contract.CallerAddress != origin {
+		return nil, errors.New(ErrCannotCallFromContract)
+	}
+
 	// we only allow the tx signer "origin" to create their own validator.
-	if origin != delegatorHexAddr {
-		return nil, fmt.Errorf(ErrDifferentOriginFromDelegator, origin.String(), delegatorHexAddr.String())
+	if origin != validatorHexAddr {
+		return nil, fmt.Errorf(ErrDifferentOriginFromDelegator, origin.String(), validatorHexAddr.String())
 	}
 
 	// Execute the transaction using the message server
@@ -79,8 +91,59 @@ func (p Precompile) CreateValidator(
 		return nil, err
 	}
 
-	// Emit the event for the delegate transaction
-	if err = p.EmitCreateValidatorEvent(ctx, stateDB, msg, delegatorHexAddr); err != nil {
+	// Here we don't add journal entries here because calls from
+	// smart contracts are not supported at the moment for this method.
+
+	// Emit the event for the create validator transaction
+	if err = p.EmitCreateValidatorEvent(ctx, stateDB, msg, validatorHexAddr); err != nil {
+		return nil, err
+	}
+
+	return method.Outputs.Pack(true)
+}
+
+// EditValidator performs edit validator.
+func (p Precompile) EditValidator(
+	ctx sdk.Context,
+	origin common.Address,
+	contract *vm.Contract,
+	stateDB vm.StateDB,
+	method *abi.Method,
+	args []interface{},
+) ([]byte, error) {
+	msg, validatorHexAddr, err := NewMsgEditValidator(args)
+	if err != nil {
+		return nil, err
+	}
+
+	p.Logger(ctx).Debug(
+		"tx called",
+		"method", method.Name,
+		"validator_address", msg.ValidatorAddress,
+		"commission_rate", msg.CommissionRate,
+		"min_self_delegation", msg.MinSelfDelegation,
+	)
+
+	// ATM there's no authorization type for the MsgCreateValidator
+	// and MsgEditValidator (source: https://github.com/cosmos/cosmos-sdk/blob/4bd73b667f8aed50ad4602ddf862a4ed6e1450a8/x/staking/proto/cosmos/staking/v1beta1/authz.proto#L39-L50)
+	// so, for the time being, we won't allow calls from smart contracts
+	if contract.CallerAddress != origin {
+		return nil, errors.New(ErrCannotCallFromContract)
+	}
+
+	// we only allow the tx signer "origin" to edit their own validator.
+	if origin != validatorHexAddr {
+		return nil, fmt.Errorf(ErrDifferentOriginFromValidator, origin.String(), validatorHexAddr.String())
+	}
+
+	// Execute the transaction using the message server
+	msgSrv := stakingkeeper.NewMsgServerImpl(&p.stakingKeeper)
+	if _, err = msgSrv.EditValidator(sdk.WrapSDKContext(ctx), msg); err != nil {
+		return nil, err
+	}
+
+	// Emit the event for the edit validator transaction
+	if err = p.EmitEditValidatorEvent(ctx, stateDB, msg, validatorHexAddr); err != nil {
 		return nil, err
 	}
 
@@ -88,7 +151,7 @@ func (p Precompile) CreateValidator(
 }
 
 // Delegate performs a delegation of coins from a delegator to a validator.
-func (p Precompile) Delegate(
+func (p *Precompile) Delegate(
 	ctx sdk.Context,
 	origin common.Address,
 	contract *vm.Contract,
@@ -162,10 +225,14 @@ func (p Precompile) Delegate(
 		return nil, err
 	}
 
-	// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB.
-	// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
-	if isCallerDelegator {
-		stateDB.(*statedb.StateDB).SubBalance(contract.CallerAddress, msg.Amount.Amount.BigInt())
+	if !isCallerOrigin {
+		// get the delegator address from the message
+		delAccAddr := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
+		delHexAddr := common.BytesToAddress(delAccAddr)
+		// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB
+		// when calling the precompile from a smart contract
+		// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
+		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(delHexAddr, msg.Amount.Amount.BigInt(), cmn.Sub))
 	}
 
 	return method.Outputs.Pack(true)

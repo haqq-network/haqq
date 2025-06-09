@@ -11,7 +11,7 @@ import (
 	"github.com/haqq-network/haqq/x/erc20/types"
 )
 
-// ParseRegisterCoinProposal reads and parses a ParseRegisterCoinProposal from a file.
+// ParseMetadata reads and parses a RegisterCoinProposal from a file.
 func ParseMetadata(cdc codec.JSONCodec, metadataFile string) ([]banktypes.Metadata, error) {
 	proposalMetadata := types.ProposalMetadata{}
 

@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package erc20
 
 import (
@@ -8,18 +11,16 @@ import (
 	"strings"
 	"time"
 
-	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
+	"github.com/haqq-network/haqq/ibc"
 	auth "github.com/haqq-network/haqq/precompiles/authorization"
-	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 const (
@@ -100,22 +101,17 @@ func (p Precompile) Decimals(
 ) ([]byte, error) {
 	metadata, found := p.bankKeeper.GetDenomMetaData(ctx, p.tokenPair.Denom)
 	if !found {
-		denomTrace, err := GetDenomTrace(p.transferKeeper, ctx, p.tokenPair.Denom)
+		denomTrace, err := ibc.GetDenomTrace(p.transferKeeper, ctx, p.tokenPair.Denom)
 		if err != nil {
 			return nil, ConvertErrToERC20Error(err)
 		}
 
 		// we assume the decimal from the first character of the denomination
-		switch string(denomTrace.BaseDenom[0]) {
-		case "u": // micro (u) -> 6 decimals
-			return method.Outputs.Pack(uint8(6))
-		case "a": // atto (a) -> 18 decimals
-			return method.Outputs.Pack(uint8(18))
+		decimals, err := ibc.DeriveDecimalsFromDenom(denomTrace.BaseDenom)
+		if err != nil {
+			return nil, ConvertErrToERC20Error(err)
 		}
-		return nil, ConvertErrToERC20Error(fmt.Errorf(
-			"invalid base denomination; should be either micro ('u[...]') or atto ('a[...]'); got: %q",
-			denomTrace.BaseDenom,
-		))
+		return method.Outputs.Pack(decimals)
 	}
 
 	var (
@@ -210,30 +206,6 @@ func (p Precompile) Allowance(
 	return method.Outputs.Pack(allowance)
 }
 
-// GetDenomTrace returns the denomination trace from the corresponding IBC denomination. If the
-// denomination is not an IBC voucher or the trace is not found, it returns an error.
-func GetDenomTrace(
-	transferKeeper transferkeeper.Keeper,
-	ctx sdk.Context,
-	denom string,
-) (transfertypes.DenomTrace, error) {
-	if !strings.HasPrefix(denom, "ibc/") {
-		return transfertypes.DenomTrace{}, errorsmod.Wrapf(ErrNoIBCVoucherDenom, denom)
-	}
-
-	hash, err := transfertypes.ParseHexHash(denom[4:])
-	if err != nil {
-		return transfertypes.DenomTrace{}, err
-	}
-
-	denomTrace, found := transferKeeper.GetDenomTrace(ctx, hash)
-	if !found {
-		return transfertypes.DenomTrace{}, ErrDenomTraceNotFound
-	}
-
-	return denomTrace, nil
-}
-
 // GetAuthzExpirationAndAllowance returns the authorization, its expiration as well as the amount of denom
 // that the grantee is allowed to spend on behalf of the granter.
 func GetAuthzExpirationAndAllowance(
@@ -261,7 +233,7 @@ func GetAuthzExpirationAndAllowance(
 // getBaseDenomFromIBCVoucher returns the base denomination from the given IBC voucher denomination.
 func (p Precompile) getBaseDenomFromIBCVoucher(ctx sdk.Context, denom string) (string, error) {
 	// Infer the denomination name from the coin denomination base denom
-	denomTrace, err := GetDenomTrace(p.transferKeeper, ctx, denom)
+	denomTrace, err := ibc.GetDenomTrace(p.transferKeeper, ctx, denom)
 	if err != nil {
 		// FIXME: return 'not supported' (same error as when you call the method on an ERC20.sol)
 		return "", err

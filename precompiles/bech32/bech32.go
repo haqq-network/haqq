@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package bech32
 
 import (
@@ -6,9 +9,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 var _ vm.PrecompiledContract = &Precompile{}
@@ -60,6 +63,11 @@ func (p Precompile) RequiredGas(_ []byte) uint64 {
 
 // Run executes the precompiled contract bech32 methods defined in the ABI.
 func (p Precompile) Run(_ *vm.EVM, contract *vm.Contract, _ bool) (bz []byte, err error) {
+	// NOTE: This check avoid panicking when trying to decode the method ID
+	if len(contract.Input) < 4 {
+		return nil, vm.ErrExecutionReverted
+	}
+
 	methodID := contract.Input[:4]
 	// NOTE: this function iterates over the method map and returns
 	// the method with the given ID

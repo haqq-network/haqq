@@ -211,7 +211,7 @@ func (k msgServer) subUnlockedERC20Tokens(ctx sdk.Context, tokenPair erc20types.
 		return errorsmod.Wrap(erc20types.ErrEVMCall, "failed to retrieve receiver's balance")
 	}
 	// Transfer Tokens to receiver
-	res, err := k.ek.CallEVM(ctx, erc20, evmFromAddr, contract, true, "transfer", evmToAddr, amt.Amount.BigInt())
+	res, err := k.evm.CallEVM(ctx, erc20, evmFromAddr, contract, true, "transfer", evmToAddr, amt.Amount.BigInt())
 	if err != nil {
 		return errorsmod.Wrap(err, "failed to transfer erc20 tokens: call evm")
 	}

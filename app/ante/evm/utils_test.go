@@ -15,6 +15,7 @@ import (
 	kmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -651,7 +652,7 @@ func (suite *AnteTestSuite) CreateTestSingleSignedTx(privKey cryptotypes.PrivKey
 	return txBuilder
 }
 
-// prepareAccount is a helper function that asigns the corresponding
+// prepareAccount is a helper function that assigns the corresponding
 // balance and rewards to the provided account
 func (suite *AnteTestSuite) prepareAccount(ctx sdk.Context, addr sdk.AccAddress, balance, rewards math.Int) sdk.Context {
 	ctx, err := testutil.PrepareAccountsForDelegationRewards(
@@ -659,7 +660,7 @@ func (suite *AnteTestSuite) prepareAccount(ctx sdk.Context, addr sdk.AccAddress,
 	)
 	suite.Require().NoError(err, "error while preparing accounts for delegation rewards")
 	return ctx.
-		WithBlockGasMeter(sdk.NewGasMeter(1e19)).
+		WithBlockGasMeter(storetypes.NewGasMeter(1e19)).
 		WithBlockHeight(ctx.BlockHeight() + 1)
 }
 

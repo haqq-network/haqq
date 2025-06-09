@@ -3,6 +3,7 @@ package erc20_test
 import (
 	"fmt"
 	"math/big"
+	"slices"
 	"time"
 
 	//nolint:revive // dot imports are fine for Gomega
@@ -15,7 +16,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"golang.org/x/exp/slices"
 
 	auth "github.com/haqq-network/haqq/precompiles/authorization"
 	"github.com/haqq-network/haqq/precompiles/erc20"
@@ -226,7 +226,7 @@ func (s *PrecompileTestSuite) setupERC20Precompile(denom string) *erc20.Precompi
 // TODO: refactor
 func (is *IntegrationTestSuite) setupERC20Precompile(denom string) *erc20.Precompile {
 	tokenPair := erc20types.NewTokenPair(utiltx.GenerateAddress(), denom, erc20types.OWNER_MODULE)
-	is.network.App.Erc20Keeper.SetTokenPair(is.network.GetContext(), tokenPair)
+	is.network.App.Erc20Keeper.SetToken(is.network.GetContext(), tokenPair)
 
 	precompile, err := setupERC20PrecompileForTokenPair(*is.network, tokenPair)
 	Expect(err).ToNot(HaveOccurred(), "failed to set up %q erc20 precompile", tokenPair.Denom)
@@ -249,7 +249,10 @@ func setupERC20PrecompileForTokenPair(
 		return nil, errorsmod.Wrapf(err, "failed to create %q erc20 precompile", tokenPair.Denom)
 	}
 
-	err = unitNetwork.App.EvmKeeper.AddEVMExtensions(unitNetwork.GetContext(), precompile)
+	err = unitNetwork.App.Erc20Keeper.EnableDynamicPrecompiles(
+		unitNetwork.GetContext(),
+		precompile.Address(),
+	)
 	if err != nil {
 		return nil, errorsmod.Wrapf(err, "failed to add %q erc20 precompile to EVM extensions", tokenPair.Denom)
 	}
@@ -275,7 +278,7 @@ var (
 	erc20CallTypes  = []CallType{erc20Call, erc20CallerCall, erc20V5Call, erc20V5CallerCall}
 )
 
-// getCallArgs is a helper function to return the correct call arguments for a given call type.
+// getTxAndCallArgs is a helper function to return the correct call arguments for a given call type.
 //
 // In case of a direct call to the precompile, the precompile's ABI is used. Otherwise, the
 // ERC20CallerContract's ABI is used and the given contract address.

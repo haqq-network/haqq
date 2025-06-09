@@ -14,6 +14,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	gethparams "github.com/ethereum/go-ethereum/params"
 
 	"github.com/haqq-network/haqq/app"
 	commonnetwork "github.com/haqq-network/haqq/testutil/integration/common/network"
@@ -32,6 +33,7 @@ type Network interface {
 	commonnetwork.Network
 
 	GetEIP155ChainID() *big.Int
+	GetEVMChainConfig() *gethparams.ChainConfig
 
 	// Clients
 	GetERC20Client() erc20types.QueryClient
@@ -45,6 +47,7 @@ type Network interface {
 	UpdateEvmParams(params evmtypes.Params) error
 	UpdateGovParams(params govtypes.Params) error
 	UpdateCoinomicsParams(params coinomicstypes.Params) error
+	UpdateFeeMarketParams(params feemarkettypes.Params) error
 }
 
 var _ Network = (*IntegrationNetwork)(nil)
@@ -119,26 +122,34 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 	// Create a new HaqqApp with the following params
 	haqqApp := createHaqqApp(n.cfg.chainID)
 
-	// Configure Genesis state
-	genesisState := app.NewDefaultGenesisState()
-
-	genesisState = setAuthGenesisState(haqqApp, genesisState, genAccounts)
-
 	stakingParams := StakingCustomGenesisState{
 		denom:       n.cfg.denom,
 		validators:  validators,
 		delegations: delegations,
 	}
-	genesisState = setStakingGenesisState(haqqApp, genesisState, stakingParams)
-
-	genesisState = setCoinomicsGenesisState(haqqApp, genesisState)
 
 	totalSupply := calculateTotalSupply(fundedAccountBalances)
 	bankParams := BankCustomGenesisState{
 		totalSupply: totalSupply,
 		balances:    fundedAccountBalances,
 	}
-	genesisState = setBankGenesisState(haqqApp, genesisState, bankParams)
+
+	// Configure Genesis state
+	genesisState := newDefaultGenesisState(
+		haqqApp,
+		defaultGenesisParams{
+			genAccounts: genAccounts,
+			staking:     stakingParams,
+			bank:        bankParams,
+		},
+	)
+
+	// modify genesis state if there're any custom genesis state
+	// for specific modules
+	genesisState, err = customizeGenesis(haqqApp, n.cfg.customGenesisState, genesisState)
+	if err != nil {
+		return err
+	}
 
 	// Init chain
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
@@ -146,13 +157,14 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		return err
 	}
 
+	consensusParams := app.DefaultConsensusParams
 	now := time.Now()
 	haqqApp.InitChain(
 		abcitypes.RequestInitChain{
 			Time:            now,
 			ChainId:         n.cfg.chainID,
 			Validators:      []abcitypes.ValidatorUpdate{},
-			ConsensusParams: app.DefaultConsensusParams,
+			ConsensusParams: consensusParams,
 			AppStateBytes:   stateBytes,
 		},
 	)
@@ -172,8 +184,11 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 
 	// Set networks global parameters
 	n.app = haqqApp
-	// TODO - this might not be the best way to initilize the context
+	// TODO - this might not be the best way to initialize the context
 	n.ctx = haqqApp.BaseApp.NewContext(false, header)
+	n.ctx = n.ctx.WithConsensusParams(consensusParams)
+	n.ctx = n.ctx.WithBlockGasMeter(sdktypes.NewInfiniteGasMeter())
+
 	n.validators = validators
 	n.valSet = valSet
 	n.valSigners = valSigners
@@ -216,6 +231,12 @@ func (n *IntegrationNetwork) GetChainID() string {
 // GetEIP155ChainID returns the network EIp-155 chainID number
 func (n *IntegrationNetwork) GetEIP155ChainID() *big.Int {
 	return n.cfg.eip155ChainID
+}
+
+// GetChainConfig returns the network's chain config
+func (n *IntegrationNetwork) GetEVMChainConfig() *gethparams.ChainConfig {
+	params := n.app.EvmKeeper.GetParams(n.ctx)
+	return params.ChainConfig.EthereumConfig(n.cfg.eip155ChainID)
 }
 
 // GetDenom returns the network's denom

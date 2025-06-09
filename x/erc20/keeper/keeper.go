@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package keeper
 
 import (
@@ -8,6 +11,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
 	"github.com/haqq-network/haqq/x/erc20/types"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
@@ -21,7 +25,7 @@ type Keeper struct {
 	authority sdk.AccAddress
 
 	accountKeeper  types.AccountKeeper
-	bankKeeper     types.BankKeeper
+	bankKeeper     bankkeeper.Keeper
 	evmKeeper      types.EVMKeeper
 	stakingKeeper  types.StakingKeeper
 	authzKeeper    authzkeeper.Keeper
@@ -34,7 +38,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	authority sdk.AccAddress,
 	ak types.AccountKeeper,
-	bk types.BankKeeper,
+	bk bankkeeper.Keeper,
 	evmKeeper types.EVMKeeper,
 	sk types.StakingKeeper,
 	authzKeeper authzkeeper.Keeper,

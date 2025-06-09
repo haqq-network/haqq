@@ -5,85 +5,14 @@ import (
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
-
 	anteutils "github.com/haqq-network/haqq/app/ante/utils"
 	"github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/evm/keeper"
-	"github.com/haqq-network/haqq/x/evm/statedb"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
-
-// EthAccountVerificationDecorator validates an account balance checks
-type EthAccountVerificationDecorator struct {
-	ak        evmtypes.AccountKeeper
-	evmKeeper EVMKeeper
-}
-
-// NewEthAccountVerificationDecorator creates a new EthAccountVerificationDecorator
-func NewEthAccountVerificationDecorator(ak evmtypes.AccountKeeper, ek EVMKeeper) EthAccountVerificationDecorator {
-	return EthAccountVerificationDecorator{
-		ak:        ak,
-		evmKeeper: ek,
-	}
-}
-
-// AnteHandle validates checks that the sender balance is greater than the total transaction cost.
-// The account will be set to store if it doesn't exist, i.e. cannot be found on store.
-// This AnteHandler decorator will fail if:
-// - any of the msgs is not a MsgEthereumTx
-// - from address is empty
-// - account balance is lower than the transaction cost
-func (avd EthAccountVerificationDecorator) AnteHandle(
-	ctx sdk.Context,
-	tx sdk.Tx,
-	simulate bool,
-	next sdk.AnteHandler,
-) (newCtx sdk.Context, err error) {
-	if !ctx.IsCheckTx() {
-		return next(ctx, tx, simulate)
-	}
-
-	for i, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
-		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
-		}
-
-		txData, err := evmtypes.UnpackTxData(msgEthTx.Data)
-		if err != nil {
-			return ctx, errorsmod.Wrapf(err, "failed to unpack tx data any for tx %d", i)
-		}
-
-		// sender address should be in the tx cache from the previous AnteHandle call
-		from := msgEthTx.GetFrom()
-		if from.Empty() {
-			return ctx, errorsmod.Wrap(errortypes.ErrInvalidAddress, "from address cannot be empty")
-		}
-
-		// check whether the sender address is EOA
-		fromAddr := common.BytesToAddress(from)
-		acct := avd.evmKeeper.GetAccount(ctx, fromAddr)
-
-		if acct == nil {
-			acc := avd.ak.NewAccountWithAddress(ctx, from)
-			avd.ak.SetAccount(ctx, acc)
-			acct = statedb.NewEmptyAccount()
-		} else if acct.IsContract() {
-			return ctx, errorsmod.Wrapf(errortypes.ErrInvalidType,
-				"the sender is not EOA: address %s, codeHash <%s>", fromAddr, acct.CodeHash)
-		}
-
-		if err := keeper.CheckSenderBalance(sdkmath.NewIntFromBigInt(acct.Balance), txData); err != nil {
-			return ctx, errorsmod.Wrap(err, "failed to check sender balance")
-		}
-	}
-	return next(ctx, tx, simulate)
-}
 
 // EthGasConsumeDecorator validates enough intrinsic gas for the transaction and
 // gas consumption.
@@ -252,84 +181,6 @@ func (egcd EthGasConsumeDecorator) deductFee(ctx sdk.Context, fees sdk.Coins, fe
 		return errorsmod.Wrapf(err, "failed to deduct transaction costs from user balance")
 	}
 	return nil
-}
-
-// CanTransferDecorator checks if the sender is allowed to transfer funds according to the EVM block
-// context rules.
-type CanTransferDecorator struct {
-	evmKeeper EVMKeeper
-}
-
-// NewCanTransferDecorator creates a new CanTransferDecorator instance.
-func NewCanTransferDecorator(evmKeeper EVMKeeper) CanTransferDecorator {
-	return CanTransferDecorator{
-		evmKeeper: evmKeeper,
-	}
-}
-
-// AnteHandle creates an EVM from the message and calls the BlockContext CanTransfer function to
-// see if the address can execute the transaction.
-func (ctd CanTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
-	params := ctd.evmKeeper.GetParams(ctx)
-	ethCfg := params.ChainConfig.EthereumConfig(ctd.evmKeeper.ChainID())
-	signer := ethtypes.MakeSigner(ethCfg, big.NewInt(ctx.BlockHeight()))
-
-	for _, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
-		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
-		}
-
-		baseFee := ctd.evmKeeper.GetBaseFee(ctx, ethCfg)
-
-		coreMsg, err := msgEthTx.AsMessage(signer, baseFee)
-		if err != nil {
-			return ctx, errorsmod.Wrapf(
-				err,
-				"failed to create an ethereum core.Message from signer %T", signer,
-			)
-		}
-
-		if evmtypes.IsLondon(ethCfg, ctx.BlockHeight()) {
-			if baseFee == nil {
-				return ctx, errorsmod.Wrap(
-					evmtypes.ErrInvalidBaseFee,
-					"base fee is supported but evm block context value is nil",
-				)
-			}
-			if coreMsg.GasFeeCap().Cmp(baseFee) < 0 {
-				return ctx, errorsmod.Wrapf(
-					errortypes.ErrInsufficientFee,
-					"max fee per gas less than block base fee (%s < %s)",
-					coreMsg.GasFeeCap(), baseFee,
-				)
-			}
-		}
-
-		// NOTE: pass in an empty coinbase address and nil tracer as we don't need them for the check below
-		cfg := &statedb.EVMConfig{
-			ChainConfig: ethCfg,
-			Params:      params,
-			CoinBase:    common.Address{},
-			BaseFee:     baseFee,
-		}
-
-		stateDB := statedb.New(ctx, ctd.evmKeeper, statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes())))
-		evm := ctd.evmKeeper.NewEVM(ctx, coreMsg, cfg, evmtypes.NewNoOpTracer(), stateDB)
-
-		// check that caller has enough balance to cover asset transfer for **topmost** call
-		// NOTE: here the gas consumed is from the context with the infinite gas meter
-		if coreMsg.Value().Sign() > 0 && !evm.Context.CanTransfer(stateDB, coreMsg.From(), coreMsg.Value()) {
-			return ctx, errorsmod.Wrapf(
-				errortypes.ErrInsufficientFunds,
-				"failed to transfer %s from address %s using the EVM block context transfer function",
-				coreMsg.Value(),
-				coreMsg.From(),
-			)
-		}
-	}
-
-	return next(ctx, tx, simulate)
 }
 
 // EthIncrementSenderSequenceDecorator increments the sequence of the signers.

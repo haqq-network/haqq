@@ -1,8 +1,13 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package authorization
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"time"
 
 	"cosmossdk.io/math"
@@ -12,7 +17,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"golang.org/x/exp/slices"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 )
@@ -72,7 +76,7 @@ func CheckApprovalArgs(args []interface{}, denom string) (common.Address, *sdk.C
 		return common.Address{}, nil, nil, fmt.Errorf(ErrInvalidMethods, args[2])
 	}
 	if len(typeURLs) == 0 {
-		return common.Address{}, nil, nil, fmt.Errorf(ErrEmptyMethods)
+		return common.Address{}, nil, nil, errors.New(ErrEmptyMethods)
 	}
 	if slices.Contains(typeURLs, "") {
 		return common.Address{}, nil, nil, fmt.Errorf(ErrEmptyStringInMethods, typeURLs)
@@ -189,7 +193,7 @@ func validateMsgTypes(arg interface{}) ([]string, error) {
 		return nil, fmt.Errorf(ErrInvalidMethods, arg)
 	}
 	if len(typeURLs) == 0 {
-		return nil, fmt.Errorf(ErrEmptyMethods)
+		return nil, errors.New(ErrEmptyMethods)
 	}
 
 	if slices.Contains(typeURLs, "") {

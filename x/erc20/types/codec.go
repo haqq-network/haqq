@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package types
 
 import (
@@ -25,7 +28,7 @@ var (
 const (
 	// Amino names
 	convertERC20Name = "evmos/MsgConvertERC20"
-	convertCoinName  = "evmos/MsgConvertCoin"
+	convertCoinName  = "evmos/MsgConvertCoin" // keep it for backwards compatibility when querying txs
 	updateParams     = "evmos/erc20/MsgUpdateParams"
 )
 
@@ -39,13 +42,13 @@ func init() {
 func RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*sdk.Msg)(nil),
-		&MsgConvertCoin{},
+		&MsgConvertCoin{}, // keep it for backwards compatibility when querying txs
 		&MsgConvertERC20{},
 		&MsgUpdateParams{},
 	)
 	registry.RegisterImplementations(
 		(*govv1beta1.Content)(nil),
-		&RegisterCoinProposal{},
+		&RegisterCoinProposal{}, // Keep interface for backwards compatibility on proposals query
 		&RegisterERC20Proposal{},
 		&ToggleTokenConversionProposal{},
 	)

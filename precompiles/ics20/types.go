@@ -1,6 +1,10 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package ics20
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -15,21 +19,25 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 const (
-	// DefaultTimeoutHeight is the default value used in the IBC timeout height for
-	// the client.
-	DefaultTimeoutHeight = 100
+	// DefaultRevisionNumber is the default value used to not set a timeout revision number
+	DefaultRevisionNumber = 0
 
-	// DefaultTimeoutTimestamp is the default value used in the IBC timeout
-	// timestamp for the client.
-	DefaultTimeoutTimestamp = 0
+	// DefaultRevisionHeight is the default value used to not set a timeout revision height
+	DefaultRevisionHeight = 0
+
+	// DefaultTimeoutMinutes is the default value in minutes used to set a timeout timestamp
+	DefaultTimeoutMinutes = 10
 )
+
+// DefaultTimeoutHeight is the default value used to set a timeout height
+var DefaultTimeoutHeight = clienttypes.NewHeight(DefaultRevisionNumber, DefaultRevisionHeight)
 
 // EventIBCTransfer is the event type emitted when a transfer is executed.
 type EventIBCTransfer struct {
@@ -100,12 +108,12 @@ func NewMsgTransfer(method *abi.Method, args []interface{}) (*transfertypes.MsgT
 
 	sourcePort, ok := args[0].(string)
 	if !ok {
-		return nil, common.Address{}, fmt.Errorf(ErrInvalidSourcePort)
+		return nil, common.Address{}, errors.New(ErrInvalidSourcePort)
 	}
 
 	sourceChannel, ok := args[1].(string)
 	if !ok {
-		return nil, common.Address{}, fmt.Errorf(ErrInvalidSourceChannel)
+		return nil, common.Address{}, errors.New(ErrInvalidSourceChannel)
 	}
 
 	denom, ok := args[2].(string)
@@ -265,12 +273,12 @@ func checkAllowanceArgs(args []interface{}) (common.Address, string, string, str
 
 	sourcePort, ok := args[1].(string)
 	if !ok {
-		return common.Address{}, "", "", "", nil, fmt.Errorf(ErrInvalidSourcePort)
+		return common.Address{}, "", "", "", nil, errors.New(ErrInvalidSourcePort)
 	}
 
 	sourceChannel, ok := args[2].(string)
 	if !ok {
-		return common.Address{}, "", "", "", nil, fmt.Errorf(ErrInvalidSourceChannel)
+		return common.Address{}, "", "", "", nil, errors.New(ErrInvalidSourceChannel)
 	}
 
 	denom, ok := args[3].(string)
@@ -314,9 +322,11 @@ func checkTransferAuthzArgs(method *abi.Method, args []interface{}) (common.Addr
 		}
 
 		allocations[i] = transfertypes.Allocation{
-			SourcePort:    a.SourcePort,
-			SourceChannel: a.SourceChannel,
-			SpendLimit:    spendLimit,
+			SourcePort:        a.SourcePort,
+			SourceChannel:     a.SourceChannel,
+			SpendLimit:        spendLimit,
+			AllowList:         a.AllowList,
+			AllowedPacketData: a.AllowedPacketData,
 		}
 	}
 
@@ -358,10 +368,11 @@ func convertToAllocation(allocs []transfertypes.Allocation) []cmn.ICS20Allocatio
 		}
 
 		allocations[i] = cmn.ICS20Allocation{
-			SourcePort:    allocation.SourcePort,
-			SourceChannel: allocation.SourceChannel,
-			SpendLimit:    spendLimit,
-			AllowList:     allocation.AllowList,
+			SourcePort:        allocation.SourcePort,
+			SourceChannel:     allocation.SourceChannel,
+			SpendLimit:        spendLimit,
+			AllowList:         allocation.AllowList,
+			AllowedPacketData: allocation.AllowedPacketData,
 		}
 	}
 

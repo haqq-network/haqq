@@ -3,7 +3,9 @@ package keeper_test
 import (
 	"testing"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	"github.com/stretchr/testify/suite"
@@ -52,6 +54,7 @@ func TestKeeperTestSuite(t *testing.T) {
 // SetupTest setup test environment, it uses`require.TestingT` to support both `testing.T` and `testing.B`.
 func (suite *KeeperTestSuite) SetupTest() {
 	checkTx := false
-	suite.app, _ = app.Setup(checkTx, nil, utils.MainNetChainID+"-1")
-	suite.SetupApp(checkTx)
+	chainID := utils.TestEdge2ChainID + "-3"
+	suite.app, _ = app.Setup(checkTx, nil, chainID)
+	suite.SetupApp(checkTx, chainID)
 }
