@@ -7,12 +7,12 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/precompiles/erc20"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 var (

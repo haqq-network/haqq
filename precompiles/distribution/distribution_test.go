@@ -8,11 +8,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/precompiles/distribution"
 	"github.com/haqq-network/haqq/utils"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -35,6 +35,11 @@ func (s *PrecompileTestSuite) TestIsTransaction() {
 		{
 			distribution.WithdrawValidatorCommissionMethod,
 			s.precompile.Methods[distribution.WithdrawValidatorCommissionMethod].Name,
+			true,
+		},
+		{
+			distribution.FundCommunityPoolMethod,
+			s.precompile.Methods[distribution.FundCommunityPoolMethod].Name,
 			true,
 		},
 		{
@@ -151,6 +156,21 @@ func (s *PrecompileTestSuite) TestRun() {
 			readOnly: false,
 			expPass:  true,
 		},
+		{
+			name: "pass - fund community pool transaction",
+			malleate: func() (common.Address, []byte) {
+				input, err := s.precompile.Pack(
+					distribution.FundCommunityPoolMethod,
+					s.address,
+					big.NewInt(1e18),
+				)
+				s.Require().NoError(err, "failed to pack input")
+
+				return s.address, input
+			},
+			readOnly: false,
+			expPass:  true,
+		},
 	}
 
 	for _, tc := range testcases {
@@ -199,13 +219,10 @@ func (s *PrecompileTestSuite) TestRun() {
 				s.ctx, msg, cfg, nil, s.stateDB,
 			)
 
-			params := s.app.EvmKeeper.GetParams(s.ctx)
-			activePrecompiles := params.GetActivePrecompilesAddrs()
-			precompileMap := s.app.EvmKeeper.Precompiles(activePrecompiles...)
-			err = vm.ValidatePrecompiles(precompileMap, activePrecompiles)
-			s.Require().NoError(err, "invalid precompiles", activePrecompiles)
-			evm.WithPrecompiles(precompileMap, activePrecompiles)
-
+			precompiles, found, err := s.app.EvmKeeper.GetPrecompileInstance(s.ctx, contractAddr)
+			s.Require().NoError(err, "failed to instantiate precompile")
+			s.Require().True(found, "not found precompile")
+			evm.WithPrecompiles(precompiles.Map, precompiles.Addresses)
 			// Run precompiled contract
 			bz, err := s.precompile.Run(evm, contract, tc.readOnly)
 

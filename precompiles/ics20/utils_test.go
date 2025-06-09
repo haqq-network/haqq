@@ -1,3 +1,5 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package ics20_test
 
 import (
@@ -29,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	haqqapp "github.com/haqq-network/haqq/app"
@@ -46,6 +47,7 @@ import (
 	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
@@ -326,13 +328,14 @@ func (s *PrecompileTestSuite) NewTransferAuthorizationWithAllocations(ctx sdk.Co
 }
 
 // NewTransferAuthorization creates a new transfer authorization for the given grantee and granter and the given coins
-func (s *PrecompileTestSuite) NewTransferAuthorization(ctx sdk.Context, app *haqqapp.Haqq, grantee, granter common.Address, path *ibctesting.Path, coins sdk.Coins, allowList []string) error {
+func (s *PrecompileTestSuite) NewTransferAuthorization(ctx sdk.Context, app *haqqapp.Haqq, grantee, granter common.Address, path *ibctesting.Path, coins sdk.Coins, allowList []string, allowedPacketData []string) error {
 	allocations := []transfertypes.Allocation{
 		{
-			SourcePort:    path.EndpointA.ChannelConfig.PortID,
-			SourceChannel: path.EndpointA.ChannelID,
-			SpendLimit:    coins,
-			AllowList:     allowList,
+			SourcePort:        path.EndpointA.ChannelConfig.PortID,
+			SourceChannel:     path.EndpointA.ChannelID,
+			SpendLimit:        coins,
+			AllowList:         allowList,
+			AllowedPacketData: allowedPacketData,
 		},
 	}
 
@@ -493,9 +496,10 @@ func (s *PrecompileTestSuite) setTransferApprovalForContract(args contracts.Call
 func (s *PrecompileTestSuite) setupAllocationsForTesting() {
 	defaultSingleAlloc = []cmn.ICS20Allocation{
 		{
-			SourcePort:    ibctesting.TransferPort,
-			SourceChannel: s.transferPath.EndpointA.ChannelID,
-			SpendLimit:    defaultCmnCoins,
+			SourcePort:        ibctesting.TransferPort,
+			SourceChannel:     s.transferPath.EndpointA.ChannelID,
+			SpendLimit:        defaultCmnCoins,
+			AllowedPacketData: []string{"memo"},
 		},
 	}
 }

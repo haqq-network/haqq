@@ -1,3 +1,5 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package p256_test
 
 import (
@@ -112,12 +114,12 @@ var _ = Describe("Calling p256 precompile directly", Label("P256 Precompile"), O
 			params := evmtypes.DefaultParams()
 			addr := s.precompileAddress.String()
 			var activePrecompiles []string
-			for _, precompile := range params.ActivePrecompiles {
+			for _, precompile := range params.ActiveStaticPrecompiles {
 				if precompile != addr {
 					activePrecompiles = append(activePrecompiles, precompile)
 				}
 			}
-			params.ActivePrecompiles = activePrecompiles
+			params.ActiveStaticPrecompiles = activePrecompiles
 			err := s.network.UpdateEvmParams(params)
 			Expect(err).To(BeNil())
 		})
@@ -132,8 +134,7 @@ var _ = Describe("Calling p256 precompile directly", Label("P256 Precompile"), O
 			}
 
 			_, err := s.factory.ExecuteEthTx(senderKey.Priv, args)
-			Expect(err).To(HaveOccurred(), "expected error while calling the precompile")
-			Expect(err.Error()).To(ContainSubstring("precompile not enabled"))
+			Expect(err).To(BeNil(), "expected no error since contract doesnt exists")
 		},
 			Entry(
 				"valid signature",

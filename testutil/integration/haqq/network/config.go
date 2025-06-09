@@ -22,7 +22,10 @@ type Config struct {
 	preFundedAccounts  []sdktypes.AccAddress
 	balances           []banktypes.Balance
 	denom              string
+	customGenesisState CustomGenesisState
 }
+
+type CustomGenesisState map[string]interface{}
 
 // DefaultConfig returns the default configuration for a chain.
 func DefaultConfig() Config {
@@ -33,7 +36,10 @@ func DefaultConfig() Config {
 		amountOfValidators: 3,
 		// No funded accounts besides the validators by default
 		preFundedAccounts: []sdktypes.AccAddress{account},
-		denom:             utils.BaseDenom,
+		// NOTE: Per default, the balances are left empty, and the pre-funded accounts are used.
+		balances:           nil,
+		denom:              utils.BaseDenom,
+		customGenesisState: nil,
 	}
 }
 
@@ -98,5 +104,12 @@ func WithBalances(balances ...banktypes.Balance) ConfigOption {
 func WithDenom(denom string) ConfigOption {
 	return func(cfg *Config) {
 		cfg.denom = denom
+	}
+}
+
+// WithCustomGenesis sets the custom genesis of the network for specific modules.
+func WithCustomGenesis(customGenesis CustomGenesisState) ConfigOption {
+	return func(cfg *Config) {
+		cfg.customGenesisState = customGenesis
 	}
 }

@@ -66,11 +66,11 @@ func createNestedMsgExec(a sdk.AccAddress, nestedLvl int, lastLvlMsgs []sdk.Msg)
 	return msgs[nestedLvl-1]
 }
 
-func generatePrivKeyAddressPairs(account int) ([]*ethsecp256k1.PrivKey, []sdk.AccAddress, error) {
+func generatePrivKeyAddressPairs(accNum int) ([]*ethsecp256k1.PrivKey, []sdk.AccAddress, error) {
 	var (
 		err           error
-		testPrivKeys  = make([]*ethsecp256k1.PrivKey, account)
-		testAddresses = make([]sdk.AccAddress, account)
+		testPrivKeys  = make([]*ethsecp256k1.PrivKey, accNum)
+		testAddresses = make([]sdk.AccAddress, accNum)
 	)
 
 	for i := range testPrivKeys {
@@ -162,4 +162,13 @@ func (suite *AnteTestSuite) setupDeductFeeDecoratorTestCase(addr sdk.AccAddress,
 		FeeGranter: tc.feeGranter,
 		Msgs:       []sdk.Msg{msg},
 	}
+}
+
+// intSlice creates a slice of sdkmath.Int with the specified size and same value
+func intSlice(size int, value sdkmath.Int) []sdkmath.Int {
+	slc := make([]sdkmath.Int, size)
+	for i := 0; i < len(slc); i++ {
+		slc[i] = value
+	}
+	return slc
 }

@@ -1,3 +1,5 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package erc20
 
 import (
@@ -11,7 +13,10 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
+
+	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/utils"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 const (
@@ -28,7 +33,7 @@ var SendMsgURL = sdk.MsgTypeURL(&banktypes.MsgSend{})
 
 // Transfer executes a direct transfer from the caller address to the
 // destination address.
-func (p Precompile) Transfer(
+func (p *Precompile) Transfer(
 	ctx sdk.Context,
 	contract *vm.Contract,
 	stateDB vm.StateDB,
@@ -46,7 +51,7 @@ func (p Precompile) Transfer(
 
 // TransferFrom executes a transfer on behalf of the specified from address in
 // the call data to the destination address.
-func (p Precompile) TransferFrom(
+func (p *Precompile) TransferFrom(
 	ctx sdk.Context,
 	contract *vm.Contract,
 	stateDB vm.StateDB,
@@ -64,7 +69,7 @@ func (p Precompile) TransferFrom(
 // transfer is a common function that handles transfers for the ERC-20 Transfer
 // and TransferFrom methods. It executes a bank Send message if the spender is
 // the sender of the transfer, otherwise it executes an authorization.
-func (p Precompile) transfer(
+func (p *Precompile) transfer(
 	ctx sdk.Context,
 	contract *vm.Contract,
 	stateDB vm.StateDB,
@@ -93,7 +98,7 @@ func (p Precompile) transfer(
 	} else {
 		_, _, prevAllowance, err = GetAuthzExpirationAndAllowance(p.AuthzKeeper, ctx, spenderAddr, from, p.tokenPair.Denom)
 		if err != nil {
-			return nil, ConvertErrToERC20Error(errorsmod.Wrapf(authz.ErrNoAuthorizationFound, err.Error()))
+			return nil, ConvertErrToERC20Error(errorsmod.Wrap(authz.ErrNoAuthorizationFound, err.Error()))
 		}
 
 		_, err = p.AuthzKeeper.DispatchActions(ctx, spender, []sdk.Msg{msg})
@@ -103,6 +108,12 @@ func (p Precompile) transfer(
 		err = ConvertErrToERC20Error(err)
 		// This should return an error to avoid the contract from being executed and an event being emitted
 		return nil, err
+	}
+
+	// TODO: where should we get this
+	if p.tokenPair.Denom == utils.BaseDenom {
+		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(from, msg.Amount.AmountOf(utils.BaseDenom).BigInt(), cmn.Sub),
+			cmn.NewBalanceChangeEntry(to, msg.Amount.AmountOf(utils.BaseDenom).BigInt(), cmn.Add))
 	}
 
 	if err = p.EmitTransferEvent(ctx, stateDB, from, to, amount); err != nil {

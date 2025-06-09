@@ -1,8 +1,12 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:LGPL-3.0-only
+
 package types
 
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -87,4 +91,20 @@ func EqualStringSlice(aliasesA, aliasesB []string) bool {
 func IsModuleAccount(acc authtypes.AccountI) bool {
 	_, isModuleAccount := acc.(authtypes.ModuleAccountI)
 	return isModuleAccount
+}
+
+func GetDisabledAndEnabledPrecompiles(oldDynamicPrecompiles, newDynamicPrecompiles []string) (disabledPrecompiles, enabledPrecompiles []string) {
+	for _, precompile := range oldDynamicPrecompiles {
+		if !slices.Contains(newDynamicPrecompiles, precompile) {
+			disabledPrecompiles = append(disabledPrecompiles, precompile)
+		}
+	}
+
+	for _, precompile := range newDynamicPrecompiles {
+		if !slices.Contains(oldDynamicPrecompiles, precompile) {
+			enabledPrecompiles = append(enabledPrecompiles, precompile)
+		}
+	}
+
+	return disabledPrecompiles, enabledPrecompiles
 }

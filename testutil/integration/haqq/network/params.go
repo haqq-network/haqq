@@ -5,10 +5,15 @@ import (
 
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	feemarketypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
 
 func (n *IntegrationNetwork) UpdateEvmParams(params evmtypes.Params) error {
 	return n.app.EvmKeeper.SetParams(n.ctx, params)
+}
+
+func (n *IntegrationNetwork) UpdateFeeMarketParams(params feemarketypes.Params) error {
+	return n.app.FeeMarketKeeper.SetParams(n.ctx, params)
 }
 
 func (n *IntegrationNetwork) UpdateCoinomicsParams(params coinomicstypes.Params) error {

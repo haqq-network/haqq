@@ -571,7 +571,9 @@ func (suite *AnteTestSuite) TestAnteHandler() {
 				from := acc.GetAddress()
 				gas := uint64(200000)
 				amount := sdk.NewCoins(sdk.NewCoin(evmtypes.DefaultEVMDenom, sdkmath.NewInt(100*int64(gas))))
-				txBuilder, err := suite.CreateTestEIP712TxBuilderMsgSend(from, privKey, "haqq_121799-1", gas, amount)
+				txBuilder, err := suite.CreateTestEIP712TxBuilderMsgSend(from, privKey, suite.ctx.ChainID(), gas, amount)
+				suite.Require().NoError(err)
+				err = txBuilder.SetSignatures()
 				suite.Require().NoError(err)
 				return txBuilder.GetTx()
 			}, false, false, false,
@@ -1148,6 +1150,7 @@ func (suite *AnteTestSuite) TestAnteHandlerWithParams() {
 		GasLimit:  100000,
 		GasFeeCap: big.NewInt(ethparams.InitialBaseFee + 1),
 		GasTipCap: big.NewInt(1),
+		Input:     []byte("create bytes"),
 		Accesses:  &types.AccessList{},
 	}
 
@@ -1159,15 +1162,15 @@ func (suite *AnteTestSuite) TestAnteHandlerWithParams() {
 		GasFeeCap: big.NewInt(ethparams.InitialBaseFee + 1),
 		GasTipCap: big.NewInt(1),
 		Accesses:  &types.AccessList{},
+		Input:     []byte("call bytes"),
 		To:        &to,
 	}
 
 	testCases := []struct {
-		name         string
-		txFn         func() sdk.Tx
-		enableCall   bool
-		enableCreate bool
-		expErr       error
+		name        string
+		txFn        func() sdk.Tx
+		permissions evmtypes.AccessControl
+		expErr      error
 	}{
 		{
 			"fail - Contract Creation Disabled",
@@ -1178,7 +1181,16 @@ func (suite *AnteTestSuite) TestAnteHandlerWithParams() {
 				tx := suite.CreateTestTx(signedContractTx, privKey, 1, false)
 				return tx
 			},
-			true, false,
+			evmtypes.AccessControl{
+				Create: evmtypes.AccessControlType{
+					AccessType:        evmtypes.AccessTypeRestricted,
+					AccessControlList: evmtypes.DefaultCreateAllowlistAddresses,
+				},
+				Call: evmtypes.AccessControlType{
+					AccessType:        evmtypes.AccessTypePermissionless,
+					AccessControlList: evmtypes.DefaultCreateAllowlistAddresses,
+				},
+			},
 			evmtypes.ErrCreateDisabled,
 		},
 		{
@@ -1190,7 +1202,7 @@ func (suite *AnteTestSuite) TestAnteHandlerWithParams() {
 				tx := suite.CreateTestTx(signedContractTx, privKey, 1, false)
 				return tx
 			},
-			true, true,
+			evmtypes.DefaultAccessControl,
 			nil,
 		},
 		{
@@ -1202,7 +1214,16 @@ func (suite *AnteTestSuite) TestAnteHandlerWithParams() {
 				tx := suite.CreateTestTx(signedTx, privKey, 1, false)
 				return tx
 			},
-			false, true,
+			evmtypes.AccessControl{
+				Create: evmtypes.AccessControlType{
+					AccessType:        evmtypes.AccessTypePermissionless,
+					AccessControlList: evmtypes.DefaultCreateAllowlistAddresses,
+				},
+				Call: evmtypes.AccessControlType{
+					AccessType:        evmtypes.AccessTypeRestricted,
+					AccessControlList: evmtypes.DefaultCreateAllowlistAddresses,
+				},
+			},
 			evmtypes.ErrCallDisabled,
 		},
 		{
@@ -1214,7 +1235,7 @@ func (suite *AnteTestSuite) TestAnteHandlerWithParams() {
 				tx := suite.CreateTestTx(signedTx, privKey, 1, false)
 				return tx
 			},
-			true, true,
+			evmtypes.DefaultAccessControl,
 			nil,
 		},
 	}
@@ -1222,8 +1243,7 @@ func (suite *AnteTestSuite) TestAnteHandlerWithParams() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			suite.evmParamsOption = func(params *evmtypes.Params) {
-				params.EnableCall = tc.enableCall
-				params.EnableCreate = tc.enableCreate
+				params.AccessControl = tc.permissions
 			}
 			suite.SetupTest() // reset
 

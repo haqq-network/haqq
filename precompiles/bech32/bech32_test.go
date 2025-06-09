@@ -5,10 +5,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/cmd/config"
 	"github.com/haqq-network/haqq/precompiles/bech32"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 func (s *PrecompileTestSuite) TestNewPrecompile() {
@@ -72,7 +72,7 @@ func (s *PrecompileTestSuite) TestRun() {
 				contract.Input = []byte("invalid")
 				return contract
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			false,
 			"no method with id",
 		},
@@ -83,7 +83,7 @@ func (s *PrecompileTestSuite) TestRun() {
 				contract.Input = s.precompile.Methods[bech32.HexToBech32Method].ID
 				return contract
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			false,
 			"abi: attempting to unmarshall an empty string while arguments are expected",
 		},
@@ -101,7 +101,7 @@ func (s *PrecompileTestSuite) TestRun() {
 				contract.Input = input
 				return contract
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			false,
 			"invalid bech32 human readable prefix (HRP)",
 		},

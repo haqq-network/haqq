@@ -7,7 +7,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/bank"
@@ -15,6 +14,7 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	integrationutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 
@@ -45,8 +45,10 @@ func TestPrecompileTestSuite(t *testing.T) {
 
 func (s *PrecompileTestSuite) SetupTest() {
 	keyring := testkeyring.New(2)
+	genesis := integrationutils.CreateGenesisWithTokenPairs(keyring)
 	integrationNetwork := network.NewUnitTestNetwork(
 		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),
+		network.WithCustomGenesis(genesis),
 	)
 	grpcHandler := grpc.NewIntegrationHandler(integrationNetwork)
 	txFactory := factory.New(integrationNetwork, grpcHandler)
@@ -63,43 +65,23 @@ func (s *PrecompileTestSuite) SetupTest() {
 	s.keyring = keyring
 	s.network = integrationNetwork
 
-	// Register ISLM
-	evmosMetadata, found := s.network.App.BankKeeper.GetDenomMetaData(s.network.GetContext(), s.bondDenom)
-	s.Require().True(found, "expected ISLM denom metadata")
-
-	tokenPair, err := s.network.App.Erc20Keeper.RegisterCoin(s.network.GetContext(), evmosMetadata)
-	s.Require().NoError(err, "failed to register coin")
-
+	tokenPairID := s.network.App.Erc20Keeper.GetTokenPairID(s.network.GetContext(), s.bondDenom)
+	tokenPair, found := s.network.App.Erc20Keeper.GetTokenPair(s.network.GetContext(), tokenPairID)
+	s.Require().True(found)
 	s.evmosAddr = common.HexToAddress(tokenPair.Erc20Address)
 
+	s.evmosAddr = tokenPair.GetERC20Contract()
+
 	// Mint and register a second coin for testing purposes
-	err = s.network.App.BankKeeper.MintCoins(s.network.GetContext(), coinomicstypes.ModuleName, sdk.Coins{{Denom: "xmpl", Amount: math.NewInt(1e18)}})
+	err := s.network.App.BankKeeper.MintCoins(s.network.GetContext(), coinomicstypes.ModuleName, sdk.Coins{{Denom: "xmpl", Amount: math.NewInt(1e18)}})
 	s.Require().NoError(err)
 
-	xmplMetadata := banktypes.Metadata{
-		Description: "An exemplary token",
-		Base:        s.tokenDenom,
-		// NOTE: Denom units MUST be increasing
-		DenomUnits: []*banktypes.DenomUnit{
-			{
-				Denom:    s.tokenDenom,
-				Exponent: 0,
-				Aliases:  []string{s.tokenDenom},
-			},
-			{
-				Denom:    s.tokenDenom,
-				Exponent: 18,
-			},
-		},
-		Name:    "Exemplary",
-		Symbol:  "XMPL",
-		Display: s.tokenDenom,
-	}
-
-	tokenPair, err = s.network.App.Erc20Keeper.RegisterCoin(s.network.GetContext(), xmplMetadata)
-	s.Require().NoError(err, "failed to register coin")
-
+	tokenPairID = s.network.App.Erc20Keeper.GetTokenPairID(s.network.GetContext(), s.tokenDenom)
+	tokenPair, found = s.network.App.Erc20Keeper.GetTokenPair(s.network.GetContext(), tokenPairID)
+	s.Require().True(found)
 	s.xmplAddr = common.HexToAddress(tokenPair.Erc20Address)
+
+	s.xmplAddr = tokenPair.GetERC20Contract()
 
 	s.precompile = s.setupBankPrecompile()
 }

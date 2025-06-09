@@ -3,12 +3,12 @@ package cosmos
 import (
 	"fmt"
 	"math/big"
+	"slices"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-	"golang.org/x/exp/slices"
 
 	evmante "github.com/haqq-network/haqq/app/ante/evm"
 )

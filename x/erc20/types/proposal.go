@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package types
 
 import (
@@ -16,6 +19,7 @@ import (
 
 // constants
 const (
+	// ProposalTypeRegisterCoin is DEPRECATED, will be removed later
 	ProposalTypeRegisterCoin          string = "RegisterCoin"
 	ProposalTypeRegisterERC20         string = "RegisterERC20"
 	ProposalTypeToggleTokenConversion string = "ToggleTokenConversion" // #nosec
@@ -23,6 +27,7 @@ const (
 
 // Implements Proposal Interface
 var (
+	// RegisterCoinProposal is DEPRECATED, remove after v16 upgrade
 	_ v1beta1.Content = &RegisterCoinProposal{}
 	_ v1beta1.Content = &RegisterERC20Proposal{}
 	_ v1beta1.Content = &ToggleTokenConversionProposal{}

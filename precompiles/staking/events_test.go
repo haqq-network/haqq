@@ -7,12 +7,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/staking"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 func (s *PrecompileTestSuite) TestApprovalEvent() {
@@ -230,7 +230,6 @@ func (s *PrecompileTestSuite) TestCreateValidatorEvent() {
 	var (
 		delegationValue = big.NewInt(1205000000000000000)
 		method          = s.precompile.Methods[staking.CreateValidatorMethod]
-		operatorAddress = sdk.ValAddress(s.address.Bytes()).String()
 		pubkey          = "nfJ0axJC9dhta1MAE1EBFaVdxxkYzxYrBaHuJVjG//M="
 	)
 
@@ -259,7 +258,6 @@ func (s *PrecompileTestSuite) TestCreateValidatorEvent() {
 					},
 					big.NewInt(1),
 					s.address,
-					operatorAddress,
 					pubkey,
 					delegationValue,
 				}
@@ -277,7 +275,6 @@ func (s *PrecompileTestSuite) TestCreateValidatorEvent() {
 				var createValidatorEvent staking.EventCreateValidator
 				err := cmn.UnpackLog(s.precompile.ABI, &createValidatorEvent, staking.EventTypeCreateValidator, *log)
 				s.Require().NoError(err)
-				s.Require().Equal(s.address, createValidatorEvent.DelegatorAddress)
 				s.Require().Equal(s.address, createValidatorEvent.ValidatorAddress)
 				s.Require().Equal(delegationValue, createValidatorEvent.Value)
 			},
@@ -287,10 +284,79 @@ func (s *PrecompileTestSuite) TestCreateValidatorEvent() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
-			operatorAddress = sdk.ValAddress(s.address.Bytes()).String()
 
 			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), 200000)
 			_, err := s.precompile.CreateValidator(s.ctx, s.address, contract, s.stateDB, &method, tc.malleate())
+
+			if tc.expErr {
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), tc.errContains)
+			} else {
+				s.Require().NoError(err)
+				tc.postCheck()
+			}
+		})
+	}
+}
+
+func (s *PrecompileTestSuite) TestEditValidatorEvent() {
+	var (
+		valOperAddr common.Address
+		method      = s.precompile.Methods[staking.EditValidatorMethod]
+		minSelfDel  = big.NewInt(11)
+		commRate    = math.LegacyNewDecWithPrec(5, 2).BigInt()
+	)
+	testCases := []struct {
+		name        string
+		malleate    func() []interface{}
+		expErr      bool
+		errContains string
+		postCheck   func()
+	}{
+		{
+			name: "success - the correct event is emitted",
+			malleate: func() []interface{} {
+				return []interface{}{
+					staking.Description{
+						Moniker:         "node0-edited",
+						Identity:        "",
+						Website:         "",
+						SecurityContact: "",
+						Details:         "",
+					},
+					valOperAddr,
+					commRate,
+					minSelfDel,
+				}
+			},
+			postCheck: func() {
+				s.Require().Equal(len(s.stateDB.Logs()), 1)
+				log := s.stateDB.Logs()[0]
+				s.Require().Equal(log.Address, s.precompile.Address())
+
+				// Check event signature matches the one emitted
+				event := s.precompile.ABI.Events[staking.EventTypeEditValidator]
+				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), common.HexToHash(log.Topics[0].Hex()))
+				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
+
+				// Check the fully unpacked event matches the one emitted
+				var editValidatorEvent staking.EventEditValidator
+				err := cmn.UnpackLog(s.precompile.ABI, &editValidatorEvent, staking.EventTypeEditValidator, *log)
+				s.Require().NoError(err)
+				s.Require().Equal(valOperAddr, editValidatorEvent.ValidatorAddress)
+				s.Require().Equal(minSelfDel, editValidatorEvent.MinSelfDelegation)
+				s.Require().Equal(commRate, editValidatorEvent.CommissionRate)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.SetupTest() // reset
+			valOperAddr = common.BytesToAddress(s.validators[0].GetOperator().Bytes())
+
+			contract := vm.NewContract(vm.AccountRef(valOperAddr), s.precompile, big.NewInt(0), 200000)
+			_, err := s.precompile.EditValidator(s.ctx, valOperAddr, contract, s.stateDB, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)

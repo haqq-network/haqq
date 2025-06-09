@@ -6,6 +6,13 @@ import (
 	"github.com/haqq-network/haqq/x/feemarket/types"
 )
 
+func (suite *KeeperTestSuite) TestGetParams() {
+	params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+	suite.Require().NotNil(params.BaseFee)
+	suite.Require().NotNil(params.MinGasPrice)
+	suite.Require().NotNil(params.MinGasMultiplier)
+}
+
 func (suite *KeeperTestSuite) TestSetGetParams() {
 	params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
 	err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)

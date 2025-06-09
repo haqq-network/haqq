@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package erc20
 
 import (
@@ -14,10 +17,10 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	auth "github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 // Approve sets the given amount as the allowance of the spender address over

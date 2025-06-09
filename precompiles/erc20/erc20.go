@@ -1,19 +1,22 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package erc20
 
 import (
 	"embed"
 	"fmt"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	auth "github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 )
 
@@ -61,28 +64,26 @@ func NewPrecompile(
 		return nil, err
 	}
 
-	return &Precompile{
+	p := &Precompile{
 		Precompile: cmn.Precompile{
 			ABI:                  newABI,
 			AuthzKeeper:          authzKeeper,
 			ApprovalExpiration:   cmn.DefaultExpirationDuration,
-			KvGasConfig:          sdk.GasConfig{},
-			TransientKVGasConfig: sdk.GasConfig{},
+			KvGasConfig:          storetypes.GasConfig{},
+			TransientKVGasConfig: storetypes.GasConfig{},
 		},
 		tokenPair:      tokenPair,
 		bankKeeper:     bankKeeper,
 		transferKeeper: transferKeeper,
-	}, nil
-}
-
-// Address defines the address of the ERC-20 precompile contract.
-func (p Precompile) Address() common.Address {
-	return p.tokenPair.GetERC20Contract()
+	}
+	// Address defines the address of the ERC-20 precompile contract.
+	p.SetAddress(p.tokenPair.GetERC20Contract())
+	return p, nil
 }
 
 // RequiredGas calculates the contract gas used for the
 func (p Precompile) RequiredGas(input []byte) uint64 {
-	// Validate input length
+	// NOTE: This check avoid panicking when trying to decode the method ID
 	if len(input) < 4 {
 		return 0
 	}
@@ -128,27 +129,35 @@ func (p Precompile) RequiredGas(input []byte) uint64 {
 
 // Run executes the precompiled contract ERC-20 methods defined in the ABI.
 func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz []byte, err error) {
-	ctx, stateDB, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
+	ctx, stateDB, snapshot, method, initialGas, args, err := p.RunSetup(evm, contract, readOnly, p.IsTransaction)
 	if err != nil {
 		return nil, err
 	}
 
 	// This handles any out of gas errors that may occur during the execution of a precompile tx or query.
 	// It avoids panics and returns the out of gas error so the EVM can continue gracefully.
-	defer cmn.HandleGasError(ctx, contract, initialGas, &err)()
+	defer cmn.HandleGasError(ctx, contract, initialGas, &err, stateDB, snapshot)()
 
-	bz, err = p.HandleMethod(ctx, contract, stateDB, method, args)
-	if err != nil {
-		return nil, err
-	}
+	return p.RunAtomic(
+		snapshot,
+		stateDB,
+		func() ([]byte, error) {
+			bz, err = p.HandleMethod(ctx, contract, stateDB, method, args)
+			if err != nil {
+				return nil, err
+			}
 
-	cost := ctx.GasMeter().GasConsumed() - initialGas
+			cost := ctx.GasMeter().GasConsumed() - initialGas
 
-	if !contract.UseGas(cost) {
-		return nil, vm.ErrOutOfGas
-	}
-
-	return bz, nil
+			if !contract.UseGas(cost) {
+				return nil, vm.ErrOutOfGas
+			}
+			if err := p.AddJournalEntries(stateDB, snapshot); err != nil {
+				return nil, err
+			}
+			return bz, nil
+		},
+	)
 }
 
 // IsTransaction checks if the given method name corresponds to a transaction or query.
@@ -166,7 +175,7 @@ func (Precompile) IsTransaction(methodName string) bool {
 }
 
 // HandleMethod handles the execution of each of the ERC-20 methods.
-func (p Precompile) HandleMethod(
+func (p *Precompile) HandleMethod(
 	ctx sdk.Context,
 	contract *vm.Contract,
 	stateDB vm.StateDB,

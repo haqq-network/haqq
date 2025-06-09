@@ -6,15 +6,17 @@ import (
 	"math/big"
 
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	geth "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/haqq-network/haqq/cmd/config"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/staking"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 func (s *PrecompileTestSuite) TestCreateValidator() {
@@ -33,19 +35,20 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 			MaxChangeRate: math.LegacyOneDec().BigInt(),
 		}
 		minSelfDelegation = big.NewInt(1)
-		delegatorAddress  = s.address
-		validatorAddress  = sdk.ValAddress(s.address.Bytes()).String()
+		validatorAddress  = s.address
 		pubkey            = "nfJ0axJC9dhta1MAE1EBFaVdxxkYzxYrBaHuJVjG//M="
 		value             = big.NewInt(1205000000000000000)
+		diffAddr, _       = testutiltx.NewAddrKey()
 	)
 
 	testCases := []struct {
-		name        string
-		malleate    func() []interface{}
-		gas         uint64
-		postCheck   func(data []byte)
-		expError    bool
-		errContains string
+		name          string
+		malleate      func() []interface{}
+		gas           uint64
+		callerAddress *geth.Address
+		postCheck     func(data []byte)
+		expError      bool
+		errContains   string
 	}{
 		{
 			"fail - empty input args",
@@ -53,9 +56,10 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 				return []interface{}{}
 			},
 			200000,
-			func(data []byte) {},
+			nil,
+			func([]byte) {},
 			true,
-			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 7, 0),
+			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 6, 0),
 		},
 		{
 			"fail - different origin than delegator",
@@ -66,13 +70,13 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 					commission,
 					minSelfDelegation,
 					differentAddr,
-					sdk.ValAddress(differentAddr.Bytes()).String(),
 					pubkey,
 					value,
 				}
 			},
 			200000,
-			func(data []byte) {},
+			nil,
+			func([]byte) {},
 			true,
 			"is not the same as delegator address",
 		},
@@ -83,14 +87,14 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 					"",
 					commission,
 					minSelfDelegation,
-					delegatorAddress,
 					validatorAddress,
 					pubkey,
 					value,
 				}
 			},
 			200000,
-			func(data []byte) {},
+			nil,
+			func([]byte) {},
 			true,
 			"invalid description",
 		},
@@ -101,14 +105,14 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 					description,
 					"",
 					minSelfDelegation,
-					delegatorAddress,
 					validatorAddress,
 					pubkey,
 					value,
 				}
 			},
 			200000,
-			func(data []byte) {},
+			nil,
+			func([]byte) {},
 			true,
 			"invalid commission",
 		},
@@ -119,34 +123,16 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 					description,
 					commission,
 					"",
-					delegatorAddress,
 					validatorAddress,
 					pubkey,
 					value,
 				}
 			},
 			200000,
-			func(data []byte) {},
+			nil,
+			func([]byte) {},
 			true,
 			"invalid amount",
-		},
-		{
-			"fail - invalid delegator address",
-			func() []interface{} {
-				return []interface{}{
-					description,
-					commission,
-					minSelfDelegation,
-					"",
-					validatorAddress,
-					pubkey,
-					value,
-				}
-			},
-			200000,
-			func(data []byte) {},
-			true,
-			"invalid delegator address",
 		},
 		{
 			"fail - invalid validator address",
@@ -155,16 +141,16 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 					description,
 					commission,
 					minSelfDelegation,
-					delegatorAddress,
 					1205,
 					pubkey,
 					value,
 				}
 			},
 			200000,
-			func(data []byte) {},
+			nil,
+			func([]byte) {},
 			true,
-			"invalid type for",
+			"invalid validator address",
 		},
 		{
 			"fail - invalid pubkey",
@@ -173,14 +159,14 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 					description,
 					commission,
 					minSelfDelegation,
-					delegatorAddress,
 					validatorAddress,
 					1205,
 					value,
 				}
 			},
 			200000,
-			func(data []byte) {},
+			nil,
+			func([]byte) {},
 			true,
 			"invalid type for",
 		},
@@ -191,16 +177,34 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 					description,
 					commission,
 					minSelfDelegation,
-					delegatorAddress,
 					validatorAddress,
 					"bHVrZQ=", // base64.StdEncoding.DecodeString error
 					value,
 				}
 			},
 			200000,
-			func(data []byte) {},
+			nil,
+			func([]byte) {},
 			true,
 			"illegal base64 data",
+		},
+		{
+			"fail - consensus pubkey len is invalid",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					commission,
+					minSelfDelegation,
+					validatorAddress,
+					"bHVrZQ==",
+					value,
+				}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			"consensus pubkey len is invalid",
 		},
 		{
 			"fail - invalid value",
@@ -209,16 +213,34 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 					description,
 					commission,
 					minSelfDelegation,
-					delegatorAddress,
 					validatorAddress,
 					pubkey,
 					"",
 				}
 			},
 			200000,
-			func(data []byte) {},
+			nil,
+			func([]byte) {},
 			true,
 			"invalid amount",
+		},
+		{
+			"fail - cannot be called from address != than validator address",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					commission,
+					minSelfDelegation,
+					validatorAddress,
+					pubkey,
+					value,
+				}
+			},
+			200000,
+			&diffAddr,
+			func([]byte) {},
+			true,
+			"this method can only be called directly to the precompile",
 		},
 		{
 			"success",
@@ -227,13 +249,13 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 					description,
 					commission,
 					minSelfDelegation,
-					delegatorAddress,
 					validatorAddress,
 					pubkey,
 					value,
 				}
 			},
 			200000,
+			nil,
 			func(data []byte) {
 				success, err := s.precompile.Unpack(staking.CreateValidatorMethod, data)
 				s.Require().NoError(err)
@@ -251,7 +273,6 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 				var createValidatorEvent staking.EventCreateValidator
 				err = cmn.UnpackLog(s.precompile.ABI, &createValidatorEvent, staking.EventTypeCreateValidator, *log)
 				s.Require().NoError(err)
-				s.Require().Equal(s.address, createValidatorEvent.DelegatorAddress)
 				s.Require().Equal(s.address, createValidatorEvent.ValidatorAddress)
 				s.Require().Equal(value, createValidatorEvent.Value)
 			},
@@ -265,11 +286,13 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 			s.SetupTest()
 
 			// reset sender
-			delegatorAddress = s.address
-			validatorAddress = sdk.ValAddress(s.address.Bytes()).String()
+			validatorAddress = s.address
 
 			var contract *vm.Contract
 			contract, s.ctx = testutil.NewPrecompileContract(s.T(), s.ctx, s.address, s.precompile, tc.gas)
+			if tc.callerAddress != nil {
+				contract.CallerAddress = *tc.callerAddress
+			}
 
 			bz, err := s.precompile.CreateValidator(s.ctx, s.address, contract, s.stateDB, &method, tc.malleate())
 
@@ -293,10 +316,349 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 				s.Require().Equal(pubkey, consPubKeyBase64, "expected validator pubkey to be %s; got %s", pubkey, consPubKeyBase64)
 
 				operator := validator.GetOperator().String()
-				s.Require().Equal(validatorAddress, operator, "expected validator operator to be %s; got %s", validatorAddress, operator)
+				s.Require().Equal(sdk.ValAddress(validatorAddress.Bytes()).String(), operator, "expected validator operator to be %s; got %s", validatorAddress, operator)
 
 				commissionRate := validator.GetCommission()
 				s.Require().Equal(commission.Rate.String(), commissionRate.BigInt().String(), "expected validator commission rate to be %s; got %s", commission.Rate.String(), commissionRate.String())
+
+				valMinSelfDelegation := validator.GetMinSelfDelegation()
+				s.Require().Equal(minSelfDelegation.String(), valMinSelfDelegation.String(), "expected validator min self delegation to be %s; got %s", minSelfDelegation.String(), valMinSelfDelegation.String())
+
+				moniker := validator.GetMoniker()
+				s.Require().Equal(description.Moniker, moniker, "expected validator moniker to be %s; got %s", description.Moniker, moniker)
+
+				jailed := validator.IsJailed()
+				s.Require().Equal(false, jailed, "expected validator jailed to be %t; got %t", false, jailed)
+			}
+		})
+	}
+}
+
+func (s *PrecompileTestSuite) TestEditValidator() {
+	var (
+		validatorAddress  geth.Address
+		commissionRate    *big.Int
+		minSelfDelegation *big.Int
+		method            = s.precompile.Methods[staking.EditValidatorMethod]
+		description       = staking.Description{
+			Moniker:         "node0-edited",
+			Identity:        "",
+			Website:         "",
+			SecurityContact: "",
+			Details:         "",
+		}
+	)
+
+	testCases := []struct {
+		name          string
+		malleate      func() []interface{}
+		gas           uint64
+		callerAddress *geth.Address
+		postCheck     func(data []byte)
+		expError      bool
+		errContains   string
+	}{
+		{
+			"fail - empty input args",
+			func() []interface{} {
+				return []interface{}{}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 4, 0),
+		},
+		{
+			"fail - different origin than delegator",
+			func() []interface{} {
+				differentAddr := testutiltx.GenerateAddress()
+				return []interface{}{
+					description,
+					differentAddr,
+					commissionRate,
+					minSelfDelegation,
+				}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			"is not the same as validator operator address",
+		},
+		{
+			"fail - invalid description",
+			func() []interface{} {
+				return []interface{}{
+					"",
+					validatorAddress,
+					commissionRate,
+					minSelfDelegation,
+				}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			"invalid description",
+		},
+		{
+			"fail - invalid commission rate",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					validatorAddress,
+					"",
+					minSelfDelegation,
+				}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			"invalid type for commissionRate",
+		},
+		{
+			"fail - invalid min self delegation",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					validatorAddress,
+					commissionRate,
+					"",
+				}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			"invalid type for minSelfDelegation",
+		},
+		{
+			"fail - invalid validator address",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					1205,
+					commissionRate,
+					minSelfDelegation,
+				}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			"invalid validator address",
+		},
+		{
+			"fail - commission change rate too high",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					validatorAddress,
+					math.LegacyNewDecWithPrec(7, 2).BigInt(),
+					minSelfDelegation,
+				}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			"commission cannot be changed more than max change rate",
+		},
+		{
+			"fail - negative commission rate",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					validatorAddress,
+					math.LegacyNewDecWithPrec(-5, 2).BigInt(),
+					minSelfDelegation,
+				}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			"commission rate must be between 0 and 1 (inclusive)",
+		},
+		{
+			"fail - negative min self delegation",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					validatorAddress,
+					commissionRate,
+					math.LegacyNewDecWithPrec(-5, 2).BigInt(),
+				}
+			},
+			200000,
+			nil,
+			func([]byte) {},
+			true,
+			"minimum self delegation must be a positive integer",
+		},
+		{
+			"fail - calling precompile from a different address than validator (smart contract call)",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					validatorAddress,
+					commissionRate,
+					minSelfDelegation,
+				}
+			},
+			200000,
+			&s.address,
+			func([]byte) {},
+			true,
+			"this method can only be called directly to the precompile",
+		},
+		{
+			"success",
+			func() []interface{} {
+				return []interface{}{
+					description,
+					validatorAddress,
+					commissionRate,
+					minSelfDelegation,
+				}
+			},
+			200000,
+			nil,
+			func(data []byte) {
+				success, err := s.precompile.Unpack(staking.EditValidatorMethod, data)
+				s.Require().NoError(err)
+				s.Require().Equal(success[0], true)
+
+				log := s.stateDB.Logs()[0]
+				s.Require().Equal(log.Address, s.precompile.Address())
+
+				// Check event signature matches the one emitted
+				event := s.precompile.ABI.Events[staking.EventTypeEditValidator]
+				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), geth.HexToHash(log.Topics[0].Hex()))
+				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
+
+				// Check the fully unpacked event matches the one emitted
+				var editValidatorEvent staking.EventEditValidator
+				err = cmn.UnpackLog(s.precompile.ABI, &editValidatorEvent, staking.EventTypeEditValidator, *log)
+				s.Require().NoError(err)
+				s.Require().Equal(validatorAddress, editValidatorEvent.ValidatorAddress)
+				s.Require().Equal(commissionRate, editValidatorEvent.CommissionRate)
+				s.Require().Equal(minSelfDelegation, editValidatorEvent.MinSelfDelegation)
+			},
+			false,
+			"",
+		},
+		{
+			"success - should not update commission rate",
+			func() []interface{} {
+				// expected commission rate is the previous one (0)
+				commissionRate = math.LegacyZeroDec().BigInt()
+				return []interface{}{
+					description,
+					validatorAddress,
+					big.NewInt(-1),
+					minSelfDelegation,
+				}
+			},
+			200000,
+			nil,
+			func(data []byte) { //nolint:dupl
+				success, err := s.precompile.Unpack(staking.EditValidatorMethod, data)
+				s.Require().NoError(err)
+				s.Require().Equal(success[0], true)
+
+				log := s.stateDB.Logs()[0]
+				s.Require().Equal(log.Address, s.precompile.Address())
+
+				// Check event signature matches the one emitted
+				event := s.precompile.ABI.Events[staking.EventTypeEditValidator]
+				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), geth.HexToHash(log.Topics[0].Hex()))
+				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
+
+				// Check the fully unpacked event matches the one emitted
+				var editValidatorEvent staking.EventEditValidator
+				err = cmn.UnpackLog(s.precompile.ABI, &editValidatorEvent, staking.EventTypeEditValidator, *log)
+				s.Require().NoError(err)
+				s.Require().Equal(validatorAddress, editValidatorEvent.ValidatorAddress)
+			},
+			false,
+			"",
+		},
+		{
+			"success - should not update minimum self delegation",
+			func() []interface{} {
+				// expected min self delegation is the previous one (0)
+				minSelfDelegation = math.LegacyZeroDec().BigInt()
+				return []interface{}{
+					description,
+					validatorAddress,
+					commissionRate,
+					big.NewInt(-1),
+				}
+			},
+			200000,
+			nil,
+			func(data []byte) { //nolint:dupl
+				success, err := s.precompile.Unpack(staking.EditValidatorMethod, data)
+				s.Require().NoError(err)
+				s.Require().Equal(success[0], true)
+
+				log := s.stateDB.Logs()[0]
+				s.Require().Equal(log.Address, s.precompile.Address())
+
+				// Check event signature matches the one emitted
+				event := s.precompile.ABI.Events[staking.EventTypeEditValidator]
+				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), geth.HexToHash(log.Topics[0].Hex()))
+				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
+
+				// Check the fully unpacked event matches the one emitted
+				var editValidatorEvent staking.EventEditValidator
+				err = cmn.UnpackLog(s.precompile.ABI, &editValidatorEvent, staking.EventTypeEditValidator, *log)
+				s.Require().NoError(err)
+				s.Require().Equal(validatorAddress, editValidatorEvent.ValidatorAddress)
+			},
+			false,
+			"",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.SetupTest()
+			commissionRate = math.LegacyNewDecWithPrec(5, 2).BigInt()
+			minSelfDelegation = big.NewInt(11)
+
+			// reset sender
+			validatorAddress = geth.BytesToAddress(s.validators[0].GetOperator().Bytes())
+
+			var contract *vm.Contract
+			contract, s.ctx = testutil.NewPrecompileContract(s.T(), s.ctx, validatorAddress, s.precompile, tc.gas)
+			if tc.callerAddress != nil {
+				contract.CallerAddress = *tc.callerAddress
+			}
+
+			bz, err := s.precompile.EditValidator(s.ctx, validatorAddress, contract, s.stateDB, &method, tc.malleate())
+
+			// query the validator in the staking keeper
+			validator := s.app.StakingKeeper.Validator(s.ctx, validatorAddress.Bytes())
+			if tc.expError {
+				s.Require().ErrorContains(err, tc.errContains)
+				s.Require().Empty(bz)
+			} else {
+				s.Require().NoError(err)
+				s.Require().NotNil(validator, "expected validator not to be nil")
+				tc.postCheck(bz)
+
+				isBonded := validator.IsBonded()
+				s.Require().Equal(true, isBonded, "expected validator bonded to be %t; got %t", true, isBonded)
+
+				operator := validator.GetOperator().String()
+				s.Require().Equal(sdk.ValAddress(validatorAddress.Bytes()).String(), operator, "expected validator operator to be %s; got %s", validatorAddress, operator)
+
+				updatedCommRate := validator.GetCommission()
+				s.Require().Equal(commissionRate.String(), updatedCommRate.BigInt().String(), "expected validator commission rate to be %s; got %s", commissionRate.String(), commissionRate.String())
 
 				valMinSelfDelegation := validator.GetMinSelfDelegation()
 				s.Require().Equal(minSelfDelegation.String(), valMinSelfDelegation.String(), "expected validator min self delegation to be %s; got %s", minSelfDelegation.String(), valMinSelfDelegation.String())
@@ -325,12 +687,12 @@ func (s *PrecompileTestSuite) TestDelegate() {
 	}{
 		{
 			"fail - empty input args",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{}
 			},
 			200000,
 			big.NewInt(0),
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 3, 0),
 		},
@@ -360,7 +722,7 @@ func (s *PrecompileTestSuite) TestDelegate() {
 			},
 			200000,
 			big.NewInt(1),
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			fmt.Sprintf(cmn.ErrInvalidDelegator, ""),
 		},
@@ -375,7 +737,7 @@ func (s *PrecompileTestSuite) TestDelegate() {
 			},
 			200000,
 			big.NewInt(1),
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			fmt.Sprintf(cmn.ErrInvalidAmount, nil),
 		},
@@ -392,7 +754,7 @@ func (s *PrecompileTestSuite) TestDelegate() {
 			},
 			200000,
 			big.NewInt(15),
-			func(data []byte) {},
+			func([]byte) {},
 			true,
 			"insufficient funds",
 		},
@@ -415,7 +777,7 @@ func (s *PrecompileTestSuite) TestDelegate() {
 		//	},
 		//	200000,
 		//	big.NewInt(15),
-		//	func(data []byte) {},
+		//	func( []byte) {},
 		//	true,
 		//	"cannot delegate/undelegate",
 		// },
@@ -535,10 +897,10 @@ func (s *PrecompileTestSuite) TestUndelegate() {
 	}{
 		{
 			"fail - empty input args",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(0),
 			true,
@@ -568,7 +930,7 @@ func (s *PrecompileTestSuite) TestUndelegate() {
 					big.NewInt(1),
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -583,7 +945,7 @@ func (s *PrecompileTestSuite) TestUndelegate() {
 					nil,
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -640,7 +1002,7 @@ func (s *PrecompileTestSuite) TestUndelegate() {
 				s.Require().NotEmpty(bz)
 				tc.postCheck(bz)
 
-				bech32Addr, err := sdk.Bech32ifyAddressBytes("haqq", s.address.Bytes())
+				bech32Addr, err := sdk.Bech32ifyAddressBytes(config.Bech32Prefix, s.address.Bytes())
 				s.Require().NoError(err)
 				s.Require().Equal(undelegations[0].DelegatorAddress, bech32Addr)
 				s.Require().Equal(undelegations[0].ValidatorAddress, s.validators[0].OperatorAddress)
@@ -664,10 +1026,10 @@ func (s *PrecompileTestSuite) TestRedelegate() {
 	}{
 		{
 			"fail - empty input args",
-			func(srcOperatorAddr, dstOperatorAddr string) []interface{} {
+			func(string, string) []interface{} {
 				return []interface{}{}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(0),
 			true,
@@ -699,7 +1061,7 @@ func (s *PrecompileTestSuite) TestRedelegate() {
 					big.NewInt(1),
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -715,7 +1077,7 @@ func (s *PrecompileTestSuite) TestRedelegate() {
 					nil,
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -731,7 +1093,7 @@ func (s *PrecompileTestSuite) TestRedelegate() {
 					big.NewInt(-1),
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -785,7 +1147,7 @@ func (s *PrecompileTestSuite) TestRedelegate() {
 				s.Require().NoError(err)
 				s.Require().NotEmpty(bz)
 
-				bech32Addr, err := sdk.Bech32ifyAddressBytes("haqq", s.address.Bytes())
+				bech32Addr, err := sdk.Bech32ifyAddressBytes(config.Bech32Prefix, s.address.Bytes())
 				s.Require().NoError(err)
 				s.Require().Equal(redelegations[0].DelegatorAddress, bech32Addr)
 				s.Require().Equal(redelegations[0].ValidatorSrcAddress, s.validators[0].OperatorAddress)
@@ -811,10 +1173,10 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 	}{
 		{
 			"fail - empty input args",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(0),
 			true,
@@ -830,7 +1192,7 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 					big.NewInt(1),
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -846,7 +1208,7 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 					nil,
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -862,7 +1224,7 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 					big.NewInt(1),
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -878,7 +1240,7 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 					big.NewInt(1),
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -894,7 +1256,7 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 					big.NewInt(1),
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			big.NewInt(1),
 			true,
@@ -961,7 +1323,7 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 				delegation, found := s.app.StakingKeeper.GetDelegation(s.ctx, s.address.Bytes(), s.validators[0].GetOperator())
 				s.Require().True(found)
 
-				bech32Addr, err := sdk.Bech32ifyAddressBytes("haqq", s.address.Bytes())
+				bech32Addr, err := sdk.Bech32ifyAddressBytes(config.Bech32Prefix, s.address.Bytes())
 				s.Require().NoError(err)
 				s.Require().Equal(delegation.DelegatorAddress, bech32Addr)
 				s.Require().Equal(delegation.ValidatorAddress, s.validators[0].OperatorAddress)

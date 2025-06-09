@@ -21,8 +21,6 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
-	tmos "github.com/cometbft/cometbft/libs/os"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/node"
@@ -127,12 +125,21 @@ import (
 	"github.com/haqq-network/haqq/ethereum/eip712"
 	srvflags "github.com/haqq-network/haqq/server/flags"
 	ethermint "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/evm"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	evmkeeper "github.com/haqq-network/haqq/x/evm/keeper"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"github.com/haqq-network/haqq/x/feemarket"
 	feemarketkeeper "github.com/haqq-network/haqq/x/feemarket/keeper"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
+
+	bankprecompile "github.com/haqq-network/haqq/precompiles/bank"
+	bech32precompile "github.com/haqq-network/haqq/precompiles/bech32"
+	distprecompile "github.com/haqq-network/haqq/precompiles/distribution"
+	ics20precompile "github.com/haqq-network/haqq/precompiles/ics20"
+	p256precompile "github.com/haqq-network/haqq/precompiles/p256"
+	stakingprecompile "github.com/haqq-network/haqq/precompiles/staking"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/haqq-network/haqq/client/docs/statik"
@@ -162,18 +169,6 @@ import (
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
-	"github.com/haqq-network/haqq/precompiles/common"
-
-	v170 "github.com/haqq-network/haqq/app/upgrades/v1.7.0"
-	v171 "github.com/haqq-network/haqq/app/upgrades/v1.7.1"
-	v172 "github.com/haqq-network/haqq/app/upgrades/v1.7.2"
-	v173 "github.com/haqq-network/haqq/app/upgrades/v1.7.3"
-	v174 "github.com/haqq-network/haqq/app/upgrades/v1.7.4"
-	v175 "github.com/haqq-network/haqq/app/upgrades/v1.7.5"
-	v176 "github.com/haqq-network/haqq/app/upgrades/v1.7.6"
-	v177 "github.com/haqq-network/haqq/app/upgrades/v1.7.7"
-	v178 "github.com/haqq-network/haqq/app/upgrades/v1.7.8"
-	v180 "github.com/haqq-network/haqq/app/upgrades/v1.8.0"
 	v181 "github.com/haqq-network/haqq/app/upgrades/v1.8.1"
 	v182 "github.com/haqq-network/haqq/app/upgrades/v1.8.2"
 	v183 "github.com/haqq-network/haqq/app/upgrades/v1.8.3"
@@ -498,9 +493,11 @@ func NewHaqq(
 	evmKeeper := evmkeeper.NewKeeper(
 		appCodec, keys[evmtypes.StoreKey], tkeys[evmtypes.TransientKey], authtypes.NewModuleAddress(govtypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, stakingKeeper, app.FeeMarketKeeper,
+		// FIX: Temporary solution to solve keeper interdependency while new precompile module
+		// is being developed.
+		&app.Erc20Keeper,
 		tracer, app.GetSubspace(evmtypes.ModuleName),
 	)
-
 	app.EvmKeeper = evmKeeper
 
 	// Create IBC Keeper
@@ -569,19 +566,13 @@ func NewHaqq(
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
 		epochskeeper.NewMultiEpochHooks(
-			// insert epoch hooks receivers here
+		// insert epoch hooks receivers here
 		),
 	)
 
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-			// insert gov hooks receivers here
-		),
-	)
-
-	app.EvmKeeper = app.EvmKeeper.SetHooks(
-		evmkeeper.NewMultiEvmHooks(
-			app.Erc20Keeper.Hooks(),
+		// insert gov hooks receivers here
 		),
 	)
 
@@ -614,11 +605,9 @@ func NewHaqq(
 		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
 	)
 
-	chainID := bApp.ChainID()
 	// We call this after setting the hooks to ensure that the hooks are set on the keeper
-	evmKeeper.WithPrecompiles(
-		evmkeeper.AvailablePrecompiles(
-			chainID,
+	evmKeeper.WithStaticPrecompiles(
+		evmkeeper.NewAvailableStaticPrecompiles(
 			*stakingKeeper,
 			app.DistrKeeper,
 			app.BankKeeper,
@@ -645,6 +634,7 @@ func NewHaqq(
 		scopedICAHostKeeper,
 		bApp.MsgServiceRouter(),
 	)
+	app.ICAHostKeeper.WithQueryRouter(bApp.GRPCQueryRouter())
 
 	// create host IBC module
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
@@ -661,7 +651,7 @@ func NewHaqq(
 	transferStack = packetforward.NewIBCMiddleware(
 		transferStack,
 		app.PacketForwardKeeper,
-		0,                                                                // retries on timeout
+		0, // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
@@ -699,7 +689,7 @@ func NewHaqq(
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
 		haqqbank.NewAppModule(
 			bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
-			app.BankKeeper, app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName),
+			app.BankKeeper, app.EvmKeeper, app.Erc20Keeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName),
 		),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
@@ -891,11 +881,12 @@ func NewHaqq(
 	app.setAnteHandler(encodingConfig.TxConfig, maxGasWanted)
 	app.setPostHandler()
 	app.SetEndBlocker(app.EndBlocker)
-	app.setupUpgradeHandlers(keys)
+	app.setupUpgradeHandlers()
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
-			tmos.Exit(err.Error())
+			logger.Error("error on loading last version", "err", err)
+			os.Exit(1)
 		}
 	}
 
@@ -955,8 +946,6 @@ func (app *Haqq) setPostHandler() {
 // of the new block for every registered module. If there is a registered fork at the current height,
 // BeginBlocker will schedule the upgrade plan and perform the state migration (if any).
 func (app *Haqq) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	// Perform any scheduled forks before executing the modules logic
-	app.ScheduleForkUpgrade(ctx)
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -1028,8 +1017,21 @@ func (app *Haqq) BlockedAddrs() map[string]bool {
 		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = true
 	}
 
-	for _, precompile := range common.DefaultPrecompilesBech32 {
-		blockedAddrs[precompile] = true
+	blockedPrecompilesHex := []string{
+		p256precompile.PrecompileAddress,
+		bech32precompile.PrecompileAddress,
+		bankprecompile.PrecompileAddress,
+		stakingprecompile.PrecompileAddress,
+		distprecompile.PrecompileAddress,
+		ics20precompile.PrecompileAddress,
+		//vestingprecompile.PrecompileAddress,
+	}
+	for _, addr := range vm.PrecompiledAddressesBerlin {
+		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
+	}
+
+	for _, precompile := range blockedPrecompilesHex {
+		blockedAddrs[utils.GetAccAddressFromEthAddress(precompile).String()] = true
 	}
 
 	return blockedAddrs
@@ -1216,74 +1218,7 @@ func initParamsKeeper(
 	return paramsKeeper
 }
 
-func (app *Haqq) setupUpgradeHandlers(keys map[string]*storetypes.KVStoreKey) {
-	// v1.7.0 Upgrade SDK, CometBFT and IBC
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v170.UpgradeName,
-		v170.CreateUpgradeHandler(
-			app.mm,
-			app.configurator,
-			app.ConsensusParamsKeeper,
-			app.IBCKeeper.ClientKeeper,
-			app.ParamsKeeper,
-			app.appCodec,
-		),
-	)
-
-	// v1.7.1 Fix Vesting AnteHandler
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v171.UpgradeName,
-		v171.CreateUpgradeHandler(app.mm, app.configurator),
-	)
-
-	// v1.7.2 Add Liquid Vesting Module
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v172.UpgradeName,
-		v172.CreateUpgradeHandler(app.mm, app.configurator),
-	)
-
-	// v1.7.3 Fix Liquid Vesting Module
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v173.UpgradeName,
-		v173.CreateUpgradeHandler(app.mm, app.configurator),
-	)
-
-	// v1.7.4 Revesting upgrade + Packet Forward Middleware
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v174.UpgradeName,
-		v174.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.LiquidVestingKeeper),
-	)
-
-	// v1.7.5 Turn off liquid vesting
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v175.UpgradeName,
-		v175.CreateUpgradeHandler(app.mm, app.configurator, app.BankKeeper, app.LiquidVestingKeeper, app.Erc20Keeper, *app.EvmKeeper, app.AccountKeeper),
-	)
-
-	// v1.7.6 Turn off liquid vesting
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v176.UpgradeName,
-		v176.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper.Keeper, app.DaoKeeper, app.LiquidVestingKeeper, app.Erc20Keeper),
-	)
-
-	// v1.7.7 Rename DAO module to United Contributors DAO
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v177.UpgradeName,
-		v177.CreateUpgradeHandler(app.mm, app.configurator),
-	)
-
-	// v1.7.8 Fix Amino codec in United Contributors DAO module and improve integration tests
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v178.UpgradeName,
-		v178.CreateUpgradeHandler(app.mm, app.configurator),
-	)
-
-	// v1.8.0 Add and enable EVM Extensions (Precompiled contracts).
-	app.UpgradeKeeper.SetUpgradeHandler(
-		v180.UpgradeName,
-		v180.CreateUpgradeHandler(app.mm, app.configurator, *app.EvmKeeper, app.BankKeeper, app.DaoKeeper, keys[ucdaotypes.StoreKey]),
-	)
-
+func (app *Haqq) setupUpgradeHandlers() {
 	// v1.8.1 Fix delegations tracking on Vesting accounts
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v181.UpgradeName,
@@ -1317,40 +1252,16 @@ func (app *Haqq) setupUpgradeHandlers(keys map[string]*storetypes.KVStoreKey) {
 	var storeUpgrades *storetypes.StoreUpgrades
 
 	switch upgradeInfo.Name {
-	case v170.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{
-				consensusparamtypes.StoreKey,
-				crisistypes.ModuleName,
-			},
-		}
-	case v172.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{
-				liquidvestingtypes.ModuleName,
-			},
-		}
-	case v174.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{
-				packetforwardtypes.ModuleName,
-			},
-		}
-	case v176.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Added: []string{
-				ucdaotypes.ModuleOldName,
-			},
-		}
-	case v177.UpgradeName:
-		storeUpgrades = &storetypes.StoreUpgrades{
-			Renamed: []storetypes.StoreRename{
-				{
-					OldKey: ucdaotypes.ModuleOldName,
-					NewKey: ucdaotypes.ModuleName,
-				},
-			},
-		}
+	// Example for further upgrades
+	// case v177.UpgradeName:
+	//	storeUpgrades = &storetypes.StoreUpgrades{
+	//		Renamed: []storetypes.StoreRename{
+	//			{
+	//				OldKey: ucdaotypes.ModuleOldName,
+	//				NewKey: ucdaotypes.ModuleName,
+	//			},
+	//		},
+	//	}
 	}
 
 	if storeUpgrades != nil {

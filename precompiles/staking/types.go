@@ -1,6 +1,10 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package staking
 
 import (
+	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -19,11 +23,24 @@ import (
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 )
 
+const (
+	// DoNotModifyCommissionRate constant used in flags to indicate that commission rate field should not be updated
+	DoNotModifyCommissionRate = -1
+	// DoNotModifyMinSelfDelegation constant used in flags to indicate that min self delegation field should not be updated
+	DoNotModifyMinSelfDelegation = -1
+)
+
 // EventCreateValidator defines the event data for the staking CreateValidator transaction.
 type EventCreateValidator struct {
-	DelegatorAddress common.Address
 	ValidatorAddress common.Address
 	Value            *big.Int
+}
+
+// EventEditValidator defines the event data for the staking EditValidator transaction.
+type EventEditValidator struct {
+	ValidatorAddress  common.Address
+	CommissionRate    *big.Int
+	MinSelfDelegation *big.Int
 }
 
 // EventDelegate defines the event data for the staking Delegate transaction.
@@ -79,27 +96,17 @@ type Commission = struct {
 // NewMsgCreateValidator creates a new MsgCreateValidator instance and does sanity checks
 // on the given arguments before populating the message.
 func NewMsgCreateValidator(args []interface{}, denom string) (*stakingtypes.MsgCreateValidator, common.Address, error) {
-	if len(args) != 7 {
-		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 7, len(args))
+	if len(args) != 6 {
+		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 6, len(args))
 	}
 
-	description := stakingtypes.Description{}
-	if descriptionInput, ok := args[0].(Description); ok {
-		description.Moniker = descriptionInput.Moniker
-		description.Identity = descriptionInput.Identity
-		description.Website = descriptionInput.Website
-		description.SecurityContact = descriptionInput.SecurityContact
-		description.Details = descriptionInput.Details
-	} else {
+	description, ok := args[0].(Description)
+	if !ok {
 		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidDescription, args[0])
 	}
 
-	commission := stakingtypes.CommissionRates{}
-	if commissionInput, ok := args[1].(Commission); ok {
-		commission.Rate = math.LegacyNewDecFromBigIntWithPrec(commissionInput.Rate, math.LegacyPrecision)
-		commission.MaxRate = math.LegacyNewDecFromBigIntWithPrec(commissionInput.MaxRate, math.LegacyPrecision)
-		commission.MaxChangeRate = math.LegacyNewDecFromBigIntWithPrec(commissionInput.MaxChangeRate, math.LegacyPrecision)
-	} else {
+	commission, ok := args[1].(Commission)
+	if !ok {
 		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidCommission, args[1])
 	}
 
@@ -108,24 +115,24 @@ func NewMsgCreateValidator(args []interface{}, denom string) (*stakingtypes.MsgC
 		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidAmount, args[2])
 	}
 
-	delegatorAddress, ok := args[3].(common.Address)
-	if !ok || delegatorAddress == (common.Address{}) {
-		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidDelegator, args[3])
+	validatorAddress, ok := args[3].(common.Address)
+	if !ok || validatorAddress == (common.Address{}) {
+		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidValidator, args[3])
 	}
 
-	validatorAddress, ok := args[4].(string)
+	// use cli `evmosd tendermint show-validator` get pubkey
+	pubkeyBase64Str, ok := args[4].(string)
 	if !ok {
-		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidType, "validatorAddress", "string", args[4])
-	}
-
-	// use cli `haqqd tendermint show-validator` get pubkey
-	pubkeyBase64Str, ok := args[5].(string)
-	if !ok {
-		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidType, "pubkey", "string", args[5])
+		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidType, "pubkey", "string", args[4])
 	}
 	pubkeyBytes, err := base64.StdEncoding.DecodeString(pubkeyBase64Str)
 	if err != nil {
 		return nil, common.Address{}, err
+	}
+
+	// more details see https://github.com/cosmos/cosmos-sdk/pull/18506
+	if len(pubkeyBytes) != ed25519.PubKeySize {
+		return nil, common.Address{}, fmt.Errorf("consensus pubkey len is invalid, got: %d, expected: %d", len(pubkeyBytes), ed25519.PubKeySize)
 	}
 
 	var ed25519pk cryptotypes.PubKey = &ed25519.PubKey{Key: pubkeyBytes}
@@ -134,17 +141,27 @@ func NewMsgCreateValidator(args []interface{}, denom string) (*stakingtypes.MsgC
 		return nil, common.Address{}, err
 	}
 
-	value, ok := args[6].(*big.Int)
+	value, ok := args[5].(*big.Int)
 	if !ok {
-		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidAmount, args[6])
+		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidAmount, args[5])
 	}
 
 	msg := &stakingtypes.MsgCreateValidator{
-		Description:       description,
-		Commission:        commission,
-		MinSelfDelegation: math.NewIntFromBigInt(minSelfDelegation),
-		DelegatorAddress:  sdk.AccAddress(delegatorAddress.Bytes()).String(),
-		ValidatorAddress:  validatorAddress,
+		Description: stakingtypes.Description{
+			Moniker:         description.Moniker,
+			Identity:        description.Identity,
+			Website:         description.Website,
+			SecurityContact: description.SecurityContact,
+			Details:         description.Details,
+		},
+		Commission: stakingtypes.CommissionRates{
+			Rate:          sdk.NewDecFromBigIntWithPrec(commission.Rate, sdk.Precision),
+			MaxRate:       sdk.NewDecFromBigIntWithPrec(commission.Rate, sdk.Precision),
+			MaxChangeRate: sdk.NewDecFromBigIntWithPrec(commission.Rate, sdk.Precision),
+		},
+		MinSelfDelegation: sdk.NewIntFromBigInt(minSelfDelegation),
+		DelegatorAddress:  sdk.AccAddress(validatorAddress.Bytes()).String(),
+		ValidatorAddress:  sdk.ValAddress(validatorAddress.Bytes()).String(),
 		Pubkey:            pubkey,
 		Value:             sdk.Coin{Denom: denom, Amount: math.NewIntFromBigInt(value)},
 	}
@@ -153,7 +170,68 @@ func NewMsgCreateValidator(args []interface{}, denom string) (*stakingtypes.MsgC
 		return nil, common.Address{}, err
 	}
 
-	return msg, delegatorAddress, nil
+	return msg, validatorAddress, nil
+}
+
+// NewMsgEditValidator creates a new MsgEditValidator instance and does sanity checks
+// on the given arguments before populating the message.
+func NewMsgEditValidator(args []interface{}) (*stakingtypes.MsgEditValidator, common.Address, error) {
+	if len(args) != 4 {
+		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 4, len(args))
+	}
+
+	description, ok := args[0].(Description)
+	if !ok {
+		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidDescription, args[0])
+	}
+
+	validatorHexAddr, ok := args[1].(common.Address)
+	if !ok || validatorHexAddr == (common.Address{}) {
+		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidValidator, args[1])
+	}
+
+	commissionRateBigInt, ok := args[2].(*big.Int)
+	if !ok {
+		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidType, "commissionRate", &big.Int{}, args[2])
+	}
+
+	// The default value of a variable declared using a pointer is nil, indicating that the user does not want to modify its value.
+	// If the value passed in by the user is not DoNotModifyCommissionRate, which is -1, it means that the user wants to modify its value.
+	var commissionRate *math.LegacyDec
+	if commissionRateBigInt.Cmp(big.NewInt(DoNotModifyCommissionRate)) != 0 {
+		cr := sdk.NewDecFromBigIntWithPrec(commissionRateBigInt, sdk.Precision)
+		commissionRate = &cr
+	}
+
+	minSelfDelegationBigInt, ok := args[3].(*big.Int)
+	if !ok {
+		return nil, common.Address{}, fmt.Errorf(cmn.ErrInvalidType, "minSelfDelegation", &big.Int{}, args[3])
+	}
+
+	var minSelfDelegation *math.Int
+	if minSelfDelegationBigInt.Cmp(big.NewInt(DoNotModifyMinSelfDelegation)) != 0 {
+		msd := math.NewIntFromBigInt(minSelfDelegationBigInt)
+		minSelfDelegation = &msd
+	}
+
+	msg := &stakingtypes.MsgEditValidator{
+		Description: stakingtypes.Description{
+			Moniker:         description.Moniker,
+			Identity:        description.Identity,
+			Website:         description.Website,
+			SecurityContact: description.SecurityContact,
+			Details:         description.Details,
+		},
+		ValidatorAddress:  sdk.ValAddress(validatorHexAddr.Bytes()).String(),
+		CommissionRate:    commissionRate,
+		MinSelfDelegation: minSelfDelegation,
+	}
+
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, common.Address{}, err
+	}
+
+	return msg, validatorHexAddr, nil
 }
 
 // NewMsgDelegate creates a new MsgDelegate instance and does sanity checks
@@ -322,10 +400,12 @@ func NewValidatorRequest(args []interface{}) (*stakingtypes.QueryValidatorReques
 		return nil, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 1, len(args))
 	}
 
-	validatorAddress, ok := args[0].(string)
-	if !ok {
-		return nil, fmt.Errorf(cmn.ErrInvalidType, "validatorAddress", "string", args[0])
+	validatorHexAddr, ok := args[0].(common.Address)
+	if !ok || validatorHexAddr == (common.Address{}) {
+		return nil, fmt.Errorf(cmn.ErrInvalidValidator, args[0])
 	}
+
+	validatorAddress := sdk.ValAddress(validatorHexAddr.Bytes()).String()
 
 	return &stakingtypes.QueryValidatorRequest{ValidatorAddr: validatorAddress}, nil
 }
@@ -340,6 +420,10 @@ func NewValidatorsRequest(method *abi.Method, args []interface{}) (*stakingtypes
 	var input ValidatorsInput
 	if err := method.Inputs.Copy(&input, args); err != nil {
 		return nil, fmt.Errorf("error while unpacking args to ValidatorsInput struct: %s", err)
+	}
+
+	if bytes.Equal(input.PageRequest.Key, []byte{0}) {
+		input.PageRequest.Key = nil
 	}
 
 	return &stakingtypes.QueryValidatorsRequest{
@@ -543,9 +627,14 @@ func DefaultValidatorOutput() ValidatorOutput {
 
 // FromResponse populates the ValidatorOutput from a QueryValidatorResponse.
 func (vo *ValidatorOutput) FromResponse(res *stakingtypes.QueryValidatorResponse) ValidatorOutput {
+	operatorAddress, err := sdk.ValAddressFromBech32(res.Validator.OperatorAddress)
+	if err != nil {
+		return DefaultValidatorOutput()
+	}
+
 	return ValidatorOutput{
 		Validator: ValidatorInfo{
-			OperatorAddress: res.Validator.OperatorAddress,
+			OperatorAddress: common.BytesToAddress(operatorAddress.Bytes()).String(),
 			ConsensusPubkey: FormatConsensusPubkey(res.Validator.ConsensusPubkey),
 			Jailed:          res.Validator.Jailed,
 			Status:          uint8(stakingtypes.BondStatus_value[res.Validator.Status.String()]),
@@ -579,18 +668,23 @@ type ValidatorsOutput struct {
 func (vo *ValidatorsOutput) FromResponse(res *stakingtypes.QueryValidatorsResponse) *ValidatorsOutput {
 	vo.Validators = make([]ValidatorInfo, len(res.Validators))
 	for i, v := range res.Validators {
-		vo.Validators[i] = ValidatorInfo{
-			OperatorAddress:   v.OperatorAddress,
-			ConsensusPubkey:   FormatConsensusPubkey(v.ConsensusPubkey),
-			Jailed:            v.Jailed,
-			Status:            uint8(stakingtypes.BondStatus_value[v.Status.String()]),
-			Tokens:            v.Tokens.BigInt(),
-			DelegatorShares:   v.DelegatorShares.BigInt(),
-			Description:       v.Description.Details,
-			UnbondingHeight:   v.UnbondingHeight,
-			UnbondingTime:     v.UnbondingTime.UTC().Unix(),
-			Commission:        v.Commission.CommissionRates.Rate.BigInt(),
-			MinSelfDelegation: v.MinSelfDelegation.BigInt(),
+		operatorAddress, err := sdk.ValAddressFromBech32(v.OperatorAddress)
+		if err != nil {
+			vo.Validators[i] = DefaultValidatorOutput().Validator
+		} else {
+			vo.Validators[i] = ValidatorInfo{
+				OperatorAddress:   common.BytesToAddress(operatorAddress.Bytes()).String(),
+				ConsensusPubkey:   FormatConsensusPubkey(v.ConsensusPubkey),
+				Jailed:            v.Jailed,
+				Status:            uint8(stakingtypes.BondStatus_value[v.Status.String()]),
+				Tokens:            v.Tokens.BigInt(),
+				DelegatorShares:   v.DelegatorShares.BigInt(),
+				Description:       v.Description.Details,
+				UnbondingHeight:   v.UnbondingHeight,
+				UnbondingTime:     v.UnbondingTime.UTC().Unix(),
+				Commission:        v.Commission.CommissionRates.Rate.BigInt(),
+				MinSelfDelegation: v.MinSelfDelegation.BigInt(),
+			}
 		}
 	}
 

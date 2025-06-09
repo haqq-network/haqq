@@ -26,9 +26,11 @@ type Handler interface {
 
 	// Bank methods
 	GetBalance(address sdktypes.AccAddress, denom string) (*banktypes.QueryBalanceResponse, error)
+	GetAllBalances(address sdktypes.AccAddress) (*banktypes.QueryAllBalancesResponse, error)
 
 	// Staking methods
 	GetDelegation(delegatorAddress string, validatorAddress string) (*stakingtypes.QueryDelegationResponse, error)
+	GetBondedValidators() (*stakingtypes.QueryValidatorsResponse, error)
 }
 
 var _ Handler = (*IntegrationHandler)(nil)

@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	_ "embed"
 	"math/big"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -96,17 +95,17 @@ func (suite *KeeperTestSuite) TestGetAccountStorage() {
 		expRes   []int
 	}{
 		{
-			"Only one account that's not a contract (no storage)",
+			"one account that's not a contract (no storage) - One precompile account (no storage)",
 			func() {},
-			[]int{0},
+			[]int{0, 0},
 		},
 		{
-			"Two accounts - one contract (with storage), one wallet",
+			"Two accounts - one contract (with storage), one wallet - One precompile account (no storage)",
 			func() {
 				supply := big.NewInt(100)
 				suite.DeployTestContract(suite.T(), suite.address, supply)
 			},
-			[]int{2, 0},
+			[]int{2, 0, 0},
 		},
 	}
 

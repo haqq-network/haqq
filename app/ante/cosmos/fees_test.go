@@ -26,6 +26,7 @@ type deductFeeDecoratorTestCase struct {
 	expPass     bool
 	errContains string
 	postCheck   func()
+	setup       func()
 	malleate    func()
 }
 
@@ -214,7 +215,7 @@ func (suite *AnteTestSuite) TestDeductFeeDecorator() {
 			checkTx:     true,
 			simulate:    false,
 			expPass:     false,
-			errContains: fmt.Sprintf("%s does not not allow to pay fees for %s", fgAddr, addr),
+			errContains: fmt.Sprintf("%s does not allow to pay fees for %s", fgAddr, addr),
 		},
 		{
 			name:        "success - with authorized fee granter",

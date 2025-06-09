@@ -4,6 +4,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	sdktypes "github.com/cosmos/cosmos-sdk/store/types"
 )
 
 // NextBlock is a private helper function that runs the EndBlocker logic, commits the changes,
@@ -34,9 +35,11 @@ func (n *IntegrationNetwork) NextBlockAfter(duration time.Duration) error {
 	// Update context header
 	newCtx := n.app.BaseApp.NewContext(false, header)
 	newCtx = newCtx.WithMinGasPrices(n.ctx.MinGasPrices())
-	newCtx = newCtx.WithEventManager(n.ctx.EventManager())
 	newCtx = newCtx.WithKVGasConfig(n.ctx.KVGasConfig())
 	newCtx = newCtx.WithTransientKVGasConfig(n.ctx.TransientKVGasConfig())
+	newCtx = newCtx.WithConsensusParams(n.ctx.ConsensusParams())
+	// This might have to be changed with time if we want to test gas limits
+	newCtx = newCtx.WithBlockGasMeter(sdktypes.NewInfiniteGasMeter())
 
 	n.ctx = newCtx
 	return nil
