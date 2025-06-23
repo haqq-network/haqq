@@ -3,6 +3,11 @@
 package keeper_test
 
 import (
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/haqq-network/haqq/app"
+	"github.com/haqq-network/haqq/encoding"
+	"github.com/haqq-network/haqq/utils"
 	"math/big"
 
 	//nolint:revive // dot imports are fine for Ginkgo
@@ -161,6 +166,342 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 			Expect(err).To(BeNil())
 			err = integrationutils.IsContractAccount(contractAccount)
 			Expect(err).To(BeNil())
+		},
+			Entry("as a DynamicFeeTx", func() evmtypes.EvmTxArgs { return evmtypes.EvmTxArgs{} }),
+			Entry("as an AccessListTx",
+				func() evmtypes.EvmTxArgs {
+					return evmtypes.EvmTxArgs{
+						Accesses: &ethtypes.AccessList{{
+							Address:     s.keyring.GetAddr(1),
+							StorageKeys: []common.Hash{{0}},
+						}},
+					}
+				},
+			),
+			Entry("as a LegacyTx", func() evmtypes.EvmTxArgs {
+				return evmtypes.EvmTxArgs{
+					GasPrice: big.NewInt(1e9),
+				}
+			}),
+		)
+
+		DescribeTable("Try MsgEthereumTx replay", func(getTxArgs func() evmtypes.EvmTxArgs) {
+			// Deploy contract
+			senderKey := s.keyring.GetKey(0)
+			receiverKey := s.keyring.GetKey(1)
+			denom := s.network.GetDenom()
+
+			// Get balances before execution
+			senderPrevBalanceResponse, err := s.grpcHandler.GetBalance(senderKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			senderPrevBalance := senderPrevBalanceResponse.GetBalance().Amount
+			senderAccountRespBeforeAll, err := s.grpcHandler.GetEvmAccount(senderKey.Addr)
+			Expect(err).To(BeNil())
+
+			receiverPrevBalanceResponse, err := s.grpcHandler.GetBalance(receiverKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			receiverPrevBalance := receiverPrevBalanceResponse.GetBalance().Amount
+
+			// Deploy contract msg
+			txArgsDeploy := getTxArgs()
+			constructorArgs := []interface{}{"coin", "token", uint8(18)}
+			compiledContract := contracts.ERC20MinterBurnerDecimalsContract
+			from := common.BytesToAddress(senderKey.AccAddr)
+			deploymentData := factory.ContractDeploymentData{
+				Contract:        compiledContract,
+				ConstructorArgs: constructorArgs,
+			}
+
+			deployTxArgs, err := s.factory.GenerateDeployContractArgs(from, txArgsDeploy, deploymentData)
+			Expect(err).To(BeNil())
+			deployMsgEthereumTx, err := s.factory.GenerateMsgEthereumTx(senderKey.Priv, deployTxArgs)
+			Expect(err).To(BeNil())
+			deployMsgEthereumTxSigned, err := s.factory.SignMsgEthereumTx(senderKey.Priv, deployMsgEthereumTx)
+			Expect(err).To(BeNil())
+
+			// Transfer msg 1
+			txArgsTransfer1 := getTxArgs()
+			txArgsTransfer1.Amount = big.NewInt(int64(1000))
+			txArgsTransfer1.To = &receiverKey.Addr
+			txArgsTransfer1.Nonce = deployTxArgs.Nonce + 1 // increase nonce as it's next msg
+
+			transferMsgEthereumTx1, err := s.factory.GenerateMsgEthereumTx(senderKey.Priv, txArgsTransfer1)
+			Expect(err).To(BeNil())
+			transferMsgEthereumTx1Signed, err := s.factory.SignMsgEthereumTx(senderKey.Priv, transferMsgEthereumTx1)
+			Expect(err).To(BeNil())
+
+			// Transfer msg 1
+			txArgsTransfer2 := getTxArgs()
+			txArgsTransfer2.Amount = big.NewInt(int64(500))
+			txArgsTransfer2.To = &receiverKey.Addr
+			txArgsTransfer2.Nonce = deployTxArgs.Nonce + 2 // increase nonce as it's next msg
+
+			transferMsgEthereumTx2, err := s.factory.GenerateMsgEthereumTx(senderKey.Priv, txArgsTransfer2)
+			Expect(err).To(BeNil())
+			transferMsgEthereumTx2Signed, err := s.factory.SignMsgEthereumTx(senderKey.Priv, transferMsgEthereumTx2)
+			Expect(err).To(BeNil())
+
+			option, err := codectypes.NewAnyWithValue(&evmtypes.ExtensionOptionsEthereumTx{})
+			Expect(err).To(BeNil())
+
+			// Compose transaction with multiple msgs
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			txBuilder1 := txConfig.NewTxBuilder()
+			txFee1 := sdktypes.NewCoins().
+				Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(deployMsgEthereumTxSigned.GetFee())}).
+				Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(transferMsgEthereumTx1Signed.GetFee())}).
+				Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(transferMsgEthereumTx2Signed.GetFee())})
+			txGasLimit1 := deployMsgEthereumTxSigned.GetGas() + transferMsgEthereumTx1Signed.GetGas() + transferMsgEthereumTx2Signed.GetGas()
+
+			deployMsgEthereumTxSigned.From = ""
+			transferMsgEthereumTx1Signed.From = ""
+			transferMsgEthereumTx2Signed.From = ""
+
+			err = txBuilder1.SetMsgs(&deployMsgEthereumTxSigned, &transferMsgEthereumTx1Signed, &transferMsgEthereumTx2Signed)
+			Expect(err).To(BeNil())
+
+			txBuilder1.(authtx.ExtensionOptionsTxBuilder).SetExtensionOptions(option)
+			txBuilder1.SetGasLimit(txGasLimit1)
+			txBuilder1.SetFeeAmount(txFee1)
+
+			tx1 := txBuilder1.GetTx()
+			txBytes, err := txConfig.TxEncoder()(tx1)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeTrue())
+
+			err = s.network.NextBlock()
+			Expect(err).To(BeNil())
+
+			// Check nonce
+			senderAccountRespAfterTx1, err := s.grpcHandler.GetEvmAccount(senderKey.Addr)
+			Expect(err).To(BeNil())
+			// By default, expect invalid nonce! Increased by 1 instead of 3
+			Expect(senderAccountRespAfterTx1.Nonce).To(Equal(senderAccountRespBeforeAll.Nonce + 3))
+
+			// Check Balance
+			senderBalanceAfterTx1Response, err := s.grpcHandler.GetBalance(senderKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			senderBalanceAfterTx1 := senderBalanceAfterTx1Response.GetBalance().Amount
+			Expect(senderBalanceAfterTx1.LT(senderPrevBalance.Sub(math.NewInt(1500)))).To(BeTrue())
+
+			receiverBalanceAfterTx1Response, err := s.grpcHandler.GetBalance(receiverKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			receiverBalanceAfterTx1 := receiverBalanceAfterTx1Response.GetBalance().Amount
+			Expect(receiverBalanceAfterTx1).To(Equal(receiverPrevBalance.Add(math.NewInt(1500))))
+
+			// Compose transaction with msg replay
+			txBuilder2 := txConfig.NewTxBuilder()
+			txFee2 := sdktypes.NewCoins().
+				Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(transferMsgEthereumTx1Signed.GetFee())}).
+				Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(transferMsgEthereumTx2Signed.GetFee())})
+			txGasLimit2 := transferMsgEthereumTx1Signed.GetGas() + transferMsgEthereumTx2Signed.GetGas()
+
+			err = txBuilder2.SetMsgs(&transferMsgEthereumTx1Signed, &transferMsgEthereumTx2Signed)
+			Expect(err).To(BeNil())
+
+			txBuilder2.(authtx.ExtensionOptionsTxBuilder).SetExtensionOptions(option)
+			txBuilder2.SetGasLimit(txGasLimit2)
+			txBuilder2.SetFeeAmount(txFee2)
+
+			tx2 := txBuilder2.GetTx()
+			txBytes2, err := txConfig.TxEncoder()(tx2)
+			Expect(err).To(BeNil())
+
+			res2, err := s.network.BroadcastTxSync(txBytes2)
+			Expect(err).To(BeNil())
+			Expect(res2.IsOK()).To(BeFalse())
+
+			err = s.network.NextBlock()
+			Expect(err).To(BeNil())
+
+			// Check nonce
+			senderAccountRespAfterTx2, err := s.grpcHandler.GetEvmAccount(senderKey.Addr)
+			Expect(err).To(BeNil())
+			// Expect correct nonce. Increased by 2 after second tx
+			Expect(senderAccountRespAfterTx2.Nonce).To(Equal(txArgsTransfer2.Nonce + 1))
+
+			// Check balances after replay
+			senderBalanceAfterTx2Response, err := s.grpcHandler.GetBalance(senderKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			senderBalanceAfterTx2 := senderBalanceAfterTx2Response.GetBalance().Amount
+			// By default, replay works and value will be 3000
+			Expect(senderBalanceAfterTx2.LT(senderPrevBalance.Sub(math.NewInt(1500)))).To(BeTrue())
+
+			receiverBalanceAfterTx2Response, err := s.grpcHandler.GetBalance(receiverKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			receiverBalanceAfterTx2 := receiverBalanceAfterTx2Response.GetBalance().Amount
+			// By default, replay works and value will be 3000
+			Expect(receiverBalanceAfterTx2).To(Equal(receiverPrevBalance.Add(math.NewInt(1500))))
+		},
+			Entry("as a DynamicFeeTx", func() evmtypes.EvmTxArgs { return evmtypes.EvmTxArgs{} }),
+			Entry("as an AccessListTx",
+				func() evmtypes.EvmTxArgs {
+					return evmtypes.EvmTxArgs{
+						Accesses: &ethtypes.AccessList{{
+							Address:     s.keyring.GetAddr(1),
+							StorageKeys: []common.Hash{{0}},
+						}},
+					}
+				},
+			),
+			Entry("as a LegacyTx", func() evmtypes.EvmTxArgs {
+				return evmtypes.EvmTxArgs{
+					GasPrice: big.NewInt(1e9),
+				}
+			}),
+		)
+
+		DescribeTable("R&D Nonce state on failed transactions - Deploy contract", func(getTxArgs func() evmtypes.EvmTxArgs) {
+			senderKey := s.keyring.GetKey(0)
+			senderAccountRespBeforeAll, err := s.grpcHandler.GetEvmAccount(senderKey.Addr)
+			Expect(err).To(BeNil())
+
+			// Deploy contract msg
+			txArgsDeploy := getTxArgs()
+			constructorArgs := []interface{}{"coin", "token", uint8(18)}
+			compiledContract := contracts.ERC20MinterBurnerDecimalsContract
+			from := common.BytesToAddress(senderKey.AccAddr)
+			deploymentData := factory.ContractDeploymentData{
+				Contract:        compiledContract,
+				ConstructorArgs: constructorArgs,
+			}
+
+			deployTxArgs, err := s.factory.GenerateDeployContractArgs(from, txArgsDeploy, deploymentData)
+			Expect(err).To(BeNil())
+			deployTxArgs.GasLimit = 1000 // Set low gas limit to force tx fail
+			deployMsgEthereumTx, err := s.factory.GenerateMsgEthereumTx(senderKey.Priv, deployTxArgs)
+			Expect(err).To(BeNil())
+			deployMsgEthereumTxSigned, err := s.factory.SignMsgEthereumTx(senderKey.Priv, deployMsgEthereumTx)
+			Expect(err).To(BeNil())
+
+			// Compose transaction and execute
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			txBuilder1 := txConfig.NewTxBuilder()
+			txFee1 := sdktypes.NewCoins().Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(deployMsgEthereumTxSigned.GetFee())})
+			txGasLimit1 := deployMsgEthereumTxSigned.GetGas()
+
+			deployMsgEthereumTxSigned.From = ""
+
+			err = txBuilder1.SetMsgs(&deployMsgEthereumTxSigned)
+			Expect(err).To(BeNil())
+
+			option, err := codectypes.NewAnyWithValue(&evmtypes.ExtensionOptionsEthereumTx{})
+			Expect(err).To(BeNil())
+
+			txBuilder1.(authtx.ExtensionOptionsTxBuilder).SetExtensionOptions(option)
+			txBuilder1.SetGasLimit(txGasLimit1)
+			txBuilder1.SetFeeAmount(txFee1)
+
+			tx1 := txBuilder1.GetTx()
+			txBytes, err := txConfig.TxEncoder()(tx1)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeFalse())
+			println("contract deploy failed: " + res.Log)
+
+			err = s.network.NextBlock()
+			Expect(err).To(BeNil())
+
+			// Check nonce
+			senderAccountRespAfter, err := s.grpcHandler.GetEvmAccount(senderKey.Addr)
+			Expect(err).To(BeNil())
+			// Expect increased nonce even on failed tx
+			Expect(senderAccountRespAfter.Nonce).To(Equal(senderAccountRespBeforeAll.Nonce + 1))
+		},
+			Entry("as a DynamicFeeTx", func() evmtypes.EvmTxArgs { return evmtypes.EvmTxArgs{} }),
+			Entry("as an AccessListTx",
+				func() evmtypes.EvmTxArgs {
+					return evmtypes.EvmTxArgs{
+						Accesses: &ethtypes.AccessList{{
+							Address:     s.keyring.GetAddr(1),
+							StorageKeys: []common.Hash{{0}},
+						}},
+					}
+				},
+			),
+			Entry("as a LegacyTx", func() evmtypes.EvmTxArgs {
+				return evmtypes.EvmTxArgs{
+					GasPrice: big.NewInt(1e9),
+				}
+			}),
+		)
+
+		DescribeTable("R&D Nonce state on failed transactions - Transfer", func(getTxArgs func() evmtypes.EvmTxArgs) {
+			senderKey := s.keyring.GetKey(0)
+			receiverKey := s.keyring.GetKey(1)
+			denom := s.network.GetDenom()
+
+			senderPrevBalanceResponse, err := s.grpcHandler.GetBalance(senderKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			senderPrevBalance := senderPrevBalanceResponse.GetBalance().Amount
+			senderAccountRespBeforeAll, err := s.grpcHandler.GetEvmAccount(senderKey.Addr)
+			Expect(err).To(BeNil())
+
+			receiverPrevBalanceResponse, err := s.grpcHandler.GetBalance(receiverKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			receiverPrevBalance := receiverPrevBalanceResponse.GetBalance().Amount
+
+			// Transfer msg
+			txArgsTransfer := getTxArgs()
+			txArgsTransfer.Amount = big.NewInt(int64(1000))
+			txArgsTransfer.To = &receiverKey.Addr
+			txArgsTransfer.Nonce = senderAccountRespBeforeAll.Nonce
+			txArgsTransfer.GasLimit = 10000 // Set low gas limit to force tx fail
+
+			transferMsgEthereumTx, err := s.factory.GenerateMsgEthereumTx(senderKey.Priv, txArgsTransfer)
+			Expect(err).To(BeNil())
+			transferMsgEthereumTxSigned, err := s.factory.SignMsgEthereumTx(senderKey.Priv, transferMsgEthereumTx)
+			Expect(err).To(BeNil())
+			transferMsgEthereumTxSigned.From = ""
+
+			// Compose and execute tx
+			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			txBuilder := txConfig.NewTxBuilder()
+			txFee := sdktypes.NewCoins().Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(transferMsgEthereumTxSigned.GetFee())})
+			txGasLimit := transferMsgEthereumTxSigned.GetGas()
+
+			err = txBuilder.SetMsgs(&transferMsgEthereumTxSigned)
+			Expect(err).To(BeNil())
+
+			option, err := codectypes.NewAnyWithValue(&evmtypes.ExtensionOptionsEthereumTx{})
+			Expect(err).To(BeNil())
+			txBuilder.(authtx.ExtensionOptionsTxBuilder).SetExtensionOptions(option)
+			txBuilder.SetGasLimit(txGasLimit)
+			txBuilder.SetFeeAmount(txFee)
+
+			tx := txBuilder.GetTx()
+			txBytes, err := txConfig.TxEncoder()(tx)
+			Expect(err).To(BeNil())
+
+			res, err := s.network.BroadcastTxSync(txBytes)
+			Expect(err).To(BeNil())
+			Expect(res.IsOK()).To(BeFalse())
+			println("transfer failed: " + res.Log)
+
+			err = s.network.NextBlock()
+			Expect(err).To(BeNil())
+
+			// Check nonce
+			senderAccountRespAfter, err := s.grpcHandler.GetEvmAccount(senderKey.Addr)
+			Expect(err).To(BeNil())
+			// Expect increased nonce even on failed tx
+			Expect(senderAccountRespAfter.Nonce).To(Equal(senderAccountRespBeforeAll.Nonce + 1))
+
+			// Check balances
+			senderBalanceAfterResponse, err := s.grpcHandler.GetBalance(senderKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			senderBalanceAfter := senderBalanceAfterResponse.GetBalance().Amount
+			Expect(senderBalanceAfter.LT(senderPrevBalance)).To(BeTrue())
+
+			receiverBalanceAfterResponse, err := s.grpcHandler.GetBalance(receiverKey.AccAddr, denom)
+			Expect(err).To(BeNil())
+			receiverBalanceAfter := receiverBalanceAfterResponse.GetBalance().Amount
+			Expect(receiverBalanceAfter).To(Equal(receiverPrevBalance))
 		},
 			Entry("as a DynamicFeeTx", func() evmtypes.EvmTxArgs { return evmtypes.EvmTxArgs{} }),
 			Entry("as an AccessListTx",

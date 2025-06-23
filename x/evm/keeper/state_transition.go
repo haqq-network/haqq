@@ -310,11 +310,17 @@ func (k *Keeper) ApplyMessageWithConfig(
 
 	if contractCreation {
 		// take over the nonce management from evm:
+		// - retrieve current sender's nonce from stateDB
 		// - reset sender's nonce to msg.Nonce() before calling evm.
-		// - increase sender's nonce by one no matter the result.
+		// - restore proper sender's nonce no matter the result.
+		//
+		// Sender's nonce already handled by AnteHandler and might be increased by more than one
+		// in case of multiple messages in a single transaction.
+		// If so, account nonce can't be decreased after AnteHandler.
+		currentNonce := stateDB.GetNonce(sender.Address())
 		stateDB.SetNonce(sender.Address(), msg.Nonce())
 		ret, _, leftoverGas, vmErr = evm.Create(sender, msg.Data(), leftoverGas, msg.Value())
-		stateDB.SetNonce(sender.Address(), msg.Nonce()+1)
+		stateDB.SetNonce(sender.Address(), currentNonce)
 	} else {
 		ret, leftoverGas, vmErr = evm.Call(sender, *msg.To(), msg.Data(), leftoverGas, msg.Value())
 	}

@@ -22,52 +22,6 @@ import (
 
 var _ types.MsgServer = &Keeper{}
 
-// ConvertCoin converts native Cosmos coins into ERC20 tokens for both
-// Cosmos-native and ERC20 TokenPair Owners
-func (k Keeper) ConvertCoin(
-	goCtx context.Context,
-	msg *types.MsgConvertCoin,
-) (*types.MsgConvertCoinResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	// Error checked during msg validation
-	receiver := common.HexToAddress(msg.Receiver)
-	sender := sdk.MustAccAddressFromBech32(msg.Sender)
-
-	pair, err := k.MintingEnabled(ctx, sender, receiver.Bytes(), msg.Coin.Denom)
-	if err != nil {
-		return nil, err
-	}
-
-	// Remove token pair if contract is suicided
-	erc20 := common.HexToAddress(pair.Erc20Address)
-	acc := k.evmKeeper.GetAccountWithoutBalance(ctx, erc20)
-
-	if acc == nil || !acc.IsContract() {
-		k.DeleteTokenPair(ctx, pair)
-		k.Logger(ctx).Debug(
-			"deleting selfdestructed token pair from state",
-			"contract", pair.Erc20Address,
-		)
-		// NOTE: return nil error to persist the changes from the deletion
-		return nil, nil
-	}
-
-	// Check ownership and execute conversion
-	switch {
-	case pair.IsNativeCoin():
-		//return k.convertCoinNativeCoin(ctx, pair, msg, receiver, sender) // case 1.1
-		return nil, types.ErrNativeConversionDisabled
-	case pair.IsNativeERC20():
-		if err := k.ConvertCoinNativeERC20(ctx, pair, msg.Coin.Amount, receiver, sender); err != nil {
-			return nil, err
-		}
-		return &types.MsgConvertCoinResponse{}, nil // case 2.2
-	default:
-		return nil, types.ErrUndefinedOwner
-	}
-}
-
 // ConvertERC20 converts ERC20 tokens into native Cosmos coins for both
 // Cosmos-native and ERC20 TokenPair Owners
 func (k Keeper) ConvertERC20(

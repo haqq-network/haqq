@@ -2,16 +2,13 @@ package keeper
 
 import (
 	"context"
+	"github.com/haqq-network/haqq/utils"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/haqq-network/haqq/contracts"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -138,17 +135,22 @@ func (k Keeper) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*type
 	}
 
 	// bind newly created denom to erc20 token
-	tokenPair, err := k.erc20Keeper.RegisterCoin(ctx, liquidTokenMetadata)
+	// Create dummy IBC denom, just to bind ERC20 Precompile with newly created aLiquid denom
+	fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, msg.Amount.Denom)
+	tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
 	if err != nil {
 		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to create erc20 token pair: %s", err.Error())
 	}
+	// Set real denom to token pair, so precompile could handle transfers properly
+	tokenPair.Denom = liquidTokenMetadata.Base
+	// k.erc20Keeper.SetToken(ctx, tokenPair) unwrap it below due to pointer receiver in original method.
+	k.erc20Keeper.SetTokenPair(ctx, tokenPair)
+	k.erc20Keeper.SetDenomMap(ctx, tokenPair.Denom, tokenPair.GetID())
+	k.erc20Keeper.SetERC20Map(ctx, tokenPair.GetERC20Contract(), tokenPair.GetID())
 
-	// convert new liquid token to erc20 token
-	// Build MsgConvertCoin, from recipient to recipient since Liquidation already occurred
-	evmLiquidateToAddress := common.BytesToAddress(liquidateToAddress.Bytes())
-	msgConvert := erc20types.NewMsgConvertCoin(liquidTokenCoin, evmLiquidateToAddress, liquidateToAddress)
-	if _, err := k.erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), msgConvert); err != nil {
-		return nil, errorsmod.Wrap(err, "failed to convert liquid tokens into erc20 tokens")
+	err = k.erc20Keeper.EnableDynamicPrecompiles(ctx, tokenPair.GetERC20Contract())
+	if err != nil {
+		return nil, err
 	}
 
 	ctx.EventManager().EmitEvents(
@@ -205,32 +207,7 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 
 	// check fromAccount has enough liquid token in balance
 	if balance := k.bankKeeper.GetBalance(ctx, fromAddress, msg.Amount.Denom); balance.IsLT(msg.Amount) {
-		// get erc20 liquid token balance
-		contract := tokenPair.GetERC20Contract()
-		erc20LiquidTokenBalance := math.NewIntFromBigInt(k.erc20Keeper.BalanceOf(
-			ctx,
-			contracts.ERC20MinterBurnerDecimalsContract.ABI,
-			contract,
-			common.BytesToAddress(fromAddress.Bytes()),
-		))
-
-		// check if erc20 + cosmos tokens are sufficient for redeem
-		if erc20LiquidTokenBalance.Add(balance.Amount).LT(msg.Amount.Amount) {
-			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "from account has insufficient balance")
-		}
-
-		// transfer token from erc20 layer to get sufficient amount
-		amountToConvert := msg.Amount.Amount.Sub(balance.Amount)
-		msgConvert := erc20types.NewMsgConvertERC20(
-			amountToConvert,
-			fromAddress,
-			contract,
-			common.BytesToAddress(fromAddress.Bytes()),
-		)
-		_, err := k.erc20Keeper.ConvertERC20(sdk.WrapSDKContext(ctx), msgConvert)
-		if err != nil {
-			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to convert erc20 token: %s", err.Error())
-		}
+		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "from account has insufficient balance")
 	}
 
 	// transfer liquid denom to liquidvesting module

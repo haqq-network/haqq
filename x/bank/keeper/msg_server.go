@@ -144,8 +144,9 @@ func (k msgServer) sendCoinsWithERC20(ctx sdk.Context, from sdk.AccAddress, to s
 			continue
 		}
 
+		erc20params := k.ek.GetParams(sdkCtx)
 		tokenPair, found := k.ek.GetTokenPair(sdkCtx, tokenPairID)
-		if !found || !tokenPair.Enabled {
+		if !found || !tokenPair.Enabled || k.ek.IsAvailableERC20Precompile(&erc20params, tokenPair.GetERC20Contract()) {
 			// if tokenPair is Disabled or not found, try to transfer on Cosmos layer without conversion
 			nativeCoins = append(nativeCoins, coin)
 			continue
@@ -197,11 +198,8 @@ func (k msgServer) subUnlockedERC20Tokens(ctx sdk.Context, tokenPair erc20types.
 	}
 
 	if !spendable.IsZero() {
-		// Build MsgConvertCoin, from recipient to recipient since IBC transfer already occurred
-		msg := erc20types.NewMsgConvertCoin(spendable, evmFromAddr, fromAddr)
-
-		if _, err := k.ek.ConvertCoin(sdk.WrapSDKContext(ctx), msg); err != nil {
-			return errorsmod.Wrap(err, "failed to convert coins")
+		if err := k.ek.ConvertCoinNativeERC20(sdkCtx, tokenPair, spendable.Amount, evmFromAddr, fromAddr); err != nil {
+			return errorsmod.Wrap(err, "failed to convert tokens")
 		}
 	}
 
