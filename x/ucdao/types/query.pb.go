@@ -355,7 +355,8 @@ func (m *QueryParamsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryParamsRequest proto.InternalMessageInfo
 
-// QueryParamsResponse defines the response type for querying x/ucdao parameters.
+// QueryParamsResponse defines the response type for querying x/ucdao
+// parameters.
 type QueryParamsResponse struct {
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 }
@@ -589,7 +590,8 @@ type QueryClient interface {
 	// When called from another module, this query might consume a high amount of
 	// gas if the pagination field is incorrectly set.
 	TotalBalance(ctx context.Context, in *QueryTotalBalanceRequest, opts ...grpc.CallOption) (*QueryTotalBalanceResponse, error)
-	// TokenHolders queries the all balances of all coins locked in the module and group them by account address.
+	// TokenHolders queries the all balances of all coins locked in the module and
+	// group them by account address.
 	//
 	// When called from another module, this query might consume a high amount of
 	// gas if the pagination field is incorrectly set.
@@ -665,7 +667,8 @@ type QueryServer interface {
 	// When called from another module, this query might consume a high amount of
 	// gas if the pagination field is incorrectly set.
 	TotalBalance(context.Context, *QueryTotalBalanceRequest) (*QueryTotalBalanceResponse, error)
-	// TokenHolders queries the all balances of all coins locked in the module and group them by account address.
+	// TokenHolders queries the all balances of all coins locked in the module and
+	// group them by account address.
 	//
 	// When called from another module, this query might consume a high amount of
 	// gas if the pagination field is incorrectly set.
