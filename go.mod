@@ -1,6 +1,6 @@
 module github.com/haqq-network/haqq
 
-go 1.23
+go 1.23.10
 
 require (
 	cosmossdk.io/api v0.3.1
