@@ -9,8 +9,8 @@ option go_package = "github.com/haqq-network/haqq/x/ucdao/types";
 
 // Params defines the parameters for the dao module.
 message Params {
-  option(amino.name) = "haqq/x/ucdao/Params";
-  option(gogoproto.goproto_stringer) = false;
+  option (amino.name) = "haqq/x/ucdao/Params";
+  option (gogoproto.goproto_stringer) = false;
   // enable_dao is the parameter to enable the module functionality.
   bool enable_dao = 1;
 
@@ -25,14 +25,14 @@ enum CollateralValueType {
   // COLLATERAL_VALUE_TYPE_UNSPECIFIED is the unspecified collateral value type.
   COLLATERAL_VALUE_TYPE_UNSPECIFIED = 0;
   // COLLATERAL_VALUE_TYPE_STRICT is the strict collateral value type.
-  COLLATERAL_VALUE_TYPE_STRICT = 1; 
+  COLLATERAL_VALUE_TYPE_STRICT = 1;
   // COLLATERAL_VALUE_TYPE_MASK is the mask collateral value type.
   COLLATERAL_VALUE_TYPE_MASK = 2;
 }
 
 message AllowedCollateral {
-  option(amino.name) = "haqq/x/ucdao/AllowedCollateral";
-  option(gogoproto.goproto_stringer) = false;
+  option (amino.name) = "haqq/x/ucdao/AllowedCollateral";
+  option (gogoproto.goproto_stringer) = false;
 
   // value is the allowed collateral value.
   string value = 1;

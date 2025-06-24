@@ -1,15 +1,13 @@
 version: v1
 name: buf.build/haqq-network/haqq
 deps:
-  - buf.build/cosmos/cosmos-sdk:v0.47.0
+  - buf.build/cosmos/cosmos-sdk
   - buf.build/cosmos/cosmos-proto
   - buf.build/cosmos/gogo-proto
-  - buf.build/cosmos/ibc:6c29d2ebf17002929c986fb45e83c2fecc76e6d3
-  - buf.build/cosmos/ics23
   - buf.build/googleapis/googleapis
 lint:
   use:
-    - DEFAULT
+    - STANDARD
     - COMMENTS
     - FILE_LOWER_SNAKE_CASE
   except:
@@ -22,6 +20,7 @@ lint:
     - RPC_RESPONSE_STANDARD_NAME
     - RPC_REQUEST_RESPONSE_UNIQUE
     - COMMENT_MESSAGE
+    - ENUM_ZERO_VALUE_SUFFIX
 breaking:
   use:
     - FILE
