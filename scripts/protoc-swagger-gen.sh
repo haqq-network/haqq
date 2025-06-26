@@ -35,7 +35,7 @@ eval "buf generate --template proto/buf.gen.swagger.yaml $PATHS"
 
 cd ..
 
-cat tmp-swagger-gen/apidocs.swagger.json | jq '.info.title |= "Haqq Network gRPC API"' | jq '.info.version |= "1.8.0"' > client/docs/swagger-ui/swagger.json
+cat tmp-swagger-gen/apidocs.swagger.json | jq '.info.title |= "Haqq Network gRPC API"' | jq '.info.version |= "1.8.4"' > client/docs/swagger-ui/swagger.json
 # cp tmp-swagger-gen/apidocs.swagger.yaml client/docs/swagger-ui/swagger.yaml
 
 # generate binary for static server
