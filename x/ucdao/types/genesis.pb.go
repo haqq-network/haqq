@@ -31,10 +31,13 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type GenesisState struct {
 	// params defines all the parameters of the module.
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
-	// balances is an array containing the balances of all the ucdao members' accounts.
+	// balances is an array containing the balances of all the ucdao members'
+	// accounts.
 	Balances []Balance `protobuf:"bytes,2,rep,name=balances,proto3" json:"balances"`
-	// total_balance represents the total balance of the ucdao module. If it is left empty, then supply will be calculated based on the provided
-	// balances. Otherwise, it will be used to validate that the sum of the balances equals this amount.
+	// total_balance represents the total balance of the ucdao module. If it is
+	// left empty, then supply will be calculated based on the provided balances.
+	// Otherwise, it will be used to validate that the sum of the balances equals
+	// this amount.
 	TotalBalance github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,3,rep,name=total_balance,json=totalBalance,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"total_balance"`
 }
 

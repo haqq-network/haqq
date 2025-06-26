@@ -7,13 +7,14 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	"github.com/haqq-network/haqq/precompiles/staking"
 	"github.com/haqq-network/haqq/utils"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -279,9 +280,12 @@ func (s *PrecompileTestSuite) TestRun() {
 		{
 			"pass - validator query",
 			func() []byte {
+				valAddr, err := sdk.ValAddressFromBech32(s.validators[0].OperatorAddress)
+				s.Require().NoError(err)
+
 				input, err := s.precompile.Pack(
 					staking.ValidatorMethod,
-					s.validators[0].OperatorAddress,
+					common.BytesToAddress(valAddr.Bytes()),
 				)
 				s.Require().NoError(err, "failed to pack input")
 				return input
@@ -444,12 +448,10 @@ func (s *PrecompileTestSuite) TestRun() {
 				s.ctx, msg, cfg, nil, s.stateDB,
 			)
 
-			params := s.app.EvmKeeper.GetParams(s.ctx)
-			activePrecompiles := params.GetActivePrecompilesAddrs()
-			precompileMap := s.app.EvmKeeper.Precompiles(activePrecompiles...)
-			err = vm.ValidatePrecompiles(precompileMap, activePrecompiles)
-			s.Require().NoError(err, "invalid precompiles", activePrecompiles)
-			evm.WithPrecompiles(precompileMap, activePrecompiles)
+			precompiles, found, err := s.app.EvmKeeper.GetPrecompileInstance(s.ctx, contractAddr)
+			s.Require().NoError(err, "failed to instantiate precompile")
+			s.Require().True(found, "not found precompile")
+			evm.WithPrecompiles(precompiles.Map, precompiles.Addresses)
 
 			// Run precompiled contract
 			bz, err := s.precompile.Run(evm, contract, tc.readOnly)

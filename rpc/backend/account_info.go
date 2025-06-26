@@ -63,8 +63,8 @@ func (b *Backend) GetProof(address common.Address, storageKeys []string, blockNr
 		if bn > math.MaxInt64 {
 			return nil, fmt.Errorf("not able to query block number greater than MaxInt64")
 		}
-
-		height = int64(bn) //#nosec G701 -- checked for int overflow already
+		//nolint: gosec // G115 -- check for overflow above
+		height = int64(bn)
 	}
 
 	clientCtx := b.clientCtx.WithHeight(height)
@@ -183,7 +183,7 @@ func (b *Backend) GetTransactionCount(address common.Address, blockNum rpctypes.
 	}
 	height := blockNum.Int64()
 
-	currentHeight := int64(bn) //#nosec G701 -- checked for int overflow already
+	currentHeight := int64(bn) //nolint: gosec // G115 -- check for overflow already
 	if height > currentHeight {
 		return &n, errorsmod.Wrapf(
 			sdkerrors.ErrInvalidHeight,

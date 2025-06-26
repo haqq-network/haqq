@@ -36,7 +36,7 @@ func GetMaxSupply() *cobra.Command {
 		Use:   "max-supply",
 		Short: "Query max supply",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
@@ -63,7 +63,7 @@ func GetRewardCoefficient() *cobra.Command {
 		Use:   "reward-coefficient",
 		Short: "Query current reward coefficient",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
@@ -90,7 +90,7 @@ func GetParams() *cobra.Command {
 		Use:   "params",
 		Short: "Query the current coinomics parameters",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -32,6 +33,7 @@ import (
 	teststypes "github.com/haqq-network/haqq/types/tests"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	"github.com/haqq-network/haqq/x/erc20/keeper/testdata"
 	"github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 	evm "github.com/haqq-network/haqq/x/evm/types"
@@ -110,7 +112,7 @@ func (suite *KeeperTestSuite) DoSetupTest(t require.TestingT) {
 	require.NoError(t, err)
 
 	// fund signer acc to pay for tx fees
-	amt := sdk.NewInt(int64(math.Pow10(18) * 2))
+	amt := sdkmath.NewInt(int64(math.Pow10(18) * 2))
 	err = testutil.FundAccount(
 		suite.ctx,
 		suite.app.BankKeeper,
@@ -168,7 +170,7 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	_, err = s.app.EvmKeeper.GetCoinbaseAddress(suite.HaqqChain.GetContext(), sdk.ConsAddress(suite.HaqqChain.CurrentHeader.ProposerAddress))
 	suite.Require().NoError(err)
 	// Mint coins locked on the Haqq Network account generated with secp.
-	amt, ok := sdk.NewIntFromString("1000000000000000000000")
+	amt, ok := sdkmath.NewIntFromString("1000000000000000000000")
 	suite.Require().True(ok)
 	coinIslm := sdk.NewCoin(utils.BaseDenom, amt)
 	coins := sdk.NewCoins(coinIslm)
@@ -178,15 +180,15 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	suite.Require().NoError(err)
 
 	// we need some coins in the bankkeeper to be able to register the coins later
-	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UosmoIbcdenom, sdk.NewInt(100)))
+	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UosmoIbcdenom, sdkmath.NewInt(100)))
 	err = s.app.BankKeeper.MintCoins(s.HaqqChain.GetContext(), types.ModuleName, coins)
 	s.Require().NoError(err)
-	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UatomIbcdenom, sdk.NewInt(100)))
+	coins = sdk.NewCoins(sdk.NewCoin(teststypes.UatomIbcdenom, sdkmath.NewInt(100)))
 	err = s.app.BankKeeper.MintCoins(s.HaqqChain.GetContext(), types.ModuleName, coins)
 	s.Require().NoError(err)
 
 	// Mint coins on the osmosis side which we'll use to unlock our aISLM
-	coinOsmo := sdk.NewCoin("uosmo", sdk.NewInt(10000000))
+	coinOsmo := sdk.NewCoin("uosmo", sdkmath.NewInt(10000000))
 	coins = sdk.NewCoins(coinOsmo)
 	err = suite.IBCOsmosisChain.GetSimApp().BankKeeper.MintCoins(suite.IBCOsmosisChain.GetContext(), minttypes.ModuleName, coins)
 	suite.Require().NoError(err)
@@ -194,7 +196,7 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	suite.Require().NoError(err)
 
 	// Mint coins on the cosmos side which we'll use to unlock our aISLM
-	coinAtom := sdk.NewCoin("uatom", sdk.NewInt(10))
+	coinAtom := sdk.NewCoin("uatom", sdkmath.NewInt(10))
 	coins = sdk.NewCoins(coinAtom)
 	err = suite.IBCCosmosChain.GetSimApp().BankKeeper.MintCoins(suite.IBCCosmosChain.GetContext(), minttypes.ModuleName, coins)
 	suite.Require().NoError(err)
@@ -229,7 +231,7 @@ func (suite *KeeperTestSuite) SetupIBCTest() {
 	suite.Require().Equal("connection-0", suite.pathOsmosisHaqq.EndpointA.ConnectionID)
 	suite.Require().Equal("channel-0", suite.pathOsmosisHaqq.EndpointA.ChannelID)
 
-	coinIslm = sdk.NewCoin(utils.BaseDenom, sdk.NewInt(1000000000000000000))
+	coinIslm = sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1000000000000000000))
 	coins = sdk.NewCoins(coinIslm)
 	err = s.app.BankKeeper.MintCoins(suite.HaqqChain.GetContext(), types.ModuleName, coins)
 	suite.Require().NoError(err)
@@ -263,7 +265,7 @@ func (suite *KeeperTestSuite) Commit() {
 //  4. Commit
 func (suite *KeeperTestSuite) CommitAndBeginBlockAfter(t time.Duration) {
 	var err error
-	suite.ctx, err = testutil.Commit(suite.ctx, suite.app, t, nil)
+	suite.ctx, err = testutil.CommitAndCreateNewCtx(suite.ctx, suite.app, t, nil)
 	suite.Require().NoError(err)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, suite.app.InterfaceRegistry())
@@ -288,12 +290,16 @@ func (suite *KeeperTestSuite) DeployContract(name, symbol string, decimals uint8
 
 func (suite *KeeperTestSuite) DeployContractMaliciousDelayed() (common.Address, error) {
 	suite.Commit()
+
+	maliciousDelayedContract, err := testdata.LoadMaliciousDelayedContract()
+	suite.Require().NoError(err, "failed to load malicious delayed contract")
+
 	addr, err := testutil.DeployContract(
 		suite.ctx,
 		suite.app,
 		suite.priv,
 		suite.queryClientEvm,
-		contracts.ERC20MaliciousDelayedContract,
+		maliciousDelayedContract,
 		big.NewInt(1000000000000000000),
 	)
 	suite.Commit()
@@ -302,12 +308,16 @@ func (suite *KeeperTestSuite) DeployContractMaliciousDelayed() (common.Address, 
 
 func (suite *KeeperTestSuite) DeployContractDirectBalanceManipulation() (common.Address, error) {
 	suite.Commit()
+
+	balanceManipulationContract, err := testdata.LoadBalanceManipulationContract()
+	suite.Require().NoError(err, "failed to load balance manipulation contract")
+
 	addr, err := testutil.DeployContract(
 		suite.ctx,
 		suite.app,
 		suite.priv,
 		suite.queryClientEvm,
-		contracts.ERC20DirectBalanceManipulationContract,
+		balanceManipulationContract,
 		big.NewInt(1000000000000000000),
 	)
 	suite.Commit()
@@ -338,7 +348,7 @@ func (suite *KeeperTestSuite) sendAndReceiveMessage(
 	seq uint64,
 	ibcCoinMetadata string,
 ) {
-	transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID, sdk.NewCoin(coin, sdk.NewInt(amount)), sender, receiver, timeoutHeight, 0, "")
+	transferMsg := transfertypes.NewMsgTransfer(originEndpoint.ChannelConfig.PortID, originEndpoint.ChannelID, sdk.NewCoin(coin, sdkmath.NewInt(amount)), sender, receiver, timeoutHeight, 0, "")
 	_, err := ibctesting.SendMsgs(originChain, ibctesting.DefaultFeeAmt, transferMsg)
 	suite.Require().NoError(err) // message committed
 	// Recreate the packet that was sent

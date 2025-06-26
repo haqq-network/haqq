@@ -1,9 +1,9 @@
 package keeper
 
 import (
-	"context"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/x/erc20/types"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 type ERC20Keeper interface {
@@ -21,8 +20,9 @@ type ERC20Keeper interface {
 	GetTokenPairs(ctx sdk.Context) []types.TokenPair
 	IterateTokenPairs(ctx sdk.Context, cb func(tokenPair types.TokenPair) (stop bool))
 	BalanceOf(ctx sdk.Context, abi abi.ABI, contract, account common.Address) *big.Int
-	ConvertCoin(goCtx context.Context, msg *types.MsgConvertCoin) (*types.MsgConvertCoinResponse, error)
-	CallEVM(ctx sdk.Context, abi abi.ABI, from, contract common.Address, commit bool, method string, args ...interface{}) (*evmtypes.MsgEthereumTxResponse, error)
+	GetParams(ctx sdk.Context) (params types.Params)
+	IsAvailableERC20Precompile(params *types.Params, address common.Address) bool
+	ConvertCoinNativeERC20(ctx sdk.Context, pair types.TokenPair, amount sdkmath.Int, receiver common.Address, sender sdk.AccAddress) error
 }
 
 type AccountKeeper interface {
@@ -34,17 +34,20 @@ type AccountKeeper interface {
 
 type WrappedBaseKeeper struct {
 	bankkeeper.Keeper
-	ek ERC20Keeper
-	ak AccountKeeper
+	evm types.EVMKeeper
+	ek  ERC20Keeper
+	ak  AccountKeeper
 }
 
 func NewWrappedBaseKeeper(
 	bk bankkeeper.Keeper,
+	evm types.EVMKeeper,
 	ek ERC20Keeper,
 	ak AccountKeeper,
 ) WrappedBaseKeeper {
 	return WrappedBaseKeeper{
 		Keeper: bk,
+		evm:    evm,
 		ek:     ek,
 		ak:     ak,
 	}

@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package distribution
 
 import (
@@ -8,9 +11,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 const (
@@ -20,6 +23,8 @@ const (
 	EventTypeWithdrawDelegatorRewards = "WithdrawDelegatorRewards"
 	// EventTypeWithdrawValidatorCommission defines the event type for the distribution WithdrawValidatorCommissionMethod transaction.
 	EventTypeWithdrawValidatorCommission = "WithdrawValidatorCommission"
+	// EventTypeFundCommunityPool defines the event type for the distribution FundCommunityPoolMethod transaction.
+	EventTypeFundCommunityPool = "FundCommunityPool"
 	// EventTypeClaimRewards defines the event type for the distribution ClaimRewardsMethod transaction.
 	EventTypeClaimRewards = "ClaimRewards"
 )
@@ -27,7 +32,7 @@ const (
 // EmitClaimRewardsEvent creates a new event emitted on a ClaimRewards transaction.
 func (p Precompile) EmitClaimRewardsEvent(ctx sdk.Context, stateDB vm.StateDB, delegatorAddress common.Address, totalCoins sdk.Coins) error {
 	// Prepare the event topics
-	event := p.ABI.Events[EventTypeClaimRewards]
+	event := p.Events[EventTypeClaimRewards]
 	topics := make([]common.Hash, 2)
 
 	// The first topic is always the signature of the event.
@@ -51,7 +56,7 @@ func (p Precompile) EmitClaimRewardsEvent(ctx sdk.Context, stateDB vm.StateDB, d
 		Address:     p.Address(),
 		Topics:      topics,
 		Data:        packed,
-		BlockNumber: uint64(ctx.BlockHeight()),
+		BlockNumber: uint64(ctx.BlockHeight()), //nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	})
 
 	return nil
@@ -83,7 +88,7 @@ func (p Precompile) EmitSetWithdrawAddressEvent(ctx sdk.Context, stateDB vm.Stat
 		Address:     p.Address(),
 		Topics:      topics,
 		Data:        packed,
-		BlockNumber: uint64(ctx.BlockHeight()),
+		BlockNumber: uint64(ctx.BlockHeight()), //nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	})
 
 	return nil
@@ -121,7 +126,7 @@ func (p Precompile) EmitWithdrawDelegatorRewardsEvent(ctx sdk.Context, stateDB v
 		Address:     p.Address(),
 		Topics:      topics,
 		Data:        b.Bytes(),
-		BlockNumber: uint64(ctx.BlockHeight()),
+		BlockNumber: uint64(ctx.BlockHeight()), //nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	})
 
 	return nil
@@ -150,7 +155,36 @@ func (p Precompile) EmitWithdrawValidatorCommissionEvent(ctx sdk.Context, stateD
 		Address:     p.Address(),
 		Topics:      topics,
 		Data:        b.Bytes(),
-		BlockNumber: uint64(ctx.BlockHeight()),
+		BlockNumber: uint64(ctx.BlockHeight()), //nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
+	})
+
+	return nil
+}
+
+// EmitFundCommunityPoolEvent creates a new event emitted on a FundCommunityPool transaction.
+func (p Precompile) EmitFundCommunityPoolEvent(ctx sdk.Context, stateDB vm.StateDB, depositor common.Address, coins sdk.Coins) error {
+	// Prepare the event topics
+	event := p.ABI.Events[EventTypeFundCommunityPool]
+	topics := make([]common.Hash, 2)
+
+	// The first topic is always the signature of the event.
+	topics[0] = event.ID
+
+	var err error
+	topics[1], err = cmn.MakeTopic(depositor)
+	if err != nil {
+		return err
+	}
+
+	// Prepare the event data
+	var b bytes.Buffer
+	b.Write(cmn.PackNum(reflect.ValueOf(coins[0].Amount.BigInt())))
+
+	stateDB.AddLog(&ethtypes.Log{
+		Address:     p.Address(),
+		Topics:      topics,
+		Data:        b.Bytes(),
+		BlockNumber: uint64(ctx.BlockHeight()), //nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	})
 
 	return nil

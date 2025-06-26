@@ -32,7 +32,8 @@ func (k WrappedBaseKeeper) Balance(ctx context.Context, req *types.QueryBalanceR
 	}
 
 	tokenPair, found := k.ek.GetTokenPair(sdkCtx, tokenPairID)
-	if !found || !tokenPair.Enabled {
+	erc20params := k.ek.GetParams(sdkCtx)
+	if !found || !tokenPair.Enabled || k.ek.IsAvailableERC20Precompile(&erc20params, tokenPair.GetERC20Contract()) {
 		return res, nil
 	}
 
@@ -54,6 +55,8 @@ func (k WrappedBaseKeeper) Balance(ctx context.Context, req *types.QueryBalanceR
 }
 
 // AllBalances implements the Query/AllBalances gRPC method
+//
+//nolint:dupl // false warning about duplicate code in AllBalances and SpendableBalances methods
 func (k WrappedBaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalancesRequest) (*types.QueryAllBalancesResponse, error) {
 	res, err := k.Keeper.AllBalances(ctx, req)
 	if err != nil {
@@ -69,19 +72,22 @@ func (k WrappedBaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllB
 	address, _ := sdk.AccAddressFromBech32(req.Address)
 	evmAddr := common.BytesToAddress(address.Bytes())
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
+	erc20params := k.ek.GetParams(sdkCtx)
 
 	k.ek.IterateTokenPairs(sdkCtx, func(tokenPair erc20types.TokenPair) (stop bool) {
-		if tokenPair.Enabled {
-			contract := tokenPair.GetERC20Contract()
-			balanceToken := k.ek.BalanceOf(sdkCtx, erc20, contract, evmAddr)
-			if balanceToken == nil {
-				// TODO Log error
-				return false
-			}
-			balanceTokenCoin := sdk.NewCoin(tokenPair.Denom, sdk.NewIntFromBigInt(balanceToken))
-
-			res.Balances = res.Balances.Add(balanceTokenCoin)
+		if !tokenPair.Enabled || k.ek.IsAvailableERC20Precompile(&erc20params, tokenPair.GetERC20Contract()) {
+			return false
 		}
+
+		contract := tokenPair.GetERC20Contract()
+		balanceToken := k.ek.BalanceOf(sdkCtx, erc20, contract, evmAddr)
+		if balanceToken == nil {
+			// TODO Log error
+			return false
+		}
+		balanceTokenCoin := sdk.NewCoin(tokenPair.Denom, sdk.NewIntFromBigInt(balanceToken))
+
+		res.Balances = res.Balances.Add(balanceTokenCoin)
 
 		return false
 	})
@@ -91,6 +97,8 @@ func (k WrappedBaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllB
 
 // SpendableBalances implements a gRPC query handler for retrieving an account's
 // spendable balances.
+//
+//nolint:dupl // false warning about duplicate code in AllBalances and SpendableBalances methods
 func (k WrappedBaseKeeper) SpendableBalances(ctx context.Context, req *types.QuerySpendableBalancesRequest) (*types.QuerySpendableBalancesResponse, error) {
 	res, err := k.Keeper.SpendableBalances(ctx, req)
 	if err != nil {
@@ -104,24 +112,27 @@ func (k WrappedBaseKeeper) SpendableBalances(ctx context.Context, req *types.Que
 
 	// AccAddressFromBech32 error check already handled above in original method
 	address, _ := sdk.AccAddressFromBech32(req.Address)
-	tokenPairs := k.ek.GetTokenPairs(sdkCtx)
 	evmAddr := common.BytesToAddress(address.Bytes())
 	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
+	erc20params := k.ek.GetParams(sdkCtx)
 
-	for _, tokenPair := range tokenPairs {
-		if !tokenPair.Enabled {
-			continue
+	k.ek.IterateTokenPairs(sdkCtx, func(tokenPair erc20types.TokenPair) (stop bool) {
+		if !tokenPair.Enabled || k.ek.IsAvailableERC20Precompile(&erc20params, tokenPair.GetERC20Contract()) {
+			return false
 		}
 
 		contract := tokenPair.GetERC20Contract()
 		balanceToken := k.ek.BalanceOf(sdkCtx, erc20, contract, evmAddr)
 		if balanceToken == nil {
-			return nil, errorsmod.Wrap(erc20types.ErrEVMCall, "failed to retrieve balance")
+			// TODO Log error
+			return false
 		}
 		balanceTokenCoin := sdk.NewCoin(tokenPair.Denom, sdk.NewIntFromBigInt(balanceToken))
 
 		res.Balances = res.Balances.Add(balanceTokenCoin)
-	}
+
+		return false
+	})
 
 	return res, nil
 }
@@ -132,7 +143,31 @@ func (k WrappedBaseKeeper) SpendableBalanceByDenom(ctx context.Context, req *typ
 		return nil, err
 	}
 
-	// TODO Add EVM balances
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if !k.ek.IsERC20Enabled(sdkCtx) {
+		return res, nil
+	}
+
+	erc20params := k.ek.GetParams(sdkCtx)
+	pairID := k.ek.GetTokenPairID(sdkCtx, req.Denom)
+	tokenPair, found := k.ek.GetTokenPair(sdkCtx, pairID)
+	if !found || !tokenPair.Enabled || k.ek.IsAvailableERC20Precompile(&erc20params, tokenPair.GetERC20Contract()) {
+		return res, nil
+	}
+
+	contract := tokenPair.GetERC20Contract()
+	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
+	addr := sdk.MustAccAddressFromBech32(req.Address)
+	evmAddr := common.BytesToAddress(addr.Bytes())
+	balanceToken := k.ek.BalanceOf(sdkCtx, erc20, contract, evmAddr)
+	if balanceToken == nil {
+		// TODO Log error
+		return res, nil
+	}
+	balanceTokenCoin := sdk.NewCoin(tokenPair.Denom, sdk.NewIntFromBigInt(balanceToken))
+	resultBalance := res.Balance.Add(balanceTokenCoin)
+
+	res.Balance = &resultBalance
 
 	return res, nil
 }

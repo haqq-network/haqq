@@ -8,13 +8,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/distribution"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 func (s *PrecompileTestSuite) TestSetWithdrawAddress() {
@@ -131,10 +131,10 @@ func (s *PrecompileTestSuite) TestWithdrawDelegatorRewards() {
 	}{
 		{
 			"fail - empty input args",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 2, 0),
@@ -147,20 +147,20 @@ func (s *PrecompileTestSuite) TestWithdrawDelegatorRewards() {
 					operatorAddress,
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidDelegator, ""),
 		},
 		{
 			"fail - invalid validator address",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{
 					s.address,
 					nil,
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			true,
 			"invalid validator address",
@@ -230,22 +230,22 @@ func (s *PrecompileTestSuite) TestWithdrawValidatorCommission() {
 	}{
 		{
 			"fail - empty input args",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 1, 0),
 		},
 		{
 			"fail - invalid validator address",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{
 					nil,
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			true,
 			"invalid validator address",
@@ -322,7 +322,7 @@ func (s *PrecompileTestSuite) TestClaimRewards() {
 			func() []interface{} {
 				return []interface{}{}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 2, 0),
@@ -335,7 +335,7 @@ func (s *PrecompileTestSuite) TestClaimRewards() {
 					10,
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			true,
 			"invalid delegator address",
@@ -348,10 +348,39 @@ func (s *PrecompileTestSuite) TestClaimRewards() {
 					big.NewInt(100000000000000000),
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			200000,
 			true,
 			"invalid type for maxRetrieve: expected uint32",
+		},
+		{
+			"pass - withdraw from validators with maxRetrieve higher than number of validators",
+			func() []interface{} {
+				return []interface{}{
+					s.address,
+					uint32(10),
+				}
+			},
+			func([]byte) {
+				balance := s.app.BankKeeper.GetBalance(s.ctx, s.address.Bytes(), utils.BaseDenom)
+				s.Require().Equal(balance.Amount.BigInt(), big.NewInt(7e18))
+			},
+			20000,
+			false,
+			"",
+		},
+		{
+			"fail - too many retrieved results",
+			func() []interface{} {
+				return []interface{}{
+					s.address,
+					uint32(32_000_000),
+				}
+			},
+			func([]byte) {},
+			200000,
+			true,
+			"maxRetrieve (32000000) parameter exceeds the maximum number of validators (100)",
 		},
 		{
 			"success - withdraw from all validators - 2",
@@ -361,7 +390,7 @@ func (s *PrecompileTestSuite) TestClaimRewards() {
 					uint32(2),
 				}
 			},
-			func(data []byte) {
+			func([]byte) {
 				balance := s.app.BankKeeper.GetBalance(s.ctx, s.address.Bytes(), utils.BaseDenom)
 				s.Require().Equal(balance.Amount.BigInt(), big.NewInt(7e18))
 			},
@@ -377,7 +406,7 @@ func (s *PrecompileTestSuite) TestClaimRewards() {
 					uint32(1),
 				}
 			},
-			func(data []byte) {
+			func([]byte) {
 				balance := s.app.BankKeeper.GetBalance(s.ctx, s.address.Bytes(), utils.BaseDenom)
 				s.Require().Equal(balance.Amount.BigInt(), big.NewInt(6e18))
 			},
@@ -405,6 +434,84 @@ func (s *PrecompileTestSuite) TestClaimRewards() {
 			}
 
 			bz, err := s.precompile.ClaimRewards(s.ctx, s.address, contract, s.stateDB, &method, tc.malleate())
+
+			if tc.expError {
+				s.Require().ErrorContains(err, tc.errContains)
+			} else {
+				s.Require().NoError(err)
+				tc.postCheck(bz)
+			}
+		})
+	}
+}
+
+func (s *PrecompileTestSuite) TestFundCommunityPool() {
+	method := s.precompile.Methods[distribution.FundCommunityPoolMethod]
+
+	testCases := []struct {
+		name        string
+		malleate    func() []interface{}
+		postCheck   func(data []byte)
+		gas         uint64
+		expError    bool
+		errContains string
+	}{
+		{
+			"fail - empty input args",
+			func() []interface{} {
+				return []interface{}{}
+			},
+			func([]byte) {},
+			200000,
+			true,
+			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 2, 0),
+		},
+		{
+			"fail - invalid depositor address",
+			func() []interface{} {
+				return []interface{}{
+					nil,
+					big.NewInt(1e18),
+				}
+			},
+			func([]byte) {},
+			200000,
+			true,
+			"invalid hex address address",
+		},
+		{
+			"success - fund the community pool 1 ISLM",
+			func() []interface{} {
+				return []interface{}{
+					s.address,
+					big.NewInt(1e18),
+				}
+			},
+			func([]byte) {
+				coins := s.app.DistrKeeper.GetFeePoolCommunityCoins(s.ctx)
+				expectedAmount := new(big.Int).Mul(big.NewInt(1e18), new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(sdk.Precision)), nil))
+				s.Require().Equal(expectedAmount, coins.AmountOf(utils.BaseDenom).BigInt())
+				userBalance := s.app.BankKeeper.GetBalance(s.ctx, s.address.Bytes(), utils.BaseDenom)
+				s.Require().Equal(big.NewInt(4e18), userBalance.Amount.BigInt())
+			},
+			20000,
+			false,
+			"",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.SetupTest()
+
+			var contract *vm.Contract
+			contract, s.ctx = testutil.NewPrecompileContract(s.T(), s.ctx, s.address, s.precompile, tc.gas)
+
+			// Sanity check to make sure the starting balance is always 5 ISLM
+			balance := s.app.BankKeeper.GetBalance(s.ctx, s.address.Bytes(), utils.BaseDenom)
+			s.Require().Equal(balance.Amount.BigInt(), big.NewInt(5e18))
+
+			bz, err := s.precompile.FundCommunityPool(s.ctx, s.address, contract, s.stateDB, &method, tc.malleate())
 
 			if tc.expError {
 				s.Require().ErrorContains(err, tc.errContains)

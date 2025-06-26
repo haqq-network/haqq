@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256r1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
@@ -36,7 +37,7 @@ func TestConsumeSignatureVerificationGas(t *testing.T) {
 	expectedCost1 := expectedGasCostByKeys(pkSet1)
 
 	for i := 0; i < len(pkSet1); i++ {
-		stdSig := legacytx.StdSignature{PubKey: pkSet1[i], Signature: sigSet1[i]} //nolint:staticcheck
+		stdSig := legacytx.StdSignature{PubKey: pkSet1[i], Signature: sigSet1[i]}
 		sigV2, err := legacytx.StdSignatureToSignatureV2(cdc, stdSig)
 		require.NoError(t, err)
 		err = multisig.AddSignatureV2(multisignature1, sigV2, pkSet1)
@@ -47,7 +48,7 @@ func TestConsumeSignatureVerificationGas(t *testing.T) {
 	skR1, _ := secp256r1.GenPrivKey()
 
 	type args struct {
-		meter  sdk.GasMeter
+		meter  storetypes.GasMeter
 		sig    signing.SignatureData
 		pubkey cryptotypes.PubKey
 		params authtypes.Params

@@ -73,7 +73,8 @@ func (m *MsgFund) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgFund proto.InternalMessageInfo
 
-// MsgFundLegacy allows an access history data from storage. Solves the problem of module renaming.
+// MsgFundLegacy allows an access history data from storage. Solves the problem
+// of module renaming.
 type MsgFundLegacy struct {
 	Amount    github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,1,rep,name=amount,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"amount"`
 	Depositor string                                   `protobuf:"bytes,2,opt,name=depositor,proto3" json:"depositor,omitempty"`
@@ -149,7 +150,8 @@ func (m *MsgFundResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgFundResponse proto.InternalMessageInfo
 
-// MsgTransferOwnership allows an account transfer the ownership of shares to another account.
+// MsgTransferOwnership allows an account transfer the ownership of shares to
+// another account.
 type MsgTransferOwnership struct {
 	// owner is a current owner of the shares in ucdao.
 	Owner string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
@@ -227,7 +229,8 @@ func (m *MsgTransferOwnershipResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgTransferOwnershipResponse proto.InternalMessageInfo
 
-// MsgTransferOwnershipWithRatio allows an account transfer the ownership of shares to another account with ratio.
+// MsgTransferOwnershipWithRatio allows an account transfer the ownership of
+// shares to another account with ratio.
 type MsgTransferOwnershipWithRatio struct {
 	// owner is a current owner of the shares in ucdao.
 	Owner string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
@@ -269,7 +272,8 @@ func (m *MsgTransferOwnershipWithRatio) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgTransferOwnershipWithRatio proto.InternalMessageInfo
 
-// MsgTransferOwnershipWithRatioResponse defines the Msg/MsgTransferOwnershipWithRatio response type.
+// MsgTransferOwnershipWithRatioResponse defines the
+// Msg/MsgTransferOwnershipWithRatio response type.
 type MsgTransferOwnershipWithRatioResponse struct {
 	Coins github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,1,rep,name=coins,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"coins"`
 }
@@ -314,8 +318,8 @@ func (m *MsgTransferOwnershipWithRatioResponse) GetCoins() github_com_cosmos_cos
 	return nil
 }
 
-// MsgTransferOwnershipWithAmount allows an account transfer the ownership of shares to another account
-// with certain amount of coins.
+// MsgTransferOwnershipWithAmount allows an account transfer the ownership of
+// shares to another account with certain amount of coins.
 type MsgTransferOwnershipWithAmount struct {
 	// owner is a current owner of the shares in ucdao.
 	Owner string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
@@ -357,7 +361,8 @@ func (m *MsgTransferOwnershipWithAmount) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgTransferOwnershipWithAmount proto.InternalMessageInfo
 
-// MsgTransferOwnershipWithAmountResponse defines the Msg/MsgTransferOwnershipWithAmount response type.
+// MsgTransferOwnershipWithAmountResponse defines the
+// Msg/MsgTransferOwnershipWithAmount response type.
 type MsgTransferOwnershipWithAmountResponse struct {
 }
 
@@ -471,13 +476,15 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	// Fund defines a method to allow an account to directly fund the dao.
 	Fund(ctx context.Context, in *MsgFund, opts ...grpc.CallOption) (*MsgFundResponse, error)
-	// TransferOwnership defines a method to allow an account to transfer the ownership of shares to another account.
+	// TransferOwnership defines a method to allow an account to transfer the
+	// ownership of shares to another account.
 	TransferOwnership(ctx context.Context, in *MsgTransferOwnership, opts ...grpc.CallOption) (*MsgTransferOwnershipResponse, error)
-	// TransferOwnershipWithRatio defines a method to allow an account to transfer the ownership of shares
-	// to another account with ratio.
+	// TransferOwnershipWithRatio defines a method to allow an account to transfer
+	// the ownership of shares to another account with ratio.
 	TransferOwnershipWithRatio(ctx context.Context, in *MsgTransferOwnershipWithRatio, opts ...grpc.CallOption) (*MsgTransferOwnershipWithRatioResponse, error)
-	// TransferOwnershipWithAmount defines a method to allow an account to transfer the ownership of shares
-	// to another account with certain amount of coins.
+	// TransferOwnershipWithAmount defines a method to allow an account to
+	// transfer the ownership of shares to another account with certain amount of
+	// coins.
 	TransferOwnershipWithAmount(ctx context.Context, in *MsgTransferOwnershipWithAmount, opts ...grpc.CallOption) (*MsgTransferOwnershipWithAmountResponse, error)
 }
 
@@ -529,13 +536,15 @@ func (c *msgClient) TransferOwnershipWithAmount(ctx context.Context, in *MsgTran
 type MsgServer interface {
 	// Fund defines a method to allow an account to directly fund the dao.
 	Fund(context.Context, *MsgFund) (*MsgFundResponse, error)
-	// TransferOwnership defines a method to allow an account to transfer the ownership of shares to another account.
+	// TransferOwnership defines a method to allow an account to transfer the
+	// ownership of shares to another account.
 	TransferOwnership(context.Context, *MsgTransferOwnership) (*MsgTransferOwnershipResponse, error)
-	// TransferOwnershipWithRatio defines a method to allow an account to transfer the ownership of shares
-	// to another account with ratio.
+	// TransferOwnershipWithRatio defines a method to allow an account to transfer
+	// the ownership of shares to another account with ratio.
 	TransferOwnershipWithRatio(context.Context, *MsgTransferOwnershipWithRatio) (*MsgTransferOwnershipWithRatioResponse, error)
-	// TransferOwnershipWithAmount defines a method to allow an account to transfer the ownership of shares
-	// to another account with certain amount of coins.
+	// TransferOwnershipWithAmount defines a method to allow an account to
+	// transfer the ownership of shares to another account with certain amount of
+	// coins.
 	TransferOwnershipWithAmount(context.Context, *MsgTransferOwnershipWithAmount) (*MsgTransferOwnershipWithAmountResponse, error)
 }
 

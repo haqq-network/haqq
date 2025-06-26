@@ -1,3 +1,5 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package evm
 
 import (
@@ -5,16 +7,18 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/gorilla/mux"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
+
 	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/gorilla/mux"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/spf13/cobra"
 
 	"github.com/haqq-network/haqq/x/evm/client/cli"
 	"github.com/haqq-network/haqq/x/evm/keeper"
@@ -22,7 +26,7 @@ import (
 )
 
 // consensusVersion defines the current x/evm module consensus version.
-const consensusVersion = 6
+const consensusVersion = 7
 
 var (
 	_ module.AppModule           = AppModule{}
@@ -129,15 +133,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
 	m := keeper.NewMigrator(*am.keeper, am.legacySubspace)
-	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
-		panic(err)
-	}
-
-	if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
-		panic(err)
-	}
-
-	if err := cfg.RegisterMigration(types.ModuleName, 5, m.Migrate5to6); err != nil {
+	if err := cfg.RegisterMigration(types.ModuleName, 6, m.Migrate6to7); err != nil {
 		panic(err)
 	}
 }

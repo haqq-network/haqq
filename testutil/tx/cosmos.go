@@ -54,7 +54,7 @@ func PrepareCosmosTx(
 
 	var fees sdk.Coins
 	if args.GasPrice != nil {
-		fees = sdk.Coins{{Denom: utils.BaseDenom, Amount: args.GasPrice.MulRaw(int64(args.Gas))}}
+		fees = sdk.Coins{{Denom: utils.BaseDenom, Amount: args.GasPrice.Mul(sdkmath.NewIntFromUint64(args.Gas))}}
 	} else {
 		fees = sdk.Coins{DefaultFee}
 	}

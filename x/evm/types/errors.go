@@ -1,3 +1,5 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package types
 
 import (
@@ -27,9 +29,9 @@ const (
 	codeErrInvalidAccount
 	codeErrInvalidGasLimit
 	codeErrInactivePrecompile
+	codeErrABIPack
+	codeErrABIUnpack
 )
-
-var ErrPostTxProcessing = errors.New("failed to execute post processing")
 
 var (
 	// ErrInvalidState returns an error resulting from an invalid Storage State.
@@ -79,6 +81,12 @@ var (
 
 	// ErrInactivePrecompile returns an error if a call is made to an inactive precompile
 	ErrInactivePrecompile = errorsmod.Register(ModuleName, codeErrInactivePrecompile, "precompile not enabled")
+
+	// ErrABIPack returns an error if the contract ABI packing fails
+	ErrABIPack = errorsmod.Register(ModuleName, codeErrABIPack, "contract ABI pack failed")
+
+	// ErrABIUnpack returns an error if the contract ABI unpacking fails
+	ErrABIUnpack = errorsmod.Register(ModuleName, codeErrABIUnpack, "contract ABI unpack failed")
 )
 
 // NewExecErrorWithReason unpacks the revert return bytes and returns a wrapped error

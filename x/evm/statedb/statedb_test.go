@@ -9,9 +9,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 )
 
@@ -195,15 +195,17 @@ func (suite *StateDBTestSuite) TestState() {
 		malleate  func(*statedb.StateDB)
 		expStates statedb.Storage
 	}{
-		{"empty state", func(db *statedb.StateDB) {
+		{"empty state", func(_ *statedb.StateDB) {
 		}, nil},
 		{"set empty value", func(db *statedb.StateDB) {
 			db.SetState(address, key1, common.Hash{})
 		}, statedb.Storage{}},
-		{"noop state change", func(db *statedb.StateDB) {
+		{"set state even if same as original value (due to possible reverts within precompile calls)", func(db *statedb.StateDB) {
 			db.SetState(address, key1, value1)
 			db.SetState(address, key1, common.Hash{})
-		}, statedb.Storage{}},
+		}, statedb.Storage{
+			key1: common.Hash{},
+		}},
 		{"set state", func(db *statedb.StateDB) {
 			// check empty initial state
 			suite.Require().Equal(common.Hash{}, db.GetState(address, key1))

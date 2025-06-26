@@ -187,7 +187,7 @@ func (suite *EIP712TestSuite) createRandomString() string {
 	return str
 }
 
-// createRandomIntInRange provides a random integer between [min, max)
-func (suite *EIP712TestSuite) createRandomIntInRange(min int, max int) int {
-	return rand.Intn(max-min) + min
+// createRandomIntInRange provides a random integer between [start, end)
+func (suite *EIP712TestSuite) createRandomIntInRange(start, end int) int {
+	return rand.Intn(end-start) + start
 }

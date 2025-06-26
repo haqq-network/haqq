@@ -923,7 +923,7 @@ type QueryTraceTxRequest struct {
 	BlockTime time.Time `protobuf:"bytes,7,opt,name=block_time,json=blockTime,proto3,stdtime" json:"block_time"`
 	// proposer_address is the proposer of the requested block
 	ProposerAddress github_com_cosmos_cosmos_sdk_types.ConsAddress `protobuf:"bytes,8,opt,name=proposer_address,json=proposerAddress,proto3,casttype=github.com/cosmos/cosmos-sdk/types.ConsAddress" json:"proposer_address,omitempty"`
-	// chain_id is the the eip155 chain id parsed from the requested block header
+	// chain_id is the eip155 chain id parsed from the requested block header
 	ChainId int64 `protobuf:"varint,9,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 	// block_max_gas of the block of the requested transaction
 	BlockMaxGas int64 `protobuf:"varint,10,opt,name=block_max_gas,json=blockMaxGas,proto3" json:"block_max_gas,omitempty"`
@@ -1462,10 +1462,12 @@ type QueryClient interface {
 	EstimateGas(ctx context.Context, in *EthCallRequest, opts ...grpc.CallOption) (*EstimateGasResponse, error)
 	// TraceTx implements the `debug_traceTransaction` rpc api
 	TraceTx(ctx context.Context, in *QueryTraceTxRequest, opts ...grpc.CallOption) (*QueryTraceTxResponse, error)
-	// TraceBlock implements the `debug_traceBlockByNumber` and `debug_traceBlockByHash` rpc api
+	// TraceBlock implements the `debug_traceBlockByNumber` and
+	// `debug_traceBlockByHash` rpc api
 	TraceBlock(ctx context.Context, in *QueryTraceBlockRequest, opts ...grpc.CallOption) (*QueryTraceBlockResponse, error)
 	// BaseFee queries the base fee of the parent block of the current block,
-	// it's similar to feemarket module's method, but also checks london hardfork status.
+	// it's similar to feemarket module's method, but also checks london hardfork
+	// status.
 	BaseFee(ctx context.Context, in *QueryBaseFeeRequest, opts ...grpc.CallOption) (*QueryBaseFeeResponse, error)
 }
 
@@ -1609,10 +1611,12 @@ type QueryServer interface {
 	EstimateGas(context.Context, *EthCallRequest) (*EstimateGasResponse, error)
 	// TraceTx implements the `debug_traceTransaction` rpc api
 	TraceTx(context.Context, *QueryTraceTxRequest) (*QueryTraceTxResponse, error)
-	// TraceBlock implements the `debug_traceBlockByNumber` and `debug_traceBlockByHash` rpc api
+	// TraceBlock implements the `debug_traceBlockByNumber` and
+	// `debug_traceBlockByHash` rpc api
 	TraceBlock(context.Context, *QueryTraceBlockRequest) (*QueryTraceBlockResponse, error)
 	// BaseFee queries the base fee of the parent block of the current block,
-	// it's similar to feemarket module's method, but also checks london hardfork status.
+	// it's similar to feemarket module's method, but also checks london hardfork
+	// status.
 	BaseFee(context.Context, *QueryBaseFeeRequest) (*QueryBaseFeeResponse, error)
 }
 

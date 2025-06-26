@@ -92,14 +92,14 @@ func (tf *IntegrationTxFactory) calculateFees(gasPrice *sdkmath.Int, gasLimit ui
 	denom := tf.network.GetDenom()
 	var fees sdktypes.Coins
 	if gasPrice != nil {
-		fees = sdktypes.Coins{{Denom: denom, Amount: gasPrice.MulRaw(int64(gasLimit))}}
+		fees = sdktypes.Coins{{Denom: denom, Amount: gasPrice.Mul(sdkmath.NewIntFromUint64(gasLimit))}}
 	} else {
 		baseFee, err := tf.grpcHandler.GetBaseFee()
 		if err != nil {
 			return sdktypes.Coins{}, errorsmod.Wrap(err, "failed to get base fee")
 		}
 		price := baseFee.BaseFee
-		fees = sdktypes.Coins{{Denom: denom, Amount: price.MulRaw(int64(gasLimit))}}
+		fees = sdktypes.Coins{{Denom: denom, Amount: price.Mul(sdkmath.NewIntFromUint64(gasLimit))}}
 	}
 	return fees, nil
 }
@@ -129,9 +129,9 @@ func (tf *IntegrationTxFactory) estimateGas(txArgs CosmosTxArgs, txBuilder clien
 }
 
 // encodeTx encodes the tx using the txConfig's encoder.
-func (tf *IntegrationTxFactory) encodeTx(txBuilder client.TxBuilder) ([]byte, error) {
+func (tf *IntegrationTxFactory) encodeTx(tx sdktypes.Tx) ([]byte, error) {
 	txConfig := tf.ec.TxConfig
-	txBytes, err := txConfig.TxEncoder()(txBuilder.GetTx())
+	txBytes, err := txConfig.TxEncoder()(tx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "failed to encode tx")
 	}

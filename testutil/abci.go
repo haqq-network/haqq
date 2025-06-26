@@ -101,12 +101,12 @@ func DeliverEthTx(
 	}
 	res, err := BroadcastTxBytes(appEvmos, txConfig.TxEncoder(), ethTx)
 	if err != nil {
-		return abci.ResponseDeliverTx{}, err
+		return res, err
 	}
 
 	codec := encoding.MakeConfig(app.ModuleBasics).Codec
 	if _, err := CheckEthTxResponse(res, codec); err != nil {
-		return abci.ResponseDeliverTx{}, err
+		return res, err
 	}
 
 	return res, nil
@@ -193,7 +193,7 @@ func BroadcastTxBytes(app *app.Haqq, txEncoder sdk.TxEncoder, tx sdk.Tx) (abci.R
 	req := abci.RequestDeliverTx{Tx: bz}
 	res := app.BaseApp.DeliverTx(req)
 	if res.Code != 0 {
-		return abci.ResponseDeliverTx{}, errorsmod.Wrapf(errortypes.ErrInvalidRequest, res.Log)
+		return abci.ResponseDeliverTx{}, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "log: %s", res.Log)
 	}
 
 	return res, nil
@@ -240,7 +240,7 @@ func checkTxBytes(app *app.Haqq, txEncoder sdk.TxEncoder, tx sdk.Tx) (abci.Respo
 	req := abci.RequestCheckTx{Tx: bz}
 	res := app.BaseApp.CheckTx(req)
 	if res.Code != 0 {
-		return abci.ResponseCheckTx{}, errorsmod.Wrapf(errortypes.ErrInvalidRequest, res.Log)
+		return abci.ResponseCheckTx{}, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "log: %s", res.Log)
 	}
 
 	return res, nil

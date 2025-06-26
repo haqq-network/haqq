@@ -1,3 +1,5 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package keeper
 
 import (
@@ -61,8 +63,8 @@ func (k *Keeper) EthereumTx(goCtx context.Context, msg *types.MsgEthereumTx) (*t
 
 			// Observe which users define a gas limit >> gas used. Note, that
 			// gas_limit and gas_used are always > 0
-			gasLimit := math.LegacyNewDec(int64(tx.Gas()))
-			gasRatio, err := gasLimit.QuoInt64(int64(response.GasUsed)).Float64()
+			gasLimit := math.LegacyNewDecFromInt(math.NewIntFromUint64(tx.Gas()))
+			gasRatio, err := gasLimit.QuoInt(math.NewIntFromUint64(response.GasUsed)).Float64()
 			if err == nil {
 				telemetry.SetGaugeWithLabels(
 					[]string{"tx", "msg", "ethereum_tx", "gas_limit", "per", "gas_used"},

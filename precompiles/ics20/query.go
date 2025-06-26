@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package ics20
 
 import (
@@ -7,10 +10,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 const (
@@ -134,10 +137,11 @@ func (p Precompile) Allowance(
 		}
 
 		allocs[i] = cmn.ICS20Allocation{
-			SourcePort:    a.SourcePort,
-			SourceChannel: a.SourceChannel,
-			SpendLimit:    spendLimit,
-			AllowList:     a.AllowList,
+			SourcePort:        a.SourcePort,
+			SourceChannel:     a.SourceChannel,
+			SpendLimit:        spendLimit,
+			AllowList:         a.AllowList,
+			AllowedPacketData: a.AllowedPacketData,
 		}
 	}
 

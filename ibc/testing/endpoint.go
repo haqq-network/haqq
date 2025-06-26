@@ -2,6 +2,7 @@ package ibctesting
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -71,7 +72,7 @@ func (endpoint *Endpoint) QueryProof(key []byte) ([]byte, clienttypes.Height) {
 // provided
 func (endpoint *Endpoint) QueryProofAtHeight(key []byte, height uint64) ([]byte, clienttypes.Height) {
 	// query proof on the counterparty using the latest height of the IBC client
-	return endpoint.Chain.QueryProofAtHeight(key, int64(height))
+	return endpoint.Chain.QueryProofAtHeight(key, int64(height)) //nolint:gosec // won't overflow in normal conditions
 }
 
 // CreateClient creates an IBC client on the endpoint. It will update the
@@ -107,10 +108,22 @@ func (endpoint *Endpoint) CreateClient() (err error) {
 		return err
 	}
 
+	require.NotNil(
+		endpoint.Chain.T, endpoint.Chain.SenderAccount,
+		fmt.Sprintf("expected sender account on chain with ID %q not to be nil", endpoint.Chain.ChainID),
+	)
+
+	zeroTimestamp := uint64(time.Time{}.UnixNano()) //nolint: gosec // converting zero value
+	require.NotEqual(
+		endpoint.Chain.T, consensusState.GetTimestamp(), zeroTimestamp,
+		"current timestamp on the last header is the zero time; it might be necessary to commit blocks with the IBC coordinator",
+	)
+
 	msg, err := clienttypes.NewMsgCreateClient(
 		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
 	)
 	require.NoError(endpoint.Chain.T, err)
+	require.NoError(endpoint.Chain.T, msg.ValidateBasic(), "failed to validate create client msg")
 
 	res, err := SendMsgs(endpoint.Chain, DefaultFeeAmt, msg)
 	if err != nil {

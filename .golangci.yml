@@ -1,66 +1,74 @@
+version: "2"
 run:
-  tests: true
-  timeout: 5m
   concurrency: 4
-
+  go: "1.23"
+  tests: true
+issues:
+  max-issues-per-linter: 100
+  max-same-issues: 10
 linters:
   enable:
+    - asciicheck
     - dogsled
-    # - dupl TODO: enable
-    - errcheck
+    - dupl
     - goconst
     - gocritic
-    - gofumpt
-    # - revive
-    # - gosec
-    - gosimple
-    # - govet TODO: enable later (too many false positives)
-    - ineffassign
-    # - lll TODO: enable
+    - gomodguard
+    - gosec
     - misspell
     - nakedret
+    - nolintlint
     - prealloc
-    - exportloopref
+    - revive
     - staticcheck
-    - stylecheck
-    - typecheck
     - unconvert
     - unparam
-    - unused
-    # - nolintlint TODO: enable
-    - asciicheck
-    - exportloopref
+  settings:
+    dogsled:
+      max-blank-identifiers: 3
+    dupl:
+      threshold: 150
+    gomodguard:
+      blocked:
+        versions:
+          - https://github.com/etcd-io/etcd:
+              version: '>= 3.4.10 || ~3.3.23'
+              reason: CVE-2020-15114; CVE-2020-15136; CVE-2020-15115
+          - https://github.com/dgrijalva/jwt-go:
+              version: '>= 4.0.0-preview1'
+              reason: CVE-2020-26160
+    misspell:
+      locale: US
+    nolintlint:
+      require-explanation: false
+      require-specific: false
+      allow-unused: false
+    staticcheck:
+      checks:
+        - -SA1019
+        - All
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - x/evm/core
+    rules:
+      - path: _test\.go
+        linters:
+          - dupl
+formatters:
+  enable:
     - gofumpt
-    - gomodguard
-  disable:
-    - govet
-
-linters-settings:
-  dogsled:
-    max-blank-identifiers: 3
-  dupl:
-    threshold: 150
-  golint:
-    min-confidence: 0
-  maligned:
-    suggest-new: true
-  misspell:
-    locale: US
-  nolintlint:
-    allow-unused: false
-    allow-leading-space: true
-    require-explanation: false
-    require-specific: false
-  staticcheck:
-    checks: ["All", "-SA1019"]
-  gofumpt:
-    lang-version: "1.21"
-  gomodguard:
-    blocked:
-      versions:                                                         # List of blocked module version constraints
-        - https://github.com/etcd-io/etcd:                              # Blocked module with version constraint
-            version: ">= 3.4.10 || ~3.3.23"                             # Version constraint, see https://github.com/Masterminds/semver#basic-comparisons
-            reason: "CVE-2020-15114; CVE-2020-15136; CVE-2020-15115"    # Reason why the version constraint exists. (Optional)
-        - https://github.com/dgrijalva/jwt-go:                          # Blocked module with version constraint
-            version: ">= 4.0.0-preview1"                                # Version constraint, see https://github.com/Masterminds/semver#basic-comparisons
-            reason: "CVE-2020-26160"                                    # Reason why the version constraint exists. (Optional)
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

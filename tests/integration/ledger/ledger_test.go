@@ -32,7 +32,7 @@ var (
 		return s.privKey.Sign(msg)
 	}
 
-	signErrMock = func(_ []uint32, msg []byte) ([]byte, error) {
+	signErrMock = func(_ []uint32, _ []byte) ([]byte, error) {
 		return nil, mocks.ErrMockedSigning
 	}
 )

@@ -9,12 +9,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/staking"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 func (s *PrecompileTestSuite) TestDelegation() {
@@ -30,10 +30,10 @@ func (s *PrecompileTestSuite) TestDelegation() {
 	}{
 		{
 			"fail - empty input args",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 2, 0),
@@ -46,20 +46,20 @@ func (s *PrecompileTestSuite) TestDelegation() {
 					operatorAddress,
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidDelegator, "invalid"),
 		},
 		{
 			"fail - invalid operator address",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{
 					s.address,
 					"invalid",
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"decoding bech32 failed: invalid bech32 string",
@@ -135,10 +135,10 @@ func (s *PrecompileTestSuite) TestUnbondingDelegation() {
 	}{
 		{
 			"fail - empty input args",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 2, 0),
@@ -151,7 +151,7 @@ func (s *PrecompileTestSuite) TestUnbondingDelegation() {
 					operatorAddress,
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidDelegator, "invalid"),
@@ -224,7 +224,7 @@ func (s *PrecompileTestSuite) TestValidator() {
 
 	testCases := []struct {
 		name        string
-		malleate    func(operatorAddress string) []interface{}
+		malleate    func(operatorAddress common.Address) []interface{}
 		postCheck   func(bz []byte)
 		gas         uint64
 		expErr      bool
@@ -232,7 +232,7 @@ func (s *PrecompileTestSuite) TestValidator() {
 	}{
 		{
 			"fail - empty input args",
-			func(operatorAddress string) []interface{} {
+			func(common.Address) []interface{} {
 				return []interface{}{}
 			},
 			func(_ []byte) {},
@@ -242,7 +242,7 @@ func (s *PrecompileTestSuite) TestValidator() {
 		},
 		{
 			"success",
-			func(operatorAddress string) []interface{} {
+			func(operatorAddress common.Address) []interface{} {
 				return []interface{}{
 					operatorAddress,
 				}
@@ -251,7 +251,11 @@ func (s *PrecompileTestSuite) TestValidator() {
 				var valOut staking.ValidatorOutput
 				err := s.precompile.UnpackIntoInterface(&valOut, staking.ValidatorMethod, data)
 				s.Require().NoError(err, "failed to unpack output")
-				s.Require().Equal(valOut.Validator.OperatorAddress, s.validators[0].OperatorAddress)
+
+				operatorAddress, err := sdk.ValAddressFromBech32(s.validators[0].OperatorAddress)
+				s.Require().NoError(err)
+
+				s.Require().Equal(common.HexToAddress(valOut.Validator.OperatorAddress), common.BytesToAddress(operatorAddress.Bytes()))
 			},
 			100000,
 			false,
@@ -259,11 +263,11 @@ func (s *PrecompileTestSuite) TestValidator() {
 		},
 		{
 			name: "success - empty validator",
-			malleate: func(operatorAddress string) []interface{} {
+			malleate: func(_ common.Address) []interface{} {
 				newAddr, _ := testutiltx.NewAccAddressAndKey()
 				newValAddr := sdk.ValAddress(newAddr)
 				return []interface{}{
-					newValAddr.String(),
+					common.BytesToAddress(newValAddr.Bytes()),
 				}
 			},
 			postCheck: func(data []byte) {
@@ -282,7 +286,10 @@ func (s *PrecompileTestSuite) TestValidator() {
 			s.SetupTest() // reset
 			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), tc.gas)
 
-			bz, err := s.precompile.Validator(s.ctx, &method, contract, tc.malleate(s.validators[0].OperatorAddress))
+			operatorAddress, err := sdk.ValAddressFromBech32(s.validators[0].OperatorAddress)
+			s.Require().NoError(err)
+
+			bz, err := s.precompile.Validator(s.ctx, &method, contract, tc.malleate(common.BytesToAddress(operatorAddress.Bytes())))
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -348,7 +355,35 @@ func (s *PrecompileTestSuite) TestValidators() {
 
 				s.Require().Len(valOut.Validators, expLen)
 				// passed CountTotal = true
-				s.Require().Equal(len(s.validators), int(valOut.PageResponse.Total))
+				s.Require().Equal(uint64(len(s.validators)), valOut.PageResponse.Total)
+				s.Require().NotEmpty(valOut.PageResponse.NextKey)
+				s.assertValidatorsResponse(valOut.Validators, expLen)
+			},
+			100000,
+			false,
+			"",
+		},
+		{
+			"success - bonded status & pagination w/countTotal & key is []byte{0}",
+			func() []interface{} {
+				return []interface{}{
+					stakingtypes.Bonded.String(),
+					query.PageRequest{
+						Key:        []byte{0},
+						Limit:      1,
+						CountTotal: true,
+					},
+				}
+			},
+			func(data []byte) {
+				const expLen = 1
+				var valOut staking.ValidatorsOutput
+				err := s.precompile.UnpackIntoInterface(&valOut, staking.ValidatorsMethod, data)
+				s.Require().NoError(err, "failed to unpack output")
+
+				s.Require().Len(valOut.Validators, expLen)
+				// passed CountTotal = true
+				s.Require().Equal(uint64(len(s.validators)), valOut.PageResponse.Total)
 				s.Require().NotEmpty(valOut.PageResponse.NextKey)
 				s.assertValidatorsResponse(valOut.Validators, expLen)
 			},
@@ -391,10 +426,10 @@ func (s *PrecompileTestSuite) TestRedelegation() {
 	}{
 		{
 			"fail - empty input args",
-			func(srcOperatorAddr, destOperatorAddr string) []interface{} {
+			func(string, string) []interface{} {
 				return []interface{}{}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 3, 0),
@@ -408,35 +443,35 @@ func (s *PrecompileTestSuite) TestRedelegation() {
 					destOperatorAddr,
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidDelegator, "invalid"),
 		},
 		{
 			"fail - empty src validator addr",
-			func(srcOperatorAddr, destOperatorAddr string) []interface{} {
+			func(_, destOperatorAddr string) []interface{} {
 				return []interface{}{
 					s.address,
 					"",
 					destOperatorAddr,
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"empty address string is not allowed",
 		},
 		{
 			"fail - empty destination addr",
-			func(srcOperatorAddr, destOperatorAddr string) []interface{} {
+			func(srcOperatorAddr, _ string) []interface{} {
 				return []interface{}{
 					s.address,
 					srcOperatorAddr,
 					"",
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"empty address string is not allowed",
@@ -534,7 +569,7 @@ func (s *PrecompileTestSuite) TestRedelegations() {
 			func() []interface{} {
 				return []interface{}{}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 4, 0),
@@ -549,7 +584,7 @@ func (s *PrecompileTestSuite) TestRedelegations() {
 					query.PageRequest{},
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"redelegation not found",
@@ -564,7 +599,7 @@ func (s *PrecompileTestSuite) TestRedelegations() {
 					query.PageRequest{},
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"invalid query. Need to specify at least a source validator address or delegator address",
@@ -579,7 +614,7 @@ func (s *PrecompileTestSuite) TestRedelegations() {
 					query.PageRequest{},
 				}
 			},
-			func(data []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"invalid query. Need to specify at least a source validator address or delegator address",
@@ -684,7 +719,7 @@ func (s *PrecompileTestSuite) TestAllowance() {
 			func() []interface{} {
 				return []interface{}{}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 3, 0),

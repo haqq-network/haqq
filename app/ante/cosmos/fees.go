@@ -27,7 +27,7 @@ type DeductFeeDecorator struct {
 	distributionKeeper anteutils.DistributionKeeper
 	feegrantKeeper     authante.FeegrantKeeper
 	stakingKeeper      anteutils.StakingKeeper
-	txFeeChecker       anteutils.TxFeeChecker
+	txFeeChecker       authante.TxFeeChecker
 }
 
 // NewDeductFeeDecorator returns a new DeductFeeDecorator.
@@ -37,7 +37,7 @@ func NewDeductFeeDecorator(
 	dk anteutils.DistributionKeeper,
 	fk authante.FeegrantKeeper,
 	sk anteutils.StakingKeeper,
-	tfc anteutils.TxFeeChecker,
+	tfc authante.TxFeeChecker,
 ) DeductFeeDecorator {
 	if tfc == nil {
 		tfc = checkTxFeeWithValidatorMinGasPrices
@@ -114,7 +114,7 @@ func (dfd DeductFeeDecorator) deductFee(ctx sdk.Context, sdkTx sdk.Tx, fees sdk.
 		if !feeGranter.Equals(feePayer) {
 			err := dfd.feegrantKeeper.UseGrantedFees(ctx, feeGranter, feePayer, fees, sdkTx.GetMsgs())
 			if err != nil {
-				return errorsmod.Wrapf(err, "%s does not not allow to pay fees for %s", feeGranter, feePayer)
+				return errorsmod.Wrapf(err, "%s does not allow to pay fees for %s", feeGranter, feePayer)
 			}
 		}
 
@@ -159,7 +159,12 @@ func deductFeesFromBalanceOrUnclaimedStakingRewards(
 
 // checkTxFeeWithValidatorMinGasPrices implements the default fee logic, where the minimum price per
 // unit of gas is fixed and set by each validator, and the tx priority is computed from the gas price.
-func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, feeTx sdk.FeeTx) (sdk.Coins, int64, error) {
+func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error) {
+	feeTx, ok := tx.(sdk.FeeTx)
+	if !ok {
+		return sdk.Coins{}, 0, errorsmod.Wrap(errortypes.ErrTxDecode, "Tx must be a FeeTx")
+	}
+
 	feeCoins := feeTx.GetFee()
 	gas := feeTx.GetGas()
 
@@ -172,7 +177,7 @@ func checkTxFeeWithValidatorMinGasPrices(ctx sdk.Context, feeTx sdk.FeeTx) (sdk.
 		}
 	}
 
-	priority := getTxPriority(feeCoins, int64(gas)) //#nosec G701 -- gosec warning about integer overflow is not relevant here
+	priority := getTxPriority(feeCoins, int64(gas)) //nolint: gosec // G115 warning about integer overflow is not relevant here
 	return feeCoins, priority, nil
 }
 
@@ -188,7 +193,7 @@ func checkFeeCoinsAgainstMinGasPrices(ctx sdk.Context, feeCoins sdk.Coins, gas u
 
 	// Determine the required fees by multiplying each required minimum gas
 	// price by the gas limit, where fee = ceil(minGasPrice * gasLimit).
-	glDec := sdkmath.LegacyNewDec(int64(gas)) //#nosec G701 -- gosec warning about integer overflow is not relevant here
+	glDec := sdkmath.LegacyNewDec(int64(gas)) //nolint: gosec // G115 warning about integer overflow is not relevant here
 	for i, gp := range minGasPrices {
 		fee := gp.Amount.Mul(glDec)
 		requiredFees[i] = sdk.NewCoin(gp.Denom, fee.Ceil().RoundInt())

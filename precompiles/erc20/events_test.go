@@ -12,7 +12,6 @@ import (
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 )
 
-//nolint:dupl // this is not a duplicate of the approval events test
 func (s *PrecompileTestSuite) TestEmitTransferEvent() {
 	testcases := []struct {
 		name   string
@@ -45,6 +44,7 @@ func (s *PrecompileTestSuite) TestEmitTransferEvent() {
 			// Check event signature matches the one emitted
 			event := s.precompile.ABI.Events[erc20precompile.EventTypeTransfer]
 			s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), common.HexToHash(log.Topics[0].Hex()))
+			//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 			s.Require().Equal(log.BlockNumber, uint64(s.network.GetContext().BlockHeight()))
 
 			// Check the fully unpacked event matches the one emitted
@@ -59,7 +59,6 @@ func (s *PrecompileTestSuite) TestEmitTransferEvent() {
 	}
 }
 
-//nolint:dupl // this is not a duplicate of the transfer events test
 func (s *PrecompileTestSuite) TestEmitApprovalEvent() {
 	testcases := []struct {
 		name    string
@@ -93,6 +92,7 @@ func (s *PrecompileTestSuite) TestEmitApprovalEvent() {
 			// Check event signature matches the one emitted
 			event := s.precompile.ABI.Events[authorization.EventTypeApproval]
 			s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), common.HexToHash(log.Topics[0].Hex()))
+			//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 			s.Require().Equal(log.BlockNumber, uint64(s.network.GetContext().BlockHeight()))
 
 			// Check the fully unpacked event matches the one emitted

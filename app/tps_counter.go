@@ -107,6 +107,7 @@ func (tpc *tpsCounter) recordValue(ctx context.Context, latest, previous uint64,
 		return 0, nil
 	}
 
+	//nolint: gosec // G115 -- there might be overflow, non-critical
 	n := int64(latest - previous)
 	if n < 0 {
 		// Perhaps we exceeded the uint64 limits then wrapped around, for the latest value.

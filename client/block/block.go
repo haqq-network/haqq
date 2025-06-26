@@ -22,7 +22,7 @@ func Cmd() *cobra.Command {
 			serverCtx := server.GetServerContextFromCmd(cmd)
 			return serverCtx.Viper.BindPFlags(cmd.Flags())
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			serverCtx := server.GetServerContextFromCmd(cmd)
 			cfg := serverCtx.Config
 			home := cfg.RootDir

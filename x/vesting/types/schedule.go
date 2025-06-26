@@ -258,9 +258,9 @@ func ConjunctPeriods(
 	// Additionally, it increments the period index and updates the last event time for schedule A.
 	consumeA := func(endTimeOfCurrentPeriod int64) {
 		totalAmountPeriodsA = totalAmountPeriodsA.Add(periodsA[idxPeriodsA].Amount...)
-		min := totalAmountPeriodsA.Min(totalAmountPeriodsB)
-		if resultingAmount.IsAllLTE(min) {
-			diff := min.Sub(resultingAmount...)
+		minAmountPeriods := totalAmountPeriodsA.Min(totalAmountPeriodsB)
+		if resultingAmount.IsAllLTE(minAmountPeriods) {
+			diff := minAmountPeriods.Sub(resultingAmount...)
 			if !diff.IsZero() {
 				emit(endTimeOfCurrentPeriod, diff)
 			}
@@ -279,9 +279,9 @@ func ConjunctPeriods(
 	// Additionally, it increments the period index and updates the last event time for schedule B.
 	consumeB := func(nextTime int64) {
 		totalAmountPeriodsB = totalAmountPeriodsB.Add(periodsB[idxPeriodsB].Amount...)
-		min := totalAmountPeriodsA.Min(totalAmountPeriodsB)
-		if resultingAmount.IsAllLTE(min) {
-			diff := min.Sub(resultingAmount...)
+		minAmountPeriods := totalAmountPeriodsA.Min(totalAmountPeriodsB)
+		if resultingAmount.IsAllLTE(minAmountPeriods) {
+			diff := minAmountPeriods.Sub(resultingAmount...)
 			if !diff.IsZero() {
 				emit(nextTime, diff)
 			}
@@ -301,9 +301,9 @@ func ConjunctPeriods(
 	consumeBoth := func(nextTime int64) {
 		totalAmountPeriodsA = totalAmountPeriodsA.Add(periodsA[idxPeriodsA].Amount...)
 		totalAmountPeriodsB = totalAmountPeriodsB.Add(periodsB[idxPeriodsB].Amount...)
-		min := totalAmountPeriodsA.Min(totalAmountPeriodsB)
-		if resultingAmount.IsAllLTE(min) {
-			diff := min.Sub(resultingAmount...)
+		minAmountPeriods := totalAmountPeriodsA.Min(totalAmountPeriodsB)
+		if resultingAmount.IsAllLTE(minAmountPeriods) {
+			diff := minAmountPeriods.Sub(resultingAmount...)
 			if !diff.IsZero() {
 				emit(nextTime, diff)
 			}

@@ -9,15 +9,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/erc20"
 	"github.com/haqq-network/haqq/precompiles/testutil"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
-//nolint:dupl // tests are not duplicate between the functions
 func (s *PrecompileTestSuite) TestApprove() {
 	method := s.precompile.Methods[authorization.ApproveMethod]
 	amount := int64(100)
@@ -267,7 +266,6 @@ func (s *PrecompileTestSuite) TestApprove() {
 	}
 }
 
-//nolint:dupl // tests are not duplicate between the functions
 func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 	method := s.precompile.Methods[authorization.IncreaseAllowanceMethod]
 	amount := int64(100)
@@ -465,7 +463,6 @@ func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 	}
 }
 
-//nolint:dupl // tests are not duplicate between the functions
 func (s *PrecompileTestSuite) TestDecreaseAllowance() {
 	method := s.precompile.Methods[authorization.DecreaseAllowanceMethod]
 	amount := int64(100)

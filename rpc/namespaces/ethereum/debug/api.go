@@ -107,18 +107,18 @@ func (a *API) BlockProfile(file string, nsec uint) error {
 	runtime.SetBlockProfileRate(1)
 	defer runtime.SetBlockProfileRate(0)
 
-	time.Sleep(time.Duration(nsec) * time.Second)
+	time.Sleep(time.Duration(nsec) * time.Second) //nolint: gosec // G115 nsec is a positive uint32
 	return writeProfile("block", file, a.logger)
 }
 
 // CpuProfile turns on CPU profiling for nsec seconds and writes
 // profile data to file.
-func (a *API) CpuProfile(file string, nsec uint) error { //nolint: golint, stylecheck, revive
+func (a *API) CpuProfile(file string, nsec uint) error { //nolint: revive
 	a.logger.Debug("debug_cpuProfile", "file", file, "nsec", nsec)
 	if err := a.StartCPUProfile(file); err != nil {
 		return err
 	}
-	time.Sleep(time.Duration(nsec) * time.Second)
+	time.Sleep(time.Duration(nsec) * time.Second) //nolint: gosec // G115 nsec is a positive uint32
 	return a.StopCPUProfile()
 }
 
@@ -137,7 +137,7 @@ func (a *API) GoTrace(file string, nsec uint) error {
 	if err := a.StartGoTrace(file); err != nil {
 		return err
 	}
-	time.Sleep(time.Duration(nsec) * time.Second)
+	time.Sleep(time.Duration(nsec) * time.Second) //nolint: gosec // G115 nsec is a positive uint32
 	return a.StopGoTrace()
 }
 
@@ -253,7 +253,7 @@ func (a *API) WriteMemProfile(file string) error {
 func (a *API) MutexProfile(file string, nsec uint) error {
 	a.logger.Debug("debug_mutexProfile", "file", file, "nsec", nsec)
 	runtime.SetMutexProfileFraction(1)
-	time.Sleep(time.Duration(nsec) * time.Second)
+	time.Sleep(time.Duration(nsec) * time.Second) //nolint: gosec // G115 nsec is a positive uint32
 	defer runtime.SetMutexProfileFraction(0)
 	return writeProfile("mutex", file, a.logger)
 }
@@ -285,6 +285,7 @@ func (a *API) SetGCPercent(v int) int {
 
 // GetHeaderRlp retrieves the RLP encoded for of a single header.
 func (a *API) GetHeaderRlp(number uint64) (hexutil.Bytes, error) {
+	//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	header, err := a.backend.HeaderByNumber(rpctypes.BlockNumber(number))
 	if err != nil {
 		return nil, err
@@ -295,6 +296,7 @@ func (a *API) GetHeaderRlp(number uint64) (hexutil.Bytes, error) {
 
 // GetBlockRlp retrieves the RLP encoded for of a single block.
 func (a *API) GetBlockRlp(number uint64) (hexutil.Bytes, error) {
+	//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	block, err := a.backend.EthBlockByNumber(rpctypes.BlockNumber(number))
 	if err != nil {
 		return nil, err
@@ -305,6 +307,7 @@ func (a *API) GetBlockRlp(number uint64) (hexutil.Bytes, error) {
 
 // PrintBlock retrieves a block and returns its pretty printed form.
 func (a *API) PrintBlock(number uint64) (string, error) {
+	//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	block, err := a.backend.EthBlockByNumber(rpctypes.BlockNumber(number))
 	if err != nil {
 		return "", err
@@ -315,6 +318,7 @@ func (a *API) PrintBlock(number uint64) (string, error) {
 
 // SeedHash retrieves the seed hash of a block.
 func (a *API) SeedHash(number uint64) (string, error) {
+	//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	_, err := a.backend.HeaderByNumber(rpctypes.BlockNumber(number))
 	if err != nil {
 		return "", err

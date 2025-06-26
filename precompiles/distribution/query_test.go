@@ -10,12 +10,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/distribution"
 	"github.com/haqq-network/haqq/testutil"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 var (
@@ -39,7 +39,7 @@ var baseTestCases = []distrTestCases{
 		func() []interface{} {
 			return []interface{}{}
 		},
-		func(bz []byte) {},
+		func([]byte) {},
 		100000,
 		true,
 		"invalid number of arguments",
@@ -51,7 +51,7 @@ var baseTestCases = []distrTestCases{
 				"invalid",
 			}
 		},
-		func(bz []byte) {},
+		func([]byte) {},
 		100000,
 		true,
 		"invalid bech32 string",
@@ -72,7 +72,7 @@ func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
 					sdk.ValAddress(pk.Address().Bytes()).String(),
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"validator does not exist",
@@ -84,7 +84,7 @@ func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
 					s.validators[0].OperatorAddress,
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"delegation does not exist",
@@ -138,7 +138,7 @@ func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
 	}
 }
 
-func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() { //nolint:dupl
+func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() {
 	method := s.precompile.Methods[distribution.ValidatorOutstandingRewardsMethod]
 
 	testCases := []distrTestCases{
@@ -224,7 +224,7 @@ func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() { //nolint:dupl
 	}
 }
 
-func (s *PrecompileTestSuite) TestValidatorCommission() { //nolint:dupl
+func (s *PrecompileTestSuite) TestValidatorCommission() {
 	method := s.precompile.Methods[distribution.ValidatorCommissionMethod]
 
 	testCases := []distrTestCases{
@@ -320,7 +320,7 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 					"invalid", uint64(1), uint64(5), query.PageRequest{},
 				}
 			},
-			func(bz []byte) {
+			func([]byte) {
 			},
 			100000,
 			true,
@@ -335,7 +335,7 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 					query.PageRequest{},
 				}
 			},
-			func(bz []byte) {
+			func([]byte) {
 			},
 			100000,
 			true,
@@ -350,7 +350,7 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 					query.PageRequest{},
 				}
 			},
-			func(bz []byte) {
+			func([]byte) {
 			},
 			100000,
 			true,
@@ -482,7 +482,7 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 					"invalid",
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"invalid bech32 string",
@@ -498,7 +498,7 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 					sdk.ValAddress(pk.Address().Bytes()).String(),
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"validator does not exist",
@@ -512,7 +512,7 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 					s.validators[0].OperatorAddress,
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			"delegation does not exist",
@@ -590,7 +590,7 @@ func (s *PrecompileTestSuite) TestDelegationTotalRewards() {
 					"invalid",
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidDelegator, "invalid"),
@@ -718,7 +718,7 @@ func (s *PrecompileTestSuite) TestDelegatorValidators() {
 					"invalid",
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidDelegator, "invalid"),
@@ -799,7 +799,7 @@ func (s *PrecompileTestSuite) TestDelegatorWithdrawAddress() {
 					"invalid",
 				}
 			},
-			func(bz []byte) {},
+			func([]byte) {},
 			100000,
 			true,
 			fmt.Sprintf(cmn.ErrInvalidDelegator, "invalid"),

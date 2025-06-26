@@ -65,7 +65,7 @@ func GetDenomsCmd() *cobra.Command {
 		Short: "Gets information about all denoms of liquid vesting tokens",
 		Long:  "Gets information about all denoms of liquid vesting tokens",
 		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err

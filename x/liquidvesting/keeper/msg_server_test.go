@@ -16,6 +16,7 @@ import (
 	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
 	haqqtypes "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -251,7 +252,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.to)
 				suite.Require().NotNil(accIto)
 				balanceTarget := suite.app.BankKeeper.GetBalance(suite.ctx, tc.to, types.DenomBaseNameFromID(0))
-				suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(0), math.ZeroInt()).String(), balanceTarget.String())
+				suite.Require().Equal(expResponse.Minted.String(), balanceTarget.String())
 
 				// check liquidated vesting locked coins are decreased on initial account
 				accIFrom := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.from)
@@ -317,7 +318,7 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, to)
 	suite.Require().NotNil(accIto)
 	balanceTarget := suite.app.BankKeeper.GetBalance(suite.ctx, to, types.DenomBaseNameFromID(0))
-	suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(0), math.ZeroInt()).String(), balanceTarget.String())
+	suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(0), liquidationAmount.Amount).String(), balanceTarget.String())
 
 	// check liquidated vesting locked coins are decreased on initial account
 	accIFrom := suite.app.AccountKeeper.GetAccount(suite.ctx, from)
@@ -355,7 +356,7 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 
 	// check target account exists and has liquid token
 	balanceTarget = suite.app.BankKeeper.GetBalance(suite.ctx, to, types.DenomBaseNameFromID(1))
-	suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(1), math.ZeroInt()).String(), balanceTarget.String())
+	suite.Require().Equal(sdk.NewCoin(types.DenomBaseNameFromID(1), liquidationAmount.Amount).String(), balanceTarget.String())
 
 	// check liquidated vesting locked coins are decreased on initial account
 	accIFrom = suite.app.AccountKeeper.GetAccount(suite.ctx, from)
@@ -414,7 +415,21 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				}
 
 				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
-				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
+
+				// bind newly created denom to erc20 token
+				// Create dummy IBC denom, just to bind ERC20 Precompile with newly created aLiquid denom
+				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, "aISLM")
+				tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
+				suite.Require().NoError(err)
+				// Set real denom to token pair, so precompile could handle transfers properly
+				tokenPair.Denom = liquidTokenMetadata.Base
+				// k.erc20Keeper.SetToken(ctx, tokenPair) unwrap it below due to pointer receiver in original method.
+				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, tokenPair)
+				suite.app.Erc20Keeper.SetDenomMap(suite.ctx, tokenPair.Denom, tokenPair.GetID())
+				suite.app.Erc20Keeper.SetERC20Map(suite.ctx, tokenPair.GetERC20Contract(), tokenPair.GetID())
+
+				err = suite.app.Erc20Keeper.EnableDynamicPrecompiles(suite.ctx, tokenPair.GetERC20Contract())
+				suite.Require().NoError(err)
 			},
 			redeemFrom:   addr1,
 			redeemTo:     addr2,
@@ -461,62 +476,27 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				}
 
 				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
-				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
+
+				// bind newly created denom to erc20 token
+				// Create dummy IBC denom, just to bind ERC20 Precompile with newly created aLiquid denom
+				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, "aISLM")
+				tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
+				suite.Require().NoError(err)
+				// Set real denom to token pair, so precompile could handle transfers properly
+				tokenPair.Denom = liquidTokenMetadata.Base
+				// k.erc20Keeper.SetToken(ctx, tokenPair) unwrap it below due to pointer receiver in original method.
+				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, tokenPair)
+				suite.app.Erc20Keeper.SetDenomMap(suite.ctx, tokenPair.Denom, tokenPair.GetID())
+				suite.app.Erc20Keeper.SetERC20Map(suite.ctx, tokenPair.GetERC20Contract(), tokenPair.GetID())
+
+				err = suite.app.Erc20Keeper.EnableDynamicPrecompiles(suite.ctx, tokenPair.GetERC20Contract())
+				suite.Require().NoError(err)
 			},
 			redeemFrom:           addr1,
 			redeemTo:             addr2,
 			redeemAmount:         600_000,
 			expectedLockedAmount: 400_000,
 			expectPass:           true,
-		},
-		{
-			name: "ok - redeem token partially from evm and cosmos layers",
-			malleate: func() {
-				// fund liquid vesting module
-				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
-				// create liquid vesting denom
-				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
-					BaseDenom:     "aLIQUID0",
-					DisplayDenom:  "LIQUID0",
-					OriginalDenom: "aISLM",
-					LockupPeriods: lockupPeriods,
-				})
-				// create accounts
-				acc1 := &haqqtypes.EthAccount{
-					BaseAccount: authtypes.NewBaseAccountWithAddress(addr1),
-					CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
-				}
-				s.app.AccountKeeper.SetAccount(s.ctx, acc1)
-				acc2 := &haqqtypes.EthAccount{
-					BaseAccount: authtypes.NewBaseAccountWithAddress(addr2),
-					CodeHash:    common.BytesToHash(crypto.Keccak256(nil)).String(),
-				}
-				s.app.AccountKeeper.SetAccount(s.ctx, acc2)
-				// fund account with liquid denom token
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
-
-				liquidTokenMetadata := banktypes.Metadata{
-					Description: "Liquid vesting token",
-					DenomUnits:  []*banktypes.DenomUnit{{Denom: "aLIQUID0", Exponent: 0}, {Denom: "LIQUID0", Exponent: 18}},
-					Base:        "aLIQUID0",
-					Display:     "LIQUID0",
-					Name:        "LIQUID0",
-					Symbol:      "LIQUID0",
-				}
-
-				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
-				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
-
-				// transfer half of liquid token to evm layer
-				evmLiquidateToAddress := common.BytesToAddress(addr1.Bytes())
-				msgConvert := erc20types.NewMsgConvertCoin(sdk.NewInt64Coin("aLIQUID0", 1_500_000), evmLiquidateToAddress, addr1)
-				_, err := suite.app.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(suite.ctx), msgConvert)
-				suite.Require().NoError(err)
-			},
-			redeemFrom:   addr1,
-			redeemTo:     addr2,
-			redeemAmount: 3_000_000,
-			expectPass:   true,
 		},
 		{
 			name: "fail - insufficient liquid token balance",
@@ -545,7 +525,21 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				}
 
 				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
-				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
+
+				// bind newly created denom to erc20 token
+				// Create dummy IBC denom, just to bind ERC20 Precompile with newly created aLiquid denom
+				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, "aISLM")
+				tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
+				suite.Require().NoError(err)
+				// Set real denom to token pair, so precompile could handle transfers properly
+				tokenPair.Denom = liquidTokenMetadata.Base
+				// k.erc20Keeper.SetToken(ctx, tokenPair) unwrap it below due to pointer receiver in original method.
+				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, tokenPair)
+				suite.app.Erc20Keeper.SetDenomMap(suite.ctx, tokenPair.Denom, tokenPair.GetID())
+				suite.app.Erc20Keeper.SetERC20Map(suite.ctx, tokenPair.GetERC20Contract(), tokenPair.GetID())
+
+				err = suite.app.Erc20Keeper.EnableDynamicPrecompiles(suite.ctx, tokenPair.GetERC20Contract())
+				suite.Require().NoError(err)
 			},
 			redeemFrom:   addr1,
 			redeemTo:     addr2,
@@ -579,7 +573,21 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				}
 
 				suite.app.BankKeeper.SetDenomMetaData(suite.ctx, liquidTokenMetadata)
-				suite.app.Erc20Keeper.RegisterCoin(suite.ctx, liquidTokenMetadata) //nolint:errcheck
+
+				// bind newly created denom to erc20 token
+				// Create dummy IBC denom, just to bind ERC20 Precompile with newly created aLiquid denom
+				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, "aISLM")
+				tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
+				suite.Require().NoError(err)
+				// Set real denom to token pair, so precompile could handle transfers properly
+				tokenPair.Denom = liquidTokenMetadata.Base
+				// k.erc20Keeper.SetToken(ctx, tokenPair) unwrap it below due to pointer receiver in original method.
+				suite.app.Erc20Keeper.SetTokenPair(suite.ctx, tokenPair)
+				suite.app.Erc20Keeper.SetDenomMap(suite.ctx, tokenPair.Denom, tokenPair.GetID())
+				suite.app.Erc20Keeper.SetERC20Map(suite.ctx, tokenPair.GetERC20Contract(), tokenPair.GetID())
+
+				err = suite.app.Erc20Keeper.EnableDynamicPrecompiles(suite.ctx, tokenPair.GetERC20Contract())
+				suite.Require().NoError(err)
 			},
 			redeemFrom:   addr1,
 			redeemTo:     addr2,

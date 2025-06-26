@@ -1,3 +1,6 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package erc20
 
 import (
@@ -29,10 +32,7 @@ func InitGenesis(
 	}
 
 	for _, pair := range data.TokenPairs {
-		id := pair.GetID()
-		k.SetTokenPair(ctx, pair)
-		k.SetDenomMap(ctx, pair.Denom, id)
-		k.SetERC20Map(ctx, pair.GetERC20Contract(), id)
+		k.SetToken(ctx, pair)
 	}
 }
 

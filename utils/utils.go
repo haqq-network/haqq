@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"sort"
 	"strings"
 
 	errorsmod "cosmossdk.io/errors"
@@ -17,6 +18,7 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/crypto/sha3"
+	"golang.org/x/exp/constraints"
 
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	haqqtypes "github.com/haqq-network/haqq/types"
@@ -202,4 +204,11 @@ func IsContractAccount(acc authtypes.AccountI) error {
 		return fmt.Errorf("account is not a contract account")
 	}
 	return nil
+}
+
+// SortSlice sorts a slice of any ordered type.
+func SortSlice[T constraints.Ordered](slice []T) {
+	sort.Slice(slice, func(i, j int) bool {
+		return slice[i] < slice[j]
+	})
 }

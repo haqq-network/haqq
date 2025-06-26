@@ -7,12 +7,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/haqq-network/haqq/cmd/config"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/distribution"
 	"github.com/haqq-network/haqq/utils"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 func (s *PrecompileTestSuite) TestSetWithdrawAddressEvent() {
@@ -27,7 +28,7 @@ func (s *PrecompileTestSuite) TestSetWithdrawAddressEvent() {
 	}{
 		{
 			"success - the correct event is emitted",
-			func(operatorAddress string) []interface{} {
+			func(string) []interface{} {
 				return []interface{}{
 					s.address,
 					s.address.String(),
@@ -40,6 +41,7 @@ func (s *PrecompileTestSuite) TestSetWithdrawAddressEvent() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[distribution.EventTypeSetWithdrawAddress]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				// Check the fully unpacked event matches the one emitted
@@ -47,7 +49,7 @@ func (s *PrecompileTestSuite) TestSetWithdrawAddressEvent() {
 				err := cmn.UnpackLog(s.precompile.ABI, &setWithdrawerAddrEvent, distribution.EventTypeSetWithdrawAddress, *log)
 				s.Require().NoError(err)
 				s.Require().Equal(s.address, setWithdrawerAddrEvent.Caller)
-				s.Require().Equal(sdk.MustBech32ifyAddressBytes("haqq", s.address.Bytes()), setWithdrawerAddrEvent.WithdrawerAddress)
+				s.Require().Equal(sdk.MustBech32ifyAddressBytes(config.Bech32Prefix, s.address.Bytes()), setWithdrawerAddrEvent.WithdrawerAddress)
 			},
 			20000,
 			false,
@@ -105,6 +107,7 @@ func (s *PrecompileTestSuite) TestWithdrawDelegatorRewardsEvent() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[distribution.EventTypeWithdrawDelegatorRewards]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				optAddr, err := sdk.ValAddressFromBech32(s.validators[0].OperatorAddress)
@@ -176,6 +179,7 @@ func (s *PrecompileTestSuite) TestWithdrawValidatorCommissionEvent() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[distribution.EventTypeWithdrawValidatorCommission]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				// Check the fully unpacked event matches the one emitted
@@ -227,6 +231,7 @@ func (s *PrecompileTestSuite) TestClaimRewardsEvent() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[distribution.EventTypeClaimRewards]
 				s.Require().Equal(event.ID, common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				var claimRewardsEvent distribution.EventClaimRewards
@@ -243,6 +248,44 @@ func (s *PrecompileTestSuite) TestClaimRewardsEvent() {
 			s.SetupTest()
 
 			err := s.precompile.EmitClaimRewardsEvent(s.ctx, s.stateDB, s.address, tc.coins)
+			s.Require().NoError(err)
+			tc.postCheck()
+		})
+	}
+}
+
+func (s *PrecompileTestSuite) TestFundCommunityPoolEvent() {
+	testCases := []struct {
+		name      string
+		coins     sdk.Coins
+		postCheck func()
+	}{
+		{
+			"success - the correct event is emitted",
+			sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, math.NewInt(1e18))),
+			func() {
+				log := s.stateDB.Logs()[0]
+				s.Require().Equal(log.Address, s.precompile.Address())
+				// Check event signature matches the one emitted
+				event := s.precompile.ABI.Events[distribution.EventTypeFundCommunityPool]
+				s.Require().Equal(event.ID, common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
+				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
+
+				var fundCommunityPoolEvent distribution.EventFundCommunityPool
+				err := cmn.UnpackLog(s.precompile.ABI, &fundCommunityPoolEvent, distribution.EventTypeFundCommunityPool, *log)
+				s.Require().NoError(err)
+				s.Require().Equal(common.BytesToAddress(s.address.Bytes()), fundCommunityPoolEvent.Depositor)
+				s.Require().Equal(big.NewInt(1e18), fundCommunityPoolEvent.Amount)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.SetupTest()
+
+			err := s.precompile.EmitFundCommunityPoolEvent(s.ctx, s.stateDB, s.address, tc.coins)
 			s.Require().NoError(err)
 			tc.postCheck()
 		})

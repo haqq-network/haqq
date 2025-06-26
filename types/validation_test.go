@@ -141,6 +141,6 @@ func TestSafeInt64(t *testing.T) {
 		}
 
 		require.NoError(t, err, tc.name)
-		require.Equal(t, int64(tc.value), value, tc.name)
+		require.Equal(t, int64(tc.value), value, tc.name) //nolint: gosec // G115 -- overflow is covered by test above
 	}
 }

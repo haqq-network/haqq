@@ -1,11 +1,13 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package testutil
 
 import (
 	"fmt"
+	"slices"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"golang.org/x/exp/slices"
 
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
@@ -39,7 +41,7 @@ func CheckLogs(logArgs LogCheckArgs) error {
 		)
 	}
 
-	if err := CheckVMError(logArgs.Res, logArgs.ErrContains); err != nil {
+	if err = CheckVMError(logArgs.Res, logArgs.ErrContains); err != nil {
 		return err
 	}
 

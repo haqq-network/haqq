@@ -28,7 +28,7 @@ func TestMsgDelegate(t *testing.T) {
 		funderAddr, _    = utiltx.NewAccAddressAndKey()
 	)
 
-	testCases := []struct { //nolint:dupl
+	testCases := []struct {
 		name   string
 		setup  func() sdk.Coin
 		expErr bool
@@ -147,7 +147,7 @@ func TestMsgCreateValidator(t *testing.T) {
 		funderAddr, _    = utiltx.NewAccAddressAndKey()
 	)
 
-	testCases := []struct { //nolint:dupl
+	testCases := []struct {
 		name   string
 		setup  func() sdk.Coin
 		expErr bool

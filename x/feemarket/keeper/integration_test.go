@@ -4,11 +4,12 @@ import (
 	"math/big"
 	"strings"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	sdkmath "cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -16,7 +17,10 @@ import (
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/utils"
 )
+
+const chainID = utils.TestEdge2ChainID + "-3"
 
 var _ = Describe("Feemarket", func() {
 	var (
@@ -27,7 +31,7 @@ var _ = Describe("Feemarket", func() {
 	DescribeTableSubtree("Performing Cosmos transactions", func(signMode signing.SignMode) {
 		Context("with min-gas-prices (local) < MinGasPrices (feemarket param)", func() {
 			BeforeEach(func() {
-				privKey, msg = setupTestWithContext("1", sdk.NewDec(3), sdk.ZeroInt())
+				privKey, msg = setupTestWithContext(chainID, "1", sdkmath.LegacyNewDec(3), sdkmath.ZeroInt())
 			})
 
 			Context("during CheckTx", func() {
@@ -63,7 +67,7 @@ var _ = Describe("Feemarket", func() {
 				It("should accept transactions with gasPrice >= MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(3)
 					res, err := testutil.DeliverTx(s.ctx, s.app, privKey, &gasPrice, signMode, &msg)
-					s.Require().NoError(err)
+					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(Equal(true), "transaction should have succeeded", res.GetLog())
 				})
 			})
@@ -71,7 +75,7 @@ var _ = Describe("Feemarket", func() {
 
 		Context("with min-gas-prices (local) == MinGasPrices (feemarket param)", func() {
 			BeforeEach(func() {
-				privKey, msg = setupTestWithContext("3", sdk.NewDec(3), sdk.ZeroInt())
+				privKey, msg = setupTestWithContext(chainID, "3", sdkmath.LegacyNewDec(3), sdkmath.ZeroInt())
 			})
 
 			Context("during CheckTx", func() {
@@ -115,10 +119,9 @@ var _ = Describe("Feemarket", func() {
 
 		Context("with MinGasPrices (feemarket param) < min-gas-prices (local)", func() {
 			BeforeEach(func() {
-				privKey, msg = setupTestWithContext("5", sdk.NewDec(3), sdk.NewInt(5))
+				privKey, msg = setupTestWithContext(chainID, "5", sdkmath.LegacyNewDec(3), sdkmath.NewInt(5))
 			})
 
-			//nolint
 			Context("during CheckTx", func() {
 				It("should reject transactions with gasPrice < MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(2)
@@ -148,7 +151,6 @@ var _ = Describe("Feemarket", func() {
 				})
 			})
 
-			//nolint
 			Context("during DeliverTx", func() {
 				It("should reject transactions with gasPrice < MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(2)
@@ -205,7 +207,7 @@ var _ = Describe("Feemarket", func() {
 				// 100000`. With the fee calculation `Fee = (baseFee + tip) * gasLimit`,
 				// a `minGasPrices = 40_000_000_000` results in `minGlobalFee =
 				// 4000000000000000`
-				privKey, _ = setupTestWithContext("1", sdk.NewDec(minGasPrices), sdkmath.NewInt(baseFee))
+				privKey, _ = setupTestWithContext(chainID, "1", sdkmath.LegacyNewDec(minGasPrices), sdkmath.NewInt(baseFee))
 			})
 
 			Context("during CheckTx", func() {
@@ -315,7 +317,7 @@ var _ = Describe("Feemarket", func() {
 				// 100_000`. With the fee calculation `Fee = (baseFee + tip) * gasLimit`,
 				// a `minGasPrices = 5_000_000_000` results in `minGlobalFee =
 				// 500_000_000_000_000`
-				privKey, _ = setupTestWithContext("1", sdk.NewDec(minGasPrices), sdkmath.NewInt(baseFee))
+				privKey, _ = setupTestWithContext(chainID, "1", sdkmath.LegacyNewDec(minGasPrices), sdkmath.NewInt(baseFee))
 			})
 
 			Context("during CheckTx", func() {

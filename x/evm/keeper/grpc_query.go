@@ -1,3 +1,5 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package keeper
 
 import (
@@ -13,18 +15,18 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
 	ethparams "github.com/ethereum/go-ethereum/params"
 
 	haqqtypes "github.com/haqq-network/haqq/types"
+	evmante "github.com/haqq-network/haqq/x/evm/ante"
+	"github.com/haqq-network/haqq/x/evm/core/logger"
+	"github.com/haqq-network/haqq/x/evm/core/tracers"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 	"github.com/haqq-network/haqq/x/evm/types"
 )
@@ -297,7 +299,7 @@ func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest
 		// Query block gas limit
 		params := ctx.ConsensusParams()
 		if params != nil && params.Block != nil && params.Block.MaxGas > 0 {
-			hi = uint64(params.Block.MaxGas)
+			hi = uint64(params.Block.MaxGas) //nolint: gosec // maxGas is a positive int64
 		} else {
 			hi = req.GasCap
 		}
@@ -368,9 +370,7 @@ func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest
 			}
 			// resetting the gasMeter after increasing the sequence to have an accurate gas estimation on EVM extensions transactions
 			gasMeter := haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas())
-			tmpCtx = tmpCtx.WithGasMeter(gasMeter).
-				WithKVGasConfig(storetypes.GasConfig{}).
-				WithTransientKVGasConfig(storetypes.GasConfig{})
+			tmpCtx = evmante.BuildEvmExecutionCtx(tmpCtx).WithGasMeter(gasMeter)
 		}
 		// pass false to not commit StateDB
 		rsp, err = k.ApplyMessageWithConfig(tmpCtx, msg, nil, false, cfg, txConfig)
@@ -469,11 +469,10 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 			continue
 		}
 		txConfig.TxHash = ethTx.Hash()
-		txConfig.TxIndex = uint(i)
+		txConfig.TxIndex = uint(i) //nolint: gosec // i is a positive int
 		// reset gas meter for each transaction
-		ctx = ctx.WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas())).
-			WithKVGasConfig(storetypes.GasConfig{}).
-			WithTransientKVGasConfig(storetypes.GasConfig{})
+		ctx = evmante.BuildEvmExecutionCtx(ctx).
+			WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
 		rsp, err := k.ApplyMessageWithConfig(ctx, msg, types.NewNoOpTracer(), true, cfg, txConfig)
 		if err != nil {
 			continue
@@ -564,7 +563,7 @@ func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest)
 		result := types.TxTraceResult{}
 		ethTx := tx.AsTransaction()
 		txConfig.TxHash = ethTx.Hash()
-		txConfig.TxIndex = uint(i)
+		txConfig.TxIndex = uint(i) //nolint: gosec // i is a positive int
 		traceResult, logIndex, err := k.traceTx(ctx, cfg, txConfig, signer, ethTx, req.TraceConfig, true, nil)
 		if err != nil {
 			result.Error = err.Error()
@@ -630,7 +629,7 @@ func (k *Keeper) traceTx(
 
 	tCtx := &tracers.Context{
 		BlockHash: txConfig.BlockHash,
-		TxIndex:   int(txConfig.TxIndex),
+		TxIndex:   int(txConfig.TxIndex), //nolint: gosec // txIndex can't overflow in normal conditions
 		TxHash:    txConfig.TxHash,
 	}
 
@@ -658,16 +657,9 @@ func (k *Keeper) traceTx(
 		}
 	}()
 
-	// In order to be on in sync with the tx execution gas meter,
-	// we need to:
-	// 1. Reset GasMeter with InfiniteGasMeterWithLimit
-	// 2. Setup an empty KV gas config for gas to be calculated by opcodes
-	// and not kvstore actions
-	// 3. Setup an empty transient KV gas config for transient gas to be
-	// calculated by opcodes
-	ctx = ctx.WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas())).
-		WithKVGasConfig(storetypes.GasConfig{}).
-		WithTransientKVGasConfig(storetypes.GasConfig{})
+	// Build EVM execution context
+	ctx = evmante.BuildEvmExecutionCtx(ctx).
+		WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
 	res, err := k.ApplyMessageWithConfig(ctx, msg, tracer, commitMessage, cfg, txConfig)
 	if err != nil {
 		return nil, 0, status.Error(codes.Internal, err.Error())

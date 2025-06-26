@@ -1,6 +1,11 @@
+// Copyright Tharsis Labs Ltd.(Evmos)
+// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
+
 package ibc
 
 import (
+	"strings"
+
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -9,6 +14,7 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 
 	"github.com/haqq-network/haqq/utils"
+	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 )
 
 // GetTransferSenderRecipient returns the sender and recipient sdk.AccAddresses
@@ -17,17 +23,11 @@ import (
 //   - the packet data is not FungibleTokenPacketData
 //   - sender address is invalid
 //   - recipient address is invalid
-func GetTransferSenderRecipient(packet channeltypes.Packet) (
+func GetTransferSenderRecipient(data transfertypes.FungibleTokenPacketData) (
 	sender, recipient sdk.AccAddress,
 	senderBech32, recipientBech32 string,
 	err error,
 ) {
-	// unmarshal packet data to obtain the sender and recipient
-	var data transfertypes.FungibleTokenPacketData
-	if err := transfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return nil, nil, "", "", errorsmod.Wrapf(errortypes.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data")
-	}
-
 	// validate the sender bech32 address from the counterparty chain
 	// and change the bech32 human readable prefix (HRP) of the sender to `haqq`
 	sender, err = utils.GetHaqqAddressFromBech32(data.Sender)
@@ -79,14 +79,10 @@ func GetReceivedCoin(srcPort, srcChannel, dstPort, dstChannel, rawDenom, rawAmt 
 		unprefixedDenom := rawDenom[len(voucherPrefix):]
 
 		// coin denomination used in sending from the escrow address
-		denom := unprefixedDenom
-
 		// The denomination used to send the coins is either the native denom or the hash of the path
 		// if the denomination is not native.
 		denomTrace := transfertypes.ParseDenomTrace(unprefixedDenom)
-		if denomTrace.Path != "" {
-			denom = denomTrace.IBCDenom()
-		}
+		denom := denomTrace.IBCDenom()
 
 		return sdk.Coin{
 			Denom:  denom,
@@ -119,4 +115,69 @@ func GetSentCoin(rawDenom, rawAmt string) sdk.Coin {
 		Denom:  trace.IBCDenom(),
 		Amount: amount,
 	}
+}
+
+// IsBaseDenomFromSourceChain checks if the given denom has only made a single hop.
+// It returns true if the denomination is single-hop, false otherwise.
+// This function expects to receive a string representing a token like
+// the denom string of the `FungibleTokenPacketData` of a received packet.
+// If the coin denom starts with `factory/` then it is a token factory coin, and we should not convert it
+// NOTE: Check https://docs.osmosis.zone/osmosis-core/modules/tokenfactory/ for more information
+func IsBaseDenomFromSourceChain(rawDenom string) bool {
+	// Parse the raw denomination to get its DenomTrace
+	denomTrace := transfertypes.ParseDenomTrace(rawDenom)
+
+	// Split the denom of the DenomTrace into its components
+	denomComponents := strings.Split(denomTrace.BaseDenom, "/")
+
+	// Each hop in the path is represented by a pair of port and channel ids
+	// If the number of components in the path is equal to or more than 2, it has hopped multiple chains
+	return len(denomTrace.Path) == 0 && len(denomComponents) == 1
+}
+
+// GetDenomTrace returns the denomination trace from the corresponding IBC denomination. If the
+// denomination is not an IBC voucher or the trace is not found, it returns an error.
+func GetDenomTrace(
+	transferKeeper transferkeeper.Keeper,
+	ctx sdk.Context,
+	denom string,
+) (transfertypes.DenomTrace, error) {
+	if !strings.HasPrefix(denom, "ibc/") {
+		return transfertypes.DenomTrace{}, errorsmod.Wrapf(ErrNoIBCVoucherDenom, "denom: %s", denom)
+	}
+
+	hash, err := transfertypes.ParseHexHash(denom[4:])
+	if err != nil {
+		return transfertypes.DenomTrace{}, err
+	}
+
+	denomTrace, found := transferKeeper.GetDenomTrace(ctx, hash)
+	if !found {
+		return transfertypes.DenomTrace{}, ErrDenomTraceNotFound
+	}
+
+	return denomTrace, nil
+}
+
+// DeriveDecimalsFromDenom returns the number of decimals of an IBC coin
+// depending on the prefix of the base denomination
+func DeriveDecimalsFromDenom(baseDenom string) (uint8, error) {
+	var decimals uint8
+	if len(baseDenom) == 0 {
+		return decimals, errorsmod.Wrapf(ErrInvalidBaseDenom, "Base denom cannot be an empty string")
+	}
+
+	switch baseDenom[0] {
+	case 'u': // micro (u) -> 6 decimals
+		decimals = 6
+	case 'a': // atto (a) -> 18 decimals
+		decimals = 18
+	default:
+		return decimals, errorsmod.Wrapf(
+			ErrInvalidBaseDenom,
+			"Should be either micro ('u[...]') or atto ('a[...]'); got: %q",
+			baseDenom,
+		)
+	}
+	return decimals, nil
 }

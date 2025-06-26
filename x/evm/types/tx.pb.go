@@ -42,8 +42,8 @@ type MsgEthereumTx struct {
 	Size_ float64 `protobuf:"fixed64,2,opt,name=size,proto3" json:"-"`
 	// hash of the transaction in hex format
 	Hash string `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty" rlp:"-"`
-	// from is the ethereum signer address in hex format. This address value is checked
-	// against the address derived from the signature (V, R, S) using the
+	// from is the ethereum signer address in hex format. This address value is
+	// checked against the address derived from the signature (V, R, S) using the
 	// secp256k1 elliptic curve
 	From string `protobuf:"bytes,4,opt,name=from,proto3" json:"from,omitempty"`
 }
@@ -197,7 +197,7 @@ func (m *AccessListTx) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_AccessListTx proto.InternalMessageInfo
 
-// DynamicFeeTx is the data of EIP-1559 dinamic fee transactions.
+// DynamicFeeTx is the data of EIP-1559 dynamic fee transactions.
 type DynamicFeeTx struct {
 	// chain_id of the destination EVM chain
 	ChainID *cosmossdk_io_math.Int `protobuf:"bytes,1,opt,name=chain_id,json=chainId,proto3,customtype=cosmossdk.io/math.Int" json:"chainID"`
@@ -211,7 +211,7 @@ type DynamicFeeTx struct {
 	GasLimit uint64 `protobuf:"varint,5,opt,name=gas,proto3" json:"gas,omitempty"`
 	// to is the hex formatted address of the recipient
 	To string `protobuf:"bytes,6,opt,name=to,proto3" json:"to,omitempty"`
-	// value defines the the transaction amount.
+	// value defines the transaction amount.
 	Amount *cosmossdk_io_math.Int `protobuf:"bytes,7,opt,name=value,proto3,customtype=cosmossdk.io/math.Int" json:"value,omitempty"`
 	// data is the data payload bytes of the transaction.
 	Data []byte `protobuf:"bytes,8,opt,name=data,proto3" json:"data,omitempty"`
@@ -304,8 +304,8 @@ type MsgEthereumTxResponse struct {
 	// logs contains the transaction hash and the proto-compatible ethereum
 	// logs.
 	Logs []*Log `protobuf:"bytes,2,rep,name=logs,proto3" json:"logs,omitempty"`
-	// ret is the returned data from evm function (result or data supplied with revert
-	// opcode)
+	// ret is the returned data from evm function (result or data supplied with
+	// revert opcode)
 	Ret []byte `protobuf:"bytes,3,opt,name=ret,proto3" json:"ret,omitempty"`
 	// vm_error is the error returned by vm execution
 	VmError string `protobuf:"bytes,4,opt,name=vm_error,json=vmError,proto3" json:"vm_error,omitempty"`
@@ -532,8 +532,9 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	// EthereumTx defines a method submitting Ethereum transactions.
 	EthereumTx(ctx context.Context, in *MsgEthereumTx, opts ...grpc.CallOption) (*MsgEthereumTxResponse, error)
-	// UpdateParams defined a governance operation for updating the x/evm module parameters.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateParams defined a governance operation for updating the x/evm module
+	// parameters. The authority is hard-coded to the Cosmos SDK x/gov module
+	// account
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
 
@@ -567,8 +568,9 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 type MsgServer interface {
 	// EthereumTx defines a method submitting Ethereum transactions.
 	EthereumTx(context.Context, *MsgEthereumTx) (*MsgEthereumTxResponse, error)
-	// UpdateParams defined a governance operation for updating the x/evm module parameters.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateParams defined a governance operation for updating the x/evm module
+	// parameters. The authority is hard-coded to the Cosmos SDK x/gov module
+	// account
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 }
 

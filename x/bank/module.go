@@ -10,6 +10,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
 type AppModule struct {
@@ -22,8 +23,8 @@ type AppModule struct {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(module bank.AppModule, keeper bankkeeper.Keeper, erc20keeper haqqbankkeeper.ERC20Keeper, accountKeeper haqqbankkeeper.AccountKeeper, ss exported.Subspace) AppModule {
-	wrappedBankKeeper := haqqbankkeeper.NewWrappedBaseKeeper(keeper, erc20keeper, accountKeeper)
+func NewAppModule(module bank.AppModule, keeper bankkeeper.Keeper, evmKeeper erc20types.EVMKeeper, erc20keeper haqqbankkeeper.ERC20Keeper, accountKeeper haqqbankkeeper.AccountKeeper, ss exported.Subspace) AppModule {
+	wrappedBankKeeper := haqqbankkeeper.NewWrappedBaseKeeper(keeper, evmKeeper, erc20keeper, accountKeeper)
 	return AppModule{
 		AppModule:   module,
 		keeper:      keeper,

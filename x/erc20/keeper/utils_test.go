@@ -34,6 +34,7 @@ import (
 	teststypes "github.com/haqq-network/haqq/types/tests"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	"github.com/haqq-network/haqq/x/erc20/keeper/testdata"
 	"github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 	evm "github.com/haqq-network/haqq/x/evm/types"
@@ -265,6 +266,7 @@ func (suite *KeeperTestSuite) sendTx(contractAddr, from common.Address, transfer
 
 	// Mint the max gas to the FeeCollector to ensure balance in case of refund
 	evmParams := suite.app.EvmKeeper.GetParams(suite.ctx)
+	//nolint: gosec // res.Gas is already checked for int overflow
 	suite.MintFeeCollector(sdk.NewCoins(sdk.NewCoin(evmParams.EvmDenom, sdkmath.NewInt(suite.app.FeeMarketKeeper.GetBaseFee(suite.ctx).Int64()*int64(res.Gas)))))
 	ercTransferTxParams := &evm.EvmTxArgs{
 		ChainID:   chainID,
@@ -325,12 +327,16 @@ func (suite *KeeperTestSuite) DeployContract(name, symbol string, decimals uint8
 
 func (suite *KeeperTestSuite) DeployContractMaliciousDelayed() (common.Address, error) {
 	suite.Commit()
+
+	maliciousDelayedContract, err := testdata.LoadMaliciousDelayedContract()
+	suite.Require().NoError(err, "failed to load malicious delayed contract")
+
 	addr, err := testutil.DeployContract(
 		suite.ctx,
 		suite.app,
 		suite.priv,
 		suite.queryClientEvm,
-		contracts.ERC20MaliciousDelayedContract,
+		maliciousDelayedContract,
 		big.NewInt(1000000000000000000),
 	)
 	suite.Commit()
@@ -339,12 +345,16 @@ func (suite *KeeperTestSuite) DeployContractMaliciousDelayed() (common.Address, 
 
 func (suite *KeeperTestSuite) DeployContractDirectBalanceManipulation() (common.Address, error) {
 	suite.Commit()
+
+	balanceManipulationContract, err := testdata.LoadBalanceManipulationContract()
+	suite.Require().NoError(err, "failed to load balance manipulation contract")
+
 	addr, err := testutil.DeployContract(
 		suite.ctx,
 		suite.app,
 		suite.priv,
 		suite.queryClientEvm,
-		contracts.ERC20DirectBalanceManipulationContract,
+		balanceManipulationContract,
 		big.NewInt(1000000000000000000),
 	)
 	suite.Commit()
@@ -361,15 +371,6 @@ func (suite *KeeperTestSuite) DeployContractToChain(name, symbol string, decimal
 		suite.queryClientEvm,
 		contracts.ERC20MinterBurnerDecimalsContract,
 		name, symbol, decimals,
-	)
-}
-
-func (suite *KeeperTestSuite) requireActivePrecompiles(precompiles []string) {
-	params := suite.app.EvmKeeper.GetParams(suite.ctx)
-	suite.Require().Equal(
-		precompiles,
-		params.ActivePrecompiles,
-		"expected different active precompiles",
 	)
 }
 
