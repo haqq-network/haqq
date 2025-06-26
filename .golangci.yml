@@ -3,6 +3,9 @@ run:
   concurrency: 4
   go: "1.23"
   tests: true
+issues:
+  max-issues-per-linter: 100
+  max-same-issues: 10
 linters:
   enable:
     - asciicheck
@@ -55,6 +58,11 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - x/evm/core
+    rules:
+      - path: _test\.go
+        linters:
+          - dupl
 formatters:
   enable:
     - gofumpt

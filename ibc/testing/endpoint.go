@@ -72,7 +72,7 @@ func (endpoint *Endpoint) QueryProof(key []byte) ([]byte, clienttypes.Height) {
 // provided
 func (endpoint *Endpoint) QueryProofAtHeight(key []byte, height uint64) ([]byte, clienttypes.Height) {
 	// query proof on the counterparty using the latest height of the IBC client
-	return endpoint.Chain.QueryProofAtHeight(key, int64(height))
+	return endpoint.Chain.QueryProofAtHeight(key, int64(height)) //nolint:gosec // won't overflow in normal conditions
 }
 
 // CreateClient creates an IBC client on the endpoint. It will update the
@@ -113,7 +113,7 @@ func (endpoint *Endpoint) CreateClient() (err error) {
 		fmt.Sprintf("expected sender account on chain with ID %q not to be nil", endpoint.Chain.ChainID),
 	)
 
-	zeroTimestamp := uint64(time.Time{}.UnixNano())
+	zeroTimestamp := uint64(time.Time{}.UnixNano()) //nolint: gosec // converting zero value
 	require.NotEqual(
 		endpoint.Chain.T, consensusState.GetTimestamp(), zeroTimestamp,
 		"current timestamp on the last header is the zero time; it might be necessary to commit blocks with the IBC coordinator",

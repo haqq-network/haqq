@@ -1024,7 +1024,7 @@ func (app *Haqq) BlockedAddrs() map[string]bool {
 		stakingprecompile.PrecompileAddress,
 		distprecompile.PrecompileAddress,
 		ics20precompile.PrecompileAddress,
-		//vestingprecompile.PrecompileAddress,
+		// vestingprecompile.PrecompileAddress,
 	}
 	for _, addr := range vm.PrecompiledAddressesBerlin {
 		blockedPrecompilesHex = append(blockedPrecompilesHex, addr.Hex())
@@ -1206,7 +1206,7 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	// ethermint subspaces
-	paramsKeeper.Subspace(evmtypes.ModuleName).WithKeyTable(evmtypes.ParamKeyTable()) //nolint: staticcheck
+	paramsKeeper.Subspace(evmtypes.ModuleName).WithKeyTable(evmtypes.ParamKeyTable())
 	paramsKeeper.Subspace(feemarkettypes.ModuleName).WithKeyTable(feemarkettypes.ParamKeyTable())
 	// evmos subspaces
 	paramsKeeper.Subspace(erc20types.ModuleName)
@@ -1256,9 +1256,8 @@ func (app *Haqq) setupUpgradeHandlers() {
 	}
 
 	var storeUpgrades *storetypes.StoreUpgrades
-
+	//nolint: revive // Example for further upgrades
 	switch upgradeInfo.Name {
-	// Example for further upgrades
 	// case v177.UpgradeName:
 	//	storeUpgrades = &storetypes.StoreUpgrades{
 	//		Renamed: []storetypes.StoreRename{

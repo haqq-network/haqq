@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/haqq-network/haqq/x/evm/keeper"
 	"github.com/haqq-network/haqq/x/evm/statedb"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"

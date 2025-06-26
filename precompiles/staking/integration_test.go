@@ -1248,7 +1248,7 @@ var _ = Describe("Calling staking precompile directly", func() {
 			}
 		})
 
-		//nolint:dupl // this is a duplicate of the test for smart contract calls to the precompile
+		// this is a duplicate of the test for smart contract calls to precompile
 		It("should return validators w/pagination limit = 1", func() {
 			const limit uint64 = 1
 			validatorArgs := defaultValidatorArgs.WithArgs(
@@ -3113,7 +3113,7 @@ var _ = Describe("Calling staking precompile via Solidity", func() {
 			}
 		})
 
-		//nolint:dupl // this is a duplicate of the test for EOA calls to the precompile
+		// this is a duplicate of the test for EOA calls to precompile
 		It("should return validators with pagination limit = 1", func() {
 			const limit uint64 = 1
 			validatorArgs := defaultValidatorsArgs.WithArgs(
@@ -3452,7 +3452,7 @@ var _ = Describe("Calling staking precompile via Solidity", func() {
 			expTxPass bool
 		}{
 			{"call", true},
-			//{"callcode", false}, // TODO Find the reason of failure and fix it
+			// {"callcode", false}, // TODO Find the reason of failure and fix it
 			{"staticcall", false},
 			{"delegatecall", false},
 		}
@@ -3596,7 +3596,6 @@ var _ = Describe("Calling staking precompile via Solidity", func() {
 			Expect(delegation).To(HaveLen(1), "expected one delegation")
 			Expect(delegation[0].GetShares().BigInt()).To(Equal(big.NewInt(2e18)), "expected different delegation shares")
 		})
-		//nolint:dupl
 		It("should revert the contract balance to the original value when the precompile fails", func() {
 			delegationArgs := defaultCallArgs.
 				WithGasLimit(1e9).
@@ -3616,7 +3615,6 @@ var _ = Describe("Calling staking precompile via Solidity", func() {
 			Expect(delegation).To(HaveLen(0), "expected no delegations")
 		})
 
-		//nolint:dupl
 		It("should revert the contract balance to the original value when the custom logic after the precompile fails ", func() {
 			delegationArgs := defaultCallArgs.
 				WithGasLimit(1e9).

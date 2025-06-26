@@ -3,11 +3,6 @@
 package keeper_test
 
 import (
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/haqq-network/haqq/app"
-	"github.com/haqq-network/haqq/encoding"
-	"github.com/haqq-network/haqq/utils"
 	"math/big"
 
 	//nolint:revive // dot imports are fine for Ginkgo
@@ -17,17 +12,22 @@ import (
 
 	"cosmossdk.io/math"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/contracts"
+	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/precompiles/staking"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	integrationutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
+	"github.com/haqq-network/haqq/utils"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 

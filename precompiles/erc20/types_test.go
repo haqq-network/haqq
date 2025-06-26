@@ -7,7 +7,6 @@ import (
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 )
 
-//nolint:dupl // these tests are not duplicates
 func (s *PrecompileTestSuite) TestParseTransferArgs() {
 	to := utiltx.GenerateAddress()
 	amount := big.NewInt(100)
@@ -140,7 +139,6 @@ func (s *PrecompileTestSuite) TestParseTransferFromArgs() {
 	}
 }
 
-//nolint:dupl // these tests are not duplicates
 func (s *PrecompileTestSuite) TestParseApproveArgs() {
 	spender := utiltx.GenerateAddress()
 	amount := big.NewInt(100)

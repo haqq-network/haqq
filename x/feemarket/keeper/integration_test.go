@@ -122,7 +122,6 @@ var _ = Describe("Feemarket", func() {
 				privKey, msg = setupTestWithContext(chainID, "5", sdkmath.LegacyNewDec(3), sdkmath.NewInt(5))
 			})
 
-			//nolint
 			Context("during CheckTx", func() {
 				It("should reject transactions with gasPrice < MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(2)
@@ -152,7 +151,6 @@ var _ = Describe("Feemarket", func() {
 				})
 			})
 
-			//nolint
 			Context("during DeliverTx", func() {
 				It("should reject transactions with gasPrice < MinGasPrices", func() {
 					gasPrice := sdkmath.NewInt(2)

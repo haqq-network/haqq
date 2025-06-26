@@ -363,6 +363,7 @@ func (s *PrecompileTestSuite) CheckAllowanceChangeEvent(log *ethtypes.Log, amoun
 	// Check event signature matches the one emitted
 	event := s.precompile.ABI.Events[authorization.EventTypeIBCTransferAuthorization]
 	s.Require().Equal(event.ID, common.HexToHash(log.Topics[0].Hex()))
+	//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 	var approvalEvent ics20.EventTransferAuthorization

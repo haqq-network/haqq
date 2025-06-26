@@ -55,6 +55,8 @@ func (k WrappedBaseKeeper) Balance(ctx context.Context, req *types.QueryBalanceR
 }
 
 // AllBalances implements the Query/AllBalances gRPC method
+//
+//nolint:dupl // false warning about duplicate code in AllBalances and SpendableBalances methods
 func (k WrappedBaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalancesRequest) (*types.QueryAllBalancesResponse, error) {
 	res, err := k.Keeper.AllBalances(ctx, req)
 	if err != nil {
@@ -95,6 +97,8 @@ func (k WrappedBaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllB
 
 // SpendableBalances implements a gRPC query handler for retrieving an account's
 // spendable balances.
+//
+//nolint:dupl // false warning about duplicate code in AllBalances and SpendableBalances methods
 func (k WrappedBaseKeeper) SpendableBalances(ctx context.Context, req *types.QuerySpendableBalancesRequest) (*types.QuerySpendableBalancesResponse, error) {
 	res, err := k.Keeper.SpendableBalances(ctx, req)
 	if err != nil {

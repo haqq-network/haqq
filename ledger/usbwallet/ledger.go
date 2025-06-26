@@ -156,7 +156,6 @@ func (w *ledgerDriver) SignTypedMessage(path gethaccounts.DerivationPath, domain
 	}
 	// Ensure the wallet is capable of signing the given transaction
 	if w.version[0] < 1 && w.version[1] < 5 {
-		//nolint:stylecheck // ST1005 requires error strings to be lowercase but Ledger as a brand name should start with a capital letter
 		return nil, fmt.Errorf("Ledger version >= 1.5.0 required for EIP-712 signing (found version v%d.%d.%d)", w.version[0], w.version[1], w.version[2])
 	}
 	// All infos gathered and metadata checks out, request signing
@@ -387,7 +386,7 @@ func (w *ledgerDriver) ledgerExchange(opcode ledgerOpcode, p1 ledgerParam1, p2 l
 	// Construct the message payload, possibly split into multiple chunks
 	apdu := make([]byte, 2, 7+len(data))
 
-	//#nosec G701 -- gosec will raise a warning on this integer conversion for potential overflow
+	//nolint: gosec // gosec G115 will raise a warning on this integer conversion for potential overflow
 	binary.BigEndian.PutUint16(apdu, uint16(5+len(data)))
 	apdu = append(apdu, []byte{0xe0, byte(opcode), byte(p1), byte(p2), byte(len(data))}...)
 	apdu = append(apdu, data...)
@@ -400,7 +399,7 @@ func (w *ledgerDriver) ledgerExchange(opcode ledgerOpcode, p1 ledgerParam1, p2 l
 	for i := 0; len(apdu) > 0; i++ {
 		// Construct the new message to stream
 		chunk = append(chunk[:0], header...)
-		//#nosec G701 -- gosec will raise a warning on this integer conversion for potential overflow
+		//nolint: gosec // gosec G115 will raise a warning on this integer conversion for potential overflow
 		binary.BigEndian.PutUint16(chunk[3:], uint16(i))
 
 		if len(apdu) > space {

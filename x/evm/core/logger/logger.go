@@ -64,6 +64,7 @@ type StructLog struct {
 }
 
 // overrides for gencodec
+// nolint: unused // used in go:generate above
 type structLogMarshaling struct {
 	Gas         math.HexOrDecimal64
 	GasCost     math.HexOrDecimal64

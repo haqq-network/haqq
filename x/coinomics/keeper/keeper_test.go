@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	"github.com/stretchr/testify/require"
@@ -163,7 +165,7 @@ func (suite *KeeperTestSuite) CommitBlock(shift uint64) {
 	_ = suite.app.Commit()
 
 	header.Height++
-	header.Time = header.Time.Add(time.Second * time.Duration(shift))
+	header.Time = header.Time.Add(time.Second * time.Duration(shift)) //nolint: gosec
 
 	// run begin block
 	suite.app.BeginBlock(abci.RequestBeginBlock{

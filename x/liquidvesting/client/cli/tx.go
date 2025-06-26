@@ -30,6 +30,8 @@ func NewTxCmd() *cobra.Command {
 }
 
 // NewMsgLiquidateCmd returns command for composing MsgLiquidate and sending it to blockchain
+//
+//nolint:dupl // false warning about duplicate code in NewMsgLiquidateCmd and NewMsgRedeemCmd methods
 func NewMsgLiquidateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "liquidate AMOUNT [RECEIVER]",
@@ -69,6 +71,8 @@ func NewMsgLiquidateCmd() *cobra.Command {
 }
 
 // NewMsgRedeemCmd returns command for composing MsgRedeem and sending it to blockchain
+//
+//nolint:dupl // false warning about duplicate code in NewMsgLiquidateCmd and NewMsgRedeemCmd methods
 func NewMsgRedeemCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "redeem AMOUNT [RECEIVER]",

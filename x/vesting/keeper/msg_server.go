@@ -295,7 +295,7 @@ func (k Keeper) ConvertVestingAccount(
 
 	ethAccount := ethtypes.ProtoAccount().(*ethtypes.EthAccount)
 	ethAccount.BaseAccount = vestingAcc.BaseAccount
-	ethAccount.SetCodeHash(vestingAcc.GetCodeHash()) // nolint: errcheck // There's always nil error
+	ethAccount.SetCodeHash(vestingAcc.GetCodeHash()) //nolint: errcheck // There's always nil error
 	k.accountKeeper.SetAccount(ctx, ethAccount)
 
 	return &types.MsgConvertVestingAccountResponse{}, nil

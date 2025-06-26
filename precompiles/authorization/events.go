@@ -80,7 +80,7 @@ func EmitRevocationEvent(args cmn.EmitEventArgs) error {
 		Address:     args.ContractAddr,
 		Topics:      topics,
 		Data:        packed,
-		BlockNumber: uint64(args.Ctx.BlockHeight()),
+		BlockNumber: uint64(args.Ctx.BlockHeight()), //nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	})
 
 	return nil
@@ -121,7 +121,7 @@ func EmitIBCTransferAuthorizationEvent(
 		Address:     precompileAddr,
 		Topics:      topics,
 		Data:        packed,
-		BlockNumber: uint64(ctx.BlockHeight()),
+		BlockNumber: uint64(ctx.BlockHeight()), //nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	})
 
 	return nil

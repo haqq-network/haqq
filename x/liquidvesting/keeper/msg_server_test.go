@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"github.com/haqq-network/haqq/utils"
 	"time"
 
 	"cosmossdk.io/math"
@@ -17,6 +16,7 @@ import (
 	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
 	haqqtypes "github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/utils"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"

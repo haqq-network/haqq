@@ -238,7 +238,6 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			false,
 			"",
 		},
-		//nolint:dupl
 		{
 			"pass - transfer 1 ISLM from chainA to chainB and don't change the unlimited spending limit",
 			func(sender, receiver sdk.AccAddress) []interface{} {
@@ -272,7 +271,6 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			false,
 			"",
 		},
-		//nolint:dupl
 		{
 			"pass - transfer 1 ISLM from chainA to chainB and only change 1 spend limit",
 			func(sender, receiver sdk.AccAddress) []interface{} {

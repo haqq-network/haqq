@@ -428,7 +428,7 @@ var _ = Describe("Calling distribution precompile from EOA", func() {
 			Expect(0).To(Equal(len(out.DistributionInfo.SelfBondRewards)))
 		})
 
-		It("should get validator outstanding rewards - validatorOutstandingRewards query", func() { //nolint:dupl
+		It("should get validator outstanding rewards - validatorOutstandingRewards query", func() {
 			valRewards := sdk.DecCoins{sdk.NewDecCoinFromDec(s.bondDenom, math.LegacyNewDec(1))}
 			// set outstanding rewards
 			s.app.DistrKeeper.SetValidatorOutstandingRewards(s.ctx, s.validators[0].GetOperator(), distrtypes.ValidatorOutstandingRewards{Rewards: valRewards})
@@ -449,7 +449,7 @@ var _ = Describe("Calling distribution precompile from EOA", func() {
 			Expect(expValAmount).To(Equal(rewards[0].Amount.Int64()))
 		})
 
-		It("should get validator commission - validatorCommission query", func() { //nolint:dupl
+		It("should get validator commission - validatorCommission query", func() {
 			// set commission
 			valCommission := sdk.DecCoins{sdk.NewDecCoinFromDec(s.bondDenom, math.LegacyNewDec(1))}
 			s.app.DistrKeeper.SetValidatorAccumulatedCommission(s.ctx, s.validators[0].GetOperator(), distrtypes.ValidatorAccumulatedCommission{Commission: valCommission})
@@ -1670,7 +1670,7 @@ var _ = Describe("Calling distribution precompile from another contract", func()
 			})
 		})
 
-		Context("get validator outstanding rewards", func() { //nolint:dupl
+		Context("get validator outstanding rewards", func() {
 			// defaultValOutRewardsArgs are the default arguments for the getValidatorOutstandingRewards query
 			//
 			// NOTE: this has to be populated in BeforeEach because the test suite setup is not available prior to that.
@@ -1710,7 +1710,7 @@ var _ = Describe("Calling distribution precompile from another contract", func()
 			})
 		})
 
-		Context("get validator commission", func() { //nolint:dupl
+		Context("get validator commission", func() {
 			// defaultValCommArgs are the default arguments for the getValidatorCommission query
 			//
 			// NOTE: this has to be populated in BeforeEach because the test suite setup is not available prior to that.

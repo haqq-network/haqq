@@ -23,6 +23,14 @@ func DenomDisplayNameFromID(id uint64) string {
 
 func DenomIDFromBaseName(baseName string) (uint64, error) {
 	stringID := strings.TrimPrefix(baseName, denomBaseNamePrefix)
+
 	result, err := strconv.Atoi(stringID)
+	switch {
+	case err != nil:
+		return 0, err
+	case result < 0:
+		return 0, fmt.Errorf("denom id out of range: %d", result)
+	}
+
 	return uint64(result), err
 }

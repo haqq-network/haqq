@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"math/big"
 
 	//nolint:revive // dot imports are fine for Ginkgo
@@ -12,6 +11,7 @@ import (
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"

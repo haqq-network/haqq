@@ -226,7 +226,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 		// 	Expect(auths).To(BeNil())
 		// })
 
-		It("should return an error if the allocation denom is not present", func() { //nolint:dupl
+		It("should return an error if the allocation denom is not present", func() {
 			increaseAllowanceArgs := defaultCallArgs.
 				WithMethodName(authorization.IncreaseAllowanceMethod).
 				WithArgs(
@@ -334,7 +334,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 		// 	Expect(auths).To(BeNil())
 		// })
 
-		It("should return an error if the allocation denom is not present", func() { //nolint:dupl
+		It("should return an error if the allocation denom is not present", func() {
 			decreaseAllowance := defaultCallArgs.
 				WithMethodName(authorization.DecreaseAllowanceMethod).
 				WithArgs(
@@ -1204,7 +1204,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 		})
 
 		Context("Increase allowance", func() {
-			It("should increase allowance", func() { //nolint:dupl
+			It("should increase allowance", func() {
 				_, _, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.app, defaultChangeAllowanceArg, allowanceChangeCheck)
 				Expect(err).To(BeNil(), "error while calling the precompile")
 
@@ -1228,7 +1228,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 					WithMethodName("testDecreaseAllowance")
 			})
 
-			It("should decrease allowance", func() { //nolint:dupl
+			It("should decrease allowance", func() {
 				_, _, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.app, defaultDecreaseAllowanceArg, allowanceChangeCheck)
 				Expect(err).To(BeNil(), "error while calling the precompile")
 

@@ -37,8 +37,7 @@ func TestConsumeSignatureVerificationGas(t *testing.T) {
 	expectedCost1 := expectedGasCostByKeys(pkSet1)
 
 	for i := 0; i < len(pkSet1); i++ {
-		// using nolint:all because the staticcheck nolint is not working as expected
-		stdSig := legacytx.StdSignature{PubKey: pkSet1[i], Signature: sigSet1[i]} //nolint:all
+		stdSig := legacytx.StdSignature{PubKey: pkSet1[i], Signature: sigSet1[i]}
 		sigV2, err := legacytx.StdSignatureToSignatureV2(cdc, stdSig)
 		require.NoError(t, err)
 		err = multisig.AddSignatureV2(multisignature1, sigV2, pkSet1)

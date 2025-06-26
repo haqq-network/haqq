@@ -1,9 +1,9 @@
 package keeper
 
 import (
-	"cosmossdk.io/math"
 	"math/big"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -22,7 +22,7 @@ type ERC20Keeper interface {
 	BalanceOf(ctx sdk.Context, abi abi.ABI, contract, account common.Address) *big.Int
 	GetParams(ctx sdk.Context) (params types.Params)
 	IsAvailableERC20Precompile(params *types.Params, address common.Address) bool
-	ConvertCoinNativeERC20(ctx sdk.Context, pair types.TokenPair, amount math.Int, receiver common.Address, sender sdk.AccAddress) error
+	ConvertCoinNativeERC20(ctx sdk.Context, pair types.TokenPair, amount sdkmath.Int, receiver common.Address, sender sdk.AccAddress) error
 }
 
 type AccountKeeper interface {

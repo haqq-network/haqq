@@ -299,7 +299,7 @@ func (k Keeper) EstimateGasInternal(c context.Context, req *types.EthCallRequest
 		// Query block gas limit
 		params := ctx.ConsensusParams()
 		if params != nil && params.Block != nil && params.Block.MaxGas > 0 {
-			hi = uint64(params.Block.MaxGas)
+			hi = uint64(params.Block.MaxGas) //nolint: gosec // maxGas is a positive int64
 		} else {
 			hi = req.GasCap
 		}
@@ -469,7 +469,7 @@ func (k Keeper) TraceTx(c context.Context, req *types.QueryTraceTxRequest) (*typ
 			continue
 		}
 		txConfig.TxHash = ethTx.Hash()
-		txConfig.TxIndex = uint(i)
+		txConfig.TxIndex = uint(i) //nolint: gosec // i is a positive int
 		// reset gas meter for each transaction
 		ctx = evmante.BuildEvmExecutionCtx(ctx).
 			WithGasMeter(haqqtypes.NewInfiniteGasMeterWithLimit(msg.Gas()))
@@ -563,7 +563,7 @@ func (k Keeper) TraceBlock(c context.Context, req *types.QueryTraceBlockRequest)
 		result := types.TxTraceResult{}
 		ethTx := tx.AsTransaction()
 		txConfig.TxHash = ethTx.Hash()
-		txConfig.TxIndex = uint(i)
+		txConfig.TxIndex = uint(i) //nolint: gosec // i is a positive int
 		traceResult, logIndex, err := k.traceTx(ctx, cfg, txConfig, signer, ethTx, req.TraceConfig, true, nil)
 		if err != nil {
 			result.Error = err.Error()
@@ -629,7 +629,7 @@ func (k *Keeper) traceTx(
 
 	tCtx := &tracers.Context{
 		BlockHash: txConfig.BlockHash,
-		TxIndex:   int(txConfig.TxIndex),
+		TxIndex:   int(txConfig.TxIndex), //nolint: gosec // txIndex can't overflow in normal conditions
 		TxHash:    txConfig.TxHash,
 	}
 

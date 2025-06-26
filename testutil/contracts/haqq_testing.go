@@ -9,7 +9,7 @@ import (
 
 var (
 	//go:embed compiled_contracts/haqq_testing.json
-	HaqqTestingJSON []byte // nolint: golint
+	HaqqTestingJSON []byte
 
 	// HaqqTestingContract is the compiled dummy contract
 	HaqqTestingContract evmtypes.CompiledContract

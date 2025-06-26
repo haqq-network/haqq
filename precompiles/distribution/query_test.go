@@ -138,7 +138,7 @@ func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
 	}
 }
 
-func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() { //nolint:dupl
+func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() {
 	method := s.precompile.Methods[distribution.ValidatorOutstandingRewardsMethod]
 
 	testCases := []distrTestCases{
@@ -224,7 +224,7 @@ func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() { //nolint:dupl
 	}
 }
 
-func (s *PrecompileTestSuite) TestValidatorCommission() { //nolint:dupl
+func (s *PrecompileTestSuite) TestValidatorCommission() {
 	method := s.precompile.Methods[distribution.ValidatorCommissionMethod]
 
 	testCases := []distrTestCases{

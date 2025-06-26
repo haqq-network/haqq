@@ -2,12 +2,12 @@ package evm
 
 import (
 	"errors"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )

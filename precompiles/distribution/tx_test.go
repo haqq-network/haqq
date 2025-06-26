@@ -13,8 +13,8 @@ import (
 	"github.com/haqq-network/haqq/precompiles/distribution"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	"github.com/haqq-network/haqq/x/evm/core/vm"
 	"github.com/haqq-network/haqq/utils"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 func (s *PrecompileTestSuite) TestSetWithdrawAddress() {

@@ -123,7 +123,7 @@ func (k BaseKeeper) GetAccountsBalances(ctx sdk.Context) []types.Balance {
 func (k BaseKeeper) GetPaginatedAccountsBalances(ctx sdk.Context, pagination *query.PageRequest) ([]types.Balance, *query.PageResponse, error) {
 	holdersStore := k.getHoldersStore(ctx)
 	balances := make([]types.Balance, 0)
-	pageRes, err := query.Paginate(holdersStore, pagination, func(key, value []byte) error {
+	pageRes, err := query.Paginate(holdersStore, pagination, func(key, _ []byte) error {
 		addr, err := types.AddressFromHoldersStore(key)
 		if err != nil {
 			k.Logger(ctx).With("key", key, "err", err).Error("failed to get address from holders store key")

@@ -20,7 +20,7 @@ import (
 	ics20precompile "github.com/haqq-network/haqq/precompiles/ics20"
 	"github.com/haqq-network/haqq/precompiles/p256"
 	stakingprecompile "github.com/haqq-network/haqq/precompiles/staking"
-	//vestingprecompile "github.com/haqq-network/haqq/precompiles/vesting"
+	// vestingprecompile "github.com/haqq-network/haqq/precompiles/vesting"
 	erc20Keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	"github.com/haqq-network/haqq/x/evm/types"
@@ -31,14 +31,14 @@ import (
 
 const bech32PrecompileBaseGas = 6_000
 
-// AvailableStaticPrecompiles returns the list of all available static precompiled contracts.
+// NewAvailableStaticPrecompiles returns the list of all available static precompiled contracts.
 // NOTE: this should only be used during initialization of the Keeper.
 func NewAvailableStaticPrecompiles(
 	stakingKeeper stakingkeeper.Keeper,
 	distributionKeeper distributionkeeper.Keeper,
 	bankKeeper bankkeeper.Keeper,
 	erc20Keeper erc20Keeper.Keeper,
-	vestingKeeper vestingkeeper.Keeper,
+	_ vestingkeeper.Keeper, // temporary unused
 	authzKeeper authzkeeper.Keeper,
 	transferKeeper transferkeeper.Keeper,
 	channelKeeper channelkeeper.Keeper,
@@ -78,10 +78,10 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate ICS20 precompile: %w", err))
 	}
 
-	//vestingPrecompile, err := vestingprecompile.NewPrecompile(vestingKeeper, authzKeeper)
-	//if err != nil {
+	// vestingPrecompile, err := vestingprecompile.NewPrecompile(vestingKeeper, authzKeeper)
+	// if err != nil {
 	//	panic(fmt.Errorf("failed to instantiate vesting precompile: %w", err))
-	//}
+	// }
 
 	bankPrecompile, err := bankprecompile.NewPrecompile(bankKeeper, erc20Keeper)
 	if err != nil {
@@ -96,7 +96,7 @@ func NewAvailableStaticPrecompiles(
 	precompiles[stakingPrecompile.Address()] = stakingPrecompile
 	precompiles[distributionPrecompile.Address()] = distributionPrecompile
 	precompiles[ibcTransferPrecompile.Address()] = ibcTransferPrecompile
-	//precompiles[vestingPrecompile.Address()] = vestingPrecompile
+	// precompiles[vestingPrecompile.Address()] = vestingPrecompile
 	precompiles[bankPrecompile.Address()] = bankPrecompile
 	return precompiles
 }

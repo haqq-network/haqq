@@ -396,6 +396,7 @@ func (s *PrecompileTestSuite) CheckAllowanceChangeEvent(log *ethtypes.Log, metho
 	// Check event signature matches the one emitted
 	event := s.precompile.ABI.Events[authorization.EventTypeAllowanceChange]
 	s.Require().Equal(event.ID, common.HexToHash(log.Topics[0].Hex()))
+	//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 	var approvalEvent authorization.EventAllowanceChange
@@ -433,6 +434,7 @@ func (s *PrecompileTestSuite) assertValidatorsResponse(validators []staking.Vali
 		j := valOrder[i]
 
 		s.Require().Equal(s.validators[j].OperatorAddress, sdk.ValAddress(common.HexToAddress(validators[i].OperatorAddress).Bytes()).String())
+		//nolint: gosec // status is one of enumerated constants that are all fit in uint8
 		s.Require().Equal(uint8(s.validators[j].Status), validators[i].Status)
 		s.Require().Equal(s.validators[j].Tokens.Uint64(), validators[i].Tokens.Uint64())
 		s.Require().Equal(s.validators[j].DelegatorShares.BigInt(), validators[i].DelegatorShares)

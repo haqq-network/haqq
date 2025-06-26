@@ -9,7 +9,7 @@ import (
 	"math/big"
 	"strings"
 
-	//nolint:stylecheck,revive // it's common practice to use the global imports for Ginkgo and Gomega
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -36,6 +36,7 @@ func CheckAuthorizationEvents(event abi.Event, precompileAddr, granter, grantee 
 
 	// Check if the log has the expected indexed fields and data
 	Expect(log.Address).To(Equal(precompileAddr.String()), "expected different address in event")
+	//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	Expect(log.BlockNumber).To(Equal(uint64(height)), "expected different block number in event")
 	Expect(log.Topics[0]).To(Equal(event.ID.String()), "expected different event ID")
 	Expect(common.HexToAddress(log.Topics[1])).To(Equal(grantee), "expected different grantee in event")

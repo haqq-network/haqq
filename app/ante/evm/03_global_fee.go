@@ -1,7 +1,6 @@
 package evm
 
 import (
-	"cosmossdk.io/math"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -86,7 +85,7 @@ func (empd EthMinGasPriceDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 // increase the GasTipCap (priority fee) until EffectivePrice > MinGasPrices.
 // Transactions with MinGasPrices * gasUsed < tx fees < EffectiveFee are rejected
 // by the feemarket AnteHandle
-func CheckGlobalFee(fee, globalMinGasPrice, gasLimit math.LegacyDec) error {
+func CheckGlobalFee(fee, globalMinGasPrice, gasLimit sdkmath.LegacyDec) error {
 	if globalMinGasPrice.IsZero() {
 		return nil
 	}

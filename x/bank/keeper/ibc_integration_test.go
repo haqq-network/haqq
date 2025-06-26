@@ -1,8 +1,7 @@
 package keeper_test
 
 import (
-	"github.com/haqq-network/haqq/contracts"
-	"github.com/haqq-network/haqq/utils"
+	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -10,7 +9,9 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/haqq-network/haqq/contracts"
 	teststypes "github.com/haqq-network/haqq/types/tests"
+	"github.com/haqq-network/haqq/utils"
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
 )
 

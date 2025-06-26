@@ -267,6 +267,7 @@ func (s *PrecompileTestSuite) TestCreateValidator() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[staking.EventTypeCreateValidator]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), geth.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				// Check the fully unpacked event matches the one emitted
@@ -537,6 +538,7 @@ func (s *PrecompileTestSuite) TestEditValidator() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[staking.EventTypeEditValidator]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), geth.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				// Check the fully unpacked event matches the one emitted
@@ -564,7 +566,7 @@ func (s *PrecompileTestSuite) TestEditValidator() {
 			},
 			200000,
 			nil,
-			func(data []byte) { //nolint:dupl
+			func(data []byte) {
 				success, err := s.precompile.Unpack(staking.EditValidatorMethod, data)
 				s.Require().NoError(err)
 				s.Require().Equal(success[0], true)
@@ -575,6 +577,7 @@ func (s *PrecompileTestSuite) TestEditValidator() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[staking.EventTypeEditValidator]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), geth.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				// Check the fully unpacked event matches the one emitted
@@ -600,7 +603,7 @@ func (s *PrecompileTestSuite) TestEditValidator() {
 			},
 			200000,
 			nil,
-			func(data []byte) { //nolint:dupl
+			func(data []byte) {
 				success, err := s.precompile.Unpack(staking.EditValidatorMethod, data)
 				s.Require().NoError(err)
 				s.Require().Equal(success[0], true)
@@ -611,6 +614,7 @@ func (s *PrecompileTestSuite) TestEditValidator() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[staking.EventTypeEditValidator]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), geth.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				// Check the fully unpacked event matches the one emitted
@@ -804,6 +808,7 @@ func (s *PrecompileTestSuite) TestDelegate() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[staking.EventTypeDelegate]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), geth.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 			},
 			false,

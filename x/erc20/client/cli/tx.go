@@ -104,7 +104,7 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 				return err
 			}
 
-			description, err := cmd.Flags().GetString(cli.FlagDescription) //nolint:staticcheck
+			description, err := cmd.Flags().GetString(cli.FlagDescription)
 			if err != nil {
 				return err
 			}
@@ -133,12 +133,12 @@ func NewRegisterERC20ProposalCmd() *cobra.Command {
 	}
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
-	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") //nolint:staticcheck
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(cli.FlagDeposit, "1aISLM", "deposit of proposal")
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
-	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil { //nolint:staticcheck
+	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
 		panic(err)
 	}
 	if err := cmd.MarkFlagRequired(cli.FlagDeposit); err != nil {
@@ -166,7 +166,7 @@ func NewToggleTokenConversionProposalCmd() *cobra.Command {
 				return err
 			}
 
-			description, err := cmd.Flags().GetString(cli.FlagDescription) //nolint:staticcheck
+			description, err := cmd.Flags().GetString(cli.FlagDescription)
 			if err != nil {
 				return err
 			}
@@ -195,12 +195,12 @@ func NewToggleTokenConversionProposalCmd() *cobra.Command {
 	}
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
-	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") //nolint:staticcheck
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(cli.FlagDeposit, "1aISLM", "deposit of proposal")
 	if err := cmd.MarkFlagRequired(cli.FlagTitle); err != nil {
 		panic(err)
 	}
-	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil { //nolint:staticcheck
+	if err := cmd.MarkFlagRequired(cli.FlagDescription); err != nil {
 		panic(err)
 	}
 	if err := cmd.MarkFlagRequired(cli.FlagDeposit); err != nil {

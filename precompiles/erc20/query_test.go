@@ -551,7 +551,7 @@ func (s *PrecompileTestSuite) TestAllowance() {
 		},
 		{
 			name: "pass - allowance exists for precompile token pair denom",
-			malleate: func(ctx sdk.Context, app *app.Haqq, amount *big.Int) []interface{} {
+			malleate: func(_ sdk.Context, _ *app.Haqq, amount *big.Int) []interface{} {
 				granterIdx := 0
 				granteeIdx := 1
 

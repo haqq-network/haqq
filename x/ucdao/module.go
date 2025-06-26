@@ -125,7 +125,7 @@ func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ss exported.Subspace) A
 func (AppModule) Name() string { return types.ModuleName }
 
 // RegisterInvariants registers the dao module invariants.
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
+func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
 // QuerierRoute returns the dao module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }

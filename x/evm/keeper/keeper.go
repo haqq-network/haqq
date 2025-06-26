@@ -152,6 +152,7 @@ func (k Keeper) GetAuthority() sdk.AccAddress {
 // GetBlockBloomTransient returns bloom bytes for the current block height
 func (k Keeper) GetBlockBloomTransient(ctx sdk.Context) *big.Int {
 	store := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
+	//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	heightBz := sdk.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
 	bz := store.Get(heightBz)
 	if len(bz) == 0 {
@@ -165,6 +166,7 @@ func (k Keeper) GetBlockBloomTransient(ctx sdk.Context) *big.Int {
 // every block.
 func (k Keeper) SetBlockBloomTransient(ctx sdk.Context, bloom *big.Int) {
 	store := prefix.NewStore(ctx.TransientStore(k.transientKey), types.KeyPrefixTransientBloom)
+	//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 	heightBz := sdk.Uint64ToBigEndian(uint64(ctx.BlockHeight()))
 	store.Set(heightBz, bloom.Bytes())
 }

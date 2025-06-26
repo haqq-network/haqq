@@ -144,28 +144,31 @@ func (b *Backend) GetCoinbase() (sdk.AccAddress, error) {
 		return nil, err
 	}
 
-	address, _ := sdk.AccAddressFromBech32(res.AccountAddress) // #nosec G703
+	address, _ := sdk.AccAddressFromBech32(res.AccountAddress)
 	return address, nil
 }
 
 // FeeHistory returns data relevant for fee estimation based on the specified range of blocks.
+// - userBlockCount is a number of blocks to fetch, maximum is 100
+// - lastBlock is the block to start search, to oldest
+// - rewardPercentiles is a percentiles to fetch reward
 func (b *Backend) FeeHistory(
-	userBlockCount rpc.DecimalOrHex, // number blocks to fetch, maximum is 100
-	lastBlock rpc.BlockNumber, // the block to start search , to oldest
-	rewardPercentiles []float64, // percentiles to fetch reward
+	userBlockCount rpc.DecimalOrHex,
+	lastBlock rpc.BlockNumber,
+	rewardPercentiles []float64,
 ) (*rpctypes.FeeHistoryResult, error) {
-	blockEnd := int64(lastBlock) //#nosec G701 -- checked for int overflow already
+	blockEnd := int64(lastBlock)
 
 	if blockEnd < 0 {
 		blockNumber, err := b.BlockNumber()
 		if err != nil {
 			return nil, err
 		}
-		blockEnd = int64(blockNumber) //#nosec G701 -- checked for int overflow already
+		blockEnd = int64(blockNumber) //nolint: gosec // G115 -- already checked for int overflow
 	}
 
-	blocks := int64(userBlockCount)                     // #nosec G701 -- checked for int overflow already
-	maxBlockCount := int64(b.cfg.JSONRPC.FeeHistoryCap) // #nosec G701 -- checked for int overflow already
+	blocks := int64(userBlockCount) //nolint: gosec // G115 -- already checked for int overflow
+	maxBlockCount := int64(b.cfg.JSONRPC.FeeHistoryCap)
 	if blocks > maxBlockCount {
 		return nil, fmt.Errorf("FeeHistory user block count %d higher than %d", blocks, maxBlockCount)
 	}
@@ -192,7 +195,7 @@ func (b *Backend) FeeHistory(
 
 	// fetch block
 	for blockID := blockStart; blockID <= blockEnd; blockID++ {
-		index := int32(blockID - blockStart) // #nosec G701
+		index := int32(blockID - blockStart) //nolint: gosec // G115 -- shouldn't overflow in normal conditions
 		// tendermint block
 		tendermintblock, err := b.TendermintBlockByNumber(rpctypes.BlockNumber(blockID))
 		if tendermintblock == nil {

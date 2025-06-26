@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -126,7 +126,7 @@ func (vtd EthVestingTransactionDecorator) updateAccountExpenses(
 	lockedBalances := account.LockedCoins(ctx.BlockTime())
 	ok, lockedBalance := lockedBalances.Find(denom)
 	if !ok {
-		lockedBalance = sdk.Coin{Denom: denom, Amount: math.ZeroInt()}
+		lockedBalance = sdk.Coin{Denom: denom, Amount: sdkmath.ZeroInt()}
 	}
 
 	spendableValue := big.NewInt(0)

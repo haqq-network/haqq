@@ -37,7 +37,7 @@ func (suite *KeeperTestSuite) TestGetHashFn() {
 	}{
 		{
 			"case 1.1: context hash cached",
-			uint64(suite.ctx.BlockHeight()),
+			uint64(suite.ctx.BlockHeight()), //nolint: gosec // blockHeight is a positive int64
 			func() {
 				suite.ctx = suite.ctx.WithHeaderHash(tmhash.Sum([]byte("header")))
 			},
@@ -45,7 +45,7 @@ func (suite *KeeperTestSuite) TestGetHashFn() {
 		},
 		{
 			"case 1.2: failed to cast Tendermint header",
-			uint64(suite.ctx.BlockHeight()),
+			uint64(suite.ctx.BlockHeight()), //nolint: gosec // blockHeight is a positive int64
 			func() {
 				header := tmproto.Header{}
 				header.Height = suite.ctx.BlockHeight()
@@ -55,7 +55,7 @@ func (suite *KeeperTestSuite) TestGetHashFn() {
 		},
 		{
 			"case 1.3: hash calculated from Tendermint header",
-			uint64(suite.ctx.BlockHeight()),
+			uint64(suite.ctx.BlockHeight()), //nolint: gosec // blockHeight is a positive int64
 			func() {
 				suite.ctx = suite.ctx.WithBlockHeader(header)
 			},
@@ -338,7 +338,6 @@ func (suite *KeeperTestSuite) TestGasToRefund() {
 
 			if tc.expPanic {
 				panicF := func() {
-					//nolint:staticcheck
 					keeper.GasToRefund(vmdb.GetRefund(), tc.gasconsumed, tc.refundQuotient)
 				}
 				suite.Require().Panics(panicF)

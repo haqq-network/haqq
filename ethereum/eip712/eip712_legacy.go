@@ -38,6 +38,10 @@ func LegacyWrapTxToTypedData(
 ) (apitypes.TypedData, error) {
 	txData := make(map[string]interface{})
 
+	if chainID > math.MaxInt64 {
+		return apitypes.TypedData{}, fmt.Errorf("chainID too large")
+	}
+
 	if err := json.Unmarshal(data, &txData); err != nil {
 		return apitypes.TypedData{}, errorsmod.Wrap(errortypes.ErrJSONUnmarshal, "failed to JSON unmarshal data")
 	}

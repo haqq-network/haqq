@@ -92,14 +92,14 @@ func (tf *IntegrationTxFactory) calculateFees(gasPrice *sdkmath.Int, gasLimit ui
 	denom := tf.network.GetDenom()
 	var fees sdktypes.Coins
 	if gasPrice != nil {
-		fees = sdktypes.Coins{{Denom: denom, Amount: gasPrice.MulRaw(int64(gasLimit))}}
+		fees = sdktypes.Coins{{Denom: denom, Amount: gasPrice.Mul(sdkmath.NewIntFromUint64(gasLimit))}}
 	} else {
 		baseFee, err := tf.grpcHandler.GetBaseFee()
 		if err != nil {
 			return sdktypes.Coins{}, errorsmod.Wrap(err, "failed to get base fee")
 		}
 		price := baseFee.BaseFee
-		fees = sdktypes.Coins{{Denom: denom, Amount: price.MulRaw(int64(gasLimit))}}
+		fees = sdktypes.Coins{{Denom: denom, Amount: price.Mul(sdkmath.NewIntFromUint64(gasLimit))}}
 	}
 	return fees, nil
 }

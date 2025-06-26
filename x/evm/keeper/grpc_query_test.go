@@ -762,7 +762,7 @@ func (suite *KeeperTestSuite) TestEstimateGas() {
 			rsp, err := suite.queryClient.EstimateGas(sdk.WrapSDKContext(suite.ctx), &req)
 			if tc.expPass {
 				suite.Require().NoError(err)
-				suite.Require().Equal(int64(tc.expGas), int64(rsp.Gas))
+				suite.Require().Equal(tc.expGas, rsp.Gas)
 			} else {
 				suite.Require().Error(err)
 			}
@@ -954,7 +954,7 @@ func (suite *KeeperTestSuite) TestTraceTx() {
 			},
 			expPass:       true,
 			traceResponse: "{\"gas\":34828,\"failed\":false,\"returnValue\":\"0000000000000000000000000000000000000000000000000000000000000001\",\"structLogs\":[{\"pc\":0,\"op\":\"PUSH1\",\"gas\":",
-			//expFinalGas:   27140, // gas consumed in traceTx setup (GetProposerAddr + CalculateBaseFee) + gas consumed in malleate func // Original evmOS value
+			// expFinalGas:   27140, // gas consumed in traceTx setup (GetProposerAddr + CalculateBaseFee) + gas consumed in malleate func // Original evmOS value
 			expFinalGas: 24221, // gas consumed in traceTx setup (GetProposerAddr + CalculateBaseFee) + gas consumed in malleate func // 24221 in Haqq
 		},
 		{
@@ -1009,7 +1009,7 @@ func (suite *KeeperTestSuite) TestTraceTx() {
 			} else {
 				suite.Require().Error(err)
 			}
-			suite.Require().Equal(int(tc.expFinalGas), int(suite.ctx.GasMeter().GasConsumed()), "expected different gas consumption")
+			suite.Require().Equal(tc.expFinalGas, suite.ctx.GasMeter().GasConsumed(), "expected different gas consumption")
 			// Reset for next test case
 			chainID = nil
 		})
@@ -1193,7 +1193,7 @@ func (suite *KeeperTestSuite) TestTraceBlock() {
 			} else {
 				suite.Require().Error(err)
 			}
-			suite.Require().Equal(int64(tc.expFinalGas), int64(suite.ctx.GasMeter().GasConsumed()), "expected different gas consumption")
+			suite.Require().Equal(tc.expFinalGas, suite.ctx.GasMeter().GasConsumed(), "expected different gas consumption")
 			// Reset for next case
 			chainID = nil
 		})

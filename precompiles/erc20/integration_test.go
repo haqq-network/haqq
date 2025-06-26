@@ -21,7 +21,6 @@ import (
 	"github.com/haqq-network/haqq/precompiles/erc20"
 	"github.com/haqq-network/haqq/precompiles/erc20/testdata"
 	"github.com/haqq-network/haqq/precompiles/testutil"
-	contractutils "github.com/haqq-network/haqq/precompiles/testutil/contracts"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
@@ -85,14 +84,6 @@ func TestIntegrationSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "ERC20 Extension Suite")
 }
-
-var (
-	defaultCallArgs    contractutils.CallArgs
-	wislmAddress       common.Address
-	revertContractAddr common.Address
-	gasLimit           uint64
-	gasPrice           *big.Int
-)
 
 var _ = Describe("ERC20 Extension -", func() {
 	var (

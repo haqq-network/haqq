@@ -17,7 +17,6 @@ import (
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
-//nolint:dupl // tests are not duplicate between the functions
 func (s *PrecompileTestSuite) TestApprove() {
 	method := s.precompile.Methods[authorization.ApproveMethod]
 	amount := int64(100)
@@ -267,7 +266,6 @@ func (s *PrecompileTestSuite) TestApprove() {
 	}
 }
 
-//nolint:dupl // tests are not duplicate between the functions
 func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 	method := s.precompile.Methods[authorization.IncreaseAllowanceMethod]
 	amount := int64(100)
@@ -465,7 +463,6 @@ func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 	}
 }
 
-//nolint:dupl // tests are not duplicate between the functions
 func (s *PrecompileTestSuite) TestDecreaseAllowance() {
 	method := s.precompile.Methods[authorization.DecreaseAllowanceMethod]
 	amount := int64(100)

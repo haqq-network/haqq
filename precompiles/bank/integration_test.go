@@ -19,9 +19,9 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	integrationutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
-	integrationutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )

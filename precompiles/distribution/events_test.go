@@ -41,6 +41,7 @@ func (s *PrecompileTestSuite) TestSetWithdrawAddressEvent() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[distribution.EventTypeSetWithdrawAddress]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				// Check the fully unpacked event matches the one emitted
@@ -106,6 +107,7 @@ func (s *PrecompileTestSuite) TestWithdrawDelegatorRewardsEvent() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[distribution.EventTypeWithdrawDelegatorRewards]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				optAddr, err := sdk.ValAddressFromBech32(s.validators[0].OperatorAddress)
@@ -177,6 +179,7 @@ func (s *PrecompileTestSuite) TestWithdrawValidatorCommissionEvent() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[distribution.EventTypeWithdrawValidatorCommission]
 				s.Require().Equal(crypto.Keccak256Hash([]byte(event.Sig)), common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				// Check the fully unpacked event matches the one emitted
@@ -213,7 +216,6 @@ func (s *PrecompileTestSuite) TestWithdrawValidatorCommissionEvent() {
 	}
 }
 
-//nolint:dupl
 func (s *PrecompileTestSuite) TestClaimRewardsEvent() {
 	testCases := []struct {
 		name      string
@@ -229,6 +231,7 @@ func (s *PrecompileTestSuite) TestClaimRewardsEvent() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[distribution.EventTypeClaimRewards]
 				s.Require().Equal(event.ID, common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				var claimRewardsEvent distribution.EventClaimRewards
@@ -251,7 +254,6 @@ func (s *PrecompileTestSuite) TestClaimRewardsEvent() {
 	}
 }
 
-//nolint:dupl
 func (s *PrecompileTestSuite) TestFundCommunityPoolEvent() {
 	testCases := []struct {
 		name      string
@@ -267,6 +269,7 @@ func (s *PrecompileTestSuite) TestFundCommunityPoolEvent() {
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[distribution.EventTypeFundCommunityPool]
 				s.Require().Equal(event.ID, common.HexToHash(log.Topics[0].Hex()))
+				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
 				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
 
 				var fundCommunityPoolEvent distribution.EventFundCommunityPool

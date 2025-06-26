@@ -83,8 +83,8 @@ func (kv *KVIndexer) IndexBlock(block *tmtypes.Block, txResults []*abci.Response
 
 			txResult := haqqtypes.TxResult{
 				Height:     height,
-				TxIndex:    uint32(txIndex),
-				MsgIndex:   uint32(msgIndex),
+				TxIndex:    uint32(txIndex),  //nolint: gosec // G115 txIndex can't overflow in normal conditions
+				MsgIndex:   uint32(msgIndex), //nolint: gosec // G115 msgIndex can't overflow in normal conditions
 				EthTxIndex: ethTxIndex,
 			}
 			if result.Code != abci.CodeTypeOK {
@@ -165,8 +165,8 @@ func TxHashKey(hash common.Hash) []byte {
 
 // TxIndexKey returns the key for db entry: `(block number, tx index) -> tx hash`
 func TxIndexKey(blockNumber int64, txIndex int32) []byte {
-	bz1 := sdk.Uint64ToBigEndian(uint64(blockNumber))
-	bz2 := sdk.Uint64ToBigEndian(uint64(txIndex))
+	bz1 := sdk.Uint64ToBigEndian(uint64(blockNumber)) //nolint: gosec // G115 blockNumber can't overflow in normal conditions
+	bz2 := sdk.Uint64ToBigEndian(uint64(txIndex))     //nolint: gosec // G115 txIndex can't overflow in normal conditions
 	return append(append([]byte{KeyPrefixTxIndex}, bz1...), bz2...)
 }
 
@@ -226,5 +226,6 @@ func parseBlockNumberFromKey(key []byte) (int64, error) {
 		return 0, fmt.Errorf("wrong tx index key length, expect: %d, got: %d", TxIndexKeyLength, len(key))
 	}
 
+	//nolint: gosec // G115 txIndex can't overflow in normal conditions
 	return int64(sdk.BigEndianToUint64(key[1:9])), nil
 }
