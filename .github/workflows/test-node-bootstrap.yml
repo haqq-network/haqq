@@ -6,7 +6,7 @@ on:
 
 jobs:
   lockfile:
-    runs-on: ubuntu-cpu16-ram64
+    runs-on: [self-hosted, nixos]
     steps:
       - name: Test node bootstrap
         run: |
