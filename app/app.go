@@ -172,7 +172,7 @@ import (
 	v181 "github.com/haqq-network/haqq/app/upgrades/v1.8.1"
 	v182 "github.com/haqq-network/haqq/app/upgrades/v1.8.2"
 	v183 "github.com/haqq-network/haqq/app/upgrades/v1.8.3"
-	v184 "github.com/haqq-network/haqq/app/upgrades/v1.8.4"
+	v185 "github.com/haqq-network/haqq/app/upgrades/v1.8.5"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -565,15 +565,11 @@ func NewHaqq(
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
-		epochskeeper.NewMultiEpochHooks(
-		// insert epoch hooks receivers here
-		),
+		epochskeeper.NewMultiEpochHooks( /* insert epoch hooks receivers here */ ),
 	)
 
 	app.GovKeeper = *govKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
-		// insert gov hooks receivers here
-		),
+		govtypes.NewMultiGovHooks( /* insert gov hooks receivers here */ ),
 	)
 
 	// Initialize the packet forward middleware Keeper
@@ -1237,10 +1233,10 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v183.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
-	// v1.8.4 EVM Precompiles upgrade
+	// v1.8.5 EVM Precompiles upgrade (hot fix applied to strv2 migration)
 	app.UpgradeKeeper.SetUpgradeHandler(
-		v184.UpgradeName,
-		v184.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.BankKeeper, app.Erc20Keeper, app.EvmKeeper),
+		v185.UpgradeName,
+		v185.CreateUpgradeHandler(app.mm, app.configurator, app.AccountKeeper, app.BankKeeper, app.Erc20Keeper, app.EvmKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic

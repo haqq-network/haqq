@@ -1,4 +1,4 @@
-package v184
+package v185
 
 import (
 	"fmt"
@@ -47,6 +47,13 @@ func executeConversion(
 		}
 		// Create the coin
 		coins := sdk.Coins{sdk.Coin{Denom: tokenPair.Denom, Amount: sdk.NewIntFromBigInt(balance)}}
+
+		if bankKeeper.BlockedAddr(result.address) {
+			// Skip blocked address on balance migration as some Precompiles
+			// and Module accounts are prohibited from receiving coins.
+			ctx.Logger().Info(fmt.Sprintf("skip blocked address - %s, stuck coins: %s", result.address.String(), coins.String()))
+			continue
+		}
 
 		err := bankKeeper.SendCoinsFromModuleToAccount(ctx, erc20types.ModuleName, result.address, coins)
 		if err != nil {
