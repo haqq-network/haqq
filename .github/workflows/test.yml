@@ -39,7 +39,7 @@ jobs:
         with:
           go-version: '1.23.10'
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Generate LFS file list
         run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
       - name: Restore LFS cache
@@ -67,7 +67,7 @@ jobs:
   test-nix:
     runs-on: ubuntu-cpu16-ram64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: haqq-network/nix-action@master
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
