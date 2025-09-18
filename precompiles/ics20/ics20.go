@@ -7,20 +7,18 @@ import (
 	"embed"
 	"fmt"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
-	channelkeeper "github.com/cosmos/ibc-go/v7/modules/core/04-channel/keeper"
+	channelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 	stakingkeeper "github.com/haqq-network/haqq/x/staking/keeper"
 )
-
-// PrecompileAddress of the ICS-20 EVM extension in hex format.
-const PrecompileAddress = "0x0000000000000000000000000000000000000802"
 
 var _ vm.PrecompiledContract = &Precompile{}
 
@@ -61,9 +59,10 @@ func NewPrecompile(
 		channelKeeper:  channelKeeper,
 		stakingKeeper:  stakingKeeper,
 	}
+
 	// SetAddress defines the address of the ICS-20 compile contract.
-	// address: 0x0000000000000000000000000000000000000802
-	p.SetAddress(common.HexToAddress(PrecompileAddress))
+	p.SetAddress(common.HexToAddress(evmtypes.ICS20PrecompileAddress))
+
 	return p, nil
 }
 

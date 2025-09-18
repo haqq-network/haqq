@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
 	"github.com/haqq-network/haqq/testutil/integration/common/network"
 )

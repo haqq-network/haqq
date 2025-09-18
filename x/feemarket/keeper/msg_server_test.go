@@ -1,13 +1,24 @@
 package keeper_test
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/x/feemarket/types"
 )
 
-func (suite *KeeperTestSuite) TestUpdateParams() {
+func TestUpdateParams(t *testing.T) {
+	var (
+		nw  *network.UnitTestNetwork
+		ctx sdk.Context
+	)
+
 	testCases := []struct {
 		name      string
 		request   *types.MsgUpdateParams
@@ -29,12 +40,16 @@ func (suite *KeeperTestSuite) TestUpdateParams() {
 	}
 
 	for _, tc := range testCases {
-		suite.Run("MsgUpdateParams", func() {
-			_, err := suite.app.FeeMarketKeeper.UpdateParams(suite.ctx, tc.request)
+		t.Run(tc.name, func(t *testing.T) {
+			// reset network and context
+			nw = network.NewUnitTestNetwork()
+			ctx = nw.GetContext()
+
+			_, err := nw.App.FeeMarketKeeper.UpdateParams(ctx, tc.request)
 			if tc.expectErr {
-				suite.Require().Error(err)
+				require.Error(t, err)
 			} else {
-				suite.Require().NoError(err)
+				require.NoError(t, err)
 			}
 		})
 	}

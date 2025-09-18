@@ -4,15 +4,15 @@
 package ante_test
 
 import (
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	evmante "github.com/haqq-network/haqq/x/evm/ante"
 )
 
 func (suite *EvmAnteTestSuite) TestBuildEvmExecutionCtx() {
-	network := network.New()
+	nw := network.New()
 
-	ctx := evmante.BuildEvmExecutionCtx(network.GetContext())
+	ctx := evmante.BuildEvmExecutionCtx(nw.GetContext())
 
 	suite.Equal(storetypes.GasConfig{}, ctx.KVGasConfig())
 	suite.Equal(storetypes.GasConfig{}, ctx.TransientKVGasConfig())

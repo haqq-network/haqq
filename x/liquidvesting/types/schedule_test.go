@@ -3,10 +3,11 @@ package types
 import (
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	"github.com/stretchr/testify/suite"
 )
 
 type ScheduleTestSuite struct {

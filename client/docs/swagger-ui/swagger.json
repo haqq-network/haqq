@@ -6,10 +6,10 @@
   },
   "tags": [
     {
-      "name": "Query"
+      "name": "ABCIService"
     },
     {
-      "name": "ABCIService"
+      "name": "Query"
     },
     {
       "name": "Service"
@@ -6329,7 +6329,7 @@
     },
     "/evmos/evm/v1/base_fee": {
       "get": {
-        "summary": "BaseFee queries the base fee of the parent block of the current block,\nit's similar to feemarket module's method, but also checks london hardfork\nstatus.",
+        "summary": "BaseFee queries the base fee of the parent block of the current block,\nit's similar to feemarket module's method, but also checks london hardfork status.",
         "operationId": "BaseFee",
         "responses": {
           "200": {
@@ -6592,7 +6592,7 @@
     },
     "/evmos/evm/v1/trace_block": {
       "get": {
-        "summary": "TraceBlock implements the `debug_traceBlockByNumber` and\n`debug_traceBlockByHash` rpc api",
+        "summary": "TraceBlock implements the `debug_traceBlockByNumber` and `debug_traceBlockByHash` rpc api",
         "operationId": "TraceBlock",
         "responses": {
           "200": {
@@ -6618,7 +6618,7 @@
           },
           {
             "name": "traceConfig.timeout",
-            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based\ntracing calls",
+            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based tracing\ncalls",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6676,7 +6676,7 @@
           },
           {
             "name": "traceConfig.overrides.daoForkSupport",
-            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO\nhard-fork",
+            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork",
             "in": "query",
             "required": false,
             "type": "boolean"
@@ -6690,7 +6690,7 @@
           },
           {
             "name": "traceConfig.overrides.eip150Hash",
-            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas\npricing changed)",
+            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6711,14 +6711,14 @@
           },
           {
             "name": "traceConfig.overrides.byzantiumBlock",
-            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on\nbyzantium)",
+            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.constantinopleBlock",
-            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already\nactivated)",
+            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6732,14 +6732,14 @@
           },
           {
             "name": "traceConfig.overrides.istanbulBlock",
-            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on\nistanbul)",
+            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.muirGlacierBlock",
-            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =\nalready activated)",
+            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6760,21 +6760,21 @@
           },
           {
             "name": "traceConfig.overrides.arrowGlacierBlock",
-            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
+            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.grayGlacierBlock",
-            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
+            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.mergeNetsplitBlock",
-            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network\nsplitter",
+            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network splitter",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6918,7 +6918,7 @@
           },
           {
             "name": "msg.from",
-            "description": "from is the ethereum signer address in hex format. This address value is\nchecked against the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve",
+            "description": "from is the ethereum signer address in hex format. This address value is checked\nagainst the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6932,7 +6932,7 @@
           },
           {
             "name": "traceConfig.timeout",
-            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based\ntracing calls",
+            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based tracing\ncalls",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6990,7 +6990,7 @@
           },
           {
             "name": "traceConfig.overrides.daoForkSupport",
-            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO\nhard-fork",
+            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork",
             "in": "query",
             "required": false,
             "type": "boolean"
@@ -7004,7 +7004,7 @@
           },
           {
             "name": "traceConfig.overrides.eip150Hash",
-            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas\npricing changed)",
+            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7025,14 +7025,14 @@
           },
           {
             "name": "traceConfig.overrides.byzantiumBlock",
-            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on\nbyzantium)",
+            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.constantinopleBlock",
-            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already\nactivated)",
+            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7046,14 +7046,14 @@
           },
           {
             "name": "traceConfig.overrides.istanbulBlock",
-            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on\nistanbul)",
+            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.muirGlacierBlock",
-            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =\nalready activated)",
+            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7074,21 +7074,21 @@
           },
           {
             "name": "traceConfig.overrides.arrowGlacierBlock",
-            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
+            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.grayGlacierBlock",
-            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
+            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.mergeNetsplitBlock",
-            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network\nsplitter",
+            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network splitter",
             "in": "query",
             "required": false,
             "type": "string"
@@ -13744,7 +13744,7 @@
           "items": {
             "type": "string"
           },
-          "title": "access_control_list defines defines different things depending on the\nAccessType:\n- ACCESS_TYPE_PERMISSIONLESS: list of addresses that are blocked from\nperforming the operation\n- ACCESS_TYPE_RESTRICTED: ignored\n- ACCESS_TYPE_PERMISSIONED: list of addresses that are allowed to perform\nthe operation"
+          "title": "access_control_list defines defines different things depending on the AccessType:\n- ACCESS_TYPE_PERMISSIONLESS: list of addresses that are blocked from performing the operation\n- ACCESS_TYPE_RESTRICTED: ignored\n- ACCESS_TYPE_PERMISSIONED: list of addresses that are allowed to perform the operation"
         }
       },
       "title": "AccessControlType defines the permission type for policies"
@@ -13773,7 +13773,7 @@
         },
         "daoForkSupport": {
           "type": "boolean",
-          "title": "dao_fork_support defines whether the nodes supports or opposes the DAO\nhard-fork"
+          "title": "dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork"
         },
         "eip150Block": {
           "type": "string",
@@ -13781,7 +13781,7 @@
         },
         "eip150Hash": {
           "type": "string",
-          "title": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas\npricing changed)"
+          "title": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)"
         },
         "eip155Block": {
           "type": "string",
@@ -13793,11 +13793,11 @@
         },
         "byzantiumBlock": {
           "type": "string",
-          "title": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on\nbyzantium)"
+          "title": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)"
         },
         "constantinopleBlock": {
           "type": "string",
-          "title": "constantinople_block: Constantinople switch block (nil no fork, 0 = already\nactivated)"
+          "title": "constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)"
         },
         "petersburgBlock": {
           "type": "string",
@@ -13805,11 +13805,11 @@
         },
         "istanbulBlock": {
           "type": "string",
-          "title": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on\nistanbul)"
+          "title": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)"
         },
         "muirGlacierBlock": {
           "type": "string",
-          "title": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =\nalready activated)"
+          "title": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)"
         },
         "berlinBlock": {
           "type": "string",
@@ -13821,15 +13821,15 @@
         },
         "arrowGlacierBlock": {
           "type": "string",
-          "title": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)"
+          "title": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)"
         },
         "grayGlacierBlock": {
           "type": "string",
-          "title": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)"
+          "title": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)"
         },
         "mergeNetsplitBlock": {
           "type": "string",
-          "title": "merge_netsplit_block: Virtual fork after The Merge to use as a network\nsplitter"
+          "title": "merge_netsplit_block: Virtual fork after The Merge to use as a network splitter"
         },
         "shanghaiBlock": {
           "type": "string",
@@ -13849,6 +13849,15 @@
           "type": "string",
           "format": "uint64",
           "title": "gas returns the estimated gas"
+        },
+        "ret": {
+          "type": "string",
+          "format": "byte",
+          "title": "ret is the returned data from evm function (result or data supplied with revert\nopcode)"
+        },
+        "vmError": {
+          "type": "string",
+          "title": "vm_error is the error returned by vm execution"
         }
       },
       "title": "EstimateGasResponse defines EstimateGas response"
@@ -13920,7 +13929,7 @@
         },
         "from": {
           "type": "string",
-          "title": "from is the ethereum signer address in hex format. This address value is\nchecked against the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve"
+          "title": "from is the ethereum signer address in hex format. This address value is checked\nagainst the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve"
         }
       },
       "description": "MsgEthereumTx encapsulates an Ethereum transaction as an SDK message."
@@ -13943,7 +13952,7 @@
         "ret": {
           "type": "string",
           "format": "byte",
-          "title": "ret is the returned data from evm function (result or data supplied with\nrevert opcode)"
+          "title": "ret is the returned data from evm function (result or data supplied with revert\nopcode)"
         },
         "vmError": {
           "type": "string",
@@ -13995,7 +14004,7 @@
           "items": {
             "type": "string"
           },
-          "title": "active_static_precompiles defines the slice of hex addresses of the\nprecompiled contracts that are active"
+          "title": "active_static_precompiles defines the slice of hex addresses of the precompiled\ncontracts that are active"
         }
       },
       "title": "Params defines the EVM module parameters"
@@ -14141,7 +14150,7 @@
         },
         "timeout": {
           "type": "string",
-          "title": "timeout overrides the default timeout of 5 seconds for JavaScript-based\ntracing calls"
+          "title": "timeout overrides the default timeout of 5 seconds for JavaScript-based tracing\ncalls"
         },
         "reexec": {
           "type": "string",
@@ -14204,7 +14213,7 @@
         "enableHeight": {
           "type": "string",
           "format": "int64",
-          "description": "enable_height defines at which block height the base fee calculation is\nenabled."
+          "description": "enable_height defines at which block height the base fee calculation is enabled."
         },
         "baseFee": {
           "type": "string",
@@ -14212,7 +14221,7 @@
         },
         "minGasPrice": {
           "type": "string",
-          "title": "min_gas_price defines the minimum gas price value for cosmos and eth\ntransactions"
+          "title": "min_gas_price defines the minimum gas price value for cosmos and eth transactions"
         },
         "minGasMultiplier": {
           "type": "string",
@@ -14288,7 +14297,7 @@
           "title": "current_epoch_start_height of the epoch"
         }
       },
-      "description": "EpochInfo defines the message interface containing the relevant informations\nabout an epoch."
+      "description": "EpochInfo defines the message interface containing the relevant informations about\nan epoch."
     },
     "evmos.epochs.v1.QueryCurrentEpochResponse": {
       "type": "object",
@@ -14327,21 +14336,21 @@
         "OWNER_EXTERNAL"
       ],
       "default": "OWNER_UNSPECIFIED",
-      "description": "Owner enumerates the ownership of a ERC20 contract.\n\n - OWNER_UNSPECIFIED: OWNER_UNSPECIFIED defines an invalid/undefined owner.\n - OWNER_MODULE: OWNER_MODULE - erc20 is owned by the erc20 module account.\n - OWNER_EXTERNAL: OWNER_EXTERNAL - erc20 is owned by an externally owned account."
+      "description": "Owner enumerates the ownership of a ERC20 contract.\n\n - OWNER_UNSPECIFIED: OWNER_UNSPECIFIED defines an invalid/undefined owner.\n - OWNER_MODULE: OWNER_MODULE - erc20 is owned by the erc20 module account.\n - OWNER_EXTERNAL: OWNER_EXTERNAL - erc20 is owned by an external account."
     },
     "evmos.erc20.v1.Params": {
       "type": "object",
       "properties": {
         "enableErc20": {
           "type": "boolean",
-          "description": "enable_erc20 is the parameter to enable the conversion of Cosmos coins <-->\nERC20 tokens."
+          "description": "enable_erc20 is the parameter to enable the conversion of Cosmos coins <--> ERC20 tokens."
         },
         "nativePrecompiles": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "title": "native_precompiles defines the slice of hex addresses of the\nactive precompiles that are used to interact with native staking coins as\nERC20s"
+          "title": "native_precompiles defines the slice of hex addresses of the\nactive precompiles that are used to interact with native staking coins as ERC20s"
         },
         "dynamicPrecompiles": {
           "type": "array",
@@ -14368,7 +14377,7 @@
       "properties": {
         "tokenPair": {
           "$ref": "#/definitions/evmos.erc20.v1.TokenPair",
-          "title": "token_pairs returns the info about a registered token pair for the erc20\nmodule"
+          "title": "token_pairs returns the info about a registered token pair for the erc20 module"
         }
       },
       "description": "QueryTokenPairResponse is the response type for the Query/TokenPair RPC\nmethod."
@@ -14408,7 +14417,7 @@
         },
         "contractOwner": {
           "$ref": "#/definitions/evmos.erc20.v1.Owner",
-          "title": "contract_owner is an ENUM specifying the type of ERC20 owner (0 invalid, 1\nModuleAccount, 2 external address)"
+          "title": "contract_owner is the an ENUM specifying the type of ERC20 owner (0 invalid, 1 ModuleAccount, 2 external address)"
         }
       },
       "description": "TokenPair defines an instance that records a pairing consisting of a native\nCosmos Coin and an ERC20 token address."

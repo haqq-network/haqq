@@ -15,9 +15,9 @@ func InitGenesis(
 	_ types.StakingKeeper,
 	data types.GenesisState,
 ) {
-	// Ensure inflation module account is set on genesis
+	// Ensure coinomics module account is set on genesis
 	if acc := ak.GetModuleAccount(ctx, types.ModuleName); acc == nil {
-		panic("the inflation module account has not been set")
+		panic("the coinomics module account has not been set")
 	}
 
 	// Set genesis state

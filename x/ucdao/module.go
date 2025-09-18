@@ -9,11 +9,11 @@ import (
 	modulev1 "cosmossdk.io/api/cosmos/bank/module/v1"
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/depinject"
+	store "cosmossdk.io/store/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	store "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -36,6 +36,8 @@ var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+
+	_ appmodule.AppModule = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the dao module.
@@ -98,8 +100,6 @@ type AppModule struct {
 	legacySubspace exported.Subspace
 }
 
-var _ appmodule.AppModule = AppModule{}
-
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
 func (am AppModule) IsOnePerModuleType() {}
 
@@ -155,8 +155,9 @@ func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 // GenerateGenesisState creates a randomized GenState of the dao module.
 func (AppModule) GenerateGenesisState(_ *module.SimulationState) {}
 
-// RegisterStoreDecoder registers a decoder for supply module's types
-func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {}
+// RegisterStoreDecoder registers a decoder for evm module's types
+func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {
+}
 
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {

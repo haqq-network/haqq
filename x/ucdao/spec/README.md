@@ -2,14 +2,14 @@
 order: 0
 title: "UnitedContributorsDAO Overview"
 parent:
-title: "dao"
+title: "ucdao"
 -->
 
 ## Abstract
 
-This document specifies the internal `x/dao` module of the Haqq Network.
+This document specifies the internal `x/ucdao` module of the Haqq Network.
 
-With the `x/dao` users on Haqq Network can make their ISLM locked in vesting liquid.
+With the `x/ucdao` users on Haqq Network can make their ISLM locked in vesting liquid.
 
 ## Contents
 

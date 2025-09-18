@@ -7,7 +7,7 @@ order: 1
 
 Users with vesting accounts can make their locked ISLM tokens liquid. If vesting account contains only locked tokens user can use `Liquidate` transaction and next things will happen:
 
-1. Specified amount amount of locked ISLM token will be transfered from a user vesting account to `x/liquidvesting` module account
+1. Specified amount of locked ISLM token will be transfered from a user vesting account to `x/liquidvesting` module account
 2. `x/liquidvesting` module will mint a liquid token which won't be locked and could be freely used in any way. Its amount will be equal to specified amount of locked ISLM token transfered to module account.
 3. ERC20 contract of newly created liquid token will be deployed on evm layer and token pair for it will be created with `x/erc20` module
 

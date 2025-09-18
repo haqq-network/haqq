@@ -3,6 +3,8 @@ package bank
 import (
 	"fmt"
 
+	"cosmossdk.io/core/appmodule"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/bank/exported"
@@ -10,36 +12,56 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	haqqbankkeeper "github.com/haqq-network/haqq/x/bank/keeper"
-	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 )
 
-type AppModule struct {
-	bank.AppModule
+var (
+	_ module.AppModuleBasic      = AppModuleBasic{}
+	_ module.AppModuleSimulation = AppModule{}
+	_ module.HasGenesis          = AppModule{}
+	_ module.HasServices         = AppModule{}
+	_ module.HasInvariants       = AppModule{}
 
-	keeper      bankkeeper.Keeper
-	wKeeper     haqqbankkeeper.WrappedBaseKeeper
-	erc20keeper haqqbankkeeper.ERC20Keeper
-	subspace    exported.Subspace
+	_ appmodule.AppModule = AppModule{}
+)
+
+type AppModuleBasic struct {
+	*bank.AppModuleBasic
+}
+
+// AppModule represents a wrapper around the Cosmos SDK staking module AppModule and
+// the Evmos custom staking module keeper.
+type AppModule struct {
+	*bank.AppModule
+
+	keeper        haqqbankkeeper.Keeper
+	accountKeeper banktypes.AccountKeeper
+
+	// legacySubspace is used solely for migration of x/params managed parameters
+	legacySubspace exported.Subspace
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(module bank.AppModule, keeper bankkeeper.Keeper, evmKeeper erc20types.EVMKeeper, erc20keeper haqqbankkeeper.ERC20Keeper, accountKeeper haqqbankkeeper.AccountKeeper, ss exported.Subspace) AppModule {
-	wrappedBankKeeper := haqqbankkeeper.NewWrappedBaseKeeper(keeper, evmKeeper, erc20keeper, accountKeeper)
+func NewAppModule(
+	cdc codec.Codec,
+	k haqqbankkeeper.Keeper,
+	ak banktypes.AccountKeeper,
+	ss exported.Subspace,
+) AppModule {
+	am := bank.NewAppModule(cdc, k.BaseKeeper, ak, ss)
 	return AppModule{
-		AppModule:   module,
-		keeper:      keeper,
-		wKeeper:     wrappedBankKeeper,
-		erc20keeper: erc20keeper,
-		subspace:    ss,
+		AppModule:      &am,
+		keeper:         k,
+		accountKeeper:  ak,
+		legacySubspace: ss,
 	}
 }
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	banktypes.RegisterMsgServer(cfg.MsgServer(), haqqbankkeeper.NewMsgServerImpl(am.wKeeper))
-	banktypes.RegisterQueryServer(cfg.QueryServer(), am.wKeeper)
+	banktypes.RegisterMsgServer(cfg.MsgServer(), bankkeeper.NewMsgServerImpl(am.keeper))
+	banktypes.RegisterQueryServer(cfg.QueryServer(), am.keeper.BaseKeeper)
 
-	m := bankkeeper.NewMigrator(am.keeper.(bankkeeper.BaseKeeper), am.subspace)
+	m := bankkeeper.NewMigrator(am.keeper.BaseKeeper, am.legacySubspace)
 	if err := cfg.RegisterMigration(banktypes.ModuleName, 1, m.Migrate1to2); err != nil {
 		panic(fmt.Sprintf("failed to migrate x/bank from version 1 to 2: %v", err))
 	}

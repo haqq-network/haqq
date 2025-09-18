@@ -3,69 +3,68 @@ package keeper_test
 import (
 	"testing"
 
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibcgotesting "github.com/cosmos/ibc-go/v7/testing"
-	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/haqq-network/haqq/app"
-	ibctesting "github.com/haqq-network/haqq/ibc/testing"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/x/erc20/types"
-	evm "github.com/haqq-network/haqq/x/evm/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx              sdk.Context
-	app              *app.Haqq
-	queryClientEvm   evm.QueryClient
-	queryClient      types.QueryClient
-	address          common.Address
-	consAddress      sdk.ConsAddress
-	clientCtx        client.Context //nolint:unused
-	ethSigner        ethtypes.Signer
-	priv             cryptotypes.PrivKey
-	validator        stakingtypes.Validator
-	signer           keyring.Signer
+	network *network.UnitTestNetwork
+	handler grpc.Handler
+	keyring keyring.Keyring
+	factory factory.TxFactory
+
+	queryClient types.QueryClient
+
 	mintFeeCollector bool
-
-	coordinator *ibcgotesting.Coordinator
-
-	// testing chains used for convenience and readability
-	HaqqChain       *ibcgotesting.TestChain
-	IBCOsmosisChain *ibcgotesting.TestChain
-	IBCCosmosChain  *ibcgotesting.TestChain
-
-	pathOsmosisHaqq   *ibctesting.Path
-	pathCosmosHaqq    *ibctesting.Path
-	pathOsmosisCosmos *ibctesting.Path
-
-	suiteIBCTesting bool
 }
 
-var s *KeeperTestSuite
-
-func TestKeeperTestSuite(t *testing.T) {
-	s = new(KeeperTestSuite)
-	suite.Run(t, s)
-
-	// Run Ginkgo integration tests
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Keeper Suite")
+func TestKeeperUnitTestSuite(t *testing.T) {
+	suite.Run(t, new(KeeperTestSuite))
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
-	suite.DoSetupTest(suite.T())
+	keys := keyring.New(2)
+	// Set custom balance based on test params
+	customGenesis := network.CustomGenesisState{}
+
+	if suite.mintFeeCollector {
+		// mint some coin to fee collector
+		coins := sdk.NewCoins(sdk.NewCoin(evmtypes.DefaultEVMDenom, sdkmath.NewInt(int64(params.TxGas)-1)))
+		balances := []banktypes.Balance{
+			{
+				Address: authtypes.NewModuleAddress(authtypes.FeeCollectorName).String(),
+				Coins:   coins,
+			},
+		}
+		bankGenesis := banktypes.DefaultGenesisState()
+		bankGenesis.Balances = balances
+		customGenesis[banktypes.ModuleName] = bankGenesis
+	}
+
+	nw := network.NewUnitTestNetwork(
+		network.WithPreFundedAccounts(keys.GetAllAccAddrs()...),
+		network.WithCustomGenesis(customGenesis),
+	)
+	gh := grpc.NewIntegrationHandler(nw)
+	tf := factory.New(nw, gh)
+
+	suite.network = nw
+	suite.factory = tf
+	suite.handler = gh
+	suite.keyring = keys
+	suite.queryClient = nw.GetERC20Client()
 }

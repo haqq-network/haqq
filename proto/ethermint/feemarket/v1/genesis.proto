@@ -1,6 +1,7 @@
 syntax = "proto3";
 package ethermint.feemarket.v1;
 
+import "amino/amino.proto";
 import "ethermint/feemarket/v1/feemarket.proto";
 import "gogoproto/gogo.proto";
 
@@ -9,7 +10,7 @@ option go_package = "github.com/haqq-network/haqq/x/feemarket/types";
 // GenesisState defines the feemarket module's genesis state.
 message GenesisState {
   // params defines all the parameters of the feemarket module.
-  Params params = 1 [ (gogoproto.nullable) = false ];
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
   // DEPRECATED: base fee is the exported value from previous software version.
   // Zero by default.
   reserved 2;

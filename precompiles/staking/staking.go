@@ -6,8 +6,8 @@ package staking
 import (
 	"embed"
 
-	"github.com/cometbft/cometbft/libs/log"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -16,6 +16,7 @@ import (
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	stakingkeeper "github.com/haqq-network/haqq/x/staking/keeper"
 )
 
@@ -25,9 +26,6 @@ var _ vm.PrecompiledContract = &Precompile{}
 //
 //go:embed abi.json
 var f embed.FS
-
-// PrecompileAddress defines the contract address of the staking precompile.
-const PrecompileAddress = "0x0000000000000000000000000000000000000800"
 
 // Precompile defines the precompiled contract for staking.
 type Precompile struct {
@@ -62,9 +60,9 @@ func NewPrecompile(
 		},
 		stakingKeeper: stakingKeeper,
 	}
-	// SetAddress defines the address of the staking compile contract.
-	// address: 0x0000000000000000000000000000000000000800
-	p.SetAddress(common.HexToAddress(PrecompileAddress))
+	// SetAddress defines the address of the staking precompiled contract.
+	p.SetAddress(common.HexToAddress(evmtypes.StakingPrecompileAddress))
+
 	return p, nil
 }
 

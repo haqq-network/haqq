@@ -13,13 +13,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	rpctypes "github.com/haqq-network/haqq/rpc/types"
 	"github.com/haqq-network/haqq/types"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -322,6 +322,9 @@ func (b *Backend) EstimateGas(args evmtypes.TransactionArgs, blockNrOptional *rp
 	if err != nil {
 		return 0, err
 	}
+	if err = handleRevertError(res.VmError, res.Ret); err != nil {
+		return 0, err
+	}
 	return hexutil.Uint64(res.Gas), nil
 }
 
@@ -371,11 +374,8 @@ func (b *Backend) DoCall(
 		return nil, err
 	}
 
-	if res.Failed() {
-		if res.VmError != vm.ErrExecutionReverted.Error() {
-			return nil, status.Error(codes.Internal, res.VmError)
-		}
-		return nil, evmtypes.NewExecErrorWithReason(res.Ret)
+	if err = handleRevertError(res.VmError, res.Ret); err != nil {
+		return nil, err
 	}
 
 	return res, nil
@@ -414,4 +414,18 @@ func (b *Backend) GasPrice() (*hexutil.Big, error) {
 	}
 
 	return (*hexutil.Big)(result), nil
+}
+
+// handleRevertError returns revert related error.
+func handleRevertError(vmError string, ret []byte) error {
+	if len(vmError) > 0 {
+		if vmError != vm.ErrExecutionReverted.Error() {
+			return status.Error(codes.Internal, vmError)
+		}
+		if len(ret) == 0 {
+			return errors.New(vmError)
+		}
+		return evmtypes.NewExecErrorWithReason(ret)
+	}
+	return nil
 }

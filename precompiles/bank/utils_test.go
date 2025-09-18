@@ -42,12 +42,13 @@ func (is *IntegrationTestSuite) setupBankPrecompile() *bank.Precompile {
 }
 
 // mintAndSendXMPLCoin is a helper function to mint and send a coin to a given address.
-func (s *PrecompileTestSuite) mintAndSendXMPLCoin(addr sdk.AccAddress, amount math.Int) {
+func (s *PrecompileTestSuite) mintAndSendXMPLCoin(ctx sdk.Context, addr sdk.AccAddress, amount math.Int) sdk.Context {
 	coins := sdk.NewCoins(sdk.NewCoin(s.tokenDenom, amount))
-	err := s.network.App.BankKeeper.MintCoins(s.network.GetContext(), coinomicstypes.ModuleName, coins)
+	err := s.network.App.BankKeeper.MintCoins(ctx, coinomicstypes.ModuleName, coins)
 	s.Require().NoError(err)
-	err = s.network.App.BankKeeper.SendCoinsFromModuleToAccount(s.network.GetContext(), coinomicstypes.ModuleName, addr, coins)
+	err = s.network.App.BankKeeper.SendCoinsFromModuleToAccount(ctx, coinomicstypes.ModuleName, addr, coins)
 	s.Require().NoError(err)
+	return ctx
 }
 
 // mintAndSendXMPLCoin is a helper function to mint and send a coin to a given address.
@@ -108,3 +109,9 @@ func Max(x, y int) int {
 	}
 	return y
 }
+
+// XMPL Token metadata to use on tests
+const (
+	xmplDenom     = "xmpl"
+	xmplErc20Addr = "0x5db67696C3c088DfBf588d3dd849f44266ffffff"
+)

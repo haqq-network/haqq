@@ -43,7 +43,7 @@ func (al accessList) addSlot(address common.Address, slot common.Hash) {
 // equal checks if the content of the current access list is the same as the
 // content of the other one.
 func (al accessList) equal(other accessList) bool {
-	// Cross reference the accounts first
+	// Cross-reference the accounts first
 	if len(al) != len(other) {
 		return false
 	}
@@ -55,7 +55,7 @@ func (al accessList) equal(other accessList) bool {
 		}
 	}
 
-	// Accounts match, cross reference the storage slots too
+	// Accounts match, cross-reference the storage slots too
 	for addr, slots := range al {
 		otherslots := other[addr]
 

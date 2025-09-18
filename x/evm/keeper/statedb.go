@@ -8,8 +8,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -45,13 +45,6 @@ func (k *Keeper) GetState(ctx sdk.Context, addr common.Address, key common.Hash)
 	}
 
 	return common.BytesToHash(value)
-}
-
-// GetFastState loads contract state from database.
-func (k *Keeper) GetFastState(ctx sdk.Context, addr common.Address, key common.Hash) []byte {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AddressStoragePrefix(addr))
-
-	return store.Get(key.Bytes())
 }
 
 // GetCode loads contract code from database, implements `statedb.Keeper` interface.

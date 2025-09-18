@@ -13,16 +13,11 @@ import (
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/distribution"
-	"github.com/haqq-network/haqq/testutil"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
-var (
-	expDelegationRewards int64 = 2000000000000000000
-	expValAmount         int64 = 1
-	rewards, _                 = math.NewIntFromString("1000000000000000000")
-)
+var expValAmount int64 = 1
 
 type distrTestCases struct {
 	name        string
@@ -59,6 +54,7 @@ var baseTestCases = []distrTestCases{
 }
 
 func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
+	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.ValidatorDistributionInfoMethod]
 
 	testCases := []distrTestCases{
@@ -81,34 +77,42 @@ func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
 			"fail - existent validator but without self delegation",
 			func() []interface{} {
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 				}
 			},
 			func([]byte) {},
 			100000,
 			true,
-			"delegation does not exist",
+			"no delegation for (address, validator) tuple",
 		},
 		{
 			"success",
 			func() []interface{} {
-				addr := sdk.AccAddress(s.validators[0].GetOperator())
-				// fund del account to make self-delegation
-				err := testutil.FundAccountWithBaseDenom(s.ctx, s.app.BankKeeper, addr, 10)
+				valAddr, err := sdk.ValAddressFromBech32(s.network.GetValidators()[0].GetOperator())
 				s.Require().NoError(err)
+				s.Require().NoError(err)
+
+				// fund account for self delegation
+				amt := math.NewInt(1)
+				err = s.fundAccountWithBaseDenom(ctx, valAddr.Bytes(), amt)
+				s.Require().NoError(err)
+
 				// make a self delegation
-				_, err = s.app.StakingKeeper.Delegate(s.ctx, addr, math.NewInt(1), stakingtypes.Unspecified, s.validators[0], true)
+				_, err = s.network.App.StakingKeeper.Delegate(ctx, valAddr.Bytes(), amt, stakingtypes.Unspecified, s.network.GetValidators()[0], true)
 				s.Require().NoError(err)
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 				}
 			},
 			func(bz []byte) {
 				var out distribution.ValidatorDistributionInfoOutput
 				err := s.precompile.UnpackIntoInterface(&out, distribution.ValidatorDistributionInfoMethod, bz)
 				s.Require().NoError(err, "failed to unpack output", err)
-				expAddr := sdk.AccAddress(s.validators[0].GetOperator())
-				s.Require().Equal(expAddr.String(), out.DistributionInfo.OperatorAddress)
+
+				valAddr, err := sdk.ValAddressFromBech32(s.network.GetValidators()[0].GetOperator())
+				s.Require().NoError(err)
+
+				s.Require().Equal(sdk.AccAddress(valAddr.Bytes()).String(), out.DistributionInfo.OperatorAddress)
 				s.Require().Equal(0, len(out.DistributionInfo.Commission))
 				s.Require().Equal(0, len(out.DistributionInfo.SelfBondRewards))
 			},
@@ -122,9 +126,10 @@ func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
-			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), tc.gas)
+			ctx = s.network.GetContext()
+			contract := vm.NewContract(vm.AccountRef(s.keyring.GetAddr(0)), s.precompile, big.NewInt(0), tc.gas)
 
-			bz, err := s.precompile.ValidatorDistributionInfo(s.ctx, contract, &method, tc.malleate())
+			bz, err := s.precompile.ValidatorDistributionInfo(ctx, contract, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -139,11 +144,12 @@ func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
 }
 
 func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() {
+	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.ValidatorOutstandingRewardsMethod]
 
 	testCases := []distrTestCases{
 		{
-			"success - nonexistent validator address",
+			"fail - nonexistent validator address",
 			func() []interface{} {
 				pv := mock.NewPV()
 				pk, err := pv.GetPubKey()
@@ -159,14 +165,14 @@ func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() {
 				s.Require().Equal(0, len(out))
 			},
 			100000,
-			false,
-			"",
+			true,
+			"validator does not exist",
 		},
 		{
 			"success - existent validator, no outstanding rewards",
 			func() []interface{} {
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 				}
 			},
 			func(bz []byte) {
@@ -184,9 +190,14 @@ func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() {
 			func() []interface{} {
 				valRewards := sdk.DecCoins{sdk.NewDecCoinFromDec(s.bondDenom, math.LegacyNewDec(1))}
 				// set outstanding rewards
-				s.app.DistrKeeper.SetValidatorOutstandingRewards(s.ctx, s.validators[0].GetOperator(), types.ValidatorOutstandingRewards{Rewards: valRewards})
+				valAddr, err := sdk.ValAddressFromBech32(s.network.GetValidators()[0].GetOperator())
+				s.Require().NoError(err)
+
+				err = s.network.App.DistrKeeper.SetValidatorOutstandingRewards(ctx, valAddr, types.ValidatorOutstandingRewards{Rewards: valRewards})
+				s.Require().NoError(err)
+
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 				}
 			},
 			func(bz []byte) {
@@ -208,9 +219,10 @@ func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
-			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), tc.gas)
+			ctx = s.network.GetContext()
+			contract := vm.NewContract(vm.AccountRef(s.keyring.GetAddr(0)), s.precompile, big.NewInt(0), tc.gas)
 
-			bz, err := s.precompile.ValidatorOutstandingRewards(s.ctx, contract, &method, tc.malleate())
+			bz, err := s.precompile.ValidatorOutstandingRewards(ctx, contract, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -225,11 +237,12 @@ func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() {
 }
 
 func (s *PrecompileTestSuite) TestValidatorCommission() {
+	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.ValidatorCommissionMethod]
 
 	testCases := []distrTestCases{
 		{
-			"success - nonexistent validator address",
+			"fail - nonexistent validator address",
 			func() []interface{} {
 				pv := mock.NewPV()
 				pk, err := pv.GetPubKey()
@@ -245,14 +258,14 @@ func (s *PrecompileTestSuite) TestValidatorCommission() {
 				s.Require().Equal(0, len(out))
 			},
 			100000,
-			false,
-			"",
+			true,
+			"validator does not exist",
 		},
 		{
 			"success - existent validator, no accumulated commission",
 			func() []interface{} {
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 				}
 			},
 			func(bz []byte) {
@@ -268,10 +281,21 @@ func (s *PrecompileTestSuite) TestValidatorCommission() {
 		{
 			"success - with accumulated commission",
 			func() []interface{} {
-				valCommission := sdk.DecCoins{sdk.NewDecCoinFromDec(s.bondDenom, math.LegacyNewDec(1))}
-				s.app.DistrKeeper.SetValidatorAccumulatedCommission(s.ctx, s.validators[0].GetOperator(), types.ValidatorAccumulatedCommission{Commission: valCommission})
+				commAmt := math.LegacyNewDec(1)
+				validator := s.network.GetValidators()[0]
+				valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
+				s.Require().NoError(err)
+				valCommission := sdk.DecCoins{sdk.NewDecCoinFromDec(s.bondDenom, commAmt)}
+				err = s.network.App.DistrKeeper.SetValidatorAccumulatedCommission(ctx, valAddr, types.ValidatorAccumulatedCommission{Commission: valCommission})
+				s.Require().NoError(err)
+
+				// set distribution module account balance which pays out the commission
+				coins := sdk.NewCoins(sdk.NewCoin(s.bondDenom, commAmt.RoundInt()))
+				err = s.mintCoinsForDistrMod(ctx, coins)
+				s.Require().NoError(err)
+
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					validator.OperatorAddress,
 				}
 			},
 			func(bz []byte) {
@@ -293,9 +317,10 @@ func (s *PrecompileTestSuite) TestValidatorCommission() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
-			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), tc.gas)
+			ctx = s.network.GetContext()
+			contract := vm.NewContract(vm.AccountRef(s.keyring.GetAddr(0)), s.precompile, big.NewInt(0), tc.gas)
 
-			bz, err := s.precompile.ValidatorCommission(s.ctx, contract, &method, tc.malleate())
+			bz, err := s.precompile.ValidatorCommission(ctx, contract, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -310,6 +335,7 @@ func (s *PrecompileTestSuite) TestValidatorCommission() {
 }
 
 func (s *PrecompileTestSuite) TestValidatorSlashes() {
+	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.ValidatorSlashesMethod]
 
 	testCases := []distrTestCases{
@@ -330,7 +356,7 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 			"fail - invalid starting height type",
 			func() []interface{} {
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 					int64(1), uint64(5),
 					query.PageRequest{},
 				}
@@ -345,7 +371,7 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 			"fail - starting height greater than ending height",
 			func() []interface{} {
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 					uint64(6), uint64(5),
 					query.PageRequest{},
 				}
@@ -384,7 +410,7 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 			"success - existent validator, no slashes",
 			func() []interface{} {
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 					uint64(1),
 					uint64(5),
 					query.PageRequest{},
@@ -404,9 +430,12 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 		{
 			"success - with slashes",
 			func() []interface{} {
-				s.app.DistrKeeper.SetValidatorSlashEvent(s.ctx, s.validators[0].GetOperator(), 2, 1, types.ValidatorSlashEvent{ValidatorPeriod: 1, Fraction: math.LegacyNewDec(5)})
+				valAddr, err := sdk.ValAddressFromBech32(s.network.GetValidators()[0].GetOperator())
+				s.Require().NoError(err)
+				err = s.network.App.DistrKeeper.SetValidatorSlashEvent(ctx, valAddr, 2, 1, types.ValidatorSlashEvent{ValidatorPeriod: 1, Fraction: math.LegacyNewDec(5)})
+				s.Require().NoError(err)
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 					uint64(1), uint64(5),
 					query.PageRequest{},
 				}
@@ -427,9 +456,12 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 		{
 			"success - with slashes w/pagination",
 			func() []interface{} {
-				s.app.DistrKeeper.SetValidatorSlashEvent(s.ctx, s.validators[0].GetOperator(), 2, 1, types.ValidatorSlashEvent{ValidatorPeriod: 1, Fraction: math.LegacyNewDec(5)})
+				valAddr, err := sdk.ValAddressFromBech32(s.network.GetValidators()[0].GetOperator())
+				s.Require().NoError(err)
+				err = s.network.App.DistrKeeper.SetValidatorSlashEvent(ctx, valAddr, 2, 1, types.ValidatorSlashEvent{ValidatorPeriod: 1, Fraction: math.LegacyNewDec(5)})
+				s.Require().NoError(err)
 				return []interface{}{
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 					uint64(1),
 					uint64(5),
 					query.PageRequest{Limit: 1, CountTotal: true},
@@ -454,9 +486,10 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
-			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), tc.gas)
+			ctx = s.network.GetContext()
+			contract := vm.NewContract(vm.AccountRef(s.keyring.GetAddr(0)), s.precompile, big.NewInt(0), tc.gas)
 
-			bz, err := s.precompile.ValidatorSlashes(s.ctx, contract, &method, tc.malleate())
+			bz, err := s.precompile.ValidatorSlashes(ctx, contract, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -471,6 +504,10 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 }
 
 func (s *PrecompileTestSuite) TestDelegationRewards() {
+	var (
+		ctx sdk.Context
+		err error
+	)
 	method := s.precompile.Methods[distribution.DelegationRewardsMethod]
 
 	testCases := []distrTestCases{
@@ -478,7 +515,7 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 			"fail - invalid validator address",
 			func() []interface{} {
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 					"invalid",
 				}
 			},
@@ -494,7 +531,7 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 				pk, err := pv.GetPubKey()
 				s.Require().NoError(err)
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 					sdk.ValAddress(pk.Address().Bytes()).String(),
 				}
 			},
@@ -509,20 +546,20 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 				newAddr, _ := testutiltx.NewAddrKey()
 				return []interface{}{
 					newAddr,
-					s.validators[0].OperatorAddress,
+					s.network.GetValidators()[0].OperatorAddress,
 				}
 			},
 			func([]byte) {},
 			100000,
 			true,
-			"delegation does not exist",
+			"no delegation for (address, validator) tuple",
 		},
 		{
 			"success - existent validator & delegation, but no rewards",
 			func() []interface{} {
 				return []interface{}{
-					s.address,
-					s.validators[0].OperatorAddress,
+					s.keyring.GetAddr(0),
+					s.network.GetValidators()[0].OperatorAddress,
 				}
 			},
 			func(bz []byte) {
@@ -538,10 +575,11 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 		{
 			"success - with rewards",
 			func() []interface{} {
-				s.prepareStakingRewards(stakingRewards{s.address.Bytes(), s.validators[0], rewards})
+				ctx, err = s.prepareStakingRewards(ctx, stakingRewards{s.keyring.GetAddr(0).Bytes(), s.network.GetValidators()[0], testRewardsAmt})
+				s.Require().NoError(err, "failed to prepare staking rewards", err)
 				return []interface{}{
-					s.address,
-					s.validators[0].OperatorAddress,
+					s.keyring.GetAddr(0),
+					s.network.GetValidators()[0].OperatorAddress,
 				}
 			},
 			func(bz []byte) {
@@ -551,7 +589,7 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 				s.Require().Equal(1, len(out))
 				s.Require().Equal(uint8(18), out[0].Precision)
 				s.Require().Equal(s.bondDenom, out[0].Denom)
-				s.Require().Equal(expDelegationRewards, out[0].Amount.Int64())
+				s.Require().Equal(expRewardsAmt.Int64(), out[0].Amount.Int64())
 			},
 			100000,
 			false,
@@ -563,9 +601,11 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
-			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), tc.gas)
+			ctx = s.network.GetContext()
+			contract := vm.NewContract(vm.AccountRef(s.keyring.GetAddr(0)), s.precompile, big.NewInt(0), tc.gas)
 
-			bz, err := s.precompile.DelegationRewards(s.ctx, contract, &method, tc.malleate())
+			args := tc.malleate()
+			bz, err := s.precompile.DelegationRewards(ctx, contract, &method, args)
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -580,6 +620,10 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 }
 
 func (s *PrecompileTestSuite) TestDelegationTotalRewards() {
+	var (
+		ctx sdk.Context
+		err error
+	)
 	method := s.precompile.Methods[distribution.DelegationTotalRewardsMethod]
 
 	testCases := []distrTestCases{
@@ -618,25 +662,21 @@ func (s *PrecompileTestSuite) TestDelegationTotalRewards() {
 			"success - existent validator & delegation, but no rewards",
 			func() []interface{} {
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 				}
 			},
 			func(bz []byte) {
 				var out distribution.DelegationTotalRewardsOutput
 				err := s.precompile.UnpackIntoInterface(&out, distribution.DelegationTotalRewardsMethod, bz)
 				s.Require().NoError(err, "failed to unpack output", err)
-				s.Require().Equal(2, len(out.Rewards))
-				// the response order may change
-				if out.Rewards[0].ValidatorAddress == s.validators[0].OperatorAddress {
-					s.Require().Equal(s.validators[0].OperatorAddress, out.Rewards[0].ValidatorAddress)
-					s.Require().Equal(s.validators[1].OperatorAddress, out.Rewards[1].ValidatorAddress)
-				} else {
-					s.Require().Equal(s.validators[1].OperatorAddress, out.Rewards[0].ValidatorAddress)
-					s.Require().Equal(s.validators[0].OperatorAddress, out.Rewards[1].ValidatorAddress)
-				}
+
+				validatorsCount := len(s.network.GetValidators())
+				s.Require().Equal(validatorsCount, len(out.Rewards))
+
 				// no rewards
 				s.Require().Equal(0, len(out.Rewards[0].Reward))
 				s.Require().Equal(0, len(out.Rewards[1].Reward))
+				s.Require().Equal(0, len(out.Rewards[2].Reward))
 				s.Require().Equal(0, len(out.Total))
 			},
 			100000,
@@ -646,9 +686,11 @@ func (s *PrecompileTestSuite) TestDelegationTotalRewards() {
 		{
 			"success - with rewards",
 			func() []interface{} {
-				s.prepareStakingRewards(stakingRewards{s.address.Bytes(), s.validators[0], rewards})
+				ctx, err = s.prepareStakingRewards(ctx, stakingRewards{s.keyring.GetAccAddr(0), s.network.GetValidators()[0], testRewardsAmt})
+				s.Require().NoError(err, "failed to prepare staking rewards", err)
+
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 				}
 			},
 			func(bz []byte) {
@@ -658,28 +700,29 @@ func (s *PrecompileTestSuite) TestDelegationTotalRewards() {
 				)
 				err := s.precompile.UnpackIntoInterface(&out, distribution.DelegationTotalRewardsMethod, bz)
 				s.Require().NoError(err, "failed to unpack output", err)
-				s.Require().Equal(2, len(out.Rewards))
+
+				validators := s.network.GetValidators()
+				valWithRewards := validators[0]
+				validatorsCount := len(s.network.GetValidators())
+				s.Require().Equal(validatorsCount, len(out.Rewards))
 
 				// the response order may change
-				if out.Rewards[0].ValidatorAddress == s.validators[0].OperatorAddress {
-					s.Require().Equal(s.validators[0].OperatorAddress, out.Rewards[0].ValidatorAddress)
-					s.Require().Equal(s.validators[1].OperatorAddress, out.Rewards[1].ValidatorAddress)
-					s.Require().Equal(0, len(out.Rewards[1].Reward))
-				} else {
-					i = 1
-					s.Require().Equal(s.validators[0].OperatorAddress, out.Rewards[1].ValidatorAddress)
-					s.Require().Equal(s.validators[1].OperatorAddress, out.Rewards[0].ValidatorAddress)
-					s.Require().Equal(0, len(out.Rewards[0].Reward))
+				for index, or := range out.Rewards {
+					if or.ValidatorAddress == valWithRewards.OperatorAddress {
+						i = index
+					} else {
+						s.Require().Equal(0, len(out.Rewards[index].Reward))
+					}
 				}
 
 				// only validator[i] has rewards
 				s.Require().Equal(1, len(out.Rewards[i].Reward))
 				s.Require().Equal(s.bondDenom, out.Rewards[i].Reward[0].Denom)
 				s.Require().Equal(uint8(math.LegacyPrecision), out.Rewards[i].Reward[0].Precision)
-				s.Require().Equal(expDelegationRewards, out.Rewards[i].Reward[0].Amount.Int64())
+				s.Require().Equal(expRewardsAmt.Int64(), out.Rewards[i].Reward[0].Amount.Int64())
 
 				s.Require().Equal(1, len(out.Total))
-				s.Require().Equal(expDelegationRewards, out.Total[0].Amount.Int64())
+				s.Require().Equal(expRewardsAmt.Int64(), out.Total[0].Amount.Int64())
 			},
 			100000,
 			false,
@@ -691,9 +734,12 @@ func (s *PrecompileTestSuite) TestDelegationTotalRewards() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
-			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), tc.gas)
+			ctx = s.network.GetContext()
 
-			bz, err := s.precompile.DelegationTotalRewards(s.ctx, contract, &method, tc.malleate())
+			contract := vm.NewContract(vm.AccountRef(s.keyring.GetAddr(0)), s.precompile, big.NewInt(0), tc.gas)
+
+			args := tc.malleate()
+			bz, err := s.precompile.DelegationTotalRewards(ctx, contract, &method, args)
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -708,6 +754,7 @@ func (s *PrecompileTestSuite) TestDelegationTotalRewards() {
 }
 
 func (s *PrecompileTestSuite) TestDelegatorValidators() {
+	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.DelegatorValidatorsMethod]
 
 	testCases := []distrTestCases{
@@ -745,21 +792,21 @@ func (s *PrecompileTestSuite) TestDelegatorValidators() {
 			"success - existent delegations",
 			func() []interface{} {
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 				}
 			},
 			func(bz []byte) {
 				var out []string
 				err := s.precompile.UnpackIntoInterface(&out, distribution.DelegatorValidatorsMethod, bz)
 				s.Require().NoError(err, "failed to unpack output", err)
-				s.Require().Equal(2, len(out))
-				// the order may change
-				if out[0] == s.validators[0].OperatorAddress {
-					s.Require().Equal(s.validators[0].OperatorAddress, out[0])
-					s.Require().Equal(s.validators[1].OperatorAddress, out[1])
-				} else {
-					s.Require().Equal(s.validators[1].OperatorAddress, out[0])
-					s.Require().Equal(s.validators[0].OperatorAddress, out[1])
+				s.Require().Equal(3, len(out))
+				for _, val := range s.network.GetValidators() {
+					s.Require().Contains(
+						out,
+						val.OperatorAddress,
+						"expected operator address %q to be in output",
+						val.OperatorAddress,
+					)
 				}
 			},
 			100000,
@@ -772,9 +819,10 @@ func (s *PrecompileTestSuite) TestDelegatorValidators() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
-			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), tc.gas)
+			ctx = s.network.GetContext()
+			contract := vm.NewContract(vm.AccountRef(s.keyring.GetAddr(0)), s.precompile, big.NewInt(0), tc.gas)
 
-			bz, err := s.precompile.DelegatorValidators(s.ctx, contract, &method, tc.malleate())
+			bz, err := s.precompile.DelegatorValidators(ctx, contract, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -789,6 +837,7 @@ func (s *PrecompileTestSuite) TestDelegatorValidators() {
 }
 
 func (s *PrecompileTestSuite) TestDelegatorWithdrawAddress() {
+	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.DelegatorWithdrawAddressMethod]
 
 	testCases := []distrTestCases{
@@ -808,14 +857,14 @@ func (s *PrecompileTestSuite) TestDelegatorWithdrawAddress() {
 			"success - withdraw address same as delegator address",
 			func() []interface{} {
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 				}
 			},
 			func(bz []byte) {
 				var out string
 				err := s.precompile.UnpackIntoInterface(&out, distribution.DelegatorWithdrawAddressMethod, bz)
 				s.Require().NoError(err, "failed to unpack output", err)
-				s.Require().Equal(sdk.AccAddress(s.address.Bytes()).String(), out)
+				s.Require().Equal(sdk.AccAddress(s.keyring.GetAddr(0).Bytes()).String(), out)
 			},
 			100000,
 			false,
@@ -827,9 +876,10 @@ func (s *PrecompileTestSuite) TestDelegatorWithdrawAddress() {
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
-			contract := vm.NewContract(vm.AccountRef(s.address), s.precompile, big.NewInt(0), tc.gas)
+			ctx = s.network.GetContext()
+			contract := vm.NewContract(vm.AccountRef(s.keyring.GetAddr(0)), s.precompile, big.NewInt(0), tc.gas)
 
-			bz, err := s.precompile.DelegatorWithdrawAddress(s.ctx, contract, &method, tc.malleate())
+			bz, err := s.precompile.DelegatorWithdrawAddress(ctx, contract, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)

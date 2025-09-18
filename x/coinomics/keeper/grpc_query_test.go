@@ -24,7 +24,7 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 			"default reward coefficient",
 			func() {
 				req = &types.QueryRewardCoefficientRequest{}
-				expResponse = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(78, 1)}
+				expResponse = &types.QueryRewardCoefficientResponse{RewardCoefficient: math.LegacyNewDecWithPrec(78, 1)}
 			},
 			true,
 		},
@@ -32,11 +32,11 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 			"set reward coefficient",
 			func() {
 				coinomicsParams := suite.app.CoinomicsKeeper.GetParams(s.ctx)
-				coinomicsParams.RewardCoefficient = sdk.NewDecWithPrec(10, 0)
+				coinomicsParams.RewardCoefficient = math.LegacyNewDecWithPrec(10, 0)
 				s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
 
 				req = &types.QueryRewardCoefficientRequest{}
-				expResponse = &types.QueryRewardCoefficientResponse{RewardCoefficient: sdk.NewDecWithPrec(10, 0)}
+				expResponse = &types.QueryRewardCoefficientResponse{RewardCoefficient: math.LegacyNewDecWithPrec(10, 0)}
 			},
 			true,
 		},
@@ -45,10 +45,9 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
 			suite.SetupTest() // reset
 
-			ctx := sdk.WrapSDKContext(suite.ctx)
 			tc.malleate()
 
-			res, err := suite.queryClient.RewardCoefficient(ctx, req)
+			res, err := suite.queryClient.RewardCoefficient(suite.ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
 				suite.Require().Equal(expResponse, res)
@@ -94,10 +93,9 @@ func (suite *KeeperTestSuite) TestMaxSupply() {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
 			suite.SetupTest() // reset
 
-			ctx := sdk.WrapSDKContext(suite.ctx)
 			tc.malleate()
 
-			res, err := suite.queryClient.MaxSupply(ctx, req)
+			res, err := suite.queryClient.MaxSupply(suite.ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
 				suite.Require().Equal(expResponse, res)
@@ -109,10 +107,9 @@ func (suite *KeeperTestSuite) TestMaxSupply() {
 }
 
 func (suite *KeeperTestSuite) TestQueryParams() {
-	ctx := sdk.WrapSDKContext(suite.ctx)
 	expParams := types.DefaultParams()
 
-	res, err := suite.queryClient.Params(ctx, &types.QueryParamsRequest{})
+	res, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
 	suite.Require().NoError(err)
 	// due to mainnet chain id in tests setup
 	suite.Require().Equal(expParams, res.Params)

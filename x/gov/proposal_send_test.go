@@ -13,8 +13,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	// "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
 	// "github.com/haqq-network/haqq/testutil/network"
 	network "github.com/haqq-network/haqq/testutil/network"

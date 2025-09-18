@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
+	"cosmossdk.io/x/feegrant"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
 
 	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
 	"github.com/haqq-network/haqq/testutil"

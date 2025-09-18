@@ -5,13 +5,12 @@ import (
 	"math/big"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/app/ante"
 	ethante "github.com/haqq-network/haqq/app/ante/evm"
-	"github.com/haqq-network/haqq/encoding"
 	cmmnfactory "github.com/haqq-network/haqq/testutil/integration/common/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
@@ -75,7 +74,7 @@ func BenchmarkAnteHandler(b *testing.B) {
 		}
 
 		handlerOptions := suite.generateHandlerOptions()
-		ante := ante.NewAnteHandler(handlerOptions)
+		anteHandler := ante.NewAnteHandler(handlerOptions)
 		b.StartTimer()
 
 		b.Run(fmt.Sprintf("tx_type_%v", v.name), func(b *testing.B) {
@@ -98,7 +97,7 @@ func BenchmarkAnteHandler(b *testing.B) {
 				b.StartTimer()
 
 				// Run benchmark
-				_, err = ante(ctx, tx, v.simulate)
+				_, err = anteHandler(ctx, tx, v.simulate)
 				if err != nil {
 					fmt.Println(err)
 					break
@@ -127,7 +126,7 @@ func (s *benchmarkSuite) generateTxType(txType string) (sdktypes.Tx, error) {
 			sdktypes.NewCoins(
 				sdktypes.NewCoin(
 					s.network.GetDenom(),
-					sdktypes.NewInt(1000),
+					math.NewInt(1000),
 				),
 			),
 		)
@@ -139,7 +138,7 @@ func (s *benchmarkSuite) generateTxType(txType string) (sdktypes.Tx, error) {
 }
 
 func (s *benchmarkSuite) generateHandlerOptions() ante.HandlerOptions {
-	encCfg := encoding.MakeConfig(app.ModuleBasics)
+	encCfg := s.network.GetEncodingConfig()
 	return ante.HandlerOptions{
 		Cdc:                    s.network.App.AppCodec(),
 		AccountKeeper:          s.network.App.AccountKeeper,

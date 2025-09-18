@@ -1,6 +1,7 @@
 syntax = "proto3";
 package haqq.vesting.v1;
 
+import "amino/amino.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
@@ -34,16 +35,19 @@ message QueryBalancesResponse {
   // locked defines the current amount of locked tokens
   repeated cosmos.base.v1beta1.Coin locked = 1 [
     (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
   // unvested defines the current amount of unvested tokens
   repeated cosmos.base.v1beta1.Coin unvested = 2 [
     (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
   // vested defines the current amount of vested tokens
   repeated cosmos.base.v1beta1.Coin vested = 3 [
     (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
 }
@@ -61,16 +65,19 @@ message QueryTotalLockedResponse {
   // locked defines the current amount of locked tokens
   repeated cosmos.base.v1beta1.Coin locked = 1 [
     (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
   // unvested defines the current amount of unvested tokens
   repeated cosmos.base.v1beta1.Coin unvested = 2 [
     (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
   // vested defines the current amount of vested tokens
   repeated cosmos.base.v1beta1.Coin vested = 3 [
     (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
 }

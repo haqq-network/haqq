@@ -8,7 +8,6 @@ import (
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/encoding"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
@@ -34,7 +33,7 @@ func TestTxEncoding(t *testing.T) {
 	err := msg.Sign(ethSigner, signer)
 	require.NoError(t, err)
 
-	cfg := encoding.MakeConfig(app.ModuleBasics)
+	cfg := encoding.MakeConfig()
 
 	_, err = cfg.TxConfig.TxEncoder()(msg)
 	require.Error(t, err, "encoding failed")

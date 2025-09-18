@@ -6,7 +6,7 @@ DIFF_TAG=$(shell git rev-list --tags="v*" --max-count=1 --not $(shell git rev-li
 DEFAULT_TAG=$(shell git rev-list --tags="v*" --max-count=1)
 # VERSION ?= $(shell echo $(shell git describe --tags $(or $(DIFF_TAG), $(DEFAULT_TAG))) | sed 's/^v//')
 
-VERSION := "1.8.5"
+VERSION := "1.9.0"
 CBFTVERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
@@ -63,18 +63,12 @@ endif
 build_tags += $(BUILD_TAGS)
 build_tags := $(strip $(build_tags))
 
-whitespace :=
-whitespace += $(whitespace)
-comma := ,
-build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
-
 # process linker flags
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=haqq \
           -X github.com/cosmos/cosmos-sdk/version.AppName=$(HAQQ_BINARY) \
           -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
           -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
-          -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)" \
           -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(CBFTVERSION)
 
 # DB backend selection
@@ -87,14 +81,28 @@ endif
 # handle rocksdb
 ifeq (rocksdb,$(findstring rocksdb,$(COSMOS_BUILD_OPTIONS)))
   CGO_ENABLED=1
-  BUILD_TAGS += rocksdb
+  build_tags += rocksdb grocksdb_no_link
+  VERSION := $(VERSION)-rocksdb
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=rocksdb
 endif
 # handle boltdb
 ifeq (boltdb,$(findstring boltdb,$(COSMOS_BUILD_OPTIONS)))
-  BUILD_TAGS += boltdb
+  build_tags += boltdb
+  VERSION := $(VERSION)-boltdb
   ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=boltdb
 endif
+# handle pebbledb
+ifeq (pebbledb,$(findstring pebbledb,$(COSMOS_BUILD_OPTIONS)))
+  build_tags += pebbledb
+  VERSION := $(VERSION)-pebbledb
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=pebbledb
+endif
+
+# add build tags to linker flags
+whitespace := $(subst ,, )
+comma := ,
+build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
+ldflags += -X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
   ldflags += -w -s
@@ -106,6 +114,12 @@ BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
 # check for nostrip option
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
   BUILD_FLAGS += -trimpath
+endif
+
+# check if no optimization option is passed
+# used for remote debugging
+ifneq (,$(findstring nooptimization,$(COSMOS_BUILD_OPTIONS)))
+  BUILD_FLAGS += -gcflags "all=-N -l"
 endif
 
 # # The below include contains the tools and runsim targets.
@@ -201,28 +215,28 @@ $(STATIK):
 contract-tools:
 ifeq (, $(shell which stringer))
 	@echo "Installing stringer..."
-	@go install golang.org/x/tools/cmd/stringer
+	@go install golang.org/x/tools/cmd/stringer@latest
 else
 	@echo "stringer already installed; skipping..."
 endif
 
 ifeq (, $(shell which go-bindata))
 	@echo "Installing go-bindata..."
-	@go install github.com/kevinburke/go-bindata/v4/...@latest
+	@go install github.com/kevinburke/go-bindata/go-bindata@latest
 else
 	@echo "go-bindata already installed; skipping..."
 endif
 
 ifeq (, $(shell which gencodec))
 	@echo "Installing gencodec..."
-	@go install github.com/fjl/gencodec
+	@go install github.com/fjl/gencodec@latest
 else
 	@echo "gencodec already installed; skipping..."
 endif
 
 ifeq (, $(shell which protoc-gen-go))
 	@echo "Installing protoc-gen-go..."
-	@go install github.com/fjl/gencodec github.com/golang/protobuf/protoc-gen-go
+	@go install github.com/fjl/gencodec@latest github.com/golang/protobuf/protoc-gen-go@latest
 else
 	@echo "protoc-gen-go already installed; skipping..."
 endif
@@ -273,6 +287,10 @@ go.sum: go.mod
 	echo "Ensure dependencies have not been modified ..." >&2
 	go mod verify
 	go mod tidy
+
+vulncheck: $(BUILDDIR)/
+	GOBIN=$(BUILDDIR) go install golang.org/x/vuln/cmd/govulncheck@latest
+	$(BUILDDIR)/govulncheck ./...
 
 ###############################################################################
 ###                              Documentation                              ###
@@ -326,21 +344,23 @@ build-docs-versioned:
 
 test: test-unit
 test-all: test-unit test-race
-PACKAGES_UNIT=$(shell go list ./...)
+# For unit tests we don't want to execute the upgrade tests in tests/e2e but
+# we want to include all unit tests in the subfolders (tests/e2e/*)
+PACKAGES_UNIT=$(shell go list ./... | grep -v '/tests/e2e$$')
 TEST_PACKAGES=./...
 TEST_TARGETS := test-unit test-unit-cover test-race
 
 # Test runs-specific rules. To add a new test target, just add
 # a new rule, customise ARGS or TEST_PACKAGES ad libitum, and
 # append the new rule to the TEST_TARGETS list.
-test-unit: ARGS=-timeout=10m -race
+test-unit: ARGS=-timeout=15m -race
 test-unit: TEST_PACKAGES=$(PACKAGES_UNIT)
 
 test-race: ARGS=-race
 test-race: TEST_PACKAGES=$(PACKAGES_NOSIMULATION)
 $(TEST_TARGETS): run-tests
 
-test-unit-cover: ARGS=-timeout=10m -race -coverprofile=coverage.txt -covermode=atomic
+test-unit-cover: ARGS=-timeout=15m -race -coverprofile=coverage.txt -covermode=atomic
 test-unit-cover: TEST_PACKAGES=$(PACKAGES_UNIT)
 
 run-tests:
@@ -438,9 +458,9 @@ lint-fix-contracts:
 .PHONY: lint lint-fix
 
 format: 
-	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs gofmt -w -s 
-	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs codespell -w 
-	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' | xargs goimports -w -local github.com/haqq-network/haqq
+	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' -not -name '*.pb.gw.go' -not -name '*.pulsar.go' | xargs gofmt -w -s
+	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' -not -name '*.pb.gw.go' -not -name '*.pulsar.go' | xargs codespell -w
+	find . -name '*.go' -type f -not -path "./.devenv/*" -not -path "./vendor*" -not -path "*.git*" -not -path "./.direnv/*" -not -path "./client/docs/statik/statik.go" -not -name '*.pb.go' -not -name '*.pb.gw.go' -not -name '*.pulsar.go' | xargs goimports -w -local github.com/haqq-network/haqq
 
 .PHONY: format
 
@@ -451,14 +471,15 @@ format:
 protoVer=0.14.0
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
 protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace --user 0 $(protoImageName)
-# ------
-# NOTE: Link to the yoheimuta/protolint docker images:
-#       https://hub.docker.com/r/yoheimuta/protolint/tags
-#
-protolintVer=0.42.2
+
+protolintVer=0.44.0
 protolintName=yoheimuta/protolint:$(protolintVer)
 protolintImage=$(DOCKER) run --network host --rm -v $(CURDIR):/workspace --workdir /workspace $(protolintName)
 
+# ------
+# NOTE: If you are experiencing problems running these commands, try deleting
+#       the docker images and execute the desired command again.
+#
 proto-all: proto-format proto-lint proto-gen
 
 proto-gen:
@@ -481,48 +502,12 @@ proto-format:
 	find ./ -not -path "./.devenv/*" -not -path "./third_party/*" -name *.proto -exec clang-format -i {} \;
 
 proto-lint:
+	@echo "Linting Protobuf files"
 	@$(DOCKER_BUF) lint --error-format=json
 
 proto-check-breaking:
+	@echo "Checking Protobuf files for breaking changes"
 	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=master
-
-# TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.15/proto/tendermint
-# GOGO_PROTO_URL      = https://raw.githubusercontent.com/regen-network/protobuf/cosmos
-# COSMOS_SDK_URL      = https://raw.githubusercontent.com/cosmos/cosmos-sdk/v0.45.1
-# ETHERMINT_URL       = https://raw.githubusercontent.com/evmos/ethermint/v0.18.0
-# IBC_GO_URL      	  = https://raw.githubusercontent.com/cosmos/ibc-go/v3.0.0-rc0
-# COSMOS_PROTO_URL    = https://raw.githubusercontent.com/cosmos/cosmos-proto/main
-#
-# TM_CRYPTO_TYPES     = third_party/proto/tendermint/crypto
-# TM_ABCI_TYPES       = third_party/proto/tendermint/abci
-# TM_TYPES            = third_party/proto/tendermint/types
-#
-# GOGO_PROTO_TYPES    = third_party/proto/gogoproto
-#
-# COSMOS_PROTO_TYPES  = third_party/proto/cosmos_proto
-
-# proto-update-deps:
-# 	@mkdir -p $(GOGO_PROTO_TYPES)
-# 	@curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
-
-# 	@mkdir -p $(COSMOS_PROTO_TYPES)
-# 	@curl -sSL $(COSMOS_PROTO_URL)/proto/cosmos_proto/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
-
-# ## Importing of tendermint protobuf definitions currently requires the
-# ## use of `sed` in order to build properly with cosmos-sdk's proto file layout
-# ## (which is the standard Buf.build FILE_LAYOUT)
-# ## Issue link: https://github.com/tendermint/tendermint/issues/5021
-# 	@mkdir -p $(TM_ABCI_TYPES)
-# 	@curl -sSL $(TM_URL)/abci/types.proto > $(TM_ABCI_TYPES)/types.proto
-
-# 	@mkdir -p $(TM_TYPES)
-# 	@curl -sSL $(TM_URL)/types/types.proto > $(TM_TYPES)/types.proto
-
-# 	@mkdir -p $(TM_CRYPTO_TYPES)
-# 	@curl -sSL $(TM_URL)/crypto/proof.proto > $(TM_CRYPTO_TYPES)/proof.proto
-# 	@curl -sSL $(TM_URL)/crypto/keys.proto > $(TM_CRYPTO_TYPES)/keys.proto
-
-
 
 .PHONY: proto-all proto-gen proto-gen-any proto-swagger-gen proto-format proto-lint proto-check-breaking
 
@@ -544,7 +529,7 @@ release-dry-run:
 		-v ${GOPATH}/pkg:/go/pkg \
 		-w /go/src/$(PACKAGE_NAME) \
 		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		--clean --skip=validate --skip=publish --snapshot
+		--clean --skip validate --skip publish --snapshot
 
 release:
 	@if [ ! -f ".release-env" ]; then \
@@ -560,8 +545,7 @@ release:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		ghcr.io/goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		release \
-		--clean --skip=validate
+		release --clean --skip validate
 
 .PHONY: release-dry-run release
 

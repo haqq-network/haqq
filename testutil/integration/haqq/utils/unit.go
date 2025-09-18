@@ -6,7 +6,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/utils"
@@ -26,10 +26,12 @@ func RegisterIslmERC20Coins(
 	network network.UnitTestNetwork,
 	tokenReceiver sdk.AccAddress,
 ) (erc20types.TokenPair, error) {
-	bondDenom := network.App.StakingKeeper.BondDenom(network.GetContext())
-
+	bondDenom, err := network.App.StakingKeeper.BondDenom(network.GetContext())
+	if err != nil {
+		return erc20types.TokenPair{}, err
+	}
 	coin := sdk.NewCoin(utils.BaseDenom, math.NewInt(TokenToMint))
-	err := network.App.BankKeeper.MintCoins(
+	err = network.App.BankKeeper.MintCoins(
 		network.GetContext(),
 		coinomicstypes.ModuleName,
 		sdk.NewCoins(coin),

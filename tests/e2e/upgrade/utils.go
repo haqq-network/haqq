@@ -2,7 +2,6 @@ package upgrade
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -25,27 +24,50 @@ func (v HaqqVersions) Swap(i, j int) { v[i], v[j] = v[j], v[i] }
 func (v HaqqVersions) Less(i, j int) bool {
 	v1, err := version.NewVersion(v[i])
 	if err != nil {
-		log.Fatalf("couldn't interpret version as SemVer string: %s: %s", v[i], err.Error())
+		panic(fmt.Sprintf("couldn't interpret version as SemVer string: %s: %s", v[i], err.Error()))
 	}
+
 	v2, err := version.NewVersion(v[j])
 	if err != nil {
-		log.Fatalf("couldn't interpret version as SemVer string: %s: %s", v[j], err.Error())
+		panic(fmt.Sprintf("couldn't interpret version as SemVer string: %s: %s", v[j], err.Error()))
 	}
+
 	return v1.LessThan(v2)
 }
 
-// CheckLegacyProposal checks if the running node requires a legacy proposal
-func CheckLegacyProposal(version string) bool {
+// ProposalVersion is an enum to represent the type of upgrade proposal to be used
+// based on the Evmos version.
+//
+// This is required since the way to submit an upgrade proposal has changed between
+// different SDK versions.
+type ProposalVersion uint8
+
+const (
+	LegacyProposalPreV46 ProposalVersion = iota
+	LegacyProposalPreV50
+	UpgradeProposalV50
+)
+
+// CheckUpgradeProposalVersion checks if the running node requires a legacy proposal
+func CheckUpgradeProposalVersion(version string) ProposalVersion {
 	version = strings.TrimSpace(version)
 	if !strings.HasPrefix(version, "v") {
 		version = "v" + version
 	}
 
-	// check if the version is lower than v10.x.x
-	cmp := HaqqVersions([]string{version, "v10.0.0"})
-	isLegacyProposal := !cmp.Less(0, 1)
+	// if version is lower than v1.7.x, then it's using SDK v0.46
+	cmp := HaqqVersions([]string{version, "v1.7.0", "v1.9.0"})
+	var proposalVersion ProposalVersion
+	switch {
+	case cmp.Less(0, 1):
+		proposalVersion = LegacyProposalPreV46
+	case cmp.Less(0, 2):
+		proposalVersion = LegacyProposalPreV50
+	default:
+		proposalVersion = UpgradeProposalV50
+	}
 
-	return isLegacyProposal
+	return proposalVersion
 }
 
 // RetrieveUpgradesList parses the app/upgrades folder and returns a slice of semver upgrade versions
@@ -57,24 +79,28 @@ func RetrieveUpgradesList(upgradesPath string) ([]string, error) {
 	}
 
 	// preallocate slice to store versions
-	versions := []string{}
+	versions := make([]string, 0, len(dirs))
 
 	// pattern to find quoted string(upgrade version) in a file e.g. "v10.0.0"
 	pattern := regexp.MustCompile(`"(.*?)"`)
 
 	for _, d := range dirs {
-		if d.Name() == ".DS_Store" {
-			// skip processing .DS_Store
+		if !d.IsDir() || d.Name() == ".DS_Store" {
+			// skip processing .DS_Store and files
 			continue
 		}
 
 		// creating path to upgrade dir file with constant upgrade version
 		constantsPath := fmt.Sprintf("%s/%s/constants.go", upgradesPath, d.Name())
-		// deepcode ignore PT/test: <tests scope>
+		if _, err = os.Stat(constantsPath); os.IsNotExist(err) {
+			continue
+		}
+
 		f, err := os.ReadFile(constantsPath)
 		if err != nil {
 			return nil, err
 		}
+
 		v := pattern.FindString(string(f))
 		// v[1 : len(v)-1] subslice used to remove quotes from version string
 		versions = append(versions, v[1:len(v)-1])

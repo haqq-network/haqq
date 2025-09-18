@@ -1,8 +1,6 @@
 package app
 
-import (
-	"cosmossdk.io/math"
-)
+import "cosmossdk.io/math"
 
 var (
 	// MinGasPrices defines 20B aISLM as the minimum gas price value on the fee market module.

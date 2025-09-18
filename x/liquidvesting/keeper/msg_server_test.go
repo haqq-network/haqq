@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/haqq-network/haqq/contracts"
-	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
 	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
@@ -23,8 +22,8 @@ import (
 )
 
 var (
-	amount = sdk.NewCoins(sdk.NewInt64Coin("aISLM", 3_000_000))
-	third  = sdk.NewCoins(sdk.NewInt64Coin("aISLM", 1_000_000))
+	amount = sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, 3_000_000))
+	third  = sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, 1_000_000))
 
 	liquidDenomAmount = sdk.NewCoins(sdk.NewInt64Coin("aLIQUID0", 3_000_000))
 
@@ -41,6 +40,8 @@ var (
 )
 
 func (suite *KeeperTestSuite) TestLiquidate() {
+	var ctx sdk.Context
+
 	testCases := []struct {
 		name       string
 		malleate   func()
@@ -56,12 +57,13 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("aISLM", third.AmountOf("aISLM")),
+			amount:     sdk.NewCoin(utils.BaseDenom, third.AmountOf(utils.BaseDenom)),
 			expectPass: true,
 		},
 		{
@@ -71,12 +73,13 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("aISLM", third.AmountOf("aISLM")).Add(sdk.NewCoin("aISLM", third.AmountOf("aISLM"))),
+			amount:     sdk.NewCoin(utils.BaseDenom, third.AmountOf(utils.BaseDenom)).Add(sdk.NewCoin(utils.BaseDenom, third.AmountOf(utils.BaseDenom))),
 			expectPass: true,
 		},
 		{
@@ -86,12 +89,13 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				startTime := suite.ctx.BlockTime().Add(-100 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("aISLM", third.AmountOf("aISLM")),
+			amount:     sdk.NewCoin(utils.BaseDenom, third.AmountOf(utils.BaseDenom)),
 			expectPass: true,
 		},
 		{
@@ -101,12 +105,13 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("aISLM", amount.AmountOf("aISLM")),
+			amount:     sdk.NewCoin(utils.BaseDenom, amount.AmountOf(utils.BaseDenom)),
 			expectPass: true,
 		},
 		{
@@ -116,13 +121,15 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
-				s.app.StakingKeeper.Delegate(s.ctx, addr1, third.AmountOf("aISLM"), stakingtypes.Unbonded, s.validator, true) //nolint:errcheck
+				_, err = s.app.StakingKeeper.Delegate(s.ctx, addr1, third.AmountOf(utils.BaseDenom), stakingtypes.Unbonded, s.validator, true)
+				suite.Require().NoError(err)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("aISLM", third.AmountOf("aISLM").Add(third.AmountOf("aISLM"))),
+			amount:     sdk.NewCoin(utils.BaseDenom, third.AmountOf(utils.BaseDenom).Add(third.AmountOf(utils.BaseDenom))),
 			expectPass: true,
 		},
 		{
@@ -132,13 +139,15 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("aISLM", amount.AmountOf("aISLM").Add(math.NewInt(1_500_000))),
+			amount:     sdk.NewCoin(utils.BaseDenom, amount.AmountOf(utils.BaseDenom).Add(math.NewInt(1_500_000))),
 			expectPass: false,
 		},
 		{
@@ -148,13 +157,15 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
-				s.app.StakingKeeper.Delegate(s.ctx, addr1, amount.AmountOf("aISLM"), stakingtypes.Unbonded, s.validator, true) //nolint:errcheck
+				_, err = s.app.StakingKeeper.Delegate(s.ctx, addr1, amount.AmountOf(utils.BaseDenom), stakingtypes.Unbonded, s.validator, true)
+				suite.Require().NoError(err)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("aISLM", amount.AmountOf("aISLM")),
+			amount:     sdk.NewCoin(utils.BaseDenom, amount.AmountOf(utils.BaseDenom)),
 			expectPass: false,
 		},
 		{
@@ -164,12 +175,13 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				startTime := suite.ctx.BlockTime().Add(-200001 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewCoin("aISLM", math.NewInt(1_500_000)),
+			amount:     sdk.NewCoin(utils.BaseDenom, math.NewInt(1_500_000)),
 			expectPass: false,
 		},
 		{
@@ -178,12 +190,13 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, suite.ctx.BlockTime(), lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewInt64Coin("aISLM", 4_000_000),
+			amount:     sdk.NewInt64Coin(utils.BaseDenom, 4_000_000),
 			expectPass: false,
 		},
 		{
@@ -192,7 +205,8 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				funder := sdk.AccAddress(types.ModuleName)
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, suite.ctx.BlockTime(), lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
 			from:       addr1,
@@ -208,12 +222,13 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 				vestingPeriods := sdkvesting.Periods{{Length: 100, Amount: amount}}
 				startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 				clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+				err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+				suite.Require().NoError(err)
 				s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 			},
 			from:       addr1,
 			to:         addr2,
-			amount:     sdk.NewInt64Coin("aISLM", 2_000_000),
+			amount:     sdk.NewInt64Coin(utils.BaseDenom, 2_000_000),
 			expectPass: false,
 		},
 	}
@@ -232,7 +247,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			}
 			suite.T().Logf("locked only coins: %s", vaFrom.GetLockedUpCoins(suite.ctx.BlockTime()).String())
 			suite.T().Logf("UN-locked only coins: %s", vaFrom.GetUnlockedCoins(suite.ctx.BlockTime()).String())
-			spendable := suite.app.BankKeeper.SpendableCoin(suite.ctx, tc.from, "aISLM")
+			spendable := suite.app.BankKeeper.SpendableCoin(suite.ctx, tc.from, utils.BaseDenom)
 			suite.T().Logf("spendable coins: %s", spendable.String())
 			suite.T().Logf("liquidation amount: %s", tc.amount.String())
 
@@ -288,18 +303,19 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 
 func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	var (
+		ctx               sdk.Context
 		from              = addr1
 		to                = addr2
-		liquidationAmount = sdk.NewCoin("aISLM", third.AmountOf("aISLM"))
+		liquidationAmount = sdk.NewCoin(utils.BaseDenom, third.AmountOf(utils.BaseDenom))
 		funder            = sdk.AccAddress(types.ModuleName)
 	)
 	suite.SetupTest() // Reset
-	ctx := sdk.WrapSDKContext(suite.ctx)
 
 	baseAccount := authtypes.NewBaseAccountWithAddress(addr1)
 	startTime := suite.ctx.BlockTime().Add(-10 * time.Second)
 	clawbackAccount := vestingtypes.NewClawbackVestingAccount(baseAccount, funder, amount, startTime, lockupPeriods, vestingPeriods, nil)
-	testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount) //nolint:errcheck
+	err := testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, amount)
+	suite.Require().NoError(err)
 	s.app.AccountKeeper.SetAccount(s.ctx, clawbackAccount)
 
 	// FIRST LIQUIDATION
@@ -379,6 +395,8 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 }
 
 func (suite *KeeperTestSuite) TestRedeem() {
+	var ctx sdk.Context
+
 	testCases := []struct {
 		name                 string
 		malleate             func()
@@ -392,19 +410,21 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			name: "ok - standard redeem, fully unlocked schedule",
 			malleate: func() {
 				// fund liquid vesting module
-				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
+				err := testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount)
+				suite.Require().NoError(err)
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
 					BaseDenom:     "aLIQUID0",
 					DisplayDenom:  "LIQUID0",
-					OriginalDenom: "aISLM",
+					OriginalDenom: utils.BaseDenom,
 					LockupPeriods: lockupPeriods,
 				})
 				// create accounts
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr1))
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr2))
 				// fund account with liquid denom token
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount)
+				suite.Require().NoError(err)
 				liquidTokenMetadata := banktypes.Metadata{
 					Description: "Liquid vesting token",
 					DenomUnits:  []*banktypes.DenomUnit{{Denom: "aLIQUID0", Exponent: 0}, {Denom: "LIQUID0", Exponent: 18}},
@@ -418,7 +438,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 
 				// bind newly created denom to erc20 token
 				// Create dummy IBC denom, just to bind ERC20 Precompile with newly created aLiquid denom
-				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, "aISLM")
+				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, utils.BaseDenom)
 				tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
 				suite.Require().NoError(err)
 				// Set real denom to token pair, so precompile could handle transfers properly
@@ -440,14 +460,15 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			name: "ok - standard redeem, partially locked",
 			malleate: func() {
 				// fund liquid vesting module
-				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
+				err := testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount)
+				suite.Require().NoError(err)
 				// create liquid vesting denom
 				// subs 150 second, it is the half of the second period now
 				startTime := s.ctx.BlockTime().Add(-150000 * time.Second)
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
 					BaseDenom:     "aLIQUID0",
 					DisplayDenom:  "LIQUID0",
-					OriginalDenom: "aISLM",
+					OriginalDenom: utils.BaseDenom,
 					StartTime:     startTime,
 					EndTime:       startTime.Add(lockupPeriods.TotalDuration()),
 					LockupPeriods: lockupPeriods,
@@ -464,7 +485,8 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				}
 				s.app.AccountKeeper.SetAccount(s.ctx, acc2)
 				// fund account with liquid denom token
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount)
+				suite.Require().NoError(err)
 
 				liquidTokenMetadata := banktypes.Metadata{
 					Description: "Liquid vesting token",
@@ -479,7 +501,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 
 				// bind newly created denom to erc20 token
 				// Create dummy IBC denom, just to bind ERC20 Precompile with newly created aLiquid denom
-				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, "aISLM")
+				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, utils.BaseDenom)
 				tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
 				suite.Require().NoError(err)
 				// Set real denom to token pair, so precompile could handle transfers properly
@@ -502,19 +524,21 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			name: "fail - insufficient liquid token balance",
 			malleate: func() {
 				// fund liquid vesting module
-				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
+				err := testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount)
+				suite.Require().NoError(err)
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
 					BaseDenom:     "aLIQUID0",
 					DisplayDenom:  "LIQUID0",
-					OriginalDenom: "aISLM",
+					OriginalDenom: utils.BaseDenom,
 					LockupPeriods: lockupPeriods,
 				})
 				// create accounts
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr1))
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr2))
 				// fund account with liquid denom token
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount)
+				suite.Require().NoError(err)
 				liquidTokenMetadata := banktypes.Metadata{
 					Description: "Liquid vesting token",
 					DenomUnits:  []*banktypes.DenomUnit{{Denom: "aLIQUID0", Exponent: 0}, {Denom: "LIQUID0", Exponent: 18}},
@@ -528,7 +552,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 
 				// bind newly created denom to erc20 token
 				// Create dummy IBC denom, just to bind ERC20 Precompile with newly created aLiquid denom
-				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, "aISLM")
+				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, utils.BaseDenom)
 				tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
 				suite.Require().NoError(err)
 				// Set real denom to token pair, so precompile could handle transfers properly
@@ -550,19 +574,21 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			name: "fail - liquid denom does not exist",
 			malleate: func() {
 				// fund liquid vesting module
-				testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount) //nolint:errcheck
+				err := testutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, amount)
+				suite.Require().NoError(err)
 				// create liquid vesting denom
 				s.app.LiquidVestingKeeper.SetDenom(s.ctx, types.Denom{
 					BaseDenom:     "solid",
 					DisplayDenom:  "solid18",
-					OriginalDenom: "aISLM",
+					OriginalDenom: utils.BaseDenom,
 					LockupPeriods: lockupPeriods,
 				})
 				// create accounts
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr1))
 				s.app.AccountKeeper.SetAccount(s.ctx, authtypes.NewBaseAccountWithAddress(addr2))
 				// fund account with liquid denom token
-				testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount) //nolint:errcheck
+				err = testutil.FundAccount(s.ctx, s.app.BankKeeper, addr1, liquidDenomAmount)
+				suite.Require().NoError(err)
 				liquidTokenMetadata := banktypes.Metadata{
 					Description: "Liquid vesting token",
 					DenomUnits:  []*banktypes.DenomUnit{{Denom: "aLIQUID0", Exponent: 0}, {Denom: "LIQUID0", Exponent: 18}},
@@ -576,7 +602,7 @@ func (suite *KeeperTestSuite) TestRedeem() {
 
 				// bind newly created denom to erc20 token
 				// Create dummy IBC denom, just to bind ERC20 Precompile with newly created aLiquid denom
-				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, "aISLM")
+				fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, utils.BaseDenom)
 				tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
 				suite.Require().NoError(err)
 				// Set real denom to token pair, so precompile could handle transfers properly
@@ -614,12 +640,12 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				// check target account has original tokens
 				accIto := suite.app.AccountKeeper.GetAccount(suite.ctx, tc.redeemTo)
 				suite.Require().NotNil(accIto)
-				balanceTarget := suite.app.BankKeeper.SpendableCoin(suite.ctx, tc.redeemTo, "aISLM")
-				suite.Require().Equal(sdk.NewInt64Coin("aISLM", tc.redeemAmount-tc.expectedLockedAmount).String(), balanceTarget.String())
+				balanceTarget := suite.app.BankKeeper.SpendableCoin(suite.ctx, tc.redeemTo, utils.BaseDenom)
+				suite.Require().Equal(sdk.NewInt64Coin(utils.BaseDenom, tc.redeemAmount-tc.expectedLockedAmount).String(), balanceTarget.String())
 				if tc.expectedLockedAmount > 0 {
 					cva, isClawback := accIto.(*vestingtypes.ClawbackVestingAccount)
 					suite.Require().True(isClawback)
-					expectedLockedCoins := sdk.NewCoins(sdk.NewInt64Coin("aISLM", tc.expectedLockedAmount))
+					expectedLockedCoins := sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, tc.expectedLockedAmount))
 					actualLockedCoins := cva.GetLockedUpCoins(s.ctx.BlockTime())
 					s.Require().Equal(expectedLockedCoins.String(), actualLockedCoins.String())
 				}

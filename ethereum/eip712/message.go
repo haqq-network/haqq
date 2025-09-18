@@ -5,6 +5,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -95,6 +96,10 @@ func getPayloadMessages(payload gjson.Result) ([]gjson.Result, error) {
 
 	if !rawMsgs.Exists() {
 		return nil, errorsmod.Wrap(errortypes.ErrInvalidRequest, "no messages found in payload, unable to parse")
+	}
+
+	if rawMsgs.Type == gjson.Null {
+		return []gjson.Result{}, nil
 	}
 
 	if !rawMsgs.IsArray() {

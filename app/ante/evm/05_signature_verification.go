@@ -29,14 +29,20 @@ func NewEthSigVerificationDecorator(ek EVMKeeper) EthSigVerificationDecorator {
 // Failure in RecheckTx will prevent tx to be included into block, especially when CheckTx succeed, in which case user
 // won't see the error message.
 func (esvd EthSigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	chainID := esvd.evmKeeper.ChainID()
 	evmParams := esvd.evmKeeper.GetParams(ctx)
 	chainCfg := evmParams.GetChainConfig()
-	ethCfg := chainCfg.EthereumConfig(esvd.evmKeeper.ChainID())
+	ethCfg := chainCfg.EthereumConfig(chainID)
 	blockNum := big.NewInt(ctx.BlockHeight())
 	signer := ethtypes.MakeSigner(ethCfg, blockNum)
 	allowUnprotectedTxs := evmParams.GetAllowUnprotectedTxs()
 
-	for _, msg := range tx.GetMsgs() {
+	msgs := tx.GetMsgs()
+	if msgs == nil {
+		return ctx, errorsmod.Wrap(errortypes.ErrUnknownRequest, "invalid transaction. Transaction without messages")
+	}
+
+	for _, msg := range msgs {
 		ethMsg, _, _, err := evmtypes.UnpackEthMsg(msg)
 		if err != nil {
 			return ctx, err

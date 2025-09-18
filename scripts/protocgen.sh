@@ -4,7 +4,7 @@ set -eo pipefail
 
 # --------------
 # Commands to run locally
-# docker run --network host --rm -v $(CURDIR):/workspace --workdir /workspace tendermintdev/sdk-proto-gen:v0.7 sh ./protocgen.sh
+# docker run --network host --rm -v $(CURDIR):/workspace --workdir /workspace ghcr.io/cosmos/proto-builder:v0.11.6 sh ./protocgen.sh
 #
 set -eo pipefail
 
@@ -23,3 +23,5 @@ done
 # move proto files to the right places
 cp -r github.com/haqq-network/haqq/* ./
 rm -rf github.com
+
+sh ./scripts/protocgen-pulsar.sh

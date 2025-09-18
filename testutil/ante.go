@@ -3,7 +3,6 @@ package testutil
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/encoding"
 )
 
@@ -20,7 +19,7 @@ func NextFn(ctx sdk.Context, _ sdk.Tx, _ bool) (sdk.Context, error) {
 // more messages, builds a transaction containing these messages, and returns any error that
 // the AnteHandler might return.
 func ValidateAnteForMsgs(ctx sdk.Context, dec sdk.AnteDecorator, msgs ...sdk.Msg) error {
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	encodingConfig := encoding.MakeConfig()
 	txBuilder := encodingConfig.TxConfig.NewTxBuilder()
 	err := txBuilder.SetMsgs(msgs...)
 	if err != nil {

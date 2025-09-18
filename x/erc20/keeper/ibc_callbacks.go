@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	errorsmod "cosmossdk.io/errors"
-	"github.com/armon/go-metrics"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/hashicorp/go-metrics"
 
 	"github.com/haqq-network/haqq/ibc"
 	"github.com/haqq-network/haqq/x/erc20/types"
@@ -95,7 +95,11 @@ func (k Keeper) OnRecvPacket(
 	}
 
 	// check if the coin is a native staking token
-	if coin.Denom == evmParams.EvmDenom {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+	if coin.Denom == bondDenom {
 		// no-op, received coin is the staking denomination
 		return ack
 	}

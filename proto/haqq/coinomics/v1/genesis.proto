@@ -1,32 +1,40 @@
 syntax = "proto3";
 package haqq.coinomics.v1;
 
+import "amino/amino.proto";
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/coinomics/types";
 
-// GenesisState defines the inflation module's genesis state.
+// GenesisState defines the coinomics module's genesis state.
 message GenesisState {
-  // params defines all the paramaters of the module.
-  Params params = 1 [ (gogoproto.nullable) = false ];
+  // params defines all the parameters of the module.
+  Params params = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
 
   // prev block block ts
   string prev_block_ts = 2 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
-    (gogoproto.nullable) = false
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
   ];
 
   // max supply
   cosmos.base.v1beta1.Coin max_supply = 3 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.moretags) = "yaml:\"max_supply\"",
-    (gogoproto.nullable) = false
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
   ];
 }
 
 // Params holds parameters for the coinomics module.
 message Params {
+  option (amino.name) = "haqq/x/coinomics/Params";
+
   // type of coin to mint
   string mint_denom = 1;
 
@@ -35,7 +43,8 @@ message Params {
 
   // current staking reward coefficient
   string reward_coefficient = 3 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.nullable) = false
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
   ];
 }

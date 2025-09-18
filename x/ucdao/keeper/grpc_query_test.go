@@ -10,7 +10,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/ucdao/keeper"

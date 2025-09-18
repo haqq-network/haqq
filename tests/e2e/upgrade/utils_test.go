@@ -7,41 +7,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestCheckLegacyProposal tests the checkLegacyProposal function with different version strings
-func TestCheckLegacyProposal(t *testing.T) {
-	var legacyProposal bool
-
+func TestCheckUpgradeProposalVersion(t *testing.T) {
 	testCases := []struct {
 		Name string
 		Ver  string
-		Exp  bool
+		Exp  ProposalVersion
 	}{
 		{
-			Name: "legacy proposal - v10.0.1",
-			Ver:  "v10.0.1",
-			Exp:  true,
+			Name: "legacy proposal v0.47 - v1.7.1",
+			Ver:  "v1.7.1",
+			Exp:  LegacyProposalPreV50,
 		},
 		{
-			Name: "normal proposal - v9.1.0",
-			Ver:  "v9.1.0",
-			Exp:  false,
+			Name: "normal proposal v0.46 - v1.6.4",
+			Ver:  "v1.6.4",
+			Exp:  LegacyProposalPreV46,
 		},
 		{
-			Name: "normal proposal - version with whitespace - v9.1.0",
-			Ver:  "\tv9.1.0 ",
-			Exp:  false,
+			Name: "normal proposal - version with whitespace - v1.6.4",
+			Ver:  "\tv1.6.4 ",
+			Exp:  LegacyProposalPreV46,
 		},
 		{
-			Name: "normal proposal - version without v - 9.1.0",
-			Ver:  "9.1.0",
-			Exp:  false,
+			Name: "normal proposal - version without v - 1.6.4",
+			Ver:  "1.6.4",
+			Exp:  LegacyProposalPreV46,
+		},
+		{
+			Name: "SDK v0.50 proposal - version with whitespace - v1.9.0",
+			Ver:  "\tv1.9.0 ",
+			Exp:  UpgradeProposalV50,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			legacyProposal = CheckLegacyProposal(tc.Ver)
-			require.Equal(t, legacyProposal, tc.Exp, "expected: %v, got: %v", tc.Exp, legacyProposal)
+			legacyProposal := CheckUpgradeProposalVersion(tc.Ver)
+			require.Equal(t, tc.Exp, legacyProposal, "expected: %v, got: %v", tc.Exp, legacyProposal)
 		})
 	}
 }
@@ -57,20 +59,20 @@ func TestHaqqVersionsLess(t *testing.T) {
 		Exp  bool
 	}{
 		{
-			Name: "higher - v10.0.1",
-			Ver:  "v10.0.1",
+			Name: "higher - v1.9.0",
+			Ver:  "v1.9.0",
 			Exp:  false,
 		},
 		{
-			Name: "lower - v9.1.0",
-			Ver:  "v9.1.0",
+			Name: "lower - v1.7.5",
+			Ver:  "v1.7.5",
 			Exp:  true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			version = []string{tc.Ver, "v10.0.0"}
+			version = []string{tc.Ver, "v1.8.0"}
 			require.Equal(t, version.Less(0, 1), tc.Exp, "expected: %v, got: %v", tc.Exp, version)
 		})
 	}
@@ -79,15 +81,15 @@ func TestHaqqVersionsLess(t *testing.T) {
 // TestHaqqVersionsSwap tests the HaqqVersions type's Swap method
 func TestHaqqVersionsSwap(t *testing.T) {
 	var version HaqqVersions
-	value := "v9.1.0"
-	version = []string{value, "v10.0.0"}
+	value := "v1.6.4"
+	version = []string{value, "v1.7.0"}
 	version.Swap(0, 1)
 	require.Equal(t, value, version[1], "expected: %v, got: %v", value, version[1])
 }
 
 // TestHaqqVersionsLen tests the HaqqVersions type's Len method
 func TestHaqqVersionsLen(t *testing.T) {
-	var version HaqqVersions = []string{"v9.1.0", "v10.0.0"}
+	var version HaqqVersions = []string{"v1.6.4", "v1.7.0"}
 	require.Equal(t, 2, version.Len(), "expected: %v, got: %v", 2, version.Len())
 }
 

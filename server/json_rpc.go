@@ -9,12 +9,11 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/server/types"
 	ethlog "github.com/ethereum/go-ethereum/log"
 	ethrpc "github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/haqq-network/haqq/rpc"
-	"github.com/haqq-network/haqq/server/config"
+	srvconfig "github.com/haqq-network/haqq/server/config"
 	haqqtypes "github.com/haqq-network/haqq/types"
 )
 
@@ -23,7 +22,7 @@ func StartJSONRPC(ctx *server.Context,
 	clientCtx client.Context,
 	tmRPCAddr,
 	tmEndpoint string,
-	config *config.Config,
+	config *srvconfig.Config,
 	indexer haqqtypes.EVMTxIndexer,
 ) (*http.Server, chan struct{}, error) {
 	tmWsClient := ConnectTmWS(tmRPCAddr, tmEndpoint, ctx.Logger)
@@ -100,7 +99,7 @@ func StartJSONRPC(ctx *server.Context,
 	case err := <-errCh:
 		ctx.Logger.Error("failed to boot JSON-RPC server", "error", err.Error())
 		return nil, nil, err
-	case <-time.After(types.ServerStartTime): // assume JSON RPC server started successfully
+	case <-time.After(srvconfig.ServerStartTime): // assume JSON RPC server started successfully
 	}
 
 	ctx.Logger.Info("Starting JSON WebSocket server", "address", config.JSONRPC.WsAddress)

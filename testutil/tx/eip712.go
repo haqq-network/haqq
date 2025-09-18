@@ -88,7 +88,7 @@ func PrepareEIP712CosmosTx(
 	fee := legacytx.NewStdFee(txArgs.Gas, txArgs.Fees)
 
 	msgs := txArgs.Msgs
-	data := legacytx.StdSignBytes(ctx.ChainID(), accNumber, nonce, 0, fee, msgs, "", nil)
+	data := legacytx.StdSignBytes(ctx.ChainID(), accNumber, nonce, 0, fee, msgs, "")
 
 	typedDataArgs := typedDataArgs{
 		chainID:        chainIDNum,
@@ -149,7 +149,7 @@ func signCosmosEIP712Tx(
 	}
 
 	keyringSigner := NewSigner(priv)
-	signature, pubKey, err := keyringSigner.SignByAddress(from, sigHash)
+	signature, pubKey, err := keyringSigner.SignByAddress(from, sigHash, signing.SignMode_SIGN_MODE_DIRECT)
 	if err != nil {
 		return nil, err
 	}

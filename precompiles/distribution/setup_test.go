@@ -3,25 +3,17 @@ package distribution_test
 import (
 	"testing"
 
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
 	"github.com/stretchr/testify/suite"
 
-	tmtypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
-	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/precompiles/distribution"
-	"github.com/haqq-network/haqq/x/evm/statedb"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 )
 
 var s *PrecompileTestSuite
@@ -29,31 +21,77 @@ var s *PrecompileTestSuite
 type PrecompileTestSuite struct {
 	suite.Suite
 
-	ctx        sdk.Context
-	app        *app.Haqq
-	address    common.Address
-	validators []stakingtypes.Validator
-	valSet     *tmtypes.ValidatorSet
-	ethSigner  ethtypes.Signer
-	privKey    cryptotypes.PrivKey
-	signer     keyring.Signer
-	bondDenom  string
+	network     *network.UnitTestNetwork
+	factory     factory.TxFactory
+	grpcHandler grpc.Handler
+	keyring     testkeyring.Keyring
 
-	precompile *distribution.Precompile
-	stateDB    *statedb.StateDB
-
-	queryClientEVM evmtypes.QueryClient
+	precompile           *distribution.Precompile
+	bondDenom            string
+	validatorsKeys       []testkeyring.Key
+	withValidatorSlashes bool
 }
 
-func TestPrecompileTestSuite(t *testing.T) {
-	s = new(PrecompileTestSuite)
-	suite.Run(t, s)
-
-	// Run Ginkgo integration tests
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Distribution Precompile Suite")
+func TestPrecompileUnitTestSuite(t *testing.T) {
+	suite.Run(t, new(PrecompileTestSuite))
 }
 
 func (s *PrecompileTestSuite) SetupTest() {
-	s.DoSetupTest()
+	keyring := testkeyring.New(2)
+	s.validatorsKeys = generateKeys(3)
+	customGen := network.CustomGenesisState{}
+
+	// set some slashing events for integration test
+	distrGen := distrtypes.DefaultGenesisState()
+	if s.withValidatorSlashes {
+		distrGen.ValidatorSlashEvents = []distrtypes.ValidatorSlashEventRecord{
+			{
+				ValidatorAddress:    sdk.ValAddress(s.validatorsKeys[0].Addr.Bytes()).String(),
+				Height:              0,
+				Period:              1,
+				ValidatorSlashEvent: distrtypes.NewValidatorSlashEvent(1, math.LegacyNewDecWithPrec(5, 2)),
+			},
+			{
+				ValidatorAddress:    sdk.ValAddress(s.validatorsKeys[0].Addr.Bytes()).String(),
+				Height:              1,
+				Period:              1,
+				ValidatorSlashEvent: distrtypes.NewValidatorSlashEvent(1, math.LegacyNewDecWithPrec(5, 2)),
+			},
+		}
+	}
+	customGen[distrtypes.ModuleName] = distrGen
+
+	operatorsAddr := make([]sdk.AccAddress, 3)
+	for i, k := range s.validatorsKeys {
+		operatorsAddr[i] = k.AccAddr
+	}
+
+	nw := network.NewUnitTestNetwork(
+		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),
+		network.WithCustomGenesis(customGen),
+		network.WithValidatorOperators(operatorsAddr),
+	)
+	grpcHandler := grpc.NewIntegrationHandler(nw)
+	txFactory := factory.New(nw, grpcHandler)
+
+	ctx := nw.GetContext()
+	sk := nw.App.StakingKeeper
+	bondDenom, err := sk.BondDenom(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	s.bondDenom = bondDenom
+	s.factory = txFactory
+	s.grpcHandler = grpcHandler
+	s.keyring = keyring
+	s.network = nw
+	s.precompile, err = distribution.NewPrecompile(
+		s.network.App.DistrKeeper,
+		s.network.App.StakingKeeper,
+		s.network.App.AuthzKeeper,
+	)
+	if err != nil {
+		panic(err)
+	}
 }

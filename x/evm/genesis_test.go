@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -40,7 +41,10 @@ func TestInitGenesis(t *testing.T) {
 
 	address := common.HexToAddress(privkey.PubKey().Address().String())
 
-	var vmdb *statedb.StateDB
+	var (
+		vmdb *statedb.StateDB
+		ctx  sdk.Context
+	)
 
 	testCases := []struct {
 		name     string
@@ -86,22 +90,6 @@ func TestInitGenesis(t *testing.T) {
 			expPanic: true,
 		},
 		{
-			name: "invalid account type",
-			malleate: func(network *testnetwork.UnitTestNetwork) {
-				acc := authtypes.NewBaseAccountWithAddress(address.Bytes())
-				network.App.AccountKeeper.SetAccount(network.GetContext(), acc)
-			},
-			genState: &types.GenesisState{
-				Params: types.DefaultParams(),
-				Accounts: []types.GenesisAccount{
-					{
-						Address: address.String(),
-					},
-				},
-			},
-			expPanic: true,
-		},
-		{
 			name: "invalid code hash",
 			malleate: func(network *testnetwork.UnitTestNetwork) {
 				ctx := network.GetContext()
@@ -120,9 +108,28 @@ func TestInitGenesis(t *testing.T) {
 			expPanic: true,
 		},
 		{
+			name: "invalid account type",
+			malleate: func(network *testnetwork.UnitTestNetwork) {
+				acc := authtypes.NewBaseAccountWithAddress(address.Bytes())
+				// account is initialized with account number zero.
+				// set a correct acc number
+				accs := network.App.AccountKeeper.GetAllAccounts(ctx)
+				acc.AccountNumber = uint64(len(accs))
+				network.App.AccountKeeper.SetAccount(ctx, acc)
+			},
+			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
+				Accounts: []types.GenesisAccount{
+					{
+						Address: address.String(),
+					},
+				},
+			},
+			expPanic: true,
+		},
+		{
 			name: "ignore empty account code checking",
 			malleate: func(network *testnetwork.UnitTestNetwork) {
-				ctx := network.GetContext()
 				acc := network.App.AccountKeeper.NewAccountWithAddress(ctx, address.Bytes())
 				network.App.AccountKeeper.SetAccount(ctx, acc)
 			},
@@ -145,7 +152,7 @@ func TestInitGenesis(t *testing.T) {
 					CodeHash:    common.BytesToHash([]byte{1, 2, 3}).Hex(),
 				}
 
-				network.App.AccountKeeper.SetAccount(network.GetContext(), ethAcc)
+				network.App.AccountKeeper.SetAccount(ctx, ethAcc)
 			},
 			genState: &types.GenesisState{
 				Params: types.DefaultParams(),
@@ -163,12 +170,12 @@ func TestInitGenesis(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ts := SetupTest()
-			ctx := ts.network.GetContext()
+			ctx = ts.network.GetContext()
 
 			vmdb = statedb.New(
 				ctx,
 				ts.network.App.EvmKeeper,
-				statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash().Bytes())),
+				statedb.NewEmptyTxConfig(common.BytesToHash(ctx.HeaderHash())),
 			)
 
 			tc.malleate(ts.network)

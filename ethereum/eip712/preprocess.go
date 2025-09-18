@@ -4,8 +4,10 @@ import (
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmoskr "github.com/cosmos/cosmos-sdk/crypto/keyring"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 
@@ -50,10 +52,17 @@ func PreprocessLedgerTx(chainID string, keyType cosmoskr.KeyType, txBuilder clie
 		return fmt.Errorf("could not parse chain id: %w", err)
 	}
 
+	addrCodec := address.Bech32Codec{
+		Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
+	}
+	feePayerAddr, err := addrCodec.BytesToString(txBuilder.GetTx().FeePayer())
+	if err != nil {
+		return fmt.Errorf("could not parse feePayer address: %w", err)
+	}
 	// Add ExtensionOptionsWeb3Tx extension with signature
 	var option *codectypes.Any
 	option, err = codectypes.NewAnyWithValue(&types.ExtensionOptionsWeb3Tx{
-		FeePayer:         txBuilder.GetTx().FeePayer().String(),
+		FeePayer:         feePayerAddr,
 		TypedDataChainID: chainIDInt.Uint64(),
 		FeePayerSig:      sigBytes,
 	})

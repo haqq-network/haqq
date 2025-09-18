@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"sort"
 
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -139,7 +140,7 @@ type (
 		slot    *common.Hash
 	}
 	precompileCallChange struct {
-		multiStore sdk.CacheMultiStore
+		multiStore storetypes.CacheMultiStore
 		events     sdk.Events
 	}
 )

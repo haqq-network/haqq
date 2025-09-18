@@ -15,7 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/exp/constraints"
@@ -25,20 +25,18 @@ import (
 )
 
 const (
-	MainNetChainID   = "haqq_11235"
-	TestEdge1ChainID = "haqq_53211"
+	// MainNetChainID defines the Haqq Network EIP155 chain ID for mainnet
+	MainNetChainID = "haqq_11235"
+	// TestEdge2ChainID defines the Haqq Network EIP155 chain ID for public testnet
 	TestEdge2ChainID = "haqq_54211"
-	LocalNetChainID  = "haqq_121799"
-	// BaseDenom defines the Haqq Network mainnet denomination
+	// LocalNetChainID defines the Haqq Network EIP155 chain ID for local devnet
+	LocalNetChainID = "haqq_121799"
+	// BaseDenom defines the Haqq Network basic denomination
 	BaseDenom = "aISLM"
 )
 
 func IsMainNetwork(chainID string) bool {
 	return strings.HasPrefix(chainID, MainNetChainID)
-}
-
-func IsTestEdge1Network(chainID string) bool {
-	return strings.HasPrefix(chainID, TestEdge1ChainID)
 }
 
 func IsTestEdge2Network(chainID string) bool {
@@ -78,7 +76,7 @@ func IsSupportedKey(pubkey cryptotypes.PubKey) bool {
 }
 
 // GetHaqqAddressFromBech32 returns the sdk.Account address of given address,
-// while also changing bech32 human readable prefix (HRP) to the value set on
+// while also changing bech32 human-readable prefix (HRP) to the value set on
 // the global sdk.Config (eg: `haqq`).
 // The function fails if the provided bech32 address is invalid.
 func GetHaqqAddressFromBech32(address string) (sdk.AccAddress, error) {
@@ -91,9 +89,13 @@ func GetHaqqAddressFromBech32(address string) (sdk.AccAddress, error) {
 }
 
 // CreateAccAddressFromBech32 creates an AccAddress from a Bech32 string.
-func CreateAccAddressFromBech32(address string, bech32prefix string) (sdk.AccAddress, error) {
+func CreateAccAddressFromBech32(address, bech32prefix string) (sdk.AccAddress, error) {
 	if len(strings.TrimSpace(address)) == 0 {
 		return sdk.AccAddress{}, fmt.Errorf("empty address string is not allowed")
+	}
+
+	if len(strings.TrimSpace(bech32prefix)) == 0 {
+		return sdk.AccAddress{}, fmt.Errorf("empty bech32 prefix string is not allowed")
 	}
 
 	addressBz, err := sdk.GetFromBech32(address, bech32prefix)
@@ -121,7 +123,7 @@ func GetIBCDenomAddress(denom string) (common.Address, error) {
 	}
 
 	if len(denom) < 5 || strings.TrimSpace(denom[4:]) == "" {
-		return common.Address{}, ibctransfertypes.ErrInvalidDenomForTransfer.Wrapf("coin %s does not a valid IBC voucher hash", denom)
+		return common.Address{}, ibctransfertypes.ErrInvalidDenomForTransfer.Wrapf("coin %s is not a valid IBC voucher hash", denom)
 	}
 
 	// Get the address from the hash of the ICS20's DenomTrace Path

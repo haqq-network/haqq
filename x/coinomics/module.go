@@ -5,6 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/gorilla/mux"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
+
+	"cosmossdk.io/core/appmodule"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -12,24 +17,25 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	"github.com/gorilla/mux"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/spf13/cobra"
 
 	"github.com/haqq-network/haqq/x/coinomics/client/cli"
 	"github.com/haqq-network/haqq/x/coinomics/keeper"
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
 
+// consensusVersion defines the current x/coinomics module consensus version.
+const consensusVersion = 1
+
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+
+	_ appmodule.AppModule     = AppModule{}
+	_ appmodule.HasEndBlocker = AppModule{}
 )
 
-// app module Basics object
+// AppModuleBasic implements the AppModuleBasic interface for the coinomics module.
 type AppModuleBasic struct{}
 
 // Name returns the coinomics module's name.
@@ -42,14 +48,11 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(_ *codec.LegacyAmino) {}
 
 // ConsensusVersion returns the consensus state-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
-	return 1
+	return consensusVersion
 }
 
-// RegisterInterfaces registers interfaces and implementations of the incentives
-// module.
-func (AppModuleBasic) RegisterInterfaces(interfaceRegistry codectypes.InterfaceRegistry) {
-	types.RegisterInterfaces(interfaceRegistry)
-}
+// RegisterInterfaces registers interfaces and implementations of the coinomics module.
+func (AppModuleBasic) RegisterInterfaces(_ codectypes.InterfaceRegistry) {}
 
 // DefaultGenesis returns default genesis state
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
@@ -91,15 +94,15 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 type AppModule struct {
 	AppModuleBasic
 	keeper keeper.Keeper
-	ak     authkeeper.AccountKeeper
-	sk     stakingkeeper.Keeper
+	ak     types.AccountKeeper
+	sk     types.StakingKeeper
 }
 
 // NewAppModule creates a new AppModule Object
 func NewAppModule(
 	k keeper.Keeper,
-	ak authkeeper.AccountKeeper,
-	sk stakingkeeper.Keeper,
+	ak types.AccountKeeper,
+	sk types.StakingKeeper,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
@@ -117,11 +120,6 @@ func (AppModule) Name() string {
 // RegisterInvariants registers the coinomics module invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
-// NewHandler returns nil coinomics module doesn't expose tx gRPC endpoints
-func (am AppModule) NewHandler() sdk.Handler {
-	return nil
-}
-
 // RegisterServices registers a gRPC query service to respond to the
 // module-specific gRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
@@ -130,16 +128,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	_ = keeper.NewMigrator(am.keeper)
 }
 
-// BeginBlock returns the begin blocker for the coinomics module.
-func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {
-}
-
-// EndBlock returns the end blocker for the coinomics module. It returns no validator
-// updates.
-func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	am.keeper.EndBlocker(ctx)
-
-	return []abci.ValidatorUpdate{}
+// EndBlock returns the end blocker for the coinomics module.
+func (am AppModule) EndBlock(ctx context.Context) error {
+	c := sdk.UnwrapSDKContext(ctx)
+	return am.keeper.EndBlocker(c)
 }
 
 // InitGenesis performs genesis initialization for the coinomics module. It returns
@@ -163,20 +155,21 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 
 // AppModuleSimulation functions
 
-// GenerateGenesisState creates a randomized GenState of the coinomics module.
+// RegisterStoreDecoder registers a decoder for evm module's types
+func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {
+}
+
+// GenerateGenesisState creates a randomized GenState of the evm module.
 func (am AppModule) GenerateGenesisState(_ *module.SimulationState) {
 }
 
-// ProposalContents doesn't return any content functions for governance proposals.
-func (am AppModule) ProposalContents(_ module.SimulationState) []simtypes.WeightedProposalContent {
-	return []simtypes.WeightedProposalContent{}
-}
-
-// RegisterStoreDecoder registers a decoder for coinomics module's types.
-func (am AppModule) RegisterStoreDecoder(_ sdk.StoreDecoderRegistry) {
-}
-
-// WeightedOperations doesn't return any coinomics module operation.
+// WeightedOperations returns the all the evm module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
-	return []simtypes.WeightedOperation{}
+	return nil
 }
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() {}

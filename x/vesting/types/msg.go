@@ -108,12 +108,6 @@ func (msg *MsgCreateClawbackVestingAccount) GetSignBytes() []byte {
 	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
 }
 
-// GetSigners defines whose signature is required
-func (msg MsgCreateClawbackVestingAccount) GetSigners() []sdk.AccAddress {
-	from := sdk.MustAccAddressFromBech32(msg.FromAddress)
-	return []sdk.AccAddress{from}
-}
-
 // NewMsgClawback creates new instance of MsgClawback. The dest address may be
 // nil - defaulting to the funder.
 func NewMsgClawback(funder, addr, dest sdk.AccAddress) *MsgClawback {
@@ -157,12 +151,6 @@ func (msg MsgClawback) ValidateBasic() error {
 // GetSignBytes encodes the message for signing
 func (msg *MsgClawback) GetSignBytes() []byte {
 	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
-}
-
-// GetSigners defines whose signature is required
-func (msg MsgClawback) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.FunderAddress)
-	return []sdk.AccAddress{funder}
 }
 
 // NewMsgUpdateVestingFunder creates new instance of MsgUpdateVestingFunder
@@ -212,12 +200,6 @@ func (msg *MsgUpdateVestingFunder) GetSignBytes() []byte {
 	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
 }
 
-// GetSigners defines whose signature is required
-func (msg MsgUpdateVestingFunder) GetSigners() []sdk.AccAddress {
-	funder := sdk.MustAccAddressFromBech32(msg.FunderAddress)
-	return []sdk.AccAddress{funder}
-}
-
 // NewMsgConvertVestingAccount creates new instance of MsgConvertVestingAccount
 func NewMsgConvertVestingAccount(vestingAcc sdk.AccAddress) *MsgConvertVestingAccount {
 	return &MsgConvertVestingAccount{
@@ -242,12 +224,6 @@ func (msg MsgConvertVestingAccount) ValidateBasic() error {
 // GetSignBytes encodes the message for signing
 func (msg *MsgConvertVestingAccount) GetSignBytes() []byte {
 	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
-}
-
-// GetSigners defines whose signature is required
-func (msg MsgConvertVestingAccount) GetSigners() []sdk.AccAddress {
-	vesting := sdk.MustAccAddressFromBech32(msg.VestingAddress)
-	return []sdk.AccAddress{vesting}
 }
 
 // NewMsgConvertIntoVestingAccount creates new instance of MsgConvertIntoVestingAccount
@@ -337,10 +313,4 @@ func (msg MsgConvertIntoVestingAccount) ValidateBasic() error {
 // GetSignBytes encodes the message for signing
 func (msg *MsgConvertIntoVestingAccount) GetSignBytes() []byte {
 	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(msg))
-}
-
-// GetSigners defines whose signature is required
-func (msg MsgConvertIntoVestingAccount) GetSigners() []sdk.AccAddress {
-	from := sdk.MustAccAddressFromBech32(msg.FromAddress)
-	return []sdk.AccAddress{from}
 }

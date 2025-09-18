@@ -1,6 +1,7 @@
 package types
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -18,6 +19,8 @@ const (
 var (
 	_ sdk.Msg = (*MsgFund)(nil)
 	_ sdk.Msg = (*MsgTransferOwnership)(nil)
+	_ sdk.Msg = (*MsgTransferOwnershipWithRatio)(nil)
+	_ sdk.Msg = (*MsgTransferOwnershipWithAmount)(nil)
 )
 
 // NewMsgFund returns a new MsgFund with a sender and
@@ -57,7 +60,7 @@ func (msg MsgFund) GetSignBytes() []byte {
 // ValidateBasic performs basic MsgFundCommunityPool message validation.
 func (msg MsgFund) ValidateBasic() error {
 	if !msg.Amount.IsValid() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
 	}
 	if _, err := sdk.AccAddressFromBech32(msg.Depositor); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid depositor address: %s", err)
@@ -97,7 +100,7 @@ func (msg MsgFundLegacy) GetSignBytes() []byte {
 // ValidateBasic performs basic MsgFundCommunityPool message validation.
 func (msg MsgFundLegacy) ValidateBasic() error {
 	if !msg.Amount.IsValid() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
 	}
 	if _, err := sdk.AccAddressFromBech32(msg.Depositor); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid depositor address: %s", err)

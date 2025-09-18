@@ -1,67 +1,61 @@
 package keeper
 
 import (
+	"context"
+
+	"cosmossdk.io/core/store"
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-type BaseKeeper struct {
+// Keeper is a wrapper around the Cosmos SDK bank keeper.
+type Keeper struct {
 	bankkeeper.BaseKeeper
 
-	ak            banktypes.AccountKeeper
-	dk            distrkeeper.Keeper
-	distrStoreKey storetypes.StoreKey
-	cdc           codec.BinaryCodec
+	ak                     banktypes.AccountKeeper
+	dk                     distrkeeper.Keeper
+	cdc                    codec.BinaryCodec
+	storeService           store.KVStoreService
+	mintCoinsRestrictionFn banktypes.MintingRestrictionFn
+	logger                 log.Logger
 }
 
-func NewBaseKeeper(
+// NewKeeper creates a new staking Keeper wrapper instance.
+func NewKeeper(
 	cdc codec.BinaryCodec,
-	storeKey storetypes.StoreKey,
-	distrStoreKey storetypes.StoreKey,
+	storeService store.KVStoreService,
 	ak banktypes.AccountKeeper,
 	dk distrkeeper.Keeper,
 	blockedAddrs map[string]bool,
 	authority string,
-) BaseKeeper {
-	return BaseKeeper{
-		BaseKeeper:    bankkeeper.NewBaseKeeper(cdc, storeKey, ak, blockedAddrs, authority),
-		ak:            ak,
-		dk:            dk,
-		distrStoreKey: distrStoreKey,
-		cdc:           cdc,
+	logger log.Logger,
+) Keeper {
+	return Keeper{
+		BaseKeeper: bankkeeper.NewBaseKeeper(cdc, storeService, ak, blockedAddrs, authority, logger),
+		ak:         ak,
+		dk:         dk,
+		cdc:        cdc,
 	}
 }
 
-func (k BaseKeeper) BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
+func (k Keeper) BurnCoins(ctx context.Context, moduleName string, amounts sdk.Coins) error {
 	switch moduleName {
 	case govtypes.ModuleName, stakingtypes.BondedPoolName, stakingtypes.NotBondedPoolName:
-		// send coins to distribution module
-		if err := k.SendCoinsFromModuleToModule(ctx, moduleName, distrtypes.ModuleName, amounts); err != nil {
-			return err
+		acc := k.ak.GetModuleAccount(ctx, moduleName)
+		if acc == nil {
+			panic(errorsmod.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", moduleName))
 		}
 
-		// update fee pool
-		kvstore := ctx.MultiStore().GetKVStore(k.distrStoreKey)
-		feePoolBin := kvstore.Get(distrtypes.FeePoolKey)
-
-		var feePool distrtypes.FeePool
-		k.cdc.MustUnmarshal(feePoolBin, &feePool)
-
-		coins := sdk.NewDecCoinsFromCoins(amounts...)
-		feePool.CommunityPool = feePool.CommunityPool.Add(coins...)
-
-		b := k.cdc.MustMarshal(&feePool)
-		kvstore.Set(distrtypes.FeePoolKey, b)
-
-		return nil
+		return k.dk.FundCommunityPool(ctx, amounts, acc.GetAddress())
 	}
 
 	return k.BaseKeeper.BurnCoins(ctx, moduleName, amounts)

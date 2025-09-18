@@ -27,7 +27,6 @@ import (
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
-	"github.com/haqq-network/haqq/tests"
 	haqqtypes "github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/coinomics/types"
 	evm "github.com/haqq-network/haqq/x/evm/types"

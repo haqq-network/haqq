@@ -2,10 +2,12 @@ package grpc
 
 import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	commongrpc "github.com/haqq-network/haqq/testutil/integration/common/grpc"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
@@ -27,6 +29,14 @@ type Handler interface {
 	// Gov methods
 	GetProposal(proposalID uint64) (*govtypes.QueryProposalResponse, error)
 	GetGovParams(paramsType string) (*govtypes.QueryParamsResponse, error)
+
+	// Coinomics methods
+	GetRewardCoefficient() (*coinomicstypes.QueryRewardCoefficientResponse, error)
+	GetMaxSupply() (*coinomicstypes.QueryMaxSupplyResponse, error)
+	GetParams() (*coinomicstypes.QueryParamsResponse, error)
+
+	// Staking methods
+	GetStakingParams() (*stakingtypes.QueryParamsResponse, error)
 }
 
 var _ Handler = (*IntegrationHandler)(nil)

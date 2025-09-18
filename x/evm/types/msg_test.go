@@ -18,7 +18,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/encoding"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
@@ -52,7 +51,7 @@ func (suite *MsgsTestSuite) SetupTest() {
 	suite.chainID = big.NewInt(1)
 	suite.hundredBigInt = big.NewInt(100)
 
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	encodingConfig := encoding.MakeConfig()
 	suite.clientCtx = client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 }
 
@@ -70,7 +69,6 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_Constructor() {
 	suite.Require().Equal(msg.Type(), types.TypeMsgEthereumTx)
 	// suite.Require().NotNil(msg.To())
 	suite.Require().Equal(msg.GetMsgs(), []sdk.Msg{msg})
-	suite.Require().Panics(func() { msg.GetSigners() })
 	suite.Require().Panics(func() { msg.GetSignBytes() })
 
 	evmTx2 := &types.EvmTxArgs{

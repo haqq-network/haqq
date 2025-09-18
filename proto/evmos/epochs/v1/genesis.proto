@@ -1,14 +1,15 @@
 syntax = "proto3";
 package evmos.epochs.v1;
 
+import "amino/amino.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/epochs/types";
 
-// EpochInfo defines the message interface containing the relevant informations
-// about an epoch.
+// EpochInfo defines the message interface containing the relevant informations about
+// an epoch.
 message EpochInfo {
   // identifier of the epoch
   string identifier = 1;
@@ -16,11 +17,13 @@ message EpochInfo {
   google.protobuf.Timestamp start_time = 2 [
     (gogoproto.stdtime) = true,
     (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
     (gogoproto.moretags) = "yaml:\"start_time\""
   ];
   // duration of the epoch
   google.protobuf.Duration duration = 3 [
     (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
     (gogoproto.stdduration) = true,
     (gogoproto.jsontag) = "duration,omitempty",
     (gogoproto.moretags) = "yaml:\"duration\""
@@ -31,6 +34,7 @@ message EpochInfo {
   google.protobuf.Timestamp current_epoch_start_time = 5 [
     (gogoproto.stdtime) = true,
     (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
     (gogoproto.moretags) = "yaml:\"current_epoch_start_time\""
   ];
   // epoch_counting_started reflects if the counting for the epoch has started
@@ -42,5 +46,5 @@ message EpochInfo {
 // GenesisState defines the epochs module's genesis state.
 message GenesisState {
   // epochs is a slice of EpochInfo that defines the epochs in the genesis state
-  repeated EpochInfo epochs = 1 [ (gogoproto.nullable) = false ];
+  repeated EpochInfo epochs = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }

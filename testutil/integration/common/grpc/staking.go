@@ -15,6 +15,48 @@ func (gqh *IntegrationHandler) GetDelegation(delegatorAddress string, validatorA
 	})
 }
 
+// GetValidatorDelegations returns the delegations to a given validator.
+func (gqh *IntegrationHandler) GetValidatorDelegations(validatorAddress string) (*stakingtypes.QueryValidatorDelegationsResponse, error) {
+	stakingClient := gqh.network.GetStakingClient()
+	return stakingClient.ValidatorDelegations(context.Background(), &stakingtypes.QueryValidatorDelegationsRequest{
+		ValidatorAddr: validatorAddress,
+	})
+}
+
+// GetDelegatorDelegations returns the delegations to a given delegator.
+func (gqh *IntegrationHandler) GetDelegatorDelegations(delegatorAddress string) (*stakingtypes.QueryDelegatorDelegationsResponse, error) {
+	stakingClient := gqh.network.GetStakingClient()
+	return stakingClient.DelegatorDelegations(context.Background(), &stakingtypes.QueryDelegatorDelegationsRequest{
+		DelegatorAddr: delegatorAddress,
+	})
+}
+
+// GetRedelegations returns the redelegations to a given delegator and validators.
+func (gqh *IntegrationHandler) GetRedelegations(delegatorAddress, srcValidator, dstValidator string) (*stakingtypes.QueryRedelegationsResponse, error) {
+	stakingClient := gqh.network.GetStakingClient()
+	return stakingClient.Redelegations(context.Background(), &stakingtypes.QueryRedelegationsRequest{
+		DelegatorAddr:    delegatorAddress,
+		SrcValidatorAddr: srcValidator,
+		DstValidatorAddr: dstValidator,
+	})
+}
+
+// GetValidatorUnbondingDelegations returns the unbonding delegations to a given validator.
+func (gqh *IntegrationHandler) GetValidatorUnbondingDelegations(validatorAddress string) (*stakingtypes.QueryValidatorUnbondingDelegationsResponse, error) {
+	stakingClient := gqh.network.GetStakingClient()
+	return stakingClient.ValidatorUnbondingDelegations(context.Background(), &stakingtypes.QueryValidatorUnbondingDelegationsRequest{
+		ValidatorAddr: validatorAddress,
+	})
+}
+
+// GetDelegatorUnbondingDelegations returns all the unbonding delegations for given delegator.
+func (gqh *IntegrationHandler) GetDelegatorUnbondingDelegations(delegatorAddress string) (*stakingtypes.QueryDelegatorUnbondingDelegationsResponse, error) {
+	stakingClient := gqh.network.GetStakingClient()
+	return stakingClient.DelegatorUnbondingDelegations(context.Background(), &stakingtypes.QueryDelegatorUnbondingDelegationsRequest{
+		DelegatorAddr: delegatorAddress,
+	})
+}
+
 // GetValidators returns the list of all bonded validators.
 func (gqh *IntegrationHandler) GetBondedValidators() (*stakingtypes.QueryValidatorsResponse, error) {
 	stakingClient := gqh.network.GetStakingClient()

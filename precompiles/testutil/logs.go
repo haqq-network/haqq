@@ -41,7 +41,7 @@ func CheckLogs(logArgs LogCheckArgs) error {
 		)
 	}
 
-	if err = CheckVMError(logArgs.Res, logArgs.ErrContains); err != nil {
+	if err := CheckVMError(logArgs.Res, "%s", logArgs.ErrContains); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ type LogCheckArgs struct {
 	// Res is the response of the transaction.
 	//
 	// NOTE: This does not have to be set when using contracts.CallContractAndCheckLogs.
-	Res abci.ResponseDeliverTx
+	Res abci.ExecTxResult
 }
 
 // WithABIEvents sets the ABIEvents field of LogCheckArgs.
@@ -115,7 +115,7 @@ func (l LogCheckArgs) WithExpPass(expPass bool) LogCheckArgs {
 }
 
 // WithRes sets the Res field of LogCheckArgs.
-func (l LogCheckArgs) WithRes(res abci.ResponseDeliverTx) LogCheckArgs {
+func (l LogCheckArgs) WithRes(res abci.ExecTxResult) LogCheckArgs {
 	l.Res = res
 	return l
 }

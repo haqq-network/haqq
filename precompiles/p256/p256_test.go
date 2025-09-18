@@ -12,12 +12,13 @@ import (
 
 	"github.com/haqq-network/haqq/precompiles/p256"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var trueValue = common.LeftPadBytes(common.Big1.Bytes(), 32)
 
 func (s *PrecompileTestSuite) TestAddress() {
-	s.Require().Equal(p256.PrecompileAddress, s.precompile.Address().String())
+	s.Require().Equal(evmtypes.P256PrecompileAddress, s.precompile.Address().String())
 }
 
 func (s *PrecompileTestSuite) TestRequiredGas() {

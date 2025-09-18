@@ -9,11 +9,11 @@ import (
 
 // Tendermint/cosmos-sdk full-node start flags
 const (
-	WithTendermint = "with-tendermint"
-	Address        = "address"
-	Transport      = "transport"
-	TraceStore     = "trace-store"
-	CPUProfile     = "cpu-profile"
+	WithCometBFT = "with-cometbft"
+	Address      = "address"
+	Transport    = "transport"
+	TraceStore   = "trace-store"
+	CPUProfile   = "cpu-profile"
 	// The type of database for application and snapshots databases
 	AppDBBackend = "app-db-backend"
 )
@@ -40,6 +40,7 @@ const (
 	JSONRPCAddress             = "json-rpc.address"
 	JSONWsAddress              = "json-rpc.ws-address"
 	JSONRPCGasCap              = "json-rpc.gas-cap"
+	JSONRPCAllowInsecureUnlock = "json-rpc.allow-insecure-unlock"
 	JSONRPCEVMTimeout          = "json-rpc.evm-timeout"
 	JSONRPCTxFeeCap            = "json-rpc.txfee-cap"
 	JSONRPCFilterCap           = "json-rpc.filter-cap"

@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"context"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
@@ -16,14 +18,14 @@ import (
 
 // ApplyVestingSchedule takes funder and funded addresses
 func (k Keeper) ApplyVestingSchedule(
-	ctx sdk.Context,
+	goCtx context.Context,
 	funder, funded sdk.AccAddress,
 	coins sdk.Coins,
 	startTime time.Time,
 	lockupPeriods, vestingPeriods sdkvesting.Periods,
 	merge bool,
 ) (vestingAcc *types.ClawbackVestingAccount, newAccountCreated, wasMerged bool, err error) {
-	targetAccount := k.accountKeeper.GetAccount(ctx, funded)
+	targetAccount := k.accountKeeper.GetAccount(goCtx, funded)
 	createNewAcc := targetAccount == nil
 
 	var isClawback bool
@@ -52,8 +54,8 @@ func (k Keeper) ApplyVestingSchedule(
 			vestingPeriods,
 			&codeHash,
 		)
-		acc := k.accountKeeper.NewAccount(ctx, vestingAcc)
-		k.accountKeeper.SetAccount(ctx, acc)
+		acc := k.accountKeeper.NewAccount(goCtx, vestingAcc)
+		k.accountKeeper.SetAccount(goCtx, acc)
 
 		return vestingAcc, true, false, nil
 	case !isClawback && !isEthAccount:
@@ -69,11 +71,21 @@ func (k Keeper) ApplyVestingSchedule(
 			vestingPeriods,
 			&codeHash,
 		)
-		bondedAmt := k.stakingKeeper.GetDelegatorBonded(ctx, vestingAcc.GetAddress())
-		unbondingAmt := k.stakingKeeper.GetDelegatorUnbonding(ctx, vestingAcc.GetAddress())
+		bondedAmt, err := k.stakingKeeper.GetDelegatorBonded(goCtx, vestingAcc.GetAddress())
+		if err != nil {
+			return nil, false, false, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to get bonded amount: %e", err)
+		}
+		unbondingAmt, err := k.stakingKeeper.GetDelegatorUnbonding(goCtx, vestingAcc.GetAddress())
+		if err != nil {
+			return nil, false, false, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to get unbonding amount: %e", err)
+		}
+		bondedDenom, err := k.stakingKeeper.BondDenom(goCtx)
+		if err != nil {
+			return nil, false, false, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to get bond denom: %e", err)
+		}
 		delegatedAmt := bondedAmt.Add(unbondingAmt)
-		vestingAcc.DelegatedFree = sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegatedAmt))
-		k.accountKeeper.SetAccount(ctx, vestingAcc)
+		vestingAcc.DelegatedFree = sdk.NewCoins(sdk.NewCoin(bondedDenom, delegatedAmt))
+		k.accountKeeper.SetAccount(goCtx, vestingAcc)
 		return vestingAcc, false, false, nil
 	case isClawback && merge:
 		if funder.String() != vestingAcc.FunderAddress {
@@ -81,7 +93,7 @@ func (k Keeper) ApplyVestingSchedule(
 		}
 
 		err := k.addGrant(
-			ctx,
+			goCtx,
 			vestingAcc,
 			types.Min64(startTime.Unix(), vestingAcc.StartTime.Unix()),
 			lockupPeriods,
@@ -91,9 +103,9 @@ func (k Keeper) ApplyVestingSchedule(
 		if err != nil {
 			return nil, false, false, err
 		}
-		k.accountKeeper.SetAccount(ctx, vestingAcc)
+		k.accountKeeper.SetAccount(goCtx, vestingAcc)
 		return vestingAcc, false, true, nil
 	default:
-		return nil, false, true, errorsmod.Wrapf(types.ErrApplyShedule, "failed to initiate vesting for account %s", funded)
+		return nil, false, false, errorsmod.Wrapf(types.ErrApplyShedule, "failed to initiate vesting for account %s", funded)
 	}
 }

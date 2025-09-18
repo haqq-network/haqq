@@ -11,7 +11,7 @@ import (
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/version"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
@@ -46,7 +46,7 @@ func (suite *GenesisTestSuite) SetupTest() {
 
 	chainID := utils.TestEdge2ChainID + "-3"
 	suite.app, _ = app.Setup(false, feemarkettypes.DefaultGenesisState(), chainID)
-	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{
+	suite.ctx = suite.app.BaseApp.NewContextLegacy(false, tmproto.Header{
 		Height:          1,
 		ChainID:         chainID,
 		Time:            time.Now().UTC(),

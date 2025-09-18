@@ -10,7 +10,7 @@ import (
 	"sort"
 
 	errorsmod "cosmossdk.io/errors"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -102,7 +102,7 @@ func (s *StateDB) GetCacheContext() (sdk.Context, error) {
 }
 
 // MultiStoreSnapshot returns a copy of the stateDB CacheMultiStore.
-func (s *StateDB) MultiStoreSnapshot() sdk.CacheMultiStore {
+func (s *StateDB) MultiStoreSnapshot() storetypes.CacheMultiStore {
 	if s.writeCache == nil {
 		err := s.cache()
 		if err != nil {
@@ -111,7 +111,7 @@ func (s *StateDB) MultiStoreSnapshot() sdk.CacheMultiStore {
 	}
 	// the cacheCtx multi store is already a CacheMultiStore
 	// so we need to pass a copy of the current state of it
-	cms := s.cacheCtx.MultiStore().(sdk.CacheMultiStore)
+	cms := s.cacheCtx.MultiStore().(storetypes.CacheMultiStore)
 	snapshot := cms.Copy()
 
 	return snapshot
@@ -346,7 +346,7 @@ func (s *StateDB) setStateObject(object *stateObject) {
 // AddPrecompileFn adds a precompileCall journal entry
 // with a snapshot of the multi-store and events previous
 // to the precompile call.
-func (s *StateDB) AddPrecompileFn(addr common.Address, cms sdk.CacheMultiStore, events sdk.Events) error {
+func (s *StateDB) AddPrecompileFn(addr common.Address, cms storetypes.CacheMultiStore, events sdk.Events) error {
 	stateObject := s.getOrNewStateObject(addr)
 	if stateObject == nil {
 		return fmt.Errorf("could not add precompile call to address %s. State object not found", addr)
@@ -530,7 +530,7 @@ func (s *StateDB) commitWithCtx(ctx sdk.Context) error {
 		obj := s.stateObjects[addr]
 		if obj.suicided {
 			if err := s.keeper.DeleteAccount(ctx, obj.Address()); err != nil {
-				return errorsmod.Wrap(err, "failed to delete account")
+				return errorsmod.Wrapf(err, "failed to delete account %s", obj.Address())
 			}
 		} else {
 			if obj.code != nil && obj.dirtyCode {
