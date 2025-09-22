@@ -43,7 +43,7 @@ func (app *Haqq) ExportAppStateAndValidators(
 		if vacc.HasLockedCoins(ctx.BlockTime()) || !vacc.GetVestingCoins(ctx.BlockTime()).IsZero() {
 			// output only addresses with pending unlocks or vesting
 			ethAddr := common.BytesToAddress(vacc.GetAddress())
-			fmt.Printf("%s,%s\n", vacc.GetAddress().String(), ethAddr.Hex())
+			fmt.Printf("%s,%s,%t,%t\n", vacc.GetAddress().String(), ethAddr.Hex(), vacc.HasLockedCoins(ctx.BlockTime()), !vacc.GetVestingCoins(ctx.BlockTime()).IsZero())
 		}
 
 		return false
