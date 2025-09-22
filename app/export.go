@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -28,6 +30,32 @@ func (app *Haqq) ExportAppStateAndValidators(
 ) (servertypes.ExportedApp, error) {
 	// Creates context with current height and checks txs for ctx to be usable by start of next block
 	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
+
+	app.AccountKeeper.IterateAccounts(ctx, func(acc authtypes.AccountI) (stop bool) {
+		// Check if acc is vesting account
+		vacc, ok := acc.(*vestingtypes.ClawbackVestingAccount)
+		if !ok {
+			return false
+		}
+
+		prevPeriodTime := vacc.StartTime.Unix()
+
+		for _, period := range vacc.LockupPeriods {
+			prevPeriodTime += period.Length
+
+			if len(period.Amount) > 0 {
+				for _, amount := range period.Amount {
+					fmt.Printf("%d,%s,%s,%s\n", prevPeriodTime, vacc.GetAddress().String(), amount.Amount, amount.Denom)
+				}
+			} else {
+				fmt.Printf("%d,%s,0,aISLM\n", prevPeriodTime, vacc.GetAddress().String())
+			}
+		}
+
+		return false
+	})
+
+	panic("intented exit")
 
 	// We export at last height + 1, because that's the height at which
 	// Tendermint will start InitChain.
