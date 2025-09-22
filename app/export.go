@@ -6,6 +6,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+	"time"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -30,7 +31,7 @@ func (app *Haqq) ExportAppStateAndValidators(
 	forZeroHeight bool, jailAllowedAddrs []string, modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	// Creates context with current height and checks txs for ctx to be usable by start of next block
-	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
+	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight(), Time: time.Now()})
 
 	app.AccountKeeper.IterateAccounts(ctx, func(acc authtypes.AccountI) (stop bool) {
 		// Check if acc is vesting account
@@ -43,7 +44,7 @@ func (app *Haqq) ExportAppStateAndValidators(
 		if vacc.HasLockedCoins(ctx.BlockTime()) || !vacc.GetVestingCoins(ctx.BlockTime()).IsZero() {
 			// output only addresses with pending unlocks or vesting
 			ethAddr := common.BytesToAddress(vacc.GetAddress())
-			fmt.Printf("%s,%s,%t,%t\n", vacc.GetAddress().String(), ethAddr.Hex(), vacc.HasLockedCoins(ctx.BlockTime()), !vacc.GetVestingCoins(ctx.BlockTime()).IsZero())
+			fmt.Printf("%s,%s\n", vacc.GetAddress().String(), ethAddr.Hex())
 		}
 
 		return false
