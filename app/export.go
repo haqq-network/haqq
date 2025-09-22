@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/ethereum/go-ethereum/common"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -38,18 +39,11 @@ func (app *Haqq) ExportAppStateAndValidators(
 			return false
 		}
 
-		prevPeriodTime := vacc.StartTime.Unix()
-
-		for _, period := range vacc.LockupPeriods {
-			prevPeriodTime += period.Length
-
-			if len(period.Amount) > 0 {
-				for _, amount := range period.Amount {
-					fmt.Printf("%d,%s,%s,%s\n", prevPeriodTime, vacc.GetAddress().String(), amount.Amount, amount.Denom)
-				}
-			} else {
-				fmt.Printf("%d,%s,0,aISLM\n", prevPeriodTime, vacc.GetAddress().String())
-			}
+		// skip fully unlocked accounts
+		if vacc.HasLockedCoins(ctx.BlockTime()) || !vacc.GetVestingCoins(ctx.BlockTime()).IsZero() {
+			// output only addresses with pending unlocks or vesting
+			ethAddr := common.BytesToAddress(vacc.GetAddress())
+			fmt.Printf("%s,%s\n", vacc.GetAddress().String(), ethAddr.Hex())
 		}
 
 		return false
