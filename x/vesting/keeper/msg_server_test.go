@@ -271,8 +271,15 @@ func TestMsgClawback(t *testing.T) {
 			errContains: "does not exist",
 		},
 		{
-			name:         "fail - no clawback account",
-			malleate:     func() {},
+			name: "fail - no clawback account",
+			malleate: func() {
+				baseAccount := authtypes.NewBaseAccountWithAddress(vestingAddr)
+				ethAccount := ethtypes.ProtoAccount().(*ethtypes.EthAccount)
+				ethAccount.BaseAccount = baseAccount
+				ethAccount.AccountNumber = nw.App.AccountKeeper.NextAccountNumber(ctx)
+				ethAccount.CodeHash = common.BytesToHash(evmtypes.EmptyCodeHash).Hex()
+				nw.App.AccountKeeper.SetAccount(ctx, ethAccount)
+			},
 			funder:       funder,
 			vestingAddr:  vestingAddr,
 			clawbackDest: addr3,
@@ -426,7 +433,7 @@ func TestMsgUpdateVestingFunder(t *testing.T) {
 				nw.App.AccountKeeper.SetAccount(ctx, acc)
 			},
 			funder:      funder,
-			vestingAcc:  vestingAddr,
+			vestingAcc:  addr4,
 			newFunder:   newFunder,
 			expPass:     false,
 			errContains: types.ErrNotSubjectToClawback.Error(),
@@ -921,6 +928,7 @@ func TestConvertIntoVestingAccount(t *testing.T) {
 			func() {
 				// Existing module account
 				baseAccount := authtypes.NewBaseAccountWithAddress(addr4)
+				baseAccount.AccountNumber = nw.App.AccountKeeper.NextAccountNumber(ctx)
 				nw.App.AccountKeeper.SetAccount(ctx, authtypes.NewModuleAccount(baseAccount, "testmodule"))
 			},
 			funder,
@@ -968,13 +976,12 @@ func TestConvertIntoVestingAccount(t *testing.T) {
 				valAddr,
 			)
 			res, err := nw.App.VestingKeeper.ConvertIntoVestingAccount(ctx, msg)
-			require.NoError(t, err)
 
 			expResponse := &types.MsgConvertIntoVestingAccountResponse{}
 			balanceSource := nw.App.BankKeeper.GetBalance(ctx, tc.funder, utils.BaseDenom)
 			balanceDest := nw.App.BankKeeper.GetBalance(ctx, tc.vestingAddr, utils.BaseDenom)
-			balanceBonded, err := nw.App.StakingKeeper.GetDelegatorBonded(ctx, tc.vestingAddr)
-			require.NoError(t, err)
+			balanceBonded, errDel := nw.App.StakingKeeper.GetDelegatorBonded(ctx, tc.vestingAddr)
+			require.NoError(t, errDel)
 
 			if tc.expectPass {
 				require.NoError(t, err, tc.name)
