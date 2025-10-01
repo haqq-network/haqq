@@ -113,8 +113,7 @@ func TestInitGenesis(t *testing.T) {
 				acc := authtypes.NewBaseAccountWithAddress(address.Bytes())
 				// account is initialized with account number zero.
 				// set a correct acc number
-				accs := network.App.AccountKeeper.GetAllAccounts(ctx)
-				acc.AccountNumber = uint64(len(accs))
+				acc.AccountNumber = network.App.AccountKeeper.NextAccountNumber(ctx)
 				network.App.AccountKeeper.SetAccount(ctx, acc)
 			},
 			genState: &types.GenesisState{
@@ -147,11 +146,10 @@ func TestInitGenesis(t *testing.T) {
 		{
 			name: "ignore empty account code checking with non-empty codehash",
 			malleate: func(network *testnetwork.UnitTestNetwork) {
-				ethAcc := &haqqtypes.EthAccount{
-					BaseAccount: authtypes.NewBaseAccount(address.Bytes(), nil, 0, 0),
-					CodeHash:    common.BytesToHash([]byte{1, 2, 3}).Hex(),
-				}
-
+				acc := network.App.AccountKeeper.NewAccountWithAddress(ctx, address.Bytes())
+				ethAcc, ok := acc.(*haqqtypes.EthAccount)
+				require.True(t, ok)
+				ethAcc.CodeHash = common.BytesToHash([]byte{1, 2, 3}).Hex()
 				network.App.AccountKeeper.SetAccount(ctx, ethAcc)
 			},
 			genState: &types.GenesisState{
