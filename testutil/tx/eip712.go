@@ -58,7 +58,11 @@ func CreateEIP712CosmosTx(
 		haqqApp,
 		args,
 	)
-	return builder.GetTx(), err
+	if err != nil {
+		return nil, err
+	}
+
+	return builder.GetTx(), nil
 }
 
 // PrepareEIP712CosmosTx creates a cosmos tx for typed data according to EIP712.

@@ -14,3 +14,14 @@ type IBCConnection struct {
 	EndpointA Endpoint
 	EndpointB Endpoint
 }
+
+func NewEndpoint() Endpoint {
+	return Endpoint{}
+}
+
+func NewIBCConnection(a, b Endpoint) IBCConnection {
+	return IBCConnection{
+		EndpointA: a,
+		EndpointB: b,
+	}
+}

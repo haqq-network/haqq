@@ -1,24 +1,17 @@
 package ibctesting
 
 import (
-	"testing"
+	"fmt"
 
 	"github.com/stretchr/testify/require"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmttypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	ibcgotesting "github.com/cosmos/ibc-go/v8/testing"
-	"github.com/cosmos/ibc-go/v8/testing/mock"
-	"github.com/ethereum/go-ethereum/common"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
-	haqqtypes "github.com/haqq-network/haqq/types"
-	"github.com/haqq-network/haqq/utils"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	ibcgotesting "github.com/cosmos/ibc-go/v8/testing"
+
+	"github.com/haqq-network/haqq/app"
 )
 
 // ChainIDPrefix defines the default chain ID prefix for Haqq Network test chains
@@ -28,88 +21,99 @@ func init() {
 	ibcgotesting.ChainIDPrefix = ChainIDPrefix
 }
 
-// NewTestChain initializes a new TestChain instance with a single validator set using a
-// generated private key. It also creates a sender account to be used for delivering transactions.
-//
-// The first block height is committed to state in order to allow for client creations on
-// counterparty chains. The TestChain will return with a block height starting at 2.
-//
-// Time management is handled by the Coordinator in order to ensure synchrony between chains.
-// Each update of any chain increments the block header time for all chains by 5 seconds.
-func NewTestChain(t *testing.T, coord *ibcgotesting.Coordinator, chainID string) *ibcgotesting.TestChain {
-	// generate validator private/public key
-	privVal := mock.NewPV()
-	pubKey, err := privVal.GetPubKey()
-	require.NoError(t, err)
+func CommitBlock(chain *ibcgotesting.TestChain, res *abci.ResponseFinalizeBlock) {
+	_, err := chain.App.Commit()
+	require.NoError(chain.TB, err)
 
-	// create validator set with single validator
-	validator := cmttypes.NewValidator(pubKey, 1)
-	valSet := cmttypes.NewValidatorSet([]*cmttypes.Validator{validator})
-	signers := make(map[string]cmttypes.PrivValidator)
-	signers[pubKey.Address().String()] = privVal
+	// set the last header to the current header
+	// use nil trusted fields
+	chain.LastHeader = chain.CurrentTMClientHeader()
 
-	// generate genesis account
-	senderPrivKey, err := ethsecp256k1.GenerateKey()
-	if err != nil {
-		panic(err)
+	// val set changes returned from previous block get applied to the next validators
+	// of this block. See tendermint spec for details.
+	chain.Vals = chain.NextVals
+	chain.NextVals = ibcgotesting.ApplyValSetChanges(chain, chain.Vals, res.ValidatorUpdates)
+
+	// increment the proposer priority of validators
+	chain.Vals.IncrementProposerPriority(1)
+
+	// increment the current header
+	chain.CurrentHeader = cmtproto.Header{
+		ChainID: chain.ChainID,
+		Height:  chain.App.LastBlockHeight() + 1,
+		AppHash: chain.App.LastCommitID().Hash,
+		// NOTE: the time is increased by the coordinator to maintain time synchrony amongst
+		// chains.
+		Time:               chain.CurrentHeader.Time,
+		ValidatorsHash:     chain.Vals.Hash(),
+		NextValidatorsHash: chain.NextVals.Hash(),
+		ProposerAddress:    chain.Vals.Proposer.Address,
 	}
-
-	baseAcc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), 0, 0)
-
-	acc := &haqqtypes.EthAccount{
-		BaseAccount: baseAcc,
-		CodeHash:    common.BytesToHash(evmtypes.EmptyCodeHash).Hex(),
-	}
-
-	amount := sdk.TokensFromConsensusPower(1, haqqtypes.PowerReduction)
-
-	balance := banktypes.Balance{
-		Address: acc.GetAddress().String(),
-		Coins:   sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, amount)),
-	}
-
-	app := SetupWithGenesisValSet(t, valSet, []authtypes.GenesisAccount{acc}, chainID, balance)
-
-	// create current header and call begin block
-	header := tmproto.Header{
-		ChainID: chainID,
-		Height:  1,
-		Time:    coord.CurrentTime.UTC(),
-	}
-
-	txConfig := app.GetTxConfig()
-
-	// create an account to send transactions from
-	chain := &ibcgotesting.TestChain{
-		TB:            t,
-		Coordinator:   coord,
-		ChainID:       chainID,
-		App:           app,
-		CurrentHeader: header,
-		QueryServer:   app.GetIBCKeeper(),
-		TxConfig:      txConfig,
-		Codec:         app.AppCodec(),
-		Vals:          valSet,
-		Signers:       signers,
-		SenderPrivKey: senderPrivKey,
-		SenderAccount: acc,
-		NextVals:      valSet,
-	}
-
-	coord.CommitBlock(chain)
-
-	return chain
 }
 
-func NewTransferPath(chainA, chainB *ibcgotesting.TestChain) *Path {
-	path := NewPath(chainA, chainB)
-	path.EndpointA.ChannelConfig.PortID = ibcgotesting.TransferPort
-	path.EndpointB.ChannelConfig.PortID = ibcgotesting.TransferPort
+// SendMsgs delivers a transaction through the application. It updates the senders sequence
+// number and updates the TestChain's headers. It returns the result and error if one
+// occurred.
+func SendMsgs(chain *ibcgotesting.TestChain, feeAmt int64, msgs ...sdk.Msg) (*abci.ExecTxResult, error) {
+	var (
+		bondDenom string
+		err       error
+	)
 
-	path.EndpointA.ChannelConfig.Order = channeltypes.UNORDERED
-	path.EndpointB.ChannelConfig.Order = channeltypes.UNORDERED
-	path.EndpointA.ChannelConfig.Version = "ics20-1"
-	path.EndpointB.ChannelConfig.Version = "ics20-1"
+	if chain.SendMsgsOverride != nil {
+		return chain.SendMsgsOverride(msgs...)
+	}
 
-	return path
+	// ensure the chain has the latest time
+	chain.Coordinator.UpdateTimeForChain(chain)
+
+	if haqqChain, ok := chain.App.(*app.Haqq); ok {
+		bondDenom, err = haqqChain.StakingKeeper.BondDenom(chain.GetContext())
+	} else {
+		bondDenom, err = chain.GetSimApp().StakingKeeper.BondDenom(chain.GetContext())
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// increment acc sequence regardless of success or failure tx execution
+	defer func() {
+		err := chain.SenderAccount.SetSequence(chain.SenderAccount.GetSequence() + 1)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	fee := sdk.Coins{sdk.NewInt64Coin(bondDenom, feeAmt)}
+	resp, err := SignAndDeliver(
+		chain.TB,
+		chain.TxConfig,
+		chain.App.GetBaseApp(),
+		msgs,
+		fee,
+		chain.ChainID,
+		[]uint64{chain.SenderAccount.GetAccountNumber()},
+		[]uint64{chain.SenderAccount.GetSequence()},
+		true,
+		chain.CurrentHeader.GetTime(),
+		chain.NextVals.Hash(),
+		chain.SenderPrivKey,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// CommitBlock calls FinalizeBlock and Commit and apply the validator set changes
+	CommitBlock(chain, resp)
+
+	require.Len(chain.TB, resp.TxResults, 1)
+	txResult := resp.TxResults[0]
+
+	if txResult.Code != 0 {
+		return txResult, fmt.Errorf("%s/%d: %q", txResult.Codespace, txResult.Code, txResult.Log)
+	}
+
+	chain.Coordinator.IncrementTime()
+
+	return txResult, nil
 }

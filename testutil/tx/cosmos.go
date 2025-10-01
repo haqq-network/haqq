@@ -147,7 +147,7 @@ var _ sdk.Tx = &InvalidTx{}
 // NOTE: This is used for testing purposes, to serve the edge case of invalid data being passed to functions.
 type InvalidTx struct{}
 
-func (InvalidTx) GetMsgs() []sdk.Msg                    { return nil }
-func (InvalidTx) GetMsgsV2() ([]protov2.Message, error) { return nil, nil }
+func (InvalidTx) GetMsgs() []sdk.Msg                    { return []sdk.Msg{nil} }
+func (InvalidTx) GetMsgsV2() ([]protov2.Message, error) { return []protov2.Message{nil}, nil }
 
 func (InvalidTx) ValidateBasic() error { return nil }

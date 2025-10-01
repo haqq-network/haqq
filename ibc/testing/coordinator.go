@@ -10,47 +10,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-
-	"github.com/haqq-network/haqq/app"
 )
 
 const DefaultFeeAmt = int64(150_000_000_000_000_000) // 0.15 ISLM
-
-var globalStartTime = time.Date(2020, 1, 2, 0, 0, 0, 0, time.UTC)
-
-// NewCoordinator initializes Coordinator with N EVM TestChain's (Haqq apps) and M Cosmos chains (Simulation Apps)
-func NewCoordinator(t *testing.T, nEVMChains, mCosmosChains int) *ibctesting.Coordinator {
-	chains := make(map[string]*ibctesting.TestChain)
-	coord := &ibctesting.Coordinator{
-		T:           t,
-		CurrentTime: globalStartTime,
-	}
-
-	for i := 1; i <= nEVMChains; i++ {
-		chainID := ibctesting.GetChainID(i)
-		// setup EVM chains
-		ibctesting.DefaultTestingAppInit = DefaultTestingAppInit(chainID)
-		chains[chainID] = NewTestChain(t, coord, chainID)
-	}
-
-	// setup Cosmos chains
-	ibctesting.DefaultTestingAppInit = ibctesting.SetupTestingApp
-
-	for j := 1 + nEVMChains; j <= nEVMChains+mCosmosChains; j++ {
-		chainID := ibctesting.GetChainID(j)
-		chains[chainID] = ibctesting.NewTestChain(t, coord, chainID)
-	}
-
-	coord.Chains = chains
-
-	return coord
-}
 
 // SetupPath constructs a TM client, connection, and channel on both chains provided. It will
 // fail if any error occurs. The clientID's, TestConnections, and TestChannels are returned
@@ -124,53 +94,6 @@ func SetupClients(coord *ibctesting.Coordinator, path *Path) {
 	require.NoError(coord.T, err)
 }
 
-func SendMsgs(chain *ibctesting.TestChain, feeAmt int64, msgs ...sdk.Msg) (*sdk.Result, error) {
-	var (
-		bondDenom string
-		err       error
-	)
-	// ensure the chain has the latest time
-	chain.Coordinator.UpdateTimeForChain(chain)
-
-	if haqqChain, ok := chain.App.(*app.Haqq); ok {
-		bondDenom, err = haqqChain.StakingKeeper.BondDenom(chain.GetContext())
-	} else {
-		bondDenom, err = chain.GetSimApp().StakingKeeper.BondDenom(chain.GetContext())
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	fee := sdk.Coins{sdk.NewInt64Coin(bondDenom, feeAmt)}
-	_, r, err := SignAndDeliver(
-		chain.TB,
-		chain.TxConfig,
-		chain.App.GetBaseApp(),
-		msgs,
-		fee,
-		chain.ChainID,
-		[]uint64{chain.SenderAccount.GetAccountNumber()},
-		[]uint64{chain.SenderAccount.GetSequence()},
-		true, chain.SenderPrivKey,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// NextBlock calls app.Commit()
-	chain.NextBlock()
-
-	// increment sequence for successful transaction execution
-	err = chain.SenderAccount.SetSequence(chain.SenderAccount.GetSequence() + 1)
-	if err != nil {
-		return nil, err
-	}
-
-	chain.Coordinator.IncrementTime()
-
-	return r, nil
-}
-
 // SignAndDeliver signs and delivers a transaction. No simulation occurs as the
 // ibc testing package causes checkState and deliverState to diverge in block time.
 //
@@ -178,10 +101,10 @@ func SendMsgs(chain *ibctesting.TestChain, feeAmt int64, msgs ...sdk.Msg) (*sdk.
 // Is a customization of IBC-go function that allows to modify the fee denom and amount
 // IBC-go implementation: https://github.com/cosmos/ibc-go/blob/d34cef7e075dda1a24a0a3e9b6d3eff406cc606c/testing/simapp/test_helpers.go#L332-L364
 func SignAndDeliver(
-	t testing.TB, txCfg client.TxConfig, app *baseapp.BaseApp, msgs []sdk.Msg,
+	tb testing.TB, txCfg client.TxConfig, app *baseapp.BaseApp, msgs []sdk.Msg,
 	fee sdk.Coins,
-	chainID string, accNums, accSeqs []uint64, expPass bool, priv ...cryptotypes.PrivKey,
-) (sdk.GasInfo, *sdk.Result, error) {
+	chainID string, accNums, accSeqs []uint64, expPass bool, blockTime time.Time, nextValHash []byte, priv ...cryptotypes.PrivKey,
+) (*abci.ResponseFinalizeBlock, error) {
 	tx, err := simtestutil.GenSignedMockTx(
 		rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
 		txCfg,
@@ -193,18 +116,15 @@ func SignAndDeliver(
 		accSeqs,
 		priv...,
 	)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
-	// Simulate a sending a transaction
-	gInfo, res, err := app.SimDeliver(txCfg.TxEncoder(), tx)
+	txBytes, err := txCfg.TxEncoder()(tx)
+	require.NoError(tb, err)
 
-	if expPass {
-		require.NoError(t, err)
-		require.NotNil(t, res)
-	} else {
-		require.Error(t, err)
-		require.Nil(t, res)
-	}
-
-	return gInfo, res, err
+	return app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height:             app.LastBlockHeight() + 1,
+		Time:               blockTime,
+		NextValidatorsHash: nextValHash,
+		Txs:                [][]byte{txBytes},
+	})
 }

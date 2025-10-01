@@ -14,13 +14,13 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 

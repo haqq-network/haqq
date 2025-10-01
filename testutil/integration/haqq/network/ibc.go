@@ -24,3 +24,19 @@ func (n *IntegrationNetwork) GetIBCChain(t *testing.T, coord *ibctesting.Coordin
 		Signers:       n.valSigners,
 	}
 }
+
+func (n *UnitTestNetwork) GetIBCChain(t *testing.T, coord *ibctesting.Coordinator) *ibctesting.TestChain {
+	return &ibctesting.TestChain{
+		TB:            t,
+		Coordinator:   coord,
+		ChainID:       n.GetChainID(),
+		App:           n.App,
+		CurrentHeader: n.ctx.BlockHeader(),
+		QueryServer:   n.App.GetIBCKeeper(),
+		TxConfig:      n.App.GetTxConfig(),
+		Codec:         n.App.AppCodec(),
+		Vals:          n.valSet,
+		NextVals:      n.valSet,
+		Signers:       n.valSigners,
+	}
+}

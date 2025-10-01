@@ -34,6 +34,8 @@ import (
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 // genSetupFn is the type for the module genesis setup functions
@@ -52,15 +54,18 @@ type defaultGenesisParams struct {
 // genesisSetupFunctions contains the available genesis setup functions
 // that can be used to customize the network genesis
 var genesisSetupFunctions = map[string]genSetupFn{
-	evmtypes.ModuleName:       genStateSetter[*evmtypes.GenesisState](evmtypes.ModuleName),
-	erc20types.ModuleName:     genStateSetter[*erc20types.GenesisState](erc20types.ModuleName),
-	govtypes.ModuleName:       genStateSetter[*govtypesv1.GenesisState](govtypes.ModuleName),
-	coinomicstypes.ModuleName: genStateSetter[*coinomicstypes.GenesisState](coinomicstypes.ModuleName),
-	feemarkettypes.ModuleName: genStateSetter[*feemarkettypes.GenesisState](feemarkettypes.ModuleName),
-	distrtypes.ModuleName:     genStateSetter[*distrtypes.GenesisState](distrtypes.ModuleName),
-	banktypes.ModuleName:      setBankGenesisState,
-	authtypes.ModuleName:      setAuthGenesisState,
-	epochstypes.ModuleName:    genStateSetter[*epochstypes.GenesisState](epochstypes.ModuleName),
+	evmtypes.ModuleName:           genStateSetter[*evmtypes.GenesisState](evmtypes.ModuleName),
+	erc20types.ModuleName:         genStateSetter[*erc20types.GenesisState](erc20types.ModuleName),
+	govtypes.ModuleName:           genStateSetter[*govtypesv1.GenesisState](govtypes.ModuleName),
+	coinomicstypes.ModuleName:     genStateSetter[*coinomicstypes.GenesisState](coinomicstypes.ModuleName),
+	feemarkettypes.ModuleName:     genStateSetter[*feemarkettypes.GenesisState](feemarkettypes.ModuleName),
+	distrtypes.ModuleName:         genStateSetter[*distrtypes.GenesisState](distrtypes.ModuleName),
+	capabilitytypes.ModuleName:    genStateSetter[*capabilitytypes.GenesisState](capabilitytypes.ModuleName),
+	ucdaotypes.ModuleName:         genStateSetter[*ucdaotypes.GenesisState](ucdaotypes.ModuleName),
+	liquidvestingtypes.ModuleName: genStateSetter[*liquidvestingtypes.GenesisState](liquidvestingtypes.ModuleName),
+	banktypes.ModuleName:          setBankGenesisState,
+	authtypes.ModuleName:          setAuthGenesisState,
+	epochstypes.ModuleName:        genStateSetter[*epochstypes.GenesisState](epochstypes.ModuleName),
 	consensustypes.ModuleName: func(_ *app.Haqq, genesisState haqqtypes.GenesisState, _ interface{}) (haqqtypes.GenesisState, error) {
 		// no-op. Consensus does not have a genesis state on the application
 		// but the params are used on it
@@ -68,7 +73,6 @@ var genesisSetupFunctions = map[string]genSetupFn{
 		// This is handled accordingly on chain and context initialization
 		return genesisState, nil
 	},
-	capabilitytypes.ModuleName: genStateSetter[*capabilitytypes.GenesisState](capabilitytypes.ModuleName),
 }
 
 // genStateSetter is a generic function to set module-specific genesis state
