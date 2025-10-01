@@ -24,15 +24,16 @@ jobs:
       - uses: technote-space/get-diff-action@v5
         id: git_diff
         with:
-          SUFFIX_FILTER: |
-            .go
-            .mod
-            .sum
+          PATTERNS: |
+            +**/*.go
+          FILES: |
+            go.mod
+            go.sum
       - name: Pull LFS files
         run: git lfs pull
       - run: |
           make build
-        if: "env.GIT_DIFF != ''"
+        if: env.GIT_DIFF || env.GIT_FILES
   build-nix:
     runs-on: ubuntu-cpu16-ram64
     steps:
