@@ -18,12 +18,9 @@ import (
 
 	"github.com/haqq-network/haqq/testutil/integration/common/factory"
 	testutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
-	"github.com/haqq-network/haqq/utils"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	fmkttypes "github.com/haqq-network/haqq/x/feemarket/types"
 )
-
-const chainID = utils.TestEdge2ChainID + "-3"
 
 type txParams struct {
 	gasPrice  *big.Int
