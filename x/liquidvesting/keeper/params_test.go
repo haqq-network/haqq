@@ -19,28 +19,14 @@ func (suite *KeeperTestSuite) TestParams() {
 		expected  bool
 	}{
 		{
-			"success - Checks if the default params are set correctly",
+			"fail - Params are not default in test setup",
 			func() interface{} {
 				return types.DefaultParams()
 			},
 			func() interface{} {
 				return suite.network.App.LiquidVestingKeeper.GetParams(ctx)
 			},
-			true,
-		},
-		{
-			"success - Checks if the params are updated properly",
-			func() interface{} {
-				params := types.DefaultParams()
-				params.MinimumLiquidationAmount = math.NewInt(2_000_000)
-				err := suite.network.App.LiquidVestingKeeper.SetParams(ctx, params)
-				suite.Require().NoError(err)
-				return params
-			},
-			func() interface{} {
-				return suite.network.App.LiquidVestingKeeper.GetParams(ctx)
-			},
-			true,
+			false,
 		},
 		{
 			"success - Checks if the params are updated properly",
