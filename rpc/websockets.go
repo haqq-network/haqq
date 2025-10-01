@@ -474,7 +474,7 @@ func (api *pubSubAPI) subscribeLogs(wsConn *wsConn, subID rpc.ID, extra interfac
 				return nil, err
 			}
 
-			if ok {
+			if isString {
 				crit.Addresses = []common.Address{common.HexToAddress(address)}
 			}
 

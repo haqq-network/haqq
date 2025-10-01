@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"io"
 	"net/http"
 	"os"
@@ -255,7 +256,7 @@ type Haqq struct {
 
 	// keepers
 	AccountKeeper         authkeeper.AccountKeeper
-	BankKeeper            haqqbankkeeper.Keeper
+	BankKeeper            bankkeeper.Keeper
 	CapabilityKeeper      *capabilitykeeper.Keeper
 	StakingKeeper         stakingkeeper.Keeper
 	SlashingKeeper        slashingkeeper.Keeper
@@ -400,7 +401,7 @@ func NewHaqq(
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		authAddr,
 	)
-	app.BankKeeper = haqqbankkeeper.NewKeeper(
+	haqqBankKeeper := haqqbankkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
 		app.AccountKeeper,
@@ -409,6 +410,7 @@ func NewHaqq(
 		authAddr,
 		logger,
 	)
+	app.BankKeeper = haqqBankKeeper.BaseKeeper
 
 	// optional: enable sign mode textual by overwriting the default tx config (after setting the bank keeper)
 	enabledSignModes := append(authtx.DefaultSignModes, sigtypes.SignMode_SIGN_MODE_TEXTUAL) //nolint:gocritic
@@ -429,7 +431,7 @@ func NewHaqq(
 		appCodec,
 		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
 		app.AccountKeeper,
-		app.BankKeeper,
+		haqqBankKeeper,
 		authAddr,
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
@@ -493,7 +495,7 @@ func NewHaqq(
 		MaxMetadataLen: 10000,
 	}
 	govKeeper := govkeeper.NewKeeper(
-		appCodec, runtime.NewKVStoreService(keys[govtypes.StoreKey]), app.AccountKeeper, app.BankKeeper,
+		appCodec, runtime.NewKVStoreService(keys[govtypes.StoreKey]), app.AccountKeeper, haqqBankKeeper,
 		stakingKeeper, app.DistrKeeper, app.MsgServiceRouter(), govConfig, authAddr,
 	)
 
@@ -656,16 +658,16 @@ func NewHaqq(
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
 		haqqbank.NewAppModule(
 			appCodec,
-			app.BankKeeper,
+			haqqBankKeeper,
 			app.AccountKeeper,
 			app.GetSubspace(banktypes.ModuleName),
 		),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)),
-		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, haqqBankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName), app.interfaceRegistry),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
-		staking.NewAppModule(appCodec, &app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		staking.NewAppModule(appCodec, &app.StakingKeeper, app.AccountKeeper, haqqBankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(&app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		params.NewAppModule(app.ParamsKeeper),
@@ -930,7 +932,7 @@ func (app *Haqq) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
 		panic(err)
 	}
 
-	app.SetAnteHandler(NewHaqqAnteHandlerDecorator(*app.StakingKeeper.Keeper, ante.NewAnteHandler(options)))
+	app.SetAnteHandler(ante.NewCommunityPoolSpendAnteHandler(ante.NewAnteHandler(options)))
 }
 
 func (app *Haqq) setPostHandler() {
@@ -960,6 +962,9 @@ func (app *Haqq) FinalizeBlock(req *abci.RequestFinalizeBlock) (res *abci.Respon
 	defer func() {
 		// TODO: Record the count along with the code and or reason so as to display
 		// in the transactions per second live dashboards.
+		if res == nil || err != nil {
+			return
+		}
 		for _, txRes := range res.TxResults {
 			if txRes.IsErr() {
 				app.tpsCounter.incrementFailure()

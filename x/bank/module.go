@@ -58,7 +58,7 @@ func NewAppModule(
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	banktypes.RegisterMsgServer(cfg.MsgServer(), bankkeeper.NewMsgServerImpl(am.keeper))
+	banktypes.RegisterMsgServer(cfg.MsgServer(), bankkeeper.NewMsgServerImpl(am.keeper.BaseKeeper))
 	banktypes.RegisterQueryServer(cfg.QueryServer(), am.keeper.BaseKeeper)
 
 	m := bankkeeper.NewMigrator(am.keeper.BaseKeeper, am.legacySubspace)

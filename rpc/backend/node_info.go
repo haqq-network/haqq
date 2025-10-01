@@ -98,7 +98,7 @@ func (b *Backend) SetEtherbase(etherbase common.Address) bool {
 	// Assemble transaction from fields
 	builder, ok := b.clientCtx.TxConfig.NewTxBuilder().(authtx.ExtensionOptionsTxBuilder)
 	if !ok {
-		b.logger.Debug("clientCtx.TxConfig.NewTxBuilder returns unsupported builder", "error", err.Error())
+		b.logger.Debug("clientCtx.TxConfig.NewTxBuilder returns unsupported builder")
 		return false
 	}
 
