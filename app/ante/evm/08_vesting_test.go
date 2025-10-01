@@ -19,8 +19,7 @@ import (
 
 type AccountExpenses = map[string]*evmante.EthVestingExpenseTracker
 
-// TestEthVestingTransactionDecorator tests the EthVestingTransactionDecorator ante handler.
-func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
+func (suite *EvmAnteTestSuite) TestCheckVesting() {
 	keyring := testkeyring.New(1)
 	unitNetwork := network.NewUnitTestNetwork(
 		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),

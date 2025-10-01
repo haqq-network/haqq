@@ -114,8 +114,8 @@ func (suite *EvmAnteTestSuite) TestConsumeGasAndEmitEvent() {
 			},
 		},
 		{
-			name:          "fail: insufficient user balance, event is NOT emitted",
-			expectedError: "failed to deduct transaction costs from user balance",
+			name:          "fail: insufficient user balance and staking rewards, event is NOT emitted",
+			expectedError: "insufficient staking rewards to cover transaction fees",
 			fees: sdktypes.Coins{
 				sdktypes.NewCoin(unitNetwork.GetDenom(), math.NewInt(1000)),
 			},

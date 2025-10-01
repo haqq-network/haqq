@@ -133,6 +133,6 @@ func (suite *EvmAnteTestSuite) TestVerifyAccountBalance() {
 }
 
 func getDefaultStateDBAccount(unitNetwork *network.UnitTestNetwork, addr common.Address) *statedb.Account {
-	statedb := unitNetwork.GetStateDB()
-	return statedb.Keeper().GetAccount(unitNetwork.GetContext(), addr)
+	stateDB := unitNetwork.GetStateDB()
+	return stateDB.Keeper().GetAccount(unitNetwork.GetContext(), addr)
 }

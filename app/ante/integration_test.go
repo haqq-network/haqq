@@ -12,7 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	"github.com/haqq-network/haqq/testutil"
 	commonfactory "github.com/haqq-network/haqq/testutil/integration/common/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
@@ -211,18 +210,19 @@ var _ = DescribeTableSubtree("when sending a Cosmos transaction", Label("AnteHan
 		It("should withdraw enough staking rewards to cover the transaction cost", func() {
 			rewardsRes, err := s.grpcHandler.GetDelegationTotalRewards(addr.String())
 			Expect(err).To(BeNil())
-			Expect(rewardsRes.Total.Sub(rewards).IsAllPositive()).To(BeTrue())
+			Expect(rewardsRes.Total.Sub(minExpRewards).IsAllPositive()).To(BeTrue())
 
-			rewards, err := testutil.GetTotalDelegationRewards(s.ctx, s.app.DistrKeeper, addr)
-			Expect(err).To(BeNil())
-			Expect(rewards).To(Equal(sdk.NewDecCoins(sdk.NewDecCoin(utils.BaseDenom, rewardsAmt))))
-
-			balance := s.app.BankKeeper.GetBalance(s.ctx, addr, utils.BaseDenom)
-			Expect(balance.Amount).To(Equal(sdkmath.NewInt(0)))
-
-			res, err := testutil.DeliverTx(s.ctx, s.app, priv, nil, signMode, msg)
+			var gas uint64 = 200_000 // specify gas to avoid failing on simulation tx (internal call in the ExecuteCosmosTx if gas not specified)
+			res, err := s.factory.ExecuteCosmosTx(
+				priv,
+				commonfactory.CosmosTxArgs{
+					Msgs: []sdk.Msg{msg},
+					Gas:  &gas,
+				},
+			)
 			Expect(res.IsOK()).To(BeTrue())
 			Expect(err).To(BeNil())
+			Expect(s.network.NextBlock()).To(BeNil())
 		})
 	})
 },

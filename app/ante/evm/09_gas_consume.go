@@ -5,13 +5,14 @@ import (
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
 
 	anteutils "github.com/haqq-network/haqq/app/ante/utils"
 	"github.com/haqq-network/haqq/types"
-	"github.com/haqq-network/haqq/x/evm/keeper"
+	evmkeeper "github.com/haqq-network/haqq/x/evm/keeper"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -59,7 +60,7 @@ func NewEthGasConsumeDecorator(
 // - transaction or block gas meter runs out of gas
 // - sets the gas meter limit
 // - gas limit is greater than the block gas meter limit
-func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
+func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdktypes.Context, tx sdktypes.Tx, simulate bool, next sdktypes.AnteHandler) (sdktypes.Context, error) {
 	gasWanted := uint64(0)
 	// gas consumption limit already checked during CheckTx so there's no need to
 	// verify it again during ReCheckTx
@@ -82,60 +83,136 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 	blockHeight := big.NewInt(ctx.BlockHeight())
 	homestead := ethCfg.IsHomestead(blockHeight)
 	istanbul := ethCfg.IsIstanbul(blockHeight)
-	var events sdk.Events
 
 	// Use the lowest priority of all the messages as the final one.
 	minPriority := int64(math.MaxInt64)
 	baseFee := egcd.evmKeeper.GetBaseFee(ctx, ethCfg)
-
+	keepers := &ConsumeGasKeepers{
+		Bank:         egcd.bankKeeper,
+		Distribution: egcd.distributionKeeper,
+		Evm:          egcd.evmKeeper,
+		Staking:      egcd.stakingKeeper,
+	}
 	for _, msg := range tx.GetMsgs() {
-		msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
-		if !ok {
-			return ctx, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "invalid message type %T, expected %T", msg, (*evmtypes.MsgEthereumTx)(nil))
-		}
-		from := msgEthTx.GetFrom()
-
-		txData, err := evmtypes.UnpackTxData(msgEthTx.Data)
+		_, txData, from, err := evmtypes.UnpackEthMsg(msg)
 		if err != nil {
-			return ctx, errorsmod.Wrap(err, "failed to unpack tx data")
+			return ctx, err
 		}
 
-		if ctx.IsCheckTx() && egcd.maxGasWanted != 0 {
-			// We can't trust the tx gas limit, because we'll refund the unused gas.
-			if txData.GetGas() > egcd.maxGasWanted {
-				gasWanted += egcd.maxGasWanted
-			} else {
-				gasWanted += txData.GetGas()
-			}
-		} else {
-			gasWanted += txData.GetGas()
-		}
-
-		fees, err := keeper.VerifyFee(txData, evmDenom, baseFee, homestead, istanbul, ctx.IsCheckTx())
+		fees, err := evmkeeper.VerifyFee(txData, evmDenom, baseFee, homestead, istanbul, ctx.IsCheckTx())
 		if err != nil {
 			return ctx, errorsmod.Wrapf(err, "failed to verify the fees")
 		}
 
-		if err = egcd.deductFee(ctx, fees, from); err != nil {
+		if err = ConsumeFeesAndEmitEvent(ctx, keepers, fees, from); err != nil {
 			return ctx, err
 		}
 
-		events = append(events,
-			sdk.NewEvent(
-				sdk.EventTypeTx,
-				sdk.NewAttribute(sdk.AttributeKeyFee, fees.String()),
-			),
-		)
-
-		priority := evmtypes.GetTxPriority(txData, baseFee)
-
-		if priority < minPriority {
-			minPriority = priority
-		}
+		gasWanted = UpdateCumulativeGasWanted(ctx, txData.GetGas(), egcd.maxGasWanted, gasWanted)
+		minPriority = GetMsgPriority(txData, minPriority, baseFee)
 	}
 
-	ctx.EventManager().EmitEvents(events)
+	newCtx, err := CheckBlockGasLimit(ctx, gasWanted, minPriority)
+	if err != nil {
+		return ctx, err
+	}
 
+	// we know that we have enough gas on the pool to cover the intrinsic gas
+	return next(newCtx, tx, simulate)
+}
+
+// UpdateCumulativeGasWanted updates the cumulative gas wanted
+func UpdateCumulativeGasWanted(
+	ctx sdktypes.Context,
+	msgGasWanted uint64,
+	maxTxGasWanted uint64,
+	cumulativeGasWanted uint64,
+) uint64 {
+	if ctx.IsCheckTx() && maxTxGasWanted != 0 {
+		// We can't trust the tx gas limit, because we'll refund the unused gas.
+		if msgGasWanted > maxTxGasWanted {
+			cumulativeGasWanted += maxTxGasWanted
+		} else {
+			cumulativeGasWanted += msgGasWanted
+		}
+	} else {
+		cumulativeGasWanted += msgGasWanted
+	}
+	return cumulativeGasWanted
+}
+
+type ConsumeGasKeepers struct {
+	Bank         anteutils.BankKeeper
+	Distribution anteutils.DistributionKeeper
+	Evm          EVMKeeper
+	Staking      anteutils.StakingKeeper
+}
+
+// ConsumeFeesAndEmitEvent deduces fees from sender and emits the event
+func ConsumeFeesAndEmitEvent(
+	ctx sdktypes.Context,
+	keepers *ConsumeGasKeepers,
+	fees sdktypes.Coins,
+	from sdktypes.AccAddress,
+) error {
+	if err := deductFee(
+		ctx,
+		keepers,
+		fees,
+		from,
+	); err != nil {
+		return err
+	}
+
+	ctx.EventManager().EmitEvent(
+		sdktypes.NewEvent(
+			sdktypes.EventTypeTx,
+			sdktypes.NewAttribute(sdktypes.AttributeKeyFee, fees.String()),
+		),
+	)
+	return nil
+}
+
+// deductFee checks if the fee payer has enough funds to pay for the fees and deducts them.
+// If the spendable balance is not enough, it tries to claim enough staking rewards to cover the fees.
+func deductFee(
+	ctx sdktypes.Context,
+	keepers *ConsumeGasKeepers,
+	fees sdktypes.Coins,
+	feePayer sdktypes.AccAddress,
+) error {
+	if fees.IsZero() {
+		return nil
+	}
+
+	// If the account balance is not sufficient, try to withdraw enough staking rewards
+	if err := anteutils.ClaimStakingRewardsIfNecessary(ctx, keepers.Bank, keepers.Distribution, keepers.Staking, feePayer, fees); err != nil {
+		return err
+	}
+
+	if err := keepers.Evm.DeductTxCostsFromUserBalance(ctx, fees, common.BytesToAddress(feePayer)); err != nil {
+		return errorsmod.Wrapf(err, "failed to deduct transaction costs from user balance")
+	}
+
+	return nil
+}
+
+// GetMsgPriority returns the priority of an Eth Tx capped by the minimum priority
+func GetMsgPriority(
+	txData evmtypes.TxData,
+	minPriority int64,
+	baseFee *big.Int,
+) int64 {
+	priority := evmtypes.GetTxPriority(txData, baseFee)
+
+	if priority < minPriority {
+		minPriority = priority
+	}
+	return minPriority
+}
+
+// TODO: Why is this necessary? This seems to be a duplicate from the CheckGasWanted function.
+func CheckBlockGasLimit(ctx sdktypes.Context, gasWanted uint64, minPriority int64) (sdktypes.Context, error) {
 	blockGasLimit := types.BlockGasLimit(ctx)
 
 	// return error if the tx gas is greater than the block limit (max gas)
@@ -158,28 +235,23 @@ func (egcd EthGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 
 	// FIXME: use a custom gas configuration that doesn't add any additional gas and only
 	// takes into account the gas consumed at the end of the EVM transaction.
-	newCtx := ctx.
+	ctx = ctx.
 		WithGasMeter(types.NewInfiniteGasMeterWithLimit(gasWanted)).
 		WithPriority(minPriority)
 
-	// we know that we have enough gas on the pool to cover the intrinsic gas
-	return next(newCtx, tx, simulate)
+	return ctx, nil
 }
 
-// deductFee checks if the fee payer has enough funds to pay for the fees and deducts them.
-// If the spendable balance is not enough, it tries to claim enough staking rewards to cover the fees.
-func (egcd EthGasConsumeDecorator) deductFee(ctx sdk.Context, fees sdk.Coins, feePayer sdk.AccAddress) error {
-	if fees.IsZero() {
-		return nil
-	}
-
-	// If the account balance is not sufficient, try to withdraw enough staking rewards
-	if err := anteutils.ClaimStakingRewardsIfNecessary(ctx, egcd.bankKeeper, egcd.distributionKeeper, egcd.stakingKeeper, feePayer, fees); err != nil {
-		return err
-	}
-
-	if err := egcd.evmKeeper.DeductTxCostsFromUserBalance(ctx, fees, common.BytesToAddress(feePayer)); err != nil {
-		return errorsmod.Wrapf(err, "failed to deduct transaction costs from user balance")
-	}
-	return nil
+// UpdateCumulativeTxFee updates the cumulative transaction fee
+func UpdateCumulativeTxFee(
+	cumulativeTxFee sdktypes.Coins,
+	msgFee *big.Int,
+	denom string,
+) sdktypes.Coins {
+	return cumulativeTxFee.Add(
+		sdktypes.Coin{
+			Denom:  denom,
+			Amount: sdkmath.NewIntFromBigInt(msgFee),
+		},
+	)
 }
