@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
@@ -21,9 +22,12 @@ import (
 var (
 	differentAddress       = testutiltx.GenerateAddress()
 	amt              int64 = 1000000000000000000
+	expBal                 = "99997650000000000000000" // initial balance is 100000 ISLM (minus transfer, minus fees, etc.)
 )
 
 func (s *PrecompileTestSuite) TestTransfer() {
+	var ctx sdk.Context
+
 	callingContractAddr := differentAddress
 	method := s.precompile.Methods[ics20.TransferMethod]
 	testCases := []struct {
@@ -48,8 +52,7 @@ func (s *PrecompileTestSuite) TestTransfer() {
 		{
 			"fail - no transfer authorization",
 			func(sdk.AccAddress, sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
 				return []interface{}{
 					path.EndpointA.ChannelConfig.PortID,
 					path.EndpointA.ChannelID,
@@ -92,9 +95,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 		{
 			"fail - non authorized denom",
 			func(sender, _ sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, callingContractAddr, common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(ctx, s.network.App, callingContractAddr, common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
 				s.Require().NoError(err)
 				return []interface{}{
 					path.EndpointA.ChannelConfig.PortID,
@@ -117,9 +119,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 		{
 			"fail - allowance is less than transfer amount",
 			func(sender, _ sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, callingContractAddr, common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(ctx, s.network.App, callingContractAddr, common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
 				s.Require().NoError(err)
 				return []interface{}{
 					path.EndpointA.ChannelConfig.PortID,
@@ -142,12 +143,11 @@ func (s *PrecompileTestSuite) TestTransfer() {
 		{
 			"fail - transfer 1 ISLM from chainA to chainB from somebody else's account",
 			func(sender, receiver sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, common.BytesToAddress(sender), common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(ctx, s.network.App, common.BytesToAddress(sender), common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
 				s.Require().NoError(err)
 				// fund another user's account
-				err = evmosutil.FundAccountWithBaseDenom(s.ctx, s.app.BankKeeper, differentAddress.Bytes(), amt)
+				err = evmosutil.FundAccountWithBaseDenom(ctx, s.network.App.BankKeeper, differentAddress.Bytes(), amt)
 				s.Require().NoError(err)
 
 				return []interface{}{
@@ -164,12 +164,12 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			},
 			func(sender, _ sdk.AccAddress, _ []byte, _ []interface{}) {
 				// The allowance is spent after the transfer thus the authorization is deleted
-				authz, _ := s.app.AuthzKeeper.GetAuthorization(s.ctx, sender, sender, ics20.TransferMsgURL)
+				authz, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, sender, sender, ics20.TransferMsgURL)
 				transferAuthz := authz.(*transfertypes.TransferAuthorization)
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit, defaultCoins)
 
 				// the balance on other user's account should remain unchanged
-				balance := s.app.BankKeeper.GetBalance(s.ctx, differentAddress.Bytes(), utils.BaseDenom)
+				balance := s.network.App.BankKeeper.GetBalance(ctx, differentAddress.Bytes(), utils.BaseDenom)
 				s.Require().Equal(balance.Amount, math.NewInt(amt))
 				s.Require().Equal(balance.Denom, utils.BaseDenom)
 			},
@@ -180,9 +180,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 		{
 			"fail - transfer with memo string, but authorization does not allows it",
 			func(sender, receiver sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, callingContractAddr, common.BytesToAddress(sender), path, defaultCoins, nil, nil)
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(ctx, s.network.App, callingContractAddr, common.BytesToAddress(sender), path, defaultCoins, nil, nil)
 				s.Require().NoError(err)
 				return []interface{}{
 					path.EndpointA.ChannelConfig.PortID,
@@ -198,7 +197,7 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			},
 			func(sender, _ sdk.AccAddress, _ []byte, _ []interface{}) {
 				// Check allowance remains unchanged
-				authz, _ := s.app.AuthzKeeper.GetAuthorization(s.ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
+				authz, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
 				transferAuthz := authz.(*transfertypes.TransferAuthorization)
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit, defaultCoins)
 			},
@@ -209,9 +208,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 		{
 			"pass - transfer 1 ISLM from chainA to chainB and spend the entire allowance",
 			func(sender, receiver sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, callingContractAddr, common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(ctx, s.network.App, callingContractAddr, common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
 				s.Require().NoError(err)
 				return []interface{}{
 					path.EndpointA.ChannelConfig.PortID,
@@ -227,12 +225,12 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			},
 			func(sender, _ sdk.AccAddress, _ []byte, _ []interface{}) {
 				// Check allowance was deleted
-				authz, _ := s.app.AuthzKeeper.GetAuthorization(s.ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
+				authz, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
 				s.Require().Nil(authz)
 
-				balance := s.app.BankKeeper.GetBalance(s.ctx, s.chainA.SenderAccount.GetAddress(), utils.BaseDenom)
-				s.Require().Equal(balance.Amount, math.NewInt(4e18))
-				s.Require().Equal(balance.Denom, utils.BaseDenom)
+				balance := s.network.App.BankKeeper.GetBalance(ctx, s.chainA.SenderAccount.GetAddress(), utils.BaseDenom)
+				s.Require().Equal(expBal, balance.Amount.String())
+				s.Require().Equal(utils.BaseDenom, balance.Denom)
 			},
 			200000,
 			false,
@@ -241,9 +239,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 		{
 			"pass - transfer 1 ISLM from chainA to chainB and don't change the unlimited spending limit",
 			func(sender, receiver sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, callingContractAddr, common.BytesToAddress(sender), path, maxUint256Coins, nil, []string{"memo"})
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(ctx, s.network.App, callingContractAddr, common.BytesToAddress(sender), path, maxUint256Coins, nil, []string{"memo"})
 				s.Require().NoError(err)
 				return []interface{}{
 					path.EndpointA.ChannelConfig.PortID,
@@ -259,13 +256,13 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			},
 			func(sender, _ sdk.AccAddress, _ []byte, _ []interface{}) {
 				// The allowance is spent after the transfer thus the authorization is deleted
-				authz, _ := s.app.AuthzKeeper.GetAuthorization(s.ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
+				authz, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
 				transferAuthz := authz.(*transfertypes.TransferAuthorization)
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit, maxUint256Coins)
 
-				balance := s.app.BankKeeper.GetBalance(s.ctx, s.chainA.SenderAccount.GetAddress(), utils.BaseDenom)
-				s.Require().Equal(balance.Amount, math.NewInt(4e18))
-				s.Require().Equal(balance.Denom, utils.BaseDenom)
+				balance := s.network.App.BankKeeper.GetBalance(ctx, s.chainA.SenderAccount.GetAddress(), utils.BaseDenom)
+				s.Require().Equal(expBal, balance.Amount.String())
+				s.Require().Equal(utils.BaseDenom, balance.Denom)
 			},
 			200000,
 			false,
@@ -274,9 +271,8 @@ func (s *PrecompileTestSuite) TestTransfer() {
 		{
 			"pass - transfer 1 ISLM from chainA to chainB and only change 1 spend limit",
 			func(sender, receiver sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, callingContractAddr, common.BytesToAddress(sender), path, mutliSpendLimit, nil, []string{"memo"})
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(ctx, s.network.App, callingContractAddr, common.BytesToAddress(sender), path, mutliSpendLimit, nil, []string{"memo"})
 				s.Require().NoError(err)
 				return []interface{}{
 					path.EndpointA.ChannelConfig.PortID,
@@ -292,13 +288,13 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			},
 			func(sender, _ sdk.AccAddress, _ []byte, _ []interface{}) {
 				// The allowance is spent after the transfer thus the authorization is deleted
-				authz, _ := s.app.AuthzKeeper.GetAuthorization(s.ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
+				authz, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
 				transferAuthz := authz.(*transfertypes.TransferAuthorization)
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit, atomCoins)
 
-				balance := s.app.BankKeeper.GetBalance(s.ctx, s.chainA.SenderAccount.GetAddress(), utils.BaseDenom)
-				s.Require().Equal(balance.Amount, math.NewInt(4e18))
-				s.Require().Equal(balance.Denom, utils.BaseDenom)
+				balance := s.network.App.BankKeeper.GetBalance(ctx, s.chainA.SenderAccount.GetAddress(), utils.BaseDenom)
+				s.Require().Equal(expBal, balance.Amount.String())
+				s.Require().Equal(utils.BaseDenom, balance.Denom)
 			},
 			200000,
 			false,
@@ -307,8 +303,7 @@ func (s *PrecompileTestSuite) TestTransfer() {
 		{
 			"pass - transfer 1 ISLM from chainA to chainB and only change 1 spend limit for the associated allocation",
 			func(sender, receiver sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
 				allocations := []transfertypes.Allocation{
 					{
 						SourcePort:        "port-01",
@@ -326,7 +321,7 @@ func (s *PrecompileTestSuite) TestTransfer() {
 						AllowedPacketData: []string{"*"}, // allow any memo string
 					},
 				}
-				err := s.NewTransferAuthorizationWithAllocations(s.ctx, s.app, callingContractAddr, common.BytesToAddress(sender), allocations)
+				err := s.NewTransferAuthorizationWithAllocations(ctx, s.network.App, callingContractAddr, common.BytesToAddress(sender), allocations)
 				s.Require().NoError(err)
 				return []interface{}{
 					path.EndpointA.ChannelConfig.PortID,
@@ -342,13 +337,13 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			},
 			func(sender, _ sdk.AccAddress, _ []byte, _ []interface{}) {
 				// The allowance is spent after the transfer thus the authorization is deleted
-				authz, _ := s.app.AuthzKeeper.GetAuthorization(s.ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
+				authz, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, callingContractAddr.Bytes(), sender, ics20.TransferMsgURL)
 				transferAuthz := authz.(*transfertypes.TransferAuthorization)
 				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit, atomCoins)
 
-				balance := s.app.BankKeeper.GetBalance(s.ctx, s.chainA.SenderAccount.GetAddress(), utils.BaseDenom)
-				s.Require().Equal(balance.Amount, math.NewInt(4e18))
-				s.Require().Equal(balance.Denom, utils.BaseDenom)
+				balance := s.network.App.BankKeeper.GetBalance(ctx, s.chainA.SenderAccount.GetAddress(), utils.BaseDenom)
+				s.Require().Equal(expBal, balance.Amount.String())
+				s.Require().Equal(utils.BaseDenom, balance.Denom)
 			},
 			200000,
 			false,
@@ -365,15 +360,15 @@ func (s *PrecompileTestSuite) TestTransfer() {
 
 			contract := vm.NewContract(vm.AccountRef(common.BytesToAddress(sender)), s.precompile, big.NewInt(0), tc.gas)
 
-			s.ctx = s.ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
-			initialGas := s.ctx.GasMeter().GasConsumed()
+			ctx = s.network.GetContext().WithGasMeter(storetypes.NewInfiniteGasMeter())
+			initialGas := ctx.GasMeter().GasConsumed()
 			s.Require().Zero(initialGas)
 
 			args := tc.malleate(sender, receiver)
 
 			// set the caller address to be another address (so we can test the authorization logic)
 			contract.CallerAddress = callingContractAddr
-			bz, err := s.precompile.Transfer(s.ctx, common.BytesToAddress(sender), contract, s.stateDB, &method, args)
+			bz, err := s.precompile.Transfer(ctx, common.BytesToAddress(sender), contract, s.network.GetStateDB(), &method, args)
 
 			if tc.expError {
 				s.Require().ErrorContains(err, tc.errContains)

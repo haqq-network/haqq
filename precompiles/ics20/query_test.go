@@ -2,11 +2,10 @@ package ics20_test
 
 import (
 	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
+	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/ics20"
@@ -67,7 +66,7 @@ func (s *PrecompileTestSuite) TestDenomTrace() {
 			func() []interface{} {
 				expTrace.Path = "transfer/channelToA/transfer/channelToB"
 				expTrace.BaseDenom = utils.BaseDenom
-				s.app.TransferKeeper.SetDenomTrace(s.ctx, expTrace)
+				s.network.App.TransferKeeper.SetDenomTrace(s.network.GetContext(), expTrace)
 				return []interface{}{
 					expTrace.IBCDenom(),
 				}
@@ -90,7 +89,7 @@ func (s *PrecompileTestSuite) TestDenomTrace() {
 			s.SetupTest()
 			contract := s.NewPrecompileContract(tc.gas)
 			args := tc.malleate()
-			bz, err := s.precompile.DenomTrace(s.ctx, contract, &method, args)
+			bz, err := s.precompile.DenomTrace(s.network.GetContext(), contract, &method, args)
 
 			if tc.expError {
 				s.Require().ErrorContains(err, tc.errContains)
@@ -130,7 +129,7 @@ func (s *PrecompileTestSuite) TestDenomTraces() {
 				expTraces = append(expTraces, types.DenomTrace{Path: "transfer/channelToB", BaseDenom: utils.BaseDenom})
 
 				for _, trace := range expTraces {
-					s.app.TransferKeeper.SetDenomTrace(s.ctx, trace)
+					s.network.App.TransferKeeper.SetDenomTrace(s.network.GetContext(), trace)
 				}
 				return []interface{}{
 					query.PageRequest{
@@ -160,7 +159,7 @@ func (s *PrecompileTestSuite) TestDenomTraces() {
 			s.SetupTest()
 			contract := s.NewPrecompileContract(tc.gas)
 			args := tc.malleate()
-			bz, err := s.precompile.DenomTraces(s.ctx, contract, &method, args)
+			bz, err := s.precompile.DenomTraces(s.network.GetContext(), contract, &method, args)
 
 			if tc.expError {
 				s.Require().ErrorContains(err, tc.errContains)
@@ -203,7 +202,7 @@ func (s *PrecompileTestSuite) TestDenomHash() {
 		{
 			"success - get the hash of a denom trace",
 			func() []interface{} {
-				s.app.TransferKeeper.SetDenomTrace(s.ctx, reqTrace)
+				s.network.App.TransferKeeper.SetDenomTrace(s.network.GetContext(), reqTrace)
 				return []interface{}{
 					reqTrace.GetFullDenomPath(),
 				}
@@ -226,7 +225,7 @@ func (s *PrecompileTestSuite) TestDenomHash() {
 			contract := s.NewPrecompileContract(tc.gas)
 			args := tc.malleate()
 
-			bz, err := s.precompile.DenomHash(s.ctx, contract, &method, args)
+			bz, err := s.precompile.DenomHash(s.network.GetContext(), contract, &method, args)
 
 			if tc.expError {
 				s.Require().ErrorContains(err, tc.errContains)
@@ -241,9 +240,9 @@ func (s *PrecompileTestSuite) TestDenomHash() {
 
 func (s *PrecompileTestSuite) TestAllowance() {
 	var (
-		path   = NewTransferPath(s.chainA, s.chainB)
-		path2  = NewTransferPath(s.chainA, s.chainB)
-		paths  = []*ibctesting.Path{path, path2}
+		path   = haqqibctesting.NewTransferPath(s.chainA, s.chainB)
+		path2  = haqqibctesting.NewTransferPath(s.chainA, s.chainB)
+		paths  = []*haqqibctesting.Path{path, path2}
 		method = s.precompile.Methods[authorization.AllowanceMethod]
 	)
 	// set channel, otherwise is "" and throws error
@@ -272,8 +271,8 @@ func (s *PrecompileTestSuite) TestAllowance() {
 			"success - no allowance == empty array",
 			func() []interface{} {
 				return []interface{}{
-					s.address,
-					s.differentAddr,
+					s.keyring.GetAddr(0),
+					differentAddress,
 				}
 			},
 			func(bz []byte) {
@@ -290,10 +289,10 @@ func (s *PrecompileTestSuite) TestAllowance() {
 			"success - auth with one allocation",
 			func() []interface{} {
 				err := s.NewTransferAuthorization(
-					s.ctx,
-					s.app,
-					s.differentAddr,
-					s.address,
+					s.network.GetContext(),
+					s.network.App,
+					differentAddress,
+					s.keyring.GetAddr(0),
 					path,
 					defaultCoins,
 					[]string{s.chainB.SenderAccount.GetAddress().String()},
@@ -302,8 +301,8 @@ func (s *PrecompileTestSuite) TestAllowance() {
 				s.Require().NoError(err)
 
 				return []interface{}{
-					s.differentAddr,
-					s.address,
+					differentAddress,
+					s.keyring.GetAddr(0),
 				}
 			},
 			func(bz []byte) {
@@ -342,17 +341,17 @@ func (s *PrecompileTestSuite) TestAllowance() {
 				}
 
 				err := s.NewTransferAuthorizationWithAllocations(
-					s.ctx,
-					s.app,
-					s.differentAddr,
-					s.address,
+					s.network.GetContext(),
+					s.network.App,
+					differentAddress,
+					s.keyring.GetAddr(0),
 					allocs,
 				)
 				s.Require().NoError(err)
 
 				return []interface{}{
-					s.differentAddr,
-					s.address,
+					differentAddress,
+					s.keyring.GetAddr(0),
 				}
 			},
 			func(bz []byte) {
@@ -384,7 +383,7 @@ func (s *PrecompileTestSuite) TestAllowance() {
 			s.SetupTest() // reset
 
 			args := tc.malleate()
-			bz, err := s.precompile.Allowance(s.ctx, &method, args)
+			bz, err := s.precompile.Allowance(s.network.GetContext(), &method, args)
 
 			if tc.expErr {
 				s.Require().Error(err)

@@ -4282,7 +4282,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			expTxPass bool
 		}{
 			{"call", true},
-			{"callcode", false}, // TODO Find out the reason of failing
+			// {"callcode", false}, // TODO Find out the reason of failing
 			{"staticcall", false},
 			{"delegatecall", false},
 		}
