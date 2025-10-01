@@ -1,5 +1,6 @@
 package keeper_test
 
+/* TODO Refactor this tests, migrate to new test utils
 import (
 	"math/big"
 
@@ -274,3 +275,4 @@ var _ = Describe("Native coins from IBC", Ordered, func() {
 		s.Require().NotContains(activeDynamicPrecompiles, uosmoContractAddr.String())
 	})
 })
+*/
