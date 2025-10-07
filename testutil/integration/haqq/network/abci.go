@@ -3,11 +3,25 @@ package network
 import (
 	"time"
 
+	coreheader "cosmossdk.io/core/header"
 	storetypes "cosmossdk.io/store/types"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 )
+
+// NextNBlocks is a helper function that finalizes block and commits the changes,
+// updates the header and runs the BeginBlocker for a give number of times.
+func (n *IntegrationNetwork) NextNBlocks(num int) error {
+	for i := 0; i < num; i++ {
+		err := n.NextBlockAfter(time.Second)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // NextBlock is a private helper function that runs the EndBlocker logic, commits the changes,
 // updates the header and runs the BeginBlocker
@@ -35,11 +49,7 @@ func (n *IntegrationNetwork) NextBlockWithTxs(txBytes ...[]byte) (*abcitypes.Res
 func (n *IntegrationNetwork) finalizeBlockAndCommit(duration time.Duration, txBytes ...[]byte) (*abcitypes.ResponseFinalizeBlock, error) {
 	header := n.ctx.BlockHeader()
 	// Update block header and BeginBlock
-	header.Height++
 	header.AppHash = n.app.LastCommitID().Hash
-	// Calculate new block time after duration
-	newBlockTime := header.Time.Add(duration)
-	header.Time = newBlockTime
 
 	// FinalizeBlock to run endBlock, deliverTx & beginBlock logic
 	req := buildFinalizeBlockReq(header, n.valSet.Validators, txBytes...)
@@ -49,20 +59,29 @@ func (n *IntegrationNetwork) finalizeBlockAndCommit(duration time.Duration, txBy
 		return nil, err
 	}
 
-	newCtx := n.app.BaseApp.NewContextLegacy(false, header)
-
-	// Update context header
-	newCtx = newCtx.WithMinGasPrices(n.ctx.MinGasPrices())
-	newCtx = newCtx.WithKVGasConfig(n.ctx.KVGasConfig())
-	newCtx = newCtx.WithTransientKVGasConfig(n.ctx.TransientKVGasConfig())
-	newCtx = newCtx.WithConsensusParams(n.ctx.ConsensusParams())
-	// This might have to be changed with time if we want to test gas limits
-	newCtx = newCtx.WithBlockGasMeter(storetypes.NewInfiniteGasMeter())
-	newCtx = newCtx.WithVoteInfos(req.DecidedLastCommit.GetVotes())
-	n.ctx = newCtx
-
 	// commit changes
 	_, err = n.app.Commit()
+
+	// Calculate new block time after duration
+	newBlockTime := header.Time.Add(duration)
+	header.Time = newBlockTime
+	header.Height++
+
+	// Update context header
+	newCtx := n.app.BaseApp.NewUncachedContext(false, header).
+		WithHeaderInfo(coreheader.Info{
+			Height: header.Height,
+			Time:   header.Time,
+		}).
+		WithMinGasPrices(n.ctx.MinGasPrices()).
+		WithKVGasConfig(n.ctx.KVGasConfig()).
+		WithTransientKVGasConfig(n.ctx.TransientKVGasConfig()).
+		WithConsensusParams(n.ctx.ConsensusParams()).
+		// This might have to be changed with time if we want to test gas limits
+		WithBlockGasMeter(storetypes.NewInfiniteGasMeter()).
+		WithVoteInfos(req.DecidedLastCommit.GetVotes())
+
+	n.ctx = newCtx
 
 	return res, err
 }

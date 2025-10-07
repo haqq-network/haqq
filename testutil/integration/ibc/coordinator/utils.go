@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
+	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/testutil/integration/common/network"
 )
 
@@ -26,10 +27,7 @@ func generateDummyChains(t *testing.T, coord *ibctesting.Coordinator, numberOfCh
 	// dummy chains use the ibc testing chain setup
 	// that uses the default sdk address prefix ('cosmos')
 	// Update the prefix configs to use that prefix
-	cfg := sdk.GetConfig()
-	cfg.SetBech32PrefixForAccount(sdk.Bech32PrefixAccAddr, sdk.Bech32PrefixAccPub)
-	cfg.SetBech32PrefixForValidator(sdk.Bech32PrefixValAddr, sdk.Bech32PrefixValPub)
-	cfg.SetBech32PrefixForConsensusNode(sdk.Bech32PrefixConsAddr, sdk.Bech32PrefixConsPub)
+	haqqibctesting.SetBech32Prefix("cosmos")
 	// Also need to disable address cache to avoid using modules
 	// accounts with 'evmos' addresses (because Evmos chain setup is first)
 	sdk.SetAddrCacheEnabled(false)

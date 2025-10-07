@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"time"
 
+	coreheader "cosmossdk.io/core/header"
 	sdkmath "cosmossdk.io/math"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -25,9 +26,12 @@ import (
 	commonnetwork "github.com/haqq-network/haqq/testutil/integration/common/network"
 	"github.com/haqq-network/haqq/types"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -47,7 +51,10 @@ type Network interface {
 	GetGovClient() govtypes.QueryClient
 	GetCoinomicsClient() coinomicstypes.QueryClient
 	GetFeeMarketClient() feemarkettypes.QueryClient
+	GetEpochsClient() epochstypes.QueryClient
 	GetVestingClient() vestingtypes.QueryClient
+	GetLiquidVestingClient() liquidvestingtypes.QueryClient
+	GetUCDAOClient() ucdaotypes.QueryClient
 }
 
 var _ Network = (*IntegrationNetwork)(nil)
@@ -181,10 +188,14 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		}
 	}
 
-	now := time.Now().UTC()
+	startTime := time.Now().UTC()
+	if !n.cfg.startTime.IsZero() {
+		startTime = n.cfg.startTime
+	}
+
 	if _, err := haqqApp.InitChain(
 		&abcitypes.RequestInitChain{
-			Time:            now,
+			Time:            startTime,
 			ChainId:         n.cfg.chainID,
 			Validators:      []abcitypes.ValidatorUpdate{},
 			ConsensusParams: consensusParams,
@@ -198,7 +209,7 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		ChainID:            n.cfg.chainID,
 		Height:             haqqApp.LastBlockHeight() + 1,
 		AppHash:            haqqApp.LastCommitID().Hash,
-		Time:               now,
+		Time:               startTime,
 		ValidatorsHash:     valSet.Hash(),
 		NextValidatorsHash: valSet.Hash(),
 		ProposerAddress:    valSet.Proposer.Address,
@@ -207,18 +218,19 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		},
 	}
 
+	// Commit genesis block
 	req := buildFinalizeBlockReq(header, valSet.Validators)
 	if _, err := haqqApp.FinalizeBlock(req); err != nil {
 		return err
 	}
 
-	// TODO - this might not be the best way to initilize the context
-	n.ctx = haqqApp.BaseApp.NewContextLegacy(false, header)
-
-	// Commit genesis changes
 	if _, err := haqqApp.Commit(); err != nil {
 		return err
 	}
+
+	// new block context
+	header.Height++
+	header.Time = header.Time.Add(time.Second)
 
 	// Set networks global parameters
 	var blockMaxGas uint64 = math.MaxUint64
@@ -226,10 +238,15 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 		blockMaxGas = uint64(consensusParams.Block.MaxGas) //nolint:gosec // G115
 	}
 
-	n.app = haqqApp
-	n.ctx = n.ctx.WithConsensusParams(*consensusParams)
-	n.ctx = n.ctx.WithBlockGasMeter(types.NewInfiniteGasMeterWithLimit(blockMaxGas))
+	n.ctx = haqqApp.BaseApp.NewUncachedContext(false, header).
+		WithHeaderInfo(coreheader.Info{
+			Height: header.Height,
+			Time:   header.Time,
+		}).
+		WithConsensusParams(*consensusParams).
+		WithBlockGasMeter(types.NewInfiniteGasMeterWithLimit(blockMaxGas))
 
+	n.app = haqqApp
 	n.validators = validators
 	n.valSet = valSet
 	n.valSigners = valSigners
@@ -294,7 +311,6 @@ func (n *IntegrationNetwork) GetEncodingConfig() sdktestutil.TestEncodingConfig 
 func (n *IntegrationNetwork) BroadcastTxSync(txBytes []byte) (abcitypes.ExecTxResult, error) {
 	header := n.ctx.BlockHeader()
 	// Update block header and BeginBlock
-	header.Height++
 	header.AppHash = n.app.LastCommitID().Hash
 	// Calculate new block time after duration
 	newBlockTime := header.Time.Add(time.Second)

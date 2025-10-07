@@ -21,6 +21,7 @@ import (
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -108,4 +109,10 @@ func (n *IntegrationNetwork) GetLiquidVestingClient() liquidvestingtypes.QueryCl
 	queryHelper := getQueryHelper(n.GetContext(), n.GetEncodingConfig())
 	liquidvestingtypes.RegisterQueryServer(queryHelper, n.app.LiquidVestingKeeper)
 	return liquidvestingtypes.NewQueryClient(queryHelper)
+}
+
+func (n *IntegrationNetwork) GetUCDAOClient() ucdaotypes.QueryClient {
+	queryHelper := getQueryHelper(n.GetContext(), n.GetEncodingConfig())
+	ucdaotypes.RegisterQueryServer(queryHelper, n.app.DaoKeeper)
+	return ucdaotypes.NewQueryClient(queryHelper)
 }

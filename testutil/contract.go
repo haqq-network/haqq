@@ -81,7 +81,7 @@ func DeployContract(
 	})
 	msgEthereumTx.From = from.String()
 
-	res, err := DeliverEthTx(appHaqq, priv, msgEthereumTx)
+	res, err := DeliverEthTx(ctx, appHaqq, priv, msgEthereumTx)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -115,7 +115,7 @@ func DeployContractWithFactory(
 	})
 	msgEthereumTx.From = from.String()
 
-	res, err := DeliverEthTx(appHaqq, priv, msgEthereumTx)
+	res, err := DeliverEthTx(ctx, appHaqq, priv, msgEthereumTx)
 	if err != nil {
 		return common.Address{}, abci.ExecTxResult{}, err
 	}

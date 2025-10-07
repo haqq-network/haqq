@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
@@ -29,6 +30,7 @@ type Config struct {
 	otherCoinDenom     []string
 	operatorsAddrs     []sdktypes.AccAddress
 	customBaseAppOpts  []func(*baseapp.BaseApp)
+	startTime          time.Time
 }
 
 type CustomGenesisState map[string]interface{}
@@ -134,6 +136,13 @@ func WithCustomGenesis(customGenesis CustomGenesisState) ConfigOption {
 func WithOtherDenoms(otherDenoms []string) ConfigOption {
 	return func(cfg *Config) {
 		cfg.otherCoinDenom = otherDenoms
+	}
+}
+
+// WithStartTime sets custom app start time.
+func WithStartTime(startTime time.Time) ConfigOption {
+	return func(cfg *Config) {
+		cfg.startTime = startTime
 	}
 }
 

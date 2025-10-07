@@ -181,7 +181,7 @@ func createHaqqApp(chainID string, customBaseAppOptions ...func(*baseapp.BaseApp
 
 // createStakingValidator creates a staking validator from the given tm validator and bonded
 func createStakingValidator(val *cmttypes.Validator, bondedAmt sdkmath.Int, operatorAddr *sdktypes.AccAddress) (stakingtypes.Validator, error) {
-	pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey) //nolint:staticcheck
+	pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 	if err != nil {
 		return stakingtypes.Validator{}, err
 	}
@@ -323,9 +323,11 @@ func setDefaultStakingGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.Gen
 // setDefaultCoinomicsGenesisState sets the coinomics genesis state
 func setDefaultCoinomicsGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState) haqqtypes.GenesisState {
 	coinomicsParams := coinomicstypes.DefaultParams()
-	coinomicsParams.EnableCoinomics = false
-
-	coinomicsGenesis := coinomicstypes.NewGenesisState(coinomicsParams, sdktypes.NewCoin("aISLM", sdkmath.NewInt(10_000_000_000)))
+	defaultMaxSupply, ok := sdkmath.NewIntFromString("100000000000000000000000000000")
+	if !ok {
+		panic("invalid default max supply")
+	}
+	coinomicsGenesis := coinomicstypes.NewGenesisState(coinomicsParams, sdktypes.NewCoin("aISLM", defaultMaxSupply))
 	genesisState[coinomicstypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(&coinomicsGenesis)
 	return genesisState
 }
