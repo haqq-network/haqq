@@ -87,6 +87,7 @@ func SendMsgs(chain *ibcgotesting.TestChain, feeAmt int64, msgs ...sdk.Msg) (*ab
 	fee := sdk.Coins{sdk.NewInt64Coin(bondDenom, feeAmt)}
 	resp, err := SignAndDeliver(
 		chain.TB,
+		chain.GetContext(),
 		chain.TxConfig,
 		chain.App.GetBaseApp(),
 		msgs,

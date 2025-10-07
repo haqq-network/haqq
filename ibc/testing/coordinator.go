@@ -4,6 +4,7 @@
 package ibctesting
 
 import (
+	"context"
 	"math/rand"
 	"testing"
 	"time"
@@ -100,10 +101,12 @@ func SetupClients(coord *ibctesting.Coordinator, path *Path) {
 // CONTRACT: BeginBlock must be called before this function.
 // Is a customization of IBC-go function that allows to modify the fee denom and amount
 // IBC-go implementation: https://github.com/cosmos/ibc-go/blob/d34cef7e075dda1a24a0a3e9b6d3eff406cc606c/testing/simapp/test_helpers.go#L332-L364
+//
+//nolint:revive // Context arg position is second on purpose, as first one arg is for testing tool
 func SignAndDeliver(
-	tb testing.TB, txCfg client.TxConfig, app *baseapp.BaseApp, msgs []sdk.Msg,
+	tb testing.TB, ctx context.Context, txCfg client.TxConfig, app *baseapp.BaseApp, msgs []sdk.Msg,
 	fee sdk.Coins,
-	chainID string, accNums, accSeqs []uint64, expPass bool, blockTime time.Time, nextValHash []byte, priv ...cryptotypes.PrivKey,
+	chainID string, accNums, accSeqs []uint64, _ bool, blockTime time.Time, nextValHash []byte, priv ...cryptotypes.PrivKey,
 ) (*abci.ResponseFinalizeBlock, error) {
 	tx, err := simtestutil.GenSignedMockTx(
 		rand.New(rand.NewSource(time.Now().UnixNano())), //nolint:gosec
@@ -126,5 +129,6 @@ func SignAndDeliver(
 		Time:               blockTime,
 		NextValidatorsHash: nextValHash,
 		Txs:                [][]byte{txBytes},
+		ProposerAddress:    sdk.UnwrapSDKContext(ctx).BlockHeader().ProposerAddress,
 	})
 }

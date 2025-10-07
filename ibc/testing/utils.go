@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
 	"github.com/haqq-network/haqq/app"
@@ -48,4 +49,18 @@ func VoteAndCheckProposalStatus(endpoint *Endpoint, proposalID uint64) error {
 		return fmt.Errorf("proposal failed: %s", p.FailedReason)
 	}
 	return nil
+}
+
+// SetBech32Prefix reset bech32 prefix
+func SetBech32Prefix(prefix string) {
+	cfg := sdk.GetConfig()
+	cfg.SetBech32PrefixForAccount(prefix, prefix+sdk.PrefixPublic)
+	cfg.SetBech32PrefixForValidator(
+		prefix+sdk.PrefixValidator+sdk.PrefixOperator,
+		prefix+sdk.PrefixValidator+sdk.PrefixOperator+sdk.PrefixPublic,
+	)
+	cfg.SetBech32PrefixForConsensusNode(
+		prefix+sdk.PrefixValidator+sdk.PrefixConsensus,
+		prefix+sdk.PrefixValidator+sdk.PrefixConsensus+sdk.PrefixPublic,
+	)
 }
