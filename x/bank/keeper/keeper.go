@@ -21,12 +21,9 @@ import (
 type Keeper struct {
 	bankkeeper.BaseKeeper
 
-	ak                     banktypes.AccountKeeper
-	dk                     distrkeeper.Keeper
-	cdc                    codec.BinaryCodec
-	storeService           store.KVStoreService
-	mintCoinsRestrictionFn banktypes.MintingRestrictionFn
-	logger                 log.Logger
+	ak  banktypes.AccountKeeper
+	dk  *distrkeeper.Keeper
+	cdc codec.BinaryCodec
 }
 
 // NewKeeper creates a new staking Keeper wrapper instance.
@@ -34,7 +31,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
 	ak banktypes.AccountKeeper,
-	dk distrkeeper.Keeper,
+	dk *distrkeeper.Keeper,
 	blockedAddrs map[string]bool,
 	authority string,
 	logger log.Logger,
