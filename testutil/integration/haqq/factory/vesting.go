@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commonfactory "github.com/haqq-network/haqq/testutil/integration/common/factory"
@@ -26,9 +27,7 @@ func newVestingTxFactory(bf commonfactory.BaseTxFactory) VestingTxFactory {
 // SetupClawbackVestingAccount sets up a clawback vesting account
 // using the TestVestingSchedule. If exceeded balance is provided,
 // will fund the vesting account with it.
-func (tf *vestingTxFactory) SetupClawbackVestingAccount(funderPriv cryptotypes.PrivKey, vestingAddr sdk.AccAddress) error {
-	//funderAccAddr := sdk.AccAddress(funderPriv.PubKey().Address())
-
+func (tf *vestingTxFactory) SetupClawbackVestingAccount(_ cryptotypes.PrivKey, _ sdk.AccAddress) error {
 	// TODO Implement!
 
 	return nil
@@ -36,26 +35,9 @@ func (tf *vestingTxFactory) SetupClawbackVestingAccount(funderPriv cryptotypes.P
 
 // CreateClawbackVestingAccount in the provided address, with the provided
 // funder address
-func (tf *vestingTxFactory) CreateClawbackVestingAccount(vestingPriv cryptotypes.PrivKey, funderAddr sdk.AccAddress, enableGovClawback bool) error {
-	//vestingAccAddr := sdk.AccAddress(vestingPriv.PubKey().Address())
-	//
-	//msg := vestingtypes.NewMsgCreateClawbackVestingAccount(
-	//	funderAddr,
-	//	vestingAccAddr,
-	//	enableGovClawback,
-	//)
-	//
-	//resp, err := tf.ExecuteCosmosTx(vestingPriv, commonfactory.CosmosTxArgs{
-	//	Msgs: []sdk.Msg{msg},
-	//})
-	//
-	//if resp.Code != 0 {
-	//	err = fmt.Errorf("received error code %d on CreateClawbackVestingAccount transaction. Logs: %s", resp.Code, resp.Log)
-	//}
-	//
-	//return err
+func (tf *vestingTxFactory) CreateClawbackVestingAccount(_ cryptotypes.PrivKey, _ sdk.AccAddress, _ bool) error {
+	// TODO Implement!
 
-	// TODO fix
 	return nil
 }
 

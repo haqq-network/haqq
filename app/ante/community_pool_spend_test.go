@@ -5,6 +5,8 @@ import (
 )
 
 func TestCommunityPoolSpendAnteHandler(t *testing.T) {
+	t.Skip()
+
 	// TODO Cover CommunityPoolSpendAnteHandler with tests
 	// TODO Refactor old legacy code below
 	// t.Run("try add gov spend proposal", func(t *testing.T) {

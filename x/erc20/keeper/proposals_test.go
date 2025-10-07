@@ -192,7 +192,7 @@ func (suite *KeeperTestSuite) TestRegisterERC20() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestToggleConverision() { //nolint:govet // we can copy locks here because it is a test
+func (suite *KeeperTestSuite) TestToggleConverision() {
 	var (
 		ctx          sdk.Context
 		err          error

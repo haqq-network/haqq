@@ -12,7 +12,6 @@ import (
 
 var ErrCommunitySpendingComingLater = errorsmod.Register("haqq-ante", 6001, "community pool spend coming later")
 
-//nolint:all
 func NewCommunityPoolSpendAnteHandler(next types.AnteHandler) types.AnteHandler {
 	return func(ctx types.Context, tx types.Tx, simulate bool) (newCtx types.Context, err error) {
 		msgs := tx.GetMsgs()

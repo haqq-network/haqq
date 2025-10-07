@@ -99,17 +99,6 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 				suite.Require().NoError(err)
 
 				return tx
-
-				//  from common.Address,
-				//	to common.Address,
-				//	amount *big.Int,
-				//	input []byte,
-				//	gasPrice *big.Int,
-				//	gasFeeCap *big.Int,
-				//	gasTipCap *big.Int,
-				//	accesses *ethtypes.AccessList,
-				//msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), big.NewInt(0), nil, nil, nil)
-				//return suite.CreateTestTx(msg, privKey, 1, false)
 			},
 			true,
 			"",

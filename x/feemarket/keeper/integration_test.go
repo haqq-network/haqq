@@ -49,7 +49,7 @@ var _ = Describe("Feemarket", func() {
 	})
 
 	// TODO Add signMode testing
-	DescribeTableSubtree("Performing Cosmos transactions", func(signMode signing.SignMode) {
+	DescribeTableSubtree("Performing Cosmos transactions", func(_ signing.SignMode) {
 		var (
 			txArgs    factory.CosmosTxArgs
 			gasWanted uint64 = 200_000

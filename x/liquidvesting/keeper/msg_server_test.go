@@ -220,10 +220,6 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 
 			tc.malleate()
 
-			// commit state and update context
-			//suite.Require().NoError(suite.network.NextBlock())
-			//ctx = suite.network.GetContext()
-
 			fromAcc := suite.network.App.AccountKeeper.GetAccount(ctx, fromAddr)
 			fromVa, ok := fromAcc.(*vestingtypes.ClawbackVestingAccount)
 			if !ok {
@@ -316,10 +312,6 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.Require().Equal(expResponse.Minted, resp.Minted)
 	suite.Require().NotEmpty(resp.ContractAddr)
 
-	// commit state and update context
-	//suite.Require().NoError(suite.network.NextBlock())
-	//ctx = suite.network.GetContext()
-
 	// check target account exists and has liquid token
 	toAcc := suite.network.App.AccountKeeper.GetAccount(ctx, toAddr)
 	suite.Require().NotNil(toAcc)
@@ -358,10 +350,6 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.Require().NoError(err)
 	suite.Require().Equal(expResponse.Minted, resp.Minted)
 	suite.Require().NotEmpty(resp.ContractAddr)
-
-	// commit state and update context
-	//suite.Require().NoError(suite.network.NextBlock())
-	//ctx = suite.network.GetContext()
 
 	// check target account exists and has liquid token
 	balanceTarget = suite.network.App.BankKeeper.GetBalance(ctx, toAddr, types.DenomBaseNameFromID(1))
@@ -617,10 +605,6 @@ func (suite *KeeperTestSuite) TestRedeem() {
 				// check returns
 				suite.Require().NoError(err)
 				suite.Require().Equal(expResponse, resp)
-
-				// commit state and update context
-				//suite.Require().NoError(suite.network.NextBlock())
-				//ctx = suite.network.GetContext()
 
 				// check target account has original tokens
 				toAcc := suite.network.App.AccountKeeper.GetAccount(ctx, toAddr)

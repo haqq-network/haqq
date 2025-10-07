@@ -1,10 +1,12 @@
 package keeper_test
 
 import (
-	"github.com/stretchr/testify/suite"
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
 	sdkmath "cosmossdk.io/math"
+
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
@@ -22,8 +24,6 @@ type KeeperTestSuite struct {
 
 	queryClient types.QueryClient
 }
-
-var s *KeeperTestSuite
 
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))

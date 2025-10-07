@@ -16,8 +16,6 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 )
 
-var s *PrecompileTestSuite
-
 type PrecompileTestSuite struct {
 	suite.Suite
 

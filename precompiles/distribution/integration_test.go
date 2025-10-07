@@ -1454,7 +1454,7 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 			accruedRewardsAmt math.Int
 		)
 
-		BeforeEach(func() { //nolint:dupl
+		BeforeEach(func() {
 			// send funds to the contract
 			err := testutils.FundAccountWithBaseDenom(s.factory, s.network, s.keyring.GetKey(0), contractAddr.Bytes(), math.NewInt(2e18))
 			Expect(err).To(BeNil())
@@ -2217,7 +2217,7 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 			accruedRewardsAmt math.Int
 		)
 
-		BeforeEach(func() { //nolint:dupl
+		BeforeEach(func() {
 			// send funds to the contract
 			err := testutils.FundAccountWithBaseDenom(s.factory, s.network, s.keyring.GetKey(0), contractAddr.Bytes(), math.NewInt(2e18))
 			Expect(err).To(BeNil())

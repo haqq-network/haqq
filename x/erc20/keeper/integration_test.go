@@ -141,7 +141,8 @@ var _ = Describe("ERC20:", Ordered, func() {
 		})
 	})
 
-	DescribeTableSubtree("Converting", func(signMode signing.SignMode) {
+	// TODO Add signMode testing
+	DescribeTableSubtree("Converting", func(_ signing.SignMode) {
 		Context("with a registered ERC20", func() {
 			BeforeEach(func() {
 				var err error

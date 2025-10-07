@@ -573,22 +573,3 @@ func (suite *AnteTestSuite) prepareAccount(ctx sdk.Context, addr sdk.AccAddress,
 		WithBlockGasMeter(storetypes.NewGasMeter(1e19)).
 		WithBlockHeight(ctx.BlockHeight() + 1)
 }
-
-// disableBaseFee is a helper function that edits the
-// feemarket parameters to not use base fee
-func (suite *AnteTestSuite) disableBaseFee(ctx sdk.Context) {
-	params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
-	params.NoBaseFee = true
-	params.MinGasPrice = sdkmath.LegacyZeroDec()
-	err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
-	suite.Require().NoError(err)
-}
-
-// makeZeroFeeTx is a helper function that sets
-// the GasPrice field to zero on the provided evmTxArgs
-func makeZeroFeeTx(from common.Address, args evmtypes.EvmTxArgs) *evmtypes.MsgEthereumTx {
-	args.GasPrice = sdkmath.ZeroInt().BigInt()
-	tx := evmtypes.NewTx(&args)
-	tx.From = from.Hex()
-	return tx
-}

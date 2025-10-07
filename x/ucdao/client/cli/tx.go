@@ -15,16 +15,6 @@ import (
 	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
-// Transaction flags for the x/distribution module
-var (
-	FlagCommission       = "commission"
-	FlagMaxMessagesPerTx = "max-msgs"
-)
-
-const (
-	MaxMessagesPerTxDefault = 0
-)
-
 // NewTxCmd returns a root CLI command handler for all x/distribution transaction commands.
 func NewTxCmd() *cobra.Command {
 	distTxCmd := &cobra.Command{

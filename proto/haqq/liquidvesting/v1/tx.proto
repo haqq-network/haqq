@@ -3,7 +3,6 @@ package haqq.liquidvesting.v1;
 
 import "amino/amino.proto";
 import "cosmos/msg/v1/msg.proto";
-import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/v1beta1/coin.proto";

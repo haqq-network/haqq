@@ -51,15 +51,6 @@ func (s *PrecompileTestSuite) mintAndSendXMPLCoin(ctx sdk.Context, addr sdk.AccA
 	return ctx
 }
 
-// mintAndSendXMPLCoin is a helper function to mint and send a coin to a given address.
-func (is *IntegrationTestSuite) mintAndSendXMPLCoin(addr sdk.AccAddress, amount math.Int) {
-	coins := sdk.NewCoins(sdk.NewCoin(is.tokenDenom, amount))
-	err := is.network.App.BankKeeper.MintCoins(is.network.GetContext(), coinomicstypes.ModuleName, coins)
-	Expect(err).ToNot(HaveOccurred())
-	err = is.network.App.BankKeeper.SendCoinsFromModuleToAccount(is.network.GetContext(), coinomicstypes.ModuleName, addr, coins)
-	Expect(err).ToNot(HaveOccurred())
-}
-
 // callType constants to differentiate between direct calls and calls through a contract.
 const (
 	directCall = iota + 1

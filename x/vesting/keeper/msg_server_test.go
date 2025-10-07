@@ -1,13 +1,13 @@
 package keeper_test
 
 import (
-	sdkmath "cosmossdk.io/math"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
@@ -24,16 +24,15 @@ import (
 )
 
 var (
-	vestAmount      = int64(1000)
-	balances        = sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, vestAmount))
-	delegationCoins = sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, 1e18))
-	quarter         = sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, 250))
-	addr3           = sdk.AccAddress(utiltx.GenerateAddress().Bytes())
-	addr4           = sdk.AccAddress(utiltx.GenerateAddress().Bytes())
-	funder          = sdk.AccAddress(utiltx.GenerateAddress().Bytes())
-	vestingAddr     = sdk.AccAddress(utiltx.GenerateAddress().Bytes())
-	lockupPeriods   = sdkvesting.Periods{{Length: 5000, Amount: balances}}
-	vestingPeriods  = sdkvesting.Periods{
+	vestAmount     = int64(1000)
+	balances       = sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, vestAmount))
+	quarter        = sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, 250))
+	addr3          = sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	addr4          = sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	funder         = sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	vestingAddr    = sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	lockupPeriods  = sdkvesting.Periods{{Length: 5000, Amount: balances}}
+	vestingPeriods = sdkvesting.Periods{
 		{Length: 2000, Amount: quarter},
 		{Length: 2000, Amount: quarter},
 		{Length: 2000, Amount: quarter},

@@ -29,7 +29,8 @@ type IntegrationTestSuite struct {
 	keyring     testkeyring.Keyring
 }
 
-var _ = DescribeTableSubtree("when sending a Cosmos transaction", Label("AnteHandler"), Ordered, func(signMode signing.SignMode) {
+// TODO Add signMode testing
+var _ = DescribeTableSubtree("when sending a Cosmos transaction", Label("AnteHandler"), Ordered, func(_ signing.SignMode) {
 	var (
 		s    *IntegrationTestSuite
 		addr sdk.AccAddress

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"io"
 	"net/http"
 	"os"
@@ -68,6 +67,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/consensus"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
@@ -107,10 +107,6 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
 
-	//ratelimit "github.com/cosmos/ibc-apps/modules/rate-limiting/v8"
-	//ratelimitkeeper "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/keeper"
-	//ratelimittypes "github.com/cosmos/ibc-apps/modules/rate-limiting/v8/types"
-
 	ica "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts"
 	icahost "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host"
 	icahostkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/keeper"
@@ -138,14 +134,9 @@ import (
 	"github.com/haqq-network/haqq/x/evm"
 	evmkeeper "github.com/haqq-network/haqq/x/evm/keeper"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
-	//inflation "github.com/evmos/evmos/v20/x/inflation/v1"
-	//inflationkeeper "github.com/evmos/evmos/v20/x/inflation/v1/keeper"
-	//inflationtypes "github.com/evmos/evmos/v20/x/inflation/v1/types"
 
 	"github.com/haqq-network/haqq/app/ante"
 	ethante "github.com/haqq-network/haqq/app/ante/evm"
-	//"github.com/evmos/evmos/v20/app/post"
-	//v20 "github.com/evmos/evmos/v20/app/upgrades/v20"
 	srvflags "github.com/haqq-network/haqq/server/flags"
 	"github.com/haqq-network/haqq/x/erc20"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
@@ -405,7 +396,7 @@ func NewHaqq(
 		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
 		app.AccountKeeper,
-		app.DistrKeeper,
+		&app.DistrKeeper,
 		app.BlockedAddrs(),
 		authAddr,
 		logger,

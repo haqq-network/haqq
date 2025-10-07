@@ -2,10 +2,10 @@ package cosmos_test
 
 import (
 	"fmt"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/feegrant"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"

@@ -642,7 +642,7 @@ func (endpoint *Endpoint) ChanUpgradeInit() error {
 		endpoint.Chain.SenderAccount.GetAddress().String(),
 		endpoint.ChannelID,
 		"upgrade-init",
-		fmt.Sprintf("gov proposal for initialising channel upgrade: %s", endpoint.ChannelID),
+		fmt.Sprintf("gov proposal for initializing channel upgrade: %s", endpoint.ChannelID),
 		false,
 	)
 	require.NoError(endpoint.Chain.TB, err)
