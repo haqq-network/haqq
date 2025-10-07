@@ -5,6 +5,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
@@ -82,7 +83,10 @@ func (k Keeper) convertERC20IntoCoinsForNativeToken(
 	balanceCoin := k.bankKeeper.GetBalance(ctx, receiver, pair.Denom)
 	balanceToken := k.BalanceOf(ctx, erc20, contract, types.ModuleAddress)
 	if balanceToken == nil {
-		return nil, errorsmod.Wrap(types.ErrEVMCall, "failed to retrieve balance")
+		return nil, errorsmod.Wrap(
+			types.ErrEVMCall,
+			fmt.Sprintf("failed to retrieve balance of erc20 module address %s in contract %s before convertERC20IntoCoinsForNativeToken", types.ModuleAddress.Hex(), contract.Hex()),
+		)
 	}
 
 	// Escrow tokens on module account
@@ -112,7 +116,10 @@ func (k Keeper) convertERC20IntoCoinsForNativeToken(
 	tokens := coins[0].Amount.BigInt()
 	balanceTokenAfter := k.BalanceOf(ctx, erc20, contract, types.ModuleAddress)
 	if balanceTokenAfter == nil {
-		return nil, errorsmod.Wrap(types.ErrEVMCall, "failed to retrieve balance")
+		return nil, errorsmod.Wrap(
+			types.ErrEVMCall,
+			fmt.Sprintf("failed to retrieve balance of erc20 module address %s in contract %s after convertERC20IntoCoinsForNativeToken", types.ModuleAddress.Hex(), contract.Hex()),
+		)
 	}
 
 	expToken := big.NewInt(0).Add(balanceToken, tokens)
@@ -211,7 +218,10 @@ func (k Keeper) ConvertCoinNativeERC20(
 
 	balanceToken := k.BalanceOf(ctx, erc20, contract, receiver)
 	if balanceToken == nil {
-		return errorsmod.Wrap(types.ErrEVMCall, "failed to retrieve balance")
+		return errorsmod.Wrap(
+			types.ErrEVMCall,
+			fmt.Sprintf("failed to retrieve balance of %s in contract %s before ConvertCoinNativeERC20", receiver.Hex(), contract.Hex()),
+		)
 	}
 
 	// Escrow Coins on module account
@@ -239,7 +249,10 @@ func (k Keeper) ConvertCoinNativeERC20(
 	// Check expected Receiver balance after transfer execution
 	balanceTokenAfter := k.BalanceOf(ctx, erc20, contract, receiver)
 	if balanceTokenAfter == nil {
-		return errorsmod.Wrap(types.ErrEVMCall, "failed to retrieve balance")
+		return errorsmod.Wrap(
+			types.ErrEVMCall,
+			fmt.Sprintf("failed to retrieve balance of %s in contract %s after ConvertCoinNativeERC20", receiver.Hex(), contract.Hex()),
+		)
 	}
 
 	exp := big.NewInt(0).Add(balanceToken, amount.BigInt())
