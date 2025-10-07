@@ -472,7 +472,7 @@ func (suite *AnteTestSuite) TestRejectMsgsInAuthz() {
 			header := ctx.BlockHeader()
 			blockRes, err := nw.App.FinalizeBlock(
 				&abci.RequestFinalizeBlock{
-					Height:             ctx.BlockHeight() + 1,
+					Height:             ctx.BlockHeight(),
 					Txs:                [][]byte{bz},
 					Hash:               header.AppHash,
 					NextValidatorsHash: header.NextValidatorsHash,
