@@ -20,7 +20,7 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
-	integrationutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
+	testutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
@@ -50,7 +50,12 @@ func (is *IntegrationTestSuite) SetupTest() {
 	// with the protocol via genesis and/or a transaction
 	is.tokenDenom = xmplDenom
 	keyring := keyring.New(2)
-	genesis := integrationutils.CreateGenesisWithTokenPairs(keyring)
+	genesis := testutils.CreateGenesisWithTokenPairs(keyring)
+	// disable coinomics
+	coinomicsGenesis := coinomicstypes.DefaultGenesisState()
+	coinomicsGenesis.Params.EnableCoinomics = false
+	genesis[coinomicstypes.ModuleName] = coinomicsGenesis
+
 	integrationNetwork := network.NewUnitTestNetwork(
 		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),
 		network.WithOtherDenoms([]string{is.tokenDenom}), // set some funds of other denom to the prefunded accounts
@@ -76,10 +81,7 @@ func (is *IntegrationTestSuite) SetupTest() {
 	Expect(found).To(BeTrue(), "failed to register token erc20 extension")
 	is.evmosAddr = common.HexToAddress(tokenPair.Erc20Address)
 
-	// Mint and register a second coin for testing purposes
-	err = is.network.App.BankKeeper.MintCoins(is.network.GetContext(), coinomicstypes.ModuleName, sdk.Coins{{Denom: is.tokenDenom, Amount: math.NewInt(1e18)}})
-	Expect(err).ToNot(HaveOccurred(), "failed to mint coin")
-
+	// Register a second coin for testing purposes
 	tokenPairID = is.network.App.Erc20Keeper.GetTokenPairID(is.network.GetContext(), is.tokenDenom)
 	tokenPair, found = is.network.App.Erc20Keeper.GetTokenPair(is.network.GetContext(), tokenPairID)
 	Expect(found).To(BeTrue(), "failed to register token erc20 extension")
@@ -175,7 +177,7 @@ var _ = Describe("Bank Extension -", func() {
 				// New account with 0 balances (does not exist on the chain yet)
 				receiver := utiltx.GenerateAddress()
 
-				err := integrationutils.FundAccountWithBaseDenom(is.factory, is.network, sender, receiver.Bytes(), math.NewIntFromBigInt(amount))
+				err := testutils.FundAccountWithBaseDenom(is.factory, is.network, sender, receiver.Bytes(), math.NewIntFromBigInt(amount))
 				Expect(err).ToNot(HaveOccurred(), "error while funding account")
 				Expect(is.network.NextBlock()).ToNot(HaveOccurred(), "error on NextBlock")
 
@@ -234,8 +236,8 @@ var _ = Describe("Bank Extension -", func() {
 				err = is.precompile.UnpackIntoInterface(&balances, bank.TotalSupplyMethod, ethRes.Ret)
 				Expect(err).ToNot(HaveOccurred(), "failed to unpack balances")
 
-				Expect(balances[0].Amount).To(Equal(islmTotalSupply))
-				Expect(balances[1].Amount).To(Equal(xmplTotalSupply))
+				Expect(balances[0].Amount.String()).To(Equal(islmTotalSupply.String()))
+				Expect(balances[1].Amount.String()).To(Equal(xmplTotalSupply.String()))
 			})
 		})
 
@@ -259,7 +261,7 @@ var _ = Describe("Bank Extension -", func() {
 				out, err := is.precompile.Unpack(bank.SupplyOfMethod, ethRes.Ret)
 				Expect(err).ToNot(HaveOccurred(), "failed to unpack balances")
 
-				Expect(out[0].(*big.Int)).To(Equal(xmplTotalSupply))
+				Expect(out[0].(*big.Int).String()).To(Equal(xmplTotalSupply.String()))
 			})
 
 			It("should return a supply of 0 for a non existing token", func() {
@@ -318,7 +320,7 @@ var _ = Describe("Bank Extension -", func() {
 				// New account with 0 balances (does not exist on the chain yet)
 				receiver := utiltx.GenerateAddress()
 
-				err := integrationutils.FundAccountWithBaseDenom(is.factory, is.network, sender, receiver.Bytes(), math.NewIntFromBigInt(amount))
+				err := testutils.FundAccountWithBaseDenom(is.factory, is.network, sender, receiver.Bytes(), math.NewIntFromBigInt(amount))
 				Expect(err).ToNot(HaveOccurred(), "error while funding account")
 				Expect(is.network.NextBlock()).ToNot(HaveOccurred(), "error on NextBlock")
 
@@ -377,8 +379,8 @@ var _ = Describe("Bank Extension -", func() {
 				err = is.precompile.UnpackIntoInterface(&balances, bank.TotalSupplyMethod, ethRes.Ret)
 				Expect(err).ToNot(HaveOccurred(), "failed to unpack balances")
 
-				Expect(balances[0].Amount).To(Equal(islmTotalSupply))
-				Expect(balances[1].Amount).To(Equal(xmplTotalSupply))
+				Expect(balances[0].Amount.String()).To(Equal(islmTotalSupply.String()))
+				Expect(balances[1].Amount.String()).To(Equal(xmplTotalSupply.String()))
 			})
 		})
 
@@ -402,7 +404,7 @@ var _ = Describe("Bank Extension -", func() {
 				out, err := is.precompile.Unpack(bank.SupplyOfMethod, ethRes.Ret)
 				Expect(err).ToNot(HaveOccurred(), "failed to unpack balances")
 
-				Expect(out[0].(*big.Int)).To(Equal(xmplTotalSupply))
+				Expect(out[0].(*big.Int).String()).To(Equal(xmplTotalSupply.String()))
 			})
 
 			It("should return a supply of 0 for a non existing token", func() {

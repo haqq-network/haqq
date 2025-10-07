@@ -148,23 +148,24 @@ func (s *PrecompileTestSuite) setupIBCTest() {
 	s.coordinator.CommitNBlocks(s.chainA.ChainID, 2)
 	s.coordinator.CommitNBlocks(s.chainB.ChainID, 2)
 
+	ctx := s.chainA.GetContext()
 	haqqApp := s.chainA.App.(*haqqapp.Haqq)
-	evmParams := haqqApp.EvmKeeper.GetParams(s.chainA.GetContext())
+	evmParams := haqqApp.EvmKeeper.GetParams(ctx)
 	evmParams.EvmDenom = utils.BaseDenom
-	err := haqqApp.EvmKeeper.SetParams(s.chainA.GetContext(), evmParams)
+	err := haqqApp.EvmKeeper.SetParams(ctx, evmParams)
 	s.Require().NoError(err)
 
 	// Set block proposer once, so its carried over on the ibc-go-testing suite
-	validators, err := haqqApp.StakingKeeper.GetValidators(s.chainA.GetContext(), 3)
+	validators, err := haqqApp.StakingKeeper.GetValidators(ctx, 3)
 	s.Require().NoError(err)
 	cons, err := validators[0].GetConsAddr()
 	s.Require().NoError(err)
 	s.chainA.CurrentHeader.ProposerAddress = cons
 
-	err = haqqApp.StakingKeeper.SetValidatorByConsAddr(s.chainA.GetContext(), validators[0])
+	err = haqqApp.StakingKeeper.SetValidatorByConsAddr(ctx, validators[0])
 	s.Require().NoError(err)
 
-	_, err = haqqApp.EvmKeeper.GetCoinbaseAddress(s.chainA.GetContext(), sdk.ConsAddress(s.chainA.CurrentHeader.ProposerAddress))
+	_, err = haqqApp.EvmKeeper.GetCoinbaseAddress(ctx, sdk.ConsAddress(s.chainA.CurrentHeader.ProposerAddress))
 	s.Require().NoError(err)
 
 	// Mint coins locked on the haqq account generated with secp.
@@ -172,10 +173,12 @@ func (s *PrecompileTestSuite) setupIBCTest() {
 	s.Require().True(ok)
 	coinIslm := sdk.NewCoin(utils.BaseDenom, amount)
 	coins := sdk.NewCoins(coinIslm)
-	err = haqqApp.BankKeeper.MintCoins(s.chainA.GetContext(), coinomicstypes.ModuleName, coins)
+	err = haqqApp.BankKeeper.MintCoins(ctx, coinomicstypes.ModuleName, coins)
 	s.Require().NoError(err)
-	err = haqqApp.BankKeeper.SendCoinsFromModuleToAccount(s.chainA.GetContext(), coinomicstypes.ModuleName, s.chainA.SenderAccount.GetAddress(), coins)
+	err = haqqApp.BankKeeper.SendCoinsFromModuleToAccount(ctx, coinomicstypes.ModuleName, s.chainA.SenderAccount.GetAddress(), coins)
 	s.Require().NoError(err)
+
+	s.chainA.NextBlock()
 
 	s.transferPath = s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
 	s.Require().Equal("07-tendermint-0", s.transferPath.EndpointA.ClientID)
@@ -257,16 +260,16 @@ func (s *PrecompileTestSuite) setupAllocationsForTesting() {
 // compiled contract data and constructor arguments
 func DeployContract(
 	ctx sdk.Context,
-	evmosApp *haqqapp.Haqq,
+	app *haqqapp.Haqq,
 	priv cryptotypes.PrivKey,
 	gasPrice *big.Int,
 	queryClientEvm evmtypes.QueryClient,
 	contract evmtypes.CompiledContract,
 	constructorArgs ...interface{},
 ) (common.Address, error) {
-	chainID := evmosApp.EvmKeeper.ChainID()
+	chainID := app.EvmKeeper.ChainID()
 	from := common.BytesToAddress(priv.PubKey().Address().Bytes())
-	nonce := evmosApp.EvmKeeper.GetNonce(ctx, from)
+	nonce := app.EvmKeeper.GetNonce(ctx, from)
 
 	ctorArgs, err := contract.ABI.Pack("", constructorArgs...)
 	if err != nil {
@@ -283,7 +286,7 @@ func DeployContract(
 		ChainID:   chainID,
 		Nonce:     nonce,
 		GasLimit:  gas,
-		GasFeeCap: evmosApp.FeeMarketKeeper.GetBaseFee(ctx),
+		GasFeeCap: app.FeeMarketKeeper.GetBaseFee(ctx),
 		GasTipCap: big.NewInt(1),
 		GasPrice:  gasPrice,
 		Input:     data,
@@ -291,12 +294,12 @@ func DeployContract(
 	})
 	msgEthereumTx.From = from.String()
 
-	res, err := haqqtestutil.DeliverEthTx(evmosApp, priv, msgEthereumTx)
+	res, err := haqqtestutil.DeliverEthTx(ctx, app, priv, msgEthereumTx)
 	if err != nil {
 		return common.Address{}, err
 	}
 
-	if _, err := haqqtestutil.CheckEthTxResponse(res, evmosApp.AppCodec()); err != nil {
+	if _, err := haqqtestutil.CheckEthTxResponse(res, app.AppCodec()); err != nil {
 		return common.Address{}, err
 	}
 

@@ -83,7 +83,7 @@ func Call(ctx sdk.Context, app *haqqapp.Haqq, args CallArgs) (res abci.ExecTxRes
 	})
 	msg.From = addr.Hex()
 
-	res, err = haqqtestutil.DeliverEthTx(app, args.PrivKey, msg)
+	res, err = haqqtestutil.DeliverEthTx(ctx, app, args.PrivKey, msg)
 	if err != nil {
 		return res, nil, fmt.Errorf("error during deliver tx: %s", err)
 	}

@@ -40,8 +40,6 @@ import (
 // stipend to pay EVM tx fees
 var (
 	accountGasCoverage = sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, math.NewInt(1e16)))
-	gas                = uint64(200_000)
-	gasPrices          = accountGasCoverage.QuoInt(math.NewIntFromUint64(gas)).AmountOf(utils.BaseDenom)
 )
 
 // ApproveAndCheckAuthz is a helper function to approve a given authorization method and check if the authorization was created.
@@ -192,7 +190,7 @@ func (s *PrecompileTestSuite) SetupApproval(
 		granterAddr,
 		grantee,
 		res,
-		s.network.GetContext().BlockHeight(),
+		s.network.GetContext().BlockHeight()-1, // use last committed block height
 		msgTypes,
 		amount,
 	)
@@ -296,8 +294,7 @@ func (s *PrecompileTestSuite) assertValidatorsResponse(validators []staking.Vali
 
 		val := s.network.GetValidators()[j]
 		s.Require().Equal(val.OperatorAddress, sdk.ValAddress(common.HexToAddress(validators[i].OperatorAddress).Bytes()).String())
-		//nolint: gosec // status is one of enumerated constants that are all fit in uint8
-		s.Require().Equal(uint8(val.Status), validators[i].Status) //#nosec G115
+		s.Require().Equal(uint8(val.Status), validators[i].Status) //nolint: gosec // status is one of enumerated constants that are all fit in uint8
 		s.Require().Equal(val.Tokens.Uint64(), validators[i].Tokens.Uint64())
 		s.Require().Equal(val.DelegatorShares.BigInt(), validators[i].DelegatorShares)
 		s.Require().Equal(val.Jailed, validators[i].Jailed)

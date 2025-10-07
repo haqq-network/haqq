@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -55,7 +56,7 @@ var (
 	outOfGasCheck testutil.LogCheckArgs
 
 	// gasPrice defines a default gas price to be used in the testing suite
-	gasPrice = big.NewInt(200_000)
+	gasPrice = big.NewInt(80_000_000)
 
 	// array of allocations with only one allocation for 'aISLM' coin
 	defaultSingleAlloc []cmn.ICS20Allocation
@@ -74,8 +75,6 @@ func TestPrecompileIntegrationTestSuite(t *testing.T) {
 }
 
 var _ = Describe("IBCTransfer Precompile", func() {
-	var s *PrecompileTestSuite
-
 	BeforeEach(func() {
 		s = new(PrecompileTestSuite)
 		s.SetT(ist)
@@ -108,14 +107,6 @@ var _ = Describe("IBCTransfer Precompile", func() {
 			auths, err := s.network.App.AuthzKeeper.GetAuthorizations(s.chainA.GetContext(), differentAddress.Bytes(), s.keyring.GetAddr(0).Bytes())
 			Expect(err).To(BeNil(), "error while getting authorizations")
 			Expect(auths).To(HaveLen(0), "expected no authorizations before tests")
-			defaultSingleAlloc = []cmn.ICS20Allocation{
-				{
-					SourcePort:        ibctesting.TransferPort,
-					SourceChannel:     s.transferPath.EndpointA.ChannelID,
-					SpendLimit:        defaultCmnCoins,
-					AllowedPacketData: []string{"memo"},
-				},
-			}
 		})
 
 		// TODO uncomment when enforcing grantee != origin
@@ -626,7 +617,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 				erc20Addr common.Address
 				// sentAmount is the amount of tokens to send for testing
 				sentAmount               = big.NewInt(1000)
-				tokenPair                *erc20types.TokenPair
+				tokenPairDenom           string
 				defaultErc20TransferArgs contracts.CallArgs
 				err                      error
 			)
@@ -640,7 +631,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 				})
 				Expect(err).To(BeNil(), "error while registering the token pair: %v", err)
 
-				tokenPairDenom := erc20types.CreateDenom(erc20Addr.String())
+				tokenPairDenom = erc20types.CreateDenom(erc20Addr.Hex())
 				defaultErc20TransferArgs = defaultTransferArgs.WithArgs(
 					s.transferPath.EndpointA.ChannelConfig.PortID,
 					s.transferPath.EndpointA.ChannelID,
@@ -712,7 +703,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 					transferArgs := defaultTransferArgs.WithArgs(
 						s.transferPath.EndpointA.ChannelConfig.PortID,
 						s.transferPath.EndpointA.ChannelID,
-						tokenPair.Denom,
+						tokenPairDenom,
 						defaultCmnCoins[0].Amount,
 						differentAddress,
 						s.chainB.SenderAccount.GetAddress().String(), // receiver
@@ -743,7 +734,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 					transferArgs := defaultTransferArgs.WithArgs(
 						s.transferPath.EndpointA.ChannelConfig.PortID,
 						s.transferPath.EndpointA.ChannelID,
-						tokenPair.Denom,
+						tokenPairDenom,
 						sentAmount,
 						s.keyring.GetAddr(0),
 						invalidReceiverAddr, // invalid receiver
@@ -785,7 +776,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 					packet := s.makePacket(
 						sdk.AccAddress(s.keyring.GetAddr(0).Bytes()).String(),
 						invalidReceiverAddr,
-						tokenPair.Denom,
+						tokenPairDenom,
 						"memo",
 						sentAmount,
 						sequence,
@@ -800,6 +791,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 					Expect(err).To(BeNil())
 
 					// Relay packet
+					// fix context header
 					err = s.transferPath.RelayPacket(packet)
 					Expect(err).To(BeNil())
 
@@ -823,7 +815,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 					transferArgs := defaultTransferArgs.WithArgs(
 						s.transferPath.EndpointA.ChannelConfig.PortID,
 						s.transferPath.EndpointA.ChannelID,
-						tokenPair.Denom,
+						tokenPairDenom,
 						sentAmount,
 						s.keyring.GetAddr(0),
 						s.chainB.SenderAccount.GetAddress().String(), // receiver
@@ -863,7 +855,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 					packet := s.makePacket(
 						sdk.AccAddress(s.keyring.GetAddr(0).Bytes()).String(),
 						s.chainB.SenderAccount.GetAddress().String(),
-						tokenPair.Denom,
+						tokenPairDenom,
 						"memo",
 						sentAmount,
 						sequence,
@@ -1072,7 +1064,6 @@ var _ = Describe("IBCTransfer Precompile", func() {
 
 var _ = Describe("Calling ICS20 precompile from another contract", func() {
 	var (
-		s *PrecompileTestSuite
 		// interchainSenderCallerContract is the compiled contract calling the interchain functionality
 		interchainSenderCallerContract evmtypes.CompiledContract
 		// contractAddr is the address of the smart contract that will be deployed
@@ -1097,12 +1088,17 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 		interchainSenderContract, err = contracts.LoadInterchainSenderContract()
 		Expect(err).To(BeNil(), "error while loading the interchain sender contract: %v", err)
 
+		ir := s.network.App.InterfaceRegistry()
+		cacheCtx, _ := s.chainA.GetContext().CacheContext()
+		queryHelper := baseapp.NewQueryServerTestHelper(cacheCtx, ir)
+		evmtypes.RegisterQueryServer(queryHelper, s.network.App.EvmKeeper)
+		evmClient := evmtypes.NewQueryClient(queryHelper)
 		contractAddr, err = DeployContract(
 			s.chainA.GetContext(),
 			s.network.App,
 			s.keyring.GetPrivKey(0),
 			gasPrice,
-			s.network.GetEvmClient(),
+			evmClient,
 			interchainSenderContract,
 		)
 		Expect(err).To(BeNil(), "error while deploying the smart contract: %v", err)
@@ -1119,7 +1115,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 			s.network.App,
 			s.keyring.GetPrivKey(0),
 			gasPrice,
-			s.network.GetEvmClient(),
+			evmClient,
 			interchainSenderCallerContract,
 			contractAddr,
 		)
@@ -1506,7 +1502,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 		Context("transfer ERC20", func() {
 			var (
 				// denom is the registered token pair denomination
-				denom string
+				tokenPairDenom string
 				// erc20Addr is the address of the ERC20 contract
 				erc20Addr                common.Address
 				defaultTransferERC20Args contracts.CallArgs
@@ -1524,7 +1520,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 				})
 				Expect(err).To(BeNil(), "error while registering the token pair: %v", err)
 
-				tokenPairDenom := erc20types.CreateDenom(erc20Addr.String())
+				tokenPairDenom = erc20types.CreateDenom(erc20Addr.String())
 
 				defaultTransferERC20Args = defaultTransferArgs.WithArgs(
 					s.transferPath.EndpointA.ChannelConfig.PortID,
@@ -1592,7 +1588,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 						{
 							SourcePort:        ibctesting.TransferPort,
 							SourceChannel:     s.transferPath.EndpointA.ChannelID,
-							SpendLimit:        []cmn.Coin{{Denom: denom, Amount: sentAmount}},
+							SpendLimit:        []cmn.Coin{{Denom: tokenPairDenom, Amount: sentAmount}},
 							AllowList:         []string{},
 							AllowedPacketData: []string{"memo"},
 						},

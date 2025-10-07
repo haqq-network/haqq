@@ -1332,16 +1332,12 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 		},
 		{
 			"success",
-			func(delegator, grantee testkeyring.Key, operatorAddress string) []interface{} {
-				// TODO: why is this necessary
-				// TODO: remove also grantee from malleate
-				err := s.CreateAuthorization(ctx, delegator.AccAddr, grantee.AccAddr, staking.DelegateAuthz, nil)
-				s.Require().NoError(err)
+			func(delegator, _ testkeyring.Key, operatorAddress string) []interface{} {
 				return []interface{}{
 					delegator.Addr,
 					operatorAddress,
 					big.NewInt(1),
-					big.NewInt(1),
+					big.NewInt(2),
 				}
 			},
 			func(data []byte) {
@@ -1389,6 +1385,10 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 
 				valAddr, err := sdk.ValAddressFromBech32(s.network.GetValidators()[0].GetOperator())
 				s.Require().NoError(err)
+				s.Require().NoError(s.network.NextBlock())
+
+				// update context after block commit
+				ctx = s.network.GetContext()
 
 				_, err = s.network.App.StakingKeeper.GetDelegation(ctx, delegator.AccAddr, valAddr)
 				s.Require().Error(err)
@@ -1396,6 +1396,10 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegation() {
 
 				err = s.CreateAuthorization(ctx, delegator.AccAddr, grantee.AccAddr, staking.CancelUnbondingDelegationAuthz, nil)
 				s.Require().NoError(err)
+				s.Require().NoError(s.network.NextBlock())
+
+				// update context after block commit
+				ctx = s.network.GetContext()
 
 				bz, err := s.precompile.CancelUnbondingDelegation(ctx, delegator.Addr, contract, stDB, &method, cancelArgs)
 				s.Require().NoError(err)

@@ -679,7 +679,7 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegationEvent() {
 					delegator.Addr,
 					s.network.GetValidators()[0].OperatorAddress,
 					big.NewInt(1000000000000000000),
-					big.NewInt(1),
+					big.NewInt(3),
 				}
 			},
 			false,
@@ -704,7 +704,7 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegationEvent() {
 				s.Require().Equal(delegator, cancelUnbondEvent.DelegatorAddress)
 				s.Require().Equal(optHexAddr, cancelUnbondEvent.ValidatorAddress)
 				s.Require().Equal(big.NewInt(1000000000000000000), cancelUnbondEvent.Amount)
-				s.Require().Equal(big.NewInt(1), cancelUnbondEvent.CreationHeight)
+				s.Require().Equal(big.NewInt(3), cancelUnbondEvent.CreationHeight)
 			},
 		},
 	}
@@ -720,6 +720,10 @@ func (s *PrecompileTestSuite) TestCancelUnbondingDelegationEvent() {
 
 			err := s.CreateAuthorization(ctx, delegator.AccAddr, grantee.AccAddr, staking.CancelUnbondingDelegationAuthz, nil)
 			s.Require().NoError(err)
+			s.Require().NoError(s.network.NextBlock())
+
+			// update context after block commit
+			ctx = s.network.GetContext()
 
 			contract := vm.NewContract(vm.AccountRef(delegator.Addr), s.precompile, big.NewInt(0), 20000)
 			callArgs := tc.malleate(contract, delegator, grantee)

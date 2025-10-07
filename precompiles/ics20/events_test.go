@@ -1,7 +1,6 @@
 package ics20_test
 
 import (
-	"github.com/haqq-network/haqq/x/evm/statedb"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,6 +12,7 @@ import (
 	"github.com/haqq-network/haqq/precompiles/ics20"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	"github.com/haqq-network/haqq/x/evm/statedb"
 )
 
 func (s *PrecompileTestSuite) TestTransferEvent() {

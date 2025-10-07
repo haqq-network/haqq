@@ -81,7 +81,7 @@ func (s *PrecompileTestSuite) TestBalances() {
 			},
 		},
 		{
-			"pass - ISLM and XMPL balances present",
+			"pass - ISLM and XMPL balances present - mint extra XMPL",
 			func() []interface{} {
 				ctx = s.mintAndSendXMPLCoin(ctx, s.keyring.GetAccAddr(0), math.NewInt(1e18))
 				return []interface{}{

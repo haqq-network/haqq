@@ -2,6 +2,7 @@ package ics20_test
 
 import (
 	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 

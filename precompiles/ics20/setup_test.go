@@ -7,10 +7,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
 	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
-	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/ics20"
 	cmnnetwork "github.com/haqq-network/haqq/testutil/integration/common/network"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
@@ -46,6 +46,16 @@ func TestPrecompileTestSuite(t *testing.T) {
 }
 
 func (s *PrecompileTestSuite) SetupTest() {
+	if s.suiteIBCTesting {
+		// dummy chains use the ibc testing chain setup
+		// that uses the default sdk address prefix ('cosmos')
+		// Update the prefix configs to use that prefix
+		haqqibctesting.SetBech32Prefix("cosmos")
+		// Also need to disable address cache to avoid using modules
+		// accounts with 'evmos' addresses (because Evmos chain setup is first)
+		sdk.SetAddrCacheEnabled(false)
+	}
+
 	keyring := testkeyring.New(2)
 	nw := network.NewUnitTestNetwork(
 		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),
@@ -54,19 +64,14 @@ func (s *PrecompileTestSuite) SetupTest() {
 	txFactory := factory.New(nw, grpcHandler)
 
 	ctx := nw.GetContext()
-	sk := nw.App.StakingKeeper
-	bondDenom, err := sk.BondDenom(ctx)
-	if err != nil {
-		panic(err)
-	}
+	bondDenom, err := nw.App.StakingKeeper.BondDenom(ctx)
+	s.Require().NoError(err)
 
 	s.bondDenom = bondDenom
 	s.factory = txFactory
 	s.grpcHandler = grpcHandler
 	s.keyring = keyring
 	s.network = nw
-
-	s.network.NextBlock()
 
 	if s.precompile, err = ics20.NewPrecompile(
 		s.network.App.StakingKeeper,
@@ -83,12 +88,12 @@ func (s *PrecompileTestSuite) SetupTest() {
 	chainID2 := dummyChainsIDs[0]
 
 	// Setup Chains in the testing suite
-	s.chainA = s.coordinator.GetTestChain(cmn.DefaultChainID)
+	s.chainA = s.coordinator.GetTestChain(s.network.GetChainID())
 	s.chainB = s.coordinator.GetTestChain(chainID2)
 
 	// set sender account on chainA
 	s.coordinator.SetDefaultSignerForChain(
-		cmn.DefaultChainID,
+		s.network.GetChainID(),
 		s.keyring.GetPrivKey(0),
 		s.network.App.AccountKeeper.GetAccount(ctx, s.keyring.GetAccAddr(0)),
 	)

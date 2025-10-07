@@ -1034,7 +1034,7 @@ var _ = Describe("Calling staking precompile directly", func() {
 			Expect(err).To(BeNil(), "error while setting up an unbonding delegation: %v", err)
 			Expect(s.network.NextBlock()).To(BeNil())
 
-			creationHeight := s.network.GetContext().BlockHeight()
+			creationHeight := s.network.GetContext().BlockHeight() - 1 // use last committed block height
 
 			// Check that the unbonding delegation was created
 			res, err := s.grpcHandler.GetDelegatorUnbondingDelegations(delegator.AccAddr.String())
@@ -1055,7 +1055,7 @@ var _ = Describe("Calling staking precompile directly", func() {
 				Expect(err).To(BeNil())
 				Expect(valDelRes.DelegationResponses).To(HaveLen(0))
 
-				creationHeight := s.network.GetContext().BlockHeight()
+				creationHeight := s.network.GetContext().BlockHeight() - 1 // use last committed block height
 				callArgs.Args = []interface{}{
 					delegator.Addr, valAddr.String(), big.NewInt(1e18), big.NewInt(creationHeight),
 				}
@@ -1084,7 +1084,7 @@ var _ = Describe("Calling staking precompile directly", func() {
 			It("should not cancel an unbonding delegation if the amount is not correct", func() {
 				delegator := s.keyring.GetKey(0)
 
-				creationHeight := s.network.GetContext().BlockHeight()
+				creationHeight := s.network.GetContext().BlockHeight() - 1 // use last committed block height
 				callArgs.Args = []interface{}{
 					delegator.Addr, valAddr.String(), big.NewInt(2e18), big.NewInt(creationHeight),
 				}
@@ -1107,9 +1107,9 @@ var _ = Describe("Calling staking precompile directly", func() {
 			It("should not cancel an unbonding delegation if the creation height is not correct", func() {
 				delegator := s.keyring.GetKey(0)
 
-				creationHeight := s.network.GetContext().BlockHeight()
+				creationHeight := s.network.GetContext().BlockHeight() // use current uncommitted block
 				callArgs.Args = []interface{}{
-					delegator.Addr, valAddr.String(), big.NewInt(1e18), big.NewInt(creationHeight + 1),
+					delegator.Addr, valAddr.String(), big.NewInt(1e18), big.NewInt(creationHeight),
 				}
 
 				logCheckArgs := defaultLogCheck.WithErrContains("unbonding delegation entry is not found at block height")
@@ -1494,7 +1494,6 @@ var _ = Describe("Calling staking precompile directly", func() {
 			}
 		})
 
-		//nolint:dupl // this is a duplicate of the test for smart contract calls to the precompile
 		It("should return validators w/pagination limit = 1", func() {
 			const limit uint64 = 1
 			delegator := s.keyring.GetKey(0)
@@ -3568,7 +3567,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			Expect(err).To(BeNil(), "error while setting up an unbonding delegation: %v", err)
 			Expect(s.network.NextBlock()).To(BeNil())
 
-			expCreationHeight = s.network.GetContext().BlockHeight()
+			expCreationHeight = s.network.GetContext().BlockHeight() - 1 // use last committed block height
 			// Check that the unbonding delegation was created
 			res, err := s.grpcHandler.GetDelegatorUnbondingDelegations(delegator.AccAddr.String())
 			Expect(err).To(BeNil())
@@ -3861,7 +3860,6 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			}
 		})
 
-		//nolint:dupl // this is a duplicate of the test for EOA calls to the precompile
 		It("should return validators with pagination limit = 1", func() {
 			const limit uint64 = 1
 			delegator := s.keyring.GetKey(0)
@@ -4161,6 +4159,8 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			Expect(err).To(BeNil(), "error while setting up an unbonding delegation: %v", err)
 			Expect(s.network.NextBlock()).To(BeNil())
 
+			creationHeight := s.network.GetContext().BlockHeight() - 1 // use last committed block height
+
 			// Check that the unbonding delegation was created
 			res, err := s.grpcHandler.GetDelegatorUnbondingDelegations(delegator.AccAddr.String())
 			Expect(err).To(BeNil())
@@ -4168,7 +4168,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			Expect(res.UnbondingResponses[0].DelegatorAddress).To(Equal(delegator.AccAddr.String()), "expected delegator address to be %s", delegator.Addr)
 			Expect(res.UnbondingResponses[0].ValidatorAddress).To(Equal(valAddr.String()), "expected validator address to be %s", valAddr)
 			Expect(res.UnbondingResponses[0].Entries).To(HaveLen(1), "expected one unbonding delegation entry to be found")
-			Expect(res.UnbondingResponses[0].Entries[0].CreationHeight).To(Equal(s.network.GetContext().BlockHeight()), "expected different creation height")
+			Expect(res.UnbondingResponses[0].Entries[0].CreationHeight).To(Equal(creationHeight), "expected different creation height")
 			Expect(res.UnbondingResponses[0].Entries[0].Balance).To(Equal(math.NewInt(1e18)), "expected different balance")
 		})
 
@@ -4464,7 +4464,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			Expect(res.DelegationResponses).To(HaveLen(1), "expected one delegation")
 			Expect(res.DelegationResponses[0].Delegation.GetShares().BigInt()).To(Equal(big.NewInt(2e18)), "expected different delegation shares")
 		})
-		//nolint:dupl
+
 		It("should revert the contract balance to the original value when the precompile fails", func() {
 			delegator := s.keyring.GetKey(0)
 
@@ -4495,7 +4495,6 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			Expect(res.DelegationResponses).To(HaveLen(0), "expected no delegations")
 		})
 
-		//nolint:dupl
 		It("should revert the contract balance to the original value when the custom logic after the precompile fails ", func() {
 			delegator := s.keyring.GetKey(0)
 
