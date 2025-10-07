@@ -39,26 +39,6 @@ func (s *PrecompileTestSuite) SetupTest() {
 	s.validatorsKeys = generateKeys(3)
 	customGen := network.CustomGenesisState{}
 
-	// set some slashing events for integration test
-	distrGen := distrtypes.DefaultGenesisState()
-	if s.withValidatorSlashes {
-		distrGen.ValidatorSlashEvents = []distrtypes.ValidatorSlashEventRecord{
-			{
-				ValidatorAddress:    sdk.ValAddress(s.validatorsKeys[0].Addr.Bytes()).String(),
-				Height:              0,
-				Period:              1,
-				ValidatorSlashEvent: distrtypes.NewValidatorSlashEvent(1, math.LegacyNewDecWithPrec(5, 2)),
-			},
-			{
-				ValidatorAddress:    sdk.ValAddress(s.validatorsKeys[0].Addr.Bytes()).String(),
-				Height:              1,
-				Period:              1,
-				ValidatorSlashEvent: distrtypes.NewValidatorSlashEvent(1, math.LegacyNewDecWithPrec(5, 2)),
-			},
-		}
-	}
-	customGen[distrtypes.ModuleName] = distrGen
-
 	operatorsAddr := make([]sdk.AccAddress, 3)
 	for i, k := range s.validatorsKeys {
 		operatorsAddr[i] = k.AccAddr
@@ -77,6 +57,44 @@ func (s *PrecompileTestSuite) SetupTest() {
 	bondDenom, err := sk.BondDenom(ctx)
 	if err != nil {
 		panic(err)
+	}
+
+	// set some slashing events for integration test
+	if s.withValidatorSlashes {
+		for i := 0; i < 2; i++ {
+			valAddr := sdk.ValAddress(s.validatorsKeys[0].Addr.Bytes())
+			val, err := sk.GetValidator(ctx, valAddr)
+			if err != nil {
+				panic(err)
+			}
+
+			// increment current period
+			newPeriod, err := nw.App.DistrKeeper.IncrementValidatorPeriod(ctx, val)
+			if err != nil {
+				panic(err)
+			}
+
+			// increment reference count on period we need to track
+			historical, err := nw.App.DistrKeeper.GetValidatorHistoricalRewards(ctx, valAddr, newPeriod)
+			if err != nil {
+				panic(err)
+			}
+
+			if historical.ReferenceCount > 2 {
+				panic("reference count should never exceed 2")
+			}
+			historical.ReferenceCount++
+			if err := nw.App.DistrKeeper.SetValidatorHistoricalRewards(ctx, valAddr, newPeriod, historical); err != nil {
+				panic(err)
+			}
+
+			slashEvent := distrtypes.NewValidatorSlashEvent(newPeriod, math.LegacyNewDecWithPrec(5, 2))
+			height := uint64(i)
+
+			if err := nw.App.DistrKeeper.SetValidatorSlashEvent(ctx, valAddr, height, newPeriod, slashEvent); err != nil {
+				panic(err)
+			}
+		}
 	}
 
 	s.bondDenom = bondDenom

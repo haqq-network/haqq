@@ -7,7 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/precompiles/distribution"
@@ -217,7 +217,7 @@ func (s *PrecompileTestSuite) TestRun() {
 				GasPrice:  app.MinGasPrices.BigInt(),
 				GasFeeCap: baseFee,
 				GasTipCap: big.NewInt(1),
-				Accesses:  &ethtypes.AccessList{},
+				Accesses:  &gethtypes.AccessList{},
 			}
 			msgEthereumTx, err := s.factory.GenerateMsgEthereumTx(s.keyring.GetPrivKey(0), txArgs)
 			s.Require().NoError(err, "failed to generate Ethereum message")
@@ -231,7 +231,7 @@ func (s *PrecompileTestSuite) TestRun() {
 			s.Require().NoError(err, "failed to instantiate EVM config")
 
 			ethChainID := s.network.GetEIP155ChainID()
-			signer := ethtypes.LatestSignerForChainID(ethChainID)
+			signer := gethtypes.LatestSignerForChainID(ethChainID)
 			msg, err := signedMsg.AsMessage(signer, baseFee)
 			s.Require().NoError(err, "failed to instantiate Ethereum message")
 
