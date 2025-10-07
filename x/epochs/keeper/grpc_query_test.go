@@ -32,8 +32,9 @@ func TestEpochInfo(t *testing.T) {
 				req = &types.QueryEpochsInfoRequest{}
 
 				ctx := suite.network.GetContext()
-				currentBlockHeight := ctx.BlockHeight()
-				currentBlockTime := ctx.BlockTime()
+				// use last committed block and time
+				currentBlockHeight := ctx.BlockHeight() - 1
+				currentBlockTime := ctx.BlockTime().Add(-time.Second)
 
 				dayEpoch := types.EpochInfo{
 					Identifier:              types.DayEpochID,
@@ -73,8 +74,9 @@ func TestEpochInfo(t *testing.T) {
 			"set epoch info",
 			func() sdktypes.Context {
 				ctx := suite.network.GetContext()
-				currentBlockHeight := ctx.BlockHeight()
-				currentBlockTime := ctx.BlockTime()
+				// use last committed block and time
+				currentBlockHeight := ctx.BlockHeight() - 1
+				currentBlockTime := ctx.BlockTime().Add(-time.Second)
 
 				dayEpoch := types.EpochInfo{
 					Identifier:              types.DayEpochID,

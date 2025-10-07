@@ -2,17 +2,18 @@ package keeper_test
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/contracts"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/erc20/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func (suite *KeeperTestSuite) TestCallEVM() {
-	wevmosContract := common.HexToAddress(types.WEVMOSContractMainnet)
 	testCases := []struct {
 		name    string
 		method  string
@@ -31,10 +32,22 @@ func (suite *KeeperTestSuite) TestCallEVM() {
 	}
 	for _, tc := range testCases {
 		suite.SetupTest() // reset
+		// We don't have native WISLM precompiled contract on chain by default, so deploy custom one
+		erc20 := contracts.ERC20MinterBurnerDecimalsContract
+		wislmContract, err := suite.factory.DeployContract(
+			suite.keyring.GetPrivKey(0),
+			evmtypes.EvmTxArgs{
+				GasPrice: big.NewInt(1e9),
+			}, // NOTE: passing empty struct to use default values
+			factory.ContractDeploymentData{
+				Contract:        erc20,
+				ConstructorArgs: []interface{}{"Wrapped ISLM", "WISLM", uint8(18)},
+			},
+		)
+		suite.Require().NoError(err)
 
-		erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
 		account := utiltx.GenerateAddress()
-		res, err := suite.network.App.EvmKeeper.CallEVM(suite.network.GetContext(), erc20, types.ModuleAddress, wevmosContract, false, tc.method, account)
+		res, err := suite.network.App.EvmKeeper.CallEVM(suite.network.GetContext(), erc20.ABI, types.ModuleAddress, wislmContract, false, tc.method, account)
 		if tc.expPass {
 			suite.Require().IsTypef(&evmtypes.MsgEthereumTxResponse{}, res, tc.name)
 			suite.Require().NoError(err)
@@ -45,8 +58,7 @@ func (suite *KeeperTestSuite) TestCallEVM() {
 }
 
 func (suite *KeeperTestSuite) TestCallEVMWithData() {
-	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
-	wevmosContract := common.HexToAddress(types.WEVMOSContractMainnet)
+	erc20 := contracts.ERC20MinterBurnerDecimalsContract
 	testCases := []struct {
 		name     string
 		from     common.Address
@@ -59,7 +71,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 			types.ModuleAddress,
 			func() []byte {
 				account := utiltx.GenerateAddress()
-				data, _ := erc20.Pack("", account)
+				data, _ := erc20.ABI.Pack("", account)
 				return data
 			},
 			false,
@@ -70,7 +82,7 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 			types.ModuleAddress,
 			func() []byte {
 				account := utiltx.GenerateAddress()
-				data, _ := erc20.Pack("balanceOf", account)
+				data, _ := erc20.ABI.Pack("balanceOf", account)
 				return data
 			},
 			false,
@@ -99,8 +111,8 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 			"deploy",
 			types.ModuleAddress,
 			func() []byte {
-				ctorArgs, _ := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
-				data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...) //nolint:gocritic
+				ctorArgs, _ := erc20.ABI.Pack("", "test", "test", uint8(18))
+				data := append(erc20.Bin, ctorArgs...) //nolint:gocritic
 				return data
 			},
 			true,
@@ -115,8 +127,8 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 					AccessType: evmtypes.AccessTypeRestricted,
 				}
 				_ = suite.network.App.EvmKeeper.SetParams(suite.network.GetContext(), params)
-				ctorArgs, _ := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
-				data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...) //nolint:gocritic
+				ctorArgs, _ := erc20.ABI.Pack("", "test", "test", uint8(18))
+				data := append(erc20.Bin, ctorArgs...) //nolint:gocritic
 				return data
 			},
 			true,
@@ -128,14 +140,26 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
 			suite.SetupTest() // reset
 
+			// We don't have native WISLM precompiled contract on chain by default, so deploy custom one
+			wislmContract, err := suite.factory.DeployContract(
+				suite.keyring.GetPrivKey(0),
+				evmtypes.EvmTxArgs{
+					GasPrice: big.NewInt(1e9),
+				}, // NOTE: passing empty struct to use default values
+				factory.ContractDeploymentData{
+					Contract:        erc20,
+					ConstructorArgs: []interface{}{"Wrapped ISLM", "WISLM", uint8(18)},
+				},
+			)
+			suite.Require().NoError(err)
+
 			data := tc.malleate()
 			var res *evmtypes.MsgEthereumTxResponse
-			var err error
 
 			if tc.deploy {
 				res, err = suite.network.App.EvmKeeper.CallEVMWithData(suite.network.GetContext(), tc.from, nil, data, true)
 			} else {
-				res, err = suite.network.App.EvmKeeper.CallEVMWithData(suite.network.GetContext(), tc.from, &wevmosContract, data, false)
+				res, err = suite.network.App.EvmKeeper.CallEVMWithData(suite.network.GetContext(), tc.from, &wislmContract, data, false)
 			}
 
 			if tc.expPass {

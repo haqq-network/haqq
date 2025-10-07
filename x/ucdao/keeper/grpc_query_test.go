@@ -3,25 +3,31 @@ package keeper_test
 import (
 	"fmt"
 	"sort"
+	"testing"
 
+	"github.com/stretchr/testify/require"
+
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/types/query"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/haqq-network/haqq/testutil"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/ucdao/keeper"
 	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
-func (suite *KeeperTestSuite) TestBalances() {
+func TestBalances(t *testing.T) {
 	var (
+		ctx    sdk.Context
+		nw     *network.UnitTestNetwork
+		kr     keyring.Keyring
+		qc     types.QueryClient
 		req    *types.QueryBalanceRequest
 		expRes *types.QueryBalanceResponse
 	)
-	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
+
 	daoAmount := int64(1000)
 	balances := sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, daoAmount))
 
@@ -62,11 +68,11 @@ func (suite *KeeperTestSuite) TestBalances() {
 			name: "valid - zero balance",
 			malleate: func() {
 				req = &types.QueryBalanceRequest{
-					Address: addr.String(),
+					Address: kr.GetAddr(0).String(),
 					Denom:   utils.BaseDenom,
 				}
 
-				zeroCoin := sdk.NewCoin(utils.BaseDenom, sdk.ZeroInt())
+				zeroCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.ZeroInt())
 				expRes = &types.QueryBalanceResponse{
 					Balance: &zeroCoin,
 				}
@@ -76,21 +82,13 @@ func (suite *KeeperTestSuite) TestBalances() {
 		{
 			name: "valid bech32",
 			malleate: func() {
-				baseAccount := authtypes.NewBaseAccountWithAddress(addr)
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
-
-				err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, acc.GetAddress(), balances)
-				suite.Require().NoError(err, "error while funding the bank account")
-
-				msg := types.NewMsgFund(balances, acc.GetAddress())
-				ctx := sdk.WrapSDKContext(suite.ctx)
-				msgSrv := keeper.NewMsgServerImpl(suite.app.DaoKeeper)
-				_, err = msgSrv.Fund(ctx, msg)
-				suite.Require().NoError(err, "error while funding the UC DAO account")
+				msg := types.NewMsgFund(balances, kr.GetAccAddr(0))
+				msgSrv := keeper.NewMsgServerImpl(nw.App.DaoKeeper)
+				_, err := msgSrv.Fund(ctx, msg)
+				require.NoError(t, err, "error while funding the UC DAO account")
 
 				req = &types.QueryBalanceRequest{
-					Address: addr.String(),
+					Address: kr.GetAccAddr(0).String(),
 					Denom:   utils.BaseDenom,
 				}
 				_, islmBal := balances.Find(utils.BaseDenom)
@@ -103,22 +101,13 @@ func (suite *KeeperTestSuite) TestBalances() {
 		{
 			name: "valid hex",
 			malleate: func() {
-				baseAccount := authtypes.NewBaseAccountWithAddress(addr)
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				msg := types.NewMsgFund(balances, kr.GetAccAddr(0))
+				msgSrv := keeper.NewMsgServerImpl(nw.App.DaoKeeper)
+				_, err := msgSrv.Fund(ctx, msg)
+				require.NoError(t, err, "error while funding the UC DAO account")
 
-				err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, acc.GetAddress(), balances)
-				suite.Require().NoError(err, "error while funding the bank account")
-
-				msg := types.NewMsgFund(balances, acc.GetAddress())
-				ctx := sdk.WrapSDKContext(suite.ctx)
-				msgSrv := keeper.NewMsgServerImpl(suite.app.DaoKeeper)
-				_, err = msgSrv.Fund(ctx, msg)
-				suite.Require().NoError(err, "error while funding the UC DAO account")
-
-				hexAddr := common.Bytes2Hex(addr.Bytes())
 				req = &types.QueryBalanceRequest{
-					Address: hexAddr,
+					Address: kr.GetAddr(0).String(),
 					Denom:   utils.BaseDenom,
 				}
 				_, islmBal := balances.Find(utils.BaseDenom)
@@ -131,19 +120,25 @@ func (suite *KeeperTestSuite) TestBalances() {
 	}
 
 	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			tc.malleate()
-			suite.Commit()
+		t.Run(fmt.Sprintf("Case %s", tc.name), func(t *testing.T) {
+			kr = keyring.New(2)
+			nw = network.NewUnitTestNetwork(
+				network.WithPreFundedAccounts(kr.GetAllAccAddrs()...),
+			)
+			ctx = nw.GetContext()
+			qc = nw.GetUCDAOClient()
 
-			res, err := suite.queryClient.Balance(ctx, req)
+			tc.malleate()
+
+			require.NoError(t, nw.NextBlock())
+
+			res, err := qc.Balance(ctx, req)
 			if tc.expPass {
-				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				require.NoError(t, err)
+				require.Equal(t, expRes, res)
 			} else {
-				suite.Require().Error(err)
-				suite.Require().ErrorContains(err, tc.errContains)
+				require.Error(t, err)
+				require.ErrorContains(t, err, tc.errContains)
 			}
 		})
 	}
@@ -163,19 +158,18 @@ func (ta testAccountsList) Swap(i, j int) {
 	ta[i], ta[j] = ta[j], ta[i]
 }
 
-func (suite *KeeperTestSuite) TestHolders() {
+func TestHolders(t *testing.T) {
 	var (
+		ctx    sdk.Context
+		nw     *network.UnitTestNetwork
+		kr     keyring.Keyring
+		qc     types.QueryClient
 		req    *types.QueryHoldersRequest
 		expRes *types.QueryHoldersResponse
 	)
 
 	testAccountsCount := 5
 	testAccounts := make(testAccountsList, testAccountsCount)
-	for i := 0; i < testAccountsCount; i++ {
-		testAccounts[i] = tests.GenerateAddress().Bytes()
-	}
-	sort.Sort(testAccounts)
-
 	daoAmount := int64(1000)
 	balances := sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, daoAmount))
 
@@ -215,24 +209,16 @@ func (suite *KeeperTestSuite) TestHolders() {
 		{
 			name: "valid - 1 holder",
 			malleate: func() {
-				baseAccount := authtypes.NewBaseAccountWithAddress(testAccounts[0])
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
-
-				err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, acc.GetAddress(), balances)
-				suite.Require().NoError(err, "error while funding the bank account")
-
-				msg := types.NewMsgFund(balances, acc.GetAddress())
-				ctx := sdk.WrapSDKContext(suite.ctx)
-				msgSrv := keeper.NewMsgServerImpl(suite.app.DaoKeeper)
-				_, err = msgSrv.Fund(ctx, msg)
-				suite.Require().NoError(err, "error while funding the UC DAO account")
+				msg := types.NewMsgFund(balances, kr.GetAccAddr(0))
+				msgSrv := keeper.NewMsgServerImpl(nw.App.DaoKeeper)
+				_, err := msgSrv.Fund(ctx, msg)
+				require.NoError(t, err, "error while funding the UC DAO account")
 
 				req = &types.QueryHoldersRequest{}
 				expRes = &types.QueryHoldersResponse{
 					Balances: []types.Balance{
 						{
-							Address: acc.GetAddress().String(),
+							Address: kr.GetAccAddr(0).String(),
 							Coins:   balances,
 						},
 					},
@@ -249,22 +235,15 @@ func (suite *KeeperTestSuite) TestHolders() {
 			malleate: func() {
 				holders := make([]types.Balance, testAccountsCount)
 				for i := 0; i < testAccountsCount; i++ {
-					baseAccount := authtypes.NewBaseAccountWithAddress(testAccounts[i])
-					acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-					suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+					coins := balances.MulInt(sdkmath.NewInt(int64(i + 1)))
 
-					coins := balances.MulInt(sdk.NewInt(int64(i + 1)))
-					err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, acc.GetAddress(), coins)
-					suite.Require().NoError(err, "error while funding the bank account")
-
-					msg := types.NewMsgFund(coins, acc.GetAddress())
-					ctx := sdk.WrapSDKContext(suite.ctx)
-					msgSrv := keeper.NewMsgServerImpl(suite.app.DaoKeeper)
-					_, err = msgSrv.Fund(ctx, msg)
-					suite.Require().NoError(err, "error while funding the UC DAO account")
+					msg := types.NewMsgFund(coins, testAccounts[i])
+					msgSrv := keeper.NewMsgServerImpl(nw.App.DaoKeeper)
+					_, err := msgSrv.Fund(ctx, msg)
+					require.NoError(t, err, "error while funding the UC DAO account")
 
 					holders[i] = types.Balance{
-						Address: acc.GetAddress().String(),
+						Address: testAccounts[i].String(),
 						Coins:   coins,
 					}
 				}
@@ -286,28 +265,21 @@ func (suite *KeeperTestSuite) TestHolders() {
 				holders := make([]types.Balance, 2)
 				var nextKey []byte
 				for i := 0; i < testAccountsCount; i++ {
-					baseAccount := authtypes.NewBaseAccountWithAddress(testAccounts[i])
-					acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-					suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+					coins := balances.MulInt(sdkmath.NewInt(int64(i + 1)))
 
-					coins := balances.MulInt(sdk.NewInt(int64(i + 1)))
-					err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, acc.GetAddress(), coins)
-					suite.Require().NoError(err, "error while funding the bank account")
-
-					msg := types.NewMsgFund(coins, acc.GetAddress())
-					ctx := sdk.WrapSDKContext(suite.ctx)
-					msgSrv := keeper.NewMsgServerImpl(suite.app.DaoKeeper)
-					_, err = msgSrv.Fund(ctx, msg)
-					suite.Require().NoError(err, "error while funding the UC DAO account")
+					msg := types.NewMsgFund(coins, testAccounts[i])
+					msgSrv := keeper.NewMsgServerImpl(nw.App.DaoKeeper)
+					_, err := msgSrv.Fund(ctx, msg)
+					require.NoError(t, err, "error while funding the UC DAO account")
 
 					if i < 2 {
 						holders[i] = types.Balance{
-							Address: acc.GetAddress().String(),
+							Address: testAccounts[i].String(),
 							Coins:   coins,
 						}
 					}
 					if i == 2 {
-						nextKey = address.MustLengthPrefix(acc.GetAddress())
+						nextKey = address.MustLengthPrefix(testAccounts[i])
 					}
 				}
 
@@ -333,28 +305,21 @@ func (suite *KeeperTestSuite) TestHolders() {
 				holders := make([]types.Balance, 2)
 				var nextKey []byte
 				for i := 0; i < testAccountsCount; i++ {
-					baseAccount := authtypes.NewBaseAccountWithAddress(testAccounts[i])
-					acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-					suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+					coins := balances.MulInt(sdkmath.NewInt(int64(i + 1)))
 
-					coins := balances.MulInt(sdk.NewInt(int64(i + 1)))
-					err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, acc.GetAddress(), coins)
-					suite.Require().NoError(err, "error while funding the bank account")
-
-					msg := types.NewMsgFund(coins, acc.GetAddress())
-					ctx := sdk.WrapSDKContext(suite.ctx)
-					msgSrv := keeper.NewMsgServerImpl(suite.app.DaoKeeper)
-					_, err = msgSrv.Fund(ctx, msg)
-					suite.Require().NoError(err, "error while funding the UC DAO account")
+					msg := types.NewMsgFund(coins, testAccounts[i])
+					msgSrv := keeper.NewMsgServerImpl(nw.App.DaoKeeper)
+					_, err := msgSrv.Fund(ctx, msg)
+					require.NoError(t, err, "error while funding the UC DAO account")
 
 					if i > 1 && i < 4 {
 						holders[i-2] = types.Balance{
-							Address: acc.GetAddress().String(),
+							Address: testAccounts[i].String(),
 							Coins:   coins,
 						}
 					}
 					if i == 4 {
-						nextKey = address.MustLengthPrefix(acc.GetAddress())
+						nextKey = address.MustLengthPrefix(testAccounts[i])
 					}
 				}
 
@@ -378,31 +343,19 @@ func (suite *KeeperTestSuite) TestHolders() {
 		{
 			name: "valid - holders changed after full transfer ownership",
 			malleate: func() {
-				baseAccount := authtypes.NewBaseAccountWithAddress(testAccounts[0])
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
-
-				baseAccount2 := authtypes.NewBaseAccountWithAddress(testAccounts[1])
-				acc2 := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount2)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc2)
-
-				err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, acc.GetAddress(), balances)
-				suite.Require().NoError(err, "error while funding the bank account")
-
-				msg := types.NewMsgFund(balances, acc.GetAddress())
-				msg2 := types.NewMsgTransferOwnership(acc.GetAddress(), acc2.GetAddress())
-				ctx := sdk.WrapSDKContext(suite.ctx)
-				msgSrv := keeper.NewMsgServerImpl(suite.app.DaoKeeper)
-				_, err = msgSrv.Fund(ctx, msg)
-				suite.Require().NoError(err, "error while funding the UC DAO account")
+				msg := types.NewMsgFund(balances, testAccounts[0])
+				msg2 := types.NewMsgTransferOwnership(testAccounts[0], testAccounts[1])
+				msgSrv := keeper.NewMsgServerImpl(nw.App.DaoKeeper)
+				_, err := msgSrv.Fund(ctx, msg)
+				require.NoError(t, err, "error while funding the UC DAO account")
 				_, err = msgSrv.TransferOwnership(ctx, msg2)
-				suite.Require().NoError(err, "error while transfer ownership to new account")
+				require.NoError(t, err, "error while transfer ownership to new account")
 
 				req = &types.QueryHoldersRequest{}
 				expRes = &types.QueryHoldersResponse{
 					Balances: []types.Balance{
 						{
-							Address: acc2.GetAddress().String(),
+							Address: testAccounts[1].String(),
 							Coins:   balances,
 						},
 					},
@@ -417,35 +370,23 @@ func (suite *KeeperTestSuite) TestHolders() {
 		{
 			name: "valid - holders changed after partial transfer ownership",
 			malleate: func() {
-				baseAccount := authtypes.NewBaseAccountWithAddress(testAccounts[0])
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
-
-				baseAccount2 := authtypes.NewBaseAccountWithAddress(testAccounts[1])
-				acc2 := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount2)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc2)
-
-				err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, acc.GetAddress(), balances)
-				suite.Require().NoError(err, "error while funding the bank account")
-
-				msg := types.NewMsgFund(balances, acc.GetAddress())
-				msg2 := types.NewMsgTransferOwnershipWithAmount(acc.GetAddress(), acc2.GetAddress(), sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, int64(300))))
-				ctx := sdk.WrapSDKContext(suite.ctx)
-				msgSrv := keeper.NewMsgServerImpl(suite.app.DaoKeeper)
-				_, err = msgSrv.Fund(ctx, msg)
-				suite.Require().NoError(err, "error while funding the UC DAO account")
+				msg := types.NewMsgFund(balances, testAccounts[0])
+				msg2 := types.NewMsgTransferOwnershipWithAmount(testAccounts[0], testAccounts[1], sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, int64(300))))
+				msgSrv := keeper.NewMsgServerImpl(nw.App.DaoKeeper)
+				_, err := msgSrv.Fund(ctx, msg)
+				require.NoError(t, err, "error while funding the UC DAO account")
 				_, err = msgSrv.TransferOwnershipWithAmount(ctx, msg2)
-				suite.Require().NoError(err, "error while transfer ownership to new account")
+				require.NoError(t, err, "error while transfer ownership to new account")
 
 				req = &types.QueryHoldersRequest{}
 				expRes = &types.QueryHoldersResponse{
 					Balances: []types.Balance{
 						{
-							Address: acc.GetAddress().String(),
+							Address: testAccounts[0].String(),
 							Coins:   sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, int64(700))),
 						},
 						{
-							Address: acc2.GetAddress().String(),
+							Address: testAccounts[1].String(),
 							Coins:   sdk.NewCoins(sdk.NewInt64Coin(utils.BaseDenom, int64(300))),
 						},
 					},
@@ -460,19 +401,30 @@ func (suite *KeeperTestSuite) TestHolders() {
 	}
 
 	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			tc.malleate()
-			suite.Commit()
+		t.Run(fmt.Sprintf("Case %s", tc.name), func(t *testing.T) {
+			kr = keyring.New(testAccountsCount)
+			nw = network.NewUnitTestNetwork(
+				network.WithPreFundedAccounts(kr.GetAllAccAddrs()...),
+			)
+			ctx = nw.GetContext()
+			qc = nw.GetUCDAOClient()
 
-			res, err := suite.queryClient.Holders(ctx, req)
+			for i := 0; i < testAccountsCount; i++ {
+				testAccounts[i] = kr.GetAccAddr(i).Bytes()
+			}
+			sort.Sort(testAccounts)
+
+			tc.malleate()
+
+			require.NoError(t, nw.NextBlock())
+
+			res, err := qc.Holders(ctx, req)
 			if tc.expPass {
-				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				require.NoError(t, err)
+				require.Equal(t, expRes, res)
 			} else {
-				suite.Require().Error(err)
-				suite.Require().ErrorContains(err, tc.errContains)
+				require.Error(t, err)
+				require.ErrorContains(t, err, tc.errContains)
 			}
 		})
 	}

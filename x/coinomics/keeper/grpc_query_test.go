@@ -11,6 +11,7 @@ import (
 
 func (suite *KeeperTestSuite) TestRewardCoefficient() {
 	var (
+		ctx         sdk.Context
 		req         *types.QueryRewardCoefficientRequest
 		expResponse *types.QueryRewardCoefficientResponse
 	)
@@ -31,9 +32,9 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 		{
 			"set reward coefficient",
 			func() {
-				coinomicsParams := suite.app.CoinomicsKeeper.GetParams(s.ctx)
+				coinomicsParams := suite.network.App.CoinomicsKeeper.GetParams(ctx)
 				coinomicsParams.RewardCoefficient = math.LegacyNewDecWithPrec(10, 0)
-				s.app.CoinomicsKeeper.SetParams(s.ctx, coinomicsParams)
+				suite.network.App.CoinomicsKeeper.SetParams(ctx, coinomicsParams)
 
 				req = &types.QueryRewardCoefficientRequest{}
 				expResponse = &types.QueryRewardCoefficientResponse{RewardCoefficient: math.LegacyNewDecWithPrec(10, 0)}
@@ -43,11 +44,12 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
+			suite.SetupTest()
+			ctx = suite.network.GetContext()
 
 			tc.malleate()
 
-			res, err := suite.queryClient.RewardCoefficient(suite.ctx, req)
+			res, err := suite.network.GetCoinomicsClient().RewardCoefficient(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
 				suite.Require().Equal(expResponse, res)
@@ -60,6 +62,7 @@ func (suite *KeeperTestSuite) TestRewardCoefficient() {
 
 func (suite *KeeperTestSuite) TestMaxSupply() {
 	var (
+		ctx         sdk.Context
 		req         *types.QueryMaxSupplyRequest
 		expResponse *types.QueryMaxSupplyResponse
 	)
@@ -73,15 +76,15 @@ func (suite *KeeperTestSuite) TestMaxSupply() {
 			"default max supply",
 			func() {
 				req = &types.QueryMaxSupplyRequest{}
-				expResponse = &types.QueryMaxSupplyResponse{MaxSupply: sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(100_000_000_000, 18)}}
+				expResponse = &types.QueryMaxSupplyResponse{MaxSupply: sdk.Coin{Denom: denomMint, Amount: math.NewIntWithDecimal(100_000_000_000, 18)}}
 			},
 			true,
 		},
 		{
 			"set max supply",
 			func() {
-				maxSupply := sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(1337, 18)}
-				suite.app.CoinomicsKeeper.SetMaxSupply(suite.ctx, maxSupply)
+				maxSupply := sdk.Coin{Denom: denomMint, Amount: math.NewIntWithDecimal(1337, 18)}
+				suite.network.App.CoinomicsKeeper.SetMaxSupply(ctx, maxSupply)
 
 				req = &types.QueryMaxSupplyRequest{}
 				expResponse = &types.QueryMaxSupplyResponse{MaxSupply: maxSupply}
@@ -91,11 +94,12 @@ func (suite *KeeperTestSuite) TestMaxSupply() {
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
+			suite.SetupTest()
+			ctx = suite.network.GetContext()
 
 			tc.malleate()
 
-			res, err := suite.queryClient.MaxSupply(suite.ctx, req)
+			res, err := suite.network.GetCoinomicsClient().MaxSupply(ctx, req)
 			if tc.expPass {
 				suite.Require().NoError(err)
 				suite.Require().Equal(expResponse, res)
@@ -109,7 +113,7 @@ func (suite *KeeperTestSuite) TestMaxSupply() {
 func (suite *KeeperTestSuite) TestQueryParams() {
 	expParams := types.DefaultParams()
 
-	res, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
+	res, err := suite.network.GetCoinomicsClient().Params(suite.network.GetContext(), &types.QueryParamsRequest{})
 	suite.Require().NoError(err)
 	// due to mainnet chain id in tests setup
 	suite.Require().Equal(expParams, res.Params)

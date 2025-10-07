@@ -8,6 +8,8 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestSetGetPrevBlockTs() {
+	var ctx sdk.Context
+
 	expEra := math.NewInt(100)
 
 	testCases := []struct {
@@ -23,30 +25,34 @@ func (suite *KeeperTestSuite) TestSetGetPrevBlockTs() {
 		{
 			"prevblockts set",
 			func() {
-				suite.app.CoinomicsKeeper.SetPrevBlockTS(suite.ctx, expEra)
+				suite.network.App.CoinomicsKeeper.SetPrevBlockTS(ctx, expEra)
 			},
 			true,
 		},
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
+			suite.SetupTest()
+			ctx = suite.network.GetContext()
 
 			tc.malleate()
 
-			prevBlockTS := suite.app.CoinomicsKeeper.GetPrevBlockTS(suite.ctx)
+			prevBlockTS := suite.network.App.CoinomicsKeeper.GetPrevBlockTS(ctx)
 			if tc.ok {
-				suite.Require().Equal(expEra, prevBlockTS, tc.name)
+				suite.Require().Equal(expEra.String(), prevBlockTS.String(), tc.name)
 			} else {
-				suite.Require().Equal(math.ZeroInt(), prevBlockTS, tc.name)
+				// start block time from setup test, as we've already committed this first block
+				suite.Require().Equal(math.NewInt(1640995200000).String(), prevBlockTS.String(), tc.name)
 			}
 		})
 	}
 }
 
 func (suite *KeeperTestSuite) TestSetGetMaxSupply() {
-	defaultMaxSupply := sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(100_000_000_000, 18)}
-	expMaxSupply := sdk.Coin{Denom: "aISLM", Amount: math.NewIntWithDecimal(1337, 18)}
+	var ctx sdk.Context
+
+	defaultMaxSupply := sdk.Coin{Denom: denomMint, Amount: math.NewIntWithDecimal(100_000_000_000, 18)}
+	expMaxSupply := sdk.Coin{Denom: denomMint, Amount: math.NewIntWithDecimal(1337, 18)}
 
 	testCases := []struct {
 		name     string
@@ -61,23 +67,24 @@ func (suite *KeeperTestSuite) TestSetGetMaxSupply() {
 		{
 			"MaxSupply set",
 			func() {
-				suite.app.CoinomicsKeeper.SetMaxSupply(suite.ctx, expMaxSupply)
+				suite.network.App.CoinomicsKeeper.SetMaxSupply(ctx, expMaxSupply)
 			},
 			true,
 		},
 	}
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
+			suite.SetupTest()
+			ctx = suite.network.GetContext()
 
 			tc.malleate()
 
-			maxSupply := suite.app.CoinomicsKeeper.GetMaxSupply(suite.ctx)
+			maxSupply := suite.network.App.CoinomicsKeeper.GetMaxSupply(ctx)
 
 			if tc.ok {
-				suite.Require().Equal(expMaxSupply, maxSupply, tc.name)
+				suite.Require().Equal(expMaxSupply.String(), maxSupply.String(), tc.name)
 			} else {
-				suite.Require().Equal(defaultMaxSupply, maxSupply, tc.name)
+				suite.Require().Equal(defaultMaxSupply.String(), maxSupply.String(), tc.name)
 			}
 		})
 	}
