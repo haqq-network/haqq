@@ -346,7 +346,8 @@ test: test-unit
 test-all: test-unit test-race
 # For unit tests we don't want to execute the upgrade tests in tests/e2e but
 # we want to include all unit tests in the subfolders (tests/e2e/*)
-PACKAGES_UNIT=$(shell go list ./... | grep -v '/tests/e2e$$')
+# also, we don't want to run tests on ./api packages, as it's generated and not supposed to be covered with test.
+PACKAGES_UNIT=$(shell go list ./... | grep -v '/tests/e2e$$' | grep -v '/haqq/api/')
 TEST_PACKAGES=./...
 TEST_TARGETS := test-unit test-unit-cover test-race
 
@@ -360,7 +361,8 @@ test-race: ARGS=-race
 test-race: TEST_PACKAGES=$(PACKAGES_NOSIMULATION)
 $(TEST_TARGETS): run-tests
 
-test-unit-cover: ARGS=-timeout=60m -race -coverprofile=coverage.txt -covermode=atomic
+# Temporary try covermode set to reduce execution time.
+test-unit-cover: ARGS=-timeout=60m -race -coverprofile=coverage.txt -covermode=set
 test-unit-cover: TEST_PACKAGES=$(PACKAGES_UNIT)
 
 run-tests:
