@@ -361,8 +361,8 @@ test-race: ARGS=-race
 test-race: TEST_PACKAGES=$(PACKAGES_NOSIMULATION)
 $(TEST_TARGETS): run-tests
 
-# Temporary try covermode set to reduce execution time.
-test-unit-cover: ARGS=-timeout=60m -race -coverprofile=coverage.txt -covermode=set
+# -covermode must be "atomic", not "set", when -race is enabled
+test-unit-cover: ARGS=-timeout=60m -race -coverprofile=coverage.txt -covermode=atomic
 test-unit-cover: TEST_PACKAGES=$(PACKAGES_UNIT)
 
 run-tests:
