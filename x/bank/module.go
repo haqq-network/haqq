@@ -33,7 +33,7 @@ type AppModuleBasic struct {
 type AppModule struct {
 	*bank.AppModule
 
-	keeper        haqqbankkeeper.Keeper
+	keeper        *haqqbankkeeper.Keeper
 	accountKeeper banktypes.AccountKeeper
 
 	// legacySubspace is used solely for migration of x/params managed parameters
@@ -43,7 +43,7 @@ type AppModule struct {
 // NewAppModule creates a new AppModule object
 func NewAppModule(
 	cdc codec.Codec,
-	k haqqbankkeeper.Keeper,
+	k *haqqbankkeeper.Keeper,
 	ak banktypes.AccountKeeper,
 	ss exported.Subspace,
 ) AppModule {
