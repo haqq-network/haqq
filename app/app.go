@@ -1248,7 +1248,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	// v1.9.0 Upgrade Cosmos SDK to v0.50.9 and IBC to v8.6.1
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v190.UpgradeName,
-		v190.CreateUpgradeHandler(app.mm, app.configurator, app.GovKeeper),
+		v190.CreateUpgradeHandler(app.mm, app.configurator, app.GovKeeper, app.Erc20Keeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic

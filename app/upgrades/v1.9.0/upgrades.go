@@ -8,6 +8,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"github.com/ethereum/go-ethereum/common"
+
+	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for Evmos v20
@@ -15,6 +18,7 @@ func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
 	gk govkeeper.Keeper,
+	ek erc20keeper.Keeper,
 ) upgradetypes.UpgradeHandler {
 	return func(c context.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		ctx := sdk.UnwrapSDKContext(c)
@@ -30,6 +34,13 @@ func CreateUpgradeHandler(
 		logger.Debug("Updating expedited prop params...")
 		if err := UpdateExpeditedPropsParams(ctx, gk); err != nil {
 			logger.Error("error while updating gov params", "error", err.Error())
+			return nil, err
+		}
+
+		logger.Debug("Register dynamic precompiles...")
+		if err := RegisterDynamicPrecompiles(ctx, ek); err != nil {
+			logger.Error("error while registering erc20 precompiles", "error", err.Error())
+			return nil, err
 		}
 
 		return vm, nil
@@ -62,4 +73,20 @@ func UpdateExpeditedPropsParams(ctx sdk.Context, gk govkeeper.Keeper) error {
 		return err
 	}
 	return gk.Params.Set(ctx, params)
+}
+
+func RegisterDynamicPrecompiles(ctx sdk.Context, ek erc20keeper.Keeper) error {
+	erc20Params := ek.GetParams(ctx)
+	if len(erc20Params.DynamicPrecompiles) == 0 {
+		return nil
+	}
+
+	// if a precompile is present we should register the account with the erc20 codehash
+	for _, precompile := range erc20Params.DynamicPrecompiles {
+		if err := ek.RegisterERC20CodeHash(ctx, common.HexToAddress(precompile)); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
