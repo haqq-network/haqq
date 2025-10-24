@@ -4,7 +4,7 @@
   "description": "A collection of smart contracts used in the development of the Haqq Network.",
   "devDependencies": {
     "@openzeppelin/contracts": "^4.9.6",
-    "hardhat": "^2.22.2"
+    "hardhat": "^3.0.9"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
