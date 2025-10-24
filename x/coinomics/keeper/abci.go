@@ -9,17 +9,19 @@ import (
 	"github.com/haqq-network/haqq/x/coinomics/types"
 )
 
-func (k Keeper) EndBlocker(ctx sdk.Context) {
+func (k Keeper) EndBlocker(ctx sdk.Context) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
 	params := k.GetParams(ctx)
 
 	// NOTE: ignore end of block if coinomics is disabled
 	if !params.EnableCoinomics {
-		return
+		return nil
 	}
 
 	if err := k.MintAndAllocate(ctx); err != nil {
 		ctx.Logger().Error("Failed MintAndAllocateInflation: ", err.Error())
 	}
+
+	return nil
 }

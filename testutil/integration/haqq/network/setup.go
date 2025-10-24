@@ -2,12 +2,13 @@ package network
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
+	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
-	tmtypes "github.com/cometbft/cometbft/types"
+	cmttypes "github.com/cometbft/cometbft/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -16,37 +17,93 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/gogoproto/proto"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/haqq-network/haqq/app"
-	"github.com/haqq-network/haqq/encoding"
 	haqqtypes "github.com/haqq-network/haqq/types"
-	evmosutil "github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
+
+// genSetupFn is the type for the module genesis setup functions
+type genSetupFn func(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, customGenesis interface{}) (haqqtypes.GenesisState, error)
+
+// defaultGenesisParams contains the params that are needed to
+// setup the default genesis for the testing setup
+type defaultGenesisParams struct {
+	genAccounts []authtypes.GenesisAccount
+	staking     StakingCustomGenesisState
+	slashing    SlashingCustomGenesisState
+	bank        BankCustomGenesisState
+	gov         GovCustomGenesisState
+}
+
+// genesisSetupFunctions contains the available genesis setup functions
+// that can be used to customize the network genesis
+var genesisSetupFunctions = map[string]genSetupFn{
+	evmtypes.ModuleName:           genStateSetter[*evmtypes.GenesisState](evmtypes.ModuleName),
+	erc20types.ModuleName:         genStateSetter[*erc20types.GenesisState](erc20types.ModuleName),
+	govtypes.ModuleName:           genStateSetter[*govtypesv1.GenesisState](govtypes.ModuleName),
+	coinomicstypes.ModuleName:     genStateSetter[*coinomicstypes.GenesisState](coinomicstypes.ModuleName),
+	feemarkettypes.ModuleName:     genStateSetter[*feemarkettypes.GenesisState](feemarkettypes.ModuleName),
+	distrtypes.ModuleName:         genStateSetter[*distrtypes.GenesisState](distrtypes.ModuleName),
+	capabilitytypes.ModuleName:    genStateSetter[*capabilitytypes.GenesisState](capabilitytypes.ModuleName),
+	ucdaotypes.ModuleName:         genStateSetter[*ucdaotypes.GenesisState](ucdaotypes.ModuleName),
+	liquidvestingtypes.ModuleName: genStateSetter[*liquidvestingtypes.GenesisState](liquidvestingtypes.ModuleName),
+	banktypes.ModuleName:          setBankGenesisState,
+	authtypes.ModuleName:          setAuthGenesisState,
+	epochstypes.ModuleName:        genStateSetter[*epochstypes.GenesisState](epochstypes.ModuleName),
+	consensustypes.ModuleName: func(_ *app.Haqq, genesisState haqqtypes.GenesisState, _ interface{}) (haqqtypes.GenesisState, error) {
+		// no-op. Consensus does not have a genesis state on the application
+		// but the params are used on it
+		// (e.g. block max gas, max bytes).
+		// This is handled accordingly on chain and context initialization
+		return genesisState, nil
+	},
+}
+
+// genStateSetter is a generic function to set module-specific genesis state
+func genStateSetter[T proto.Message](moduleName string) genSetupFn {
+	return func(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, customGenesis interface{}) (haqqtypes.GenesisState, error) {
+		moduleGenesis, ok := customGenesis.(T)
+		if !ok {
+			return nil, fmt.Errorf("invalid type %T for %s module genesis state", customGenesis, moduleName)
+		}
+
+		genesisState[moduleName] = haqqApp.AppCodec().MustMarshalJSON(moduleGenesis)
+		return genesisState, nil
+	}
+}
 
 // createValidatorSetAndSigners creates validator set with the amount of validators specified
 // with the default power of 1.
-func createValidatorSetAndSigners(numberOfValidators int) (*tmtypes.ValidatorSet, map[string]tmtypes.PrivValidator) {
+func createValidatorSetAndSigners(numberOfValidators int) (*cmttypes.ValidatorSet, map[string]cmttypes.PrivValidator) {
 	// Create validator set
-	tmValidators := make([]*tmtypes.Validator, 0, numberOfValidators)
-	signers := make(map[string]tmtypes.PrivValidator, numberOfValidators)
+	tmValidators := make([]*cmttypes.Validator, 0, numberOfValidators)
+	signers := make(map[string]cmttypes.PrivValidator, numberOfValidators)
 
 	for i := 0; i < numberOfValidators; i++ {
 		privVal := mock.NewPV()
 		pubKey, _ := privVal.GetPubKey()
-		validator := tmtypes.NewValidator(pubKey, 1)
+		validator := cmttypes.NewValidator(pubKey, 1)
 		tmValidators = append(tmValidators, validator)
 		signers[pubKey.Address().String()] = privVal
 	}
 
-	return tmtypes.NewValidatorSet(tmValidators), signers
+	return cmttypes.NewValidatorSet(tmValidators), signers
 }
 
 // createGenesisAccounts returns a slice of genesis accounts from the given
@@ -72,19 +129,24 @@ func getAccAddrsFromBalances(balances []banktypes.Balance) []sdktypes.AccAddress
 	numberOfBalances := len(balances)
 	genAccounts := make([]sdktypes.AccAddress, 0, numberOfBalances)
 	for _, balance := range balances {
-		genAccounts = append(genAccounts, balance.GetAddress())
+		genAccounts = append(genAccounts, sdktypes.AccAddress(balance.Address))
 	}
 	return genAccounts
 }
 
 // createBalances creates balances for the given accounts and coin
-func createBalances(accounts []sdktypes.AccAddress, coin sdktypes.Coin) []banktypes.Balance {
+func createBalances(accounts []sdktypes.AccAddress, denoms []string) []banktypes.Balance {
+	slices.Sort(denoms)
 	numberOfAccounts := len(accounts)
+	coins := make([]sdktypes.Coin, len(denoms))
+	for i, denom := range denoms {
+		coins[i] = sdktypes.NewCoin(denom, PrefundedAccountInitialBalance)
+	}
 	fundedAccountBalances := make([]banktypes.Balance, 0, numberOfAccounts)
 	for _, acc := range accounts {
 		balance := banktypes.Balance{
 			Address: acc.String(),
-			Coins:   sdktypes.NewCoins(coin),
+			Coins:   coins,
 		}
 
 		fundedAccountBalances = append(fundedAccountBalances, balance)
@@ -93,7 +155,7 @@ func createBalances(accounts []sdktypes.AccAddress, coin sdktypes.Coin) []bankty
 }
 
 // createHaqqApp creates a Haqq app
-func createHaqqApp(chainID string) *app.Haqq {
+func createHaqqApp(chainID string, customBaseAppOptions ...func(*baseapp.BaseApp)) *app.Haqq {
 	// Create Haqq app
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
@@ -101,9 +163,8 @@ func createHaqqApp(chainID string) *app.Haqq {
 	skipUpgradeHeights := map[int64]bool{}
 	homePath := app.DefaultNodeHome
 	invCheckPeriod := uint(5)
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
 	appOptions := simutils.NewAppOptionsWithFlagHome(app.DefaultNodeHome)
-	baseAppOptions := []func(*baseapp.BaseApp){baseapp.SetChainID(chainID)}
+	baseAppOptions := append(customBaseAppOptions, baseapp.SetChainID(chainID)) //nolint:gocritic
 
 	return app.NewHaqq(
 		logger,
@@ -113,14 +174,13 @@ func createHaqqApp(chainID string) *app.Haqq {
 		skipUpgradeHeights,
 		homePath,
 		invCheckPeriod,
-		encodingConfig,
 		appOptions,
 		baseAppOptions...,
 	)
 }
 
 // createStakingValidator creates a staking validator from the given tm validator and bonded
-func createStakingValidator(val *tmtypes.Validator, bondedAmt sdkmath.Int) (stakingtypes.Validator, error) {
+func createStakingValidator(val *cmttypes.Validator, bondedAmt sdkmath.Int, operatorAddr *sdktypes.AccAddress) (stakingtypes.Validator, error) {
 	pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 	if err != nil {
 		return stakingtypes.Validator{}, err
@@ -131,30 +191,62 @@ func createStakingValidator(val *tmtypes.Validator, bondedAmt sdkmath.Int) (stak
 		return stakingtypes.Validator{}, err
 	}
 
-	commission := stakingtypes.NewCommission(sdktypes.ZeroDec(), sdktypes.ZeroDec(), sdktypes.ZeroDec())
+	opAddr := sdktypes.ValAddress(val.Address).String()
+	if operatorAddr != nil {
+		opAddr = sdktypes.ValAddress(operatorAddr.Bytes()).String()
+	}
+
+	// Default to 5% commission
+	commission := stakingtypes.NewCommission(sdkmath.LegacyNewDecWithPrec(5, 2), sdkmath.LegacyNewDecWithPrec(2, 1), sdkmath.LegacyNewDecWithPrec(5, 2))
 	validator := stakingtypes.Validator{
-		OperatorAddress:   sdktypes.ValAddress(val.Address).String(),
+		OperatorAddress:   opAddr,
 		ConsensusPubkey:   pkAny,
 		Jailed:            false,
 		Status:            stakingtypes.Bonded,
 		Tokens:            bondedAmt,
-		DelegatorShares:   sdktypes.OneDec(),
+		DelegatorShares:   sdkmath.LegacyOneDec(),
 		Description:       stakingtypes.Description{},
 		UnbondingHeight:   int64(0),
 		UnbondingTime:     time.Unix(0, 0).UTC(),
 		Commission:        commission,
-		MinSelfDelegation: sdktypes.ZeroInt(),
+		MinSelfDelegation: sdkmath.ZeroInt(),
 	}
 	return validator, nil
 }
 
 // createStakingValidators creates staking validators from the given tm validators and bonded
 // amounts
-func createStakingValidators(tmValidators []*tmtypes.Validator, bondedAmt sdkmath.Int) ([]stakingtypes.Validator, error) {
+func createStakingValidators(tmValidators []*cmttypes.Validator, bondedAmt sdkmath.Int, operatorsAddresses []sdktypes.AccAddress) ([]stakingtypes.Validator, error) {
+	if len(operatorsAddresses) == 0 {
+		return createStakingValidatorsWithRandomOperator(tmValidators, bondedAmt)
+	}
+	return createStakingValidatorsWithSpecificOperator(tmValidators, bondedAmt, operatorsAddresses)
+}
+
+// createStakingValidatorsWithRandomOperator creates staking validators with non-specified operator addresses.
+func createStakingValidatorsWithRandomOperator(tmValidators []*cmttypes.Validator, bondedAmt sdkmath.Int) ([]stakingtypes.Validator, error) {
 	amountOfValidators := len(tmValidators)
 	stakingValidators := make([]stakingtypes.Validator, 0, amountOfValidators)
 	for _, val := range tmValidators {
-		validator, err := createStakingValidator(val, bondedAmt)
+		validator, err := createStakingValidator(val, bondedAmt, nil)
+		if err != nil {
+			return nil, err
+		}
+		stakingValidators = append(stakingValidators, validator)
+	}
+	return stakingValidators, nil
+}
+
+// createStakingValidatorsWithSpecificOperator creates staking validators with the given operator addresses.
+func createStakingValidatorsWithSpecificOperator(tmValidators []*cmttypes.Validator, bondedAmt sdkmath.Int, operatorsAddresses []sdktypes.AccAddress) ([]stakingtypes.Validator, error) {
+	amountOfValidators := len(tmValidators)
+	stakingValidators := make([]stakingtypes.Validator, 0, amountOfValidators)
+	operatorsCount := len(operatorsAddresses)
+	if operatorsCount != amountOfValidators {
+		panic(fmt.Sprintf("provided %d validator operator keys but need %d!", operatorsCount, amountOfValidators))
+	}
+	for i, val := range tmValidators {
+		validator, err := createStakingValidator(val, bondedAmt, &operatorsAddresses[i])
 		if err != nil {
 			return nil, err
 		}
@@ -164,14 +256,45 @@ func createStakingValidators(tmValidators []*tmtypes.Validator, bondedAmt sdkmat
 }
 
 // createDelegations creates delegations for the given validators and account
-func createDelegations(tmValidators []*tmtypes.Validator, fromAccount sdktypes.AccAddress) []stakingtypes.Delegation {
-	amountOfValidators := len(tmValidators)
+func createDelegations(validators []stakingtypes.Validator, fromAccount sdktypes.AccAddress) []stakingtypes.Delegation {
+	amountOfValidators := len(validators)
 	delegations := make([]stakingtypes.Delegation, 0, amountOfValidators)
-	for _, val := range tmValidators {
-		delegation := stakingtypes.NewDelegation(fromAccount, val.Address.Bytes(), sdktypes.OneDec())
+	for _, val := range validators {
+		delegation := stakingtypes.NewDelegation(fromAccount.String(), val.OperatorAddress, sdkmath.LegacyOneDec())
 		delegations = append(delegations, delegation)
 	}
 	return delegations
+}
+
+// getValidatorsSlashingGen creates the validators signingInfos and missedBlocks
+// records necessary for the slashing module genesis
+func getValidatorsSlashingGen(validators []stakingtypes.Validator, sk slashingtypes.StakingKeeper) (SlashingCustomGenesisState, error) {
+	valCount := len(validators)
+	signInfo := make([]slashingtypes.SigningInfo, valCount)
+	missedBlocks := make([]slashingtypes.ValidatorMissedBlocks, valCount)
+	for i, val := range validators {
+		consAddrBz, err := val.GetConsAddr()
+		if err != nil {
+			return SlashingCustomGenesisState{}, err
+		}
+		consAddr, err := sk.ConsensusAddressCodec().BytesToString(consAddrBz)
+		if err != nil {
+			return SlashingCustomGenesisState{}, err
+		}
+		signInfo[i] = slashingtypes.SigningInfo{
+			Address: consAddr,
+			ValidatorSigningInfo: slashingtypes.ValidatorSigningInfo{
+				Address: consAddr,
+			},
+		}
+		missedBlocks[i] = slashingtypes.ValidatorMissedBlocks{
+			Address: consAddr,
+		}
+	}
+	return SlashingCustomGenesisState{
+		signingInfo:  signInfo,
+		missedBlocks: missedBlocks,
+	}, nil
 }
 
 // StakingCustomGenesisState defines the staking genesis state
@@ -182,13 +305,17 @@ type StakingCustomGenesisState struct {
 	delegations []stakingtypes.Delegation
 }
 
-// setDefaultStakingGenesisState sets the staking genesis state
+// setDefaultStakingGenesisState sets the default staking genesis state
 func setDefaultStakingGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, overwriteParams StakingCustomGenesisState) haqqtypes.GenesisState {
 	// Set staking params
 	stakingParams := stakingtypes.DefaultParams()
 	stakingParams.BondDenom = overwriteParams.denom
 
-	stakingGenesis := stakingtypes.NewGenesisState(stakingParams, overwriteParams.validators, overwriteParams.delegations)
+	stakingGenesis := stakingtypes.NewGenesisState(
+		stakingParams,
+		overwriteParams.validators,
+		overwriteParams.delegations,
+	)
 	genesisState[stakingtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(stakingGenesis)
 	return genesisState
 }
@@ -196,9 +323,11 @@ func setDefaultStakingGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.Gen
 // setDefaultCoinomicsGenesisState sets the coinomics genesis state
 func setDefaultCoinomicsGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState) haqqtypes.GenesisState {
 	coinomicsParams := coinomicstypes.DefaultParams()
-	coinomicsParams.EnableCoinomics = false
-
-	coinomicsGenesis := coinomicstypes.NewGenesisState(coinomicsParams, sdktypes.NewCoin("aISLM", sdkmath.NewInt(10_000_000_000)))
+	defaultMaxSupply, ok := sdkmath.NewIntFromString("100000000000000000000000000000")
+	if !ok {
+		panic("invalid default max supply")
+	}
+	coinomicsGenesis := coinomicstypes.NewGenesisState(coinomicsParams, sdktypes.NewCoin("aISLM", defaultMaxSupply))
 	genesisState[coinomicstypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(&coinomicsGenesis)
 	return genesisState
 }
@@ -208,7 +337,7 @@ type BankCustomGenesisState struct {
 	balances    []banktypes.Balance
 }
 
-// setDefaultBankGenesisState sets the bank genesis state
+// setDefaultBankGenesisState sets the default bank genesis state
 func setDefaultBankGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, overwriteParams BankCustomGenesisState) haqqtypes.GenesisState {
 	bankGenesis := banktypes.NewGenesisState(
 		banktypes.DefaultGenesisState().Params,
@@ -221,65 +350,114 @@ func setDefaultBankGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.Genesi
 	return genesisState
 }
 
-// genSetupFn is the type for the module genesis setup functions
-type genSetupFn func(
-	haqqApp *app.Haqq,
-	genesisState haqqtypes.GenesisState,
-	customGenesis interface{},
-) (haqqtypes.GenesisState, error)
-
-// defaultGenesisParams contains the params that are needed to
-// setup the default genesis for the testing setup
-type defaultGenesisParams struct {
-	genAccounts []authtypes.GenesisAccount
-	staking     StakingCustomGenesisState
-	bank        BankCustomGenesisState
+// SlashingCustomGenesisState defines the corresponding
+// validators signing info and missed blocks for the genesis state
+type SlashingCustomGenesisState struct {
+	signingInfo  []slashingtypes.SigningInfo
+	missedBlocks []slashingtypes.ValidatorMissedBlocks
 }
 
-// genStateSetter is a generic function to set module-specific genesis state
-func genStateSetter[T proto.Message](moduleName string) genSetupFn {
-	return func(
-		haqqApp *app.Haqq,
-		genesisState haqqtypes.GenesisState,
-		customGenesis interface{},
-	) (haqqtypes.GenesisState, error) {
-		moduleGenesis, ok := customGenesis.(T)
-		if !ok {
-			return nil, fmt.Errorf("invalid type %T for %s module genesis state", customGenesis, moduleName)
-		}
+// setDefaultSlashingGenesisState sets the default slashing genesis state
+func setDefaultSlashingGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, overwriteParams SlashingCustomGenesisState) haqqtypes.GenesisState {
+	slashingGen := slashingtypes.DefaultGenesisState()
+	slashingGen.SigningInfos = overwriteParams.signingInfo
+	slashingGen.MissedBlocks = overwriteParams.missedBlocks
 
-		genesisState[moduleName] = haqqApp.AppCodec().MustMarshalJSON(moduleGenesis)
-		return genesisState, nil
+	genesisState[slashingtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(slashingGen)
+	return genesisState
+}
+
+// setBankGenesisState updates the bank genesis state with custom genesis state
+func setBankGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, customGenesis interface{}) (haqqtypes.GenesisState, error) {
+	customGen, ok := customGenesis.(*banktypes.GenesisState)
+	if !ok {
+		return nil, fmt.Errorf("invalid type %T for bank module genesis state", customGenesis)
 	}
+
+	bankGen := &banktypes.GenesisState{}
+	haqqApp.AppCodec().MustUnmarshalJSON(genesisState[banktypes.ModuleName], bankGen)
+
+	if len(customGen.Balances) > 0 {
+		coins := sdktypes.NewCoins()
+		bankGen.Balances = append(bankGen.Balances, customGen.Balances...)
+		for _, b := range customGen.Balances {
+			coins = append(coins, b.Coins...)
+		}
+		bankGen.Supply = bankGen.Supply.Add(coins...)
+	}
+	if len(customGen.DenomMetadata) > 0 {
+		bankGen.DenomMetadata = append(bankGen.DenomMetadata, customGen.DenomMetadata...)
+	}
+
+	if len(customGen.SendEnabled) > 0 {
+		bankGen.SendEnabled = append(bankGen.SendEnabled, customGen.SendEnabled...)
+	}
+
+	bankGen.Params = customGen.Params
+
+	genesisState[banktypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(bankGen)
+	return genesisState, nil
 }
 
-// genesisSetupFunctions contains the available genesis setup functions
-// that can be used to customize the network genesis
-var genesisSetupFunctions = map[string]genSetupFn{
-	authtypes.ModuleName:      genStateSetter[*authtypes.GenesisState](authtypes.ModuleName),
-	evmtypes.ModuleName:       genStateSetter[*evmtypes.GenesisState](evmtypes.ModuleName),
-	govtypes.ModuleName:       genStateSetter[*govtypesv1.GenesisState](govtypes.ModuleName),
-	coinomicstypes.ModuleName: genStateSetter[*coinomicstypes.GenesisState](coinomicstypes.ModuleName),
-	erc20types.ModuleName:     genStateSetter[*erc20types.GenesisState](erc20types.ModuleName),
+// calculateTotalSupply calculates the total supply from the given balances
+func calculateTotalSupply(fundedAccountsBalances []banktypes.Balance) sdktypes.Coins {
+	totalSupply := sdktypes.NewCoins()
+	for _, balance := range fundedAccountsBalances {
+		totalSupply = totalSupply.Add(balance.Coins...)
+	}
+	return totalSupply
+}
+
+// addBondedModuleAccountToFundedBalances adds bonded amount to bonded pool module account and include it on funded accounts
+func addBondedModuleAccountToFundedBalances(
+	fundedAccountsBalances []banktypes.Balance,
+	totalBonded sdktypes.Coin,
+) []banktypes.Balance {
+	return append(fundedAccountsBalances, banktypes.Balance{
+		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
+		Coins:   sdktypes.Coins{totalBonded},
+	})
 }
 
 // setDefaultAuthGenesisState sets the default auth genesis state
-func setDefaultAuthGenesisState(
-	haqqApp *app.Haqq,
-	genesisState haqqtypes.GenesisState,
-	genAccs []authtypes.GenesisAccount,
-) haqqtypes.GenesisState {
+func setDefaultAuthGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, genAccs []authtypes.GenesisAccount) haqqtypes.GenesisState {
 	defaultAuthGen := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
 	genesisState[authtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(defaultAuthGen)
 	return genesisState
 }
 
+// setAuthGenesisState updates the bank genesis state with custom genesis state
+func setAuthGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, customGenesis interface{}) (haqqtypes.GenesisState, error) {
+	customGen, ok := customGenesis.(*authtypes.GenesisState)
+	if !ok {
+		return nil, fmt.Errorf("invalid type %T for auth module genesis state", customGenesis)
+	}
+
+	authGen := &authtypes.GenesisState{}
+	haqqApp.AppCodec().MustUnmarshalJSON(genesisState[authtypes.ModuleName], authGen)
+
+	if len(customGen.Accounts) > 0 {
+		authGen.Accounts = append(authGen.Accounts, customGen.Accounts...)
+	}
+
+	authGen.Params = customGen.Params
+
+	genesisState[authtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(authGen)
+	return genesisState, nil
+}
+
+// GovCustomGenesisState defines the gov genesis state
+type GovCustomGenesisState struct {
+	denom string
+}
+
 // setDefaultGovGenesisState sets the default gov genesis state
-func setDefaultGovGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState) haqqtypes.GenesisState {
+func setDefaultGovGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState, overwriteParams GovCustomGenesisState) haqqtypes.GenesisState {
 	govGen := govtypesv1.DefaultGenesisState()
 	updatedParams := govGen.Params
-	// set 'aevmos' as deposit denom
-	updatedParams.MinDeposit = sdktypes.NewCoins(sdktypes.NewCoin(evmosutil.BaseDenom, sdkmath.NewInt(1e18)))
+	minDepositAmt := sdkmath.NewInt(1e18)
+	updatedParams.MinDeposit = sdktypes.NewCoins(sdktypes.NewCoin(overwriteParams.denom, minDepositAmt))
+	updatedParams.ExpeditedMinDeposit = sdktypes.NewCoins(sdktypes.NewCoin(overwriteParams.denom, minDepositAmt.MulRaw(2)))
 	govGen.Params = updatedParams
 	genesisState[govtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(govGen)
 	return genesisState
@@ -294,13 +472,14 @@ func setDefaultErc20GenesisState(haqqApp *app.Haqq, genesisState haqqtypes.Genes
 // defaultAuthGenesisState sets the default genesis state
 // for the testing setup
 func newDefaultGenesisState(haqqApp *app.Haqq, params defaultGenesisParams) haqqtypes.GenesisState {
-	genesisState := app.NewDefaultGenesisState()
+	genesisState := haqqApp.DefaultGenesis()
 
 	genesisState = setDefaultAuthGenesisState(haqqApp, genesisState, params.genAccounts)
 	genesisState = setDefaultStakingGenesisState(haqqApp, genesisState, params.staking)
 	genesisState = setDefaultBankGenesisState(haqqApp, genesisState, params.bank)
 	genesisState = setDefaultCoinomicsGenesisState(haqqApp, genesisState)
-	genesisState = setDefaultGovGenesisState(haqqApp, genesisState)
+	genesisState = setDefaultGovGenesisState(haqqApp, genesisState, params.gov)
+	genesisState = setDefaultSlashingGenesisState(haqqApp, genesisState, params.slashing)
 	genesisState = setDefaultErc20GenesisState(haqqApp, genesisState)
 
 	return genesisState
@@ -308,11 +487,7 @@ func newDefaultGenesisState(haqqApp *app.Haqq, params defaultGenesisParams) haqq
 
 // customizeGenesis modifies genesis state if there're any custom genesis state
 // for specific modules
-func customizeGenesis(
-	haqqApp *app.Haqq,
-	customGen CustomGenesisState,
-	genesisState haqqtypes.GenesisState,
-) (haqqtypes.GenesisState, error) {
+func customizeGenesis(haqqApp *app.Haqq, customGen CustomGenesisState, genesisState haqqtypes.GenesisState) (haqqtypes.GenesisState, error) {
 	var err error
 	for mod, modGenState := range customGen {
 		if fn, found := genesisSetupFunctions[mod]; found {
@@ -325,21 +500,4 @@ func customizeGenesis(
 		}
 	}
 	return genesisState, err
-}
-
-// calculateTotalSupply calculates the total supply from the given balances
-func calculateTotalSupply(fundedAccountsBalances []banktypes.Balance) sdktypes.Coins {
-	totalSupply := sdktypes.NewCoins()
-	for _, balance := range fundedAccountsBalances {
-		totalSupply = totalSupply.Add(balance.Coins...)
-	}
-	return totalSupply
-}
-
-// addBondedModuleAccountToFundedBalances adds bonded amount to bonded pool module account and include it on funded accounts
-func addBondedModuleAccountToFundedBalances(fundedAccountsBalances []banktypes.Balance, totalBonded sdktypes.Coin) []banktypes.Balance {
-	return append(fundedAccountsBalances, banktypes.Balance{
-		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
-		Coins:   sdktypes.Coins{totalBonded},
-	})
 }

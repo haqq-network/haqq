@@ -13,7 +13,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/haqq-network/haqq/testutil"
@@ -22,7 +21,6 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
-	"github.com/haqq-network/haqq/utils"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -60,27 +58,8 @@ var _ = Describe("Staking module tests", func() {
 			vestingAccount = keys.GetKey(1)
 			otherAccount = keys.GetKey(2)
 
-			// set a higher initial balance for the funder to have
-			// enough for the vesting schedule
-			funderInitialBalance, ok := math.NewIntFromString("100_000_000_000_000_000_000")
-			Expect(ok).To(BeTrue())
-			balances := []banktypes.Balance{
-				{
-					Address: funder.AccAddr.String(),
-					Coins:   sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, funderInitialBalance)),
-				},
-				{
-					Address: vestingAccount.AccAddr.String(),
-					Coins:   sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, network.PrefundedAccountInitialBalance)),
-				},
-				{
-					Address: otherAccount.AccAddr.String(),
-					Coins:   sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, network.PrefundedAccountInitialBalance)),
-				},
-			}
-
 			nw = network.NewUnitTestNetwork(
-				network.WithBalances(balances...),
+				network.WithPreFundedAccounts(keys.GetAllAccAddrs()...),
 			)
 			gh = grpc.NewIntegrationHandler(nw)
 			tf = haqqfactory.New(nw, gh)
@@ -101,6 +80,7 @@ var _ = Describe("Staking module tests", func() {
 			Expect(nw.NextBlock()).To(BeNil())
 
 			// check vesting account was created successfully
+			var ok bool
 			acc, err := gh.GetAccount(vestingAccount.AccAddr.String())
 			Expect(err).To(BeNil())
 			clawbackAccount, ok = acc.(*vestingtypes.ClawbackVestingAccount)
@@ -113,7 +93,7 @@ var _ = Describe("Staking module tests", func() {
 			Context("using MsgDelegate", func() {
 				BeforeEach(func() {
 					// create a MsgDelegate to delegate the free tokens (balance previous to be converted to clawback account) + vested coins per period
-					delMsg = types.NewMsgDelegate(vestingAccount.AccAddr, nw.GetValidators()[0].GetOperator(), testutil.TestVestingSchedule.VestedCoinsPerPeriod.Add(*vestAccInitialBalance)[0])
+					delMsg = types.NewMsgDelegate(vestingAccount.AccAddr.String(), nw.GetValidators()[0].GetOperator(), testutil.TestVestingSchedule.VestedCoinsPerPeriod.Add(*vestAccInitialBalance)[0])
 				})
 
 				It("should not allow to delegate unvested tokens", func() {
@@ -137,7 +117,7 @@ var _ = Describe("Staking module tests", func() {
 					fees := sdk.NewCoin(nw.GetDenom(), gasPrice.Mul(math.NewIntFromUint64(gas)))
 					delMsg.Amount = vestAccInitialBalance.Sub(fees)
 
-					res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{delMsg}, Gas: gas, GasPrice: &gasPrice})
+					res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{delMsg}, Gas: &gas, GasPrice: &gasPrice})
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(BeTrue())
 					Expect(nw.NextBlock()).To(BeNil())
@@ -164,7 +144,7 @@ var _ = Describe("Staking module tests", func() {
 					fees := sdk.NewCoin(nw.GetDenom(), gasPrice.Mul(math.NewIntFromUint64(gas)))
 					delMsg.Amount = vestAccInitialBalance.Add(lockedVestedCoins[0]).Sub(fees)
 
-					res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{delMsg}, Gas: gas, GasPrice: &gasPrice})
+					res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{delMsg}, Gas: &gas, GasPrice: &gasPrice})
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(BeTrue())
 					Expect(nw.NextBlock()).To(BeNil())
@@ -195,7 +175,7 @@ var _ = Describe("Staking module tests", func() {
 					fees := sdk.NewCoin(nw.GetDenom(), gasPrice.Mul(math.NewIntFromUint64(gas)))
 					delMsg.Amount = vestAccInitialBalance.Add(unlockedVestedCoins[0]).Sub(fees)
 
-					res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{delMsg}, Gas: gas, GasPrice: &gasPrice})
+					res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{delMsg}, Gas: &gas, GasPrice: &gasPrice})
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(BeTrue())
 					Expect(nw.NextBlock()).To(BeNil())
@@ -221,7 +201,7 @@ var _ = Describe("Staking module tests", func() {
 					Expect(nw.NextBlock()).To(BeNil())
 
 					// create a MsgDelegate to delegate vested coins per period
-					delMsg = types.NewMsgDelegate(vestingAccount.AccAddr, nw.GetValidators()[0].GetOperator(), testutil.TestVestingSchedule.VestedCoinsPerPeriod.Add(*vestAccInitialBalance)[0])
+					delMsg = types.NewMsgDelegate(vestingAccount.AccAddr.String(), nw.GetValidators()[0].GetOperator(), testutil.TestVestingSchedule.VestedCoinsPerPeriod.Add(*vestAccInitialBalance)[0])
 				})
 
 				It("should not allow to delegate unvested tokens", func() {
@@ -256,7 +236,7 @@ var _ = Describe("Staking module tests", func() {
 					delMsg.Amount = vestAccInitialBalance.Add(lockedVestedCoins[0]).Sub(fees)
 
 					execMsg := authz.NewMsgExec(otherAccount.AccAddr, []sdk.Msg{delMsg})
-					res, err := tf.ExecuteCosmosTx(otherAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{&execMsg}, Gas: gas, GasPrice: &gasPrice})
+					res, err := tf.ExecuteCosmosTx(otherAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{&execMsg}, Gas: &gas, GasPrice: &gasPrice})
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(BeTrue())
 					Expect(nw.NextBlock()).To(BeNil())
@@ -280,7 +260,7 @@ var _ = Describe("Staking module tests", func() {
 					Expect(vestedCoins).To(Equal(expVested))
 
 					execMsg := authz.NewMsgExec(otherAccount.AccAddr, []sdk.Msg{delMsg})
-					res, err := tf.ExecuteCosmosTx(otherAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{&execMsg}, Gas: gas})
+					res, err := tf.ExecuteCosmosTx(otherAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{&execMsg}, Gas: &gas})
 					Expect(err).To(BeNil())
 					Expect(res.IsOK()).To(BeTrue())
 					Expect(nw.NextBlock()).To(BeNil())
@@ -303,17 +283,17 @@ var _ = Describe("Staking module tests", func() {
 				var err error
 				pubKey := ed25519.GenPrivKey().PubKey()
 				commissions := types.NewCommissionRates(
-					sdk.NewDecWithPrec(5, 2),
-					sdk.NewDecWithPrec(2, 1),
-					sdk.NewDecWithPrec(5, 2),
+					math.LegacyNewDecWithPrec(5, 2),
+					math.LegacyNewDecWithPrec(2, 1),
+					math.LegacyNewDecWithPrec(5, 2),
 				)
 				createValMsg, err = types.NewMsgCreateValidator(
-					sdk.ValAddress(vestingAccount.AccAddr),
+					sdk.ValAddress(vestingAccount.AccAddr).String(),
 					pubKey,
 					testutil.TestVestingSchedule.VestedCoinsPerPeriod.Add(*vestAccInitialBalance)[0],
 					types.NewDescription("T", "E", "S", "T", "Z"),
 					commissions,
-					sdk.OneInt(),
+					math.OneInt(),
 				)
 				Expect(err).To(BeNil())
 			})
@@ -348,7 +328,7 @@ var _ = Describe("Staking module tests", func() {
 				fees := sdk.NewCoin(nw.GetDenom(), gasPrice.Mul(math.NewIntFromUint64(gas)))
 				createValMsg.Value = vestAccInitialBalance.Add(lockedVestedCoins[0]).Sub(fees)
 
-				res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{createValMsg}, Gas: gas, GasPrice: &gasPrice})
+				res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{createValMsg}, Gas: &gas, GasPrice: &gasPrice})
 				Expect(err).To(BeNil())
 				Expect(res.IsOK()).To(BeTrue())
 				Expect(nw.NextBlock()).To(BeNil())
@@ -371,7 +351,7 @@ var _ = Describe("Staking module tests", func() {
 				vestedCoins := clawbackAccount.GetVestedCoins(nw.GetContext().BlockTime())
 				Expect(vestedCoins).To(Equal(expVested))
 
-				res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{createValMsg}, Gas: 500_000})
+				res, err := tf.ExecuteCosmosTx(vestingAccount.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{createValMsg}, Gas: &gas})
 				Expect(err).To(BeNil())
 				Expect(res.IsOK()).To(BeTrue())
 				Expect(nw.NextBlock()).To(BeNil())

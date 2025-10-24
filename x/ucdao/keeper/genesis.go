@@ -3,7 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -37,7 +38,7 @@ func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		}
 	}
 
-	if !genState.TotalBalance.Empty() && !genState.TotalBalance.IsEqual(totalBalance) {
+	if !genState.TotalBalance.Empty() && !genState.TotalBalance.Equal(totalBalance) {
 		panic(fmt.Errorf("genesis total balance is incorrect, expected %v, got %v", genState.TotalBalance, totalBalance))
 	}
 
@@ -66,7 +67,7 @@ func (k BaseKeeper) initBalances(ctx sdk.Context, addr sdk.AccAddress, balances 
 	for i := range balances {
 		balance := balances[i]
 		if !balance.IsValid() {
-			return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, balance.String())
+			return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, balance.String())
 		}
 
 		// x/dao invariants prohibit persistence of zero balances

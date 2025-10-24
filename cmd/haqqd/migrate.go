@@ -7,8 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	tmjson "github.com/cometbft/cometbft/libs/json"
-	tmtypes "github.com/cometbft/cometbft/types"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmttypes "github.com/cometbft/cometbft/types"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -39,7 +40,7 @@ func MigrateGenesisCmd() *cobra.Command {
 		Short: "Migrate genesis to a specified target version",
 		Long:  "Migrate the source genesis into the target version and print to STDOUT.",
 		Example: fmt.Sprintf(
-			"%s migrate v3 /path/to/genesis.json --chain-id=haqq_11235-1 --genesis-time=2022-04-01T17:00:00Z",
+			"%s migrate v3 /path/to/genesis.json --chain-id=haqq_11235-2 --genesis-time=2022-04-01T17:00:00Z",
 			version.AppName,
 		),
 		Args: cobra.ExactArgs(2),
@@ -49,7 +50,7 @@ func MigrateGenesisCmd() *cobra.Command {
 			target := args[0]
 			importGenesis := args[1]
 
-			genDoc, err := tmtypes.GenesisDocFromFile(importGenesis)
+			genDoc, err := cmttypes.GenesisDocFromFile(importGenesis)
 			if err != nil {
 				return fmt.Errorf("failed to retrieve genesis.json: %w", err)
 			}
@@ -69,7 +70,10 @@ func MigrateGenesisCmd() *cobra.Command {
 				return fmt.Errorf("unknown migration function for version: %s", target)
 			}
 
-			newGenState := migrationFn(initialState, clientCtx)
+			newGenState, err := migrationFn(initialState, clientCtx)
+			if err != nil {
+				return fmt.Errorf("failed to when running migration function: %w", err)
+			}
 
 			appState, err := json.Marshal(newGenState)
 			if err != nil {
@@ -89,7 +93,7 @@ func MigrateGenesisCmd() *cobra.Command {
 				genDoc.GenesisTime = t
 			}
 
-			bz, err := tmjson.Marshal(genDoc)
+			bz, err := cmtjson.Marshal(genDoc)
 			if err != nil {
 				return fmt.Errorf("failed to marshal genesis doc: %w", err)
 			}

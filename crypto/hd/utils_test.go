@@ -145,12 +145,11 @@ func (w *Wallet) derivePrivateKey(path accounts.DerivationPath) (*ecdsa.PrivateK
 	}
 
 	privateKey, err := key.ECPrivKey()
-	privateKeyECDSA := privateKey.ToECDSA()
 	if err != nil {
 		return nil, err
 	}
 
-	return privateKeyECDSA, nil
+	return privateKey.ToECDSA(), nil
 }
 
 // derivePublicKey derives the public key of the derivation path.

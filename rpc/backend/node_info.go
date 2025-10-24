@@ -7,7 +7,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
-	tmtypes "github.com/cometbft/cometbft/types"
+	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdkcrypto "github.com/cosmos/cosmos-sdk/crypto"
@@ -30,6 +30,11 @@ import (
 // Accounts returns the list of accounts available to this node.
 func (b *Backend) Accounts() ([]common.Address, error) {
 	addresses := make([]common.Address, 0) // return [] instead of nil if empty
+
+	if !b.cfg.JSONRPC.AllowInsecureUnlock {
+		b.logger.Debug("account unlock with HTTP access is forbidden")
+		return addresses, fmt.Errorf("account unlock with HTTP access is forbidden")
+	}
 
 	infos, err := b.clientCtx.Keyring.List()
 	if err != nil {
@@ -76,6 +81,11 @@ func (b *Backend) Syncing() (interface{}, error) {
 
 // SetEtherbase sets the etherbase of the miner
 func (b *Backend) SetEtherbase(etherbase common.Address) bool {
+	if !b.cfg.JSONRPC.AllowInsecureUnlock {
+		b.logger.Debug("account unlock with HTTP access is forbidden")
+		return false
+	}
+
 	delAddr, err := b.GetCoinbase()
 	if err != nil {
 		b.logger.Debug("failed to get coinbase address", "error", err.Error())
@@ -85,15 +95,10 @@ func (b *Backend) SetEtherbase(etherbase common.Address) bool {
 	withdrawAddr := sdk.AccAddress(etherbase.Bytes())
 	msg := distributiontypes.NewMsgSetWithdrawAddress(delAddr, withdrawAddr)
 
-	if err := msg.ValidateBasic(); err != nil {
-		b.logger.Debug("tx failed basic validation", "error", err.Error())
-		return false
-	}
-
 	// Assemble transaction from fields
 	builder, ok := b.clientCtx.TxConfig.NewTxBuilder().(authtx.ExtensionOptionsTxBuilder)
 	if !ok {
-		b.logger.Debug("clientCtx.TxConfig.NewTxBuilder returns unsupported builder", "error", err.Error())
+		b.logger.Debug("clientCtx.TxConfig.NewTxBuilder returns unsupported builder")
 		return false
 	}
 
@@ -146,7 +151,7 @@ func (b *Backend) SetEtherbase(etherbase common.Address) bool {
 		return false
 	}
 
-	if err := tx.Sign(txFactory, keyInfo.Name, builder, false); err != nil {
+	if err := tx.Sign(b.clientCtx.CmdContext, txFactory, keyInfo.Name, builder, false); err != nil {
 		b.logger.Debug("failed to sign tx", "error", err.Error())
 		return false
 	}
@@ -159,7 +164,7 @@ func (b *Backend) SetEtherbase(etherbase common.Address) bool {
 		return false
 	}
 
-	tmHash := common.BytesToHash(tmtypes.Tx(txBytes).Hash())
+	tmHash := common.BytesToHash(cmttypes.Tx(txBytes).Hash())
 
 	// Broadcast transaction in sync mode (default)
 	// NOTE: If error is encountered on the node, the broadcast will not return an error
@@ -216,6 +221,11 @@ func (b *Backend) ImportRawKey(privkey, password string) (common.Address, error)
 // ListAccounts will return a list of addresses for accounts this node manages.
 func (b *Backend) ListAccounts() ([]common.Address, error) {
 	addrs := []common.Address{}
+
+	if !b.cfg.JSONRPC.AllowInsecureUnlock {
+		b.logger.Debug("account unlock with HTTP access is forbidden")
+		return addrs, fmt.Errorf("account unlock with HTTP access is forbidden")
+	}
 
 	list, err := b.clientCtx.Keyring.List()
 	if err != nil {

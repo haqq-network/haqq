@@ -11,7 +11,6 @@ func WrapTxToTypedData(
 	data []byte,
 ) (apitypes.TypedData, error) {
 	messagePayload, err := createEIP712MessagePayload(data)
-	message := messagePayload.message
 	if err != nil {
 		return apitypes.TypedData{}, err
 	}
@@ -27,7 +26,7 @@ func WrapTxToTypedData(
 		Types:       types,
 		PrimaryType: txField,
 		Domain:      domain,
-		Message:     message,
+		Message:     messagePayload.message,
 	}
 
 	return typedData, nil

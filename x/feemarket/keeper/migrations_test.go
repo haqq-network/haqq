@@ -1,8 +1,13 @@
 package keeper_test
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	feemarketkeeper "github.com/haqq-network/haqq/x/feemarket/keeper"
 	"github.com/haqq-network/haqq/x/feemarket/types"
 )
@@ -19,9 +24,12 @@ func (ms mockSubspace) GetParamSetIfExists(_ sdk.Context, ps types.LegacyParams)
 	*ps.(*types.Params) = ms.ps
 }
 
-func (suite *KeeperTestSuite) TestMigrations() {
+func TestMigrations(t *testing.T) {
+	nw := network.NewUnitTestNetwork()
+	ctx := nw.GetContext()
+
 	legacySubspace := newMockSubspace(types.DefaultParams())
-	migrator := feemarketkeeper.NewMigrator(suite.app.FeeMarketKeeper, legacySubspace)
+	migrator := feemarketkeeper.NewMigrator(nw.App.FeeMarketKeeper, legacySubspace)
 
 	testCases := []struct {
 		name        string
@@ -34,9 +42,9 @@ func (suite *KeeperTestSuite) TestMigrations() {
 	}
 
 	for _, tc := range testCases {
-		suite.Run(tc.name, func() {
-			err := tc.migrateFunc(suite.ctx)
-			suite.Require().NoError(err)
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.migrateFunc(ctx)
+			require.NoError(t, err)
 		})
 	}
 }

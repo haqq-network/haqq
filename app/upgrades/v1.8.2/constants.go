@@ -1,6 +1,5 @@
 package v182
 
-const (
-	// UpgradeName is the shared upgrade plan name for mainnet
-	UpgradeName = "v1.8.2"
-)
+// UpgradeName is the shared upgrade plan name for mainnet
+// Note: this file is here just for the e2e tests
+const UpgradeName = "v1.8.2"

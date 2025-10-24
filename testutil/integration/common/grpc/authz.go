@@ -4,9 +4,6 @@ import (
 	"context"
 
 	"github.com/cosmos/cosmos-sdk/x/authz"
-
-	"github.com/haqq-network/haqq/app"
-	"github.com/haqq-network/haqq/encoding"
 )
 
 // GetGrants returns the grants for the given grantee and granter combination.
@@ -57,7 +54,7 @@ func (gqh *IntegrationHandler) GetGrantsByGranter(granter string) ([]*authz.Gran
 
 // GetAuthorizations returns the concrete authorizations for the given grantee and granter combination.
 func (gqh *IntegrationHandler) GetAuthorizations(grantee, granter string) ([]authz.Authorization, error) {
-	encodingCfg := encoding.MakeConfig(app.ModuleBasics)
+	encodingCfg := gqh.network.GetEncodingConfig()
 
 	grants, err := gqh.GetGrants(grantee, granter)
 	if err != nil {
@@ -85,7 +82,7 @@ func (gqh *IntegrationHandler) GetAuthorizationsByGrantee(grantee string) ([]aut
 		return nil, err
 	}
 
-	return unpackGrantAuthzs(grants)
+	return gqh.unpackGrantAuthzs(grants)
 }
 
 // GetAuthorizationsByGranter returns the concrete authorizations for the given granter.
@@ -95,12 +92,12 @@ func (gqh *IntegrationHandler) GetAuthorizationsByGranter(granter string) ([]aut
 		return nil, err
 	}
 
-	return unpackGrantAuthzs(grants)
+	return gqh.unpackGrantAuthzs(grants)
 }
 
 // unpackGrantAuthzs unpacks the given grant authorization.
-func unpackGrantAuthzs(grantAuthzs []*authz.GrantAuthorization) ([]authz.Authorization, error) {
-	encodingCfg := encoding.MakeConfig(app.ModuleBasics)
+func (gqh *IntegrationHandler) unpackGrantAuthzs(grantAuthzs []*authz.GrantAuthorization) ([]authz.Authorization, error) {
+	encodingCfg := gqh.network.GetEncodingConfig()
 
 	auths := make([]authz.Authorization, 0, len(grantAuthzs))
 	for _, grantAuthz := range grantAuthzs {

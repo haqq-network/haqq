@@ -1,9 +1,10 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
+	"cosmossdk.io/store/prefix"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -176,7 +177,7 @@ func UnmarshalBalanceCompat(cdc codec.BinaryCodec, bz []byte, denom string) (sdk
 // setBalance sets the coin balance for an account by address.
 func (k BaseKeeper) setBalance(ctx sdk.Context, addr sdk.AccAddress, balance sdk.Coin) error {
 	if !balance.IsValid() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, balance.String())
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, balance.String())
 	}
 
 	accountStore := k.getAccountStore(ctx, addr)
@@ -209,7 +210,7 @@ func (k BaseKeeper) setBalance(ctx sdk.Context, addr sdk.AccAddress, balance sdk
 // amt is invalid. It emits a coin received event.
 func (k BaseKeeper) addCoinsToAccount(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coins) error {
 	if !amt.IsValid() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, amt.String())
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, amt.String())
 	}
 
 	for _, coin := range amt {

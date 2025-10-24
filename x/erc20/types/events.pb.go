@@ -77,8 +77,7 @@ func (m *EventRegisterPair) GetErc20Address() string {
 	return ""
 }
 
-// EventToggleTokenConversion is an event emitted when a coin's token conversion
-// is toggled.
+// EventToggleTokenConversion is an event emitted when a coin's token conversion is toggled.
 type EventToggleTokenConversion struct {
 	// denom is the coin's denomination.
 	Denom string `protobuf:"bytes,1,opt,name=denom,proto3" json:"denom,omitempty"`
@@ -225,8 +224,7 @@ type EventConvertERC20 struct {
 	Amount string `protobuf:"bytes,3,opt,name=amount,proto3" json:"amount,omitempty"`
 	// denom is the coin's denomination.
 	Denom string `protobuf:"bytes,4,opt,name=denom,proto3" json:"denom,omitempty"`
-	// contract_address of an ERC20 token contract, that is registered in a token
-	// pair
+	// contract_address of an ERC20 token contract, that is registered in a token pair
 	ContractAddress string `protobuf:"bytes,5,opt,name=contract_address,json=contractAddress,proto3" json:"contract_address,omitempty"`
 }
 

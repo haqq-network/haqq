@@ -1,6 +1,10 @@
 package types
 
 import (
+	"context"
+
+	"cosmossdk.io/core/address"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -8,35 +12,36 @@ import (
 // AccountKeeper defines the account contract that must be fulfilled when
 // creating a x/bank keeper.
 type AccountKeeper interface {
-	NewAccount(sdk.Context, types.AccountI) types.AccountI
-	NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) types.AccountI
+	AddressCodec() address.Codec
 
-	GetAccount(ctx sdk.Context, addr sdk.AccAddress) types.AccountI
-	GetAllAccounts(ctx sdk.Context) []types.AccountI
-	HasAccount(ctx sdk.Context, addr sdk.AccAddress) bool
-	SetAccount(ctx sdk.Context, acc types.AccountI)
+	NewAccount(context.Context, sdk.AccountI) sdk.AccountI
+	NewAccountWithAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
 
-	IterateAccounts(ctx sdk.Context, process func(types.AccountI) bool)
+	GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
+	GetAllAccounts(ctx context.Context) []sdk.AccountI
+	HasAccount(ctx context.Context, addr sdk.AccAddress) bool
+	SetAccount(ctx context.Context, acc sdk.AccountI)
 
-	ValidatePermissions(macc types.ModuleAccountI) error
+	IterateAccounts(ctx context.Context, process func(sdk.AccountI) bool)
+
+	ValidatePermissions(macc sdk.ModuleAccountI) error
 
 	GetModuleAddress(moduleName string) sdk.AccAddress
 	GetModuleAddressAndPermissions(moduleName string) (addr sdk.AccAddress, permissions []string)
-	GetModuleAccountAndPermissions(ctx sdk.Context, moduleName string) (types.ModuleAccountI, []string)
-	GetModuleAccount(ctx sdk.Context, moduleName string) types.ModuleAccountI
-	SetModuleAccount(ctx sdk.Context, macc types.ModuleAccountI)
+	GetModuleAccountAndPermissions(ctx context.Context, moduleName string) (sdk.ModuleAccountI, []string)
+	GetModuleAccount(ctx context.Context, moduleName string) sdk.ModuleAccountI
+	SetModuleAccount(ctx context.Context, macc sdk.ModuleAccountI)
 	GetModulePermissions() map[string]types.PermissionsForAddress
 }
 
 // BankKeeper defines the expected interface needed to retrieve account balances.
 type BankKeeper interface {
-	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
+	GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins
+	SpendableCoins(ctx context.Context, addr sdk.AccAddress) sdk.Coins
 
-	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
-
-	SendCoinsFromModuleToModule(ctx sdk.Context, senderModule string, recipientModule string, amt sdk.Coins) error
-	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
-	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+	SendCoinsFromModuleToModule(ctx context.Context, senderModule, recipientModule string, amt sdk.Coins) error
+	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 
 	BlockedAddr(addr sdk.AccAddress) bool
 }

@@ -10,7 +10,6 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	govcdc "github.com/cosmos/cosmos-sdk/x/gov/codec"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
 	haqqtypes "github.com/haqq-network/haqq/types"
@@ -35,8 +34,6 @@ var (
 func init() {
 	v1beta1.RegisterProposalType(ProposalTypeRegisterERC20)
 	v1beta1.RegisterProposalType(ProposalTypeToggleTokenConversion)
-	govcdc.ModuleCdc.Amino.RegisterConcrete(&RegisterERC20Proposal{}, "erc20/RegisterERC20Proposal", nil)
-	govcdc.ModuleCdc.Amino.RegisterConcrete(&ToggleTokenConversionProposal{}, "erc20/ToggleTokenConversionProposal", nil)
 }
 
 // CreateDenomDescription generates a string with the coin description

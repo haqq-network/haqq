@@ -1,6 +1,7 @@
 syntax = "proto3";
 package haqq.coinomics.v1;
 
+import "amino/amino.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/v1beta1/coin.proto";
@@ -31,7 +32,8 @@ message QueryMaxSupplyRequest {}
 message QueryMaxSupplyResponse {
   cosmos.base.v1beta1.Coin max_supply = 1 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Coin",
-    (gogoproto.nullable) = false
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
   ];
 }
 
@@ -39,13 +41,14 @@ message QueryRewardCoefficientRequest {}
 message QueryRewardCoefficientResponse {
   // rate by which the total supply increases within one era
   string reward_coefficient = 1 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.nullable) = false
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
   ];
 }
 
 message QueryParamsRequest {}
 message QueryParamsResponse {
   // params defines the parameters of the module.
-  Params params = 1 [ (gogoproto.nullable) = false ];
+  Params params = 1 [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

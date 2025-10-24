@@ -11,6 +11,7 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -33,10 +34,10 @@ func (k Keeper) CreateClawbackVestingAccount(
 	bk := k.bankKeeper
 
 	// Error checked during msg validation
-	from := sdk.MustAccAddressFromBech32(msg.FromAddress)
-	to := sdk.MustAccAddressFromBech32(msg.ToAddress)
+	funderAddress := sdk.MustAccAddressFromBech32(msg.FromAddress)
+	vestingAddress := sdk.MustAccAddressFromBech32(msg.ToAddress)
 
-	if bk.BlockedAddr(to) {
+	if bk.BlockedAddr(vestingAddress) {
 		return nil, errorsmod.Wrapf(errortypes.ErrUnauthorized,
 			"%s is not allowed to receive funds", msg.ToAddress,
 		)
@@ -72,7 +73,7 @@ func (k Keeper) CreateClawbackVestingAccount(
 	// Add Grant if vesting account exists, "merge" is true and funder is correct.
 	// Otherwise create a new Clawback Vesting Account
 	madeNewAcc := false
-	acc := ak.GetAccount(ctx, to)
+	acc := ak.GetAccount(goCtx, vestingAddress)
 	var vestingAcc *types.ClawbackVestingAccount
 
 	if acc != nil {
@@ -90,25 +91,25 @@ func (k Keeper) CreateClawbackVestingAccount(
 			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s can only accept grants from account %s", msg.ToAddress, vestingAcc.FunderAddress)
 		}
 
-		err := k.addGrant(ctx, vestingAcc, msg.GetStartTime().Unix(), msg.GetLockupPeriods(), msg.GetVestingPeriods(), vestingCoins)
+		err := k.addGrant(goCtx, vestingAcc, msg.GetStartTime().Unix(), msg.GetLockupPeriods(), msg.GetVestingPeriods(), vestingCoins)
 		if err != nil {
 			return nil, err
 		}
-		ak.SetAccount(ctx, vestingAcc)
+		ak.SetAccount(goCtx, vestingAcc)
 	} else {
 		codeHash := common.BytesToHash(crypto.Keccak256(nil))
-		baseAcc := authtypes.NewBaseAccountWithAddress(to)
+		baseAcc := authtypes.NewBaseAccountWithAddress(vestingAddress)
 		vestingAcc = types.NewClawbackVestingAccount(
 			baseAcc,
-			from,
+			funderAddress,
 			vestingCoins,
 			msg.StartTime,
 			msg.LockupPeriods,
 			msg.VestingPeriods,
 			&codeHash,
 		)
-		acc := ak.NewAccount(ctx, vestingAcc)
-		ak.SetAccount(ctx, acc)
+		acc := ak.NewAccount(goCtx, vestingAcc)
+		ak.SetAccount(goCtx, acc)
 		madeNewAcc = true
 	}
 
@@ -119,10 +120,14 @@ func (k Keeper) CreateClawbackVestingAccount(
 	}
 
 	// Send coins from the funder to vesting account
-	if err := bk.SendCoins(ctx, from, to, vestingCoins); err != nil {
+	if err := bk.SendCoins(goCtx, funderAddress, vestingAddress, vestingCoins); err != nil {
 		return nil, err
 	}
 
+	telemetry.IncrCounter(
+		float32(ctx.GasMeter().GasConsumed()),
+		"tx", "fund_vesting_account", "gas_used",
+	)
 	ctx.EventManager().EmitEvents(
 		sdk.Events{
 			sdk.NewEvent(
@@ -165,12 +170,12 @@ func (k Keeper) Clawback(
 
 	if bk.BlockedAddr(dest) {
 		return nil, errorsmod.Wrapf(errortypes.ErrUnauthorized,
-			"%s is not allowed to receive funds", msg.DestAddress,
+			"%s is a blocked address and not allowed to receive funds", msg.DestAddress,
 		)
 	}
 
 	// Get clawback vesting account
-	va, err := k.GetClawbackVestingAccount(ctx, addr)
+	va, err := k.GetClawbackVestingAccount(goCtx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +191,7 @@ func (k Keeper) Clawback(
 	}
 
 	// Perform clawback transfer
-	if err := k.transferClawback(ctx, *va, dest); err != nil {
+	if err := k.transferClawback(goCtx, *va, dest); err != nil {
 		return nil, err
 	}
 
@@ -236,7 +241,7 @@ func (k Keeper) UpdateVestingFunder(
 	}
 
 	// Check if vesting account exists
-	va, err := k.GetClawbackVestingAccount(ctx, vestingAccAddr)
+	va, err := k.GetClawbackVestingAccount(goCtx, vestingAccAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +283,7 @@ func (k Keeper) ConvertVestingAccount(
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	address := sdk.MustAccAddressFromBech32(msg.VestingAddress)
 
-	vestingAcc, err := k.GetClawbackVestingAccount(ctx, address)
+	vestingAcc, err := k.GetClawbackVestingAccount(goCtx, address)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +301,7 @@ func (k Keeper) ConvertVestingAccount(
 	ethAccount := ethtypes.ProtoAccount().(*ethtypes.EthAccount)
 	ethAccount.BaseAccount = vestingAcc.BaseAccount
 	ethAccount.SetCodeHash(vestingAcc.GetCodeHash()) //nolint: errcheck // There's always nil error
-	k.accountKeeper.SetAccount(ctx, ethAccount)
+	k.accountKeeper.SetAccount(goCtx, ethAccount)
 
 	return &types.MsgConvertVestingAccountResponse{}, nil
 }
@@ -336,7 +341,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 	}
 
 	// Disable clawback vesting account creation for contract accounts
-	acc := k.accountKeeper.GetAccount(ctx, to)
+	acc := k.accountKeeper.GetAccount(goCtx, to)
 	ethAcc, ok := acc.(*ethtypes.EthAccount)
 	if ok {
 		if err := utils.IsContractAccount(ethAcc); err == nil {
@@ -374,7 +379,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 	}
 
 	vestingAcc, newAccountCreated, wasMerged, err := k.ApplyVestingSchedule(
-		ctx,
+		goCtx,
 		from, to,
 		vestingCoins,
 		msg.StartTime,
@@ -392,7 +397,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 	}
 
 	// Send coins from the funder to vesting account
-	if err := k.bankKeeper.SendCoins(ctx, from, to, vestingCoins); err != nil {
+	if err := k.bankKeeper.SendCoins(goCtx, from, to, vestingCoins); err != nil {
 		return nil, err
 	}
 
@@ -413,7 +418,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 	}
 
 	if msg.Stake {
-		events, err = k.delegateVestedCoins(ctx, to, msg, events)
+		events, err = k.delegateVestedCoins(goCtx, to, msg, events)
 		if err != nil {
 			return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to delegate vested coins: %s", err.Error())
 		}
@@ -427,7 +432,7 @@ func (k Keeper) ConvertIntoVestingAccount(
 // addGrant merges a new clawback vesting grant into an existing
 // ClawbackVestingAccount.
 func (k Keeper) addGrant(
-	ctx sdk.Context,
+	goCtx context.Context,
 	va *types.ClawbackVestingAccount,
 	grantStartTime int64,
 	grantLockupPeriods, grantVestingPeriods sdkvesting.Periods,
@@ -435,8 +440,14 @@ func (k Keeper) addGrant(
 ) error {
 	// how much is really delegated?
 	vestingAddr := va.GetAddress()
-	bondedAmt := k.stakingKeeper.GetDelegatorBonded(ctx, vestingAddr)
-	unbondingAmt := k.stakingKeeper.GetDelegatorUnbonding(ctx, vestingAddr)
+	bondedAmt, err := k.stakingKeeper.GetDelegatorBonded(goCtx, vestingAddr)
+	if err != nil {
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to get bonded amount: %e", err)
+	}
+	unbondingAmt, err := k.stakingKeeper.GetDelegatorUnbonding(goCtx, vestingAddr)
+	if err != nil {
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to get unbonding amount: %e", err)
+	}
 	delegatedAmt := bondedAmt.Add(unbondingAmt)
 
 	// modify schedules for the new grant
@@ -459,8 +470,12 @@ func (k Keeper) addGrant(
 	va.OriginalVesting = va.OriginalVesting.Add(grantCoins...)
 
 	// DF rounds out to current delegated
+	bondDenom, err := k.stakingKeeper.BondDenom(goCtx)
+	if err != nil {
+		return errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to get bond denom: %e", err)
+	}
 	va.DelegatedVesting = sdk.NewCoins()
-	va.DelegatedFree = sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegatedAmt))
+	va.DelegatedFree = sdk.NewCoins(sdk.NewCoin(bondDenom, delegatedAmt))
 	return nil
 }
 
@@ -468,11 +483,12 @@ func (k Keeper) addGrant(
 // the destination address. Then, it updates the lockup schedule, and removes future
 // vesting events.
 func (k Keeper) transferClawback(
-	ctx sdk.Context,
+	goCtx context.Context,
 	va types.ClawbackVestingAccount,
 	dest sdk.AccAddress,
 ) error {
 	// Compute clawback amount, unlock unvested tokens and remove future vesting events
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	updatedAcc, toClawBack := va.ComputeClawback(ctx.BlockTime().Unix())
 	if toClawBack.IsZero() {
 		// no-op, nothing to transfer
@@ -480,9 +496,15 @@ func (k Keeper) transferClawback(
 	}
 
 	// set the account with the updated values of the vesting schedule
-	k.accountKeeper.SetAccount(ctx, &updatedAcc)
+	k.accountKeeper.SetAccount(goCtx, &updatedAcc)
 
 	addr := updatedAcc.GetAddress()
+
+	// In case destination is community pool (e.g. Gov Clawback)
+	// call the corresponding function
+	if dest.String() == k.accountKeeper.GetModuleAddress(distributiontypes.ModuleName).String() {
+		return k.distributionKeeper.FundCommunityPool(goCtx, toClawBack, addr)
+	}
 
 	// NOTE: don't use `SpendableCoins` to get the minimum value to clawback since
 	// the amount is retrieved from `ComputeClawback`, which ensures correctness.
@@ -490,20 +512,21 @@ func (k Keeper) transferClawback(
 	// different denoms (because of store iteration).
 
 	// Transfer clawback to the destination (funder)
-	return k.bankKeeper.SendCoins(ctx, addr, dest, toClawBack)
+	return k.bankKeeper.SendCoins(goCtx, addr, dest, toClawBack)
 }
 
-func (k Keeper) delegateVestedCoins(ctx sdk.Context, to sdk.AccAddress, msg *types.MsgConvertIntoVestingAccount, events sdk.Events) (sdk.Events, error) {
+func (k Keeper) delegateVestedCoins(goCtx context.Context, delegator sdk.AccAddress, msg *types.MsgConvertIntoVestingAccount, events sdk.Events) (sdk.Events, error) {
 	valAddress, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
 	if err != nil {
 		return events, errorsmod.Wrapf(errortypes.ErrInvalidAddress, "invalid validator address: %s", msg.ValidatorAddress)
 	}
 
-	validator, found := k.stakingKeeper.GetValidator(ctx, valAddress)
-	if !found {
-		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "validator %s not found", msg.ValidatorAddress)
+	validator, err := k.stakingKeeper.GetValidator(goCtx, valAddress)
+	if err != nil {
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to get validator %s: %e", msg.ValidatorAddress, err)
 	}
 
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	newVestingStart, newVestingEnd, _ := types.DisjunctPeriods(
 		msg.GetStartTime().Unix(),
 		msg.GetStartTime().Unix(),
@@ -522,14 +545,17 @@ func (k Keeper) delegateVestedCoins(ctx sdk.Context, to sdk.AccAddress, msg *typ
 		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "no vested coins to delegate immediately, check your vesting schedule")
 	}
 
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
+	bondDenom, err := k.stakingKeeper.BondDenom(goCtx)
+	if err != nil {
+		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "failed to get bond denom: %e", err)
+	}
 	found, amountToDelegate := vestedCoins.Find(bondDenom)
 	if !found || amountToDelegate.IsZero() {
 		// Nothing to delegate
 		return events, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "coin denom not match bonding denom '%s', check your vesting schedule", bondDenom)
 	}
 
-	newShares, err := k.stakingKeeper.Delegate(ctx, to, amountToDelegate.Amount, stakingtypes.Unbonded, validator, true)
+	newShares, err := k.stakingKeeper.Delegate(goCtx, delegator, amountToDelegate.Amount, stakingtypes.Unbonded, validator, true)
 	if err != nil {
 		return events, err
 	}

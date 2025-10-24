@@ -19,4 +19,6 @@ RUN chmod +x init-node.sh
 # JSON-RPC server
 EXPOSE 8545
 
+HEALTHCHECK CMD curl --fail http://localhost:26657 || exit 1
+
 CMD ["sh", "./init-node.sh"]

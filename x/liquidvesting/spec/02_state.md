@@ -8,9 +8,9 @@ order: 2
 
 The `x/liquidvesting` module keeps the following objects in state:
 
-| State Object | Description           | Key                             | Value           | Store    |
-|--------------|-----------------------|---------------------------------|-----------------| -------- |
-| `Denom`      | Liquid token bytecode | `[]byte{1} + []byte(baseDenom)` | `[]byte{denom}` | KV       |
+| State Object | Description           | Key                             | Value           | Store |
+|--------------|-----------------------|---------------------------------|-----------------|-------|
+| `Denom`      | Liquid token bytecode | `[]byte{1} + []byte(baseDenom)` | `[]byte{denom}` | KV    |
 
 ### Denom
 

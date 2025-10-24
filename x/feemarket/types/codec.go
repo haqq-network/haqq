@@ -14,6 +14,7 @@ var (
 	ModuleCdc = codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
 
 	// AminoCdc is a amino codec created to support amino JSON compatible msgs.
+	// For now we'll leave this. PENDING to check if we can remove it.
 	AminoCdc = codec.NewAminoCodec(amino)
 )
 

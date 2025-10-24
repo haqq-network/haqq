@@ -4,7 +4,8 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
@@ -79,7 +80,7 @@ func (k Keeper) SetDenom(ctx sdk.Context, denom types.Denom) {
 // GetAllGenesisAccount returns all genesisAccount
 func (k Keeper) GetAllDenoms(ctx sdk.Context) (list []types.Denom) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.DenomKeyPrefix)
+	iterator := storetypes.KVStorePrefixIterator(store, types.DenomKeyPrefix)
 
 	defer iterator.Close()
 
@@ -120,7 +121,7 @@ func (k Keeper) SetDenomCounter(ctx sdk.Context, counter uint64) {
 // Stops iteration when callback returns true.
 func (k Keeper) IterateDenoms(ctx sdk.Context, cb func(account types.Denom) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.DenomKeyPrefix)
+	iterator := storetypes.KVStorePrefixIterator(store, types.DenomKeyPrefix)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {

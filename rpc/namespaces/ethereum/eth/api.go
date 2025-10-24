@@ -3,7 +3,7 @@ package eth
 import (
 	"context"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -403,27 +403,7 @@ func (e *PublicAPI) Sign(address common.Address, data hexutil.Bytes) (hexutil.By
 func (e *PublicAPI) GetTransactionLogs(txHash common.Hash) ([]*ethtypes.Log, error) {
 	e.logger.Debug("eth_getTransactionLogs", "hash", txHash)
 
-	hexTx := txHash.Hex()
-	res, err := e.backend.GetTxByEthHash(txHash)
-	if err != nil {
-		e.logger.Debug("tx not found", "hash", hexTx, "error", err.Error())
-		return nil, nil
-	}
-
-	if res.Failed {
-		// failed, return empty logs
-		return nil, nil
-	}
-
-	resBlockResult, err := e.backend.TendermintBlockResultByNumber(&res.Height)
-	if err != nil {
-		e.logger.Debug("block result not found", "number", res.Height, "error", err.Error())
-		return nil, nil
-	}
-
-	// parse tx logs from events
-	index := int(res.MsgIndex) // #nosec G701
-	return backend.TxLogsFromEvents(resBlockResult.TxsResults[res.TxIndex].Events, index)
+	return e.backend.GetTransactionLogs(txHash)
 }
 
 // SignTypedData signs EIP-712 conformant typed data
@@ -477,6 +457,13 @@ func (e *PublicAPI) GetPendingTransactions() ([]*rpctypes.RPCTransaction, error)
 		return nil, err
 	}
 
+	chainIDHex, err := e.backend.ChainID()
+	if err != nil {
+		return nil, err
+	}
+
+	chainID := chainIDHex.ToInt()
+
 	result := make([]*rpctypes.RPCTransaction, 0, len(txs))
 	for _, tx := range txs {
 		for _, msg := range (*tx).GetMsgs() {
@@ -492,7 +479,7 @@ func (e *PublicAPI) GetPendingTransactions() ([]*rpctypes.RPCTransaction, error)
 				uint64(0),
 				uint64(0),
 				nil,
-				e.backend.ChainConfig().ChainID,
+				chainID,
 			)
 			if err != nil {
 				return nil, err

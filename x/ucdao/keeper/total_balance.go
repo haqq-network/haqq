@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
@@ -91,7 +91,7 @@ func (k BaseKeeper) GetTotalBalanceOf(ctx sdk.Context, denom string) sdk.Coin {
 	if bz == nil {
 		return sdk.Coin{
 			Denom:  denom,
-			Amount: sdk.NewInt(0),
+			Amount: math.NewInt(0),
 		}
 	}
 

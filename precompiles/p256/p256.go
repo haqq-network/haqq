@@ -23,6 +23,7 @@ import (
 
 	"github.com/haqq-network/haqq/crypto/secp256r1"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var _ vm.PrecompiledContract = &Precompile{}
@@ -34,17 +35,14 @@ const (
 	VerifyInputLength = 160
 )
 
-// PrecompileAddress defines the hex address of the p256 precompiled contract.
-const PrecompileAddress = "0x0000000000000000000000000000000000000100"
-
 // Precompile secp256r1 (P256) signature verification
 // implemented as a native contract as per EIP-7212.
-// See https://eips.ethereum.org/EIPS/eip-7212 for details
+// See https://github.com/ethereum/RIPs/blob/master/RIPS/rip-7212.md for details
 type Precompile struct{}
 
 // Address defines the address of the p256 precompiled contract.
 func (Precompile) Address() common.Address {
-	return common.HexToAddress(PrecompileAddress)
+	return common.HexToAddress(evmtypes.P256PrecompileAddress)
 }
 
 // RequiredGas returns the static gas required to execute the precompiled contract.

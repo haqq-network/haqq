@@ -14,7 +14,6 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/encoding"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
@@ -51,7 +50,7 @@ func TestUnwrapEthererumMsg(t *testing.T) {
 	_, err := evmtypes.UnwrapEthereumMsg(nil, common.Hash{})
 	require.NotNil(t, err)
 
-	encodingConfig := encoding.MakeConfig(app.ModuleBasics)
+	encodingConfig := encoding.MakeConfig()
 	clientCtx := client.Context{}.WithTxConfig(encodingConfig.TxConfig)
 	builder, _ := clientCtx.TxConfig.NewTxBuilder().(authtx.ExtensionOptionsTxBuilder)
 

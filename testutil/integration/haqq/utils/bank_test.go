@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	grpchandler "github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/utils"
@@ -22,7 +21,6 @@ func TestCheckBalances(t *testing.T) {
 		network.WithDenom(testDenom),
 		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),
 	)
-	handler := grpchandler.NewIntegrationHandler(nw)
 
 	testcases := []struct {
 		name        string
@@ -40,7 +38,7 @@ func TestCheckBalances(t *testing.T) {
 		{
 			name:        "fail - wrong amount",
 			address:     keyring.GetAccAddr(0).String(),
-			expAmount:   sdk.NewInt(1),
+			expAmount:   math.NewInt(1),
 			errContains: "expected balance",
 		},
 	}
@@ -55,7 +53,7 @@ func TestCheckBalances(t *testing.T) {
 				),
 			}}
 
-			err := utils.CheckBalances(handler, balances)
+			err := utils.CheckBalances(nw.GetContext(), nw.GetBankClient(), balances)
 			if tc.expPass {
 				require.NoError(t, err, "unexpected error checking balances")
 			} else {

@@ -13,7 +13,7 @@ func (k Keeper) GetPrevBlockTS(ctx sdk.Context) sdkmath.Int {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.KeyPrefixPrevBlockTS)
 	if len(bz) == 0 {
-		return sdk.ZeroInt()
+		return sdkmath.ZeroInt()
 	}
 
 	var prevBlockTSValue sdkmath.Int
@@ -41,7 +41,7 @@ func (k Keeper) GetMaxSupply(ctx sdk.Context) sdk.Coin {
 	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.KeyPrefixMaxSupply)
 	if len(bz) == 0 {
-		return sdk.NewCoin(params.MintDenom, sdk.ZeroInt())
+		return sdk.NewCoin(params.MintDenom, sdkmath.ZeroInt())
 	}
 
 	var maxSupply sdk.Coin

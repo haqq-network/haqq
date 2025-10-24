@@ -12,7 +12,11 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/cosmos/cosmos-sdk/codec"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+
 	"github.com/haqq-network/haqq/tests/e2e/upgrade"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/utils"
 )
 
@@ -27,17 +31,11 @@ const (
 	// relatedBuildPath defines the path where the build data is stored
 	relatedBuildPath = "../../build/"
 
-	// upgradeHeightDelta defines the number of blocks after the proposal and the scheduled upgrade
-	upgradeHeightDelta = 10
-
 	// upgradePath defines the relative path from this folder to the upgrade folder
 	upgradePath = "../../app/upgrades"
 
 	// registryDockerFile builds the image using the docker image registry
 	registryDockerFile = "./upgrade/Dockerfile.init"
-
-	// repoDockerFile builds the image from the repository (used when the images are not pushed to the registry, e.g. main)
-	repoDockerFile = "./Dockerfile.repo"
 )
 
 type IntegrationTestSuite struct {
@@ -94,36 +92,6 @@ func (s *IntegrationTestSuite) runInitialNode(version upgrade.VersionConfig) {
 	s.T().Logf("successfully started node with version: [%s]", version.ImageTag)
 }
 
-// runNodeWithCurrentChanges builds a docker image using the current branch of the Haqq repository.
-// Before running the node, runs a script to modify some configurations for the tests
-// (e.g.: gov proposal voting period, setup accounts, balances, etc..)
-// After a successful build, runs the container.
-func (s *IntegrationTestSuite) runNodeWithCurrentChanges() {
-	const (
-		name    = "e2e-test/haqq"
-		version = "latest"
-	)
-	// get the current branch name
-	// to run the tests against the last changes
-	branch, err := getCurrentBranch()
-	s.Require().NoError(err)
-
-	err = s.upgradeManager.BuildImage(
-		name,
-		version,
-		repoDockerFile,
-		".",
-		map[string]string{"BRANCH_NAME": branch},
-	)
-	s.Require().NoError(err, "can't build container for e2e test")
-
-	node := upgrade.NewNode(name, version)
-	node.SetEnvVars([]string{fmt.Sprintf("CHAIN_ID=%s", s.upgradeParams.ChainID)})
-
-	err = s.upgradeManager.RunNode(node)
-	s.Require().NoError(err, "can't run node Haqq using branch %s", branch)
-}
-
 // proposeUpgrade submits an upgrade proposal to the chain that schedules an upgrade to
 // the given target version.
 func (s *IntegrationTestSuite) proposeUpgrade(name, target string) {
@@ -131,22 +99,22 @@ func (s *IntegrationTestSuite) proposeUpgrade(name, target string) {
 	defer cancel()
 
 	// calculate upgrade height for the proposal
-	nodeHeight, err := s.upgradeManager.GetNodeHeight(ctx)
-	s.Require().NoError(err, "can't get block height from running node")
-	s.upgradeManager.UpgradeHeight = uint(nodeHeight + upgradeHeightDelta)
+	upgradeHeight, err := s.upgradeManager.GetUpgradeHeight(ctx, s.upgradeParams.ChainID)
+	s.Require().NoError(err, "can't get upgrade height")
+	s.upgradeManager.UpgradeHeight = upgradeHeight
 
 	// if Haqq is lower than v10.x.x no need to use the legacy proposal
 	currentVersion, err := s.upgradeManager.GetNodeVersion(ctx)
 	s.Require().NoError(err, "can't get current Haqq version")
-	isLegacyProposal := upgrade.CheckLegacyProposal(currentVersion)
+	proposalVersion := upgrade.CheckUpgradeProposalVersion(currentVersion)
 
 	// create the proposal
 	exec, err := s.upgradeManager.CreateSubmitProposalExec(
 		name,
 		s.upgradeParams.ChainID,
 		s.upgradeManager.UpgradeHeight,
-		isLegacyProposal,
-		"--fees=500aISLM",
+		proposalVersion,
+		"--fees=10000000000000000aISLM",
 		"--gas=500000",
 	)
 	s.Require().NoErrorf(
@@ -178,7 +146,7 @@ func (s *IntegrationTestSuite) proposeUpgrade(name, target string) {
 func (s *IntegrationTestSuite) voteForProposal(id int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	exec, err := s.upgradeManager.CreateVoteProposalExec(s.upgradeParams.ChainID, id, "--fees=500aISLM", "--gas=500000")
+	exec, err := s.upgradeManager.CreateVoteProposalExec(s.upgradeParams.ChainID, id, "--fees=10000000000000000aISLM", "--gas=500000")
 	s.Require().NoError(err, "can't create vote for proposal exec")
 	outBuf, errBuf, err := s.upgradeManager.RunExec(ctx, exec)
 	s.Require().NoErrorf(
@@ -196,15 +164,20 @@ func (s *IntegrationTestSuite) voteForProposal(id int) {
 
 // upgrade upgrades the node to the given version using the given repo. The repository
 // can either be a local path or a remote repository.
-func (s *IntegrationTestSuite) upgrade(targetRepo, targetVersion string) {
+func (s *IntegrationTestSuite) upgrade(targetVersion upgrade.VersionConfig) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	s.T().Log("wait for node to reach upgrade height...")
+	s.T().Logf("wait for node to reach upgrade height %d...", s.upgradeManager.UpgradeHeight)
 	// wait for proposed upgrade height
 	_, err := s.upgradeManager.WaitForHeight(ctx, int(s.upgradeManager.UpgradeHeight))
 	s.Require().NoError(err, "can't reach upgrade height")
-	buildDir := strings.Split(s.upgradeParams.MountPath, ":")[0]
+	dirs := strings.Split(s.upgradeParams.MountPath, ":")
+	buildDir := dirs[0]
+	rootDir := dirs[1]
+
+	// check that the proposal has passed before stopping the node
+	s.checkProposalPassed(ctx)
 
 	s.T().Log("exporting state to local...")
 	// export node .haqqd to local build/
@@ -217,9 +190,20 @@ func (s *IntegrationTestSuite) upgrade(targetRepo, targetVersion string) {
 
 	s.T().Logf("starting upgraded node with version: [%s]", targetVersion)
 
-	node := upgrade.NewNode(targetRepo, targetVersion)
+	// NOTE: after the upgrade, the current version needs to be updated to make sure that the correct CLI commands
+	// for the given version are used.
+	//
+	// this is e.g. relevant for retrieving the current node height from the block header
+	if targetVersion.ImageTag == upgrade.LocalVersionTag {
+		// NOTE: the upgrade name is the latest version from the app/upgrades folder to upgrade to
+		s.upgradeManager.CurrentVersion = targetVersion.UpgradeName
+	} else {
+		s.upgradeManager.CurrentVersion = targetVersion.ImageTag
+	}
+
+	node := upgrade.NewNode(targetVersion.ImageName, targetVersion.ImageTag)
 	node.Mount(s.upgradeParams.MountPath)
-	node.SetCmd([]string{"haqqd", "start", fmt.Sprintf("--chain-id=%s", s.upgradeParams.ChainID)})
+	node.SetCmd([]string{"haqqd", "start", fmt.Sprintf("--chain-id=%s", s.upgradeParams.ChainID), fmt.Sprintf("--home=%s.haqqd", rootDir)})
 	err = s.upgradeManager.RunNode(node)
 	s.Require().NoError(err, "can't mount and run upgraded node container")
 
@@ -227,6 +211,9 @@ func (s *IntegrationTestSuite) upgrade(targetRepo, targetVersion string) {
 
 	s.T().Logf("executing all module queries")
 	s.executeQueries()
+
+	s.T().Log("executing sample transactions")
+	s.executeTransactions()
 
 	// make sure node produce blocks after upgrade
 	s.T().Logf("height to wait for is %d", int(s.upgradeManager.UpgradeHeight)+blocksAfterUpgrade)
@@ -240,13 +227,13 @@ func (s *IntegrationTestSuite) upgrade(targetRepo, targetVersion string) {
 	}
 	s.Require().NoError(err, "node does not produce blocks after upgrade")
 
-	if targetVersion != upgrade.LocalVersionTag {
+	if targetVersion.ImageTag != upgrade.LocalVersionTag {
 		s.T().Log("checking node version...")
 		version, err := s.upgradeManager.GetNodeVersion(ctx)
 		s.Require().NoError(err, "can't get node version")
 
 		version = strings.TrimSpace(version)
-		targetVersion = strings.TrimPrefix(targetVersion, "v")
+		targetVersion.ImageTag = strings.TrimPrefix(targetVersion.ImageTag, "v")
 		s.Require().Equal(targetVersion, version,
 			"unexpected node version after upgrade:\nexpected: %s\nactual: %s",
 			targetVersion, version,
@@ -255,7 +242,40 @@ func (s *IntegrationTestSuite) upgrade(targetRepo, targetVersion string) {
 	}
 }
 
-// executeQueries executes all the module queries
+// checkProposalPassed queries the (most recent) upgrade proposal and checks that it has passed.
+//
+// NOTE: This was a problem in the past, where the upgrade height was reached before the proposal actually passed.
+// This is a safety check to make sure this doesn't happen again, as this was not obvious from the log output.
+func (s *IntegrationTestSuite) checkProposalPassed(ctx context.Context) {
+	exec, err := s.upgradeManager.CreateModuleQueryExec(upgrade.QueryArgs{
+		Module:     "gov",
+		SubCommand: "proposals",
+		ChainID:    s.upgradeParams.ChainID,
+	})
+	s.Require().NoError(err, "can't create query proposals exec")
+
+	outBuf, errBuf, err := s.upgradeManager.RunExec(ctx, exec)
+	s.Require().NoErrorf(
+		err,
+		"failed to query proposals;\nstdout: %s,\nstderr: %s", outBuf.String(), errBuf.String(),
+	)
+
+	nw := network.New()
+	encodingConfig := nw.GetEncodingConfig()
+	protoCodec, ok := encodingConfig.Codec.(*codec.ProtoCodec)
+	s.Require().True(ok, "encoding config codec is not a proto codec")
+
+	var proposalsRes govtypes.QueryProposalsResponse
+	err = protoCodec.UnmarshalJSON(outBuf.Bytes(), &proposalsRes)
+	s.Require().NoError(err, "can't unmarshal proposals response\n%s", outBuf.String())
+	s.Require().GreaterOrEqual(len(proposalsRes.Proposals), 1, "no proposals found")
+
+	// check that the most recent proposal has passed
+	proposal := proposalsRes.Proposals[len(proposalsRes.Proposals)-1]
+	s.Require().Equal(govtypes.ProposalStatus_PROPOSAL_STATUS_PASSED.String(), proposal.Status.String(), "expected proposal to have passed already")
+}
+
+// executeQueries executes all the module queries to check they are still working after the upgrade.
 func (s *IntegrationTestSuite) executeQueries() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -279,16 +299,15 @@ func (s *IntegrationTestSuite) executeQueries() {
 		{"feemarket: base-fee", "feemarket", "base-fee"},
 		{"feemarket: block-gas", "feemarket", "block-gas"},
 		{"feemarket: block-gas", "feemarket", "block-gas"},
-		{"revenue: params", "revenue", "params"},
-		{"revenue: contracts", "revenue", "contracts"},
-		{"incentives: params", "incentives", "params"},
-		{"incentives: allocation-meters", "incentives", "allocation-meters"},
-		{"incentives: incentives", "incentives", "incentives"},
 	}
 
 	for _, tc := range testCases {
 		s.T().Logf("executing %s", tc.name)
-		exec, err := s.upgradeManager.CreateModuleQueryExec(tc.moduleName, tc.subCommand, chainID)
+		exec, err := s.upgradeManager.CreateModuleQueryExec(upgrade.QueryArgs{
+			Module:     tc.moduleName,
+			SubCommand: tc.subCommand,
+			ChainID:    chainID,
+		})
 		s.Require().NoError(err)
 
 		_, errBuf, err := s.upgradeManager.RunExec(ctx, exec)

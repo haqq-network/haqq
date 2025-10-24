@@ -2,6 +2,7 @@ syntax = "proto3";
 package haqq.liquidvesting.v1;
 
 import "amino/amino.proto";
+import "cosmos/msg/v1/msg.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/v1beta1/coin.proto";
@@ -10,6 +11,7 @@ option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
 
 // Msg defines the Msg service.
 service Msg {
+  option (cosmos.msg.v1.service) = true;
   // Liquidate transforms specified amount of tokens locked on vesting account
   // into a new liquid token
   rpc Liquidate(MsgLiquidate) returns (MsgLiquidateResponse) {
@@ -26,6 +28,9 @@ service Msg {
 // MsgLiquidate represents message to liquidate arbitrary amount of tokens
 // locked in vesting
 message MsgLiquidate {
+  option (amino.name) = "haqq/x/liquidvesting/MsgLiquidate";
+  option (cosmos.msg.v1.signer) = "liquidate_from";
+
   // account for liquidation of locked vesting tokens
   string liquidate_from = 1;
   // account to send resulted liquid token
@@ -48,6 +53,9 @@ message MsgLiquidateResponse {
 // MsgLiquidate represents message to redeem arbitrary amount of liquid vesting
 // tokens
 message MsgRedeem {
+  option (amino.name) = "haqq/x/liquidvesting/MsgRedeem";
+  option (cosmos.msg.v1.signer) = "redeem_from";
+
   string redeem_from = 1;
   // destination address for vesting tokens
   string redeem_to = 2;

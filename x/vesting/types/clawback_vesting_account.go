@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
@@ -243,10 +244,50 @@ func (va ClawbackVestingAccount) ComputeClawback(
 	return va, totalUnvested
 }
 
-// HasLockedCoins returns true if the blocktime has not passed all clawback
+// HasLockedCoins returns true if the block time has not passed all clawback
 // account's lockup periods
 func (va ClawbackVestingAccount) HasLockedCoins(blockTime time.Time) bool {
 	return !va.GetLockedUpCoins(blockTime).IsZero()
+}
+
+// AddGrant merges a new clawback vesting grant into an existing
+// ClawbackVestingAccount.
+func (va *ClawbackVestingAccount) AddGrant(
+	grantStartTime int64,
+	grantLockupPeriods, grantVestingPeriods sdkvesting.Periods,
+	grantCoins sdk.Coins,
+) error {
+	// check if the clawback vesting account has only been initialized and not yet funded --
+	// in that case it's necessary to update the vesting account with the given start time because this is set to zero in the initialization
+	if len(va.LockupPeriods) == 0 && len(va.VestingPeriods) == 0 {
+		va.StartTime = time.Unix(grantStartTime, 0).UTC()
+	}
+
+	// modify schedules for the new grant
+	accStartTime := va.GetStartTime()
+	newLockupStart, newLockupEnd, newLockupPeriods := DisjunctPeriods(accStartTime, grantStartTime, va.LockupPeriods, grantLockupPeriods)
+	newVestingStart, newVestingEnd, newVestingPeriods := DisjunctPeriods(
+		accStartTime,
+		grantStartTime,
+		va.GetVestingPeriods(),
+		grantVestingPeriods,
+	)
+
+	if newLockupStart != newVestingStart {
+		return errorsmod.Wrapf(
+			ErrVestingLockup,
+			"vesting start time calculation should match lockup start (%d ≠ %d)",
+			newVestingStart, newLockupStart,
+		)
+	}
+
+	va.StartTime = time.Unix(newLockupStart, 0).UTC()
+	va.EndTime = Max64(newLockupEnd, newVestingEnd)
+	va.LockupPeriods = newLockupPeriods
+	va.VestingPeriods = newVestingPeriods
+	va.OriginalVesting = va.OriginalVesting.Add(grantCoins...)
+
+	return nil
 }
 
 // EthAddress returns the account address ethereum format.

@@ -233,7 +233,10 @@ func (k Keeper) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.MsgR
 	if decreasedPeriods.TotalAmount().IsZero() {
 		k.DeleteDenom(ctx, liquidDenom.GetBaseDenom())
 		if tokenPair.Enabled {
-			_, err := k.erc20Keeper.ToggleConversion(ctx, msg.Amount.Denom)
+			_, err := k.erc20Keeper.ToggleConversion(ctx, &erc20types.MsgToggleConversion{
+				Authority: k.accountKeeper.GetModuleAddress("gov").String(),
+				Token:     msg.Amount.Denom,
+			})
 			if err != nil {
 				return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to disable conversion: %s", err.Error())
 			}

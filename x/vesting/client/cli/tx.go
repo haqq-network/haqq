@@ -2,8 +2,6 @@ package cli
 
 import (
 	"fmt"
-	// "github.com/ethereum/go-ethereum/common"
-	// "strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -163,9 +161,6 @@ func NewMsgClawbackCmd() *cobra.Command {
 			}
 
 			msg := types.NewMsgClawback(clientCtx.GetFromAddress(), addr, dest)
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
@@ -202,9 +197,6 @@ func NewMsgUpdateVestingFunderCmd() *cobra.Command {
 			}
 
 			msg := types.NewMsgUpdateVestingFunder(clientCtx.GetFromAddress(), newFunder, vestingAcc)
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
@@ -235,9 +227,6 @@ func NewMsgConvertVestingAccountCmd() *cobra.Command {
 			}
 
 			msg := types.NewMsgConvertVestingAccount(addr)
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},

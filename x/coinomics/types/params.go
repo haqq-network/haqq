@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
@@ -24,7 +25,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 func NewParams(
 	mintDenom string,
-	rewardsCoefficient sdk.Dec,
+	rewardsCoefficient sdkmath.LegacyDec,
 	enableCoinomics bool,
 ) Params {
 	return Params{
@@ -37,12 +38,12 @@ func NewParams(
 func DefaultParams() Params {
 	return Params{
 		MintDenom:         DefaultMintDenom,
-		RewardCoefficient: sdk.NewDecWithPrec(78, 1),
+		RewardCoefficient: sdkmath.LegacyNewDecWithPrec(78, 1),
 		EnableCoinomics:   true,
 	}
 }
 
-// Implements params.ParamSet
+// ParamSetPairs Implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyMintDenom, &p.MintDenom, validateMintDenom),
@@ -65,7 +66,7 @@ func validateMintDenom(i interface{}) error {
 }
 
 func validateRewardCoefficient(i interface{}) error {
-	_, ok := i.(sdk.Dec)
+	_, ok := i.(sdkmath.LegacyDec)
 
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)

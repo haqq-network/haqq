@@ -2,21 +2,25 @@ package keeper_test
 
 import (
 	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/haqq-network/haqq/tests"
 	"github.com/haqq-network/haqq/testutil"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
-func (suite *KeeperTestSuite) TestBalances() {
+func TestBalances(t *testing.T) {
 	var (
+		ctx    sdk.Context
+		nw     *network.UnitTestNetwork
 		req    *types.QueryBalancesRequest
 		expRes *types.QueryBalancesResponse
 	)
-	addr := sdk.AccAddress(tests.GenerateAddress().Bytes())
 
 	testCases := []struct {
 		name        string
@@ -54,7 +58,7 @@ func (suite *KeeperTestSuite) TestBalances() {
 			name: "invalid account - not found",
 			malleate: func() {
 				req = &types.QueryBalancesRequest{
-					Address: addr.String(),
+					Address: vestingAddr.String(),
 				}
 			},
 			expPass:     false,
@@ -63,12 +67,12 @@ func (suite *KeeperTestSuite) TestBalances() {
 		{
 			name: "invalid account - not clawback vesting account",
 			malleate: func() {
-				baseAccount := authtypes.NewBaseAccountWithAddress(addr)
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, baseAccount)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				baseAccount := authtypes.NewBaseAccountWithAddress(vestingAddr)
+				acc := nw.App.AccountKeeper.NewAccount(ctx, baseAccount)
+				nw.App.AccountKeeper.SetAccount(ctx, acc)
 
 				req = &types.QueryBalancesRequest{
-					Address: addr.String(),
+					Address: vestingAddr.String(),
 				}
 			},
 			expPass:     false,
@@ -77,25 +81,23 @@ func (suite *KeeperTestSuite) TestBalances() {
 		{
 			name: "valid",
 			malleate: func() {
-				vestingStart := s.ctx.BlockTime()
-				funder := sdk.AccAddress(types.ModuleName)
-				err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, funder, balances)
-				suite.Require().NoError(err, "error while funding the target account")
+				vestingStart := ctx.BlockTime()
+				err := testutil.FundAccount(ctx, nw.App.BankKeeper, funder, balances)
+				require.NoError(t, err, "error while funding the funder account")
 
 				msg := types.NewMsgCreateClawbackVestingAccount(
 					funder,
-					addr,
+					vestingAddr,
 					vestingStart,
 					lockupPeriods,
 					vestingPeriods,
 					false,
 				)
-				ctx := sdk.WrapSDKContext(suite.ctx)
-				_, err = suite.app.VestingKeeper.CreateClawbackVestingAccount(ctx, msg)
-				suite.Require().NoError(err, "error while creating the vesting account")
+				_, err = nw.App.VestingKeeper.CreateClawbackVestingAccount(ctx, msg)
+				require.NoError(t, err, "error while creating the vesting account")
 
 				req = &types.QueryBalancesRequest{
-					Address: addr.String(),
+					Address: vestingAddr.String(),
 				}
 				expRes = &types.QueryBalancesResponse{
 					Locked:   balances,
@@ -108,19 +110,21 @@ func (suite *KeeperTestSuite) TestBalances() {
 	}
 
 	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
-			suite.SetupTest() // reset
-			ctx := sdk.WrapSDKContext(suite.ctx)
-			tc.malleate()
-			suite.Commit()
+		t.Run(fmt.Sprintf("Case %s", tc.name), func(t *testing.T) {
+			// reset
+			nw = network.NewUnitTestNetwork()
+			ctx = nw.GetContext()
+			qc := nw.GetVestingClient()
 
-			res, err := suite.queryClient.Balances(ctx, req)
+			tc.malleate()
+
+			res, err := qc.Balances(ctx, req)
 			if tc.expPass {
-				suite.Require().NoError(err)
-				suite.Require().Equal(expRes, res)
+				require.NoError(t, err)
+				require.Equal(t, expRes, res)
 			} else {
-				suite.Require().Error(err)
-				suite.Require().ErrorContains(err, tc.errContains)
+				require.Error(t, err)
+				require.ErrorContains(t, err, tc.errContains)
 			}
 		})
 	}

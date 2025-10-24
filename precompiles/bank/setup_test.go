@@ -26,7 +26,7 @@ type PrecompileTestSuite struct {
 	suite.Suite
 
 	bondDenom, tokenDenom string
-	evmosAddr, xmplAddr   common.Address
+	islmAddr, xmplAddr    common.Address
 
 	// tokenDenom is the specific token denomination used in testing the ERC20 precompile.
 	// This denomination is used to instantiate the precompile.
@@ -43,37 +43,40 @@ func TestPrecompileTestSuite(t *testing.T) {
 	suite.Run(t, s)
 }
 
-func (s *PrecompileTestSuite) SetupTest() {
+func (s *PrecompileTestSuite) SetupTest() sdk.Context {
+	s.tokenDenom = xmplDenom
+
 	keyring := testkeyring.New(2)
 	genesis := integrationutils.CreateGenesisWithTokenPairs(keyring)
-	integrationNetwork := network.NewUnitTestNetwork(
+	unitNetwork := network.NewUnitTestNetwork(
 		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),
 		network.WithCustomGenesis(genesis),
+		network.WithOtherDenoms([]string{s.tokenDenom}),
 	)
-	grpcHandler := grpc.NewIntegrationHandler(integrationNetwork)
-	txFactory := factory.New(integrationNetwork, grpcHandler)
+	grpcHandler := grpc.NewIntegrationHandler(unitNetwork)
+	txFactory := factory.New(unitNetwork, grpcHandler)
 
-	ctx := integrationNetwork.GetContext()
-	sk := integrationNetwork.App.StakingKeeper
-	bondDenom := sk.BondDenom(ctx)
+	ctx := unitNetwork.GetContext()
+	sk := unitNetwork.App.StakingKeeper
+	bondDenom, err := sk.BondDenom(ctx)
+	s.Require().NoError(err, "failed to get bond denom")
 	s.Require().NotEmpty(bondDenom, "bond denom cannot be empty")
 
 	s.bondDenom = bondDenom
-	s.tokenDenom = "xmpl"
 	s.factory = txFactory
 	s.grpcHandler = grpcHandler
 	s.keyring = keyring
-	s.network = integrationNetwork
+	s.network = unitNetwork
 
 	tokenPairID := s.network.App.Erc20Keeper.GetTokenPairID(s.network.GetContext(), s.bondDenom)
 	tokenPair, found := s.network.App.Erc20Keeper.GetTokenPair(s.network.GetContext(), tokenPairID)
 	s.Require().True(found)
-	s.evmosAddr = common.HexToAddress(tokenPair.Erc20Address)
+	s.islmAddr = common.HexToAddress(tokenPair.Erc20Address)
 
-	s.evmosAddr = tokenPair.GetERC20Contract()
+	s.islmAddr = tokenPair.GetERC20Contract()
 
 	// Mint and register a second coin for testing purposes
-	err := s.network.App.BankKeeper.MintCoins(s.network.GetContext(), coinomicstypes.ModuleName, sdk.Coins{{Denom: "xmpl", Amount: math.NewInt(1e18)}})
+	err = s.network.App.BankKeeper.MintCoins(s.network.GetContext(), coinomicstypes.ModuleName, sdk.Coins{{Denom: "xmpl", Amount: math.NewInt(1e18)}})
 	s.Require().NoError(err)
 
 	tokenPairID = s.network.App.Erc20Keeper.GetTokenPairID(s.network.GetContext(), s.tokenDenom)
@@ -84,4 +87,5 @@ func (s *PrecompileTestSuite) SetupTest() {
 	s.xmplAddr = tokenPair.GetERC20Contract()
 
 	s.precompile = s.setupBankPrecompile()
+	return ctx
 }

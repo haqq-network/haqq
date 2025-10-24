@@ -3,11 +3,13 @@ package cosmos_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	sdkmath "cosmossdk.io/math"
+	sdktestutil "github.com/cosmos/cosmos-sdk/testutil/testdata"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 
+	cosmosante "github.com/haqq-network/haqq/app/ante/cosmos"
 	"github.com/haqq-network/haqq/testutil"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 )
@@ -17,9 +19,18 @@ import (
 // To do so, specify the iteration num with the -benchtime flag
 // e.g.: go test -bench=DeductFeeDecorator -benchtime=1000x
 func BenchmarkDeductFeeDecorator(b *testing.B) {
+	var (
+		err error
+		ctx sdk.Context
+	)
 	s := new(AnteTestSuite)
 	s.SetT(&testing.T{})
 	s.SetupTest()
+
+	delegationsRewards := make([]sdkmath.Int, 110)
+	for i := 0; i < len(delegationsRewards); i++ {
+		delegationsRewards[i] = sdkmath.NewInt(1e14)
+	}
 
 	testCases := []deductFeeDecoratorTestCase{
 		{
@@ -40,16 +51,14 @@ func BenchmarkDeductFeeDecorator(b *testing.B) {
 			rewards:  []sdkmath.Int{sdkmath.ZeroInt()},
 			simulate: true,
 			setup: func() {
-				var err error
 				usersCount := 10_000
 				// setup other users rewards
 				for i := 0; i < usersCount; i++ {
 					userAddr, _ := testutiltx.NewAccAddressAndKey()
-					s.ctx, err = testutil.PrepareAccountsForDelegationRewards(s.T(), s.ctx, s.app, userAddr, sdkmath.ZeroInt(), sdkmath.NewInt(1e18))
+					ctx, err = testutil.PrepareAccountsForDelegationRewards(s.T(), ctx, s.GetNetwork().App, userAddr, sdkmath.ZeroInt(), sdkmath.NewInt(1e18))
 					s.Require().NoError(err, "failed to prepare accounts for delegation rewards")
 				}
-				s.ctx, err = testutil.Commit(s.ctx, s.app, time.Second*0, nil)
-				s.Require().NoError(err)
+				s.Require().NoError(s.GetNetwork().NextBlock())
 			},
 		},
 		{
@@ -63,17 +72,16 @@ func BenchmarkDeductFeeDecorator(b *testing.B) {
 				// setup other users rewards
 				for i := 0; i < usersCount; i++ {
 					userAddr, _ := testutiltx.NewAccAddressAndKey()
-					s.ctx, err = testutil.PrepareAccountsForDelegationRewards(s.T(), s.ctx, s.app, userAddr, sdkmath.ZeroInt(), sdkmath.NewInt(1e18))
+					ctx, err = testutil.PrepareAccountsForDelegationRewards(s.T(), ctx, s.GetNetwork().App, userAddr, sdkmath.ZeroInt(), sdkmath.NewInt(1e18))
 					s.Require().NoError(err, "failed to prepare accounts for delegation rewards")
 				}
-				s.ctx, err = testutil.Commit(s.ctx, s.app, time.Second*0, nil)
-				s.Require().NoError(err)
+				s.Require().NoError(s.GetNetwork().NextBlock())
 			},
 		},
 		{
 			name:    "insufficient funds but sufficient staking rewards - 110 delegations",
 			balance: sdkmath.ZeroInt(),
-			rewards: intSlice(110, sdkmath.NewInt(1e14)),
+			rewards: delegationsRewards,
 			gas:     10_000_000,
 		},
 	}
@@ -88,19 +96,36 @@ func BenchmarkDeductFeeDecorator(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				// Stop the timer to perform expensive test setup
 				b.StopTimer()
+				s.SetupTest()
+				ctx = s.GetNetwork().GetContext()
 				addr, priv := testutiltx.NewAccAddressAndKey()
 
-				// Create a new DeductFeeDecorator
-				dfd, args := s.setupDeductFeeDecoratorTestCase(addr, priv, tc)
+				// prepare the testcase
+				ctx, err = testutil.PrepareAccountsForDelegationRewards(s.T(), ctx, s.GetNetwork().App, addr, tc.balance, tc.rewards...)
+				s.Require().NoError(err, "failed to prepare accounts for delegation rewards")
+				s.Require().NoError(s.GetNetwork().NextBlock())
 
-				s.ctx = s.ctx.WithIsCheckTx(tc.checkTx)
+				dfd := cosmosante.NewDeductFeeDecorator(
+					s.GetNetwork().App.AccountKeeper, s.GetNetwork().App.BankKeeper, s.GetNetwork().App.DistrKeeper, s.GetNetwork().App.FeeGrantKeeper, s.GetNetwork().App.StakingKeeper, nil,
+				)
+				msg := sdktestutil.NewTestMsg(addr)
+				args := testutiltx.CosmosTxArgs{
+					TxCfg:      s.GetClientCtx().TxConfig,
+					Priv:       priv,
+					Gas:        tc.gas,
+					GasPrice:   tc.gasPrice,
+					FeeGranter: tc.feeGranter(),
+					Msgs:       []sdk.Msg{msg},
+				}
+
+				ctx = ctx.WithIsCheckTx(tc.checkTx)
 
 				// Create a transaction out of the message
-				tx, _ := testutiltx.PrepareCosmosTx(s.ctx, s.app, args, signing.SignMode_SIGN_MODE_DIRECT)
+				tx, _ := testutiltx.PrepareCosmosTx(ctx, s.GetNetwork().App, args, signing.SignMode_SIGN_MODE_DIRECT)
 
 				// Benchmark only the ante handler logic - start the timer
 				b.StartTimer()
-				_, err := dfd.AnteHandle(s.ctx, tx, tc.simulate, testutil.NextFn)
+				_, err = dfd.AnteHandle(ctx, tx, tc.simulate, testutil.NextFn)
 				s.Require().NoError(err)
 			}
 		})

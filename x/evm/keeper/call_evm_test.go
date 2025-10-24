@@ -2,32 +2,16 @@ package keeper_test
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/contracts"
-	"github.com/haqq-network/haqq/testutil"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/x/erc20/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
-
-const erc20Decimals = uint8(18)
-
-// DeployContract deploys the ERC20MinterBurnerDecimalsContract.
-func (suite *KeeperTestSuite) DeployContract(name, symbol string, decimals uint8) (common.Address, error) {
-	suite.Commit()
-	addr, err := testutil.DeployContract(
-		suite.ctx,
-		suite.app,
-		suite.priv,
-		suite.queryClient,
-		contracts.ERC20MinterBurnerDecimalsContract,
-		name, symbol, decimals,
-	)
-	suite.Commit()
-	return addr, err
-}
 
 func (suite *KeeperTestSuite) TestCallEVM() {
 	testCases := []struct {
@@ -48,13 +32,22 @@ func (suite *KeeperTestSuite) TestCallEVM() {
 	}
 	for _, tc := range testCases {
 		suite.SetupTest() // reset
-
-		erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
-		contract, err := suite.DeployContract("coin", "token", erc20Decimals)
+		// We don't have native WISLM precompiled contract on chain by default, so deploy custom one
+		erc20 := contracts.ERC20MinterBurnerDecimalsContract
+		wislmContract, err := suite.factory.DeployContract(
+			suite.keyring.GetPrivKey(0),
+			evmtypes.EvmTxArgs{
+				GasPrice: big.NewInt(1e9),
+			}, // NOTE: passing empty struct to use default values
+			factory.ContractDeploymentData{
+				Contract:        erc20,
+				ConstructorArgs: []interface{}{"Wrapped ISLM", "WISLM", uint8(18)},
+			},
+		)
 		suite.Require().NoError(err)
-		account := utiltx.GenerateAddress()
 
-		res, err := suite.app.EvmKeeper.CallEVM(suite.ctx, erc20, types.ModuleAddress, contract, true, tc.method, account)
+		account := utiltx.GenerateAddress()
+		res, err := suite.network.App.EvmKeeper.CallEVM(suite.network.GetContext(), erc20.ABI, types.ModuleAddress, wislmContract, false, tc.method, account)
 		if tc.expPass {
 			suite.Require().IsTypef(&evmtypes.MsgEthereumTxResponse{}, res, tc.name)
 			suite.Require().NoError(err)
@@ -65,81 +58,80 @@ func (suite *KeeperTestSuite) TestCallEVM() {
 }
 
 func (suite *KeeperTestSuite) TestCallEVMWithData() {
-	erc20 := contracts.ERC20MinterBurnerDecimalsContract.ABI
+	erc20 := contracts.ERC20MinterBurnerDecimalsContract
 	testCases := []struct {
 		name     string
 		from     common.Address
-		malleate func() ([]byte, *common.Address)
+		malleate func() []byte
+		deploy   bool
 		expPass  bool
 	}{
 		{
 			"unknown method",
 			types.ModuleAddress,
-			func() ([]byte, *common.Address) {
-				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
-				suite.Require().NoError(err)
+			func() []byte {
 				account := utiltx.GenerateAddress()
-				data, _ := erc20.Pack("", account)
-				return data, &contract
+				data, _ := erc20.ABI.Pack("", account)
+				return data
 			},
+			false,
 			false,
 		},
 		{
 			"pass",
 			types.ModuleAddress,
-			func() ([]byte, *common.Address) {
-				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
-				suite.Require().NoError(err)
+			func() []byte {
 				account := utiltx.GenerateAddress()
-				data, _ := erc20.Pack("balanceOf", account)
-				return data, &contract
+				data, _ := erc20.ABI.Pack("balanceOf", account)
+				return data
 			},
+			false,
 			true,
 		},
 		{
 			"fail empty data",
 			types.ModuleAddress,
-			func() ([]byte, *common.Address) {
-				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
-				suite.Require().NoError(err)
-				return []byte{}, &contract
+			func() []byte {
+				return []byte{}
 			},
+			false,
 			false,
 		},
 
 		{
 			"fail empty sender",
 			common.Address{},
-			func() ([]byte, *common.Address) {
-				contract, err := suite.DeployContract("coin", "token", erc20Decimals)
-				suite.Require().NoError(err)
-				return []byte{}, &contract
+			func() []byte {
+				return []byte{}
 			},
+			false,
 			false,
 		},
 		{
 			"deploy",
 			types.ModuleAddress,
-			func() ([]byte, *common.Address) {
-				ctorArgs, _ := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
-				data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...) //nolint:gocritic
-				return data, nil
+			func() []byte {
+				ctorArgs, _ := erc20.ABI.Pack("", "test", "test", uint8(18))
+				data := append(erc20.Bin, ctorArgs...) //nolint:gocritic
+				return data
 			},
+			true,
 			true,
 		},
 		{
 			"fail deploy",
 			types.ModuleAddress,
-			func() ([]byte, *common.Address) {
-				params := suite.app.EvmKeeper.GetParams(suite.ctx)
+			func() []byte {
+				params := suite.network.App.EvmKeeper.GetParams(suite.network.GetContext())
 				params.AccessControl.Create = evmtypes.AccessControlType{
 					AccessType: evmtypes.AccessTypeRestricted,
 				}
-				_ = suite.app.EvmKeeper.SetParams(suite.ctx, params)
-				ctorArgs, _ := contracts.ERC20MinterBurnerDecimalsContract.ABI.Pack("", "test", "test", uint8(18))
-				data := append(contracts.ERC20MinterBurnerDecimalsContract.Bin, ctorArgs...) //nolint:gocritic
-				return data, nil
+				_ = suite.network.App.EvmKeeper.SetParams(suite.network.GetContext(), params)
+				ctorArgs, _ := erc20.ABI.Pack("", "test", "test", uint8(18))
+				data := append(erc20.Bin, ctorArgs...) //nolint:gocritic
+				return data
 			},
+			true,
 			false,
 		},
 	}
@@ -148,9 +140,28 @@ func (suite *KeeperTestSuite) TestCallEVMWithData() {
 		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
 			suite.SetupTest() // reset
 
-			data, contract := tc.malleate()
+			// We don't have native WISLM precompiled contract on chain by default, so deploy custom one
+			wislmContract, err := suite.factory.DeployContract(
+				suite.keyring.GetPrivKey(0),
+				evmtypes.EvmTxArgs{
+					GasPrice: big.NewInt(1e9),
+				}, // NOTE: passing empty struct to use default values
+				factory.ContractDeploymentData{
+					Contract:        erc20,
+					ConstructorArgs: []interface{}{"Wrapped ISLM", "WISLM", uint8(18)},
+				},
+			)
+			suite.Require().NoError(err)
 
-			res, err := suite.app.EvmKeeper.CallEVMWithData(suite.ctx, tc.from, contract, data, true)
+			data := tc.malleate()
+			var res *evmtypes.MsgEthereumTxResponse
+
+			if tc.deploy {
+				res, err = suite.network.App.EvmKeeper.CallEVMWithData(suite.network.GetContext(), tc.from, nil, data, true)
+			} else {
+				res, err = suite.network.App.EvmKeeper.CallEVMWithData(suite.network.GetContext(), tc.from, &wislmContract, data, false)
+			}
+
 			if tc.expPass {
 				suite.Require().IsTypef(&evmtypes.MsgEthereumTxResponse{}, res, tc.name)
 				suite.Require().NoError(err)

@@ -6,128 +6,231 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 
-	ethante "github.com/haqq-network/haqq/app/ante/evm"
-	"github.com/haqq-network/haqq/testutil"
-	testutiltx "github.com/haqq-network/haqq/testutil/tx"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	evmante "github.com/haqq-network/haqq/app/ante/evm"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
-// global variables used for testing the eth vesting ante handler
-var (
-	balances       = sdk.NewCoins(sdk.NewInt64Coin("test", 1000))
-	quarter        = sdk.NewCoins(sdk.NewInt64Coin("test", 250))
-	lockupPeriods  = sdkvesting.Periods{{Length: 5000, Amount: balances}}
-	vestingPeriods = sdkvesting.Periods{
-		{Length: 2000, Amount: quarter},
-		{Length: 2000, Amount: quarter},
-		{Length: 2000, Amount: quarter},
-		{Length: 2000, Amount: quarter},
-	}
-	vestingCoins = sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(1000000000)))
-)
+type AccountExpenses = map[string]*evmante.EthVestingExpenseTracker
 
-// TestEthVestingTransactionDecorator tests the EthVestingTransactionDecorator ante handler.
-func (suite *AnteTestSuite) TestEthVestingTransactionDecorator() {
-	addr := testutiltx.GenerateAddress()
+func (suite *EvmAnteTestSuite) TestCheckVesting() {
+	keyring := testkeyring.New(1)
+	unitNetwork := network.NewUnitTestNetwork(
+		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),
+	)
+	grpcHandler := grpc.NewIntegrationHandler(unitNetwork)
+	sender := keyring.GetAccAddr(0)
+	addedExpense := math.NewInt(100)
 
-	ethTxParams := &evmtypes.EvmTxArgs{
-		ChainID:  suite.app.EvmKeeper.ChainID(),
-		Nonce:    1,
-		To:       &addr,
-		Amount:   big.NewInt(1000000000),
-		GasLimit: 100000,
-		GasPrice: big.NewInt(1000000000),
-	}
-	tx := evmtypes.NewTx(ethTxParams)
-	tx.From = addr.Hex()
-
-	testcases := []struct {
-		name        string
-		tx          sdk.Tx
-		malleate    func()
-		expPass     bool
-		errContains string
+	testCases := []struct {
+		name                  string
+		expectedError         error
+		getAccountAndExpenses func() (sdk.AccountI, AccountExpenses)
 	}{
 		{
-			"pass - valid transaction, no vesting account",
-			tx,
-			func() {
-				acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr.Bytes())
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+			name:          "success: non clawback account should be successful",
+			expectedError: nil,
+			getAccountAndExpenses: func() (sdk.AccountI, AccountExpenses) {
+				account, err := grpcHandler.GetAccount(sender.String())
+				suite.Require().NoError(err)
+				return account, defaultAccountExpenses()
 			},
-			true,
-			"",
 		},
 		{
-			"fail - invalid transaction",
-			&testutiltx.InvalidTx{},
-			func() {},
-			false,
-			"invalid message type",
+			name:          "error: clawback account with balance 0 should fail",
+			expectedError: errortypes.ErrInsufficientFunds,
+			getAccountAndExpenses: func() (sdk.AccountI, AccountExpenses) {
+				newIndex := keyring.AddKey()
+				unfundedAddr := keyring.GetAccAddr(newIndex)
+				funder := keyring.GetAccAddr(0)
+				vestingParams := defaultVestingParams(unitNetwork, funder, unfundedAddr)
+				return generateNewVestingAccount(
+					unitNetwork,
+					vestingParams,
+				), defaultAccountExpenses()
+			},
 		},
 		{
-			"fail - from address not found",
-			tx,
-			func() {},
-			false,
-			"does not exist: unknown address",
-		},
-		{
-			"pass - valid transaction, vesting account",
-			tx,
-			func() {
-				baseAcc := authtypes.NewBaseAccountWithAddress(addr.Bytes())
-				codeHash := common.BytesToHash(crypto.Keccak256(nil))
-				vestingAcc := vestingtypes.NewClawbackVestingAccount(
-					baseAcc, addr.Bytes(), vestingCoins, time.Now(), lockupPeriods, vestingPeriods, &codeHash,
-				)
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, vestingAcc)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+			name:          "error: clawback account with not enough bank + not enough vested unlocked balance < total should fail",
+			expectedError: vestingtypes.ErrInsufficientUnlockedCoins,
+			getAccountAndExpenses: func() (sdk.AccountI, AccountExpenses) {
+				newIndex := keyring.AddKey()
+				newAddr := keyring.GetAccAddr(newIndex)
+				funder := keyring.GetAccAddr(0)
 
-				denom := suite.app.EvmKeeper.GetParams(suite.ctx).EvmDenom
-				coins := sdk.NewCoins(sdk.NewCoin(denom, math.NewInt(1000000000)))
-				err := testutil.FundAccount(suite.ctx, suite.app.BankKeeper, addr.Bytes(), coins)
-				suite.Require().NoError(err, "failed to fund account")
+				// have insufficient bank balance but not zero
+				insufficientAmount := addedExpense.Sub(math.NewInt(1))
+				err := unitNetwork.FundAccount(
+					newAddr,
+					sdk.NewCoins(
+						sdk.NewCoin(
+							unitNetwork.GetDenom(),
+							insufficientAmount,
+						),
+					),
+				)
+				suite.Require().NoError(err)
+
+				vestingParams := defaultVestingParams(unitNetwork, funder, newAddr)
+				vestingAccount := generateNewVestingAccount(
+					unitNetwork,
+					vestingParams,
+				)
+				return vestingAccount, defaultAccountExpenses()
 			},
-			true,
-			"",
 		},
 		{
-			"fail - valid transaction, vesting account, no balance",
-			tx,
-			func() {
-				baseAcc := authtypes.NewBaseAccountWithAddress(addr.Bytes())
-				codeHash := common.BytesToHash(crypto.Keccak256(nil))
-				vestingAcc := vestingtypes.NewClawbackVestingAccount(
-					baseAcc, addr.Bytes(), vestingCoins, time.Now(), lockupPeriods, vestingPeriods, &codeHash,
+			name:          "error: clawback account with not enough bank + not enough vested unlocked balance < total + previousExpenses should fail",
+			expectedError: vestingtypes.ErrInsufficientUnlockedCoins,
+			getAccountAndExpenses: func() (sdk.AccountI, AccountExpenses) {
+				newIndex := keyring.AddKey()
+				newAddr := keyring.GetAccAddr(newIndex)
+				funder := keyring.GetAccAddr(0)
+
+				// have insufficient bank balance but not zero
+				enoughAmount := addedExpense
+				err := unitNetwork.FundAccount(
+					newAddr,
+					sdk.NewCoins(
+						sdk.NewCoin(
+							unitNetwork.GetDenom(),
+							enoughAmount,
+						),
+					),
 				)
-				acc := suite.app.AccountKeeper.NewAccount(suite.ctx, vestingAcc)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+				suite.Require().NoError(err)
+
+				vestingParams := defaultVestingParams(unitNetwork, funder, newAddr)
+				vestingAccount := generateNewVestingAccount(
+					unitNetwork,
+					vestingParams,
+				)
+
+				accExpenses := defaultAccountExpenses()
+				accExpenses[newAddr.String()] = &evmante.EthVestingExpenseTracker{
+					Total:     big.NewInt(1000),
+					Spendable: big.NewInt(0),
+				}
+
+				return vestingAccount, accExpenses
 			},
-			false,
-			"account has no balance to execute transaction",
+		},
+		{
+			name:          "success: clawback account with enough bank + not enough vested unlocked balance > total should be successful",
+			expectedError: nil,
+			getAccountAndExpenses: func() (sdk.AccountI, AccountExpenses) {
+				newIndex := keyring.AddKey()
+				newAddr := keyring.GetAccAddr(newIndex)
+				funder := keyring.GetAccAddr(0)
+
+				// have more than enough bank balance
+				enoughAmount := addedExpense.Add(math.NewInt(1e18))
+				err := unitNetwork.FundAccount(
+					newAddr,
+					sdk.NewCoins(
+						sdk.NewCoin(
+							unitNetwork.GetDenom(),
+							enoughAmount,
+						),
+					),
+				)
+				suite.Require().NoError(err)
+
+				vestingParams := defaultVestingParams(unitNetwork, funder, newAddr)
+				vestingAccount := generateNewVestingAccount(
+					unitNetwork,
+					vestingParams,
+				)
+				return vestingAccount, defaultAccountExpenses()
+			},
 		},
 	}
 
-	for _, tc := range testcases {
+	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			suite.SetupTest()
-			tc.malleate()
+			account, accountExpenses := tc.getAccountAndExpenses()
 
-			dec := ethante.NewEthVestingTransactionDecorator(suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.EvmKeeper)
-			_, err := dec.AnteHandle(suite.ctx, tc.tx, false, testutil.NextFn)
+			// Function under test
+			err := evmante.CheckVesting(
+				unitNetwork.GetContext(),
+				unitNetwork.App.BankKeeper,
+				account,
+				accountExpenses,
+				addedExpense.BigInt(),
+				unitNetwork.GetDenom(),
+			)
 
-			if tc.expPass {
-				suite.Require().NoError(err, tc.name)
+			if tc.expectedError != nil {
+				suite.Require().Error(err)
+				suite.Contains(err.Error(), tc.expectedError.Error())
 			} else {
-				suite.Require().ErrorContains(err, tc.errContains, tc.name)
+				suite.Require().NoError(err)
 			}
 		})
 	}
+}
+
+type customVestingParams struct {
+	FunderAddress    sdk.AccAddress
+	BaseAccAddress   sdk.AccAddress
+	StartVestingTime time.Time
+	Period           sdkvesting.Period
+	VestingAmount    math.Int
+}
+
+func defaultAccountExpenses() AccountExpenses {
+	return make(map[string]*evmante.EthVestingExpenseTracker)
+}
+
+func defaultVestingParams(network network.Network, funder, baseAddress sdk.AccAddress) customVestingParams {
+	return customVestingParams{
+		FunderAddress:    funder,
+		BaseAccAddress:   baseAddress,
+		StartVestingTime: time.Now(),
+		Period: sdkvesting.Period{
+			Length: 1000,
+			Amount: sdk.NewCoins(sdk.NewInt64Coin(network.GetDenom(), 1000)),
+		},
+		VestingAmount: math.NewInt(1e18),
+	}
+}
+
+func generateNewVestingAccount(
+	unitNetwork *network.UnitTestNetwork,
+	vestingParams customVestingParams,
+) sdk.AccountI {
+	var (
+		balances       = sdk.NewCoins(sdk.NewInt64Coin(unitNetwork.GetDenom(), 1000))
+		lockupPeriods  = sdkvesting.Periods{{Length: 5000, Amount: balances}}
+		vestingPeriods = sdkvesting.Periods{
+			vestingParams.Period,
+			vestingParams.Period,
+			vestingParams.Period,
+			vestingParams.Period,
+			vestingParams.Period,
+		}
+		vestingCoins = sdk.NewCoins(
+			sdk.NewCoin(unitNetwork.GetDenom(), vestingParams.VestingAmount),
+		)
+	)
+
+	baseAcc := authtypes.NewBaseAccountWithAddress(vestingParams.BaseAccAddress)
+	vestingAcc := vestingtypes.NewClawbackVestingAccount(
+		baseAcc,
+		vestingParams.FunderAddress,
+		vestingCoins,
+		vestingParams.StartVestingTime,
+		lockupPeriods,
+		vestingPeriods,
+		nil,
+	)
+	acc := unitNetwork.App.AccountKeeper.NewAccount(unitNetwork.GetContext(), vestingAcc)
+	unitNetwork.App.AccountKeeper.SetAccount(unitNetwork.GetContext(), acc)
+	return acc
 }

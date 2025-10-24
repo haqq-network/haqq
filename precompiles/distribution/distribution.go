@@ -7,18 +7,16 @@ import (
 	"embed"
 	"fmt"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	"github.com/ethereum/go-ethereum/common"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	stakingkeeper "github.com/haqq-network/haqq/x/staking/keeper"
 )
-
-// PrecompileAddress of the distribution EVM extension in hex format.
-const PrecompileAddress = "0x0000000000000000000000000000000000000801"
 
 var _ vm.PrecompiledContract = &Precompile{}
 
@@ -57,9 +55,10 @@ func NewPrecompile(
 		stakingKeeper:      stakingKeeper,
 		distributionKeeper: distributionKeeper,
 	}
+
 	// SetAddress defines the address of the distribution compile contract.
-	// address: 0x0000000000000000000000000000000000000801
-	p.SetAddress(common.HexToAddress(PrecompileAddress))
+	p.SetAddress(common.HexToAddress(evmtypes.DistributionPrecompileAddress))
+
 	return p, nil
 }
 

@@ -1,6 +1,7 @@
 version: v1.25.0
 language-settings: 
-    go: "1.21"
+    go: "1.23.10"
 exclude:
     global:
         - client/export.go
+        - tests/e2e/upgrade

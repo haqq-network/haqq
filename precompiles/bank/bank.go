@@ -7,19 +7,17 @@ import (
 	"embed"
 	"fmt"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	storetypes "cosmossdk.io/store/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	"github.com/ethereum/go-ethereum/common"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 const (
-	// PrecompileAddress defines the bank precompile address in Hex format
-	PrecompileAddress string = "0x0000000000000000000000000000000000000804"
-
 	// GasBalanceOf defines the gas cost for a single ERC-20 balanceOf query
 	GasBalanceOf = 2_851
 
@@ -66,8 +64,10 @@ func NewPrecompile(
 		bankKeeper:  bankKeeper,
 		erc20Keeper: erc20Keeper,
 	}
+
 	// SetAddress defines the address of the bank compile contract.
-	p.SetAddress(common.HexToAddress(PrecompileAddress))
+	p.SetAddress(common.HexToAddress(evmtypes.BankPrecompileAddress))
+
 	return p, nil
 }
 

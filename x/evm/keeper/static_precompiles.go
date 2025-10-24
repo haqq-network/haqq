@@ -5,14 +5,14 @@ package keeper
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	channelkeeper "github.com/cosmos/ibc-go/v7/modules/core/04-channel/keeper"
+	channelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
 	"github.com/ethereum/go-ethereum/common"
-	"golang.org/x/exp/maps"
 
 	bankprecompile "github.com/haqq-network/haqq/precompiles/bank"
 	"github.com/haqq-network/haqq/precompiles/bech32"
@@ -20,7 +20,6 @@ import (
 	ics20precompile "github.com/haqq-network/haqq/precompiles/ics20"
 	"github.com/haqq-network/haqq/precompiles/p256"
 	stakingprecompile "github.com/haqq-network/haqq/precompiles/staking"
-	// vestingprecompile "github.com/haqq-network/haqq/precompiles/vesting"
 	erc20Keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	"github.com/haqq-network/haqq/x/evm/types"

@@ -12,9 +12,12 @@ import (
 	"github.com/haqq-network/haqq/precompiles/ics20"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	"github.com/haqq-network/haqq/x/evm/statedb"
 )
 
 func (s *PrecompileTestSuite) TestTransferEvent() {
+	var stDB *statedb.StateDB
+
 	method := s.precompile.Methods[ics20.TransferMethod]
 	testCases := []struct {
 		name        string
@@ -26,9 +29,8 @@ func (s *PrecompileTestSuite) TestTransferEvent() {
 		{
 			"success - transfer event emitted",
 			func(sender, receiver sdk.AccAddress) []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, common.BytesToAddress(sender), common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(s.network.GetContext(), s.network.App, common.BytesToAddress(sender), common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
 				s.Require().NoError(err)
 				return []interface{}{
 					path.EndpointA.ChannelConfig.PortID,
@@ -45,13 +47,13 @@ func (s *PrecompileTestSuite) TestTransferEvent() {
 			false,
 			"",
 			func(sender, receiver sdk.AccAddress) {
-				log := s.stateDB.Logs()[0]
+				log := stDB.Logs()[0]
 				s.Require().Equal(log.Address, s.precompile.Address())
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[ics20.EventTypeIBCTransfer]
 				s.Require().Equal(event.ID, common.HexToHash(log.Topics[0].Hex()))
 				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
-				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
+				s.Require().Equal(log.BlockNumber, uint64(s.network.GetContext().BlockHeight()))
 
 				var ibcTransferEvent ics20.EventIBCTransfer
 				err := cmn.UnpackLog(s.precompile.ABI, &ibcTransferEvent, ics20.EventTypeIBCTransfer, *log)
@@ -71,10 +73,11 @@ func (s *PrecompileTestSuite) TestTransferEvent() {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
 
+			stDB = s.network.GetStateDB()
 			sender := s.chainA.SenderAccount.GetAddress()
 			receiver := s.chainB.SenderAccount.GetAddress()
 			contract := vm.NewContract(vm.AccountRef(sender), s.precompile, big.NewInt(0), 20000)
-			_, err := s.precompile.Transfer(s.ctx, common.BytesToAddress(sender), contract, s.stateDB, &method, tc.malleate(sender, receiver))
+			_, err := s.precompile.Transfer(s.network.GetContext(), common.BytesToAddress(sender), contract, stDB, &method, tc.malleate(sender, receiver))
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -88,6 +91,8 @@ func (s *PrecompileTestSuite) TestTransferEvent() {
 }
 
 func (s *PrecompileTestSuite) TestApproveTransferAuthorizationEvent() {
+	var stDB *statedb.StateDB
+
 	method := s.precompile.Methods[authorization.ApproveMethod]
 	testCases := []struct {
 		name        string
@@ -99,10 +104,9 @@ func (s *PrecompileTestSuite) TestApproveTransferAuthorizationEvent() {
 		{
 			"success - transfer authorization event emitted with default coins ",
 			func() []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 					[]cmn.ICS20Allocation{
 						{
 							SourcePort:    path.EndpointA.ChannelConfig.PortID,
@@ -116,19 +120,19 @@ func (s *PrecompileTestSuite) TestApproveTransferAuthorizationEvent() {
 			false,
 			"",
 			func() {
-				log := s.stateDB.Logs()[0]
+				log := stDB.Logs()[0]
 				s.Require().Equal(log.Address, s.precompile.Address())
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[authorization.EventTypeIBCTransferAuthorization]
 				s.Require().Equal(event.ID, common.HexToHash(log.Topics[0].Hex()))
 				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
-				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
+				s.Require().Equal(log.BlockNumber, uint64(s.network.GetContext().BlockHeight()))
 
 				var transferAuthorizationEvent ics20.EventTransferAuthorization
 				err := cmn.UnpackLog(s.precompile.ABI, &transferAuthorizationEvent, authorization.EventTypeIBCTransferAuthorization, *log)
 				s.Require().NoError(err)
-				s.Require().Equal(s.address, transferAuthorizationEvent.Granter)
-				s.Require().Equal(s.address, transferAuthorizationEvent.Grantee)
+				s.Require().Equal(s.keyring.GetAddr(0), transferAuthorizationEvent.Granter)
+				s.Require().Equal(s.keyring.GetAddr(0), transferAuthorizationEvent.Grantee)
 				s.Require().Equal("transfer", transferAuthorizationEvent.Allocations[0].SourcePort)
 				s.Require().Equal("channel-0", transferAuthorizationEvent.Allocations[0].SourceChannel)
 				abiCoins := cmn.NewCoinsResponse(defaultCoins)
@@ -141,7 +145,9 @@ func (s *PrecompileTestSuite) TestApproveTransferAuthorizationEvent() {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
 
-			_, err := s.precompile.Approve(s.ctx, s.address, s.stateDB, &method, tc.malleate())
+			stDB = s.network.GetStateDB()
+
+			_, err := s.precompile.Approve(s.network.GetContext(), s.keyring.GetAddr(0), stDB, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -155,6 +161,8 @@ func (s *PrecompileTestSuite) TestApproveTransferAuthorizationEvent() {
 }
 
 func (s *PrecompileTestSuite) TestRevokeTransferAuthorizationEvent() {
+	var stDB *statedb.StateDB
+
 	method := s.precompile.Methods[authorization.ApproveMethod]
 	testCases := []struct {
 		name        string
@@ -166,30 +174,29 @@ func (s *PrecompileTestSuite) TestRevokeTransferAuthorizationEvent() {
 		{
 			"success - transfer revoke authorization event emitted",
 			func() []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, s.address, s.address, path, defaultCoins, nil, nil)
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(s.network.GetContext(), s.network.App, s.keyring.GetAddr(0), s.keyring.GetAddr(0), path, defaultCoins, nil, nil)
 				s.Require().NoError(err)
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 				}
 			},
 			false,
 			"",
 			func() {
-				log := s.stateDB.Logs()[0]
+				log := stDB.Logs()[0]
 				s.Require().Equal(log.Address, s.precompile.Address())
 				// Check event signature matches the one emitted
 				event := s.precompile.ABI.Events[authorization.EventTypeIBCTransferAuthorization]
 				s.Require().Equal(event.ID, common.HexToHash(log.Topics[0].Hex()))
 				//nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
-				s.Require().Equal(log.BlockNumber, uint64(s.ctx.BlockHeight()))
+				s.Require().Equal(log.BlockNumber, uint64(s.network.GetContext().BlockHeight()))
 
 				var transferRevokeAuthorizationEvent ics20.EventTransferAuthorization
 				err := cmn.UnpackLog(s.precompile.ABI, &transferRevokeAuthorizationEvent, authorization.EventTypeIBCTransferAuthorization, *log)
 				s.Require().NoError(err)
-				s.Require().Equal(s.address, transferRevokeAuthorizationEvent.Grantee)
-				s.Require().Equal(s.address, transferRevokeAuthorizationEvent.Granter)
+				s.Require().Equal(s.keyring.GetAddr(0), transferRevokeAuthorizationEvent.Grantee)
+				s.Require().Equal(s.keyring.GetAddr(0), transferRevokeAuthorizationEvent.Granter)
 				s.Require().Equal(0, len(transferRevokeAuthorizationEvent.Allocations))
 			},
 		},
@@ -199,7 +206,9 @@ func (s *PrecompileTestSuite) TestRevokeTransferAuthorizationEvent() {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
 
-			_, err := s.precompile.Revoke(s.ctx, s.address, s.stateDB, &method, tc.malleate())
+			stDB = s.network.GetStateDB()
+
+			_, err := s.precompile.Revoke(s.network.GetContext(), s.keyring.GetAddr(0), stDB, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -213,6 +222,8 @@ func (s *PrecompileTestSuite) TestRevokeTransferAuthorizationEvent() {
 }
 
 func (s *PrecompileTestSuite) TestIncreaseAllowanceEvent() {
+	var stDB *statedb.StateDB
+
 	method := s.precompile.Methods[authorization.IncreaseAllowanceMethod]
 	testCases := []struct {
 		name        string
@@ -224,12 +235,11 @@ func (s *PrecompileTestSuite) TestIncreaseAllowanceEvent() {
 		{
 			"success - increased allowance by 1 ISLM",
 			func() []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, s.address, s.address, path, defaultCoins, nil, nil)
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(s.network.GetContext(), s.network.App, s.keyring.GetAddr(0), s.keyring.GetAddr(0), path, defaultCoins, nil, nil)
 				s.Require().NoError(err)
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 					path.EndpointA.ChannelConfig.PortID,
 					path.EndpointA.ChannelID,
 					utils.BaseDenom,
@@ -239,7 +249,7 @@ func (s *PrecompileTestSuite) TestIncreaseAllowanceEvent() {
 			false,
 			"",
 			func() {
-				log := s.stateDB.Logs()[0]
+				log := stDB.Logs()[0]
 				amount := big.NewInt(1e18)
 				s.CheckAllowanceChangeEvent(log, amount, true)
 			},
@@ -250,7 +260,9 @@ func (s *PrecompileTestSuite) TestIncreaseAllowanceEvent() {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
 
-			_, err := s.precompile.IncreaseAllowance(s.ctx, s.address, s.stateDB, &method, tc.malleate())
+			stDB = s.network.GetStateDB()
+
+			_, err := s.precompile.IncreaseAllowance(s.network.GetContext(), s.keyring.GetAddr(0), stDB, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)
@@ -264,6 +276,8 @@ func (s *PrecompileTestSuite) TestIncreaseAllowanceEvent() {
 }
 
 func (s *PrecompileTestSuite) TestDecreaseAllowanceEvent() {
+	var stDB *statedb.StateDB
+
 	method := s.precompile.Methods[authorization.DecreaseAllowanceMethod]
 	testCases := []struct {
 		name        string
@@ -275,12 +289,11 @@ func (s *PrecompileTestSuite) TestDecreaseAllowanceEvent() {
 		{
 			"success - decrease allowance by 0.5 ISLM",
 			func() []interface{} {
-				path := NewTransferPath(s.chainA, s.chainB)
-				s.coordinator.Setup(path)
-				err := s.NewTransferAuthorization(s.ctx, s.app, s.address, s.address, path, defaultCoins, nil, nil)
+				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
+				err := s.NewTransferAuthorization(s.network.GetContext(), s.network.App, s.keyring.GetAddr(0), s.keyring.GetAddr(0), path, defaultCoins, nil, nil)
 				s.Require().NoError(err)
 				return []interface{}{
-					s.address,
+					s.keyring.GetAddr(0),
 					path.EndpointA.ChannelConfig.PortID,
 					path.EndpointA.ChannelID,
 					utils.BaseDenom,
@@ -290,7 +303,7 @@ func (s *PrecompileTestSuite) TestDecreaseAllowanceEvent() {
 			false,
 			"",
 			func() {
-				log := s.stateDB.Logs()[0]
+				log := stDB.Logs()[0]
 				amount := big.NewInt(1e18 / 2)
 				s.CheckAllowanceChangeEvent(log, amount, false)
 			},
@@ -301,7 +314,9 @@ func (s *PrecompileTestSuite) TestDecreaseAllowanceEvent() {
 		s.Run(tc.name, func() {
 			s.SetupTest() // reset
 
-			_, err := s.precompile.DecreaseAllowance(s.ctx, s.address, s.stateDB, &method, tc.malleate())
+			stDB = s.network.GetStateDB()
+
+			_, err := s.precompile.DecreaseAllowance(s.network.GetContext(), s.keyring.GetAddr(0), stDB, &method, tc.malleate())
 
 			if tc.expErr {
 				s.Require().Error(err)

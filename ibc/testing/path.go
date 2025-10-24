@@ -1,13 +1,14 @@
-// Copyright Tharsis Labs Ltd.(Evmos)
-// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
 package ibctesting
 
 import (
 	"bytes"
 	"fmt"
 
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	abci "github.com/cometbft/cometbft/abci/types"
+
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	ibcgotesting "github.com/cosmos/ibc-go/v8/testing"
 )
 
 // Path contains two endpoints representing two chains connected over IBC
@@ -19,7 +20,7 @@ type Path struct {
 // NewPath constructs an endpoint for each chain using the default values
 // for the endpoints. Each endpoint is updated to have a pointer to the
 // counterparty endpoint.
-func NewPath(chainA, chainB *ibctesting.TestChain) *Path {
+func NewPath(chainA, chainB *ibcgotesting.TestChain) *Path {
 	endpointA := NewDefaultEndpoint(chainA)
 	endpointB := NewDefaultEndpoint(chainB)
 
@@ -32,6 +33,22 @@ func NewPath(chainA, chainB *ibctesting.TestChain) *Path {
 	}
 }
 
+// NewTransferPath constructs a new path between each chain suitable for use with
+// the transfer module.
+func NewTransferPath(chainA, chainB *ibcgotesting.TestChain) *Path {
+	path := NewPath(chainA, chainB)
+	path.EndpointA.ChannelConfig.PortID = ibcgotesting.TransferPort
+	path.EndpointB.ChannelConfig.PortID = ibcgotesting.TransferPort
+	path.EndpointA.ChannelConfig.Version = transfertypes.Version
+	path.EndpointB.ChannelConfig.Version = transfertypes.Version
+
+	// set unordered by default
+	path.EndpointA.ChannelConfig.Order = channeltypes.UNORDERED
+	path.EndpointB.ChannelConfig.Order = channeltypes.UNORDERED
+
+	return path
+}
+
 // SetChannelOrdered sets the channel order for both endpoints to ORDERED.
 func (path *Path) SetChannelOrdered() {
 	path.EndpointA.ChannelConfig.Order = channeltypes.ORDERED
@@ -42,25 +59,38 @@ func (path *Path) SetChannelOrdered() {
 // if EndpointA does not contain a packet commitment for that packet. An error is returned
 // if a relay step fails or the packet commitment does not exist on either endpoint.
 func (path *Path) RelayPacket(packet channeltypes.Packet) error {
+	_, _, err := path.RelayPacketWithResults(packet)
+	return err
+}
+
+// RelayPacketWithResults attempts to relay the packet first on EndpointA and then on EndpointB
+// if EndpointA does not contain a packet commitment for that packet. The function returns:
+// - The result of the packet receive transaction.
+// - The acknowledgement written on the receiving chain.
+// - An error if a relay step fails or the packet commitment does not exist on either endpoint.
+func (path *Path) RelayPacketWithResults(packet channeltypes.Packet) (*abci.ExecTxResult, []byte, error) {
 	pc := path.EndpointA.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(path.EndpointA.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
 	if bytes.Equal(pc, channeltypes.CommitPacket(path.EndpointA.Chain.App.AppCodec(), packet)) {
-
 		// packet found, relay from A to B
 		if err := path.EndpointB.UpdateClient(); err != nil {
-			return err
+			return nil, nil, err
 		}
 
 		res, err := path.EndpointB.RecvPacketWithResult(packet)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 
-		ack, err := ibctesting.ParseAckFromEvents(res.GetEvents())
+		ack, err := ibcgotesting.ParseAckFromEvents(res.GetEvents())
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 
-		return path.EndpointA.AcknowledgePacket(packet, ack)
+		if err := path.EndpointA.AcknowledgePacket(packet, ack); err != nil {
+			return nil, nil, err
+		}
+
+		return res, ack, nil
 	}
 
 	pc = path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(path.EndpointB.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
@@ -68,21 +98,25 @@ func (path *Path) RelayPacket(packet channeltypes.Packet) error {
 
 		// packet found, relay B to A
 		if err := path.EndpointA.UpdateClient(); err != nil {
-			return err
+			return nil, nil, err
 		}
 
 		res, err := path.EndpointA.RecvPacketWithResult(packet)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 
-		ack, err := ibctesting.ParseAckFromEvents(res.GetEvents())
+		ack, err := ibcgotesting.ParseAckFromEvents(res.GetEvents())
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
 
-		return path.EndpointB.AcknowledgePacket(packet, ack)
+		if err := path.EndpointB.AcknowledgePacket(packet, ack); err != nil {
+			return nil, nil, err
+		}
+
+		return res, ack, nil
 	}
 
-	return fmt.Errorf("packet commitment does not exist on either endpoint for provided packet")
+	return nil, nil, fmt.Errorf("packet commitment does not exist on either endpoint for provided packet")
 }

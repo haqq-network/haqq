@@ -5,12 +5,13 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestParams() {
-	params := suite.app.CoinomicsKeeper.GetParams(suite.ctx)
+	params := suite.network.App.CoinomicsKeeper.GetParams(suite.network.GetContext())
 	expParams := types.DefaultParams()
-
 	suite.Require().Equal(expParams, params)
 
-	suite.app.CoinomicsKeeper.SetParams(suite.ctx, params)
-	newParams := suite.app.CoinomicsKeeper.GetParams(suite.ctx)
+	suite.network.App.CoinomicsKeeper.SetParams(suite.network.GetContext(), params)
+	suite.Require().NoError(suite.network.NextBlock())
+
+	newParams := suite.network.App.CoinomicsKeeper.GetParams(suite.network.GetContext())
 	suite.Require().Equal(newParams, params)
 }

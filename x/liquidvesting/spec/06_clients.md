@@ -30,17 +30,17 @@ haqqd query liquidvesting params
 
 ### Queries
 
-| Verb   | Method                              | Description                    |
-| ------ |-------------------------------------| ------------------------------ |
-| `gRPC` | `haqq.liquidvesting.v1.Query/Denom` | Get liquid token               |
-| `gRPC` | `haqq.liquidvesting.v1.Query/Denoms`| Get all existing liquid tokens |
-| `GET`  | `/haqq/liquidvesting/v1/denom`      | Get liquid token               |
-| `GET`  | `/haqq/liquidvesting/v1/denom`      | Get all existing liquid tokens |
+| Verb   | Method                               | Description                    |
+|--------|--------------------------------------|--------------------------------|
+| `gRPC` | `haqq.liquidvesting.v1.Query/Denom`  | Get liquid token               |
+| `gRPC` | `haqq.liquidvesting.v1.Query/Denoms` | Get all existing liquid tokens |
+| `GET`  | `/haqq/liquidvesting/v1/denom`       | Get liquid token               |
+| `GET`  | `/haqq/liquidvesting/v1/denom`       | Get all existing liquid tokens |
 
 ### Transactions
 
 | Verb   | Method                                | Description                                       |
-|--------|---------------------------------------| ------------------------------------------------- |
+|--------|---------------------------------------|---------------------------------------------------|
 | `gRPC` | `haqq.liquidvesting.v1.Msg/Liquidate` | Liquidates arbitrary amount of locked ISLM tokens |
 | `gRPC` | `haqq.liquidvesting.v1.Msg/Redeem`    | Redeem liquid token to ISLM                       |
 | `POST` | `/haqq/liquidvesting/v1/tx/liquidate` | Liquidates arbitrary amount of locked ISLM tokens |

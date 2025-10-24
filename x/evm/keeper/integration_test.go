@@ -18,7 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/encoding"
 	"github.com/haqq-network/haqq/precompiles/staking"
@@ -75,13 +74,16 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 		BeforeAll(func() {
 			// Set params to default values
 			defaultParams := evmtypes.DefaultParams()
-			err := s.network.UpdateEvmParams(defaultParams)
-			Expect(err).To(BeNil())
-
-			err = s.network.NextBlock()
+			err := integrationutils.UpdateEvmParams(
+				integrationutils.UpdateParamsInput{
+					Tf:      s.factory,
+					Network: s.network,
+					Pk:      s.keyring.GetPrivKey(0),
+					Params:  defaultParams,
+				},
+			)
 			Expect(err).To(BeNil())
 		})
-
 		DescribeTable("Executes a transfer transaction", func(getTxArgs func() evmtypes.EvmTxArgs) {
 			senderKey := s.keyring.GetKey(0)
 			receiverKey := s.keyring.GetKey(1)
@@ -245,7 +247,7 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 			Expect(err).To(BeNil())
 
 			// Compose transaction with multiple msgs
-			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			txConfig := encoding.MakeConfig().TxConfig
 			txBuilder1 := txConfig.NewTxBuilder()
 			txFee1 := sdktypes.NewCoins().
 				Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(deployMsgEthereumTxSigned.GetFee())}).
@@ -378,7 +380,7 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 			Expect(err).To(BeNil())
 
 			// Compose transaction and execute
-			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			txConfig := encoding.MakeConfig().TxConfig
 			txBuilder1 := txConfig.NewTxBuilder()
 			txFee1 := sdktypes.NewCoins().Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(deployMsgEthereumTxSigned.GetFee())})
 			txGasLimit1 := deployMsgEthereumTxSigned.GetGas()
@@ -460,7 +462,7 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 			transferMsgEthereumTxSigned.From = ""
 
 			// Compose and execute tx
-			txConfig := encoding.MakeConfig(app.ModuleBasics).TxConfig
+			txConfig := encoding.MakeConfig().TxConfig
 			txBuilder := txConfig.NewTxBuilder()
 			txFee := sdktypes.NewCoins().Add(sdktypes.Coin{Denom: utils.BaseDenom, Amount: math.NewIntFromBigInt(transferMsgEthereumTxSigned.GetFee())})
 			txGasLimit := transferMsgEthereumTxSigned.GetGas()
@@ -620,13 +622,20 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 			Expect(err).NotTo(BeNil())
 			Expect(err.Error()).To(ContainSubstring("invalid chain id"))
 			// Transaction fails before being broadcasted
-			Expect(res).To(Equal(abcitypes.ResponseDeliverTx{}))
+			Expect(res).To(Equal(abcitypes.ExecTxResult{}))
 		})
 	})
 
 	DescribeTable("Performs transfer and contract call", func(getTestParams func() evmtypes.Params, transferParams, contractCallParams PermissionsTableTest) {
 		params := getTestParams()
-		err := s.network.UpdateEvmParams(params)
+		err := integrationutils.UpdateEvmParams(
+			integrationutils.UpdateParamsInput{
+				Tf:      s.factory,
+				Network: s.network,
+				Pk:      s.keyring.GetPrivKey(0),
+				Params:  params,
+			},
+		)
 		Expect(err).To(BeNil())
 
 		err = s.network.NextBlock()
@@ -644,14 +653,19 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 		res, err := s.factory.ExecuteEthTx(signer.Priv, txArgs)
 		if transferParams.ExpFail {
 			Expect(err).NotTo(BeNil())
-			Expect(err.Error()).To(ContainSubstring("does not have permission to perform a call"))
+			if params.AccessControl.Call.AccessType == evmtypes.AccessTypeRestricted {
+				Expect(err.Error()).To(ContainSubstring("EVM Call operation is disabled"))
+			} else {
+				Expect(err.Error()).To(ContainSubstring("does not have permission to perform a call"))
+			}
+
 		} else {
 			Expect(err).To(BeNil())
 			Expect(res.IsOK()).To(Equal(true), "transaction should have succeeded", res.GetLog())
 		}
 
 		senderKey := s.keyring.GetKey(contractCallParams.SignerIndex)
-		contractAddress := common.HexToAddress(staking.PrecompileAddress)
+		contractAddress := common.HexToAddress(evmtypes.StakingPrecompileAddress)
 		validatorAddress := s.network.GetValidators()[1].OperatorAddress
 		contractABI, err := staking.LoadABI()
 		Expect(err).To(BeNil())
@@ -674,6 +688,8 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 			MethodName:  staking.DelegateMethod,
 			Args:        []interface{}{senderKey.Addr, validatorAddress, amountToDelegate},
 		}
+		err = s.network.NextBlock()
+		Expect(err).To(BeNil())
 		delegateResponse, err := s.factory.ExecuteContractCall(senderKey.Priv, totalSupplyTxArgs, delegateArgs)
 		if contractCallParams.ExpFail {
 			Expect(err).NotTo(BeNil())
@@ -704,17 +720,17 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 			Expect(delegationOutput.Balance.Amount.String()).To(Equal(expectedDelegationAmt.String()))
 		}
 	},
-		// Entry("transfer and call fail with CALL permission policy set to restricted", func() evmtypes.Params {
-		// 	// Set params to default values
-		// 	defaultParams := evmtypes.DefaultParams()
-		// 	defaultParams.AccessControl.Call = evmtypes.AccessControlType{
-		// 		AccessType:        evmtypes.AccessTypeRestricted,
-		// 	}
-		// 	return defaultParams
-		// },
-		// 	OpcodeTestTable{ExpFail: true, SignerIndex: 0},
-		// 	OpcodeTestTable{ExpFail: true, SignerIndex: 0},
-		// ),
+		Entry("transfer and call fail with CALL permission policy set to restricted", func() evmtypes.Params {
+			// Set params to default values
+			defaultParams := evmtypes.DefaultParams()
+			defaultParams.AccessControl.Call = evmtypes.AccessControlType{
+				AccessType: evmtypes.AccessTypeRestricted,
+			}
+			return defaultParams
+		},
+			PermissionsTableTest{ExpFail: true, SignerIndex: 0},
+			PermissionsTableTest{ExpFail: true, SignerIndex: 0},
+		),
 		Entry("transfer and call succeed with CALL permission policy set to default and CREATE permission policy set to restricted", func() evmtypes.Params {
 			blockedSignerIndex := 1
 			// Set params to default values
@@ -797,7 +813,14 @@ var _ = Describe("Handling a MsgEthereumTx message", Label("EVM"), Ordered, func
 
 	DescribeTable("Performs contract deployment and contract call with AccessControl", func(getTestParams func() evmtypes.Params, createParams, callParams PermissionsTableTest) {
 		params := getTestParams()
-		err := s.network.UpdateEvmParams(params)
+		err := integrationutils.UpdateEvmParams(
+			integrationutils.UpdateParamsInput{
+				Tf:      s.factory,
+				Network: s.network,
+				Pk:      s.keyring.GetPrivKey(0),
+				Params:  params,
+			},
+		)
 		Expect(err).To(BeNil())
 
 		err = s.network.NextBlock()
@@ -980,7 +1003,7 @@ type PermissionsTableTest struct {
 	SignerIndex int
 }
 
-func checkMintTopics(res abcitypes.ResponseDeliverTx) error {
+func checkMintTopics(res abcitypes.ExecTxResult) error {
 	// Check contract call response has the expected topics for a mint
 	// call within an ERC20 contract
 	expectedTopics := []string{

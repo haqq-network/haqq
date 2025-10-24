@@ -25,8 +25,9 @@ var execTypes = []struct {
 }
 
 func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
+	var ctx sdk.Context
 	denom := evmtypes.DefaultEVMDenom
-	from, privKey := testutiltx.NewAddrKey()
+	_, privKey := testutiltx.NewAddrKey()
 	to := testutiltx.GenerateAddress()
 	emptyAccessList := ethtypes.AccessList{}
 
@@ -39,9 +40,9 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"invalid tx type",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyNewDec(10)
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
 				return &testutiltx.InvalidTx{}
@@ -52,9 +53,9 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"wrong tx type",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyNewDec(10)
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 				testMsg := banktypes.MsgSend{
 					FromAddress: "evmos1x8fhpj9nmhqk8z9kpgjt95ck2xwyue0ptzkucp",
@@ -70,9 +71,9 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"valid: invalid tx type with MinGasPrices = 0",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyZeroDec()
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 				return &testutiltx.InvalidTx{}
 			},
@@ -82,13 +83,22 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"valid legacy tx with MinGasPrices = 0, gasPrice = 0",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyZeroDec()
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), big.NewInt(0), nil, nil, nil)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:       &to,
+					Nonce:    0,
+					Amount:   nil,
+					GasLimit: 100000,
+					GasPrice: big.NewInt(0),
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			true,
 			"",
@@ -96,13 +106,22 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"valid legacy tx with MinGasPrices = 0, gasPrice > 0",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyZeroDec()
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), big.NewInt(10), nil, nil, nil)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:       &to,
+					Nonce:    0,
+					Amount:   nil,
+					GasLimit: 100000,
+					GasPrice: big.NewInt(10),
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			true,
 			"",
@@ -110,13 +129,22 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"valid legacy tx with MinGasPrices = 10, gasPrice = 10",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyNewDec(10)
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), big.NewInt(10), nil, nil, nil)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:       &to,
+					Nonce:    0,
+					Amount:   nil,
+					GasLimit: 100000,
+					GasPrice: big.NewInt(10),
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			true,
 			"",
@@ -124,13 +152,22 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"invalid legacy tx with MinGasPrices = 10, gasPrice = 0",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyNewDec(10)
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), big.NewInt(0), nil, nil, nil)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:  suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:       &to,
+					Nonce:    0,
+					Amount:   nil,
+					GasLimit: 100000,
+					GasPrice: big.NewInt(0),
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			false,
 			"provided fee < minimum global fee",
@@ -138,13 +175,24 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"valid dynamic tx with MinGasPrices = 0, EffectivePrice = 0",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyZeroDec()
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), nil, big.NewInt(0), big.NewInt(0), &emptyAccessList)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:   suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:        &to,
+					Nonce:     0,
+					Amount:    nil,
+					GasLimit:  100000,
+					GasFeeCap: big.NewInt(0),
+					GasTipCap: big.NewInt(0),
+					Accesses:  &emptyAccessList,
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			true,
 			"",
@@ -152,13 +200,24 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"valid dynamic tx with MinGasPrices = 0, EffectivePrice > 0",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyZeroDec()
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), nil, big.NewInt(100), big.NewInt(50), &emptyAccessList)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:   suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:        &to,
+					Nonce:     0,
+					Amount:    nil,
+					GasLimit:  100000,
+					GasFeeCap: big.NewInt(100),
+					GasTipCap: big.NewInt(50),
+					Accesses:  &emptyAccessList,
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			true,
 			"",
@@ -166,13 +225,24 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"valid dynamic tx with MinGasPrices < EffectivePrice",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyNewDec(10)
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), nil, big.NewInt(100), big.NewInt(100), &emptyAccessList)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:   suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:        &to,
+					Nonce:     0,
+					Amount:    nil,
+					GasLimit:  100000,
+					GasFeeCap: big.NewInt(100),
+					GasTipCap: big.NewInt(100),
+					Accesses:  &emptyAccessList,
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			true,
 			"",
@@ -180,13 +250,24 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"invalid dynamic tx with MinGasPrices > EffectivePrice",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyNewDec(10)
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), nil, big.NewInt(0), big.NewInt(0), &emptyAccessList)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:   suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:        &to,
+					Nonce:     0,
+					Amount:    nil,
+					GasLimit:  100000,
+					GasFeeCap: big.NewInt(0),
+					GasTipCap: big.NewInt(0),
+					Accesses:  &emptyAccessList,
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			false,
 			"provided fee < minimum global fee",
@@ -194,18 +275,29 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"invalid dynamic tx with MinGasPrices > BaseFee, MinGasPrices > EffectivePrice",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyNewDec(100)
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				feemarketParams := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				feemarketParams := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				feemarketParams.BaseFee = sdkmath.NewInt(10)
-				err = suite.app.FeeMarketKeeper.SetParams(suite.ctx, feemarketParams)
+				err = suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, feemarketParams)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), nil, big.NewInt(1000), big.NewInt(0), &emptyAccessList)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:   suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:        &to,
+					Nonce:     0,
+					Amount:    nil,
+					GasLimit:  100000,
+					GasFeeCap: big.NewInt(1000),
+					GasTipCap: big.NewInt(0),
+					Accesses:  &emptyAccessList,
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			false,
 			"provided fee < minimum global fee",
@@ -213,18 +305,29 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"valid dynamic tx with MinGasPrices > BaseFee, MinGasPrices < EffectivePrice (big GasTipCap)",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyNewDec(100)
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				feemarketParams := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				feemarketParams := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				feemarketParams.BaseFee = sdkmath.NewInt(10)
-				err = suite.app.FeeMarketKeeper.SetParams(suite.ctx, feemarketParams)
+				err = suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, feemarketParams)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), nil, big.NewInt(1000), big.NewInt(101), &emptyAccessList)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:   suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:        &to,
+					Nonce:     0,
+					Amount:    nil,
+					GasLimit:  100000,
+					GasFeeCap: big.NewInt(1000),
+					GasTipCap: big.NewInt(101),
+					Accesses:  &emptyAccessList,
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			true,
 			"",
@@ -232,13 +335,24 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 		{
 			"panic bug, requiredFee > math.MaxInt64",
 			func() sdk.Tx {
-				params := suite.app.FeeMarketKeeper.GetParams(suite.ctx)
+				params := suite.GetNetwork().App.FeeMarketKeeper.GetParams(ctx)
 				params.MinGasPrice = sdkmath.LegacyNewDec(math.MaxInt64)
-				err := suite.app.FeeMarketKeeper.SetParams(suite.ctx, params)
+				err := suite.GetNetwork().App.FeeMarketKeeper.SetParams(ctx, params)
 				suite.Require().NoError(err)
 
-				msg := suite.BuildTestEthTx(from, to, nil, make([]byte, 0), nil, big.NewInt(math.MaxInt64), big.NewInt(100), &emptyAccessList)
-				return suite.CreateTestTx(msg, privKey, 1, false)
+				tx, err := suite.GetTxFactory().GenerateSignedEthTx(privKey, evmtypes.EvmTxArgs{
+					ChainID:   suite.GetNetwork().App.EvmKeeper.ChainID(),
+					To:        &to,
+					Nonce:     0,
+					Amount:    nil,
+					GasLimit:  100000,
+					GasFeeCap: big.NewInt(math.MaxInt64),
+					GasTipCap: big.NewInt(100),
+					Accesses:  &emptyAccessList,
+				})
+				suite.Require().NoError(err)
+
+				return tx
 			},
 			false,
 			"provided fee < minimum global fee",
@@ -248,10 +362,10 @@ func (suite *AnteTestSuite) TestEthMinGasPriceDecorator() {
 	for _, et := range execTypes {
 		for _, tc := range testCases {
 			suite.Run(et.name+"_"+tc.name, func() {
-				// s.SetupTest(et.isCheckTx)
 				suite.SetupTest()
-				dec := evmante.NewEthMinGasPriceDecorator(suite.app.FeeMarketKeeper, suite.app.EvmKeeper)
-				_, err := dec.AnteHandle(suite.ctx, tc.malleate(), et.simulate, testutil.NextFn)
+				ctx = suite.GetNetwork().GetContext()
+				dec := evmante.NewEthMinGasPriceDecorator(suite.GetNetwork().App.FeeMarketKeeper, suite.GetNetwork().App.EvmKeeper)
+				_, err := dec.AnteHandle(ctx, tc.malleate(), et.simulate, testutil.NextFn)
 
 				if tc.expPass {
 					suite.Require().NoError(err, tc.name)

@@ -4,7 +4,7 @@ This section describes in details how `x/liquidvesting` module handles operation
 
 ## Liquidation
 
-For example we have an account this account has 3 days of vesting so each day represented as a period and has amount which be unlocked once period is passed. 
+For example, we have an account this account has 3 days of vesting so each day represented as a period and has amount which be unlocked once period is passed. 
 Let's imagine every period has different amount 10,20 and 30 respectively
 ```
 10,20,30

@@ -12,10 +12,10 @@ import (
 
 func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	// Convert current block timestamp to Dec type for calculations
-	currentBlockTS, _ := sdk.NewDecFromStr(math.NewInt(ctx.BlockTime().UnixMilli()).String())
+	currentBlockTS, _ := math.LegacyNewDecFromStr(math.NewInt(ctx.BlockTime().UnixMilli()).String())
 
 	// Skip minting for the first block after activation, waiting for previous block timestamp to be set
-	if k.GetPrevBlockTS(ctx).Equal(sdk.ZeroInt()) {
+	if k.GetPrevBlockTS(ctx).Equal(math.ZeroInt()) {
 		k.SetPrevBlockTS(ctx, currentBlockTS.RoundInt())
 		return nil
 	}
@@ -25,24 +25,28 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	isLeapYear := (currentYear%4 == 0 && currentYear%100 != 0) || currentYear%400 == 0
 
 	// Define milliseconds in a year, considering leap year
-	var yearInMillis sdk.Dec
+	var yearInMillis math.LegacyDec
 	if isLeapYear {
-		yearInMillis, _ = sdk.NewDecFromStr("31622400000") // 366 days in milliseconds
+		yearInMillis, _ = math.LegacyNewDecFromStr("31622400000") // 366 days in milliseconds
 	} else {
-		yearInMillis, _ = sdk.NewDecFromStr("31536000000") // 365 days in milliseconds
+		yearInMillis, _ = math.LegacyNewDecFromStr("31536000000") // 365 days in milliseconds
 	}
 
 	// Calculate the mint amount based on total bonded tokens and time elapsed since the last block.
 	params := k.GetParams(ctx)
-	rewardCoefficient := params.RewardCoefficient.Quo(sdk.NewDec(100))
-	prevBlockTS, _ := sdk.NewDecFromStr(k.GetPrevBlockTS(ctx).String())
-	totalBonded, _ := sdk.NewDecFromStr(k.stakingKeeper.TotalBondedTokens(ctx).String())
+	rewardCoefficient := params.RewardCoefficient.Quo(math.LegacyNewDec(100))
+	prevBlockTS, _ := math.LegacyNewDecFromStr(k.GetPrevBlockTS(ctx).String())
+	totalBondedTokens, err := k.stakingKeeper.TotalBondedTokens(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to get total bonded tokens")
+	}
+	totalBonded, _ := math.LegacyNewDecFromStr(totalBondedTokens.String())
 
 	// totalBonded * rewardCoefficient * ((currentBlockTS - prevBlockTS) / yearInMillis)
 	blockMint := totalBonded.Mul(rewardCoefficient).Mul((currentBlockTS.Sub(prevBlockTS)).Quo(yearInMillis))
 
-	bankTotalSupply, _ := sdk.NewDecFromStr(k.bankKeeper.GetSupply(ctx, params.MintDenom).Amount.String())
-	maxSupply, _ := sdk.NewDecFromStr(k.GetMaxSupply(ctx).Amount.String())
+	bankTotalSupply, _ := math.LegacyNewDecFromStr(k.bankKeeper.GetSupply(ctx, params.MintDenom).Amount.String())
+	maxSupply, _ := math.LegacyNewDecFromStr(k.GetMaxSupply(ctx).Amount.String())
 
 	// Ensure minting does not exceed the maximum supply
 	if bankTotalSupply.Add(blockMint).GT(maxSupply) {
@@ -67,13 +71,12 @@ func (k Keeper) MintAndAllocate(ctx sdk.Context) error {
 	}
 
 	// Allocate remaining coinomics module balance to distribution
-	err := k.bankKeeper.SendCoinsFromModuleToModule(
+	if err := k.bankKeeper.SendCoinsFromModuleToModule(
 		ctx,
 		types.ModuleName,
 		k.feeCollectorName,
 		sdk.NewCoins(totalMintOnBlockCoin),
-	)
-	if err != nil {
+	); err != nil {
 		return errors.Wrap(err, "failed send coins from coinomics to distribution")
 	}
 

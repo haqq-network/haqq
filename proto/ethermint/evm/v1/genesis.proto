@@ -1,6 +1,7 @@
 syntax = "proto3";
 package ethermint.evm.v1;
 
+import "amino/amino.proto";
 import "ethermint/evm/v1/evm.proto";
 import "gogoproto/gogo.proto";
 
@@ -9,9 +10,9 @@ option go_package = "github.com/haqq-network/haqq/x/evm/types";
 // GenesisState defines the evm module's genesis state.
 message GenesisState {
   // accounts is an array containing the ethereum genesis accounts.
-  repeated GenesisAccount accounts = 1 [ (gogoproto.nullable) = false ];
+  repeated GenesisAccount accounts = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
   // params defines all the parameters of the module.
-  Params params = 2 [ (gogoproto.nullable) = false ];
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
 // GenesisAccount defines an account to be initialized in the genesis state.
@@ -24,5 +25,5 @@ message GenesisAccount {
   string code = 2;
   // storage defines the set of state key values for the account.
   repeated State storage = 3
-      [ (gogoproto.nullable) = false, (gogoproto.castrepeated) = "Storage" ];
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (gogoproto.castrepeated) = "Storage"];
 }

@@ -53,11 +53,15 @@ func (p Precompile) Delegation(
 
 	queryServer := stakingkeeper.Querier{Keeper: p.stakingKeeper.Keeper}
 
-	res, err := queryServer.Delegation(sdk.WrapSDKContext(ctx), req)
+	res, err := queryServer.Delegation(ctx, req)
 	if err != nil {
 		// If there is no delegation found, return the response with zero values.
 		if strings.Contains(err.Error(), fmt.Sprintf(ErrNoDelegationFound, req.DelegatorAddr, req.ValidatorAddr)) {
-			return method.Outputs.Pack(big.NewInt(0), cmn.Coin{Denom: p.stakingKeeper.BondDenom(ctx), Amount: big.NewInt(0)})
+			bondDenom, err := p.stakingKeeper.BondDenom(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return method.Outputs.Pack(big.NewInt(0), cmn.Coin{Denom: bondDenom, Amount: big.NewInt(0)})
 		}
 
 		return nil, err
@@ -83,7 +87,7 @@ func (p Precompile) UnbondingDelegation(
 
 	queryServer := stakingkeeper.Querier{Keeper: p.stakingKeeper.Keeper}
 
-	res, err := queryServer.UnbondingDelegation(sdk.WrapSDKContext(ctx), req)
+	res, err := queryServer.UnbondingDelegation(ctx, req)
 	if err != nil {
 		// return empty unbonding delegation output if the unbonding delegation is not found
 		expError := fmt.Sprintf("unbonding delegation with delegator %s not found for validator %s", req.DelegatorAddr, req.ValidatorAddr)
@@ -112,7 +116,7 @@ func (p Precompile) Validator(
 
 	queryServer := stakingkeeper.Querier{Keeper: p.stakingKeeper.Keeper}
 
-	res, err := queryServer.Validator(sdk.WrapSDKContext(ctx), req)
+	res, err := queryServer.Validator(ctx, req)
 	if err != nil {
 		// return empty validator info if the validator is not found
 		expError := fmt.Sprintf("validator %s not found", req.ValidatorAddr)
@@ -141,7 +145,7 @@ func (p Precompile) Validators(
 
 	queryServer := stakingkeeper.Querier{Keeper: p.stakingKeeper.Keeper}
 
-	res, err := queryServer.Validators(sdk.WrapSDKContext(ctx), req)
+	res, err := queryServer.Validators(ctx, req)
 	if err != nil {
 		return nil, err
 	}

@@ -4,29 +4,20 @@ package ics20_test
 
 import (
 	"testing"
-	"time"
-
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
 
 	"github.com/stretchr/testify/suite"
 
-	tmtypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
-	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
-	"github.com/haqq-network/haqq/app"
 	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/ics20"
-	"github.com/haqq-network/haqq/x/evm/statedb"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	cmnnetwork "github.com/haqq-network/haqq/testutil/integration/common/network"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	"github.com/haqq-network/haqq/testutil/integration/ibc/coordinator"
 )
 
 var s *PrecompileTestSuite
@@ -34,40 +25,80 @@ var s *PrecompileTestSuite
 type PrecompileTestSuite struct {
 	suite.Suite
 
-	ctx           sdk.Context
-	app           *app.Haqq
-	address       common.Address
-	differentAddr common.Address
-	validators    []stakingtypes.Validator
-	valSet        *tmtypes.ValidatorSet
-	ethSigner     ethtypes.Signer
-	privKey       cryptotypes.PrivKey
-	signer        keyring.Signer
-	bondDenom     string
+	network     *network.UnitTestNetwork
+	factory     factory.TxFactory
+	grpcHandler grpc.Handler
+	keyring     testkeyring.Keyring
 
+	bondDenom  string
 	precompile *ics20.Precompile
-	stateDB    *statedb.StateDB
 
-	coordinator    *ibctesting.Coordinator
-	chainA         *ibctesting.TestChain
-	chainB         *ibctesting.TestChain
-	transferPath   *haqqibctesting.Path
-	queryClientEVM evmtypes.QueryClient
-
-	defaultExpirationDuration time.Time
+	coordinator  coordinator.Coordinator
+	chainA       *ibctesting.TestChain
+	chainB       *ibctesting.TestChain
+	transferPath *haqqibctesting.Path
 
 	suiteIBCTesting bool
 }
 
 func TestPrecompileTestSuite(t *testing.T) {
-	s = new(PrecompileTestSuite)
-	suite.Run(t, s)
-
-	// Run Ginkgo integration tests
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "ICS20 Precompile Suite")
+	suite.Run(t, new(PrecompileTestSuite))
 }
 
 func (s *PrecompileTestSuite) SetupTest() {
-	s.DoSetupTest()
+	if s.suiteIBCTesting {
+		// dummy chains use the ibc testing chain setup
+		// that uses the default sdk address prefix ('cosmos')
+		// Update the prefix configs to use that prefix
+		haqqibctesting.SetBech32Prefix("cosmos")
+		// Also need to disable address cache to avoid using modules
+		// accounts with 'evmos' addresses (because Evmos chain setup is first)
+		sdk.SetAddrCacheEnabled(false)
+	}
+
+	keyring := testkeyring.New(2)
+	nw := network.NewUnitTestNetwork(
+		network.WithPreFundedAccounts(keyring.GetAllAccAddrs()...),
+	)
+	grpcHandler := grpc.NewIntegrationHandler(nw)
+	txFactory := factory.New(nw, grpcHandler)
+
+	ctx := nw.GetContext()
+	bondDenom, err := nw.App.StakingKeeper.BondDenom(ctx)
+	s.Require().NoError(err)
+
+	s.bondDenom = bondDenom
+	s.factory = txFactory
+	s.grpcHandler = grpcHandler
+	s.keyring = keyring
+	s.network = nw
+
+	if s.precompile, err = ics20.NewPrecompile(
+		s.network.App.StakingKeeper,
+		s.network.App.TransferKeeper,
+		s.network.App.IBCKeeper.ChannelKeeper,
+		s.network.App.AuthzKeeper,
+	); err != nil {
+		panic(err)
+	}
+
+	// Create a coordinator and 2 test chains that will be used in the testing suite
+	s.coordinator = coordinator.NewIntegrationCoordinator(s.T(), []cmnnetwork.Network{s.network})
+	dummyChainsIDs := s.coordinator.GetDummyChainsIDs()
+	chainID2 := dummyChainsIDs[0]
+
+	// Setup Chains in the testing suite
+	s.chainA = s.coordinator.GetTestChain(s.network.GetChainID())
+	s.chainB = s.coordinator.GetTestChain(chainID2)
+
+	// set sender account on chainA
+	s.coordinator.SetDefaultSignerForChain(
+		s.network.GetChainID(),
+		s.keyring.GetPrivKey(0),
+		s.network.App.AccountKeeper.GetAccount(ctx, s.keyring.GetAccAddr(0)),
+	)
+
+	if s.suiteIBCTesting {
+		s.setupIBCTest()
+	}
 }

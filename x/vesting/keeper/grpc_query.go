@@ -6,8 +6,6 @@ import (
 	"os"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/spf13/cast"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -34,9 +32,7 @@ func (k Keeper) Balances(
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	ctx := sdk.UnwrapSDKContext(goCtx)
-
-	clawbackAccount, err := k.GetClawbackVestingAccount(ctx, addr)
+	clawbackAccount, err := k.GetClawbackVestingAccount(goCtx, addr)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
@@ -44,6 +40,7 @@ func (k Keeper) Balances(
 		)
 	}
 
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	locked := clawbackAccount.GetLockedUpCoins(ctx.BlockTime())
 	unvested := clawbackAccount.GetVestingCoins(ctx.BlockTime())
 	vested := clawbackAccount.GetVestedCoins(ctx.BlockTime())
@@ -76,7 +73,7 @@ func (k Keeper) TotalLocked(
 	totalUnvested := sdk.NewCoins()
 	totalVested := sdk.NewCoins()
 
-	k.accountKeeper.IterateAccounts(ctx, func(acc authtypes.AccountI) bool {
+	k.accountKeeper.IterateAccounts(goCtx, func(acc sdk.AccountI) bool {
 		// Check if clawback vesting account
 		clawbackAccount, isClawback := acc.(*types.ClawbackVestingAccount)
 		if isClawback {
@@ -91,13 +88,11 @@ func (k Keeper) TotalLocked(
 		return false
 	})
 
-	lvmAcc := k.accountKeeper.GetModuleAccount(ctx, liquidvestingtypes.ModuleName)
-	if lvmAcc == nil {
-		panic(sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", lvmAcc))
+	lvmAcc := k.accountKeeper.GetModuleAccount(goCtx, liquidvestingtypes.ModuleName)
+	if lvmAcc != nil {
+		escrowedLiquidBalance := k.bankKeeper.GetBalance(goCtx, lvmAcc.GetAddress(), utils.BaseDenom)
+		totalLocked = totalLocked.Add(escrowedLiquidBalance)
 	}
-
-	escrowedLiquidBalance := k.bankKeeper.GetBalance(ctx, lvmAcc.GetAddress(), utils.BaseDenom)
-	totalLocked = totalLocked.Add(escrowedLiquidBalance)
 
 	return &types.QueryTotalLockedResponse{
 		Locked:   totalLocked,

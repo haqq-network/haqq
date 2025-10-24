@@ -1,17 +1,23 @@
 package network
 
 import (
-	"encoding/json"
+	"fmt"
 	"math"
 	"math/big"
 	"time"
 
+	coreheader "cosmossdk.io/core/header"
+	sdkmath "cosmossdk.io/math"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmtypes "github.com/cometbft/cometbft/types"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmttypes "github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	sdktestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gethparams "github.com/ethereum/go-ethereum/params"
@@ -20,9 +26,13 @@ import (
 	commonnetwork "github.com/haqq-network/haqq/testutil/integration/common/network"
 	"github.com/haqq-network/haqq/types"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
 // Network is the interface that wraps the methods to interact with integration test network.
@@ -41,13 +51,10 @@ type Network interface {
 	GetGovClient() govtypes.QueryClient
 	GetCoinomicsClient() coinomicstypes.QueryClient
 	GetFeeMarketClient() feemarkettypes.QueryClient
-
-	// Because to update the module params on a conventional manner governance
-	// would be required, we should provide an easier way to update the params
-	UpdateEvmParams(params evmtypes.Params) error
-	UpdateGovParams(params govtypes.Params) error
-	UpdateCoinomicsParams(params coinomicstypes.Params) error
-	UpdateFeeMarketParams(params feemarkettypes.Params) error
+	GetEpochsClient() epochstypes.QueryClient
+	GetVestingClient() vestingtypes.QueryClient
+	GetLiquidVestingClient() liquidvestingtypes.QueryClient
+	GetUCDAOClient() ucdaotypes.QueryClient
 }
 
 var _ Network = (*IntegrationNetwork)(nil)
@@ -60,8 +67,8 @@ type IntegrationNetwork struct {
 	app        *app.Haqq
 
 	// This is only needed for IBC chain testing setup
-	valSet     *tmtypes.ValidatorSet
-	valSigners map[string]tmtypes.PrivValidator
+	valSet     *cmttypes.ValidatorSet
+	valSigners map[string]cmttypes.PrivValidator
 }
 
 // New configures and initializes a new integration Network instance with
@@ -91,47 +98,59 @@ func New(opts ...ConfigOption) *IntegrationNetwork {
 }
 
 var (
-	// bondedAmt is the amount of tokens that each validator will have initially bonded
-	bondedAmt = sdktypes.TokensFromConsensusPower(1, types.PowerReduction)
+	// DefaultBondedAmount is the amount of tokens that each validator will have initially bonded
+	DefaultBondedAmount = sdktypes.TokensFromConsensusPower(1, types.PowerReduction)
 	// PrefundedAccountInitialBalance is the amount of tokens that each prefunded account has at genesis
-	PrefundedAccountInitialBalance = sdktypes.NewInt(int64(math.Pow10(18) * 4))
+	PrefundedAccountInitialBalance, _ = sdkmath.NewIntFromString("100000000000000000000000") // 100k
 )
 
 // configureAndInitChain initializes the network with the given configuration.
 // It creates the genesis state and starts the network.
 func (n *IntegrationNetwork) configureAndInitChain() error {
-	// Create funded accounts based on the config and
-	// create genesis accounts
-	genAccounts, fundedAccountBalances := getGenAccountsAndBalances(n.cfg)
-
 	// Create validator set with the amount of validators specified in the config
 	// with the default power of 1.
 	valSet, valSigners := createValidatorSetAndSigners(n.cfg.amountOfValidators)
-	totalBonded := bondedAmt.Mul(sdktypes.NewInt(int64(n.cfg.amountOfValidators)))
+	totalBonded := DefaultBondedAmount.Mul(sdkmath.NewInt(int64(n.cfg.amountOfValidators)))
 
 	// Build staking type validators and delegations
-	validators, err := createStakingValidators(valSet.Validators, bondedAmt)
+	validators, err := createStakingValidators(valSet.Validators, DefaultBondedAmount, n.cfg.operatorsAddrs)
 	if err != nil {
 		return err
 	}
 
-	fundedAccountBalances = addBondedModuleAccountToFundedBalances(fundedAccountBalances, sdktypes.NewCoin(n.cfg.denom, totalBonded))
+	// Create genesis accounts and funded balances based on the config
+	genAccounts, fundedAccountBalances := getGenAccountsAndBalances(n.cfg, validators)
 
-	delegations := createDelegations(valSet.Validators, genAccounts[0].GetAddress())
+	fundedAccountBalances = addBondedModuleAccountToFundedBalances(
+		fundedAccountBalances,
+		sdktypes.NewCoin(n.cfg.denom, totalBonded),
+	)
+
+	delegations := createDelegations(validators, genAccounts[0].GetAddress())
 
 	// Create a new HaqqApp with the following params
-	haqqApp := createHaqqApp(n.cfg.chainID)
+	haqqApp := createHaqqApp(n.cfg.chainID, n.cfg.customBaseAppOpts...)
 
 	stakingParams := StakingCustomGenesisState{
 		denom:       n.cfg.denom,
 		validators:  validators,
 		delegations: delegations,
 	}
+	govParams := GovCustomGenesisState{
+		denom: n.cfg.denom,
+	}
 
 	totalSupply := calculateTotalSupply(fundedAccountBalances)
 	bankParams := BankCustomGenesisState{
 		totalSupply: totalSupply,
 		balances:    fundedAccountBalances,
+	}
+
+	// Get the corresponding slashing info and missed block info
+	// for the created validators
+	slashingParams, err := getValidatorsSlashingGen(validators, haqqApp.StakingKeeper)
+	if err != nil {
+		return err
 	}
 
 	// Configure Genesis state
@@ -141,6 +160,8 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 			genAccounts: genAccounts,
 			staking:     stakingParams,
 			bank:        bankParams,
+			slashing:    slashingParams,
+			gov:         govParams,
 		},
 	)
 
@@ -152,74 +173,95 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 	}
 
 	// Init chain
-	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
+	stateBytes, err := cmtjson.MarshalIndent(genesisState, "", " ")
 	if err != nil {
 		return err
 	}
 
+	// Consensus module does not have a genesis state on the app,
+	// but can customize the consensus parameters of the chain on initialization
 	consensusParams := app.DefaultConsensusParams
-	now := time.Now()
-	haqqApp.InitChain(
-		abcitypes.RequestInitChain{
-			Time:            now,
+	if gen, ok := n.cfg.customGenesisState[consensustypes.ModuleName]; ok {
+		consensusParams, ok = gen.(*cmtproto.ConsensusParams)
+		if !ok {
+			return fmt.Errorf("invalid type for consensus parameters. Expected: cmtproto.ConsensusParams, got %T", gen)
+		}
+	}
+
+	startTime := time.Now().UTC()
+	if !n.cfg.startTime.IsZero() {
+		startTime = n.cfg.startTime
+	}
+
+	if _, err := haqqApp.InitChain(
+		&abcitypes.RequestInitChain{
+			Time:            startTime,
 			ChainId:         n.cfg.chainID,
 			Validators:      []abcitypes.ValidatorUpdate{},
 			ConsensusParams: consensusParams,
 			AppStateBytes:   stateBytes,
 		},
-	)
-	// Commit genesis changes
-	haqqApp.Commit()
+	); err != nil {
+		return err
+	}
 
-	header := tmproto.Header{
+	header := cmtproto.Header{
 		ChainID:            n.cfg.chainID,
 		Height:             haqqApp.LastBlockHeight() + 1,
-		Time:               now,
 		AppHash:            haqqApp.LastCommitID().Hash,
+		Time:               startTime,
 		ValidatorsHash:     valSet.Hash(),
 		NextValidatorsHash: valSet.Hash(),
 		ProposerAddress:    valSet.Proposer.Address,
+		Version: tmversion.Consensus{
+			Block: version.BlockProtocol,
+		},
 	}
-	haqqApp.BeginBlock(abcitypes.RequestBeginBlock{Header: header})
+
+	// Commit genesis block
+	req := buildFinalizeBlockReq(header, valSet.Validators)
+	if _, err := haqqApp.FinalizeBlock(req); err != nil {
+		return err
+	}
+
+	if _, err := haqqApp.Commit(); err != nil {
+		return err
+	}
+
+	// new block context
+	header.Height++
+	header.Time = header.Time.Add(time.Second)
 
 	// Set networks global parameters
-	n.app = haqqApp
-	// TODO - this might not be the best way to initialize the context
-	n.ctx = haqqApp.BaseApp.NewContext(false, header)
-	n.ctx = n.ctx.WithConsensusParams(consensusParams)
-	n.ctx = n.ctx.WithBlockGasMeter(sdktypes.NewInfiniteGasMeter())
+	var blockMaxGas uint64 = math.MaxUint64
+	if consensusParams.Block != nil && consensusParams.Block.MaxGas > 0 {
+		blockMaxGas = uint64(consensusParams.Block.MaxGas) //nolint:gosec // G115
+	}
 
+	n.ctx = haqqApp.BaseApp.NewUncachedContext(false, header).
+		WithHeaderInfo(coreheader.Info{
+			Height: header.Height,
+			Time:   header.Time,
+		}).
+		WithConsensusParams(*consensusParams).
+		WithBlockGasMeter(types.NewInfiniteGasMeterWithLimit(blockMaxGas))
+
+	n.app = haqqApp
 	n.validators = validators
 	n.valSet = valSet
 	n.valSigners = valSigners
-
-	// Register ISLM in denom metadata
-	islmMetadata := banktypes.Metadata{
-		Description: "The native token of Haqq Network",
-		Base:        n.cfg.denom,
-		// NOTE: Denom units MUST be increasing
-		DenomUnits: []*banktypes.DenomUnit{
-			{
-				Denom:    n.cfg.denom,
-				Exponent: 0,
-				Aliases:  []string{n.cfg.denom},
-			},
-			{
-				Denom:    n.cfg.denom,
-				Exponent: 18,
-			},
-		},
-		Name:    "Islamic Coin",
-		Symbol:  "ISLM",
-		Display: n.cfg.denom,
-	}
-	haqqApp.BankKeeper.SetDenomMetaData(n.ctx, islmMetadata)
 
 	return nil
 }
 
 // GetContext returns the network's context
 func (n *IntegrationNetwork) GetContext() sdktypes.Context {
+	return n.ctx
+}
+
+// WithIsCheckTxCtx switches the network's checkTx property
+func (n *IntegrationNetwork) WithIsCheckTxCtx(isCheckTx bool) sdktypes.Context {
+	n.ctx = n.ctx.WithIsCheckTx(isCheckTx)
 	return n.ctx
 }
 
@@ -244,16 +286,51 @@ func (n *IntegrationNetwork) GetDenom() string {
 	return n.cfg.denom
 }
 
+// GetOtherDenoms returns network's other supported denoms
+func (n *IntegrationNetwork) GetOtherDenoms() []string {
+	return n.cfg.otherCoinDenom
+}
+
 // GetValidators returns the network's validators
 func (n *IntegrationNetwork) GetValidators() []stakingtypes.Validator {
 	return n.validators
 }
 
+// GetOtherDenoms returns network's other supported denoms
+func (n *IntegrationNetwork) GetEncodingConfig() sdktestutil.TestEncodingConfig {
+	return sdktestutil.TestEncodingConfig{
+		InterfaceRegistry: n.app.InterfaceRegistry(),
+		Codec:             n.app.AppCodec(),
+		TxConfig:          n.app.GetTxConfig(),
+		Amino:             n.app.LegacyAmino(),
+	}
+}
+
 // BroadcastTxSync broadcasts the given txBytes to the network and returns the response.
 // TODO - this should be change to gRPC
-func (n *IntegrationNetwork) BroadcastTxSync(txBytes []byte) (abcitypes.ResponseDeliverTx, error) {
-	req := abcitypes.RequestDeliverTx{Tx: txBytes}
-	return n.app.BaseApp.DeliverTx(req), nil
+func (n *IntegrationNetwork) BroadcastTxSync(txBytes []byte) (abcitypes.ExecTxResult, error) {
+	header := n.ctx.BlockHeader()
+	// Update block header and BeginBlock
+	header.AppHash = n.app.LastCommitID().Hash
+	// Calculate new block time after duration
+	newBlockTime := header.Time.Add(time.Second)
+	header.Time = newBlockTime
+
+	req := buildFinalizeBlockReq(header, n.valSet.Validators, txBytes)
+
+	// dont include the DecidedLastCommit because we're not committing the changes
+	// here, is just for broadcasting the tx. To persist the changes, use the
+	// NextBlock or NextBlockAfter functions
+	req.DecidedLastCommit = abcitypes.CommitInfo{}
+
+	blockRes, err := n.app.BaseApp.FinalizeBlock(req)
+	if err != nil {
+		return abcitypes.ExecTxResult{}, err
+	}
+	if len(blockRes.TxResults) != 1 {
+		return abcitypes.ExecTxResult{}, fmt.Errorf("unexpected number of tx results. Expected 1, got: %d", len(blockRes.TxResults))
+	}
+	return *blockRes.TxResults[0], nil
 }
 
 // Simulate simulates the given txBytes to the network and returns the simulated response.
@@ -267,4 +344,14 @@ func (n *IntegrationNetwork) Simulate(txBytes []byte) (*txtypes.SimulateResponse
 		GasInfo: &gas,
 		Result:  result,
 	}, nil
+}
+
+// CheckTx calls the BaseApp's CheckTx method with the given txBytes to the network and returns the response.
+func (n *IntegrationNetwork) CheckTx(txBytes []byte) (*abcitypes.ResponseCheckTx, error) {
+	req := &abcitypes.RequestCheckTx{Tx: txBytes}
+	res, err := n.app.BaseApp.CheckTx(req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }

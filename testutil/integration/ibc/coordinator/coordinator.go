@@ -5,8 +5,8 @@ import (
 	"time"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 
 	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/testutil/integration/common/network"
@@ -19,24 +19,35 @@ type Coordinator interface {
 	// IncrementTime iterates through all the TestChain's and increments their current header time
 	// by 5 seconds.
 	IncrementTime()
+	// IncrementTimeBy iterates through all the TestChain's and increments their current header time
+	// by specified time.
+	IncrementTimeBy(increment time.Duration)
 	// UpdateTime updates all clocks for the TestChains to the current global time.
 	UpdateTime()
 	// UpdateTimeForChain updates the clock for a specific chain.
 	UpdateTimeForChain(chainID string)
-	// GetChain returns the TestChain for a given chainID.
+	// GetChain returns the abstracted TestChain for a given chainID.
 	GetChain(chainID string) ibcchain.Chain
+	// GetTestChain returns the original TestChain for a given chainID.
+	GetTestChain(chainID string) *ibctesting.TestChain
 	// GetDummyChainsIDs returns the chainIDs for all dummy chains.
 	GetDummyChainsIDs() []string
+	// GetPath returns the transfer path for the chain ids 'a' and 'b'
+	GetPath(a, b string) *haqqibctesting.Path
+	// GetChainSenderAcc returns the sender account for the specified chain
+	GetChainSenderAcc(chainID string) sdk.AccountI
 	// SetDefaultSignerForChain sets the default signer for the chain with the given chainID.
-	SetDefaultSignerForChain(chainID string, priv cryptotypes.PrivKey, acc authtypes.AccountI)
+	SetDefaultSignerForChain(chainID string, priv cryptotypes.PrivKey, acc sdk.AccountI)
 	// Setup constructs a TM client, connection, and channel on both chains provided. It will
 	// fail if any error occurs. The clientID's, TestConnections, and TestChannels are returned
 	// for both chains. The channels created are connected to the ibc-transfer application.
-	Setup(src, dst string) IBCConnection
+	Setup(src, dst string) *haqqibctesting.Path
+	// CommitBlock commits 1 block on the chain(s) with the given chainID(s).
+	CommitBlock(chainIDs ...string)
 	// CommitNBlocks commits n blocks on the chain with the given chainID.
-	CommitNBlocks(chainID string, n uint64) error
+	CommitNBlocks(chainID string, n uint64)
 	// CommitAll commits 1 blocks on all chains within the coordinator.
-	CommitAll() error
+	CommitAll()
 }
 
 var AmountOfDummyChains = 2
@@ -71,7 +82,7 @@ func NewIntegrationCoordinator(t *testing.T, preConfiguredChains []network.Netwo
 
 // GetChain returns the TestChain for a given chainID but abstracted to our internal chain interface.
 func (c *IntegrationCoordinator) GetChain(chainID string) ibcchain.Chain {
-	return c.coord.Chains[chainID]
+	return c.coord.GetChain(chainID)
 }
 
 // GetTestChain returns the TestChain for a given chainID.
@@ -84,10 +95,31 @@ func (c *IntegrationCoordinator) GetDummyChainsIDs() []string {
 	return c.dummyChainsIDs
 }
 
+// GetPath returns the transfer path for the chain ids 'a' and 'b'
+func (c *IntegrationCoordinator) GetPath(a, b string) *haqqibctesting.Path {
+	chainA := c.coord.GetChain(a)
+	chainB := c.coord.GetChain(b)
+
+	return haqqibctesting.NewTransferPath(chainA, chainB)
+}
+
+// GetChainSenderAcc returns the TestChain's SenderAccount for a given chainID.
+func (c *IntegrationCoordinator) GetChainSenderAcc(chainID string) sdk.AccountI {
+	return c.coord.Chains[chainID].SenderAccount
+}
+
 // IncrementTime iterates through all the TestChain's and increments their current header time
 // by 5 seconds.
+//
+// CONTRACT: this function must be called after every Commit on any TestChain.
 func (c *IntegrationCoordinator) IncrementTime() {
 	c.coord.IncrementTime()
+}
+
+// IncrementTimeBy iterates through all the TestChain's and increments their current header time
+// by specified time.
+func (c *IntegrationCoordinator) IncrementTimeBy(increment time.Duration) {
+	c.coord.IncrementTimeBy(increment)
 }
 
 // UpdateTime updates all clocks for the TestChains to the current global time.
@@ -102,7 +134,7 @@ func (c *IntegrationCoordinator) UpdateTimeForChain(chainID string) {
 }
 
 // SetDefaultSignerForChain sets the default signer for the chain with the given chainID.
-func (c *IntegrationCoordinator) SetDefaultSignerForChain(chainID string, priv cryptotypes.PrivKey, acc authtypes.AccountI) {
+func (c *IntegrationCoordinator) SetDefaultSignerForChain(chainID string, priv cryptotypes.PrivKey, acc sdk.AccountI) {
 	chain := c.coord.GetChain(chainID)
 	chain.SenderPrivKey = priv
 	chain.SenderAccount = acc
@@ -112,42 +144,30 @@ func (c *IntegrationCoordinator) SetDefaultSignerForChain(chainID string, priv c
 // Setup constructs a TM client, connection, and channel on both chains provided. It will
 // fail if any error occurs. The clientID's, TestConnections, and TestChannels are returned
 // for both chains. The channels created are connected to the ibc-transfer application.
-func (c *IntegrationCoordinator) Setup(a, b string) IBCConnection {
-	chainA := c.coord.GetChain(a)
-	chainB := c.coord.GetChain(b)
-
-	path := haqqibctesting.NewTransferPath(chainA, chainB)
+func (c *IntegrationCoordinator) Setup(a, b string) *haqqibctesting.Path {
+	path := c.GetPath(a, b)
 	haqqibctesting.SetupPath(c.coord, path)
 
-	return IBCConnection{
-		EndpointA: Endpoint{
-			ChainID:      a,
-			ClientID:     path.EndpointA.ClientID,
-			ConnectionID: path.EndpointA.ConnectionID,
-			ChannelID:    path.EndpointA.ChannelID,
-			PortID:       path.EndpointA.ChannelConfig.PortID,
-		},
-		EndpointB: Endpoint{
-			ChainID:      b,
-			ClientID:     path.EndpointB.ClientID,
-			ConnectionID: path.EndpointB.ConnectionID,
-			ChannelID:    path.EndpointB.ChannelID,
-			PortID:       path.EndpointB.ChannelConfig.PortID,
-		},
+	return path
+}
+
+// CommitBlock commits 1 block on the chain(s) with the given chainID(s).
+func (c *IntegrationCoordinator) CommitBlock(chainIDs ...string) {
+	for _, chainID := range chainIDs {
+		chain := c.coord.GetChain(chainID)
+		c.coord.CommitBlock(chain)
 	}
 }
 
 // CommitNBlocks commits n blocks on the chain with the given chainID.
-func (c *IntegrationCoordinator) CommitNBlocks(chainID string, n uint64) error {
+func (c *IntegrationCoordinator) CommitNBlocks(chainID string, n uint64) {
 	chain := c.coord.GetChain(chainID)
 	c.coord.CommitNBlocks(chain, n)
-	return nil
 }
 
 // CommitAll commits n blocks on the chain with the given chainID.
-func (c *IntegrationCoordinator) CommitAll() error {
+func (c *IntegrationCoordinator) CommitAll() {
 	for _, chain := range c.coord.Chains {
-		c.coord.CommitNBlocks(chain, 1)
+		c.coord.CommitBlock(chain)
 	}
-	return nil
 }

@@ -1,10 +1,10 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 
 	sdkmath "cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -12,12 +12,12 @@ import (
 )
 
 // BeginBlock updates base fee
-func (k *Keeper) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
+func (k *Keeper) BeginBlock(ctx sdk.Context) error {
 	baseFee := k.CalculateBaseFee(ctx)
 
 	// return immediately if base fee is nil
 	if baseFee == nil {
-		return
+		return nil
 	}
 
 	k.SetBaseFee(ctx, baseFee)
@@ -33,28 +33,32 @@ func (k *Keeper) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
 			sdk.NewAttribute(types.AttributeKeyBaseFee, baseFee.String()),
 		),
 	})
+	return nil
 }
 
 // EndBlock update block gas wanted.
 // The EVM end block logic doesn't update the validator set, thus it returns
 // an empty slice.
-func (k *Keeper) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) {
+func (k *Keeper) EndBlock(ctx sdk.Context) error {
 	if ctx.BlockGasMeter() == nil {
-		k.Logger(ctx).Error("block gas meter is nil when setting block gas wanted")
-		return
+		err := errors.New("block gas meter is nil when setting block gas wanted")
+		k.Logger(ctx).Error(err.Error())
+		return err
 	}
 
 	gasWanted := sdkmath.NewIntFromUint64(k.GetTransientGasWanted(ctx))
 	gasUsed := sdkmath.NewIntFromUint64(ctx.BlockGasMeter().GasConsumedToLimit())
 
 	if !gasWanted.IsInt64() {
-		k.Logger(ctx).Error("integer overflow by integer type conversion. Gas wanted > MaxInt64", "gas wanted", gasWanted.String())
-		return
+		err := fmt.Errorf("integer overflow by integer type conversion. Gas wanted > MaxInt64. Gas wanted: %s", gasWanted)
+		k.Logger(ctx).Error(err.Error())
+		return err
 	}
 
 	if !gasUsed.IsInt64() {
-		k.Logger(ctx).Error("integer overflow by integer type conversion. Gas used > MaxInt64", "gas used", gasUsed.String())
-		return
+		err := fmt.Errorf("integer overflow by integer type conversion. Gas used > MaxInt64. Gas used: %s", gasUsed)
+		k.Logger(ctx).Error(err.Error())
+		return err
 	}
 
 	// to prevent BaseFee manipulation we limit the gasWanted so that
@@ -75,4 +79,5 @@ func (k *Keeper) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) {
 		sdk.NewAttribute("height", fmt.Sprintf("%d", ctx.BlockHeight())),
 		sdk.NewAttribute("amount", fmt.Sprintf("%d", updatedGasWanted)),
 	))
+	return nil
 }
