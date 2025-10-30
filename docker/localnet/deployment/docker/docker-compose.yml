@@ -1,0 +1,68 @@
+services:
+  node0:
+    platform: linux/amd64
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile-node0
+    container_name: haqq_localnet_node0
+    ports:
+      - "26657:26657"
+      - "9090:9090"
+      - "1317:1317"
+      - "8545:8545"
+      - "8546:8546"
+    volumes:
+      - shared-node0-volume:/app/.haqqd
+    networks:
+      haqq-network:
+        ipv4_address: 172.20.0.2
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://172.20.0.2:26657/status | jq -e '.result.sync_info.catching_up == false' > /dev/null",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: on-failure
+
+  node1:
+    platform: linux/amd64
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile-node1
+    container_name: haqq_localnet_node1
+    volumes:
+      - shared-node1-volume:/app/.haqqd
+    networks:
+      haqq-network:
+        ipv4_address: 172.20.0.3
+    restart: on-failure
+
+  node2:
+    platform: linux/amd64
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile-node2
+    container_name: haqq_localnet_node2
+    volumes:
+      - shared-node2-volume:/app/.haqqd
+    networks:
+      haqq-network:
+        ipv4_address: 172.20.0.4
+    restart: on-failure
+
+volumes:
+  shared-node0-volume:
+  shared-node1-volume:
+  shared-node2-volume:
+
+networks:
+  haqq-network:
+    name: haqq-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
