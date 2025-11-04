@@ -11,7 +11,7 @@ import (
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	channelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
+	channelkeeper "github.com/cosmos/ibc-go/v10/modules/core/04-channel/keeper"
 	"github.com/ethereum/go-ethereum/common"
 
 	bankprecompile "github.com/haqq-network/haqq/precompiles/bank"
