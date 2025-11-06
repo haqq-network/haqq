@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -289,10 +290,14 @@ func (suite *KeeperTestSuite) TestTransfer() {
 			ctx = suite.network.GetContext()
 
 			suite.network.App.TransferKeeper = keeper.NewKeeper(
-				suite.network.App.AppCodec(), suite.network.App.GetKey(types.StoreKey), suite.network.App.GetSubspace(types.ModuleName),
+				suite.network.App.AppCodec(),
+				runtime.NewKVStoreService(suite.network.App.GetKey(types.StoreKey)),
+				suite.network.App.GetSubspace(types.ModuleName),
 				&MockICS4Wrapper{}, // ICS4 Wrapper
-				mockChannelKeeper, suite.network.App.IBCKeeper.PortKeeper,
-				suite.network.App.AccountKeeper, suite.network.App.BankKeeper, suite.network.App.ScopedTransferKeeper,
+				mockChannelKeeper,
+				suite.network.App.MsgServiceRouter(),
+				suite.network.App.AccountKeeper,
+				suite.network.App.BankKeeper,
 				suite.network.App.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
 				authAddr,
 			)
