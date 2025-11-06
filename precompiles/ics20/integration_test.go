@@ -894,7 +894,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 	Context("Queries", func() {
 		var (
 			path     string
-			expTrace transfertypes.DenomTrace
+			expTrace transfertypes.Denom
 		)
 
 		BeforeEach(func() {
@@ -905,16 +905,13 @@ var _ = Describe("IBCTransfer Precompile", func() {
 				s.transferPath.EndpointB.ChannelConfig.PortID,
 				s.transferPath.EndpointB.ChannelID,
 			)
-			expTrace = transfertypes.DenomTrace{
-				Path:      path,
-				BaseDenom: utils.BaseDenom,
-			}
+			expTrace = transfertypes.ExtractDenomFromPath(path + "/" + utils.BaseDenom)
 		})
 
 		It("should query denom trace", func() {
 			// setup - create a denom trace to get it on the query result
 			method := ics20.DenomTraceMethod
-			s.network.App.TransferKeeper.SetDenomTrace(s.chainA.GetContext(), expTrace)
+			s.network.App.TransferKeeper.SetDenom(s.chainA.GetContext(), expTrace)
 
 			args := defaultCallArgs.
 				WithMethodName(method).
@@ -926,26 +923,26 @@ var _ = Describe("IBCTransfer Precompile", func() {
 			var out ics20.DenomTraceResponse
 			err = s.precompile.UnpackIntoInterface(&out, method, ethRes.Ret)
 			Expect(err).To(BeNil(), "error while unpacking the output: %v", err)
-			Expect(out.DenomTrace.Path).To(Equal(expTrace.Path))
-			Expect(out.DenomTrace.BaseDenom).To(Equal(expTrace.BaseDenom))
+			Expect(out.Denom.Base).To(Equal(expTrace.Base))
+			Expect(out.Denom.Trace).To(Equal(expTrace.Trace))
 		})
 
 		Context("denom traces query", func() {
 			var (
 				method    string
-				expTraces []transfertypes.DenomTrace
+				expTraces []transfertypes.Denom
 			)
 			BeforeEach(func() {
 				method = ics20.DenomTracesMethod
 				// setup - create some denom traces to get on the query result
-				expTraces = []transfertypes.DenomTrace{
-					{Path: "", BaseDenom: utils.BaseDenom},
-					{Path: fmt.Sprintf("%s/%s", s.transferPath.EndpointA.ChannelConfig.PortID, s.transferPath.EndpointA.ChannelID), BaseDenom: utils.BaseDenom},
+				expTraces = []transfertypes.Denom{
+					transfertypes.NewDenom(utils.BaseDenom),
+					transfertypes.ExtractDenomFromPath(fmt.Sprintf("%s/%s/%s", s.transferPath.EndpointA.ChannelConfig.PortID, s.transferPath.EndpointA.ChannelID, utils.BaseDenom)),
 					expTrace,
 				}
 
 				for _, trace := range expTraces {
-					s.network.App.TransferKeeper.SetDenomTrace(s.chainA.GetContext(), trace)
+					s.network.App.TransferKeeper.SetDenom(s.chainA.GetContext(), trace)
 				}
 			})
 			It("should query denom traces - w/all results on page", func() {
@@ -962,14 +959,14 @@ var _ = Describe("IBCTransfer Precompile", func() {
 				var out ics20.DenomTracesResponse
 				err = s.precompile.UnpackIntoInterface(&out, method, ethRes.Ret)
 				Expect(err).To(BeNil(), "error while unpacking the output: %v", err)
-				Expect(out.DenomTraces).To(HaveLen(3), "expected 3 denom traces to be returned")
+				Expect(out.Denoms).To(HaveLen(3), "expected 3 denom traces to be returned")
 				Expect(out.PageResponse.Total).To(Equal(uint64(3)))
 				Expect(out.PageResponse.NextKey).To(BeEmpty())
 
-				for i, dt := range out.DenomTraces {
+				for i, dt := range out.Denoms {
 					// order can change
-					Expect(dt.Path).To(Equal(expTraces[i].Path))
-					Expect(dt.BaseDenom).To(Equal(expTraces[i].BaseDenom))
+					Expect(dt.Base).To(Equal(expTraces[i].Base))
+					Expect(dt.Trace).To(Equal(expTraces[i].Trace))
 				}
 			})
 
@@ -987,7 +984,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 				var out ics20.DenomTracesResponse
 				err = s.precompile.UnpackIntoInterface(&out, method, ethRes.Ret)
 				Expect(err).To(BeNil(), "error while unpacking the output: %v", err)
-				Expect(out.DenomTraces).To(HaveLen(1), "expected 1 denom traces to be returned")
+				Expect(out.Denoms).To(HaveLen(1), "expected 1 denom traces to be returned")
 				Expect(out.PageResponse.Total).To(Equal(uint64(3)))
 				Expect(out.PageResponse.NextKey).NotTo(BeEmpty())
 			})
@@ -996,11 +993,18 @@ var _ = Describe("IBCTransfer Precompile", func() {
 		It("should query denom hash", func() {
 			method := ics20.DenomHashMethod
 			// setup - create a denom expTrace
-			s.network.App.TransferKeeper.SetDenomTrace(s.chainA.GetContext(), expTrace)
+			s.network.App.TransferKeeper.SetDenom(s.chainA.GetContext(), expTrace)
+
+			// Build full path from Denom
+			fullPath := ""
+			for _, hop := range expTrace.Trace {
+				fullPath += hop.PortId + "/" + hop.ChannelId + "/"
+			}
+			fullPath += expTrace.Base
 
 			args := defaultCallArgs.
 				WithMethodName(method).
-				WithArgs(expTrace.GetFullDenomPath())
+				WithArgs(fullPath)
 
 			_, ethRes, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.network.App, args, passCheck)
 			Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
@@ -1402,12 +1406,9 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 			)
 			BeforeEach(func() {
 				// set IBC denom trace
-				s.network.App.TransferKeeper.SetDenomTrace(
+				s.network.App.TransferKeeper.SetDenom(
 					s.chainA.GetContext(),
-					transfertypes.DenomTrace{
-						Path:      teststypes.UosmoDenomtrace.Path,
-						BaseDenom: teststypes.UosmoDenomtrace.BaseDenom,
-					},
+					teststypes.UosmoDenomtrace,
 				)
 
 				// Mint IBC coins and add them to sender balance

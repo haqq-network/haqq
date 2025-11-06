@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
@@ -130,6 +129,7 @@ func (m MockIBCModule) OnChanCloseConfirm(
 //nolint:all // escaping govet since we can copy locks here as it is a test
 func (m MockIBCModule) OnRecvPacket(
 	ctx sdk.Context,
+	portID string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
@@ -145,6 +145,7 @@ func (m MockIBCModule) OnRecvPacket(
 //nolint:all // escaping govet since we can copy locks here as it is a test
 func (m MockIBCModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
+	portID string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
@@ -161,6 +162,7 @@ func (m MockIBCModule) OnAcknowledgementPacket(
 //nolint:all // escaping govet since we can copy locks here as it is a test
 func (m MockIBCModule) OnTimeoutPacket(
 	ctx sdk.Context,
+	portID string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
@@ -183,9 +185,9 @@ func TestModule(t *testing.T) {
 	module := NewModule(mockModule)
 
 	// mock calls for abstraction
-	_, err := module.OnChanOpenInit(sdk.Context{}, channeltypes.ORDERED, nil, transfertypes.PortID, "channel-0", &capabilitytypes.Capability{}, channeltypes.Counterparty{}, "")
+	_, err := module.OnChanOpenInit(sdk.Context{}, channeltypes.ORDERED, nil, transfertypes.PortID, "channel-0", channeltypes.Counterparty{}, "")
 	require.NoError(t, err)
-	_, err = module.OnChanOpenTry(sdk.Context{}, channeltypes.ORDERED, nil, transfertypes.PortID, "channel-0", &capabilitytypes.Capability{}, channeltypes.Counterparty{}, "")
+	_, err = module.OnChanOpenTry(sdk.Context{}, channeltypes.ORDERED, nil, transfertypes.PortID, "channel-0", channeltypes.Counterparty{}, "")
 	require.NoError(t, err)
 	err = module.OnChanOpenAck(sdk.Context{}, transfertypes.PortID, "channel-0", "channel-0", "")
 	require.NoError(t, err)
@@ -195,10 +197,10 @@ func TestModule(t *testing.T) {
 	require.NoError(t, err)
 	err = module.OnChanCloseConfirm(sdk.Context{}, transfertypes.PortID, "channel-0")
 	require.NoError(t, err)
-	ack := module.OnRecvPacket(sdk.Context{}, channeltypes.Packet{}, nil)
+	ack := module.OnRecvPacket(sdk.Context{}, transfertypes.PortID, channeltypes.Packet{}, nil)
 	require.NotNil(t, ack)
-	err = module.OnAcknowledgementPacket(sdk.Context{}, channeltypes.Packet{}, nil, nil)
+	err = module.OnAcknowledgementPacket(sdk.Context{}, transfertypes.PortID, channeltypes.Packet{}, nil, nil)
 	require.NoError(t, err)
-	err = module.OnTimeoutPacket(sdk.Context{}, channeltypes.Packet{}, nil)
+	err = module.OnTimeoutPacket(sdk.Context{}, transfertypes.PortID, channeltypes.Packet{}, nil)
 	require.NoError(t, err)
 }

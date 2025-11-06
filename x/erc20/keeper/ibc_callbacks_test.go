@@ -231,11 +231,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			ctx = suite.network.GetContext()
 
 			// Set Denom Trace
-			denomTrace := transfertypes.DenomTrace{
-				Path:      path,
-				BaseDenom: registeredDenom,
-			}
-			suite.network.App.TransferKeeper.SetDenomTrace(ctx, denomTrace)
+			denomTrace := transfertypes.ExtractDenomFromPath(path + "/" + registeredDenom)
+			suite.network.App.TransferKeeper.SetDenom(ctx, denomTrace)
 
 			// Set Cosmos Channel
 			channel := channeltypes.Channel{
