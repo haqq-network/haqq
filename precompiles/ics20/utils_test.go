@@ -160,12 +160,16 @@ func (s *PrecompileTestSuite) setupIBCTest() {
 	s.Require().NoError(err)
 	cons, err := validators[0].GetConsAddr()
 	s.Require().NoError(err)
-	s.chainA.CurrentHeader.ProposerAddress = cons
+	
+	// Update the proposed header with the proposer address
+	header := s.chainA.ProposedHeader
+	header.ProposerAddress = cons
+	s.chainA.ProposedHeader = header
 
 	err = haqqApp.StakingKeeper.SetValidatorByConsAddr(ctx, validators[0])
 	s.Require().NoError(err)
 
-	_, err = haqqApp.EvmKeeper.GetCoinbaseAddress(ctx, sdk.ConsAddress(s.chainA.CurrentHeader.ProposerAddress))
+	_, err = haqqApp.EvmKeeper.GetCoinbaseAddress(ctx, sdk.ConsAddress(cons))
 	s.Require().NoError(err)
 
 	// Mint coins locked on the haqq account generated with secp.

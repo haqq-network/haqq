@@ -76,7 +76,7 @@ func (s *PrecompileTestSuite) SetupTest() {
 	if s.precompile, err = ics20.NewPrecompile(
 		s.network.App.StakingKeeper,
 		s.network.App.TransferKeeper,
-		s.network.App.IBCKeeper.ChannelKeeper,
+		*s.network.App.IBCKeeper.ChannelKeeper,
 		s.network.App.AuthzKeeper,
 	); err != nil {
 		panic(err)

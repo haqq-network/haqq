@@ -25,7 +25,7 @@ var _ = Describe("Convert native ERC20 receiving from IBC back to Erc20", Ordere
 		senderAcc        sdk.AccAddress
 		amount           int64 = 10
 		pair             *types.TokenPair
-		erc20Denomtrace  transfertypes.DenomTrace
+		erc20Denom       transfertypes.Denom
 	)
 
 	BeforeEach(func() {
@@ -47,10 +47,7 @@ var _ = Describe("Convert native ERC20 receiving from IBC back to Erc20", Ordere
 			pair, err = s.app.Erc20Keeper.RegisterERC20(s.HaqqChain.GetContext(), addr)
 			s.Require().NoError(err)
 
-			erc20Denomtrace = transfertypes.DenomTrace{
-				Path:      "transfer/channel-0",
-				BaseDenom: pair.Denom,
-			}
+			erc20Denom = transfertypes.ExtractDenomFromPath("transfer/channel-0/" + pair.Denom)
 
 			s.HaqqChain.SenderAccount.SetSequence(s.HaqqChain.SenderAccount.GetSequence() + 1) //nolint:errcheck
 		})
@@ -91,10 +88,16 @@ var _ = Describe("Convert native ERC20 receiving from IBC back to Erc20", Ordere
 			s.IBCOsmosisChain.Coordinator.CommitBlock()
 
 			// Check balance on the Osmosis chain
-			erc20IBCBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), receiverAcc, erc20Denomtrace.IBCDenom())
+			erc20IBCBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), receiverAcc, erc20Denom.IBCDenom())
 			s.Require().Equal(amount, erc20IBCBalance.Amount.Int64())
 
-			s.SendAndReceiveMessage(s.pathOsmosisHaqq, s.IBCOsmosisChain, erc20Denomtrace.IBCDenom(), amount, receiver, sender, 1, erc20Denomtrace.GetFullDenomPath())
+			// Build full path from Denom
+			fullPath := ""
+			for _, hop := range erc20Denom.Trace {
+				fullPath += hop.PortId + "/" + hop.ChannelId + "/"
+			}
+			fullPath += erc20Denom.Base
+			s.SendAndReceiveMessage(s.pathOsmosisHaqq, s.IBCOsmosisChain, erc20Denom.IBCDenom(), amount, receiver, sender, 1, fullPath)
 			// Check Balance
 			balanceToken = s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(senderAcc.Bytes()))
 			s.Require().Equal(amount, balanceToken.Int64())
@@ -137,10 +140,16 @@ var _ = Describe("Convert native ERC20 receiving from IBC back to Erc20", Ordere
 			s.IBCOsmosisChain.Coordinator.CommitBlock()
 
 			// Check balance on the Osmosis chain
-			erc20IBCBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), receiverAcc, erc20Denomtrace.IBCDenom())
+			erc20IBCBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), receiverAcc, erc20Denom.IBCDenom())
 			s.Require().Equal(amount/2, erc20IBCBalance.Amount.Int64())
 
-			s.SendAndReceiveMessage(s.pathOsmosisHaqq, s.IBCOsmosisChain, erc20Denomtrace.IBCDenom(), amount/2, receiver, sender, 1, erc20Denomtrace.GetFullDenomPath())
+			// Build full path from Denom
+			fullPath := ""
+			for _, hop := range erc20Denom.Trace {
+				fullPath += hop.PortId + "/" + hop.ChannelId + "/"
+			}
+			fullPath += erc20Denom.Base
+			s.SendAndReceiveMessage(s.pathOsmosisHaqq, s.IBCOsmosisChain, erc20Denom.IBCDenom(), amount/2, receiver, sender, 1, fullPath)
 			// Check Balance
 			balanceToken = s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(senderAcc.Bytes()))
 			s.Require().Equal(amount, balanceToken.Int64())
@@ -173,11 +182,17 @@ var _ = Describe("Convert native ERC20 receiving from IBC back to Erc20", Ordere
 			s.Require().Equal(amount/2, balanceToken.Int64())
 
 			// Check balance on the Osmosis chain
-			erc20IBCBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), receiverAcc, erc20Denomtrace.IBCDenom())
+			erc20IBCBalance := s.IBCOsmosisChain.GetSimApp().BankKeeper.GetBalance(s.IBCOsmosisChain.GetContext(), receiverAcc, erc20Denom.IBCDenom())
 			s.Require().Equal(amount/2, erc20IBCBalance.Amount.Int64())
 
 			// send back the IBC coins from Osmosis to Evmos
-			s.SendAndReceiveMessage(s.pathOsmosisHaqq, s.IBCOsmosisChain, erc20Denomtrace.IBCDenom(), amount/2, receiver, sender, 1, erc20Denomtrace.GetFullDenomPath())
+			// Build full path from Denom
+			fullPath := ""
+			for _, hop := range erc20Denom.Trace {
+				fullPath += hop.PortId + "/" + hop.ChannelId + "/"
+			}
+			fullPath += erc20Denom.Base
+			s.SendAndReceiveMessage(s.pathOsmosisHaqq, s.IBCOsmosisChain, erc20Denom.IBCDenom(), amount/2, receiver, sender, 1, fullPath)
 			// Check Balance
 			balanceToken = s.app.Erc20Keeper.BalanceOf(s.HaqqChain.GetContext(), contracts.ERC20MinterBurnerDecimalsContract.ABI, pair.GetERC20Contract(), common.BytesToAddress(senderAcc.Bytes()))
 			s.Require().Equal(amount, balanceToken.Int64())
@@ -235,11 +250,8 @@ var _ = Describe("Native coins from IBC", Ordered, func() {
 		receiver := s.IBCOsmosisChain.SenderAccount.GetAddress().String()
 		receiverAcc := sdk.MustAccAddressFromBech32(receiver)
 
-		UatomInOsmosisDenomtrace := transfertypes.DenomTrace{
-			Path:      "transfer/channel-1",
-			BaseDenom: "uatom",
-		}
-		UatomInOsmosisIbcdenom := UatomInOsmosisDenomtrace.IBCDenom()
+		UatomInOsmosisDenom := transfertypes.ExtractDenomFromPath("transfer/channel-1/uatom")
+		UatomInOsmosisIbcdenom := UatomInOsmosisDenom.IBCDenom()
 		uosmoContractAddr, err := utils.GetIBCDenomAddress(UatomInOsmosisIbcdenom)
 		s.Require().NoError(err)
 		params := s.app.EvmKeeper.GetParams(s.HaqqChain.GetContext())

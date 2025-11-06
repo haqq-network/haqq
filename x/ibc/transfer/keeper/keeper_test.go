@@ -112,13 +112,19 @@ func (b *MockChannelKeeper) GetAllChannelsWithPortPrefix(ctx sdk.Context, portPr
 	return []channeltypes.IdentifiedChannel{}
 }
 
+//nolint:revive // allow unused parameters to indicate expected signature
+func (b *MockChannelKeeper) HasChannel(ctx sdk.Context, portID, channelID string) bool {
+	args := b.Called(mock.Anything, mock.Anything, mock.Anything)
+	return args.Bool(0)
+}
+
 var _ porttypes.ICS4Wrapper = &MockICS4Wrapper{}
 
 type MockICS4Wrapper struct {
 	mock.Mock
 }
 
-func (b *MockICS4Wrapper) WriteAcknowledgement(_ sdk.Context, _ *capabilitytypes.Capability, _ exported.PacketI, _ exported.Acknowledgement) error {
+func (b *MockICS4Wrapper) WriteAcknowledgement(_ sdk.Context, _ exported.PacketI, _ exported.Acknowledgement) error {
 	return nil
 }
 
@@ -130,7 +136,6 @@ func (b *MockICS4Wrapper) GetAppVersion(ctx sdk.Context, portID string, channelI
 //nolint:revive // allow unused parameters to indicate expected signature
 func (b *MockICS4Wrapper) SendPacket(
 	ctx sdk.Context,
-	channelCap *capabilitytypes.Capability,
 	sourcePort string,
 	sourceChannel string,
 	timeoutHeight clienttypes.Height,
