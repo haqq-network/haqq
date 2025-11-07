@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"cosmossdk.io/core/appmodule"
-    sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -20,7 +19,6 @@ var (
 	_ module.AppModuleSimulation = AppModule{}
 	_ module.HasGenesis          = AppModule{}
 	_ module.HasServices         = AppModule{}
-	_ module.HasInvariants       = AppModule{}
 
 	_ appmodule.AppModule = AppModule{}
 )
@@ -75,6 +73,3 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 		panic(fmt.Sprintf("failed to migrate x/bank from version 3 to 4: %v", err))
 	}
 }
-
-// RegisterInvariants registers module invariants (delegates to embedded bank module).
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}

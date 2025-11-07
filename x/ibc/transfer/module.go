@@ -43,9 +43,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
 	m := ibctransferkeeper.NewMigrator(*am.keeper.Keeper)
-	if err := cfg.RegisterMigration(types.ModuleName, 1, m.MigrateDenomTraceToDenom); err != nil {
-		panic(fmt.Sprintf("failed to migrate transfer app from version 1 to 2: %v", err))
-	}
 
 	if err := cfg.RegisterMigration(types.ModuleName, 2, m.MigrateTotalEscrowForDenom); err != nil {
 		panic(fmt.Sprintf("failed to migrate transfer app from version 2 to 3: %v", err))
@@ -57,5 +54,9 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 	if err := cfg.RegisterMigration(types.ModuleName, 4, m.MigrateDenomMetadata); err != nil {
 		panic(fmt.Errorf("failed to migrate transfer app from version 4 to 5 (set denom metadata migration): %v", err))
+	}
+
+	if err := cfg.RegisterMigration(types.ModuleName, 5, m.MigrateDenomTraceToDenom); err != nil {
+		panic(fmt.Errorf("failed to migrate transfer app from version 5 to 6 (migrate DenomTrace to Denom): %v", err))
 	}
 }
