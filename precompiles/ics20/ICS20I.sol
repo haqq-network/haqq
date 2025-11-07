@@ -10,14 +10,20 @@ address constant ICS20_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000
 /// @dev The ICS20 contract's instance.
 ICS20I constant ICS20_CONTRACT = ICS20I(ICS20_PRECOMPILE_ADDRESS);
 
-/// @dev DenomTrace contains the base denomination for ICS20 fungible tokens and the
+/// @dev Denom contains the base denomination for ICS20 fungible tokens and the
 /// source tracing information path.
-struct DenomTrace {
-    // path defines the chain of port/channel identifiers used for tracing the
-    // source of the fungible token.
-    string path;
-    // base denomination of the relayed fungible token.
-    string baseDenom;
+struct Denom {
+    /// base denomination of the relayed fungible token.
+    string base;
+    /// trace contains a list of hops for multi-hop transfers.
+    Hop[] trace;
+}
+
+/// @dev Hop defines a port ID, channel ID pair specifying where
+/// tokens must be forwarded next in a multi-hop transfer.
+struct Hop {
+    string portId;
+    string channelId;
 }
 
 /// @author Evmos Team
@@ -68,24 +74,24 @@ interface ICS20I is IICS20Authorization {
         string memory memo
     ) external returns (uint64 nextSequence);
 
-    /// @dev DenomTraces Defines a method for returning all denom traces.
+    /// @dev denoms Defines a method for returning all denoms.
     /// @param pageRequest Defines the pagination parameters to for the request.
-    function denomTraces(
+    function denoms(
         PageRequest memory pageRequest
     )
         external
         view
         returns (
-            DenomTrace[] memory denomTraces,
+            Denom[] memory denoms,
             PageResponse memory pageResponse
         );
 
-    /// @dev DenomTrace defines a method for returning a denom trace.
-    function denomTrace(
+    /// @dev Denom defines a method for returning a denom.
+    function denom(
         string memory hash
-    ) external view returns (DenomTrace memory denomTrace);
+    ) external view returns (Denom memory denom);
 
-    /// @dev DenomHash defines a method for returning a hash of the denomination trace info.
+    /// @dev DenomHash defines a method for returning a hash of the denomination info.
     function denomHash(
         string memory trace
     ) external view returns (string memory hash);
