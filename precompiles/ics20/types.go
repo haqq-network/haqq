@@ -67,7 +67,7 @@ type PageRequest struct {
 	PageRequest query.PageRequest
 }
 
-// DenomTracesResponse defines the data for the denom traces response.
+// DenomsResponse defines the data for the denoms response.
 type DenomsResponse struct {
 	Denoms       []transfertypes.Denom
 	PageResponse query.PageResponse
