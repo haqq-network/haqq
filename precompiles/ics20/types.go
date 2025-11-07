@@ -58,7 +58,7 @@ type EventTransferAuthorization struct {
 }
 
 // DenomTraceResponse defines the data for the denom trace response.
-type DenomTraceResponse struct {
+type DenomResponse struct {
 	Denom transfertypes.Denom
 }
 
@@ -68,7 +68,7 @@ type PageRequest struct {
 }
 
 // DenomTracesResponse defines the data for the denom traces response.
-type DenomTracesResponse struct {
+type DenomsResponse struct {
 	Denoms       []transfertypes.Denom
 	PageResponse query.PageResponse
 }
@@ -192,8 +192,8 @@ func CreateAndValidateMsgTransfer(
 	return msg, nil
 }
 
-// NewDenomTraceRequest returns a new denom trace request from the given arguments.
-func NewDenomTraceRequest(args []interface{}) (*transfertypes.QueryDenomRequest, error) {
+// NewDenomRequest returns a new denom request from the given arguments.
+func NewDenomRequest(args []interface{}) (*transfertypes.QueryDenomRequest, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("invalid input arguments. Expected 1, got %d", len(args))
 	}
@@ -203,13 +203,15 @@ func NewDenomTraceRequest(args []interface{}) (*transfertypes.QueryDenomRequest,
 		return nil, fmt.Errorf(ErrInvalidHash, args[0])
 	}
 
-	req := &transfertypes.QueryDenomRequest{Hash: hash}
+	req := &transfertypes.QueryDenomRequest{
+		Hash: hash,
+	}
 
 	return req, nil
 }
 
-// NewDenomTracesRequest returns a new denom traces request from the given arguments.
-func NewDenomTracesRequest(method *abi.Method, args []interface{}) (*transfertypes.QueryDenomsRequest, error) {
+// NewDenomsRequest returns a new denom request from the given arguments.
+func NewDenomsRequest(method *abi.Method, args []interface{}) (*transfertypes.QueryDenomsRequest, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 1, len(args))
 	}
@@ -219,7 +221,9 @@ func NewDenomTracesRequest(method *abi.Method, args []interface{}) (*transfertyp
 		return nil, fmt.Errorf("error while unpacking args to PageRequest: %w", err)
 	}
 
-	req := &transfertypes.QueryDenomsRequest{Pagination: &pageRequest.PageRequest}
+	req := &transfertypes.QueryDenomsRequest{
+		Pagination: &pageRequest.PageRequest,
+	}
 
 	return req, nil
 }

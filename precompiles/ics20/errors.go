@@ -1,6 +1,3 @@
-// Copyright Tharsis Labs Ltd.(Evmos)
-// SPDX-License-Identifier:ENCL-1.0(https://github.com/evmos/evmos/blob/main/LICENSE)
-
 package ics20
 
 const (
@@ -22,6 +19,6 @@ const (
 	ErrNoMatchingAllocation = "no matching allocation found for source port: %s, source channel: %s, and denom: %s"
 	// ErrDifferentOriginFromSender is raised when the origin address is not the same as the sender address.
 	ErrDifferentOriginFromSender = "origin address %s is not the same as sender address %s"
-	// ErrTraceNotFound is raised when the denom trace for the specified request does not exist.
-	ErrTraceNotFound = "denomination trace not found"
+	// ErrDenomNotFound is raised when the denom for the specified request does not exist.
+	ErrDenomNotFound = "denomination not found"
 )

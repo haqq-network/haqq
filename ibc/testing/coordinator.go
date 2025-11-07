@@ -21,7 +21,7 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 )
 
-const DefaultFeeAmt = int64(150_000_000_000_000_000) // 0.15 ISLM
+const DefaultFeeAmt = int64(2_000_000_000_000_000_000) // 2 ISLM
 
 // SetupPath constructs a TM client, connection, and channel on both chains provided. It will
 // fail if any error occurs. The clientID's, TestConnections, and TestChannels are returned
