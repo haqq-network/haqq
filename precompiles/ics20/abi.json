@@ -285,6 +285,49 @@
       "inputs": [
         {
           "internalType": "string",
+          "name": "hash",
+          "type": "string"
+        }
+      ],
+      "name": "denom",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "base",
+              "type": "string"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "string",
+                  "name": "portId",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "channelId",
+                  "type": "string"
+                }
+              ],
+              "internalType": "struct Hop[]",
+              "name": "trace",
+              "type": "tuple[]"
+            }
+          ],
+          "internalType": "struct Denom",
+          "name": "denom",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
           "name": "trace",
           "type": "string"
         }
@@ -295,37 +338,6 @@
           "internalType": "string",
           "name": "hash",
           "type": "string"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "hash",
-          "type": "string"
-        }
-      ],
-      "name": "denomTrace",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "string",
-              "name": "path",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "baseDenom",
-              "type": "string"
-            }
-          ],
-          "internalType": "struct DenomTrace",
-          "name": "denomTrace",
-          "type": "tuple"
         }
       ],
       "stateMutability": "view",
@@ -366,23 +378,35 @@
           "type": "tuple"
         }
       ],
-      "name": "denomTraces",
+      "name": "denoms",
       "outputs": [
         {
           "components": [
             {
               "internalType": "string",
-              "name": "path",
+              "name": "base",
               "type": "string"
             },
             {
-              "internalType": "string",
-              "name": "baseDenom",
-              "type": "string"
+              "components": [
+                {
+                  "internalType": "string",
+                  "name": "portId",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "channelId",
+                  "type": "string"
+                }
+              ],
+              "internalType": "struct Hop[]",
+              "name": "trace",
+              "type": "tuple[]"
             }
           ],
-          "internalType": "struct DenomTrace[]",
-          "name": "denomTraces",
+          "internalType": "struct Denom[]",
+          "name": "denoms",
           "type": "tuple[]"
         },
         {

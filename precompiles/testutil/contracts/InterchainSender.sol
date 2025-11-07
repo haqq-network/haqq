@@ -199,23 +199,23 @@ contract InterchainSender {
     }
 
     // QUERIES
-    function testDenomTraces(
+    function testDenoms(
         PageRequest calldata pageRequest
     )
         public
         view
         returns (
-            DenomTrace[] memory denomTraces,
+            Denom[] memory denoms,
             PageResponse memory pageResponse
         )
     {
-        return ICS20_CONTRACT.denomTraces(pageRequest);
+        return ICS20_CONTRACT.denoms(pageRequest);
     }
 
-    function testDenomTrace(
+    function testDenom(
         string memory hash
-    ) public view returns (DenomTrace memory denomTrace) {
-        return ICS20_CONTRACT.denomTrace(hash);
+    ) public view returns (Denom memory denom) {
+        return ICS20_CONTRACT.denom(hash);
     }
 
     function testDenomHash(

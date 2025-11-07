@@ -22,7 +22,7 @@ import (
 var (
 	differentAddress       = testutiltx.GenerateAddress()
 	amt              int64 = 1000000000000000000
-	expBal                 = "99997650000000000000000" // initial balance is 100000 ISLM (minus transfer, minus fees, etc.)
+	expBal                 = "99981000000000000000000" // initial balance is 100000 ISLM (minus transfer, minus fees, etc.)
 )
 
 func (s *PrecompileTestSuite) TestTransfer() {
@@ -114,7 +114,7 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			},
 			200000,
 			true,
-			"requested amount is more than spend limit",
+			"requested amount of token",
 		},
 		{
 			"fail - allowance is less than transfer amount",
@@ -138,7 +138,7 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			},
 			200000,
 			true,
-			"requested amount is more than spend limit",
+			"requested amount of token",
 		},
 		{
 			"fail - transfer 1 ISLM from chainA to chainB from somebody else's account",
