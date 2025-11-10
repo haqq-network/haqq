@@ -57,6 +57,7 @@ import (
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	"github.com/cosmos/cosmos-sdk/x/auth/posthandler"
@@ -390,6 +391,7 @@ func NewHaqq(
 		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		authAddr,
+		authkeeper.WithUnorderedTransactions(true), // enable unordered transactions
 	)
 	haqqBankKeeper := haqqbankkeeper.NewKeeper(
 		appCodec,
@@ -950,6 +952,12 @@ func (app *Haqq) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
 		SigGasConsumer:         ante.SigVerificationGasConsumer,
 		MaxTxGasWanted:         maxGasWanted,
 		TxFeeChecker:           ethante.NewDynamicFeeChecker(app.EvmKeeper),
+		SigVerifyOptions: []authante.SigVerificationDecoratorOption{
+			// Configure unordered transaction gas cost (default: 2240)
+			authante.WithUnorderedTxGasCost(authante.DefaultUnorderedTxGasCost),
+			// Configure maximum unordered transaction timeout duration (default: 10 minutes)
+			authante.WithMaxUnorderedTxTimeoutDuration(authante.DefaultMaxTimeoutDuration),
+		},
 	}
 
 	if err := options.Validate(); err != nil {
