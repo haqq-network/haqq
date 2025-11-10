@@ -302,7 +302,7 @@ require (
 
 replace (
 	// use Haqq fork of store
-	// cosmossdk.io/store => github.com/haqq-network/cosmos-sdk/store v0.0.0-20251007193432-bcbfd929031f
+	cosmossdk.io/store => github.com/haqq-network/cosmos-sdk/store v1.1.2-0.20251110062334-bbf317476c07
 
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
