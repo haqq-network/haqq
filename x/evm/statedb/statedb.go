@@ -111,8 +111,10 @@ func (s *StateDB) MultiStoreSnapshot() storetypes.CacheMultiStore {
 	}
 	// the cacheCtx multi store is already a CacheMultiStore
 	// so we need to pass a copy of the current state of it
-    // In SDK v0.53, CacheMultiStore no longer exposes Copy; create a new cache layer instead.
-    return s.cacheCtx.MultiStore().CacheMultiStore()
+	cms := s.cacheCtx.MultiStore().(storetypes.CacheMultiStore)
+	snapshot := cms.Copy()
+
+	return snapshot
 }
 
 // cache creates the stateDB cache context
