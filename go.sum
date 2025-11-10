@@ -638,8 +638,6 @@ cosmossdk.io/schema v1.1.0 h1:mmpuz3dzouCoyjjcMcA/xHBEmMChN+EHh8EHxHRHhzE=
 cosmossdk.io/schema v1.1.0/go.mod h1:Gb7pqO+tpR+jLW5qDcNOSv0KtppYs7881kfzakguhhI=
 cosmossdk.io/simapp v0.0.0-20230608160436-666c345ad23d h1:E/8y0oG3u9hBR8l4F9MtC0LdZIamPCUwUoLlrHrX86I=
 cosmossdk.io/simapp v0.0.0-20230608160436-666c345ad23d/go.mod h1:xbjky3L3DJEylaho6gXplkrMvJ5sFgv+qNX+Nn47bzY=
-cosmossdk.io/store v1.1.2 h1:3HOZG8+CuThREKv6cn3WSohAc6yccxO3hLzwK6rBC7o=
-cosmossdk.io/store v1.1.2/go.mod h1:60rAGzTHevGm592kFhiUVkNC9w7gooSEn5iUBPzHQ6A=
 cosmossdk.io/tools/confix v0.1.2 h1:2hoM1oFCNisd0ltSAAZw2i4ponARPmlhuNu3yy0VwI4=
 cosmossdk.io/tools/confix v0.1.2/go.mod h1:7XfcbK9sC/KNgVGxgLM0BrFbVcR/+6Dg7MFfpx7duYo=
 cosmossdk.io/x/evidence v0.1.1 h1:Ks+BLTa3uftFpElLTDp9L76t2b58htjVbSZ86aoK/E4=
@@ -1323,6 +1321,8 @@ github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3/go.mod h1:o//XUCC/F+yRGJoPO/VU
 github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c h1:6rhixN/i8ZofjG1Y75iExal34USq5p+wiN1tpie8IrU=
 github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c/go.mod h1:NMPJylDgVpX0MLRlPy15sqSwOFv/U1GZ2m21JhFfek0=
 github.com/gtank/merlin v0.1.1/go.mod h1:T86dnYJhcGOh5BjZFCJWTDeTK7XW8uE+E21Cy/bIQ+s=
+github.com/haqq-network/cosmos-sdk/store v1.1.2-0.20251110062334-bbf317476c07 h1:F6qmXywPlneUwao71fN94sKtlYwiRm1H8z12RNvS6ws=
+github.com/haqq-network/cosmos-sdk/store v1.1.2-0.20251110062334-bbf317476c07/go.mod h1:7a15p+QsM5UXf7VMhO3ylmqj85k9UBN/h1kwMcLiffA=
 github.com/hashicorp/consul/api v1.3.0/go.mod h1:MmDNSzIMUjNpY/mQ398R4bk2FnqQLoPndWW5VkKPlCE=
 github.com/hashicorp/consul/sdk v0.3.0/go.mod h1:VKf9jXwCTEY1QZP2MOLRhb5i/I/ssyNV1vwHyQBF0x8=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
