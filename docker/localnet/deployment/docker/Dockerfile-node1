@@ -26,6 +26,9 @@ ENV KEYRING="test"
 ENV CHAINID="haqq_121799-1"
 ENV LOGLEVEL="info"
 ENV TRACE=""
+ENV DAEMON_ALLOW_DOWNLOAD_BINARIES=true
+ENV DAEMON_RESTART_AFTER_UPGRADE=true
+ENV UNSAFE_SKIP_BACKUP=false
 
 # Create necessary directories
 RUN mkdir -p \
@@ -39,10 +42,13 @@ COPY deployment/library/libwasmvm.x86_64.so /usr/local/lib/
 COPY build/haqqd /usr/local/bin/
 COPY build/haqqd $DAEMON_HOME/cosmovisor/genesis/bin/haqqd
 COPY deployment/config/localnet/node1 $DAEMON_HOME/
+COPY deployment/docker/cosmovisor-wrapper.sh /usr/local/bin/cosmovisor-wrapper.sh
 
 # Set proper permissions and ownership
 RUN chown -R nobody:nogroup $HOME && \
-    chmod -R 777 $DAEMON_HOME
+    chmod -R 777 $DAEMON_HOME && \
+    chown nobody:nogroup /usr/local/bin/cosmovisor-wrapper.sh && \
+    chmod +x /usr/local/bin/cosmovisor-wrapper.sh
 
 # Switch to non-privileged user
 USER nobody
@@ -50,13 +56,6 @@ USER nobody
 # Expose necessary ports
 EXPOSE 26656 26657 1317 9090 8545 8546
 
-# Run the application
-CMD haqqd start \
---pruning=nothing $TRACE \
---log_level $LOGLEVEL \
---minimum-gas-prices=0.0001aISLM \
---json-rpc.api eth,txpool,personal,net,debug,web3 \
---json-rpc.enable true \
---keyring-backend $KEYRING \
---chain-id $CHAINID \
---home $DAEMON_HOME
+# Run the application using cosmovisor wrapper
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/usr/local/bin/cosmovisor-wrapper.sh"]

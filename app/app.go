@@ -162,7 +162,7 @@ import (
 	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 
-	v190 "github.com/haqq-network/haqq/app/upgrades/v1.9.0"
+	v1100 "github.com/haqq-network/haqq/app/upgrades/v1.10.0"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -1281,10 +1281,11 @@ func initParamsKeeper(
 }
 
 func (app *Haqq) setupUpgradeHandlers() {
-	// v1.9.0 Upgrade Cosmos SDK to v0.50.9 and IBC to v8.6.1
+	// v1.10.0 Upgrade Cosmos SDK to v0.53.4 and IBC to v10
+	// Note: PreBlockers order already includes authtypes.ModuleName as required by v0.53.x
 	app.UpgradeKeeper.SetUpgradeHandler(
-		v190.UpgradeName,
-		v190.CreateUpgradeHandler(app.mm, app.configurator, app.GovKeeper, app.Erc20Keeper),
+		v1100.UpgradeName,
+		v1100.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
 	// When a planned update height is reached, the old binary will panic
@@ -1295,26 +1296,11 @@ func (app *Haqq) setupUpgradeHandlers() {
 		panic(fmt.Errorf("failed to read upgrade info from disk: %w", err))
 	}
 
-	if app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		return
-	}
-
-	var storeUpgrades *storetypes.StoreUpgrades
-	//nolint: revive // Example for further upgrades
-	switch upgradeInfo.Name {
-	// case v177.UpgradeName:
-	//	storeUpgrades = &storetypes.StoreUpgrades{
-	//		Renamed: []storetypes.StoreRename{
-	//			{
-	//				OldKey: ucdaotypes.ModuleOldName,
-	//				NewKey: ucdaotypes.ModuleName,
-	//			},
-	//		},
-	//	}
-	}
-
-	if storeUpgrades != nil {
+	if upgradeInfo.Name == v1100.UpgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := storetypes.StoreUpgrades{
+			Deleted: []string{"capability", "feeibc"},
+		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
-		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
 }
