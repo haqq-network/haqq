@@ -72,8 +72,8 @@ for i in $(seq 0 $NODE_NUM); do
     NODE_HOME="$LOCALNET_PATH/node$i"
     KEY_NAME="$MONIKER_PREFIX$i"
     ADDR=$($HAQQD_BIN keys show "$KEY_NAME" --keyring-backend $KEYRING --home "$NODE_HOME" -a)
-    $HAQQD_BIN add-genesis-account "$ADDR" 2000000000000000000$DEFAULT_DENOM --keyring-backend $KEYRING --home "$LOCALNET_PATH/node0"
-    echo "Genesis funded: $ADDR -> 2000000000000000000$DEFAULT_DENOM"
+    $HAQQD_BIN add-genesis-account "$ADDR" 10000000000000000000$DEFAULT_DENOM --keyring-backend $KEYRING --home "$LOCALNET_PATH/node0"
+    echo "Genesis funded: $ADDR -> 10000000000000000000$DEFAULT_DENOM"
 done
 
 # Apply genesis param changes only once (node0)
