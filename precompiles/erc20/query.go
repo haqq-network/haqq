@@ -119,7 +119,8 @@ func (p Precompile) Decimals(
 		displayFound bool
 	)
 	for i := len(metadata.DenomUnits) - 1; i >= 0; i-- {
-		if metadata.DenomUnits[i].Denom == metadata.Display {
+		// Return decimals if matched Display denom or it's the last option we have (by default, last and only)
+		if metadata.DenomUnits[i].Denom == metadata.Display || i == 0 {
 			decimals = metadata.DenomUnits[i].Exponent
 			displayFound = true
 			break
