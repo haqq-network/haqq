@@ -110,6 +110,32 @@ func (k Keeper) CreateCoinMetadata(
 	return &metadata, nil
 }
 
+func (k Keeper) updateCoinMetadata(ctx sdk.Context, metadata banktypes.Metadata) (types.TokenPair, error) {
+	if err := metadata.Validate(); err != nil {
+		return types.TokenPair{}, err
+	}
+
+	// We should find registered token pair as we shouldn't be allowed to change any other coins metadata
+	// except related to ERC20 module
+	id := k.GetTokenPairID(ctx, metadata.Base)
+	if len(id) == 0 {
+		return types.TokenPair{}, errorsmod.Wrapf(
+			types.ErrTokenPairNotFound, "token '%s' not registered by id", metadata.Base,
+		)
+	}
+	pair, found := k.GetTokenPair(ctx, id)
+	if !found {
+		return types.TokenPair{}, errorsmod.Wrapf(
+			types.ErrTokenPairNotFound, "token '%s' not registered", metadata.Base,
+		)
+	}
+
+	// Update metadata
+	k.bankKeeper.SetDenomMetaData(ctx, metadata)
+
+	return pair, nil
+}
+
 // toggleConversion toggles conversion for a given token pair
 func (k Keeper) toggleConversion(
 	ctx sdk.Context,
