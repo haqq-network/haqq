@@ -163,6 +163,7 @@ import (
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 
 	v190 "github.com/haqq-network/haqq/app/upgrades/v1.9.0"
+	v191 "github.com/haqq-network/haqq/app/upgrades/v1.9.1"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -552,11 +553,11 @@ func NewHaqq(
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
-		epochskeeper.NewMultiEpochHooks( /* insert epoch hooks receivers here */ ),
+		epochskeeper.NewMultiEpochHooks(), // < insert epoch hooks receivers here
 	)
 
 	app.GovKeeper = *govKeeper.SetHooks(
-		govtypes.NewMultiGovHooks( /* insert gov hooks receivers here */ ),
+		govtypes.NewMultiGovHooks(), // < insert gov hooks receivers here
 	)
 
 	// We call this after setting the hooks to ensure that the hooks are set on the keeper
@@ -607,7 +608,7 @@ func NewHaqq(
 	transferStack = packetforward.NewIBCMiddleware(
 		transferStack,
 		app.PacketForwardKeeper,
-		0, // retries on timeout
+		0,
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 	)
 	transferStack = erc20.NewIBCMiddleware(app.Erc20Keeper, transferStack)
@@ -1249,6 +1250,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v190.UpgradeName,
 		v190.CreateUpgradeHandler(app.mm, app.configurator, app.GovKeeper, app.Erc20Keeper),
+	)
+
+	// v1.9.1 Upgrade Cosmos SDK to v0.50.9 and IBC to v8.6.1 with minor fixes for ERC20
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v191.UpgradeName,
+		v191.CreateUpgradeHandler(app.mm, app.configurator, app.GovKeeper, app.Erc20Keeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic
