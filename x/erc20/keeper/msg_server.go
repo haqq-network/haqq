@@ -326,8 +326,8 @@ func (k *Keeper) RegisterERC20(goCtx context.Context, req *types.MsgRegisterERC2
 	return &types.MsgRegisterERC20Response{}, nil
 }
 
-// RegisterERC20 implements the gRPC MsgServer interface. After a successful governance vote
-// it updates creates the token pair for an ERC20 contract if the requested authority
+// ToggleConversion implements the gRPC MsgServer interface. After a successful governance vote
+// it toggles the availability of the token pair if the requested authority
 // is the Cosmos SDK governance module account
 func (k *Keeper) ToggleConversion(goCtx context.Context, req *types.MsgToggleConversion) (*types.MsgToggleConversionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
@@ -354,6 +354,38 @@ func (k *Keeper) ToggleConversion(goCtx context.Context, req *types.MsgToggleCon
 	)
 
 	return &types.MsgToggleConversionResponse{}, nil
+}
+
+// UpdateCoinMetadata implements the gRPC MsgServer interface. After a successful governance vote
+// it updates coin metadata for the given token pairs if the requested authority
+// is the Cosmos SDK governance module account
+func (k *Keeper) UpdateCoinMetadata(goCtx context.Context, req *types.MsgUpdateCoinMetadata) (*types.MsgUpdateCoinMetadataResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	// Check if the conversion is globally enabled
+	if !k.IsERC20Enabled(ctx) {
+		return nil, types.ErrERC20Disabled.Wrap("updating coin metadata is currently disabled by governance")
+	}
+
+	if err := k.validateAuthority(req.Authority); err != nil {
+		return nil, err
+	}
+
+	for _, md := range req.Metadata {
+		pair, err := k.updateCoinMetadata(ctx, md)
+		if err != nil {
+			return nil, err
+		}
+
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				types.EventTypeUpdateCoinMetadata,
+				sdk.NewAttribute(types.AttributeKeyCosmosCoin, pair.Denom),
+				sdk.NewAttribute(types.AttributeKeyERC20Token, pair.Erc20Address),
+			),
+		)
+	}
+
+	return &types.MsgUpdateCoinMetadataResponse{}, nil
 }
 
 // validateAuthority is a helper function to validate that the provided authority

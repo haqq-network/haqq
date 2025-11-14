@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_ConvertERC20_FullMethodName     = "/evmos.erc20.v1.Msg/ConvertERC20"
-	Msg_UpdateParams_FullMethodName     = "/evmos.erc20.v1.Msg/UpdateParams"
-	Msg_RegisterERC20_FullMethodName    = "/evmos.erc20.v1.Msg/RegisterERC20"
-	Msg_ToggleConversion_FullMethodName = "/evmos.erc20.v1.Msg/ToggleConversion"
+	Msg_ConvertERC20_FullMethodName       = "/evmos.erc20.v1.Msg/ConvertERC20"
+	Msg_UpdateParams_FullMethodName       = "/evmos.erc20.v1.Msg/UpdateParams"
+	Msg_RegisterERC20_FullMethodName      = "/evmos.erc20.v1.Msg/RegisterERC20"
+	Msg_ToggleConversion_FullMethodName   = "/evmos.erc20.v1.Msg/ToggleConversion"
+	Msg_UpdateCoinMetadata_FullMethodName = "/evmos.erc20.v1.Msg/UpdateCoinMetadata"
 )
 
 // MsgClient is the client API for Msg service.
@@ -41,6 +42,9 @@ type MsgClient interface {
 	// ToggleConversion defines a governance operation for enabling/disablen a token pair conversion.
 	// The authority is hard-coded to the Cosmos SDK x/gov module account
 	ToggleConversion(ctx context.Context, in *MsgToggleConversion, opts ...grpc.CallOption) (*MsgToggleConversionResponse, error)
+	// UpdateCoinMetadata defines a governance operation for updating metadata of the registered token pair.
+	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	UpdateCoinMetadata(ctx context.Context, in *MsgUpdateCoinMetadata, opts ...grpc.CallOption) (*MsgUpdateCoinMetadataResponse, error)
 }
 
 type msgClient struct {
@@ -87,6 +91,15 @@ func (c *msgClient) ToggleConversion(ctx context.Context, in *MsgToggleConversio
 	return out, nil
 }
 
+func (c *msgClient) UpdateCoinMetadata(ctx context.Context, in *MsgUpdateCoinMetadata, opts ...grpc.CallOption) (*MsgUpdateCoinMetadataResponse, error) {
+	out := new(MsgUpdateCoinMetadataResponse)
+	err := c.cc.Invoke(ctx, Msg_UpdateCoinMetadata_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
@@ -103,6 +116,9 @@ type MsgServer interface {
 	// ToggleConversion defines a governance operation for enabling/disablen a token pair conversion.
 	// The authority is hard-coded to the Cosmos SDK x/gov module account
 	ToggleConversion(context.Context, *MsgToggleConversion) (*MsgToggleConversionResponse, error)
+	// UpdateCoinMetadata defines a governance operation for updating metadata of the registered token pair.
+	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	UpdateCoinMetadata(context.Context, *MsgUpdateCoinMetadata) (*MsgUpdateCoinMetadataResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -121,6 +137,9 @@ func (UnimplementedMsgServer) RegisterERC20(context.Context, *MsgRegisterERC20) 
 }
 func (UnimplementedMsgServer) ToggleConversion(context.Context, *MsgToggleConversion) (*MsgToggleConversionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ToggleConversion not implemented")
+}
+func (UnimplementedMsgServer) UpdateCoinMetadata(context.Context, *MsgUpdateCoinMetadata) (*MsgUpdateCoinMetadataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateCoinMetadata not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -207,6 +226,24 @@ func _Msg_ToggleConversion_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_UpdateCoinMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdateCoinMetadata)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).UpdateCoinMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_UpdateCoinMetadata_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).UpdateCoinMetadata(ctx, req.(*MsgUpdateCoinMetadata))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Msg_ServiceDesc is the grpc.ServiceDesc for Msg service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -229,6 +266,10 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ToggleConversion",
 			Handler:    _Msg_ToggleConversion_Handler,
+		},
+		{
+			MethodName: "UpdateCoinMetadata",
+			Handler:    _Msg_UpdateCoinMetadata_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -329,7 +329,8 @@ func (s *PrecompileTestSuite) TestDecimals() {
 				// NOTE: we set the denom metadata for the coin
 				app.BankKeeper.SetDenomMetaData(ctx, noDisplayMetadata)
 			},
-			errContains: vm.ErrExecutionReverted.Error(),
+			expPass:     true,
+			expDecimals: 0,
 		},
 	}
 
