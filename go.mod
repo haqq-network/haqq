@@ -4,7 +4,7 @@ go 1.24.10
 
 require (
 	cosmossdk.io/api v0.9.2
-	cosmossdk.io/client/v2 v2.0.0-beta.5
+	cosmossdk.io/client/v2 v2.0.0-beta.9
 	cosmossdk.io/core v0.11.3
 	cosmossdk.io/depinject v1.2.1
 	cosmossdk.io/errors v1.0.2
@@ -13,10 +13,11 @@ require (
 	cosmossdk.io/simapp v0.0.0-20230608160436-666c345ad23d
 	cosmossdk.io/store v1.1.2
 	cosmossdk.io/tools/confix v0.1.2
-	cosmossdk.io/x/evidence v0.1.1
-	cosmossdk.io/x/feegrant v0.1.1
+	cosmossdk.io/x/evidence v0.2.0
+	cosmossdk.io/x/feegrant v0.2.0
 	cosmossdk.io/x/tx v0.14.0
 	cosmossdk.io/x/upgrade v0.2.0
+	github.com/CosmWasm/wasmvm/v2 v2.2.4
 	github.com/btcsuite/btcd v0.24.2
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft v0.38.19
@@ -27,7 +28,8 @@ require (
 	github.com/cosmos/gogoproto v1.7.2
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 v10.0.0
 	github.com/cosmos/ibc-go/modules/capability v1.0.1
-	github.com/cosmos/ibc-go/v10 v10.1.1
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10 v10.4.0
+	github.com/cosmos/ibc-go/v10 v10.4.0
 	github.com/cosmos/rosetta v0.50.12
 	github.com/creachadair/tomledit v0.0.29
 	github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20240722062311-8384cad72737
@@ -254,6 +256,7 @@ require (
 	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.5 // indirect
+	github.com/shamaton/msgpack/v2 v2.2.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect

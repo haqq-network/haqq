@@ -49,6 +49,7 @@ import (
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	wasmvm "github.com/CosmWasm/wasmvm/v2"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -96,16 +97,22 @@ import (
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	ibcwasm "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10"
+	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10/keeper"
+	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10/types"
+	ibccallbacksv2 "github.com/cosmos/ibc-go/v10/modules/apps/callbacks/v2"
 	ibctransfer "github.com/cosmos/ibc-go/v10/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v10/modules/core"
 	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
 	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	ibcapi "github.com/cosmos/ibc-go/v10/modules/core/api"
 	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
 	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	transferv2 "github.com/haqq-network/haqq/x/ibc/transfer/v2"
 
 	ica "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts"
 	icahost "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host"
@@ -141,6 +148,7 @@ import (
 	"github.com/haqq-network/haqq/x/erc20"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	erc20v2 "github.com/haqq-network/haqq/x/erc20/v2"
 	"github.com/haqq-network/haqq/x/feemarket"
 	feemarketkeeper "github.com/haqq-network/haqq/x/feemarket/keeper"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
@@ -196,6 +204,10 @@ const (
 	// Name defines the application binary name
 	Name           = "haqqd"
 	MainnetChainID = "haqq_11235"
+
+	// MaxIBCCallbackGas should roughly be a couple orders of magnitude larger than needed.
+	// This is the maximum gas that can be consumed by IBC callbacks.
+	MaxIBCCallbackGas = uint64(10_000_000)
 )
 
 var (
@@ -259,6 +271,7 @@ type Haqq struct {
 	FeeGrantKeeper        feegrantkeeper.Keeper
 	AuthzKeeper           authzkeeper.Keeper
 	IBCKeeper             *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	WasmClientKeeper      ibcwasmkeeper.Keeper
 	ICAHostKeeper         icahostkeeper.Keeper
 	PacketForwardKeeper   *packetforwardkeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
@@ -619,11 +632,84 @@ func NewHaqq(
 
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	// Create IBCv2 Transfer Stack with prefix-based routing support
+	// Stack order (from bottom to top):
+	// - Transfer
+	// - Callbacks (with max gas limit)
+	// - ERC20 Middleware
+	var transferStackV2 ibcapi.IBCModule
+	transferStackV2 = transferv2.NewIBCModule(app.TransferKeeper)
+	// wasmStackIBCHandler is nil since haqq doesn't have wasm support
+	// The callbacks middleware will handle nil gracefully
+	transferStackV2 = ibccallbacksv2.NewIBCMiddleware(
+		transferStackV2,
+		app.IBCKeeper.ChannelKeeperV2,
+		nil, // wasmStackIBCHandler - nil since haqq doesn't have wasm
+		app.IBCKeeper.ChannelKeeperV2,
+		MaxIBCCallbackGas, // Maximum callback gas limit
+	)
+	transferStackV2 = erc20v2.NewIBCMiddleware(app.Erc20Keeper, transferStackV2)
+
+	// Create IBCv2 Router with prefix-based routing support
+	// Prefix-based routing allows routing packets based on port ID prefixes
+	// This enables support for multiple IBC applications (ICS-20, ICS-27, ICS-29, etc.)
+	//
+	// Note: ICS-27 (Interchain Accounts) is currently only available via IBC v1 router
+	// as ICA host module implements porttypes.IBCModule, not ibcapi.IBCModule.
+	// When ICA host v2 support is available, it can be added here:
+	//   AddRoute(icatypes.HostPortID, icaHostStackV2)
+	//
+	// Note: ICS-29 (Fee Middleware) support can be added here when fee middleware is integrated.
+	// Example:
+	//   var feeStackV2 ibcapi.IBCModule
+	//   feeStackV2 = feemiddleware.NewIBCMiddleware(transferStackV2, app.FeeKeeper)
+	//   AddRoute(feetypes.PortID, feeStackV2)
+	ibcv2Router := ibcapi.NewRouter().
+		// ICS-20: Transfer port with prefix-based routing
+		AddRoute(ibctransfertypes.PortID, transferStackV2)
+	app.IBCKeeper.SetRouterV2(ibcv2Router)
+
 	// Register Tendermint light client route (ibc-go v10)
 	clientKeeper := app.IBCKeeper.ClientKeeper
 	storeProvider := clientKeeper.GetStoreProvider()
 	tmLightClientModule := ibctm.NewLightClientModule(appCodec, storeProvider)
 	clientKeeper.AddRoute(ibctm.ModuleName, &tmLightClientModule)
+
+	// Initialize Wasm light client keeper
+	wasmLightClientQuerier := ibcwasmkeeper.QueryPlugins{
+		// `myAcceptList` is a `[]string` containing the list of gRPC query paths that the chain wants to allow for the `08-wasm` module to query.
+		// These queries must be registered in the chain's gRPC query router, be deterministic, and track their gas usage.
+		// The `AcceptListStargateQuerier` function will return a query plugin that will only allow queries for the paths in the `myAcceptList`.
+		// The query responses are encoded in protobuf unlike the implementation in `x/wasm`.
+		Stargate: ibcwasmkeeper.AcceptListStargateQuerier([]string{
+			"/ibc.core.client.v1.Query/ClientState",
+			"/ibc.core.client.v1.Query/ConsensusState",
+			"/ibc.core.connection.v1.Query/Connection",
+		}, bApp.GRPCQueryRouter()),
+	}
+
+	dataDir := filepath.Join(homePath, "data")
+	var memCacheSizeMB uint32 = 100
+	// For 08-wasm light client, we use an empty capabilities list since we don't have wasmd
+	// The capabilities are mainly for x/wasm features which aren't needed for light clients
+	lc08, err := wasmvm.NewVM(filepath.Join(dataDir, "08-light-client"), []string{}, 32, false, memCacheSizeMB)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create VM for 08 light client: %s", err))
+	}
+
+	app.WasmClientKeeper = ibcwasmkeeper.NewKeeperWithVM(
+		appCodec,
+		runtime.NewKVStoreService(keys[ibcwasmtypes.StoreKey]),
+		app.IBCKeeper.ClientKeeper,
+		authAddr,
+		lc08,
+		bApp.GRPCQueryRouter(),
+		ibcwasmkeeper.WithQueryPlugins(&wasmLightClientQuerier),
+	)
+
+	// Register Wasm light client route (ibc-go v10)
+	wasmLightClientModule := ibcwasm.NewLightClientModule(app.WasmClientKeeper, storeProvider)
+	clientKeeper.AddRoute(ibcwasmtypes.ModuleName, &wasmLightClientModule)
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -676,6 +762,7 @@ func NewHaqq(
 		ica.NewAppModule(nil, &app.ICAHostKeeper),
 		// IBC light clients
 		ibctm.NewAppModule(tmLightClientModule),
+		ibcwasm.NewAppModule(app.WasmClientKeeper),
 		transferModule,
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		// Ethermint app modules
@@ -735,6 +822,7 @@ func NewHaqq(
 		ibcexported.ModuleName,
 		icatypes.ModuleName,
 		ibctm.ModuleName,
+		ibcwasmtypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		evmtypes.ModuleName,
@@ -763,6 +851,7 @@ func NewHaqq(
 		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibcexported.ModuleName,
+		ibcwasmtypes.ModuleName,
 		authz.ModuleName,
 		// feegrant.ModuleName, // doesn't have begin blocker
 	)
@@ -803,6 +892,7 @@ func NewHaqq(
 		ibctransfertypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		icatypes.ModuleName,
+		ibcwasmtypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
@@ -1299,6 +1389,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	if upgradeInfo.Name == v1100.UpgradeName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Deleted: []string{"capability", "feeibc"},
+			Added:   []string{ibcwasmtypes.StoreKey},
 		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
