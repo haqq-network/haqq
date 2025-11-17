@@ -17,6 +17,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10/types"
 	icahosttypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
@@ -48,6 +49,8 @@ func StoreKeys() (
 		// ibc keys
 		ibcexported.StoreKey, ibctransfertypes.StoreKey,
 		packetforwardtypes.StoreKey,
+		// ibc wasm light client keys
+		ibcwasmtypes.StoreKey,
 		// ica keys
 		icahosttypes.StoreKey,
 		// ethermint keys
