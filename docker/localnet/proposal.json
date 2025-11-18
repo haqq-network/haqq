@@ -1,0 +1,17 @@
+{
+    "messages": [
+      {
+        "@type": "/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade",
+        "authority": "haqq10d07y265gmmuvt4z0w9aw880jnsr700jc9xkg9",
+        "plan": {
+          "name": "v1.10.0",
+          "height": "70",
+          "info": "{}"
+        }
+      }
+    ],
+    "metadata": "",
+    "deposit": "50000000aISLM",
+    "title": "Software Upgrade to v1.10.0",
+    "summary": "Proposal to upgrade the software to version v1.10.0 at block height 70."
+  }

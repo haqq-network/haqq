@@ -165,6 +165,7 @@ import (
 	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 
+	v1100 "github.com/haqq-network/haqq/app/upgrades/v1.10.0"
 	v190 "github.com/haqq-network/haqq/app/upgrades/v1.9.0"
 	v191 "github.com/haqq-network/haqq/app/upgrades/v1.9.1"
 	v192 "github.com/haqq-network/haqq/app/upgrades/v1.9.2"
@@ -1336,6 +1337,13 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v193.CreateUpgradeHandler(app.mm, app.configurator, app.EvmKeeper),
 	)
 
+	// v1.10.0 Upgrade Cosmos SDK to v0.53.4 and IBC to v10
+	// Note: PreBlockers order already includes authtypes.ModuleName as required by v0.53.x
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v1100.UpgradeName,
+		v1100.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1349,13 +1357,16 @@ func (app *Haqq) setupUpgradeHandlers() {
 	}
 
 	var storeUpgrades *storetypes.StoreUpgrades
-	//nolint: gocritic // intended use of switch
 	switch upgradeInfo.Name {
 	case v193.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
 			Added: []string{
 				ethiqtypes.ModuleName,
 			},
+		}
+	case v1100.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Deleted: []string{"capability", "feeibc"},
 		}
 	}
 

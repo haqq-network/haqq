@@ -81,11 +81,13 @@ GENESIS_PATH="$LOCALNET_PATH/node0/config/genesis.json"
 tmp() { echo "$GENESIS_PATH" | sed 's/genesis.json/tmp_genesis.json/'; }
 cat $GENESIS_PATH | jq '.app_state["staking"]["params"]["bond_denom"]="aISLM"' > $(tmp) && mv $(tmp) $GENESIS_PATH
 cat $GENESIS_PATH | jq '.app_state["crisis"]["constant_fee"]["denom"]="aISLM"' > $(tmp) && mv $(tmp) $GENESIS_PATH
-cat $GENESIS_PATH | jq '.app_state["gov"]["deposit_params"]["min_deposit"][0]["denom"]="aISLM"' > $(tmp) && mv $(tmp) $GENESIS_PATH
+cat $GENESIS_PATH | jq '.app_state["gov"]["params"]["min_deposit"][0]["denom"]="aISLM"' > $(tmp) && mv $(tmp) $GENESIS_PATH
 cat $GENESIS_PATH | jq '.app_state["mint"]["params"]["mint_denom"]="aISLM"' > $(tmp) && mv $(tmp) $GENESIS_PATH
 cat $GENESIS_PATH | jq '.app_state["evm"]["params"]["evm_denom"]="aISLM"' > $(tmp) && mv $(tmp) $GENESIS_PATH
 # voting period
-cat $GENESIS_PATH | jq '.app_state["gov"]["voting_params"]["voting_period"]="60s"' > $(tmp) && mv $(tmp) $GENESIS_PATH
+cat $GENESIS_PATH | jq '.app_state["gov"]["params"]["voting_period"]="120s"' > $(tmp) && mv $(tmp) $GENESIS_PATH
+cat $GENESIS_PATH | jq '.app_state["gov"]["params"]["expedited_voting_period"]="100s"' > $(tmp) && mv $(tmp) $GENESIS_PATH
+
 # block gas
 cat $GENESIS_PATH | jq '.consensus_params["block"]["max_gas"]="10000000"' > $(tmp) && mv $(tmp) $GENESIS_PATH
 # distribution
