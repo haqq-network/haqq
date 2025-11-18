@@ -1,0 +1,12 @@
+
+- address: haqq17ytqn9mtrp4d9r8x704krhwpzmyg265y3ru3uv
+  name: validator2
+  pubkey: '{"@type":"/ethermint.crypto.v1.ethsecp256k1.PubKey","key":"A0fG1BrZsxfm6qHjTrPsqYWeE2Qg4kqzxvvL3Gbdhs5a"}'
+  type: local
+
+
+**Important** write this mnemonic phrase in a safe place.
+It is the only way to recover your account if you ever forget your password.
+
+panic echo thank divide zone insect panther way ocean decide admit job vacuum bubble carry fire pull average absurd glow slush loyal spray item
+

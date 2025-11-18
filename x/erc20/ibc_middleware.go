@@ -7,10 +7,10 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	"github.com/cosmos/ibc-go/v10/modules/core/exported"
 
 	"github.com/haqq-network/haqq/ibc"
 	"github.com/haqq-network/haqq/x/erc20/keeper"
@@ -41,10 +41,11 @@ func NewIBCMiddleware(k keeper.Keeper, app porttypes.IBCModule) IBCMiddleware {
 // packet callback.
 func (im IBCMiddleware) OnRecvPacket(
 	ctx sdk.Context,
+	portID string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
-	ack := im.Module.OnRecvPacket(ctx, packet, relayer)
+	ack := im.Module.OnRecvPacket(ctx, portID, packet, relayer)
 
 	// returning nil ack will prevent WriteAcknowledgement from occurring for forwarded packet.
 	// This is intentional so that the acknowledgement will be written later based on the ack/timeout of the forwarded packet.
@@ -67,6 +68,7 @@ func (im IBCMiddleware) OnRecvPacket(
 // Cosmos Coin to their ERC20 token representation.
 func (im IBCMiddleware) OnAcknowledgementPacket(
 	ctx sdk.Context,
+	portID string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
@@ -81,7 +83,7 @@ func (im IBCMiddleware) OnAcknowledgementPacket(
 		return errorsmod.Wrapf(errortypes.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
 	}
 
-	if err := im.Module.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer); err != nil {
+	if err := im.Module.OnAcknowledgementPacket(ctx, portID, packet, acknowledgement, relayer); err != nil {
 		return err
 	}
 
@@ -93,6 +95,7 @@ func (im IBCMiddleware) OnAcknowledgementPacket(
 // Cosmos Coin to their ERC20 token representation.
 func (im IBCMiddleware) OnTimeoutPacket(
 	ctx sdk.Context,
+	portID string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
@@ -101,7 +104,7 @@ func (im IBCMiddleware) OnTimeoutPacket(
 		return errorsmod.Wrapf(errortypes.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
 	}
 
-	if err := im.Module.OnTimeoutPacket(ctx, packet, relayer); err != nil {
+	if err := im.Module.OnTimeoutPacket(ctx, portID, packet, relayer); err != nil {
 		return err
 	}
 

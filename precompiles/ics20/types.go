@@ -15,8 +15,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -59,7 +59,7 @@ type EventTransferAuthorization struct {
 
 // DenomTraceResponse defines the data for the denom trace response.
 type DenomTraceResponse struct {
-	DenomTrace transfertypes.DenomTrace
+	Denom transfertypes.Denom
 }
 
 // PageRequest defines the data for the page request.
@@ -69,7 +69,7 @@ type PageRequest struct {
 
 // DenomTracesResponse defines the data for the denom traces response.
 type DenomTracesResponse struct {
-	DenomTraces  []transfertypes.DenomTrace
+	Denoms       []transfertypes.Denom
 	PageResponse query.PageResponse
 }
 
@@ -193,7 +193,7 @@ func CreateAndValidateMsgTransfer(
 }
 
 // NewDenomTraceRequest returns a new denom trace request from the given arguments.
-func NewDenomTraceRequest(args []interface{}) (*transfertypes.QueryDenomTraceRequest, error) {
+func NewDenomTraceRequest(args []interface{}) (*transfertypes.QueryDenomRequest, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("invalid input arguments. Expected 1, got %d", len(args))
 	}
@@ -203,15 +203,13 @@ func NewDenomTraceRequest(args []interface{}) (*transfertypes.QueryDenomTraceReq
 		return nil, fmt.Errorf(ErrInvalidHash, args[0])
 	}
 
-	req := &transfertypes.QueryDenomTraceRequest{
-		Hash: hash,
-	}
+	req := &transfertypes.QueryDenomRequest{Hash: hash}
 
 	return req, nil
 }
 
 // NewDenomTracesRequest returns a new denom traces request from the given arguments.
-func NewDenomTracesRequest(method *abi.Method, args []interface{}) (*transfertypes.QueryDenomTracesRequest, error) {
+func NewDenomTracesRequest(method *abi.Method, args []interface{}) (*transfertypes.QueryDenomsRequest, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 1, len(args))
 	}
@@ -221,9 +219,7 @@ func NewDenomTracesRequest(method *abi.Method, args []interface{}) (*transfertyp
 		return nil, fmt.Errorf("error while unpacking args to PageRequest: %w", err)
 	}
 
-	req := &transfertypes.QueryDenomTracesRequest{
-		Pagination: &pageRequest.PageRequest,
-	}
+	req := &transfertypes.QueryDenomsRequest{Pagination: &pageRequest.PageRequest}
 
 	return req, nil
 }

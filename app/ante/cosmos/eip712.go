@@ -102,10 +102,10 @@ func (svd LegacyEip712SigVerificationDecorator) AnteHandle(ctx sdk.Context,
 	i := 0
 	sig := sigs[i]
 
-	acc, err := authante.GetSignerAcc(ctx, svd.ak, signerAddrs[i])
-	if err != nil {
-		return ctx, err
-	}
+    acc := svd.ak.GetAccount(ctx, signerAddrs[i])
+    if acc == nil {
+        return ctx, errorsmod.Wrap(errortypes.ErrUnknownAddress, "signer account not found")
+    }
 
 	// retrieve pubkey
 	pubKey := acc.GetPubKey()
