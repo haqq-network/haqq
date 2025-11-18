@@ -1,0 +1,12 @@
+
+- address: haqq1u5zgpvxygps6tvapsrsgrxuh8p5rcwdftyyqk2
+  name: validator1
+  pubkey: '{"@type":"/ethermint.crypto.v1.ethsecp256k1.PubKey","key":"Ak3k0D32aKQoxliJcDus4vyLRmzlQ63TKhe/gJEL8hWQ"}'
+  type: local
+
+
+**Important** write this mnemonic phrase in a safe place.
+It is the only way to recover your account if you ever forget your password.
+
+square kit feature athlete flush pen team aerobic torch acoustic census script paddle bind turtle joke swap curve bundle shrug elite claim rough turtle
+

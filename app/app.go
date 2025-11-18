@@ -95,27 +95,26 @@ import (
 	"github.com/cosmos/ibc-go/modules/capability"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	ibctransfer "github.com/cosmos/ibc-go/v8/modules/apps/transfer"
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v8/modules/core"
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	ibctestingtypes "github.com/cosmos/ibc-go/v8/testing/types"
+	ibctransfer "github.com/cosmos/ibc-go/v10/modules/apps/transfer"
+	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v10/modules/core"
+	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
+	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
+	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
-	ica "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts"
-	icahost "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host"
-	icahostkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/keeper"
-	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
-	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
+	ica "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts"
+	icahost "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host"
+	icahostkeeper "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/keeper"
+	icahosttypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/types"
+	icatypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/types"
 
-	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
-	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
+	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward"
+	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/keeper"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/types"
 
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
@@ -169,7 +168,7 @@ import (
 	"github.com/haqq-network/haqq/x/ibc/transfer"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 
-	memiavlstore "github.com/crypto-org-chain/cronos/store"
+	// memiavlstore "github.com/crypto-org-chain/cronos/store"
 
 	// Force-load the tracer engines to trigger registration due to Go-Ethereum v1.10.15 changes
 	_ "github.com/haqq-network/haqq/x/evm/core/tracers/js"
@@ -322,8 +321,8 @@ func NewHaqq(
 	cdc := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 
-	// setup memiavl if it's enabled in config
-	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, false, false, baseAppOptions)
+	// setup memiavl if it's enabled in config (disabled for SDK v0.53.4 compatibility)
+	// baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, false, false, baseAppOptions)
 
 	// Setup Mempool and Proposal Handlers
 	baseAppOptions = append(baseAppOptions, func(app *baseapp.BaseApp) {
@@ -379,7 +378,7 @@ func NewHaqq(
 
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibcexported.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
+	// scopedICAHostKeeper no longer required with ibc-go v10 ICA host keeper constructor
 
 	// Applications that wish to enforce statically created ScopedKeepers should call `Seal` after creating
 	// their scoped modules in `NewApp` with `ScopeToModule`
@@ -480,7 +479,7 @@ func NewHaqq(
 
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec, keys[ibcexported.StoreKey], app.GetSubspace(ibcexported.ModuleName), stakingKeeper, app.UpgradeKeeper, scopedIBCKeeper, authAddr,
+		appCodec, runtime.NewKVStoreService(keys[ibcexported.StoreKey]), app.GetSubspace(ibcexported.ModuleName), app.UpgradeKeeper, authAddr,
 	)
 
 	govConfig := govtypes.Config{
@@ -534,7 +533,7 @@ func NewHaqq(
 	// It's important to note that the PFM Keeper must be initialized before the Transfer Keeper
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
 		appCodec,
-		keys[packetforwardtypes.StoreKey],
+		runtime.NewKVStoreService(keys[packetforwardtypes.StoreKey]),
 		nil, // will be zero-value here, reference is set later on with SetTransferKeeper.
 		app.IBCKeeper.ChannelKeeper,
 		app.BankKeeper,
@@ -543,10 +542,10 @@ func NewHaqq(
 	)
 
 	app.TransferKeeper = transferkeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
+		appCodec, runtime.NewKVStoreService(keys[ibctransfertypes.StoreKey]), app.GetSubspace(ibctransfertypes.ModuleName),
 		app.PacketForwardKeeper, // ICS4 Wrapper: packet forwarding IBC middleware
-		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
+		app.IBCKeeper.ChannelKeeper, bApp.MsgServiceRouter(),
+		app.AccountKeeper, app.BankKeeper,
 		app.Erc20Keeper, // Add ERC20 Keeper for ERC20 transfers
 		authAddr,
 	)
@@ -570,7 +569,7 @@ func NewHaqq(
 			app.VestingKeeper,
 			app.AuthzKeeper,
 			app.TransferKeeper,
-			app.IBCKeeper.ChannelKeeper,
+			*app.IBCKeeper.ChannelKeeper,
 		),
 	)
 
@@ -581,17 +580,15 @@ func NewHaqq(
 
 	// Create the app.ICAHostKeeper
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
-		appCodec, app.keys[icahosttypes.StoreKey],
+		appCodec, runtime.NewKVStoreService(app.keys[icahosttypes.StoreKey]),
 		app.GetSubspace(icahosttypes.SubModuleName),
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
-		scopedICAHostKeeper,
 		bApp.MsgServiceRouter(),
+		bApp.GRPCQueryRouter(),
 		authAddr,
 	)
-	app.ICAHostKeeper.WithQueryRouter(bApp.GRPCQueryRouter())
 
 	// create host IBC module
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
@@ -620,6 +617,12 @@ func NewHaqq(
 		AddRoute(ibctransfertypes.ModuleName, transferStack)
 
 	app.IBCKeeper.SetRouter(ibcRouter)
+
+	// Register Tendermint light client route (ibc-go v10)
+	clientKeeper := app.IBCKeeper.ClientKeeper
+	storeProvider := clientKeeper.GetStoreProvider()
+	tmLightClientModule := ibctm.NewLightClientModule(appCodec, storeProvider)
+	clientKeeper.AddRoute(ibctm.ModuleName, &tmLightClientModule)
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -670,8 +673,9 @@ func NewHaqq(
 		// ibc modules
 		ibc.NewAppModule(app.IBCKeeper),
 		ica.NewAppModule(nil, &app.ICAHostKeeper),
+		// IBC light clients
+		ibctm.NewAppModule(tmLightClientModule),
 		transferModule,
-		ibctm.NewAppModule(),
 		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		// Ethermint app modules
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper, app.GetSubspace(evmtypes.ModuleName)),
@@ -709,8 +713,37 @@ func NewHaqq(
 	app.BasicModuleManager.RegisterInterfaces(interfaceRegistry)
 
 	// NOTE: upgrade module is required to be prioritized
+	// In SDK v0.53.4, all registered modules must be listed in PreBlockers order,
+	// even if they don't implement PreBlocker
 	app.mm.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
+		genutiltypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		capabilitytypes.ModuleName,
+		crisistypes.ModuleName,
+		govtypes.ModuleName,
+		slashingtypes.ModuleName,
+		distrtypes.ModuleName,
+		stakingtypes.ModuleName,
+		evidencetypes.ModuleName,
+		paramstypes.ModuleName,
+		feegrant.ModuleName,
+		authz.ModuleName,
+		consensusparamtypes.ModuleName,
+		ibcexported.ModuleName,
+		icatypes.ModuleName,
+		ibctm.ModuleName,
+		ibctransfertypes.ModuleName,
+		packetforwardtypes.ModuleName,
+		evmtypes.ModuleName,
+		feemarkettypes.ModuleName,
+		erc20types.ModuleName,
+		epochstypes.ModuleName,
+		coinomicstypes.ModuleName,
+		vestingtypes.ModuleName,
+		liquidvestingtypes.ModuleName,
+		ucdaotypes.ModuleName,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -1142,11 +1175,6 @@ func (app *Haqq) RegisterNodeService(clientCtx client.Context, cfg config.Config
 // GetBaseApp implements the TestingApp interface.
 func (app *Haqq) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
-}
-
-// GetStakingKeeper implements the TestingApp interface.
-func (app *Haqq) GetStakingKeeper() ibctestingtypes.StakingKeeper {
-	return app.StakingKeeper
 }
 
 // GetStakingKeeperSDK implements the TestingApp interface.

@@ -6,9 +6,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	ibcgotesting "github.com/cosmos/ibc-go/v8/testing"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibcgotesting "github.com/cosmos/ibc-go/v10/testing"
 )
 
 // Path contains two endpoints representing two chains connected over IBC
@@ -39,8 +38,10 @@ func NewTransferPath(chainA, chainB *ibcgotesting.TestChain) *Path {
 	path := NewPath(chainA, chainB)
 	path.EndpointA.ChannelConfig.PortID = ibcgotesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibcgotesting.TransferPort
-	path.EndpointA.ChannelConfig.Version = transfertypes.Version
-	path.EndpointB.ChannelConfig.Version = transfertypes.Version
+	// In ibc-go v10, channel version is typically negotiated during handshake
+	// Use default transfer version if available, otherwise empty string
+	path.EndpointA.ChannelConfig.Version = "" // Will be set during channel handshake
+	path.EndpointB.ChannelConfig.Version = "" // Will be set during channel handshake
 
 	// set unordered by default
 	path.EndpointA.ChannelConfig.Order = channeltypes.UNORDERED
@@ -70,7 +71,7 @@ func (path *Path) RelayPacket(packet channeltypes.Packet) error {
 // - An error if a relay step fails or the packet commitment does not exist on either endpoint.
 func (path *Path) RelayPacketWithResults(packet channeltypes.Packet) (*abci.ExecTxResult, []byte, error) {
 	pc := path.EndpointA.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(path.EndpointA.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
-	if bytes.Equal(pc, channeltypes.CommitPacket(path.EndpointA.Chain.App.AppCodec(), packet)) {
+	if bytes.Equal(pc, channeltypes.CommitPacket(packet)) {
 		// packet found, relay from A to B
 		if err := path.EndpointB.UpdateClient(); err != nil {
 			return nil, nil, err
@@ -94,7 +95,7 @@ func (path *Path) RelayPacketWithResults(packet channeltypes.Packet) (*abci.Exec
 	}
 
 	pc = path.EndpointB.Chain.App.GetIBCKeeper().ChannelKeeper.GetPacketCommitment(path.EndpointB.Chain.GetContext(), packet.GetSourcePort(), packet.GetSourceChannel(), packet.GetSequence())
-	if bytes.Equal(pc, channeltypes.CommitPacket(path.EndpointB.Chain.App.AppCodec(), packet)) {
+	if bytes.Equal(pc, channeltypes.CommitPacket(packet)) {
 
 		// packet found, relay B to A
 		if err := path.EndpointA.UpdateClient(); err != nil {
