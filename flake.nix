@@ -10,12 +10,13 @@
     devenv.url = "github:cachix/devenv";
     devenv.inputs.nixpkgs.follows = "nixpkgs-unstable";
 
+    git-hooks.url = "github:cachix/git-hooks.nix";
+    git-hooks.inputs.nixpkgs.follows = "nixpkgs-unstable";
+    devenv.inputs.git-hooks.follows = "git-hooks";
+
     gomod2nix.url = "github:nix-community/gomod2nix/master";
     gomod2nix.inputs.nixpkgs.follows = "nixpkgs-unstable";
     gomod2nix.inputs.flake-utils.follows = "flake-utils";
-
-    cosmos.url = "github:informalsystems/cosmos.nix";
-    cosmos.inputs.nixpkgs.follows = "nixpkgs-unstable";
   };
 
   outputs =
@@ -26,7 +27,6 @@
       flake-utils,
       devenv,
       gomod2nix,
-      cosmos,
       ...
     }@inputs:
     flake-utils.lib.eachDefaultSystem (
@@ -79,9 +79,7 @@
     // {
 
       overlays.default = prev: final: {
-        inherit (inputs.cosmos.packages.${prev.system}) cosmovisor;
-        inherit (self.packages.${prev.system}) haqq;
-        grafana-agent-unstable = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.grafana-agent;
+        cosmovisor = prev.callPackage ./nix/cosmovisor.nix { };
       };
 
       nixosModules = {
