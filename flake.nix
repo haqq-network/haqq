@@ -2,7 +2,7 @@
   description = "A very basic flake";
 
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2505.*.tar.gz";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     flake-utils.url = "github:numtide/flake-utils";
@@ -13,6 +13,9 @@
     gomod2nix.url = "github:nix-community/gomod2nix/master";
     gomod2nix.inputs.nixpkgs.follows = "nixpkgs-unstable";
     gomod2nix.inputs.flake-utils.follows = "flake-utils";
+
+    cosmos.url = "github:informalsystems/cosmos.nix";
+    cosmos.inputs.nixpkgs.follows = "nixpkgs-unstable";
   };
 
   outputs =
@@ -23,6 +26,7 @@
       flake-utils,
       devenv,
       gomod2nix,
+      cosmos,
       ...
     }@inputs:
     flake-utils.lib.eachDefaultSystem (

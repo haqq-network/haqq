@@ -5,9 +5,8 @@ package keeper_test
 import (
 	"math/big"
 
-	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
+
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"

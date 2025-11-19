@@ -5,7 +5,6 @@ package ics20_test
 import (
 	"math/big"
 
-	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/gomega"
 
 	sdkmath "cosmossdk.io/math"
@@ -160,7 +159,7 @@ func (s *PrecompileTestSuite) setupIBCTest() {
 	s.Require().NoError(err)
 	cons, err := validators[0].GetConsAddr()
 	s.Require().NoError(err)
-	
+
 	// Update the proposed header with the proposer address
 	header := s.chainA.ProposedHeader
 	header.ProposerAddress = cons

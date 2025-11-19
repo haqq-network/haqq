@@ -1,9 +1,8 @@
 package ante_test
 
 import (
-	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // dot imports are fine for Ginkgo
+
 	. "github.com/onsi/gomega"
 
 	sdkmath "cosmossdk.io/math"

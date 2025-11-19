@@ -48,14 +48,14 @@ func (k *Keeper) DeductTxCostsFromUserBalance(
 	fees sdk.Coins,
 	from common.Address,
 ) error {
-    // fetch sender account
-    acc := k.accountKeeper.GetAccount(ctx, sdk.AccAddress(from.Bytes()))
-    if acc == nil {
-        return errorsmod.Wrapf(errortypes.ErrUnknownAddress, "account not found for sender %s", from)
-    }
+	// fetch sender account
+	acc := k.accountKeeper.GetAccount(ctx, sdk.AccAddress(from.Bytes()))
+	if acc == nil {
+		return errorsmod.Wrapf(errortypes.ErrUnknownAddress, "account not found for sender %s", from)
+	}
 
 	// deduct the full gas cost from the user balance
-    if err := authante.DeductFees(k.bankKeeper, ctx, acc, fees); err != nil {
+	if err := authante.DeductFees(k.bankKeeper, ctx, acc, fees); err != nil {
 		return errorsmod.Wrapf(err, "failed to deduct full gas cost %s from the user %s balance", fees, from)
 	}
 

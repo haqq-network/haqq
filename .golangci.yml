@@ -24,6 +24,10 @@ linters:
     - unconvert
     - unparam
   settings:
+    revive:
+      rules:
+        - name: var-naming
+          disabled: true
     dogsled:
       max-blank-identifiers: 3
     dupl:

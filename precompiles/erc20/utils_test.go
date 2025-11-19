@@ -6,7 +6,6 @@ import (
 	"slices"
 	"time"
 
-	//nolint:revive // dot imports are fine for Gomega
 	. "github.com/onsi/gomega"
 
 	errorsmod "cosmossdk.io/errors"
