@@ -31,9 +31,10 @@ jobs:
             go.sum
       - name: Pull LFS files
         run: git lfs pull
-      - run: |
+      - name: Build
+        run: |
           make build
-        if: env.GIT_DIFF || env.GIT_FILES
+        if: env.GIT_DIFF != '' || env.GIT_FILES != ''
   build-nix:
     runs-on: ubuntu-cpu16-ram64
     steps:

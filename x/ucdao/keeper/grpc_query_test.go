@@ -313,9 +313,13 @@ func TestHolders(t *testing.T) {
 					require.NoError(t, err, "error while funding the UC DAO account")
 
 					if i > 1 && i < 4 {
-						holders[i-2] = types.Balance{
-							Address: testAccounts[i].String(),
-							Coins:   coins,
+						idx := i - 2
+
+						if idx >= 0 && idx < len(holders) {
+							holders[idx] = types.Balance{
+								Address: testAccounts[i].String(),
+								Coins:   coins,
+							}
 						}
 					}
 					if i == 4 {

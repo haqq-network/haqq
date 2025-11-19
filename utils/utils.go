@@ -139,13 +139,13 @@ func GetIBCDenomAddress(denom string) (common.Address, error) {
 // the portID, channelID, and the given a token denomination.
 // For ibc-go v10, use types.Denom and Hop instead of legacy DenomTrace.
 func ComputeIBCDenomTrace(portID, channelID, denom string) ibctransfertypes.Denom {
-    return ibctransfertypes.NewDenom(denom, ibctransfertypes.Hop{PortId: portID, ChannelId: channelID})
+	return ibctransfertypes.NewDenom(denom, ibctransfertypes.Hop{PortId: portID, ChannelId: channelID})
 }
 
 // ComputeIBCDenom compute the ibc voucher denom associated to
 // the portID, channelID, and the given a token denomination.
 func ComputeIBCDenom(portID, channelID, denom string) string {
-    return ComputeIBCDenomTrace(portID, channelID, denom).IBCDenom()
+	return ComputeIBCDenomTrace(portID, channelID, denom).IBCDenom()
 }
 
 // ParseHexValue parses a hex string into a big.Int

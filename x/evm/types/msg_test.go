@@ -134,7 +134,7 @@ func (suite *MsgsTestSuite) TestMsgEthereumTx_ValidateBasic() {
 		validChainID = big.NewInt(9000)
 		zeroInt      = big.NewInt(0)
 		minusOneInt  = big.NewInt(-1)
-		//nolint:all
+
 		exp_2_255 = new(big.Int).Exp(big.NewInt(2), big.NewInt(255), nil)
 	)
 	testCases := []struct {
@@ -700,7 +700,7 @@ func (suite *MsgsTestSuite) TestFromEthereumTx() {
 	suite.Require().NoError(err)
 
 	// 10^80 is more than 256 bits
-	//nolint:all
+
 	exp_10_80 := new(big.Int).Mul(big.NewInt(1), new(big.Int).Exp(big.NewInt(10), big.NewInt(80), nil))
 
 	testCases := []struct {

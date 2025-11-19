@@ -30,7 +30,10 @@ func CommitBlock(chain *ibcgotesting.TestChain, res *abci.ResponseFinalizeBlock)
 	// use nil trusted fields
 	chain.LatestCommittedHeader = chain.CurrentTMClientHeader()
 	// set the trusted validator set to the next validator set
-	chain.TrustedValidators[uint64(chain.ProposedHeader.Height)] = chain.NextVals
+	//nolint:gosec // Height is always positive in this context
+	if chain.ProposedHeader.Height > 0 {
+		chain.TrustedValidators[uint64(chain.ProposedHeader.Height)] = chain.NextVals
+	}
 
 	// val set changes returned from previous block get applied to the next validators
 	// of this block. See tendermint spec for details.

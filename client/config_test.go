@@ -25,7 +25,7 @@ func TestInitConfigNonNotExistError(t *testing.T) {
 		t.Fatalf("Failed to create config file: %v", err)
 	}
 	defer func() {
-		os.Chmod(configFile, 0o644) // Restore permissions for cleanup
+		_ = os.Chmod(configFile, 0o644) // Restore permissions for cleanup
 		os.RemoveAll(subDir)
 	}()
 

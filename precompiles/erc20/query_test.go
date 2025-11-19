@@ -22,6 +22,8 @@ import (
 )
 
 // Helper function to convert old DenomTrace format to new Denom format
+//
+//nolint:unparam // path parameter is kept for API compatibility
 func denomTraceToDenom(path, baseDenom string) types.Denom {
 	if path == "" {
 		return types.NewDenom(baseDenom)

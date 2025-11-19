@@ -95,24 +95,20 @@ type MockChannelKeeper struct {
 	mock.Mock
 }
 
-//nolint:revive // allow unused parameters to indicate expected signature
 func (b *MockChannelKeeper) GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool) {
 	args := b.Called(mock.Anything, mock.Anything, mock.Anything)
 	return args.Get(0).(channeltypes.Channel), true
 }
 
-//nolint:revive // allow unused parameters to indicate expected signature
 func (b *MockChannelKeeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool) {
 	_ = b.Called(mock.Anything, mock.Anything, mock.Anything)
 	return 1, true
 }
 
-//nolint:revive // allow unused parameters to indicate expected signature
 func (b *MockChannelKeeper) GetAllChannelsWithPortPrefix(ctx sdk.Context, portPrefix string) []channeltypes.IdentifiedChannel {
 	return []channeltypes.IdentifiedChannel{}
 }
 
-//nolint:revive // allow unused parameters to indicate expected signature
 func (b *MockChannelKeeper) HasChannel(ctx sdk.Context, portID, channelID string) bool {
 	args := b.Called(mock.Anything, mock.Anything, mock.Anything)
 	return args.Bool(0)
@@ -128,12 +124,10 @@ func (b *MockICS4Wrapper) WriteAcknowledgement(_ sdk.Context, _ exported.PacketI
 	return nil
 }
 
-//nolint:revive // allow unused parameters to indicate expected signature
 func (b *MockICS4Wrapper) GetAppVersion(ctx sdk.Context, portID string, channelID string) (string, bool) {
 	return "", false
 }
 
-//nolint:revive // allow unused parameters to indicate expected signature
 func (b *MockICS4Wrapper) SendPacket(
 	ctx sdk.Context,
 	sourcePort string,

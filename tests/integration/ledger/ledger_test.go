@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 
-	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/spf13/cobra"
