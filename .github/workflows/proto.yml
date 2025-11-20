@@ -21,8 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: haqq-network/nix-action@master
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/cachix-action@v12
         with:
+          name: haqq
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - name: Check that proto builds and committed
         env:
