@@ -52,7 +52,7 @@ jobs:
         env:
           NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
-          nix build .#haqq --print-build-logs
+          nix build .#haqq --print-build-logs --no-link
   check-nix:
     runs-on: ubuntu-latest
     steps:
@@ -70,9 +70,9 @@ jobs:
         env:
           NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
-          nix develop --impure .#ci --command ci-check-version
+          nix develop --impure .#ci --command bash -c 'ci-check-version'
       - name: Check if gomod2nix is up to date
         env:
           NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
-          nix develop --impure .#ci --command ci-check-gomod2nix
+          nix develop --impure .#ci --command bash -c 'ci-check-gomod2nix'

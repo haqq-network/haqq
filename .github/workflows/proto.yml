@@ -24,7 +24,10 @@ jobs:
       - uses: haqq-network/nix-action@master
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-      - run: |
+      - name: Check that proto builds and committed
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
+        run: |
           nix develop --impure .#ci --command ci-proto
 
   lint:
