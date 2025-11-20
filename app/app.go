@@ -681,7 +681,7 @@ func NewHaqq(
 
 	dataDir := filepath.Join(homePath, "data")
 	// Ensure dataDir exists before creating temp subdirectory
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
+	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		panic(fmt.Sprintf("failed to create data directory: %s", err))
 	}
 	var memCacheSizeMB uint32 = 100
