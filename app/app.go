@@ -164,6 +164,7 @@ import (
 
 	v190 "github.com/haqq-network/haqq/app/upgrades/v1.9.0"
 	v191 "github.com/haqq-network/haqq/app/upgrades/v1.9.1"
+	v192 "github.com/haqq-network/haqq/app/upgrades/v1.9.2"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -1256,6 +1257,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v191.UpgradeName,
 		v191.CreateUpgradeHandler(app.mm, app.configurator, app.GovKeeper, app.Erc20Keeper),
+	)
+
+	// v1.9.2 Upgrade UCDAO module
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v192.UpgradeName,
+		v192.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
 	// When a planned update height is reached, the old binary will panic

@@ -3,6 +3,7 @@ package keeper
 import (
 	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 
 	"github.com/haqq-network/haqq/x/ucdao/types"
 )
@@ -22,4 +23,22 @@ func (k BaseKeeper) getDenomAddressPrefixStore(ctx sdk.Context, denom string) pr
 // getHoldersStore gets the holders store.
 func (k BaseKeeper) getHoldersStore(ctx sdk.Context) prefix.Store {
 	return prefix.NewStore(ctx.KVStore(k.storeKey), types.HoldersPrefix)
+}
+
+// setHoldersIndex registers account as shareholder or remove it from index
+// if there are no coins on designated escrow account.
+func (k BaseKeeper) setHoldersIndex(ctx sdk.Context, addr sdk.AccAddress) {
+	holdersStore := k.getHoldersStore(ctx)
+	addrKey := address.MustLengthPrefix(addr)
+
+	// Delete value from holders store if all balances is zero.
+	allBalances := k.GetAccountBalances(ctx, addr)
+	if allBalances.IsZero() && holdersStore.Has(addrKey) {
+		holdersStore.Delete(addrKey)
+	}
+
+	// Store an index of account address with a sentinel value.
+	if !holdersStore.Has(addrKey) && !allBalances.IsZero() {
+		holdersStore.Set(addrKey, []byte{0})
+	}
 }

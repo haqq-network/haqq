@@ -46,6 +46,7 @@ func (k BaseKeeper) Balance(ctx context.Context, req *types.QueryBalanceRequest)
 }
 
 // AllBalances implements the Query/AllBalances gRPC method
+// Pagination argument is ignored since we switched to escrow accounts.
 func (k BaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalancesRequest) (*types.QueryAllBalancesResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -67,24 +68,9 @@ func (k BaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalances
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	balances := k.GetAccountBalances(sdkCtx, address)
 
-	balances := sdk.NewCoins()
-	accountStore := k.getAccountStore(sdkCtx, address)
-
-	pageRes, err := query.Paginate(accountStore, req.Pagination, func(key, value []byte) error {
-		denom := string(key)
-		balance, err := UnmarshalBalanceCompat(k.cdc, value, denom)
-		if err != nil {
-			return err
-		}
-		balances = append(balances, balance)
-		return nil
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
-	}
-
-	return &types.QueryAllBalancesResponse{Balances: balances, Pagination: pageRes}, nil
+	return &types.QueryAllBalancesResponse{Balances: balances, Pagination: &query.PageResponse{}}, nil
 }
 
 // TotalBalance implements the Query/TotalSupply gRPC method

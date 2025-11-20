@@ -28,10 +28,9 @@ type Keeper interface {
 
 	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	HasBalance(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coin) bool
-	IterateAccountBalances(ctx sdk.Context, addr sdk.AccAddress, cb func(sdk.Coin) bool)
 	GetAccountBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
-	IterateAllBalances(ctx sdk.Context, cb func(sdk.AccAddress, sdk.Coin) bool)
 	GetAccountsBalances(ctx sdk.Context) []types.Balance
+	GetHolders(ctx sdk.Context) []sdk.AccAddress
 
 	Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
 	TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress, amount sdk.Coins) (sdk.Coins, error)
@@ -86,12 +85,9 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 		return types.ErrModuleDisabled
 	}
 
-	if err := k.bk.SendCoinsFromAccountToModule(ctx, sender, types.ModuleName, amount); err != nil {
-		return err
-	}
-
+	escrowAddr := types.GetEscrowAddress(sender)
 	for _, coin := range amount {
-		if coin.Denom != utils.BaseDenom && !IsLiquidToken(coin.Denom) {
+		if coin.Denom != utils.BaseDenom && !types.IsLiquidToken(coin.Denom) {
 			return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom %s is not allowed", coin.Denom)
 		}
 
@@ -99,14 +95,9 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 			continue
 		}
 
-		err := k.addCoinsToAccount(ctx, sender, sdk.NewCoins(coin))
-		if err != nil {
+		if err := k.escrowToken(ctx, sender, escrowAddr, coin); err != nil {
 			return err
 		}
-
-		bal := k.GetTotalBalanceOf(ctx, coin.Denom)
-		bal = bal.Add(coin)
-		k.setTotalBalanceOfCoin(ctx, bal)
 	}
 
 	// Update holders index
@@ -125,35 +116,17 @@ func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAd
 		return nil, types.ErrNotEligible
 	}
 
-	leftovers := sdk.NewCoins()
+	ownerEscrowAddr := types.GetEscrowAddress(owner)
+	newOwnerEscrowAddr := types.GetEscrowAddress(newOwner)
+
 	for _, coin := range amount {
 		if coin.IsZero() {
 			// should not happen
 			continue
 		}
 
-		ok, foundInBalance := balances.Find(coin.Denom)
-		if !ok {
-			return nil, sdkerrors.Wrapf(types.ErrInsufficientFunds, "zero balance of %s", coin.Denom)
-		}
-		leftCoin, err := foundInBalance.SafeSub(coin)
-		if err != nil {
-			return nil, sdkerrors.Wrapf(types.ErrInsufficientFunds, "%s on balance is lower than %s to transfer", foundInBalance, coin)
-		}
-
-		leftovers = append(leftovers, leftCoin)
-	}
-
-	// Add coins to new owner
-	err := k.addCoinsToAccount(ctx, newOwner, amount)
-	if err != nil {
-		return nil, err
-	}
-
-	// Remove coins from old owner
-	for _, coin := range leftovers {
-		if err := k.setBalance(ctx, owner, coin); err != nil {
-			return nil, err
+		if err := k.transferEscrowToken(ctx, ownerEscrowAddr, newOwnerEscrowAddr, coin); err != nil {
+			return nil, sdkerrors.Wrapf(err, "failed to transfer ownership of %s", coin)
 		}
 	}
 

@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/types/query"
+
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/utils"

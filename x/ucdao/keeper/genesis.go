@@ -12,7 +12,7 @@ import (
 	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
-// InitGenesis initializes the bank module's state from a given genesis state.
+// InitGenesis initializes the ucdao module's state from a given genesis state.
 func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	if err := k.SetParams(ctx, genState.Params); err != nil {
 		panic(err)
@@ -31,11 +31,7 @@ func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		totalBalance = totalBalance.Add(balance.Coins...)
 
 		// Set the holders store if the balance is not zero
-		holdersStore := k.getHoldersStore(ctx)
-		addrKey := address.MustLengthPrefix(addr)
-		if !balance.Coins.IsZero() && !holdersStore.Has(addrKey) {
-			holdersStore.Set(addrKey, []byte{0})
-		}
+		k.setHoldersIndex(ctx, addr)
 	}
 
 	if !genState.TotalBalance.Empty() && !genState.TotalBalance.Equal(totalBalance) {
