@@ -81,4 +81,4 @@ jobs:
         env:
           NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
-          nix build .#haqq-with-tests --print-build-logs
+          nix build .#haqq-with-tests --print-build-logs --no-link

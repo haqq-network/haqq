@@ -44,10 +44,15 @@
         
         # Try to get the Go version from pkgsUnstable first (since we use it for building),
         # then fallback to pkgs, then to latest available version
+        # Go 1.24 might not be available in nixpkgs yet, so we fallback to 1.23
         go = if pkgsUnstable ? "go_${goMajor}_${goMinor}" then
           pkgsUnstable."go_${goMajor}_${goMinor}"
         else if pkgs ? "go_${goMajor}_${goMinor}" then
           pkgs."go_${goMajor}_${goMinor}"
+        else if pkgsUnstable ? "go_1_24" then
+          pkgsUnstable.go_1_24
+        else if pkgs ? "go_1_24" then
+          pkgs.go_1_24
         else if pkgsUnstable ? "go_1_23" then
           pkgsUnstable.go_1_23
         else if pkgs ? "go_1_23" then
