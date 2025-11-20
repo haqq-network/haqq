@@ -39,8 +39,21 @@
         # match go x.x in go.mod
         gomod = builtins.readFile ./go.mod;
         goVersion = builtins.match ".*[\n]go ([[:digit:]]*)\.([[:digit:]]*)[\.]*([[:digit:]]*)[\n].*" gomod;
-
-        go = pkgs."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
+        goMajor = builtins.head goVersion;
+        goMinor = builtins.elemAt goVersion 1;
+        
+        # Try to get the Go version from pkgsUnstable first (since we use it for building),
+        # then fallback to pkgs, then to latest available version
+        go = if pkgsUnstable ? "go_${goMajor}_${goMinor}" then
+          pkgsUnstable."go_${goMajor}_${goMinor}"
+        else if pkgs ? "go_${goMajor}_${goMinor}" then
+          pkgs."go_${goMajor}_${goMinor}"
+        else if pkgsUnstable ? "go_1_23" then
+          pkgsUnstable.go_1_23
+        else if pkgs ? "go_1_23" then
+          pkgs.go_1_23
+        else
+          pkgs.go;
       in
       {
         packages = rec {
@@ -78,15 +91,31 @@
     )
     // {
 
-      overlays.default = prev: final: {
-        cosmovisor = prev.callPackage ./nix/cosmovisor.nix { };
-      };
+      overlays.default = prev: final:
+        let
+          # Get system from the package set  
+          system = prev.stdenv.hostPlatform.system;
+          # Get grafana-agent from nixpkgs-unstable
+          grafanaAgentPkg = (import inputs.nixpkgs-unstable {
+            inherit system;
+            overlays = [ ];
+          }).grafana-agent;
+        in
+        {
+          cosmovisor = prev.callPackage ./nix/cosmovisor.nix { };
+          grafana-agent-unstable = grafanaAgentPkg;
+        };
 
       nixosModules = {
         haqqdSupervised = {
           imports = [ ./nix/nixos-module ];
 
-          nixpkgs.overlays = [ self.overlays.default ];
+          nixpkgs.overlays = [
+            self.overlays.default
+            (final: prev: {
+              haqq = self.packages.${prev.stdenv.hostPlatform.system}.haqq;
+            })
+          ];
         };
       };
 

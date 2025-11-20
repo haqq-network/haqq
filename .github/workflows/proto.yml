@@ -25,7 +25,7 @@ jobs:
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
-          nix develop --impure #ci --command ci-proto
+          nix develop --impure .#ci --command ci-proto
 
   lint:
     name: Proto lint
