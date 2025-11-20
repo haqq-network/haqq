@@ -30,5 +30,17 @@ mkdir -p "${THIRD_PARTY_DIR}/ics_tmp" && \
 
 cd ${THIRD_PARTY_DIR}/../..
 
-cat proto/buf.yaml | yq '.deps | map( "buf export " + . + " -o '${THIRD_PARTY_DIR}'") | join(" && ")' | xargs bash -c
+# Export buf dependencies without requiring yq
+# Read deps from buf.yaml and export each one
+if ! command -v yq &> /dev/null; then
+	# Fallback: manually extract deps from buf.yaml and export them
+	# This works for the current buf.yaml structure
+	buf export buf.build/cosmos/cosmos-sdk -o ${THIRD_PARTY_DIR}
+	buf export buf.build/cosmos/cosmos-proto -o ${THIRD_PARTY_DIR}
+	buf export buf.build/cosmos/gogo-proto -o ${THIRD_PARTY_DIR}
+	buf export buf.build/googleapis/googleapis -o ${THIRD_PARTY_DIR}
+else
+	# Use yq if available (preferred method)
+	cat proto/buf.yaml | yq '.deps | map( "buf export " + . + " -o '${THIRD_PARTY_DIR}'") | join(" && ")' | xargs bash -c
+fi
 

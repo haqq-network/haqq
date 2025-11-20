@@ -100,7 +100,6 @@ import (
 	ibcwasm "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10"
 	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10/keeper"
 	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10/types"
-	ibccallbacksv2 "github.com/cosmos/ibc-go/v10/modules/apps/callbacks/v2"
 	ibctransfer "github.com/cosmos/ibc-go/v10/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v10/modules/core"
@@ -636,19 +635,10 @@ func NewHaqq(
 	// Create IBCv2 Transfer Stack with prefix-based routing support
 	// Stack order (from bottom to top):
 	// - Transfer
-	// - Callbacks (with max gas limit)
 	// - ERC20 Middleware
+	// Note: Callbacks middleware is skipped since haqq doesn't have wasm support
 	var transferStackV2 ibcapi.IBCModule
 	transferStackV2 = transferv2.NewIBCModule(app.TransferKeeper)
-	// wasmStackIBCHandler is nil since haqq doesn't have wasm support
-	// The callbacks middleware will handle nil gracefully
-	transferStackV2 = ibccallbacksv2.NewIBCMiddleware(
-		transferStackV2,
-		app.IBCKeeper.ChannelKeeperV2,
-		nil, // wasmStackIBCHandler - nil since haqq doesn't have wasm
-		app.IBCKeeper.ChannelKeeperV2,
-		MaxIBCCallbackGas, // Maximum callback gas limit
-	)
 	transferStackV2 = erc20v2.NewIBCMiddleware(app.Erc20Keeper, transferStackV2)
 
 	// Create IBCv2 Router with prefix-based routing support
@@ -690,10 +680,19 @@ func NewHaqq(
 	}
 
 	dataDir := filepath.Join(homePath, "data")
+	// Ensure dataDir exists before creating temp subdirectory
+	if err := os.MkdirAll(dataDir, 0755); err != nil {
+		panic(fmt.Sprintf("failed to create data directory: %s", err))
+	}
 	var memCacheSizeMB uint32 = 100
 	// For 08-wasm light client, we use an empty capabilities list since we don't have wasmd
 	// The capabilities are mainly for x/wasm features which aren't needed for light clients
-	lc08, err := wasmvm.NewVM(filepath.Join(dataDir, "08-light-client"), []string{}, 32, false, memCacheSizeMB)
+	// Create a unique VM directory per app instance to avoid lock conflicts in parallel tests
+	vmDir, err := os.MkdirTemp(dataDir, "08-light-client-*")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create VM directory for 08 light client: %s", err))
+	}
+	lc08, err := wasmvm.NewVM(vmDir, []string{}, 32, false, memCacheSizeMB)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create VM for 08 light client: %s", err))
 	}
