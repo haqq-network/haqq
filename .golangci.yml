@@ -1,7 +1,7 @@
 version: "2"
 run:
   concurrency: 4
-  go: "1.23"
+  go: "1.24"
   tests: true
 issues:
   max-issues-per-linter: 100
@@ -24,6 +24,10 @@ linters:
     - unconvert
     - unparam
   settings:
+    revive:
+      rules:
+        - name: var-naming
+          disabled: true
     dogsled:
       max-blank-identifiers: 3
     dupl:

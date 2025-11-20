@@ -1,0 +1,61 @@
+FROM ubuntu:24.04
+
+# Non-interactive frontend for apt-get
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install required packages and clean up
+RUN apt-get update && \
+    apt-get dist-upgrade -y && \
+    apt-get install -y jq curl screen wget ca-certificates bash vim lz4 tini && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install golang
+RUN apt-get update && apt-get install -y golang
+
+# Install cosmovisor using go install
+RUN go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@latest && \
+    cp /root/go/bin/cosmovisor /usr/local/bin/cosmovisor && \
+    chmod +x /usr/local/bin/cosmovisor
+
+# Set working directory and environment variables
+WORKDIR /app
+ENV HOME=/app
+ENV DAEMON_HOME=$HOME/.haqqd
+ENV DAEMON_NAME=haqqd
+ENV KEYRING="test"
+ENV CHAINID="haqq_121799-1"
+ENV LOGLEVEL="info"
+ENV TRACE=""
+ENV DAEMON_ALLOW_DOWNLOAD_BINARIES=true
+ENV DAEMON_RESTART_AFTER_UPGRADE=true
+ENV UNSAFE_SKIP_BACKUP=false
+
+# Create necessary directories
+RUN mkdir -p \
+    $DAEMON_HOME/config \
+    $DAEMON_HOME/cosmovisor/genesis/bin \
+    $DAEMON_HOME/cosmovisor/upgrades \
+    /var/log/haqqd
+
+# Copy necessary files
+COPY deployment/library/libwasmvm.x86_64.so /usr/local/lib/
+COPY build/haqqd /usr/local/bin/
+COPY build/haqqd $DAEMON_HOME/cosmovisor/genesis/bin/haqqd
+COPY deployment/config/localnet/node0 $DAEMON_HOME/
+COPY deployment/docker/cosmovisor-wrapper.sh /usr/local/bin/cosmovisor-wrapper.sh
+
+# Set proper permissions and ownership
+RUN chown -R nobody:nogroup $HOME && \
+    chmod -R 777 $DAEMON_HOME && \
+    chown nobody:nogroup /usr/local/bin/cosmovisor-wrapper.sh && \
+    chmod +x /usr/local/bin/cosmovisor-wrapper.sh
+
+# Switch to non-privileged user
+USER nobody
+
+# Expose necessary ports
+EXPOSE 26656 26657 1317 9090 8545 8546
+
+# Run the application using cosmovisor wrapper
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/usr/local/bin/cosmovisor-wrapper.sh"]

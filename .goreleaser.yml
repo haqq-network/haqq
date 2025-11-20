@@ -63,32 +63,12 @@ builds:
       - -tags=cgo
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=haqq -X github.com/cosmos/cosmos-sdk/version.AppName=haqqd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
-  - id: "haqqd-windows"
-    main: ./cmd/haqqd
-    binary: bin/haqqd
-    env:
-      - CGO_ENABLED=1
-      - CC=x86_64-w64-mingw32-gcc
-      - CXX=x86_64-w64-mingw32-g++
-    goos:
-      - windows
-    goarch:
-      - amd64
-    flags:
-      - -tags=cgo
-      - -buildmode=exe
-    ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=haqq -X github.com/cosmos/cosmos-sdk/version.AppName=haqqd -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
 archives:
 - name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
-  format_overrides:
-    - goos: windows
-      format: zip
   builds:
   - haqqd-darwin
   - haqqd-darwin-arm64
-  - haqqd-windows
   - haqqd-linux
   - haqqd-linux-arm64
   

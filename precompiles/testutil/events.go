@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"strings"
 
-	//nolint:revive // it's common practice to use the global imports for Ginkgo and Gomega
 	. "github.com/onsi/gomega"
 
 	abci "github.com/cometbft/cometbft/abci/types"

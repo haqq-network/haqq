@@ -9,18 +9,18 @@ on:
 jobs:
   cleanup-runs:
     runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master' }}
     steps:
       - uses: rokroskar/workflow-run-cleanup-action@master
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
 
   install-tparse:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.23.10'
+          go-version: '1.24.10'
       - name: Display Go Version
         run: go version
       - name: Install tparse
@@ -37,7 +37,7 @@ jobs:
       - name: Set up go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.10'
+          go-version: '1.24.10'
       - name: Checkout source
         uses: actions/checkout@v4
       - name: Generate LFS file list
@@ -68,10 +68,18 @@ jobs:
     runs-on: ubuntu-cpu16-ram64
     steps:
       - uses: actions/checkout@v4
-      - uses: haqq-network/nix-action@master
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/cachix-action@v12
         with:
+          name: haqq
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
-      - name: Run nix package tests
+      - name: Update flake lock to use GitHub URLs
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
-          nix build .#haqq-with-tests --print-build-logs
+          nix flake update --no-registries || true
+      - name: Run nix package tests
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
+        run: |
+          nix build .#haqq-with-tests --print-build-logs --no-link

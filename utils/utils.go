@@ -15,7 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/exp/constraints"
@@ -137,13 +137,9 @@ func GetIBCDenomAddress(denom string) (common.Address, error) {
 
 // ComputeIBCDenomTrace compute the ibc voucher denom trace associated with
 // the portID, channelID, and the given a token denomination.
-func ComputeIBCDenomTrace(portID, channelID, denom string) ibctransfertypes.DenomTrace {
-	denomTrace := ibctransfertypes.DenomTrace{
-		Path:      fmt.Sprintf("%s/%s", portID, channelID),
-		BaseDenom: denom,
-	}
-
-	return denomTrace
+// For ibc-go v10, use types.Denom and Hop instead of legacy DenomTrace.
+func ComputeIBCDenomTrace(portID, channelID, denom string) ibctransfertypes.Denom {
+	return ibctransfertypes.NewDenom(denom, ibctransfertypes.Hop{PortId: portID, ChannelId: channelID})
 }
 
 // ComputeIBCDenom compute the ibc voucher denom associated to

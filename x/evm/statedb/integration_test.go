@@ -7,9 +7,8 @@ import (
 	"math/big"
 	"testing"
 
-	//nolint:revive // okay to use dot imports for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
-	//nolint:revive // okay to use dot imports for Ginkgo
+
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"

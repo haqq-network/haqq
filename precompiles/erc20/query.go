@@ -107,7 +107,7 @@ func (p Precompile) Decimals(
 		}
 
 		// we assume the decimal from the first character of the denomination
-		decimals, err := ibc.DeriveDecimalsFromDenom(denomTrace.BaseDenom)
+		decimals, err := ibc.DeriveDecimalsFromDenom(denomTrace.Base)
 		if err != nil {
 			return nil, ConvertErrToERC20Error(err)
 		}
@@ -241,10 +241,10 @@ func (p Precompile) getBaseDenomFromIBCVoucher(ctx sdk.Context, denom string) (s
 	}
 
 	// safety check
-	if len(denomTrace.BaseDenom) < 3 {
+	if len(denomTrace.Base) < 3 {
 		// FIXME: return not supported (same error as when you call the method on an ERC20.sol)
-		return "", fmt.Errorf("invalid base denomination; should be at least length 3; got: %q", denomTrace.BaseDenom)
+		return "", fmt.Errorf("invalid base denomination; should be at least length 3; got: %q", denomTrace.Base)
 	}
 
-	return denomTrace.BaseDenom, nil
+	return denomTrace.Base, nil
 }

@@ -265,8 +265,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetSimulateCmd(),
 	)
 
-	// DefaultGasAdjustment value to use as default in gas-adjustment flag
-	flags.DefaultGasAdjustment = servercfg.DefaultGasAdjustment
+	// Note: gas-adjustment default is controlled via flag definition in SDK v0.53+
 
 	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 

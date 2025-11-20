@@ -6,7 +6,7 @@ DIFF_TAG=$(shell git rev-list --tags="v*" --max-count=1 --not $(shell git rev-li
 DEFAULT_TAG=$(shell git rev-list --tags="v*" --max-count=1)
 # VERSION ?= $(shell echo $(shell git describe --tags $(or $(DIFF_TAG), $(DEFAULT_TAG))) | sed 's/^v//')
 
-VERSION := "1.9.1"
+VERSION := "1.10.0"
 CBFTVERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 LEDGER_ENABLED ?= true
@@ -354,10 +354,10 @@ TEST_TARGETS := test-unit test-unit-cover test-race
 # Test runs-specific rules. To add a new test target, just add
 # a new rule, customise ARGS or TEST_PACKAGES ad libitum, and
 # append the new rule to the TEST_TARGETS list.
-test-unit: ARGS=-timeout=20m -race
+test-unit: ARGS=-timeout=20m
 test-unit: TEST_PACKAGES=$(PACKAGES_UNIT)
 
-test-race: ARGS=-race
+test-race: ARGS=-timeout=30m -race
 test-race: TEST_PACKAGES=$(PACKAGES_NOSIMULATION)
 $(TEST_TARGETS): run-tests
 

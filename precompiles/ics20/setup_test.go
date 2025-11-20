@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
 	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/ics20"
@@ -18,6 +18,10 @@ import (
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/testutil/integration/ibc/coordinator"
+
+	sdkmath "cosmossdk.io/math"
+	haqqapp "github.com/haqq-network/haqq/app"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 
 var s *PrecompileTestSuite
@@ -73,10 +77,18 @@ func (s *PrecompileTestSuite) SetupTest() {
 	s.keyring = keyring
 	s.network = nw
 
+	// Ensure tests are not blocked by min gas price settings
+	feemParams := s.network.App.FeeMarketKeeper.GetParams(ctx)
+	feemParams.MinGasPrice = sdkmath.LegacyZeroDec()
+	// Also ensure base fee does not enforce high minimums during tests
+	feemParams.NoBaseFee = true
+	feemParams.EnableHeight = 0
+	s.Require().NoError(s.network.App.FeeMarketKeeper.SetParams(ctx, feemParams))
+
 	if s.precompile, err = ics20.NewPrecompile(
 		s.network.App.StakingKeeper,
 		s.network.App.TransferKeeper,
-		s.network.App.IBCKeeper.ChannelKeeper,
+		*s.network.App.IBCKeeper.ChannelKeeper,
 		s.network.App.AuthzKeeper,
 	); err != nil {
 		panic(err)
@@ -90,6 +102,36 @@ func (s *PrecompileTestSuite) SetupTest() {
 	// Setup Chains in the testing suite
 	s.chainA = s.coordinator.GetTestChain(s.network.GetChainID())
 	s.chainB = s.coordinator.GetTestChain(chainID2)
+
+	// Lower gas requirements on both IBC test chains
+	for _, c := range []*ibctesting.TestChain{s.chainA, s.chainB} {
+		chainCtx := c.GetContext()
+		if haqqApp, ok := c.App.(*haqqapp.Haqq); ok {
+			params := haqqApp.FeeMarketKeeper.GetParams(chainCtx)
+			params.MinGasPrice = sdkmath.LegacyZeroDec()
+			params.NoBaseFee = true
+			params.EnableHeight = 0
+			_ = haqqApp.FeeMarketKeeper.SetParams(chainCtx, params)
+		}
+	}
+
+	// Ensure chainB has our sender account with funds and set as default signer
+	if haqqB, ok := s.chainB.App.(*haqqapp.Haqq); ok {
+		chainBCtx := s.chainB.GetContext()
+		addr := s.keyring.GetAccAddr(0)
+		acc := haqqB.AccountKeeper.NewAccountWithAddress(chainBCtx, addr)
+		haqqB.AccountKeeper.SetAccount(chainBCtx, acc)
+		amount := sdkmath.NewInt(1_000_000_000_000_000_000)
+		coins := sdk.NewCoins(sdk.NewCoin(s.bondDenom, amount))
+		_ = haqqB.BankKeeper.MintCoins(chainBCtx, coinomicstypes.ModuleName, coins)
+		_ = haqqB.BankKeeper.SendCoinsFromModuleToAccount(chainBCtx, coinomicstypes.ModuleName, addr, coins)
+		// set default signer for chainB
+		s.coordinator.SetDefaultSignerForChain(
+			chainID2,
+			s.keyring.GetPrivKey(0),
+			acc,
+		)
+	}
 
 	// set sender account on chainA
 	s.coordinator.SetDefaultSignerForChain(

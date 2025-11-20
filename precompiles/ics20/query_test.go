@@ -3,9 +3,9 @@ package ics20_test
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	"github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
 	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
@@ -13,9 +13,9 @@ import (
 	"github.com/haqq-network/haqq/utils"
 )
 
-func (s *PrecompileTestSuite) TestDenomTrace() {
-	var expTrace types.DenomTrace
-	method := s.precompile.Methods[ics20.DenomTraceMethod]
+func (s *PrecompileTestSuite) TestDenom() {
+	var expTrace types.Denom
+	method := s.precompile.Methods[ics20.DenomMethod]
 	testCases := []struct {
 		name        string
 		malleate    func() []interface{}
@@ -45,18 +45,14 @@ func (s *PrecompileTestSuite) TestDenomTrace() {
 		{
 			"success - denom trace not found, return empty struct",
 			func() []interface{} {
-				expTrace.Path = "transfer/channelToA/transfer/channelToB"
-				expTrace.BaseDenom = utils.BaseDenom
-				return []interface{}{
-					expTrace.IBCDenom(),
-				}
+				expTrace = types.ExtractDenomFromPath("transfer/channelToA/transfer/channelToB/" + utils.BaseDenom)
+				return []interface{}{expTrace.Hash().String()}
 			},
 			func(data []byte, _ []interface{}) {
-				var out ics20.DenomTraceResponse
-				err := s.precompile.UnpackIntoInterface(&out, ics20.DenomTraceMethod, data)
+				var out ics20.DenomResponse
+				err := s.precompile.UnpackIntoInterface(&out, ics20.DenomMethod, data)
 				s.Require().NoError(err, "failed to unpack output", err)
-				s.Require().Equal("", out.DenomTrace.BaseDenom)
-				s.Require().Equal("", out.DenomTrace.Path)
+				s.Require().Equal("", out.Denom.Base)
 			},
 			200000,
 			false,
@@ -65,19 +61,15 @@ func (s *PrecompileTestSuite) TestDenomTrace() {
 		{
 			"success - denom trace",
 			func() []interface{} {
-				expTrace.Path = "transfer/channelToA/transfer/channelToB"
-				expTrace.BaseDenom = utils.BaseDenom
-				s.network.App.TransferKeeper.SetDenomTrace(s.network.GetContext(), expTrace)
-				return []interface{}{
-					expTrace.IBCDenom(),
-				}
+				expTrace = types.ExtractDenomFromPath("transfer/channelToA/transfer/channelToB/" + utils.BaseDenom)
+				s.network.App.TransferKeeper.SetDenom(s.network.GetContext(), expTrace)
+				return []interface{}{expTrace.Hash().String()}
 			},
 			func(data []byte, _ []interface{}) {
-				var out ics20.DenomTraceResponse
-				err := s.precompile.UnpackIntoInterface(&out, ics20.DenomTraceMethod, data)
+				var out ics20.DenomResponse
+				err := s.precompile.UnpackIntoInterface(&out, ics20.DenomMethod, data)
 				s.Require().NoError(err, "failed to unpack output", err)
-				s.Require().Equal(expTrace.Path, out.DenomTrace.Path)
-				s.Require().Equal(expTrace.BaseDenom, out.DenomTrace.BaseDenom)
+				s.Require().Equal(expTrace.Base, out.Denom.Base)
 			},
 			200000,
 			false,
@@ -90,7 +82,7 @@ func (s *PrecompileTestSuite) TestDenomTrace() {
 			s.SetupTest()
 			contract := s.NewPrecompileContract(tc.gas)
 			args := tc.malleate()
-			bz, err := s.precompile.DenomTrace(s.network.GetContext(), contract, &method, args)
+			bz, err := s.precompile.Denom(s.network.GetContext(), contract, &method, args)
 
 			if tc.expError {
 				s.Require().ErrorContains(err, tc.errContains)
@@ -103,9 +95,9 @@ func (s *PrecompileTestSuite) TestDenomTrace() {
 	}
 }
 
-func (s *PrecompileTestSuite) TestDenomTraces() {
-	expTraces := types.Traces(nil)
-	method := s.precompile.Methods[ics20.DenomTracesMethod]
+func (s *PrecompileTestSuite) TestDenoms() {
+	var expTraces []types.Denom
+	method := s.precompile.Methods[ics20.DenomsMethod]
 	testCases := []struct {
 		name        string
 		malleate    func() []interface{}
@@ -125,28 +117,31 @@ func (s *PrecompileTestSuite) TestDenomTraces() {
 		{
 			"success - gets denom traces",
 			func() []interface{} {
-				expTraces = append(expTraces, types.DenomTrace{Path: "", BaseDenom: utils.BaseDenom})
-				expTraces = append(expTraces, types.DenomTrace{Path: "transfer/channelToA/transfer/channelToB", BaseDenom: utils.BaseDenom})
-				expTraces = append(expTraces, types.DenomTrace{Path: "transfer/channelToB", BaseDenom: utils.BaseDenom})
+				expTraces = []types.Denom{
+					types.NewDenom(utils.BaseDenom),
+					types.ExtractDenomFromPath("transfer/channelToA/transfer/channelToB/" + utils.BaseDenom),
+					types.ExtractDenomFromPath("transfer/channelToB/" + utils.BaseDenom),
+				}
 
 				for _, trace := range expTraces {
-					s.network.App.TransferKeeper.SetDenomTrace(s.network.GetContext(), trace)
+					s.network.App.TransferKeeper.SetDenom(s.network.GetContext(), trace)
 				}
-				return []interface{}{
-					query.PageRequest{
-						Limit:      3,
-						CountTotal: true,
-					},
-				}
+				return []interface{}{query.PageRequest{
+					Key:        nil,
+					Offset:     0,
+					Limit:      3,
+					CountTotal: true,
+					Reverse:    false,
+				}}
 			},
 			func(data []byte, _ []interface{}) {
-				var denomTraces ics20.DenomTracesResponse
-				err := s.precompile.UnpackIntoInterface(&denomTraces, ics20.DenomTracesMethod, data)
-				s.Require().Equal(denomTraces.PageResponse.Total, uint64(3))
+				var out ics20.DenomsResponse
+				err := s.precompile.UnpackIntoInterface(&out, ics20.DenomsMethod, data)
 				s.Require().NoError(err, "failed to unpack output", err)
-				s.Require().Equal(3, len(denomTraces.DenomTraces))
-				for i, trace := range denomTraces.DenomTraces {
-					s.Require().Equal(expTraces[i].Path, trace.Path)
+				s.Require().Equal(uint64(3), out.PageResponse.Total)
+				s.Require().Equal(3, len(out.Denoms))
+				for i, denom := range out.Denoms {
+					s.Require().Equal(expTraces[i].Base, denom.Base)
 				}
 			},
 			200000,
@@ -160,7 +155,7 @@ func (s *PrecompileTestSuite) TestDenomTraces() {
 			s.SetupTest()
 			contract := s.NewPrecompileContract(tc.gas)
 			args := tc.malleate()
-			bz, err := s.precompile.DenomTraces(s.network.GetContext(), contract, &method, args)
+			bz, err := s.precompile.Denoms(s.network.GetContext(), contract, &method, args)
 
 			if tc.expError {
 				s.Require().ErrorContains(err, tc.errContains)
@@ -174,10 +169,7 @@ func (s *PrecompileTestSuite) TestDenomTraces() {
 }
 
 func (s *PrecompileTestSuite) TestDenomHash() {
-	reqTrace := types.DenomTrace{
-		Path:      "transfer/channelToA/transfer/channelToB",
-		BaseDenom: utils.BaseDenom,
-	}
+	reqTrace := types.ExtractDenomFromPath("transfer/channelToA/transfer/channelToB/" + utils.BaseDenom)
 	method := s.precompile.Methods[ics20.DenomHashMethod]
 	testCases := []struct {
 		name        string
@@ -203,9 +195,10 @@ func (s *PrecompileTestSuite) TestDenomHash() {
 		{
 			"success - get the hash of a denom trace",
 			func() []interface{} {
-				s.network.App.TransferKeeper.SetDenomTrace(s.network.GetContext(), reqTrace)
+				s.network.App.TransferKeeper.SetDenom(s.network.GetContext(), reqTrace)
+				// Use base denom for hash lookup
 				return []interface{}{
-					reqTrace.GetFullDenomPath(),
+					reqTrace.Base,
 				}
 			},
 			func(data []byte, _ []interface{}) {

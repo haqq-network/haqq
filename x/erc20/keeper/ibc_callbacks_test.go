@@ -10,11 +10,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	ibcgotesting "github.com/cosmos/ibc-go/v8/testing"
-	ibcmock "github.com/cosmos/ibc-go/v8/testing/mock"
+	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibcgotesting "github.com/cosmos/ibc-go/v10/testing"
+	ibcmock "github.com/cosmos/ibc-go/v10/testing/mock"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/contracts"
@@ -231,11 +231,8 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 			ctx = suite.network.GetContext()
 
 			// Set Denom Trace
-			denomTrace := transfertypes.DenomTrace{
-				Path:      path,
-				BaseDenom: registeredDenom,
-			}
-			suite.network.App.TransferKeeper.SetDenomTrace(ctx, denomTrace)
+			denomTrace := transfertypes.ExtractDenomFromPath(path + "/" + registeredDenom)
+			suite.network.App.TransferKeeper.SetDenom(ctx, denomTrace)
 
 			// Set Cosmos Channel
 			channel := channeltypes.Channel{

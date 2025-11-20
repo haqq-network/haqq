@@ -18,10 +18,10 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 )
 
-const DefaultFeeAmt = int64(150_000_000_000_000_000) // 0.15 ISLM
+const DefaultFeeAmt = int64(2_000_000_000_000_000_000) // 2 ISLM
 
 // SetupPath constructs a TM client, connection, and channel on both chains provided. It will
 // fail if any error occurs. The clientID's, TestConnections, and TestChannels are returned
@@ -102,7 +102,7 @@ func SetupClients(coord *ibctesting.Coordinator, path *Path) {
 // Is a customization of IBC-go function that allows to modify the fee denom and amount
 // IBC-go implementation: https://github.com/cosmos/ibc-go/blob/d34cef7e075dda1a24a0a3e9b6d3eff406cc606c/testing/simapp/test_helpers.go#L332-L364
 //
-//nolint:revive // Context arg position is second on purpose, as first one arg is for testing tool
+
 func SignAndDeliver(
 	tb testing.TB, ctx context.Context, txCfg client.TxConfig, app *baseapp.BaseApp, msgs []sdk.Msg,
 	fee sdk.Coins,
