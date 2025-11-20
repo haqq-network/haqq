@@ -72,6 +72,13 @@ jobs:
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
           cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
+      - name: Update flake lock to use GitHub URLs
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
+        run: |
+          nix flake update --no-registries || true
       - name: Run nix package tests
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
           nix build .#haqq-with-tests --print-build-logs

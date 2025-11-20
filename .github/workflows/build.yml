@@ -43,7 +43,14 @@ jobs:
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
           cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
+      - name: Update flake lock to use GitHub URLs
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
+        run: |
+          nix flake update --no-registries || true
       - name: Build nix package
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
           nix build .#haqq --print-build-logs
   check-nix:
@@ -54,9 +61,18 @@ jobs:
         with:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
           cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
+      - name: Update flake lock to use GitHub URLs
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
+        run: |
+          nix flake update --no-registries || true
       - name: Check if nix package and Makefile versions match
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
           nix develop --impure .#ci --command ci-check-version
       - name: Check if gomod2nix is up to date
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
           nix develop --impure .#ci --command ci-check-gomod2nix
