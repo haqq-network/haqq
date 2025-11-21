@@ -33,6 +33,7 @@ func GetQueryCmd() *cobra.Command {
 	cmd.AddCommand(
 		GetBalancesCmd(),
 		GetCmdQueryTotalBalance(),
+		GetCmdQueryEscrowAddress(),
 	)
 
 	return cmd
@@ -146,6 +147,46 @@ Example:
 
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "all supply totals")
+
+	return cmd
+}
+
+func GetCmdQueryEscrowAddress() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "escrow-address [address]",
+		Short: "Query the escrow address for a given standard wallet address",
+		Args:  cobra.ExactArgs(1),
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the escrow address for a given standard wallet address.
+
+Example:
+  $ %s query %s escrow-address [address]
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			addr, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			res, err := queryClient.EscrowAddress(ctx, &types.QueryEscrowAddressRequest{Address: addr.String()})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
 
 	return cmd
 }
