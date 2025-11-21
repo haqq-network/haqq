@@ -116,9 +116,19 @@ func (k BaseKeeper) EscrowAddress(ctx context.Context, req *types.QueryEscrowAdd
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	address, err := sdk.AccAddressFromBech32(req.Address)
+	var (
+		address []byte
+		err     error
+	)
+
+	if common.IsHexAddress(req.Address) {
+		hexAddr := common.HexToAddress(req.Address)
+		address = hexAddr.Bytes()
+	} else {
+		address, err = sdk.AccAddressFromBech32(req.Address)
+	}
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err)
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
 	}
 
 	return &types.QueryEscrowAddressResponse{EscrowAddress: types.GetEscrowAddress(address).String()}, nil

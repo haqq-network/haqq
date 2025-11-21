@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -200,10 +201,10 @@ Example:
 func GetCmdQueryEscrowAddress() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "escrow-address [address]",
-		Short: "Query the escrow address for a given standard wallet address in the United Contributors DAO",
+		Short: "Query the escrow address for a given wallet address in the United Contributors DAO",
 		Args:  cobra.ExactArgs(1),
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Query the escrow address for a given standard wallet address in the United Contributors DAO.
+			fmt.Sprintf(`Query the escrow address for a given wallet address in the United Contributors DAO.
 
 Example:
   $ %s query %s escrow-address [address]
@@ -220,12 +221,11 @@ Example:
 			queryClient := types.NewQueryClient(clientCtx)
 			ctx := cmd.Context()
 
-			addr, err := sdk.AccAddressFromBech32(args[0])
-			if err != nil {
-				return err
+			if args[0] == "" {
+				return errors.New("address is required and cannot be empty")
 			}
 
-			res, err := queryClient.EscrowAddress(ctx, &types.QueryEscrowAddressRequest{Address: addr.String()})
+			res, err := queryClient.EscrowAddress(ctx, &types.QueryEscrowAddressRequest{Address: args[0]})
 			if err != nil {
 				return err
 			}
@@ -283,10 +283,10 @@ Example:
 func GetCmdQueryParams() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "params",
-		Short: "Query the parameters of the United Contributors DAO",
+		Short: "Query the parameters of the United Contributors DAO module",
 		Args:  cobra.NoArgs,
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Query the parameters of the United Contributors DAO.
+			fmt.Sprintf(`Query the parameters of the United Contributors DAO module.
 
 Example:
   $ %s query %s params
