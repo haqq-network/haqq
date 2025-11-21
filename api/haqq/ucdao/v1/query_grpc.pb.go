@@ -19,11 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_Balance_FullMethodName      = "/haqq.ucdao.v1.Query/Balance"
-	Query_AllBalances_FullMethodName  = "/haqq.ucdao.v1.Query/AllBalances"
-	Query_TotalBalance_FullMethodName = "/haqq.ucdao.v1.Query/TotalBalance"
-	Query_Holders_FullMethodName      = "/haqq.ucdao.v1.Query/Holders"
-	Query_Params_FullMethodName       = "/haqq.ucdao.v1.Query/Params"
+	Query_Balance_FullMethodName       = "/haqq.ucdao.v1.Query/Balance"
+	Query_AllBalances_FullMethodName   = "/haqq.ucdao.v1.Query/AllBalances"
+	Query_TotalBalance_FullMethodName  = "/haqq.ucdao.v1.Query/TotalBalance"
+	Query_Holders_FullMethodName       = "/haqq.ucdao.v1.Query/Holders"
+	Query_Params_FullMethodName        = "/haqq.ucdao.v1.Query/Params"
+	Query_EscrowAddress_FullMethodName = "/haqq.ucdao.v1.Query/EscrowAddress"
 )
 
 // QueryClient is the client API for Query service.
@@ -50,6 +51,8 @@ type QueryClient interface {
 	Holders(ctx context.Context, in *QueryHoldersRequest, opts ...grpc.CallOption) (*QueryHoldersResponse, error)
 	// Params queries the parameters of x/ucdao module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// EscrowAddress queries the escrow address for a given standard wallet address.
+	EscrowAddress(ctx context.Context, in *QueryEscrowAddressRequest, opts ...grpc.CallOption) (*QueryEscrowAddressResponse, error)
 }
 
 type queryClient struct {
@@ -105,6 +108,15 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 	return out, nil
 }
 
+func (c *queryClient) EscrowAddress(ctx context.Context, in *QueryEscrowAddressRequest, opts ...grpc.CallOption) (*QueryEscrowAddressResponse, error) {
+	out := new(QueryEscrowAddressResponse)
+	err := c.cc.Invoke(ctx, Query_EscrowAddress_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -129,6 +141,8 @@ type QueryServer interface {
 	Holders(context.Context, *QueryHoldersRequest) (*QueryHoldersResponse, error)
 	// Params queries the parameters of x/ucdao module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// EscrowAddress queries the escrow address for a given standard wallet address.
+	EscrowAddress(context.Context, *QueryEscrowAddressRequest) (*QueryEscrowAddressResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -150,6 +164,9 @@ func (UnimplementedQueryServer) Holders(context.Context, *QueryHoldersRequest) (
 }
 func (UnimplementedQueryServer) Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
+}
+func (UnimplementedQueryServer) EscrowAddress(context.Context, *QueryEscrowAddressRequest) (*QueryEscrowAddressResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EscrowAddress not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -254,6 +271,24 @@ func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_EscrowAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryEscrowAddressRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).EscrowAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_EscrowAddress_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).EscrowAddress(ctx, req.(*QueryEscrowAddressRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -280,6 +315,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Params",
 			Handler:    _Query_Params_Handler,
+		},
+		{
+			MethodName: "EscrowAddress",
+			Handler:    _Query_EscrowAddress_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

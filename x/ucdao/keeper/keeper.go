@@ -41,6 +41,7 @@ type Keeper interface {
 	TotalBalance(ctx context.Context, req *types.QueryTotalBalanceRequest) (*types.QueryTotalBalanceResponse, error)
 	Holders(ctx context.Context, req *types.QueryHoldersRequest) (*types.QueryHoldersResponse, error)
 	Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error)
+	EscrowAddress(ctx context.Context, req *types.QueryEscrowAddressRequest) (*types.QueryEscrowAddressResponse, error)
 
 	// genesis methods
 	InitGenesis(ctx sdk.Context, genState *types.GenesisState)

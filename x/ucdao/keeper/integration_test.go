@@ -9,7 +9,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/haqq-network/haqq/crypto/ethsecp256k1"
 	"github.com/haqq-network/haqq/testutil"
@@ -22,7 +21,6 @@ var gasLimit uint64 = 400_000
 
 var _ = Describe("United Contributors DAO", func() {
 	var (
-		daoModuleAcc                   authtypes.ModuleAccountI
 		fundMsg                        *types.MsgFund
 		transferOwnershipMsg           *types.MsgTransferOwnership
 		transferOwnershipWithRatioMsg  *types.MsgTransferOwnershipWithRatio
@@ -48,10 +46,9 @@ var _ = Describe("United Contributors DAO", func() {
 			BeforeEach(func() {
 				s.SetupTest()
 
-				daoModuleAcc = s.network.App.AccountKeeper.GetModuleAccount(s.network.GetContext(), types.ModuleName)
-
-				daoBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), utils.BaseDenom)
-				Expect(daoBalanceBefore.IsZero()).To(BeTrue(), "dao account should have no balance")
+				escrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, utils.BaseDenom)
+				Expect(daoBalanceBefore.IsZero()).To(BeTrue(), "escrow account should have no balance")
 
 				err = testutil.FundAccount(s.network.GetContext(), s.network.App.BankKeeper, s.keyring.GetAccAddr(0), sdk.NewCoins(oneHundredIslm, threeInvalid, fiveLiquid1, sevenLiquid75, nineLiquidInvalid))
 				s.Require().NoError(err)
@@ -62,8 +59,9 @@ var _ = Describe("United Contributors DAO", func() {
 			Context("correct aLIQUID with invalid", func() {
 				It("should fail", func() {
 					// Check balances before TX
-					daoBankBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-					Expect(daoBankBalanceBefore.IsZero()).To(BeTrue(), "dao account should have no balance")
+					escrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, fiveLiquid1.Denom)
+					Expect(daoBankBalanceBefore.IsZero()).To(BeTrue(), "escrow account should have no balance")
 
 					daoTotalBalanceBefore, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -85,8 +83,9 @@ var _ = Describe("United Contributors DAO", func() {
 					s.Require().NoError(s.network.NextBlock())
 
 					// Check balances after TX
-					daoBankBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-					Expect(daoBankBalanceAfter.IsZero()).To(BeTrue(), "dao account should have no balance")
+					escrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, fiveLiquid1.Denom)
+					Expect(daoBankBalanceAfter.IsZero()).To(BeTrue(), "escrow account should have no balance")
 
 					daoTotalBalanceAfter, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -101,8 +100,9 @@ var _ = Describe("United Contributors DAO", func() {
 			Context("correct aISLM with invalid", func() {
 				It("should fail", func() {
 					// Check balances before TX
-					daoBankBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-					Expect(daoBankBalanceBefore.IsZero()).To(BeTrue(), "dao account should have no balance")
+					escrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, oneIslm.Denom)
+					Expect(daoBankBalanceBefore.IsZero()).To(BeTrue(), "escrow account should have no balance")
 
 					daoTotalBalanceBefore, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -124,8 +124,9 @@ var _ = Describe("United Contributors DAO", func() {
 					s.Require().NoError(s.network.NextBlock())
 
 					// Check balances after TX
-					daoBankBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-					Expect(daoBankBalanceAfter.IsZero()).To(BeTrue(), "dao account should have no balance")
+					escrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, oneIslm.Denom)
+					Expect(daoBankBalanceAfter.IsZero()).To(BeTrue(), "escrow account should have no balance")
 
 					daoTotalBalanceAfter, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -151,8 +152,9 @@ var _ = Describe("United Contributors DAO", func() {
 			Context("correct standalone aLIQUID", func() {
 				It("should pass", func() {
 					// Check balances before TX
-					daoBankBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), sevenLiquid75.Denom)
-					Expect(daoBankBalanceBefore.IsZero()).To(BeTrue(), "dao account should have no balance")
+					escrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, sevenLiquid75.Denom)
+					Expect(daoBankBalanceBefore.IsZero()).To(BeTrue(), "escrow account should have no balance")
 
 					daoTotalBalanceBefore, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -173,8 +175,9 @@ var _ = Describe("United Contributors DAO", func() {
 					s.Require().NoError(s.network.NextBlock())
 
 					// Check balances after TX
-					daoBankBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), sevenLiquid75.Denom)
-					Expect(daoBankBalanceAfter.Amount.String()).To(Equal(sevenLiquid75.Amount.String()), "dao account should have received the funds")
+					escrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, sevenLiquid75.Denom)
+					Expect(daoBankBalanceAfter.Amount.String()).To(Equal(sevenLiquid75.Amount.String()), "escrow account should have received the funds")
 
 					daoTotalBalanceAfter, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -193,8 +196,9 @@ var _ = Describe("United Contributors DAO", func() {
 			Context("correct standalone aISLM", func() {
 				It("should pass", func() {
 					// Check balances before TX
-					daoBankBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-					Expect(daoBankBalanceBefore.IsZero()).To(BeTrue(), "dao account should have no balance")
+					escrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, oneIslm.Denom)
+					Expect(daoBankBalanceBefore.IsZero()).To(BeTrue(), "escrow account should have no balance")
 
 					daoTotalBalanceBefore, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -215,8 +219,9 @@ var _ = Describe("United Contributors DAO", func() {
 					s.Require().NoError(s.network.NextBlock())
 
 					// Check balances after TX
-					daoBankBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-					Expect(daoBankBalanceAfter.Amount.String()).To(Equal(oneIslm.Amount.String()), "dao account should have received the funds")
+					escrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, oneIslm.Denom)
+					Expect(daoBankBalanceAfter.Amount.String()).To(Equal(oneIslm.Amount.String()), "escrow account should have received the funds")
 
 					daoTotalBalanceAfter, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -235,8 +240,9 @@ var _ = Describe("United Contributors DAO", func() {
 			Context("correct aISLM and aLIQUID", func() {
 				It("should pass", func() {
 					// Check balances before TX
-					daoBankIslmBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-					Expect(daoBankIslmBalanceBefore.IsZero()).To(BeTrue(), "dao account should have no balance")
+					escrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankIslmBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, oneIslm.Denom)
+					Expect(daoBankIslmBalanceBefore.IsZero()).To(BeTrue(), "escrow account should have no balance")
 
 					daoTotalIslmBalanceBefore, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -246,8 +252,9 @@ var _ = Describe("United Contributors DAO", func() {
 					Expect(err).To(BeNil(), "query should have succeed")
 					Expect(daoAddressIslmBalanceBefore.Balances.IsZero()).To(BeTrue(), "dao address balance should be empty")
 
-					daoBankLiquidBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-					Expect(daoBankLiquidBalanceBefore.IsZero()).To(BeTrue(), "dao account should have no balance")
+					escrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankLiquidBalanceBefore := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, fiveLiquid1.Denom)
+					Expect(daoBankLiquidBalanceBefore.IsZero()).To(BeTrue(), "escrow account should have no balance")
 
 					daoTotalLiquidBalanceBefore, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -268,8 +275,9 @@ var _ = Describe("United Contributors DAO", func() {
 					s.Require().NoError(s.network.NextBlock())
 
 					// Check balances after TX
-					daoBankIslmBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-					Expect(daoBankIslmBalanceAfter.Amount.String()).To(Equal(oneIslm.Amount.String()), "dao account should have received the funds")
+					escrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankIslmBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, oneIslm.Denom)
+					Expect(daoBankIslmBalanceAfter.Amount.String()).To(Equal(oneIslm.Amount.String()), "escrow account should have received the funds")
 
 					daoTotalIslmBalanceAfter, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -283,8 +291,9 @@ var _ = Describe("United Contributors DAO", func() {
 					Expect(okAcc).To(BeTrue(), "dao address balance should have received the funds")
 					Expect(amountAcc.String()).To(Equal(oneIslm.String()), "dao address balance should have received the funds")
 
-					daoBankLiquidBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-					Expect(daoBankLiquidBalanceAfter.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "dao account should have received the funds")
+					escrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+					daoBankLiquidBalanceAfter := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), escrowAddr, fiveLiquid1.Denom)
+					Expect(daoBankLiquidBalanceAfter.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "escrow account should have received the funds")
 
 					daoTotalLiquidBalanceAfter, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 					Expect(err).To(BeNil(), "query should have succeed")
@@ -426,8 +435,9 @@ var _ = Describe("United Contributors DAO", func() {
 			})
 
 			It("successfully transferred - NewMsgTransferOwnership", func() {
-				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), daoModuleAcc.GetAddress())
-				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "dao module account bank balance should be empty")
+				ownerEscrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), ownerEscrowAddr)
+				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "owner escrow account bank balance should be empty")
 
 				daoTotalBalanceBeforeFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -448,10 +458,11 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Check balances after funding TX
-				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "dao account should have received the funds")
-				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "dao account should have received the funds")
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "owner escrow account should have received the funds")
+				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow account should have received the funds")
 
 				daoTotalBalanceAfterFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -493,11 +504,18 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Checks after transfer ownership
-				// Module bank balance shouldn't change
-				daoModuleAddressBankBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferIslm.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()))
-				daoModuleAddressBankBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferLiquid.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()))
+				// Total escrow balance shouldn't change (sum of all escrow addresses)
+				// Owner escrow should be empty, new owner escrow should have all the funds
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				newOwnerEscrowAddr := types.GetEscrowAddress(newOwnerAddr)
+				ownerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(ownerEscrowBalanceAfterTransferIslm.IsZero()).To(BeTrue(), "owner escrow should be empty after full transfer")
+				newOwnerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, oneIslm.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "new owner escrow should have all aISLM")
+				ownerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(ownerEscrowBalanceAfterTransferLiquid.IsZero()).To(BeTrue(), "owner escrow should be empty after full transfer")
+				newOwnerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, fiveLiquid1.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "new owner escrow should have all aLIQUID")
 
 				// Module internal total balance shouldn't change
 				daoTotalBalanceAfterTransfer, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
@@ -534,8 +552,9 @@ var _ = Describe("United Contributors DAO", func() {
 			})
 
 			It("successfully transferred - NewMsgTransferOwnershipWithRatio", func() {
-				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), daoModuleAcc.GetAddress())
-				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "dao module account bank balance should be empty")
+				ownerEscrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), ownerEscrowAddr)
+				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "owner escrow account bank balance should be empty")
 
 				daoTotalBalanceBeforeFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -556,10 +575,11 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Check balances after funding TX
-				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "dao account should have received the funds")
-				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "dao account should have received the funds")
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "owner escrow account should have received the funds")
+				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow account should have received the funds")
 
 				daoTotalBalanceAfterFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -601,11 +621,18 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Checks after transfer ownership
-				// Module bank balance shouldn't change
-				daoModuleAddressBankBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferIslm.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()))
-				daoModuleAddressBankBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferLiquid.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()))
+				// Total escrow balance shouldn't change (sum of all escrow addresses)
+				// Owner escrow should have 50%, new owner escrow should have 50%
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				newOwnerEscrowAddr := types.GetEscrowAddress(newOwnerAddr)
+				ownerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(ownerEscrowBalanceAfterTransferIslm.Amount.String()).To(Equal(halfIslm.Amount.String()), "owner escrow should have 50% after transfer")
+				newOwnerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, oneIslm.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferIslm.Amount.String()).To(Equal(halfIslm.Amount.String()), "new owner escrow should have 50%")
+				ownerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(ownerEscrowBalanceAfterTransferLiquid.Amount.String()).To(Equal(twopointfiveLiquid1.Amount.String()), "owner escrow should have 50% after transfer")
+				newOwnerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, fiveLiquid1.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferLiquid.Amount.String()).To(Equal(twopointfiveLiquid1.Amount.String()), "new owner escrow should have 50%")
 
 				// Module internal total balance shouldn't change
 				daoTotalBalanceAfterTransfer, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
@@ -648,8 +675,9 @@ var _ = Describe("United Contributors DAO", func() {
 			})
 
 			It("should fail - NewMsgTransferOwnershipWithRatio - invalid ratio", func() {
-				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), daoModuleAcc.GetAddress())
-				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "dao module account bank balance should be empty")
+				ownerEscrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), ownerEscrowAddr)
+				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "owner escrow account bank balance should be empty")
 
 				daoTotalBalanceBeforeFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -670,10 +698,11 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Check balances after funding TX
-				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "dao account should have received the funds")
-				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "dao account should have received the funds")
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "owner escrow account should have received the funds")
+				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow account should have received the funds")
 
 				daoTotalBalanceAfterFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -717,8 +746,9 @@ var _ = Describe("United Contributors DAO", func() {
 			})
 
 			It("successfully transferred - NewMsgTransferOwnershipWithAmount - all aISLM, aLIQUID intact", func() {
-				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), daoModuleAcc.GetAddress())
-				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "dao module account bank balance should be empty")
+				ownerEscrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), ownerEscrowAddr)
+				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "owner escrow account bank balance should be empty")
 
 				daoTotalBalanceBeforeFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -739,10 +769,11 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Check balances after funding TX
-				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "dao account should have received the funds")
-				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "dao account should have received the funds")
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "owner escrow account should have received the funds")
+				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow account should have received the funds")
 
 				daoTotalBalanceAfterFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -784,11 +815,19 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Checks after transfer ownership
-				// Module bank balance shouldn't change
-				daoModuleAddressBankBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferIslm.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()))
-				daoModuleAddressBankBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferLiquid.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()))
+				// Total escrow balance shouldn't change (sum of all escrow addresses)
+				// Owner escrow: no aISLM (all transferred), all aLIQUID (intact)
+				// New owner escrow: all aISLM, no aLIQUID
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				newOwnerEscrowAddr := types.GetEscrowAddress(newOwnerAddr)
+				ownerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(ownerEscrowBalanceAfterTransferIslm.IsZero()).To(BeTrue(), "owner escrow should have no aISLM after transfer")
+				newOwnerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, oneIslm.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "new owner escrow should have all aISLM")
+				ownerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(ownerEscrowBalanceAfterTransferLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow should have all aLIQUID intact")
+				newOwnerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, fiveLiquid1.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferLiquid.IsZero()).To(BeTrue(), "new owner escrow should have no aLIQUID")
 
 				// Module internal total balance shouldn't change
 				daoTotalBalanceAfterTransfer, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
@@ -829,8 +868,9 @@ var _ = Describe("United Contributors DAO", func() {
 			})
 
 			It("successfully transferred - NewMsgTransferOwnershipWithAmount - part aISLM, aLIQUID intact", func() {
-				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), daoModuleAcc.GetAddress())
-				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "dao module account bank balance should be empty")
+				ownerEscrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), ownerEscrowAddr)
+				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "owner escrow account bank balance should be empty")
 
 				daoTotalBalanceBeforeFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -851,10 +891,11 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Check balances after funding TX
-				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "dao account should have received the funds")
-				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "dao account should have received the funds")
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "owner escrow account should have received the funds")
+				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow account should have received the funds")
 
 				daoTotalBalanceAfterFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -896,11 +937,19 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Checks after transfer ownership
-				// Module bank balance shouldn't change
-				daoModuleAddressBankBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferIslm.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()))
-				daoModuleAddressBankBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferLiquid.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()))
+				// Total escrow balance shouldn't change (sum of all escrow addresses)
+				// Owner escrow: halfIslm (50% of aISLM transferred), all fiveLiquid1 (intact)
+				// New owner escrow: halfIslm, no aLIQUID
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				newOwnerEscrowAddr := types.GetEscrowAddress(newOwnerAddr)
+				ownerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(ownerEscrowBalanceAfterTransferIslm.Amount.String()).To(Equal(halfIslm.Amount.String()), "owner escrow should have 50% aISLM after transfer")
+				newOwnerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, oneIslm.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferIslm.Amount.String()).To(Equal(halfIslm.Amount.String()), "new owner escrow should have 50% aISLM")
+				ownerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(ownerEscrowBalanceAfterTransferLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow should have all aLIQUID intact")
+				newOwnerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, fiveLiquid1.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferLiquid.IsZero()).To(BeTrue(), "new owner escrow should have no aLIQUID")
 
 				// Module internal total balance shouldn't change
 				daoTotalBalanceAfterTransfer, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
@@ -942,8 +991,9 @@ var _ = Describe("United Contributors DAO", func() {
 			})
 
 			It("successfully transferred - NewMsgTransferOwnershipWithAmount - part aISLM, part aLIQUID", func() {
-				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), daoModuleAcc.GetAddress())
-				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "dao module account bank balance should be empty")
+				ownerEscrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), ownerEscrowAddr)
+				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "owner escrow account bank balance should be empty")
 
 				daoTotalBalanceBeforeFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -964,10 +1014,11 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Check balances after funding TX
-				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "dao account should have received the funds")
-				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "dao account should have received the funds")
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "owner escrow account should have received the funds")
+				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow account should have received the funds")
 
 				daoTotalBalanceAfterFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -1009,11 +1060,18 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Checks after transfer ownership
-				// Module bank balance shouldn't change
-				daoModuleAddressBankBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferIslm.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()))
-				daoModuleAddressBankBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferLiquid.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()))
+				// Total escrow balance shouldn't change (sum of all escrow addresses)
+				// Owner escrow should have 50%, new owner escrow should have 50%
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				newOwnerEscrowAddr := types.GetEscrowAddress(newOwnerAddr)
+				ownerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(ownerEscrowBalanceAfterTransferIslm.Amount.String()).To(Equal(halfIslm.Amount.String()), "owner escrow should have 50% after transfer")
+				newOwnerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, oneIslm.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferIslm.Amount.String()).To(Equal(halfIslm.Amount.String()), "new owner escrow should have 50%")
+				ownerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(ownerEscrowBalanceAfterTransferLiquid.Amount.String()).To(Equal(twopointfiveLiquid1.Amount.String()), "owner escrow should have 50% after transfer")
+				newOwnerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, fiveLiquid1.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferLiquid.Amount.String()).To(Equal(twopointfiveLiquid1.Amount.String()), "new owner escrow should have 50%")
 
 				// Module internal total balance shouldn't change
 				daoTotalBalanceAfterTransfer, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
@@ -1056,8 +1114,9 @@ var _ = Describe("United Contributors DAO", func() {
 			})
 
 			It("should fail - NewMsgTransferOwnershipWithAmount - insufficient funds", func() {
-				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), daoModuleAcc.GetAddress())
-				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "dao module account bank balance should be empty")
+				ownerEscrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), ownerEscrowAddr)
+				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "owner escrow account bank balance should be empty")
 
 				daoTotalBalanceBeforeFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -1078,10 +1137,11 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Check balances after funding TX
-				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "dao account should have received the funds")
-				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "dao account should have received the funds")
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "owner escrow account should have received the funds")
+				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow account should have received the funds")
 
 				daoTotalBalanceAfterFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -1141,8 +1201,9 @@ var _ = Describe("United Contributors DAO", func() {
 			})
 
 			It("successfully transferred - NewMsgTransferOwnership", func() {
-				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), daoModuleAcc.GetAddress())
-				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "dao module account bank balance should be empty")
+				ownerEscrowAddr := types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				daoModuleAddressBankBalanceBeforeFund := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), ownerEscrowAddr)
+				Expect(daoModuleAddressBankBalanceBeforeFund.IsZero()).To(BeTrue(), "owner escrow account bank balance should be empty")
 
 				daoTotalBalanceBeforeFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil(), "query should have succeed")
@@ -1174,10 +1235,15 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Check balances after funding TX
-				daoModuleAddressBankBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.Add(twoIslm.Amount).String()))
-				daoModuleAddressBankBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()))
+				// Check individual escrow addresses
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				newOwnerEscrowAddr := types.GetEscrowAddress(newOwnerAddr)
+				ownerEscrowBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(ownerEscrowBalanceAfterFundIslm.Amount.String()).To(Equal(oneIslm.Amount.String()), "owner escrow should have oneIslm")
+				newOwnerEscrowBalanceAfterFundIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, oneIslm.Denom)
+				Expect(newOwnerEscrowBalanceAfterFundIslm.Amount.String()).To(Equal(twoIslm.Amount.String()), "new owner escrow should have twoIslm")
+				ownerEscrowBalanceAfterFundLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(ownerEscrowBalanceAfterFundLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "owner escrow should have fiveLiquid1")
 
 				daoTotalBalanceAfterFund, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})
 				Expect(err).To(BeNil())
@@ -1221,11 +1287,18 @@ var _ = Describe("United Contributors DAO", func() {
 				s.Require().NoError(s.network.NextBlock())
 
 				// Checks after transfer ownership
-				// Module bank balance shouldn't change
-				daoModuleAddressBankBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), oneIslm.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferIslm.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundIslm.Amount.String()))
-				daoModuleAddressBankBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), daoModuleAcc.GetAddress(), fiveLiquid1.Denom)
-				Expect(daoModuleAddressBankBalanceAfterTransferLiquid.Amount.String()).To(Equal(daoModuleAddressBankBalanceAfterFundLiquid.Amount.String()))
+				// Total escrow balance shouldn't change (sum of all escrow addresses)
+				// Owner escrow should be empty, new owner escrow should have all funds
+				ownerEscrowAddr = types.GetEscrowAddress(s.keyring.GetAccAddr(0))
+				newOwnerEscrowAddr = types.GetEscrowAddress(newOwnerAddr)
+				ownerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, oneIslm.Denom)
+				Expect(ownerEscrowBalanceAfterTransferIslm.IsZero()).To(BeTrue(), "owner escrow should be empty after full transfer")
+				newOwnerEscrowBalanceAfterTransferIslm := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, oneIslm.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferIslm.Amount.String()).To(Equal(oneIslm.Add(twoIslm).Amount.String()), "new owner escrow should have all aISLM")
+				ownerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), ownerEscrowAddr, fiveLiquid1.Denom)
+				Expect(ownerEscrowBalanceAfterTransferLiquid.IsZero()).To(BeTrue(), "owner escrow should be empty after full transfer")
+				newOwnerEscrowBalanceAfterTransferLiquid := s.network.App.BankKeeper.GetBalance(s.network.GetContext(), newOwnerEscrowAddr, fiveLiquid1.Denom)
+				Expect(newOwnerEscrowBalanceAfterTransferLiquid.Amount.String()).To(Equal(fiveLiquid1.Amount.String()), "new owner escrow should have all aLIQUID")
 
 				// Module internal total balance shouldn't change
 				daoTotalBalanceAfterTransfer, err := s.network.GetUCDAOClient().TotalBalance(s.network.GetContext(), &types.QueryTotalBalanceRequest{})

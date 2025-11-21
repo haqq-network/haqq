@@ -430,3 +430,130 @@ func TestHolders(t *testing.T) {
 		})
 	}
 }
+
+func TestEscrowAddress(t *testing.T) {
+	var (
+		ctx    sdk.Context
+		nw     *network.UnitTestNetwork
+		kr     keyring.Keyring
+		qc     types.QueryClient
+		req    *types.QueryEscrowAddressRequest
+		expRes *types.QueryEscrowAddressResponse
+	)
+
+	testCases := []struct {
+		name        string
+		malleate    func()
+		expPass     bool
+		errContains string
+	}{
+		{
+			name: "nil req",
+			malleate: func() {
+				req = nil
+			},
+			expPass:     false,
+			errContains: "invalid address",
+		},
+		{
+			name: "invalid bech32 address",
+			malleate: func() {
+				req = &types.QueryEscrowAddressRequest{
+					Address: "haqq11",
+				}
+			},
+			expPass:     false,
+			errContains: "decoding bech32 failed: invalid bech32 string length 6",
+		},
+		{
+			name: "invalid hex address",
+			malleate: func() {
+				req = &types.QueryEscrowAddressRequest{
+					Address: "0xinvalid",
+				}
+			},
+			expPass:     false,
+			errContains: "invalid address",
+		},
+		{
+			name: "valid bech32 address",
+			malleate: func() {
+				accAddr := kr.GetAccAddr(0)
+				escrowAddr := types.GetEscrowAddress(accAddr)
+				req = &types.QueryEscrowAddressRequest{
+					Address: accAddr.String(),
+				}
+				expRes = &types.QueryEscrowAddressResponse{
+					EscrowAddress: escrowAddr.String(),
+				}
+			},
+			expPass: true,
+		},
+		{
+			name: "valid hex address",
+			malleate: func() {
+				accAddr := kr.GetAccAddr(0)
+				escrowAddr := types.GetEscrowAddress(accAddr)
+				req = &types.QueryEscrowAddressRequest{
+					Address: kr.GetAddr(0).String(),
+				}
+				expRes = &types.QueryEscrowAddressResponse{
+					EscrowAddress: escrowAddr.String(),
+				}
+			},
+			expPass: true,
+		},
+		{
+			name: "valid bech32 address - different account",
+			malleate: func() {
+				accAddr := kr.GetAccAddr(1)
+				escrowAddr := types.GetEscrowAddress(accAddr)
+				req = &types.QueryEscrowAddressRequest{
+					Address: accAddr.String(),
+				}
+				expRes = &types.QueryEscrowAddressResponse{
+					EscrowAddress: escrowAddr.String(),
+				}
+			},
+			expPass: true,
+		},
+		{
+			name: "valid hex address - different account",
+			malleate: func() {
+				accAddr := kr.GetAccAddr(1)
+				escrowAddr := types.GetEscrowAddress(accAddr)
+				req = &types.QueryEscrowAddressRequest{
+					Address: kr.GetAddr(1).String(),
+				}
+				expRes = &types.QueryEscrowAddressResponse{
+					EscrowAddress: escrowAddr.String(),
+				}
+			},
+			expPass: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Case %s", tc.name), func(t *testing.T) {
+			kr = keyring.New(2)
+			nw = network.NewUnitTestNetwork(
+				network.WithPreFundedAccounts(kr.GetAllAccAddrs()...),
+			)
+			ctx = nw.GetContext()
+			qc = nw.GetUCDAOClient()
+
+			tc.malleate()
+
+			require.NoError(t, nw.NextBlock())
+
+			res, err := qc.EscrowAddress(ctx, req)
+			if tc.expPass {
+				require.NoError(t, err)
+				require.Equal(t, expRes, res)
+			} else {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tc.errContains)
+			}
+		})
+	}
+}
