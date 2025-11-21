@@ -31,7 +31,8 @@ func GetQueryCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		GetBalancesCmd(),
+		GetCmdQueryBalance(),
+		GetCmdQueryAllBalances(),
 		GetCmdQueryTotalBalance(),
 		GetCmdQueryEscrowAddress(),
 		GetCmdQueryHolders(),
@@ -41,13 +42,13 @@ func GetQueryCmd() *cobra.Command {
 	return cmd
 }
 
-func GetBalanceCmd() *cobra.Command {
+func GetCmdQueryBalance() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "balance [address] [denom]",
-		Short: "Query the balance of a given address for a given denomination",
+		Short: "Query the balance of a given address for a given denomination in the United Contributors DAO",
 		Args:  cobra.ExactArgs(2),
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Query the balance of a given address for a given denomination.
+			fmt.Sprintf(`Query the balance of a given address for a given denomination in the United Contributors DAO.
 
 Example:
   $ %s query %s balance [address] [denom]
@@ -80,10 +81,11 @@ Example:
 		},
 	}
 
+	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
 }
 
-func GetBalancesCmd() *cobra.Command {
+func GetCmdQueryAllBalances() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "balances [address]",
 		Short: "Query for account balances in the United Contributors DAO by address",
@@ -198,10 +200,10 @@ Example:
 func GetCmdQueryEscrowAddress() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "escrow-address [address]",
-		Short: "Query the escrow address for a given standard wallet address",
+		Short: "Query the escrow address for a given standard wallet address in the United Contributors DAO",
 		Args:  cobra.ExactArgs(1),
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Query the escrow address for a given standard wallet address.
+			fmt.Sprintf(`Query the escrow address for a given standard wallet address in the United Contributors DAO.
 
 Example:
   $ %s query %s escrow-address [address]
