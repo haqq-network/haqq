@@ -22,8 +22,8 @@ var _ Keeper = (*BaseKeeper)(nil)
 
 // Keeper defines a module interface that facilitates liquid vesting operations.
 type Keeper interface {
-	Liquidate(ctx sdk.Context, liquidateFrom string, liquidateTo string, amount sdk.Coin) (*types.MsgLiquidateResponse, error)
-	Redeem(ctx sdk.Context, redeemFrom string, redeemTo string, amount sdk.Coin) (*types.MsgRedeemResponse, error)
+	Liquidate(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) (*types.MsgLiquidateResponse, error)
+	Redeem(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) error
 
 	// Params methods
 	GetParams(ctx sdk.Context) types.Params
@@ -86,7 +86,7 @@ func NewKeeper(
 }
 
 // Liquidate liquidates specified amount of token locked in vesting into liquid token
-func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFrom string, liquidateTo string, amount sdk.Coin) (*types.MsgLiquidateResponse, error) {
+func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddress, liquidateToAddress sdk.AccAddress, amount sdk.Coin) (*types.MsgLiquidateResponse, error) {
 	if !k.IsLiquidVestingEnabled(ctx) {
 		return nil, errorsmod.Wrapf(types.ErrModuleIsDisabled, "liquid vesting module is disabled")
 	}
@@ -102,17 +102,13 @@ func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFrom string, liquidateTo
 		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "unable to liquidate amount lesser than %d", minLiquidation)
 	}
 
+	liquidateFrom := liquidateFromAddress.String()
+	liquidateTo := liquidateToAddress.String()
+
 	// get account
-	liquidateFromAddress := sdk.MustAccAddressFromBech32(liquidateFrom)
 	liquidateFromAccount := k.accountKeeper.GetAccount(ctx, liquidateFromAddress)
 	if liquidateFromAccount == nil {
 		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", liquidateFrom)
-	}
-
-	// set to address
-	liquidateToAddress := liquidateFromAddress
-	if liquidateTo != liquidateFrom {
-		liquidateToAddress = sdk.MustAccAddressFromBech32(liquidateTo)
 	}
 
 	// check from account is vesting account
@@ -240,57 +236,54 @@ func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFrom string, liquidateTo
 }
 
 // Redeem redeems specified amount of liquid token into original locked token and adds them to account
-func (k BaseKeeper) Redeem(ctx sdk.Context, redeemFrom string, redeemTo string, amount sdk.Coin) (*types.MsgRedeemResponse, error) {
+func (k BaseKeeper) Redeem(ctx sdk.Context, fromAddress sdk.AccAddress, toAddress sdk.AccAddress, amount sdk.Coin) error {
 	if !k.IsLiquidVestingEnabled(ctx) {
-		return nil, errorsmod.Wrapf(types.ErrModuleIsDisabled, "liquid vesting module is disabled")
+		return errorsmod.Wrapf(types.ErrModuleIsDisabled, "liquid vesting module is disabled")
 	}
 
-	fromAddress := sdk.MustAccAddressFromBech32(redeemFrom)
 	fromAccount := k.accountKeeper.GetAccount(ctx, fromAddress)
 	if fromAccount == nil {
-		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", redeemFrom)
+		return errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", fromAddress.String())
 	}
-
-	toAddress := sdk.MustAccAddressFromBech32(redeemTo)
 
 	// query liquid token info
 	liquidDenom, found := k.GetDenom(ctx, amount.Denom)
 	if !found {
-		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "liquidDenom %s does not exist", amount.Denom)
+		return errorsmod.Wrapf(errortypes.ErrNotFound, "liquidDenom %s does not exist", amount.Denom)
 	}
 
 	// get token pair
 	tokenPairID := k.erc20Keeper.GetTokenPairID(ctx, amount.Denom)
 	if len(tokenPairID) == 0 {
-		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", amount.Denom)
+		return errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", amount.Denom)
 	}
 	tokenPair, found := k.erc20Keeper.GetTokenPair(ctx, tokenPairID)
 	if !found || !tokenPair.Enabled {
-		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", amount.Denom)
+		return errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", amount.Denom)
 	}
 
 	// check fromAccount has enough liquid token in balance
 	if balance := k.bankKeeper.GetBalance(ctx, fromAddress, amount.Denom); balance.IsLT(amount) {
-		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "from account has insufficient balance")
+		return errorsmod.Wrapf(types.ErrRedeemFailed, "from account has insufficient balance")
 	}
 
 	// transfer liquid denom to liquidvesting module
 	err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, fromAddress, types.ModuleName, sdk.NewCoins(amount))
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to transfer liquid token to module: %s", err.Error())
+		return errorsmod.Wrapf(types.ErrRedeemFailed, "failed to transfer liquid token to module: %s", err.Error())
 	}
 
 	// burn liquid token specified amount
 	err = k.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(amount))
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to burn liquid tokens: %s", err.Error())
+		return errorsmod.Wrapf(types.ErrRedeemFailed, "failed to burn liquid tokens: %s", err.Error())
 	}
 
 	// subtract burned amount from token schedule
 	originalDenomCoin := sdk.NewCoin(liquidDenom.GetOriginalDenom(), amount.Amount)
 	decreasedPeriods, diffPeriods, err := types.SubtractAmountFromPeriods(liquidDenom.LockupPeriods, originalDenomCoin)
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to calculate new liquid denom schedule: %s", err.Error())
+		return errorsmod.Wrapf(types.ErrRedeemFailed, "failed to calculate new liquid denom schedule: %s", err.Error())
 	}
 	// save modified token schedule
 	if decreasedPeriods.TotalAmount().IsZero() {
@@ -301,20 +294,20 @@ func (k BaseKeeper) Redeem(ctx sdk.Context, redeemFrom string, redeemTo string, 
 				Token:     amount.Denom,
 			})
 			if err != nil {
-				return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to disable conversion: %s", err.Error())
+				return errorsmod.Wrapf(types.ErrRedeemFailed, "failed to disable conversion: %s", err.Error())
 			}
 		}
 	} else {
 		err = k.UpdateDenomPeriods(ctx, liquidDenom.GetBaseDenom(), decreasedPeriods)
 		if err != nil {
-			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to update liquid denom schedule: %s", err.Error())
+			return errorsmod.Wrapf(types.ErrRedeemFailed, "failed to update liquid denom schedule: %s", err.Error())
 		}
 	}
 
 	// transfer original token to account
 	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, toAddress, sdk.NewCoins(originalDenomCoin))
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to transfer original denom to target account: %s", err.Error())
+		return errorsmod.Wrapf(types.ErrRedeemFailed, "failed to transfer original denom to target account: %s", err.Error())
 	}
 
 	upcomingPeriods := types.ExtractUpcomingPeriods(
@@ -328,13 +321,13 @@ func (k BaseKeeper) Redeem(ctx sdk.Context, redeemFrom string, redeemTo string, 
 	if len(upcomingPeriods) > 0 {
 		funder := k.accountKeeper.GetModuleAddress(types.ModuleName)
 		if funder == nil {
-			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to get funder address")
+			return errorsmod.Wrapf(types.ErrRedeemFailed, "failed to get funder address")
 		}
 
 		// check if toAddress already a vesting account to apply current funder
 		toAccount := k.accountKeeper.GetAccount(ctx, toAddress)
 		if toAccount == nil {
-			return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", toAddress)
+			return errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", toAddress.String())
 		}
 		toVestingAcc, isClawback := toAccount.(*vestingtypes.ClawbackVestingAccount)
 		if isClawback {
@@ -352,7 +345,7 @@ func (k BaseKeeper) Redeem(ctx sdk.Context, redeemFrom string, redeemTo string, 
 			true,
 		)
 		if err != nil {
-			return nil, errorsmod.Wrapf(types.ErrRedeemFailed, "failed to apply vesting schedule to account %s: %s", toAddress, err.Error())
+			return errorsmod.Wrapf(types.ErrRedeemFailed, "failed to apply vesting schedule to account %s: %s", toAddress, err.Error())
 		}
 	}
 
@@ -360,12 +353,12 @@ func (k BaseKeeper) Redeem(ctx sdk.Context, redeemFrom string, redeemTo string, 
 		sdk.Events{
 			sdk.NewEvent(
 				types.EventTypeRedeem,
-				sdk.NewAttribute(sdk.AttributeKeySender, redeemFrom),
-				sdk.NewAttribute(types.AttributeKeyDestination, redeemTo),
+				sdk.NewAttribute(sdk.AttributeKeySender, fromAddress.String()),
+				sdk.NewAttribute(types.AttributeKeyDestination, toAddress.String()),
 				sdk.NewAttribute(types.AttributeKeyAmount, amount.String()),
 			),
 		},
 	)
 
-	return &types.MsgRedeemResponse{}, nil
+	return nil
 }

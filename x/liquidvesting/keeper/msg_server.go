@@ -28,7 +28,14 @@ func (k msgServer) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*t
 		return nil, err
 	}
 
-	return k.Keeper.Liquidate(ctx, msg.LiquidateFrom, msg.LiquidateTo, msg.Amount)
+	// already validated in ValidateBasic
+	liquidateFromAddress := sdk.MustAccAddressFromBech32(msg.LiquidateFrom)
+	liquidateToAddress := liquidateFromAddress
+	if msg.LiquidateTo != msg.LiquidateFrom {
+		liquidateToAddress = sdk.MustAccAddressFromBech32(msg.LiquidateTo)
+	}
+
+	return k.Keeper.Liquidate(ctx, liquidateFromAddress, liquidateToAddress, msg.Amount)
 }
 
 // Redeem redeems specified amount of liquid token into original locked token and adds them to account
@@ -39,5 +46,13 @@ func (k msgServer) Redeem(goCtx context.Context, msg *types.MsgRedeem) (*types.M
 		return nil, err
 	}
 
-	return k.Keeper.Redeem(ctx, msg.RedeemFrom, msg.RedeemTo, msg.Amount)
+	// already validated in ValidateBasic
+	fromAddress := sdk.MustAccAddressFromBech32(msg.RedeemFrom)
+	toAddress := sdk.MustAccAddressFromBech32(msg.RedeemTo)
+
+	if err := k.Keeper.Redeem(ctx, fromAddress, toAddress, msg.Amount); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgRedeemResponse{}, nil
 }

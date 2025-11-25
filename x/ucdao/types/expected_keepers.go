@@ -51,7 +51,7 @@ type BankKeeper interface {
 
 // LiquidVestingKeeper defines the expected interface needed to retrieve liquid vesting balances.
 type LiquidVestingKeeper interface {
-	Redeem(ctx context.Context, addr sdk.AccAddress, amt sdk.Coin) error
+	Redeem(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) error
 }
 
 // EthiqKeeper defines the expected interface needed to retrieve ethiq balances.
