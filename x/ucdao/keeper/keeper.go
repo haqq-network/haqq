@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/ucdao/types"
 )
@@ -31,9 +32,11 @@ type Keeper interface {
 	GetAccountBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 	GetAccountsBalances(ctx sdk.Context) []types.Balance
 	GetHolders(ctx sdk.Context) []sdk.AccAddress
+	IsHolder(ctx sdk.Context, addr sdk.AccAddress) bool
 
 	Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
 	TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress, amount sdk.Coins) (sdk.Coins, error)
+	ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, ethiqAmount, maxISLMAmount sdkmath.Int) error
 
 	// grpc query endpoints
 	Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error)
@@ -53,8 +56,10 @@ type BaseKeeper struct {
 	cdc      codec.BinaryCodec
 	storeKey storetypes.StoreKey
 
-	ak types.AccountKeeper
-	bk types.BankKeeper
+	ak     types.AccountKeeper
+	bk     types.BankKeeper
+	lvk    types.LiquidVestingKeeper
+	ethiqK types.EthiqKeeper
 }
 
 func NewBaseKeeper(
@@ -62,6 +67,8 @@ func NewBaseKeeper(
 	storeKey storetypes.StoreKey,
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
+	lvk types.LiquidVestingKeeper,
+	ethiqK types.EthiqKeeper,
 	authority string,
 ) BaseKeeper {
 	if _, err := sdk.AccAddressFromBech32(authority); err != nil {
@@ -74,6 +81,8 @@ func NewBaseKeeper(
 		storeKey: storeKey,
 		ak:       ak,
 		bk:       bk,
+		lvk:      lvk,
+		ethiqK:   ethiqK,
 	}
 }
 
@@ -136,6 +145,57 @@ func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAd
 	k.setHoldersIndex(ctx, owner)
 
 	return amount, nil
+}
+
+// ConvertToEthiq converts ISLM tokens to ethiq tokens for a holder.
+func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, ethiqAmount, maxISLMAmount sdkmath.Int) error {
+	if !k.IsModuleEnabled(ctx) {
+		return types.ErrModuleDisabled
+	}
+
+	// Get spender's escrow address
+	escrowAddr := types.GetEscrowAddress(sender)
+
+	// Validation: user should be listed as one of the holders in ucdao module
+	if !k.IsHolder(ctx, escrowAddr) {
+		return types.ErrNotEligible
+	}
+
+	// Get spender's ISLM balance
+	spenderISLMBalance := k.GetBalance(ctx, sender, utils.BaseDenom)
+	if spenderISLMBalance.Amount.LT(maxISLMAmount) {
+		// calculate the necessary amount of ISLM to redeem from liquid vesting module
+		necessaryISLMAmount := maxISLMAmount.Sub(spenderISLMBalance.Amount)
+
+		// Should proceed redeem from liquid vesting module
+		err := k.lvk.Redeem(ctx, sender, sdk.NewCoin(utils.BaseDenom, necessaryISLMAmount))
+		if err != nil {
+			return sdkerrors.Wrapf(err, "failed to redeem ISLM from liquid vesting module")
+		}
+
+		// should fund redeemed sISLM to ucdao module escrow address
+		err = k.Fund(ctx, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, necessaryISLMAmount)), sender)
+		if err != nil {
+			return sdkerrors.Wrapf(err, "failed to fund redeemed ISLM to ucdao module escrow address")
+		}
+	}
+
+	requiredISLMAmount, err := k.ethiqK.ConvertToEthiq(ctx, ethiqAmount, maxISLMAmount, sender, receiver)
+	if err != nil {
+		return sdkerrors.Wrapf(err, "failed to convert amount of aISLM to ethiq")
+	}
+
+	// Update total balance tracking for ISLM
+	currentTotalEscrow := k.GetTotalBalanceOf(ctx, utils.BaseDenom)
+
+	// should remove required ISLAM amount instead of maxISLM amount
+	newTotalEscrow := currentTotalEscrow.Sub(sdk.NewCoin(utils.BaseDenom, requiredISLMAmount))
+	k.setTotalBalanceOfCoin(ctx, newTotalEscrow)
+
+	// Update holders index
+	k.setHoldersIndex(ctx, sender)
+
+	return nil
 }
 
 // Logger returns a module-specific logger.

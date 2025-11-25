@@ -13,6 +13,7 @@ const (
 	TypeMsgTransferOwnership           = "transfer_ownership"
 	TypeMsgTransferOwnershipWithRatio  = "transfer_ownership_with_ratio"
 	TypeMsgTransferOwnershipWithAmount = "transfer_ownership_with_amount"
+	TypeMsgConvertToEthiq              = "convert_to_ethiq"
 )
 
 // Verify interface at compile time
@@ -21,6 +22,7 @@ var (
 	_ sdk.Msg = (*MsgTransferOwnership)(nil)
 	_ sdk.Msg = (*MsgTransferOwnershipWithRatio)(nil)
 	_ sdk.Msg = (*MsgTransferOwnershipWithAmount)(nil)
+	_ sdk.Msg = (*MsgConvertToEthiq)(nil)
 )
 
 // NewMsgFund returns a new MsgFund with a sender and
@@ -234,5 +236,53 @@ func (msg MsgTransferOwnershipWithAmount) ValidateBasic() error {
 	if !msg.Amount.IsValid() {
 		return sdkerrors.ErrInvalidCoins.Wrapf("invalid amount: %s", msg.Amount)
 	}
+	return nil
+}
+
+// NewMsgConvertToEthiq returns a new MsgConvertToEthiq with sender, amount, maxISLMAmount, and receiver.
+func NewMsgConvertToEthiq(sender sdk.AccAddress, amount math.Int, maxISLMAmount math.Int, receiver sdk.AccAddress) *MsgConvertToEthiq {
+	return &MsgConvertToEthiq{
+		Sender:        sender.String(),
+		Amount:        amount,
+		MaxIslmAmount: maxISLMAmount,
+		Receiver:      receiver.String(),
+	}
+}
+
+// Route returns the MsgConvertToEthiq message route.
+func (msg MsgConvertToEthiq) Route() string { return ModuleName }
+
+// Type returns the MsgConvertToEthiq message type.
+func (msg MsgConvertToEthiq) Type() string { return TypeMsgConvertToEthiq }
+
+// GetSigners returns the signer addresses that are expected to sign the result
+// of GetSignBytes.
+func (msg MsgConvertToEthiq) GetSigners() []sdk.AccAddress {
+	sender, _ := sdk.AccAddressFromBech32(msg.Sender)
+	return []sdk.AccAddress{sender}
+}
+
+// GetSignBytes returns the raw bytes for a MsgConvertToEthiq message that
+// the expected signer needs to sign.
+func (msg MsgConvertToEthiq) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic performs basic MsgConvertToEthiq message validation.
+func (msg MsgConvertToEthiq) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Sender); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid sender address: %s", err)
+	}
+	if _, err := sdk.AccAddressFromBech32(msg.Receiver); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid receiver address: %s", err)
+	}
+	if msg.Amount.IsZero() {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, "amount must be non-zero")
+	}
+	if msg.MaxIslmAmount.IsZero() {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, "max ISLM amount must be non-zero")
+	}
+
 	return nil
 }

@@ -184,9 +184,10 @@ type DaoInputs struct {
 	Cdc    codec.Codec
 	Key    *store.KVStoreKey
 
-	AccountKeeper types.AccountKeeper
-	BankKeeper    types.BankKeeper
-
+	AccountKeeper       types.AccountKeeper
+	BankKeeper          types.BankKeeper
+	LiquidVestingKeeper types.LiquidVestingKeeper
+	EthiqKeeper         types.EthiqKeeper
 	// LegacySubspace is used solely for migration of x/params managed parameters
 	LegacySubspace exported.Subspace `optional:"true"`
 }
@@ -210,6 +211,8 @@ func ProvideModule(in DaoInputs) DaoOutputs {
 		in.Key,
 		in.AccountKeeper,
 		in.BankKeeper,
+		in.LiquidVestingKeeper,
+		in.EthiqKeeper,
 		authority.String(),
 	)
 	m := NewAppModule(in.Cdc, daoKeeper, in.LegacySubspace)

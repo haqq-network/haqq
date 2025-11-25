@@ -528,7 +528,7 @@ func NewHaqq(
 	)
 
 	app.DaoKeeper = ucdaokeeper.NewBaseKeeper(
-		appCodec, keys[ucdaotypes.StoreKey], app.AccountKeeper, app.BankKeeper, authAddr,
+		appCodec, keys[ucdaotypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.LiquidVestingKeeper, authAddr,
 	)
 
 	// Initialize the packet forward middleware Keeper
