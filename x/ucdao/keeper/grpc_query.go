@@ -109,3 +109,27 @@ func (k BaseKeeper) Params(ctx context.Context, req *types.QueryParamsRequest) (
 
 	return &types.QueryParamsResponse{Params: params}, nil
 }
+
+// EscrowAddress implements the Query/EscrowAddress gRPC method
+func (k BaseKeeper) EscrowAddress(ctx context.Context, req *types.QueryEscrowAddressRequest) (*types.QueryEscrowAddressResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	var (
+		address []byte
+		err     error
+	)
+
+	if common.IsHexAddress(req.Address) {
+		hexAddr := common.HexToAddress(req.Address)
+		address = hexAddr.Bytes()
+	} else {
+		address, err = sdk.AccAddressFromBech32(req.Address)
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
+	}
+
+	return &types.QueryEscrowAddressResponse{EscrowAddress: types.GetEscrowAddress(address).String()}, nil
+}

@@ -41,7 +41,6 @@ func Migrate1to2(
 			return errorsmod.Wrapf(err, "failed to unmarshal balance from balances store: account %s", addr.String())
 		}
 
-		// TODO Add GetEscrowAddress to CLI
 		escrow := types.GetEscrowAddress(addr)
 
 		// Transfer coins from module to escrow account

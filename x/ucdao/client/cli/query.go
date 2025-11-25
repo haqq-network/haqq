@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -31,14 +32,61 @@ func GetQueryCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		GetBalancesCmd(),
+		GetCmdQueryBalance(),
+		GetCmdQueryAllBalances(),
 		GetCmdQueryTotalBalance(),
+		GetCmdQueryEscrowAddress(),
+		GetCmdQueryHolders(),
+		GetCmdQueryParams(),
 	)
 
 	return cmd
 }
 
-func GetBalancesCmd() *cobra.Command {
+func GetCmdQueryBalance() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "balance [address] [denom]",
+		Short: "Query the balance of a given address for a given denomination in the United Contributors DAO",
+		Args:  cobra.ExactArgs(2),
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the balance of a given address for a given denomination in the United Contributors DAO.
+
+Example:
+  $ %s query %s balance [address] [denom]
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			addr, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			denom := args[1]
+
+			res, err := queryClient.Balance(ctx, &types.QueryBalanceRequest{Address: addr.String(), Denom: denom})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res.Balance)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+func GetCmdQueryAllBalances() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "balances [address]",
 		Short: "Query for account balances in the United Contributors DAO by address",
@@ -146,6 +194,122 @@ Example:
 
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "all supply totals")
+
+	return cmd
+}
+
+func GetCmdQueryEscrowAddress() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "escrow-address [address]",
+		Short: "Query the escrow address for a given wallet address in the United Contributors DAO",
+		Args:  cobra.ExactArgs(1),
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the escrow address for a given wallet address in the United Contributors DAO.
+
+Example:
+  $ %s query %s escrow-address [address]
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			if args[0] == "" {
+				return errors.New("address is required and cannot be empty")
+			}
+
+			res, err := queryClient.EscrowAddress(ctx, &types.QueryEscrowAddressRequest{Address: args[0]})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	return cmd
+}
+
+func GetCmdQueryHolders() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "holders",
+		Short: "Query the holders of the United Contributors DAO",
+		Args:  cobra.NoArgs,
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the holders of the United Contributors DAO.
+
+Example:
+  $ %s query %s holders
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			res, err := queryClient.Holders(ctx, &types.QueryHoldersRequest{Pagination: pageReq})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "all holders")
+
+	return cmd
+}
+
+func GetCmdQueryParams() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "params",
+		Short: "Query the parameters of the United Contributors DAO module",
+		Args:  cobra.NoArgs,
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query the parameters of the United Contributors DAO module.
+
+Example:
+  $ %s query %s params
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			ctx := cmd.Context()
+			res, err := queryClient.Params(ctx, &types.QueryParamsRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
 
 	return cmd
 }

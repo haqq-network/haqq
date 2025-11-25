@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"cosmossdk.io/core/address"
-
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -47,4 +47,14 @@ type BankKeeper interface {
 	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 
 	BlockedAddr(addr sdk.AccAddress) bool
+}
+
+// LiquidVestingKeeper defines the expected interface needed to retrieve liquid vesting balances.
+type LiquidVestingKeeper interface {
+	Redeem(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) error
+}
+
+// EthiqKeeper defines the expected interface needed to retrieve ethiq balances.
+type EthiqKeeper interface {
+	ConvertToEthiq(ctx context.Context, ethiqAmount, maxISLMAmount sdkmath.Int, sender, receiver sdk.AccAddress) (sdkmath.Int, error)
 }

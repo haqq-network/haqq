@@ -231,8 +231,7 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			suite.T().Logf("spendable coins: %s", spendable.String())
 			suite.T().Logf("liquidation amount: %s", tc.amount.String())
 
-			msg := types.NewMsgLiquidate(fromAddr, toAddr, tc.amount)
-			resp, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, msg)
+			resp, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, tc.amount)
 			expResponse := &types.MsgLiquidateResponse{
 				Minted: sdk.NewCoin(types.DenomBaseNameFromID(0), tc.amount.Amount),
 			}
@@ -301,8 +300,7 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.network.App.AccountKeeper.SetAccount(ctx, clawbackAccount)
 
 	// FIRST LIQUIDATION
-	msg := types.NewMsgLiquidate(fromAddr, toAddr, third[0])
-	resp, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, msg)
+	resp, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, third[0])
 	expResponse := &types.MsgLiquidateResponse{
 		Minted: sdk.NewCoin("aLIQUID0", third[0].Amount),
 	}
@@ -340,8 +338,7 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.Require().Equal(third[0].Amount.String(), balanceOfLiquidTokeErc20Pair0.String())
 
 	// SECOND LIQUIDATION
-	msg = types.NewMsgLiquidate(fromAddr, toAddr, third[0])
-	resp, err = suite.network.App.LiquidVestingKeeper.Liquidate(ctx, msg)
+	resp, err = suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, third[0])
 	expResponse = &types.MsgLiquidateResponse{
 		Minted: sdk.NewCoin("aLIQUID1", third[0].Amount),
 	}
@@ -598,13 +595,10 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			tc.malleate()
 
 			redeemCoin := sdk.NewInt64Coin("aLIQUID0", tc.redeemAmount)
-			msg := types.NewMsgRedeem(fromAddr, toAddr, redeemCoin)
-			resp, err := suite.network.App.LiquidVestingKeeper.Redeem(ctx, msg)
-			expResponse := &types.MsgRedeemResponse{}
+			err := suite.network.App.LiquidVestingKeeper.Redeem(ctx, fromAddr, toAddr, redeemCoin)
 			if tc.expectPass {
 				// check returns
 				suite.Require().NoError(err)
-				suite.Require().Equal(expResponse, resp)
 
 				// check target account has original tokens
 				toAcc := suite.network.App.AccountKeeper.GetAccount(ctx, toAddr)

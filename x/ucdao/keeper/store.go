@@ -42,3 +42,10 @@ func (k BaseKeeper) setHoldersIndex(ctx sdk.Context, addr sdk.AccAddress) {
 		holdersStore.Set(addrKey, []byte{0})
 	}
 }
+
+// IsHolder checks if an address is registered as a holder in the ucdao module.
+func (k BaseKeeper) IsHolder(ctx sdk.Context, addr sdk.AccAddress) bool {
+	holdersStore := k.getHoldersStore(ctx)
+	addrKey := address.MustLengthPrefix(addr)
+	return holdersStore.Has(addrKey)
+}
