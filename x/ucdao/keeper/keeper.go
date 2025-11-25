@@ -59,7 +59,7 @@ type BaseKeeper struct {
 	ak     types.AccountKeeper
 	bk     types.BankKeeper
 	lvk    types.LiquidVestingKeeper
-	ethiqK types.EthiqKeeper
+	ethiqk types.EthiqKeeper
 }
 
 func NewBaseKeeper(
@@ -68,7 +68,7 @@ func NewBaseKeeper(
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
 	lvk types.LiquidVestingKeeper,
-	ethiqK types.EthiqKeeper,
+	ethiqk types.EthiqKeeper,
 	authority string,
 ) BaseKeeper {
 	if _, err := sdk.AccAddressFromBech32(authority); err != nil {
@@ -82,7 +82,7 @@ func NewBaseKeeper(
 		ak:       ak,
 		bk:       bk,
 		lvk:      lvk,
-		ethiqK:   ethiqK,
+		ethiqk:   ethiqk,
 	}
 }
 
@@ -173,14 +173,14 @@ func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddr
 			return sdkerrors.Wrapf(err, "failed to redeem ISLM from liquid vesting module")
 		}
 
-		// should fund redeemed sISLM to ucdao module escrow address
+		// Should fund redeemed aISLM to ucdao module escrow address
 		err = k.Fund(ctx, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, necessaryISLMAmount)), sender)
 		if err != nil {
 			return sdkerrors.Wrapf(err, "failed to fund redeemed ISLM to ucdao module escrow address")
 		}
 	}
 
-	requiredISLMAmount, err := k.ethiqK.ConvertToEthiq(ctx, ethiqAmount, maxISLMAmount, sender, receiver)
+	requiredISLMAmount, err := k.ethiqk.ConvertToEthiq(ctx, ethiqAmount, maxISLMAmount, sender, receiver)
 	if err != nil {
 		return sdkerrors.Wrapf(err, "failed to convert amount of aISLM to ethiq")
 	}
