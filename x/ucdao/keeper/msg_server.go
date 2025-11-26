@@ -127,18 +127,18 @@ func (k msgServer) ConvertToEthiq(goCtx context.Context, msg *types.MsgConvertTo
 	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 	receiver := sdk.MustAccAddressFromBech32(msg.Receiver)
 
-	burntCoins, err := k.Keeper.ConvertToEthiq(ctx, sender, receiver, msg.Amount, msg.MaxIslmAmount)
+	burntCoin, err := k.Keeper.ConvertToEthiq(ctx, sender, receiver, msg.Amount, msg.MaxIslmAmount)
 	if err != nil {
 		return &types.MsgConvertToEthiqResponse{
-			BurntCoins: nil,
-			Success:    false,
-			Error:      err.Error(),
+			BurntCoin: sdk.Coin{},
+			Success:   false,
+			Error:     err.Error(),
 		}, nil
 	}
 
 	return &types.MsgConvertToEthiqResponse{
-		BurntCoins: burntCoins,
-		Success:    true,
-		Error:      "",
+		BurntCoin: burntCoin,
+		Success:   true,
+		Error:     "",
 	}, nil
 }

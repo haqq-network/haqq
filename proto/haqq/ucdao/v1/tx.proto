@@ -177,8 +177,8 @@ message MsgConvertToEthiq {
 
 // MsgConvertToEthiqResponse defines the Msg/ConvertToEthiq response type.
 message MsgConvertToEthiqResponse {
-  repeated cosmos.base.v1beta1.Coin burnt_coins = 1 [
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+  cosmos.base.v1beta1.Coin burnt_coin = 1 [
+    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
