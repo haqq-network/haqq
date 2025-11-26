@@ -22,7 +22,7 @@ var _ Keeper = (*BaseKeeper)(nil)
 
 // Keeper defines a module interface that facilitates liquid vesting operations.
 type Keeper interface {
-	Liquidate(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) (*types.MsgLiquidateResponse, error)
+	Liquidate(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) (sdk.Coin, string, error)
 	Redeem(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) error
 
 	// Params methods
@@ -86,20 +86,20 @@ func NewKeeper(
 }
 
 // Liquidate liquidates specified amount of token locked in vesting into liquid token
-func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddress, liquidateToAddress sdk.AccAddress, amount sdk.Coin) (*types.MsgLiquidateResponse, error) {
+func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddress, liquidateToAddress sdk.AccAddress, amount sdk.Coin) (sdk.Coin, string, error) {
 	if !k.IsLiquidVestingEnabled(ctx) {
-		return nil, errorsmod.Wrapf(types.ErrModuleIsDisabled, "liquid vesting module is disabled")
+		return sdk.Coin{}, "", errorsmod.Wrapf(types.ErrModuleIsDisabled, "liquid vesting module is disabled")
 	}
 
 	// check amount denom
 	if amount.Denom != utils.BaseDenom {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "unable to liquidate any other coin except aISLM")
+		return sdk.Coin{}, "", errorsmod.Wrapf(errortypes.ErrInvalidRequest, "unable to liquidate any other coin except aISLM")
 	}
 
 	// check amount
 	minLiquidation := k.GetParams(ctx).MinimumLiquidationAmount
 	if amount.IsLT(sdk.NewCoin(utils.BaseDenom, minLiquidation)) {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "unable to liquidate amount lesser than %d", minLiquidation)
+		return sdk.Coin{}, "", errorsmod.Wrapf(errortypes.ErrInvalidRequest, "unable to liquidate amount lesser than %d", minLiquidation)
 	}
 
 	liquidateFrom := liquidateFromAddress.String()
@@ -108,36 +108,36 @@ func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddre
 	// get account
 	liquidateFromAccount := k.accountKeeper.GetAccount(ctx, liquidateFromAddress)
 	if liquidateFromAccount == nil {
-		return nil, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", liquidateFrom)
+		return sdk.Coin{}, "", errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", liquidateFrom)
 	}
 
 	// check from account is vesting account
 	va, isClawback := liquidateFromAccount.(*vestingtypes.ClawbackVestingAccount)
 	if !isClawback {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s is regular nothing to liquidate", liquidateFrom)
+		return sdk.Coin{}, "", errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s is regular nothing to liquidate", liquidateFrom)
 	}
 
 	// check there is not vesting periods on the schedule
 	if !va.GetVestingCoins(ctx.BlockTime()).IsZero() {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s has vesting ongoing periods, unable to liquidate unvested coins", liquidateFrom)
+		return sdk.Coin{}, "", errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s has vesting ongoing periods, unable to liquidate unvested coins", liquidateFrom)
 	}
 
 	// check account has liquidation target denom locked in vesting
 	hasTargetDenom, lockedBalance := va.GetLockedUpCoins(ctx.BlockTime()).Find(amount.Denom)
 	if !(hasTargetDenom) {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s doesn't contain coin specified as liquidation target", liquidateFrom)
+		return sdk.Coin{}, "", errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s doesn't contain coin specified as liquidation target", liquidateFrom)
 	}
 
 	// validate current locked periods have sufficient amount to be liquidated
 	if lockedBalance.IsLT(amount) {
-		return nil, errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s doesn't have sufficient amount of target coin for liquidation", liquidateFrom)
+		return sdk.Coin{}, "", errorsmod.Wrapf(errortypes.ErrInvalidRequest, "account %s doesn't have sufficient amount of target coin for liquidation", liquidateFrom)
 	}
 
 	// calculate new schedule
 	upcomingPeriods := types.ExtractUpcomingPeriods(va.GetStartTime(), va.GetEndTime(), va.LockupPeriods, ctx.BlockTime().Unix())
 	decreasedPeriods, diffPeriods, err := types.SubtractAmountFromPeriods(upcomingPeriods, amount)
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to calculate new schedule: %s", err.Error())
+		return sdk.Coin{}, "", errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to calculate new schedule: %s", err.Error())
 	}
 	va.LockupPeriods = types.ReplacePeriodsTail(va.LockupPeriods, decreasedPeriods)
 	va.OriginalVesting = va.OriginalVesting.Sub(amount)
@@ -145,7 +145,7 @@ func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddre
 	// all vesting periods are completed at this point, so we can reduce amounts without additional extracting logic
 	decreasedVestingPeriods, _, err := types.SubtractAmountFromPeriods(va.VestingPeriods, amount)
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to calculate new schedule: %s", err.Error())
+		return sdk.Coin{}, "", errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to calculate new schedule: %s", err.Error())
 	}
 
 	va.VestingPeriods = types.ReplacePeriodsTail(va.VestingPeriods, decreasedVestingPeriods)
@@ -155,13 +155,13 @@ func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddre
 	// transfer liquidated amount to liquid vesting module account
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, liquidateFromAddress, types.ModuleName, sdk.NewCoins(amount))
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to transfer liquidated locked coins from account to module: %s", err.Error())
+		return sdk.Coin{}, "", errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to transfer liquidated locked coins from account to module: %s", err.Error())
 	}
 
 	diffPeriods[0].Length -= types.CurrentPeriodShift(va.StartTime.Unix(), ctx.BlockTime().Unix(), va.LockupPeriods)
 	liquidDenom, err := k.CreateDenom(ctx, amount.Denom, ctx.BlockTime().Unix(), diffPeriods)
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to create denom for liquid token: %s", err.Error())
+		return sdk.Coin{}, "", errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to create denom for liquid token: %s", err.Error())
 	}
 
 	// create new sdk denom for liquidated locked coins
@@ -187,14 +187,14 @@ func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddre
 	liquidTokenCoins := sdk.NewCoins(liquidTokenCoin)
 	err = k.bankKeeper.MintCoins(ctx, types.ModuleName, liquidTokenCoins)
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to mint liquid token: %s", err.Error())
+		return sdk.Coin{}, "", errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to mint liquid token: %s", err.Error())
 	}
 
 	k.bankKeeper.SetDenomMetaData(ctx, liquidTokenMetadata)
 
 	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, liquidateToAddress, liquidTokenCoins)
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to transfer liquid tokens to account %s", err.Error())
+		return sdk.Coin{}, "", errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to transfer liquid tokens to account %s", err.Error())
 	}
 
 	// bind newly created denom to erc20 token
@@ -202,7 +202,7 @@ func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddre
 	fakeIBCDenom := utils.ComputeIBCDenom(types.ModuleName, liquidTokenMetadata.Base, amount.Denom)
 	tokenPair, err := erc20types.NewTokenPairSTRv2(fakeIBCDenom)
 	if err != nil {
-		return nil, errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to create erc20 token pair: %s", err.Error())
+		return sdk.Coin{}, "", errorsmod.Wrapf(types.ErrLiquidationFailed, "failed to create erc20 token pair: %s", err.Error())
 	}
 	// Set real denom to token pair, so precompile could handle transfers properly
 	tokenPair.Denom = liquidTokenMetadata.Base
@@ -213,7 +213,7 @@ func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddre
 
 	err = k.erc20Keeper.EnableDynamicPrecompiles(ctx, tokenPair.GetERC20Contract())
 	if err != nil {
-		return nil, err
+		return sdk.Coin{}, "", err
 	}
 
 	ctx.EventManager().EmitEvents(
@@ -227,12 +227,7 @@ func (k BaseKeeper) Liquidate(ctx sdk.Context, liquidateFromAddress sdk.AccAddre
 		},
 	)
 
-	responseMsg := &types.MsgLiquidateResponse{
-		Minted:       liquidTokenCoin,
-		ContractAddr: tokenPair.Erc20Address,
-	}
-
-	return responseMsg, nil
+	return liquidTokenCoin, tokenPair.Erc20Address, nil
 }
 
 // Redeem redeems specified amount of liquid token into original locked token and adds them to account

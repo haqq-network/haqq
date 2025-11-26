@@ -156,24 +156,32 @@ message MsgConvertToEthiq {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
+  // sender is the address initiating the conversion (must be a holder).
+  string sender = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // receiver is the address to receive ethiq token.
+  string receiver = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
   // amount is the desired ethiq amount to receive.
-  string amount = 1 [
+  string amount = 3 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 
   // max_islm_amount is the maximum payable islam token amount.
-  string max_islm_amount = 2 [
+  string max_islm_amount = 4 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
-
-  // receiver is the address to receive ethiq token.
-  string receiver = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-
-  // sender is the address initiating the conversion (must be a holder).
-  string sender = 4 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 }
 
 // MsgConvertToEthiqResponse defines the Msg/ConvertToEthiq response type.
-message MsgConvertToEthiqResponse {}
+message MsgConvertToEthiqResponse {
+  repeated cosmos.base.v1beta1.Coin burnt_coins = 1 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  bool success = 2;
+  string error = 3;
+}

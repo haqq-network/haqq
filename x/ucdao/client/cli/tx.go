@@ -116,7 +116,7 @@ $ %s tx %s transfer-ownership haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92 haqq1h
 // NewConvertToEthiqCmd returns a CLI command handler for creating a MsgConvertToEthiq transaction.
 func NewConvertToEthiqCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "convert-to-ethiq [ethiq_amount] [max_islm_amount] [receiver]",
+		Use:   "convert-to-ethiq [receiver] [ethiq_amount] [max_islm_amount] ",
 		Args:  cobra.ExactArgs(3),
 		Short: "Convert ISLM tokens to ethiq tokens",
 		Long: strings.TrimSpace(
@@ -136,19 +136,19 @@ $ %s tx %s convert-to-ethiq 100 1000 haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq
 
 			senderAddr := clientCtx.GetFromAddress()
 
-			ethiqAmount, ok := sdkmath.NewIntFromString(args[0])
-			if !ok {
-				return fmt.Errorf("invalid ethiq amount: %s", args[0])
-			}
-
-			maxISLMAmount, ok := sdkmath.NewIntFromString(args[1])
-			if !ok {
-				return fmt.Errorf("invalid max ISLM amount: %s", args[1])
-			}
-
-			receiver, err := sdk.AccAddressFromBech32(args[2])
+			receiver, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
-				return fmt.Errorf("invalid receiver address: %s", args[2])
+				return fmt.Errorf("invalid receiver address: %s", args[0])
+			}
+
+			ethiqAmount, ok := sdkmath.NewIntFromString(args[1])
+			if !ok {
+				return fmt.Errorf("invalid ethiq amount: %s", args[1])
+			}
+
+			maxISLMAmount, ok := sdkmath.NewIntFromString(args[2])
+			if !ok {
+				return fmt.Errorf("invalid max ISLM amount: %s", args[2])
 			}
 
 			msg := types.NewMsgConvertToEthiq(senderAddr, ethiqAmount, maxISLMAmount, receiver)

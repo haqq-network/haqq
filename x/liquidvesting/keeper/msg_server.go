@@ -35,7 +35,15 @@ func (k msgServer) Liquidate(goCtx context.Context, msg *types.MsgLiquidate) (*t
 		liquidateToAddress = sdk.MustAccAddressFromBech32(msg.LiquidateTo)
 	}
 
-	return k.Keeper.Liquidate(ctx, liquidateFromAddress, liquidateToAddress, msg.Amount)
+	liquidTokenCoin, contractAddr, err := k.Keeper.Liquidate(ctx, liquidateFromAddress, liquidateToAddress, msg.Amount)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.MsgLiquidateResponse{
+		Minted:       liquidTokenCoin,
+		ContractAddr: contractAddr,
+	}, nil
 }
 
 // Redeem redeems specified amount of liquid token into original locked token and adds them to account

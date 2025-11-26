@@ -36,7 +36,7 @@ type Keeper interface {
 
 	Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
 	TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress, amount sdk.Coins) (sdk.Coins, error)
-	ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, ethiqAmount, maxISLMAmount sdkmath.Int) error
+	ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, ethiqAmount, maxISLMAmount sdkmath.Int) (sdk.Coins, error)
 
 	// grpc query endpoints
 	Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error)
@@ -148,14 +148,14 @@ func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAd
 }
 
 // ConvertToEthiq converts ISLM tokens to ethiq tokens for a holder.
-func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, ethiqAmount, maxISLMAmount sdkmath.Int) error {
+func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, ethiqAmount, maxISLMAmount sdkmath.Int) (sdk.Coins, error) {
 	if !k.IsModuleEnabled(ctx) {
-		return types.ErrModuleDisabled
+		return nil, types.ErrModuleDisabled
 	}
 
 	// Validation: user should be listed as one of the holders in ucdao module
 	if !k.IsHolder(ctx, sender) {
-		return types.ErrNotEligible
+		return nil, types.ErrNotEligible
 	}
 
 	// Get spender's ISLM balance
@@ -167,21 +167,21 @@ func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddr
 		// Should proceed redeem from liquid vesting module
 		err := k.lvk.Redeem(ctx, sender, sender, sdk.NewCoin(utils.BaseDenom, redeemISLMAmount))
 		if err != nil {
-			return sdkerrors.Wrapf(err, "failed to redeem ISLM from liquid vesting module")
+			return nil, sdkerrors.Wrapf(err, "failed to redeem ISLM from liquid vesting module")
 		}
 
 		// Funding is necessary to keep track the total balance of aISLM as well as holders index in ucdao module
 		// Should fund redeemed aISLM to ucdao module escrow address
 		err = k.Fund(ctx, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, redeemISLMAmount)), sender)
 		if err != nil {
-			return sdkerrors.Wrapf(err, "failed to fund redeemed ISLM to ucdao module escrow address")
+			return nil, sdkerrors.Wrapf(err, "failed to fund redeemed ISLM to ucdao module escrow address")
 		}
 	}
 
 	// Exchange aISLM to ethiq
 	spentISLMAmount, err := k.ethiqk.ConvertToEthiq(ctx, ethiqAmount, maxISLMAmount, sender, receiver)
 	if err != nil {
-		return sdkerrors.Wrapf(err, "failed to convert amount of aISLM to ethiq")
+		return nil, sdkerrors.Wrapf(err, "failed to convert amount of aISLM to ethiq")
 	}
 
 	// Update total balance of aISLM in ucdao module
@@ -194,7 +194,7 @@ func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddr
 	// Update holders index
 	k.setHoldersIndex(ctx, sender)
 
-	return nil
+	return sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, spentISLMAmount)), nil
 }
 
 // Logger returns a module-specific logger.
