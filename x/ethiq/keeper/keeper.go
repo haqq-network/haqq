@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
@@ -11,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/haqq-network/haqq/utils"
 	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/ethiq/types"
@@ -61,106 +63,46 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
-// GetParams returns the total set of ethiq parameters.
-func (k Keeper) GetParams(ctx sdk.Context) types.Params {
-	var params types.Params
-	k.paramstore.GetParamSet(ctx, &params)
-	return params
-}
-
-// SetParams sets the ethiq parameters to the param space.
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	k.paramstore.SetParamSet(ctx, &params)
-}
-
-// GetTotalBurnedAmount returns the total amount of burned coins
-func (k Keeper) GetTotalBurnedAmount(ctx sdk.Context) sdk.Coin {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.TotalBurnedAmountKey)
-	if bz == nil {
-		return sdk.NewCoin(types.ISLMBaseDenom, sdkmath.ZeroInt())
-	}
-
-	var coin sdk.Coin
-	k.cdc.MustUnmarshal(bz, &coin)
-	return coin
-}
-
-// SetTotalBurnedAmount sets the total amount of burned coins
-func (k Keeper) SetTotalBurnedAmount(ctx sdk.Context, coin sdk.Coin) {
-	store := ctx.KVStore(k.storeKey)
-	bz := k.cdc.MustMarshal(&coin)
-	store.Set(types.TotalBurnedAmountKey, bz)
-}
-
-// AddToTotalBurnedAmount adds to the total burned amount
-func (k Keeper) AddToTotalBurnedAmount(ctx sdk.Context, amount sdkmath.Int) {
-	current := k.GetTotalBurnedAmount(ctx)
-	newAmount := current.Amount.Add(amount)
-	k.SetTotalBurnedAmount(ctx, sdk.NewCoin(types.ISLMBaseDenom, newAmount))
-}
-
 // GetEthiqSupply returns the current supply of aethiq coins
 func (k Keeper) GetEthiqSupply(ctx sdk.Context) sdkmath.Int {
 	return k.bankKeeper.GetSupply(ctx, types.BaseDenom).Amount
 }
 
 // CalculateRequiredISLM calculates the amount of aISLM required to mint the given amount of aethiq
-// Uses a bonding curve formula: price = curveCoefficient * (supply + startRate) ^ powerCoefficient
-// The required ISLM is the integral of the price function from supplyBefore to supplyAfter
-// We use numerical integration (trapezoidal rule) to calculate the integral
+// Formula: requiredIslm = StartRate * ethiqAmount + CurveCoefficient * ((currentEthiqTotalSupply + ethiqAmount)^(PowerCoefficient) - (currentEthiqTotalSupply)^(PowerCoefficient)) / (PowerCoefficient)
 func (k Keeper) CalculateRequiredISLM(ctx sdk.Context, ethiqAmount sdkmath.Int) (sdkmath.Int, sdkmath.LegacyDec, error) {
 	params := k.GetParams(ctx)
 
-	supplyBefore := sdkmath.LegacyNewDecFromInt(k.GetEthiqSupply(ctx))
-	supplyAfter := supplyBefore.Add(sdkmath.LegacyNewDecFromInt(ethiqAmount))
-
-	// Use numerical integration with trapezoidal rule
-	// Divide the interval into steps for accuracy
-	// For small amounts, use fewer steps; for large amounts, use more steps
-	numSteps := int64(100)
-	if ethiqAmount.LT(sdkmath.NewInt(1_000_000_000_000_000)) { // Less than 0.001 ethiq
-		numSteps = 10
+	if !params.Enabled {
+		return sdkmath.Int{}, sdkmath.LegacyDec{}, types.ErrModuleDisabled
 	}
 
-	stepSize := sdkmath.LegacyNewDecFromInt(ethiqAmount).QuoInt64(numSteps)
+	currentEthiqTotalSupply := sdkmath.LegacyNewDecFromInt(k.GetEthiqSupply(ctx))
+	supplyAfter := currentEthiqTotalSupply.Add(sdkmath.LegacyNewDecFromInt(ethiqAmount))
 
-	// Price function: price(x) = curveCoefficient * (x + startRate) ^ powerCoefficient
-	priceFunc := func(x sdkmath.LegacyDec) sdkmath.LegacyDec {
-		term := x.Add(params.StartRate)
-		// Calculate term^powerCoefficient using iterative multiplication
-		// Convert powerCoefficient to a ratio for approximation
-		// For powerCoefficient = 1.1, we approximate as term^1 * term^0.1
-		// term^0.1 ≈ term^(1/10) which we can approximate
-		powerInt := params.PowerCoefficient.TruncateInt().Int64()
-		powerFrac := params.PowerCoefficient.Sub(sdkmath.LegacyNewDecFromInt64(powerInt))
-
-		result := sdkmath.LegacyOneDec()
-		// Calculate integer power part
-		for i := int64(0); i < powerInt; i++ {
-			result = result.Mul(term)
-		}
-
-		// Approximate fractional power: term^fraction ≈ 1 + fraction * (term - 1) for small fractions
-		// This is a linear approximation around 1
-		if powerFrac.GT(sdkmath.LegacyZeroDec()) {
-			fractionalPart := sdkmath.LegacyOneDec().Add(powerFrac.Mul(term.Sub(sdkmath.LegacyOneDec())))
-			result = result.Mul(fractionalPart)
-		}
-
-		return params.CurveCoefficient.Mul(result)
+	// Calculate (currentEthiqTotalSupply + ethiqAmount)^(PowerCoefficient)
+	powerAfter, err := powerDec(supplyAfter, params.PowerCoefficient)
+	if err != nil {
+		return sdkmath.Int{}, sdkmath.LegacyDec{}, errorsmod.Wrapf(types.ErrCalculationFailed, "failure during power calculation: %v", err)
 	}
 
-	// Trapezoidal rule: ∫f(x)dx ≈ (h/2) * [f(x0) + 2*f(x1) + 2*f(x2) + ... + 2*f(xn-1) + f(xn)]
-	sum := priceFunc(supplyBefore).Add(priceFunc(supplyAfter))
-
-	current := supplyBefore.Add(stepSize)
-	for i := int64(1); i < numSteps; i++ {
-		sum = sum.Add(priceFunc(current).MulInt64(2))
-		current = current.Add(stepSize)
+	// Calculate (currentEthiqTotalSupply)^(PowerCoefficient)
+	powerBefore, err := powerDec(currentEthiqTotalSupply, params.PowerCoefficient)
+	if err != nil {
+		return sdkmath.Int{}, sdkmath.LegacyDec{}, errorsmod.Wrapf(types.ErrCalculationFailed, "failure during power calculation: %v", err)
 	}
 
-	result := sum.Mul(stepSize).QuoInt64(2)
+	// Calculate the difference: (supplyAfter^PowerCoefficient - supplyBefore^PowerCoefficient)
+	diff := powerAfter.Sub(powerBefore)
+
+	// Calculate: CurveCoefficient * diff / PowerCoefficient
+	curvePart := params.CurveCoefficient.Mul(diff).Quo(params.PowerCoefficient)
+
+	// Calculate: StartRate * ethiqAmount
+	startRatePart := params.StartRate.Mul(sdkmath.LegacyNewDecFromInt(ethiqAmount))
+
+	// Total required: StartRate * ethiqAmount + CurveCoefficient * diff / PowerCoefficient
+	result := startRatePart.Add(curvePart)
 
 	// Convert to Int (truncate)
 	requiredISLM := result.TruncateInt()
@@ -175,6 +117,95 @@ func (k Keeper) CalculateRequiredISLM(ctx sdk.Context, ethiqAmount sdkmath.Int) 
 	pricePerUnit := result.Quo(sdkmath.LegacyNewDecFromInt(ethiqAmount))
 
 	return requiredISLM, pricePerUnit, nil
+}
+
+// Mint mints aethiq coins in exchange for aISLM coins
+// It validates the mint request, calculates required ISLM, burns ISLM, and mints ethiq
+// Returns the actual ISLM amount used and any error
+func (k Keeper) Mint(ctx sdk.Context, ethiqAmount sdkmath.Int, maxIslmAmount sdkmath.Int, fromAddress sdk.AccAddress, toAddress sdk.AccAddress) (sdkmath.Int, error) {
+	params := k.GetParams(ctx)
+
+	// Short no-op circuit if module is disabled
+	if !params.Enabled {
+		return sdkmath.ZeroInt(), nil
+	}
+
+	// Validate toAddress
+	if toAddress.Empty() {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(types.ErrInvalidAddress, "to_address cannot be empty")
+	}
+
+	// Return error if ethiqAmount is outbound the limits
+	if ethiqAmount.LT(params.MinMintPerTx) {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInvalidAmount, "ethiq_amount %s is less than min_mint_per_tx %s", ethiqAmount, params.MinMintPerTx)
+	}
+
+	if ethiqAmount.GT(params.MaxMintPerTx) {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInvalidAmount, "ethiq_amount %s is greater than max_mint_per_tx %s", ethiqAmount, params.MaxMintPerTx)
+	}
+
+	// Return error if ethiqAmount less than 1
+	if ethiqAmount.LT(sdkmath.OneInt()) {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(types.ErrInvalidAmount, "ethiq_amount must be at least 1")
+	}
+
+	// Calculate required ISLM amount
+	requiredISLM, _, err := k.CalculateRequiredISLM(ctx, ethiqAmount)
+	if err != nil {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to calculate required ISLM")
+	}
+
+	// Return error if RequiredISLM less than 1
+	if requiredISLM.LT(sdkmath.OneInt()) {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(types.ErrInvalidAmount, "calculated required ISLM is less than 1")
+	}
+
+	// Return error if RequiredISLM greater than maxIslmAmount
+	if requiredISLM.GT(maxIslmAmount) {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInsufficientFunds, "required ISLM %s is greater than max_islm_amount %s", requiredISLM, maxIslmAmount)
+	}
+
+	// Send RequiredISLM coins to module account
+	islmCoin := sdk.NewCoin(utils.BaseDenom, requiredISLM)
+	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, fromAddress, types.ModuleName, sdk.NewCoins(islmCoin))
+	if err != nil {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to send ISLM to module account")
+	}
+
+	// Burn RequiredISLM coins from module account
+	err = k.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(islmCoin))
+	if err != nil {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to burn ISLM coins")
+	}
+
+	// Update TotalBurnedAmount
+	k.AddToTotalBurnedAmount(ctx, requiredISLM)
+
+	// Mint ethiqAmount coins to module account
+	ethiqCoin := sdk.NewCoin(types.BaseDenom, ethiqAmount)
+	err = k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(ethiqCoin))
+	if err != nil {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to mint ethiq coins")
+	}
+
+	// Send minted ethiqAmount from module account to toAddress
+	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, toAddress, sdk.NewCoins(ethiqCoin))
+	if err != nil {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to send ethiq to recipient")
+	}
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeMintExecuted,
+			sdk.NewAttribute(types.AttributeKeyEthiqAmount, ethiqAmount.String()),
+			sdk.NewAttribute(types.AttributeKeyISLMAmount, requiredISLM.String()),
+			sdk.NewAttribute(types.AttributeKeyToAddress, toAddress.String()),
+			sdk.NewAttribute(types.AttributeKeyFromAddress, fromAddress.String()),
+		),
+	)
+
+	return requiredISLM, nil
 }
 
 // EnsureEthiqMetadata ensures that the aethiq denom metadata is set up correctly

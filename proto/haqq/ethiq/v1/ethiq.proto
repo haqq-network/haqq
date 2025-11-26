@@ -3,7 +3,6 @@ syntax = "proto3";
 package haqq.ethiq.v1;
 
 import "gogoproto/gogo.proto";
-import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/ethiq/types";

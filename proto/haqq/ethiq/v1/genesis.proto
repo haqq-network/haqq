@@ -4,7 +4,6 @@ package haqq.ethiq.v1;
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
-import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
 import "haqq/ethiq/v1/ethiq.proto";
 
@@ -13,8 +12,7 @@ option go_package = "github.com/haqq-network/haqq/x/ethiq/types";
 // GenesisState defines the ethiq module's genesis state.
 message GenesisState {
   // params defines all the parameters of the module.
-  Params params = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 
   // total_burned_amount defines the total amount of coins burned
   cosmos.base.v1beta1.Coin total_burned_amount = 2 [

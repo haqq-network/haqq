@@ -610,6 +610,9 @@ schema = 3
   [mod."github.com/rs/zerolog"]
     version = "v1.33.0"
     hash = "sha256-jT/Y/izhZiCdrDbC/ty83FGs8UQavTU+OW03O4vKFkY="
+  [mod."github.com/rsned/bigmath"]
+    version = "v0.0.1"
+    hash = "sha256-xVAt8NYlIGZ7FB2NnQimKSmc7SzB9nEyml0dbP6jmEc="
   [mod."github.com/sagikazarmark/locafero"]
     version = "v0.4.0"
     hash = "sha256-7I1Oatc7GAaHgAqBFO6Tv4IbzFiYeU9bJAfJhXuWaXk="

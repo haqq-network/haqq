@@ -10,21 +10,18 @@ var _ sdk.Msg = &MsgMintEthiq{}
 
 // GetSigners returns the signers of the message
 func (msg *MsgMintEthiq) GetSigners() []sdk.AccAddress {
-	fromAddress, err := sdk.AccAddressFromBech32(msg.FromAddress)
-	if err != nil {
-		panic(err)
-	}
+	fromAddress, _ := sdk.AccAddressFromBech32(msg.FromAddress)
 	return []sdk.AccAddress{fromAddress}
 }
 
 // ValidateBasic performs basic validation on the message
 func (msg *MsgMintEthiq) ValidateBasic() error {
-	if msg.EthiqAmount.LTE(sdkmath.ZeroInt()) {
-		return errorsmod.Wrap(ErrInvalidAmount, "ethiq_amount must be positive")
+	if msg.EthiqAmount.LTE(sdkmath.OneInt()) {
+		return errorsmod.Wrap(ErrInvalidAmount, "ethiq_amount must be positive and greater than 1")
 	}
 
-	if msg.MaxIslmAmount.LTE(sdkmath.ZeroInt()) {
-		return errorsmod.Wrap(ErrInvalidAmount, "max_islm_amount must be positive")
+	if msg.MaxIslmAmount.LTE(sdkmath.OneInt()) {
+		return errorsmod.Wrap(ErrInvalidAmount, "max_islm_amount must be positive and greater than 1")
 	}
 
 	if _, err := sdk.AccAddressFromBech32(msg.ToAddress); err != nil {

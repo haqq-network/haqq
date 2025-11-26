@@ -5,7 +5,6 @@ package haqq.ethiq.v1;
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/v1beta1/coin.proto";
-import "cosmos_proto/cosmos.proto";
 import "cosmos/query/v1/query.proto";
 import "amino/amino.proto";
 import "haqq/ethiq/v1/ethiq.proto";
@@ -56,7 +55,8 @@ message QueryCalculateRequest {
   // ethiq_amount is the amount of aethiq coins to mint
   string ethiq_amount = 1 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
-    (gogoproto.nullable) = false
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
   ];
 }
 
@@ -96,7 +96,6 @@ message QueryParamsRequest {}
 
 // QueryParamsResponse defines the response type for querying x/ethiq parameters.
 message QueryParamsResponse {
-  Params params = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
