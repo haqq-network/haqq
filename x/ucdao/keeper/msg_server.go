@@ -123,7 +123,7 @@ func (k msgServer) ConvertToEthiq(goCtx context.Context, msg *types.MsgConvertTo
 		return nil, err
 	}
 
-	// ready validated in ValidateBasic
+	// Already validated in ValidateBasic
 	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 	receiver := sdk.MustAccAddressFromBech32(msg.Receiver)
 
@@ -131,14 +131,10 @@ func (k msgServer) ConvertToEthiq(goCtx context.Context, msg *types.MsgConvertTo
 	if err != nil {
 		return &types.MsgConvertToEthiqResponse{
 			BurntCoin: sdk.Coin{},
-			Success:   false,
-			Error:     err.Error(),
-		}, nil
+		}, err
 	}
 
 	return &types.MsgConvertToEthiqResponse{
 		BurntCoin: burntCoin,
-		Success:   true,
-		Error:     "",
 	}, nil
 }

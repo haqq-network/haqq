@@ -231,20 +231,20 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			suite.T().Logf("spendable coins: %s", spendable.String())
 			suite.T().Logf("liquidation amount: %s", tc.amount.String())
 
-			burnt, contractAddr, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, tc.amount)
-			expBurnt := sdk.NewCoin(types.DenomBaseNameFromID(0), tc.amount.Amount)
+			minted, contractAddr, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, tc.amount)
+			expMinted := sdk.NewCoin(types.DenomBaseNameFromID(0), tc.amount.Amount)
 
 			if tc.expectPass {
 				// check returns
 				suite.Require().NoError(err)
-				suite.Require().Equal(expBurnt, burnt)
+				suite.Require().Equal(expMinted, minted)
 				suite.Require().NotEmpty(contractAddr)
 
 				// check target account exists and has liquid token
 				toAcc := suite.network.App.AccountKeeper.GetAccount(ctx, toAddr)
 				suite.Require().NotNil(toAcc)
 				balanceTarget := suite.network.App.BankKeeper.GetBalance(ctx, toAddr, types.DenomBaseNameFromID(0))
-				suite.Require().Equal(expBurnt.String(), balanceTarget.String())
+				suite.Require().Equal(expMinted.String(), balanceTarget.String())
 
 				// check liquidated vesting locked coins are decreased on initial account
 				fromAccAfter := suite.network.App.AccountKeeper.GetAccount(ctx, fromAddr)
@@ -298,12 +298,12 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.network.App.AccountKeeper.SetAccount(ctx, clawbackAccount)
 
 	// FIRST LIQUIDATION
-	burnt, contractAddr, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, third[0])
-	expBurnt := sdk.NewCoin("aLIQUID0", third[0].Amount)
+	minted, contractAddr, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, third[0])
+	expMinted := sdk.NewCoin("aLIQUID0", third[0].Amount)
 
 	// check returns
 	suite.Require().NoError(err)
-	suite.Require().Equal(expBurnt, burnt)
+	suite.Require().Equal(expMinted, minted)
 	suite.Require().NotEmpty(contractAddr)
 
 	// check target account exists and has liquid token
@@ -334,12 +334,12 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.Require().Equal(third[0].Amount.String(), balanceOfLiquidTokeErc20Pair0.String())
 
 	// SECOND LIQUIDATION
-	burnt, contractAddr, err = suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, third[0])
-	expBurnt = sdk.NewCoin("aLIQUID1", third[0].Amount)
+	minted, contractAddr, err = suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, third[0])
+	expMinted = sdk.NewCoin("aLIQUID1", third[0].Amount)
 
 	// check returns
 	suite.Require().NoError(err)
-	suite.Require().Equal(expBurnt, burnt)
+	suite.Require().Equal(expMinted, minted)
 	suite.Require().NotEmpty(contractAddr)
 
 	// check target account exists and has liquid token

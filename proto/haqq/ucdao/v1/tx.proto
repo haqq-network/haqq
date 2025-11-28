@@ -182,6 +182,4 @@ message MsgConvertToEthiqResponse {
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
-  bool success = 2;
-  string error = 3;
 }
