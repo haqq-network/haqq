@@ -129,9 +129,7 @@ func (k msgServer) ConvertToEthiq(goCtx context.Context, msg *types.MsgConvertTo
 
 	burntCoin, err := k.Keeper.ConvertToEthiq(ctx, sender, receiver, msg.Amount, msg.MaxIslmAmount)
 	if err != nil {
-		return &types.MsgConvertToEthiqResponse{
-			BurntCoin: sdk.Coin{},
-		}, err
+		return nil, err
 	}
 
 	return &types.MsgConvertToEthiqResponse{
