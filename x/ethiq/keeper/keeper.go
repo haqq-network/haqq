@@ -177,7 +177,7 @@ func (k Keeper) Mint(ctx sdk.Context, ethiqAmount sdkmath.Int, maxIslmAmount sdk
 	// TODO Vesting
 	vestingIslmUsed := sdkmath.ZeroInt()
 	freeIslmUsed := requiredIslm.Sub(vestingIslmUsed)
-	
+
 	// Send RequiredISLM coins to module account
 	islmCoin := sdk.NewCoin(utils.BaseDenom, requiredIslm)
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, fromAddress, types.ModuleName, sdk.NewCoins(islmCoin))
@@ -285,13 +285,14 @@ func (k Keeper) EnsureEthiqERC20Registration(ctx sdk.Context) error {
 	k.erc20Keeper.SetToken(ctx, pair)
 
 	// Register as dynamic precompile
-	err := k.erc20Keeper.EnableDynamicPrecompiles(ctx, erc20Address)
-	if err != nil {
+	if err := k.erc20Keeper.EnableDynamicPrecompiles(ctx, erc20Address); err != nil {
 		return err
 	}
 
 	// Register code hash
-	k.erc20Keeper.RegisterERC20CodeHash(ctx, erc20Address)
+	if err := k.erc20Keeper.RegisterERC20CodeHash(ctx, erc20Address); err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // InitGenesis initializes the ethiq module's state from a provided genesis state
-func InitGenesis(ctx sdk.Context, k keeper.Keeper, ak types.AccountKeeper, genState types.GenesisState) {
+func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	// Set params
 	k.SetParams(ctx, genState.Params)
 
@@ -37,4 +37,3 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 		TotalBurnedAmount: k.GetTotalBurnedAmount(ctx),
 	}
 }
-

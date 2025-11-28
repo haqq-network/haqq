@@ -18,4 +18,3 @@ var (
 	// TotalBurnedAmountKey is the key for total burned amount
 	TotalBurnedAmountKey = []byte{0x01}
 )
-
