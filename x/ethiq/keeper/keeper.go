@@ -73,26 +73,27 @@ func (k Keeper) GetEthiqSupply(ctx sdk.Context) sdkmath.Int {
 func (k Keeper) CalculateRequiredISLM(ctx sdk.Context, ethiqAmount sdkmath.Int) (sdkmath.Int, sdkmath.LegacyDec, error) {
 	params := k.GetParams(ctx)
 
+	// Short no-op circuit if module is disabled
 	if !params.Enabled {
 		return sdkmath.Int{}, sdkmath.LegacyDec{}, types.ErrModuleDisabled
 	}
 
 	currentEthiqTotalSupply := sdkmath.LegacyNewDecFromInt(k.GetEthiqSupply(ctx))
-	supplyAfter := currentEthiqTotalSupply.Add(sdkmath.LegacyNewDecFromInt(ethiqAmount))
+	finalEthiqTotalSupply := currentEthiqTotalSupply.Add(sdkmath.LegacyNewDecFromInt(ethiqAmount))
 
 	// Calculate (currentEthiqTotalSupply + ethiqAmount)^(PowerCoefficient)
-	powerAfter, err := powerDec(supplyAfter, params.PowerCoefficient)
+	powerAfter, err := powerDec(finalEthiqTotalSupply, params.PowerCoefficient)
 	if err != nil {
-		return sdkmath.Int{}, sdkmath.LegacyDec{}, errorsmod.Wrapf(types.ErrCalculationFailed, "failure during power calculation: %v", err)
+		return sdkmath.Int{}, sdkmath.LegacyDec{}, errorsmod.Wrapf(types.ErrCalculationFailed, "finalEthiqTotalSupply ^ PowerCoefficient: %v", err)
 	}
 
 	// Calculate (currentEthiqTotalSupply)^(PowerCoefficient)
 	powerBefore, err := powerDec(currentEthiqTotalSupply, params.PowerCoefficient)
 	if err != nil {
-		return sdkmath.Int{}, sdkmath.LegacyDec{}, errorsmod.Wrapf(types.ErrCalculationFailed, "failure during power calculation: %v", err)
+		return sdkmath.Int{}, sdkmath.LegacyDec{}, errorsmod.Wrapf(types.ErrCalculationFailed, "currentEthiqTotalSupply ^ PowerCoefficient: %v", err)
 	}
 
-	// Calculate the difference: (supplyAfter^PowerCoefficient - supplyBefore^PowerCoefficient)
+	// Calculate the difference: (finalEthiqTotalSupply^PowerCoefficient - supplyBefore^PowerCoefficient)
 	diff := powerAfter.Sub(powerBefore)
 
 	// Calculate: CurveCoefficient * diff / PowerCoefficient
@@ -127,7 +128,12 @@ func (k Keeper) Mint(ctx sdk.Context, ethiqAmount sdkmath.Int, maxIslmAmount sdk
 
 	// Short no-op circuit if module is disabled
 	if !params.Enabled {
-		return sdkmath.ZeroInt(), nil
+		return sdkmath.ZeroInt(), types.ErrModuleDisabled
+	}
+
+	// Validate fromAddress
+	if fromAddress.Empty() {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(types.ErrInvalidAddress, "from_address cannot be empty")
 	}
 
 	// Validate toAddress
@@ -149,24 +155,31 @@ func (k Keeper) Mint(ctx sdk.Context, ethiqAmount sdkmath.Int, maxIslmAmount sdk
 		return sdkmath.ZeroInt(), errorsmod.Wrap(types.ErrInvalidAmount, "ethiq_amount must be at least 1")
 	}
 
+	// Ethiq supply before mint
+	ethiqTotalSupplyBefore := k.GetEthiqSupply(ctx)
+
 	// Calculate required ISLM amount
-	requiredISLM, _, err := k.CalculateRequiredISLM(ctx, ethiqAmount)
+	requiredIslm, _, err := k.CalculateRequiredISLM(ctx, ethiqAmount)
 	if err != nil {
 		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to calculate required ISLM")
 	}
 
 	// Return error if RequiredISLM less than 1
-	if requiredISLM.LT(sdkmath.OneInt()) {
+	if requiredIslm.LT(sdkmath.OneInt()) {
 		return sdkmath.ZeroInt(), errorsmod.Wrap(types.ErrInvalidAmount, "calculated required ISLM is less than 1")
 	}
 
 	// Return error if RequiredISLM greater than maxIslmAmount
-	if requiredISLM.GT(maxIslmAmount) {
-		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInsufficientFunds, "required ISLM %s is greater than max_islm_amount %s", requiredISLM, maxIslmAmount)
+	if requiredIslm.GT(maxIslmAmount) {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInsufficientFunds, "required ISLM %s is greater than max_islm_amount %s", requiredIslm, maxIslmAmount)
 	}
 
+	// TODO Vesting
+	vestingIslmUsed := sdkmath.ZeroInt()
+	freeIslmUsed := requiredIslm.Sub(vestingIslmUsed)
+	
 	// Send RequiredISLM coins to module account
-	islmCoin := sdk.NewCoin(utils.BaseDenom, requiredISLM)
+	islmCoin := sdk.NewCoin(utils.BaseDenom, requiredIslm)
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, fromAddress, types.ModuleName, sdk.NewCoins(islmCoin))
 	if err != nil {
 		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to send ISLM to module account")
@@ -179,7 +192,7 @@ func (k Keeper) Mint(ctx sdk.Context, ethiqAmount sdkmath.Int, maxIslmAmount sdk
 	}
 
 	// Update TotalBurnedAmount
-	k.AddToTotalBurnedAmount(ctx, requiredISLM)
+	k.AddToTotalBurnedAmount(ctx, requiredIslm)
 
 	// Mint ethiqAmount coins to module account
 	ethiqCoin := sdk.NewCoin(types.BaseDenom, ethiqAmount)
@@ -194,18 +207,23 @@ func (k Keeper) Mint(ctx sdk.Context, ethiqAmount sdkmath.Int, maxIslmAmount sdk
 		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to send ethiq to recipient")
 	}
 
+	ethiqTotalSupplyAfter := ethiqTotalSupplyBefore.Add(ethiqAmount)
 	// Emit event
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeMintExecuted,
-			sdk.NewAttribute(types.AttributeKeyEthiqAmount, ethiqAmount.String()),
-			sdk.NewAttribute(types.AttributeKeyISLMAmount, requiredISLM.String()),
-			sdk.NewAttribute(types.AttributeKeyToAddress, toAddress.String()),
-			sdk.NewAttribute(types.AttributeKeyFromAddress, fromAddress.String()),
+			sdk.NewAttribute(types.AttributeKeySender, fromAddress.String()),
+			sdk.NewAttribute(types.AttributeKeyReceiver, toAddress.String()),
+			sdk.NewAttribute(types.AttributeKeyEthiqMinted, ethiqAmount.String()),
+			sdk.NewAttribute(types.AttributeKeyIslmSpent, requiredIslm.String()),
+			sdk.NewAttribute(types.AttributeKeyEthiqSupplyBefore, ethiqTotalSupplyBefore.String()),
+			sdk.NewAttribute(types.AttributeKeyEthiqSupplyAfter, ethiqTotalSupplyAfter.String()),
+			sdk.NewAttribute(types.AttributeKeyIslmVestingUsed, vestingIslmUsed.String()),
+			sdk.NewAttribute(types.AttributeKeyIslmFreeUsed, freeIslmUsed.String()),
 		),
 	)
 
-	return requiredISLM, nil
+	return requiredIslm, nil
 }
 
 // EnsureEthiqMetadata ensures that the aethiq denom metadata is set up correctly

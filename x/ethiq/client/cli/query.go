@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/version"
 
 	"github.com/haqq-network/haqq/x/ethiq/types"
@@ -99,7 +99,7 @@ Example:
 			ctx := cmd.Context()
 
 			res, err := queryClient.Calculate(ctx, &types.QueryCalculateRequest{
-				EthiqAmount: ethiqAmount,
+				EthiqAmount: ethiqAmount.String(),
 			})
 			if err != nil {
 				return err
@@ -150,4 +150,3 @@ Example:
 
 	return cmd
 }
-

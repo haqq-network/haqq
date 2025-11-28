@@ -6,6 +6,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/query/v1/query.proto";
+import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
 import "haqq/ethiq/v1/ethiq.proto";
 
@@ -53,17 +54,15 @@ message QueryCalculateRequest {
   option (gogoproto.goproto_getters) = false;
 
   // ethiq_amount is the amount of aethiq coins to mint
-  string ethiq_amount = 1 [
-    (gogoproto.customtype) = "cosmossdk.io/math.Int",
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
+  // using string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)
+  string ethiq_amount = 1;
 }
 
 // QueryCalculateResponse is the response type for the Query/Calculate RPC method.
 message QueryCalculateResponse {
   // required_islm is the amount of aISLM coins required
   string required_islm = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
@@ -71,6 +70,7 @@ message QueryCalculateResponse {
 
   // supply_before is the supply of aethiq before minting
   string supply_before = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
@@ -78,6 +78,7 @@ message QueryCalculateResponse {
 
   // supply_after is the supply of aethiq after minting
   string supply_after = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
@@ -85,6 +86,7 @@ message QueryCalculateResponse {
 
   // price_per_unit is the price per unit of aethiq
   string price_per_unit = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
