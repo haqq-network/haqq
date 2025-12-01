@@ -9,7 +9,7 @@ schema = 3
     hash = "sha256-FIfzk9JYArEfDnJtdXXHBrI4yTGzZPyefQm1O1ldez8="
   [mod."cloud.google.com/go/auth"]
     version = "v0.14.1"
-    hash = "sha256-gOhYABjjNn62exyu2fzqUMJev9Tva6scdYVdaSHwrqo="
+    hash = "sha256-nBYUu/RQv3aAUgUaYbXJ3bCNkJfF9W05NThkwrL3sZg="
   [mod."cloud.google.com/go/auth/oauth2adapt"]
     version = "v0.2.7"
     hash = "sha256-rdgb3uWekFSfsMZeY7DqHr7Q8ELOwLIZO4W7t2Cvt40="
@@ -678,7 +678,7 @@ schema = 3
     hash = "sha256-TX3DcyAdrXqf+TxmEz4TilWQo2Y4hcBXOeRY6BjDp+s="
   [mod."github.com/spf13/cast"]
     version = "v1.9.2"
-    hash = "sha256-BjX0aY/PC37gIdMc7JhMgvhWFsksGdAcp2FgzpuvkPo="
+    hash = "sha256-B+Nw/DDgWR0NV6J6EO2oOahw75qbjLtV8Tm3wrN5NDw="
   [mod."github.com/spf13/cobra"]
     version = "v1.10.1"
     hash = "sha256-dzEqquABE3UqZmJuj99244QjvfojS8cFlsPr/MXQGj0="
