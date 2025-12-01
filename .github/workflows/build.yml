@@ -8,11 +8,11 @@ on:
 jobs:
   cleanup-runs:
     runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master' }}
     steps:
       - uses: rokroskar/workflow-run-cleanup-action@master
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    if: "!startsWith(github.ref, 'refs/tags/') && github.ref != 'refs/heads/master'"
 
   build:
     runs-on: ubuntu-cpu16-ram64
@@ -31,50 +31,31 @@ jobs:
             go.sum
       - name: Pull LFS files
         run: git lfs pull
-      - name: Build
-        run: |
+      - run: |
           make build
-        if: env.GIT_DIFF != '' || env.GIT_FILES != ''
+        if: env.GIT_DIFF || env.GIT_FILES
   build-nix:
     runs-on: ubuntu-cpu16-ram64
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: cachix/cachix-action@v12
+      - uses: haqq-network/nix-action@master
         with:
-          name: haqq
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-      - name: Update flake lock to use GitHub URLs
-        env:
-          NIX_CONFIG: "experimental-features = nix-command flakes"
-        run: |
-          nix flake update --no-registries || true
+          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
       - name: Build nix package
-        env:
-          NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
-          nix build .#haqq --print-build-logs --no-link
+          nix build .#haqq --print-build-logs
   check-nix:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: cachix/cachix-action@v12
+      - uses: haqq-network/nix-action@master
         with:
-          name: haqq
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-      - name: Update flake lock to use GitHub URLs
-        env:
-          NIX_CONFIG: "experimental-features = nix-command flakes"
-        run: |
-          nix flake update --no-registries || true
+          cacheKeyPostfix: ${{ hashFiles('**/go.sum') }}
       - name: Check if nix package and Makefile versions match
-        env:
-          NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
-          nix develop --impure .#ci --command bash -c 'ci-check-version'
+          nix develop --impure .#ci --command ci-check-version
       - name: Check if gomod2nix is up to date
-        env:
-          NIX_CONFIG: "experimental-features = nix-command flakes"
         run: |
-          nix develop --impure .#ci --command bash -c 'ci-check-gomod2nix'
+          nix develop --impure .#ci --command ci-check-gomod2nix
