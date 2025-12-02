@@ -21,7 +21,8 @@ mkdir -p $SWAGGER_TMP_DIR
 cd $SWAGGER_PROTO_DIR
 
 PATHS=""
-proto_dirs=$(find -L ./proto ./third_party -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
+# Exclude ibc_tmp directory if it exists (shouldn't, but be safe)
+proto_dirs=$(find -L ./proto ./third_party \( -path ./third_party/ibc_tmp -o -path ./third_party/ics_tmp \) -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 for dir in $proto_dirs; do
     
     # generate swagger files (filter query files)

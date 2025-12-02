@@ -1,5 +1,7 @@
 { ... }:
 {
+  git-hooks.enable = false;
+
   scripts.ci-check-version.exec = ''
     set -e
     MAKEFILE_VERSION=$(grep "^VERSION :=" Makefile | awk -F '"' '{print $2}')
