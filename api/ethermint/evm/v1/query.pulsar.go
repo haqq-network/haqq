@@ -12713,8 +12713,8 @@ type EstimateGasResponse struct {
 
 	// gas returns the estimated gas
 	Gas uint64 `protobuf:"varint,1,opt,name=gas,proto3" json:"gas,omitempty"`
-	// ret is the returned data from evm function (result or data supplied with revert
-	// opcode)
+	// ret is the returned data from evm function (result or data supplied with
+	// revert opcode)
 	Ret []byte `protobuf:"bytes,2,opt,name=ret,proto3" json:"ret,omitempty"`
 	// vm_error is the error returned by vm execution
 	VmError string `protobuf:"bytes,3,opt,name=vm_error,json=vmError,proto3" json:"vm_error,omitempty"`

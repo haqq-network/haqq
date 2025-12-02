@@ -1330,8 +1330,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// EpochInfo defines the message interface containing the relevant informations about
-// an epoch.
+// EpochInfo defines the message interface containing the relevant informations
+// about an epoch.
 type EpochInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

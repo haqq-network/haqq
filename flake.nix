@@ -64,7 +64,7 @@
         packages = rec {
           nixos-test = pkgs.callPackage ./nix/test { overlay = self.overlays.default; };
           haqq = pkgsUnstable.callPackage ./nix/package.nix {
-            inherit (pkgsUnstable) buildGoApplication;
+            inherit (pkgsUnstable) buildGoApplication stdenv;
             inherit go;
             rev = if (self ? rev) then self.rev else self.dirtyRev;
           };

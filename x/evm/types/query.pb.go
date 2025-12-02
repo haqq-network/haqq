@@ -865,8 +865,8 @@ func (m *EthCallRequest) GetChainId() int64 {
 type EstimateGasResponse struct {
 	// gas returns the estimated gas
 	Gas uint64 `protobuf:"varint,1,opt,name=gas,proto3" json:"gas,omitempty"`
-	// ret is the returned data from evm function (result or data supplied with revert
-	// opcode)
+	// ret is the returned data from evm function (result or data supplied with
+	// revert opcode)
 	Ret []byte `protobuf:"bytes,2,opt,name=ret,proto3" json:"ret,omitempty"`
 	// vm_error is the error returned by vm execution
 	VmError string `protobuf:"bytes,3,opt,name=vm_error,json=vmError,proto3" json:"vm_error,omitempty"`
@@ -1485,10 +1485,12 @@ type QueryClient interface {
 	EstimateGas(ctx context.Context, in *EthCallRequest, opts ...grpc.CallOption) (*EstimateGasResponse, error)
 	// TraceTx implements the `debug_traceTransaction` rpc api
 	TraceTx(ctx context.Context, in *QueryTraceTxRequest, opts ...grpc.CallOption) (*QueryTraceTxResponse, error)
-	// TraceBlock implements the `debug_traceBlockByNumber` and `debug_traceBlockByHash` rpc api
+	// TraceBlock implements the `debug_traceBlockByNumber` and
+	// `debug_traceBlockByHash` rpc api
 	TraceBlock(ctx context.Context, in *QueryTraceBlockRequest, opts ...grpc.CallOption) (*QueryTraceBlockResponse, error)
 	// BaseFee queries the base fee of the parent block of the current block,
-	// it's similar to feemarket module's method, but also checks london hardfork status.
+	// it's similar to feemarket module's method, but also checks london hardfork
+	// status.
 	BaseFee(ctx context.Context, in *QueryBaseFeeRequest, opts ...grpc.CallOption) (*QueryBaseFeeResponse, error)
 }
 
@@ -1632,10 +1634,12 @@ type QueryServer interface {
 	EstimateGas(context.Context, *EthCallRequest) (*EstimateGasResponse, error)
 	// TraceTx implements the `debug_traceTransaction` rpc api
 	TraceTx(context.Context, *QueryTraceTxRequest) (*QueryTraceTxResponse, error)
-	// TraceBlock implements the `debug_traceBlockByNumber` and `debug_traceBlockByHash` rpc api
+	// TraceBlock implements the `debug_traceBlockByNumber` and
+	// `debug_traceBlockByHash` rpc api
 	TraceBlock(context.Context, *QueryTraceBlockRequest) (*QueryTraceBlockResponse, error)
 	// BaseFee queries the base fee of the parent block of the current block,
-	// it's similar to feemarket module's method, but also checks london hardfork status.
+	// it's similar to feemarket module's method, but also checks london hardfork
+	// status.
 	BaseFee(context.Context, *QueryBaseFeeRequest) (*QueryBaseFeeResponse, error)
 }
 

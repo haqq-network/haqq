@@ -81,10 +81,12 @@ func (m *GenesisState) GetTokenPairs() []TokenPair {
 
 // Params defines the erc20 module params
 type Params struct {
-	// enable_erc20 is the parameter to enable the conversion of Cosmos coins <--> ERC20 tokens.
+	// enable_erc20 is the parameter to enable the conversion of Cosmos coins <-->
+	// ERC20 tokens.
 	EnableErc20 bool `protobuf:"varint,1,opt,name=enable_erc20,json=enableErc20,proto3" json:"enable_erc20,omitempty"`
 	// native_precompiles defines the slice of hex addresses of the
-	// active precompiles that are used to interact with native staking coins as ERC20s
+	// active precompiles that are used to interact with native staking coins as
+	// ERC20s
 	NativePrecompiles []string `protobuf:"bytes,3,rep,name=native_precompiles,json=nativePrecompiles,proto3" json:"native_precompiles,omitempty"`
 	// dynamic_precompiles defines the slice of hex addresses of the
 	// active precompiles that are used to interact with Bank coins as ERC20s

@@ -285,7 +285,8 @@ var xxx_messageInfo_MsgClawbackResponse proto.InternalMessageInfo
 type MsgUpdateVestingFunder struct {
 	// funder_address is the current funder address of the ClawbackVestingAccount
 	FunderAddress string `protobuf:"bytes,1,opt,name=funder_address,json=funderAddress,proto3" json:"funder_address,omitempty"`
-	// new_funder_address is the new address to replace the existing funder_address
+	// new_funder_address is the new address to replace the existing
+	// funder_address
 	NewFunderAddress string `protobuf:"bytes,2,opt,name=new_funder_address,json=newFunderAddress,proto3" json:"new_funder_address,omitempty"`
 	// vesting_address is the address of the ClawbackVestingAccount being updated
 	VestingAddress string `protobuf:"bytes,3,opt,name=vesting_address,json=vestingAddress,proto3" json:"vesting_address,omitempty"`
@@ -383,7 +384,8 @@ func (m *MsgUpdateVestingFunderResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgUpdateVestingFunderResponse proto.InternalMessageInfo
 
-// MsgConvertVestingAccount defines a message that enables converting a vesting account to an eth account
+// MsgConvertVestingAccount defines a message that enables converting a vesting
+// account to an eth account
 type MsgConvertVestingAccount struct {
 	// vesting_address is the address of the vesting account to convert
 	VestingAddress string `protobuf:"bytes,1,opt,name=vesting_address,json=vestingAddress,proto3" json:"vesting_address,omitempty"`

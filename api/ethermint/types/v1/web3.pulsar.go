@@ -560,8 +560,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ExtensionOptionsWeb3Tx is an extension option that specifies the typed chain id,
-// the fee payer as well as its signature data.
+// ExtensionOptionsWeb3Tx is an extension option that specifies the typed chain
+// id, the fee payer as well as its signature data.
 type ExtensionOptionsWeb3Tx struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

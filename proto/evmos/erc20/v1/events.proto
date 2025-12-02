@@ -11,7 +11,8 @@ message EventRegisterPair {
   string erc20_address = 2;
 }
 
-// EventToggleTokenConversion is an event emitted when a coin's token conversion is toggled.
+// EventToggleTokenConversion is an event emitted when a coin's token conversion
+// is toggled.
 message EventToggleTokenConversion {
   // denom is the coin's denomination.
   string denom = 1;
@@ -43,6 +44,7 @@ message EventConvertERC20 {
   string amount = 3;
   // denom is the coin's denomination.
   string denom = 4;
-  // contract_address of an ERC20 token contract, that is registered in a token pair
+  // contract_address of an ERC20 token contract, that is registered in a token
+  // pair
   string contract_address = 5;
 }
