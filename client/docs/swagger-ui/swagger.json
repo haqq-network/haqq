@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Haqq Network gRPC API",
-    "version": "1.8.4"
+    "version": "1.9.0"
   },
   "tags": [
     {
@@ -12,7 +12,127 @@
       "name": "Query"
     },
     {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
       "name": "Service"
+    },
+    {
+      "name": "Service"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Service"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
+    },
+    {
+      "name": "Query"
     }
   ],
   "consumes": [
@@ -6329,7 +6449,7 @@
     },
     "/evmos/evm/v1/base_fee": {
       "get": {
-        "summary": "BaseFee queries the base fee of the parent block of the current block,\nit's similar to feemarket module's method, but also checks london hardfork status.",
+        "summary": "BaseFee queries the base fee of the parent block of the current block,\nit's similar to feemarket module's method, but also checks london hardfork\nstatus.",
         "operationId": "BaseFee",
         "responses": {
           "200": {
@@ -6592,7 +6712,7 @@
     },
     "/evmos/evm/v1/trace_block": {
       "get": {
-        "summary": "TraceBlock implements the `debug_traceBlockByNumber` and `debug_traceBlockByHash` rpc api",
+        "summary": "TraceBlock implements the `debug_traceBlockByNumber` and\n`debug_traceBlockByHash` rpc api",
         "operationId": "TraceBlock",
         "responses": {
           "200": {
@@ -6618,7 +6738,7 @@
           },
           {
             "name": "traceConfig.timeout",
-            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based tracing\ncalls",
+            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based\ntracing calls",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6676,7 +6796,7 @@
           },
           {
             "name": "traceConfig.overrides.daoForkSupport",
-            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork",
+            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO\nhard-fork",
             "in": "query",
             "required": false,
             "type": "boolean"
@@ -6690,7 +6810,7 @@
           },
           {
             "name": "traceConfig.overrides.eip150Hash",
-            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)",
+            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas\npricing changed)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6711,14 +6831,14 @@
           },
           {
             "name": "traceConfig.overrides.byzantiumBlock",
-            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)",
+            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on\nbyzantium)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.constantinopleBlock",
-            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)",
+            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already\nactivated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6732,14 +6852,14 @@
           },
           {
             "name": "traceConfig.overrides.istanbulBlock",
-            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)",
+            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on\nistanbul)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.muirGlacierBlock",
-            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)",
+            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6760,21 +6880,21 @@
           },
           {
             "name": "traceConfig.overrides.arrowGlacierBlock",
-            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)",
+            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.grayGlacierBlock",
-            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)",
+            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.mergeNetsplitBlock",
-            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network splitter",
+            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network\nsplitter",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6918,7 +7038,7 @@
           },
           {
             "name": "msg.from",
-            "description": "from is the ethereum signer address in hex format. This address value is checked\nagainst the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve",
+            "description": "from is the ethereum signer address in hex format. This address value is\nchecked against the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6932,7 +7052,7 @@
           },
           {
             "name": "traceConfig.timeout",
-            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based tracing\ncalls",
+            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based\ntracing calls",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6990,7 +7110,7 @@
           },
           {
             "name": "traceConfig.overrides.daoForkSupport",
-            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork",
+            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO\nhard-fork",
             "in": "query",
             "required": false,
             "type": "boolean"
@@ -7004,7 +7124,7 @@
           },
           {
             "name": "traceConfig.overrides.eip150Hash",
-            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)",
+            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas\npricing changed)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7025,14 +7145,14 @@
           },
           {
             "name": "traceConfig.overrides.byzantiumBlock",
-            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)",
+            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on\nbyzantium)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.constantinopleBlock",
-            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)",
+            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already\nactivated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7046,14 +7166,14 @@
           },
           {
             "name": "traceConfig.overrides.istanbulBlock",
-            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)",
+            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on\nistanbul)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.muirGlacierBlock",
-            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)",
+            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7074,21 +7194,21 @@
           },
           {
             "name": "traceConfig.overrides.arrowGlacierBlock",
-            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)",
+            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.grayGlacierBlock",
-            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)",
+            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.mergeNetsplitBlock",
-            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network splitter",
+            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network\nsplitter",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7757,6 +7877,2304 @@
             }
           }
         },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/interchain_accounts/controller/v1/owners/{owner}/connections/{connectionId}": {
+      "get": {
+        "summary": "InterchainAccount returns the interchain account address for a given owner address on a given connection",
+        "operationId": "InterchainAccount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/interchain_accounts/controller/v1/params": {
+      "get": {
+        "summary": "Params queries all parameters of the ICA controller submodule.",
+        "operationId": "Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/interchain_accounts/host/v1/params": {
+      "get": {
+        "summary": "Params queries all parameters of the ICA host submodule.",
+        "operationId": "Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.interchain_accounts.host.v1.QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/transfer/v1/channels/{channelId}/ports/{portId}/escrow_address": {
+      "get": {
+        "summary": "EscrowAddress returns the escrow address for a particular port and channel id.",
+        "operationId": "EscrowAddress",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryEscrowAddressResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "unique channel identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "unique port identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/transfer/v1/denom_hashes/{trace}": {
+      "get": {
+        "summary": "DenomHash queries a denomination hash information.",
+        "operationId": "DenomHash",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryDenomHashResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "trace",
+            "description": "The denomination trace ([port_id]/[channel_id])+/[denom]",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": ".+"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/transfer/v1/denoms": {
+      "get": {
+        "summary": "Denoms queries all denominations",
+        "operationId": "Denoms",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryDenomsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/transfer/v1/denoms/{hash}": {
+      "get": {
+        "summary": "Denom queries a denomination",
+        "operationId": "Denom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryDenomResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "description": "hash (in hex format) or denom (full denom with ibc prefix) of the on chain denomination.",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": ".+"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/transfer/v1/params": {
+      "get": {
+        "summary": "Params queries all parameters of the ibc-transfer module.",
+        "operationId": "Params",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/transfer/v1/total_escrow/{denom}": {
+      "get": {
+        "summary": "TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.",
+        "operationId": "TotalEscrowForDenom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "denom",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": ".+"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels": {
+      "get": {
+        "summary": "Channels queries all the IBC channels of a chain.",
+        "operationId": "Channels",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryChannelsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}": {
+      "get": {
+        "summary": "Channel queries an IBC Channel.",
+        "operationId": "Channel",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryChannelResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/client_state": {
+      "get": {
+        "summary": "ChannelClientState queries for the client state for the channel associated\nwith the provided channel identifiers.",
+        "operationId": "ChannelClientState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryChannelClientStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/consensus_state/revision/{revisionNumber}/height/{revisionHeight}": {
+      "get": {
+        "summary": "ChannelConsensusState queries for the consensus state for the channel\nassociated with the provided channel identifiers.",
+        "operationId": "ChannelConsensusState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryChannelConsensusStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "revisionNumber",
+            "description": "revision number of the consensus state",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "revisionHeight",
+            "description": "revision height of the consensus state",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/next_sequence": {
+      "get": {
+        "summary": "NextSequenceReceive returns the next receive sequence for a given channel.",
+        "operationId": "NextSequenceReceive",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryNextSequenceReceiveResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/next_sequence_send": {
+      "get": {
+        "summary": "NextSequenceSend returns the next send sequence for a given channel.",
+        "operationId": "NextSequenceSend",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryNextSequenceSendResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/packet_acknowledgements": {
+      "get": {
+        "summary": "PacketAcknowledgements returns all the packet acknowledgements associated\nwith a channel.",
+        "operationId": "PacketAcknowledgements",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryPacketAcknowledgementsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "packetCommitmentSequences",
+            "description": "list of packet sequences",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uint64"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/packet_acks/{sequence}": {
+      "get": {
+        "summary": "PacketAcknowledgement queries a stored packet acknowledgement hash.",
+        "operationId": "PacketAcknowledgement",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryPacketAcknowledgementResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequence",
+            "description": "packet sequence",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/packet_commitments": {
+      "get": {
+        "summary": "PacketCommitments returns all the packet commitments hashes associated\nwith a channel.",
+        "operationId": "PacketCommitments",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryPacketCommitmentsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/packet_commitments/{packetAckSequences}/unreceived_acks": {
+      "get": {
+        "summary": "UnreceivedAcks returns all the unreceived IBC acknowledgements associated\nwith a channel and sequences.",
+        "operationId": "UnreceivedAcks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryUnreceivedAcksResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "packetAckSequences",
+            "description": "list of acknowledgement sequences",
+            "in": "path",
+            "required": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uint64"
+            },
+            "collectionFormat": "csv",
+            "minItems": 1
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/packet_commitments/{packetCommitmentSequences}/unreceived_packets": {
+      "get": {
+        "summary": "UnreceivedPackets returns all the unreceived IBC packets associated with a\nchannel and sequences.",
+        "operationId": "UnreceivedPackets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryUnreceivedPacketsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "packetCommitmentSequences",
+            "description": "list of packet sequences",
+            "in": "path",
+            "required": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uint64"
+            },
+            "collectionFormat": "csv",
+            "minItems": 1
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/packet_commitments/{sequence}": {
+      "get": {
+        "summary": "PacketCommitment queries a stored packet commitment hash.",
+        "operationId": "PacketCommitment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryPacketCommitmentResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequence",
+            "description": "packet sequence",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/packet_receipts/{sequence}": {
+      "get": {
+        "summary": "PacketReceipt queries if a given packet sequence has been received on the\nqueried chain",
+        "operationId": "PacketReceipt",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryPacketReceiptResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "channelId",
+            "description": "channel unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "portId",
+            "description": "port unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequence",
+            "description": "packet sequence",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v1/connections/{connection}/channels": {
+      "get": {
+        "summary": "ConnectionChannels queries all the channels associated with a connection\nend.",
+        "operationId": "ConnectionChannels",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v1.QueryConnectionChannelsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "connection",
+            "description": "connection unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/next_sequence_send": {
+      "get": {
+        "summary": "NextSequenceSend returns the next send sequence for a given channel.",
+        "operationId": "NextSequenceSend",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryNextSequenceSendResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_acknowledgements": {
+      "get": {
+        "summary": "PacketAcknowledgements returns all packet acknowledgements associated with a channel.",
+        "operationId": "PacketAcknowledgements",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketAcknowledgementsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "packetCommitmentSequences",
+            "description": "list of packet sequences",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uint64"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_acks/{sequence}": {
+      "get": {
+        "summary": "PacketAcknowledgement queries a stored acknowledgement commitment hash.",
+        "operationId": "PacketAcknowledgement",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketAcknowledgementResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequence",
+            "description": "packet sequence",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_commitments": {
+      "get": {
+        "summary": "PacketCommitments queries a stored packet commitment hash.",
+        "operationId": "PacketCommitments",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketCommitmentsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_commitments/{packetAckSequences}/unreceived_acks": {
+      "get": {
+        "summary": "UnreceivedAcks returns all the unreceived IBC acknowledgements associated with a channel and sequences.",
+        "operationId": "UnreceivedAcks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryUnreceivedAcksResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "packetAckSequences",
+            "description": "list of acknowledgement sequences",
+            "in": "path",
+            "required": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uint64"
+            },
+            "collectionFormat": "csv",
+            "minItems": 1
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_commitments/{sequences}/unreceived_packets": {
+      "get": {
+        "summary": "UnreceivedPackets returns all the unreceived IBC packets associated with a channel and sequences.",
+        "operationId": "UnreceivedPackets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryUnreceivedPacketsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequences",
+            "description": "list of packet sequences",
+            "in": "path",
+            "required": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uint64"
+            },
+            "collectionFormat": "csv",
+            "minItems": 1
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_commitments/{sequence}": {
+      "get": {
+        "summary": "PacketCommitment queries a stored packet commitment hash.",
+        "operationId": "PacketCommitment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketCommitmentResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequence",
+            "description": "packet sequence",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_receipts/{sequence}": {
+      "get": {
+        "summary": "PacketReceipt queries a stored packet receipt.",
+        "operationId": "PacketReceipt",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketReceiptResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequence",
+            "description": "packet sequence",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/client_creator/{clientId}": {
+      "get": {
+        "summary": "ClientCreator queries the creator of a given client.",
+        "operationId": "ClientCreator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryClientCreatorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/client_states": {
+      "get": {
+        "summary": "ClientStates queries all the IBC light clients of a chain.",
+        "operationId": "ClientStates",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryClientStatesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/client_states/{clientId}": {
+      "get": {
+        "summary": "ClientState queries an IBC light client.",
+        "operationId": "ClientState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryClientStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client state unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/client_status/{clientId}": {
+      "get": {
+        "summary": "Status queries the status of an IBC client.",
+        "operationId": "ClientStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryClientStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/consensus_states/{clientId}": {
+      "get": {
+        "summary": "ConsensusStates queries all the consensus state associated with a given\nclient.",
+        "operationId": "ConsensusStates",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryConsensusStatesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/consensus_states/{clientId}/heights": {
+      "get": {
+        "summary": "ConsensusStateHeights queries the height of every consensus states associated with a given client.",
+        "operationId": "ConsensusStateHeights",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryConsensusStateHeightsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/consensus_states/{clientId}/revision/{revisionNumber}/height/{revisionHeight}": {
+      "get": {
+        "summary": "ConsensusState queries a consensus state associated with a client state at\na given height.",
+        "operationId": "ConsensusState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryConsensusStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "revisionNumber",
+            "description": "consensus state revision number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "revisionHeight",
+            "description": "consensus state revision height",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "latestHeight",
+            "description": "latest_height overrides the height field and queries the latest stored\nConsensusState",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/params": {
+      "get": {
+        "summary": "ClientParams queries all parameters of the ibc client submodule.",
+        "operationId": "ClientParams",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryClientParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/upgraded_client_states": {
+      "get": {
+        "summary": "UpgradedClientState queries an Upgraded IBC light client.",
+        "operationId": "UpgradedClientState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryUpgradedClientStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/upgraded_consensus_states": {
+      "get": {
+        "summary": "UpgradedConsensusState queries an Upgraded IBC consensus state.",
+        "operationId": "UpgradedConsensusState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryUpgradedConsensusStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/verify_membership": {
+      "post": {
+        "summary": "VerifyMembership queries an IBC light client for proof verification of a value at a given key path.",
+        "operationId": "VerifyMembership",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryVerifyMembershipResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryVerifyMembershipRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v2/config/{clientId}": {
+      "get": {
+        "summary": "Config queries the IBC client v2 configuration for a given client.",
+        "operationId": "Config",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v2.QueryConfigResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client state unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v2/counterparty_info/{clientId}": {
+      "get": {
+        "summary": "CounterpartyInfo queries an IBC light counter party info.",
+        "operationId": "CounterpartyInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v2.QueryCounterpartyInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client state unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/connection/v1/client_connections/{clientId}": {
+      "get": {
+        "summary": "ClientConnections queries the connection paths associated with a client\nstate.",
+        "operationId": "ClientConnections",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.connection.v1.QueryClientConnectionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client identifier associated with a connection",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/connection/v1/connections": {
+      "get": {
+        "summary": "Connections queries all the IBC connections of a chain.",
+        "operationId": "Connections",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.connection.v1.QueryConnectionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/connection/v1/connections/{connectionId}": {
+      "get": {
+        "summary": "Connection queries an IBC connection end.",
+        "operationId": "Connection",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.connection.v1.QueryConnectionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "connectionId",
+            "description": "connection unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/connection/v1/connections/{connectionId}/client_state": {
+      "get": {
+        "summary": "ConnectionClientState queries the client state associated with the\nconnection.",
+        "operationId": "ConnectionClientState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.connection.v1.QueryConnectionClientStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "connectionId",
+            "description": "connection identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/connection/v1/connections/{connectionId}/consensus_state/revision/{revisionNumber}/height/{revisionHeight}": {
+      "get": {
+        "summary": "ConnectionConsensusState queries the consensus state associated with the\nconnection.",
+        "operationId": "ConnectionConsensusState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.connection.v1.QueryConnectionConsensusStateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "connectionId",
+            "description": "connection identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "revisionNumber",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "revisionHeight",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/connection/v1/params": {
+      "get": {
+        "summary": "ConnectionParams queries all parameters of the ibc connection submodule.",
+        "operationId": "ConnectionParams",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.connection.v1.QueryConnectionParamsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/lightclients/wasm/v1/checksums": {
+      "get": {
+        "summary": "Get all Wasm checksums",
+        "operationId": "Checksums",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.lightclients.wasm.v1.QueryChecksumsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/lightclients/wasm/v1/checksums/{checksum}/code": {
+      "get": {
+        "summary": "Get Wasm code for given checksum",
+        "operationId": "Code",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.lightclients.wasm.v1.QueryCodeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "checksum",
+            "description": "checksum is a hex encoded string of the code stored.",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
         "tags": [
           "Query"
         ]
@@ -13744,7 +16162,7 @@
           "items": {
             "type": "string"
           },
-          "title": "access_control_list defines defines different things depending on the AccessType:\n- ACCESS_TYPE_PERMISSIONLESS: list of addresses that are blocked from performing the operation\n- ACCESS_TYPE_RESTRICTED: ignored\n- ACCESS_TYPE_PERMISSIONED: list of addresses that are allowed to perform the operation"
+          "title": "access_control_list defines defines different things depending on the\nAccessType:\n- ACCESS_TYPE_PERMISSIONLESS: list of addresses that are blocked from\nperforming the operation\n- ACCESS_TYPE_RESTRICTED: ignored\n- ACCESS_TYPE_PERMISSIONED: list of addresses that are allowed to perform\nthe operation"
         }
       },
       "title": "AccessControlType defines the permission type for policies"
@@ -13773,7 +16191,7 @@
         },
         "daoForkSupport": {
           "type": "boolean",
-          "title": "dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork"
+          "title": "dao_fork_support defines whether the nodes supports or opposes the DAO\nhard-fork"
         },
         "eip150Block": {
           "type": "string",
@@ -13781,7 +16199,7 @@
         },
         "eip150Hash": {
           "type": "string",
-          "title": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)"
+          "title": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas\npricing changed)"
         },
         "eip155Block": {
           "type": "string",
@@ -13793,11 +16211,11 @@
         },
         "byzantiumBlock": {
           "type": "string",
-          "title": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)"
+          "title": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on\nbyzantium)"
         },
         "constantinopleBlock": {
           "type": "string",
-          "title": "constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)"
+          "title": "constantinople_block: Constantinople switch block (nil no fork, 0 = already\nactivated)"
         },
         "petersburgBlock": {
           "type": "string",
@@ -13805,11 +16223,11 @@
         },
         "istanbulBlock": {
           "type": "string",
-          "title": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)"
+          "title": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on\nistanbul)"
         },
         "muirGlacierBlock": {
           "type": "string",
-          "title": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)"
+          "title": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =\nalready activated)"
         },
         "berlinBlock": {
           "type": "string",
@@ -13821,15 +16239,15 @@
         },
         "arrowGlacierBlock": {
           "type": "string",
-          "title": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)"
+          "title": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)"
         },
         "grayGlacierBlock": {
           "type": "string",
-          "title": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)"
+          "title": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)"
         },
         "mergeNetsplitBlock": {
           "type": "string",
-          "title": "merge_netsplit_block: Virtual fork after The Merge to use as a network splitter"
+          "title": "merge_netsplit_block: Virtual fork after The Merge to use as a network\nsplitter"
         },
         "shanghaiBlock": {
           "type": "string",
@@ -13853,7 +16271,7 @@
         "ret": {
           "type": "string",
           "format": "byte",
-          "title": "ret is the returned data from evm function (result or data supplied with revert\nopcode)"
+          "title": "ret is the returned data from evm function (result or data supplied with\nrevert opcode)"
         },
         "vmError": {
           "type": "string",
@@ -13929,7 +16347,7 @@
         },
         "from": {
           "type": "string",
-          "title": "from is the ethereum signer address in hex format. This address value is checked\nagainst the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve"
+          "title": "from is the ethereum signer address in hex format. This address value is\nchecked against the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve"
         }
       },
       "description": "MsgEthereumTx encapsulates an Ethereum transaction as an SDK message."
@@ -13952,7 +16370,7 @@
         "ret": {
           "type": "string",
           "format": "byte",
-          "title": "ret is the returned data from evm function (result or data supplied with revert\nopcode)"
+          "title": "ret is the returned data from evm function (result or data supplied with\nrevert opcode)"
         },
         "vmError": {
           "type": "string",
@@ -14004,7 +16422,7 @@
           "items": {
             "type": "string"
           },
-          "title": "active_static_precompiles defines the slice of hex addresses of the precompiled\ncontracts that are active"
+          "title": "active_static_precompiles defines the slice of hex addresses of the\nprecompiled contracts that are active"
         }
       },
       "title": "Params defines the EVM module parameters"
@@ -14150,7 +16568,7 @@
         },
         "timeout": {
           "type": "string",
-          "title": "timeout overrides the default timeout of 5 seconds for JavaScript-based tracing\ncalls"
+          "title": "timeout overrides the default timeout of 5 seconds for JavaScript-based\ntracing calls"
         },
         "reexec": {
           "type": "string",
@@ -14213,7 +16631,7 @@
         "enableHeight": {
           "type": "string",
           "format": "int64",
-          "description": "enable_height defines at which block height the base fee calculation is enabled."
+          "description": "enable_height defines at which block height the base fee calculation is\nenabled."
         },
         "baseFee": {
           "type": "string",
@@ -14221,7 +16639,7 @@
         },
         "minGasPrice": {
           "type": "string",
-          "title": "min_gas_price defines the minimum gas price value for cosmos and eth transactions"
+          "title": "min_gas_price defines the minimum gas price value for cosmos and eth\ntransactions"
         },
         "minGasMultiplier": {
           "type": "string",
@@ -14297,7 +16715,7 @@
           "title": "current_epoch_start_height of the epoch"
         }
       },
-      "description": "EpochInfo defines the message interface containing the relevant informations about\nan epoch."
+      "description": "EpochInfo defines the message interface containing the relevant informations\nabout an epoch."
     },
     "evmos.epochs.v1.QueryCurrentEpochResponse": {
       "type": "object",
@@ -14343,14 +16761,14 @@
       "properties": {
         "enableErc20": {
           "type": "boolean",
-          "description": "enable_erc20 is the parameter to enable the conversion of Cosmos coins <--> ERC20 tokens."
+          "description": "enable_erc20 is the parameter to enable the conversion of Cosmos coins <-->\nERC20 tokens."
         },
         "nativePrecompiles": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "title": "native_precompiles defines the slice of hex addresses of the\nactive precompiles that are used to interact with native staking coins as ERC20s"
+          "title": "native_precompiles defines the slice of hex addresses of the\nactive precompiles that are used to interact with native staking coins as\nERC20s"
         },
         "dynamicPrecompiles": {
           "type": "array",
@@ -14377,7 +16795,7 @@
       "properties": {
         "tokenPair": {
           "$ref": "#/definitions/evmos.erc20.v1.TokenPair",
-          "title": "token_pairs returns the info about a registered token pair for the erc20 module"
+          "title": "token_pairs returns the info about a registered token pair for the erc20\nmodule"
         }
       },
       "description": "QueryTokenPairResponse is the response type for the Query/TokenPair RPC\nmethod."
@@ -14417,7 +16835,7 @@
         },
         "contractOwner": {
           "$ref": "#/definitions/evmos.erc20.v1.Owner",
-          "title": "contract_owner is the an ENUM specifying the type of ERC20 owner (0 invalid, 1 ModuleAccount, 2 external address)"
+          "title": "contract_owner is the an ENUM specifying the type of ERC20 owner (0\ninvalid, 1 ModuleAccount, 2 external address)"
         }
       },
       "description": "TokenPair defines an instance that records a pairing consisting of a native\nCosmos Coin and an ERC20 token address."
@@ -14751,6 +17169,1344 @@
         }
       },
       "description": "QueryTotalLockedResponse is the response type for the Query/TotalLocked RPC\nmethod."
+    },
+    "ibc.applications.interchain_accounts.controller.v1.Params": {
+      "type": "object",
+      "properties": {
+        "controllerEnabled": {
+          "type": "boolean",
+          "description": "controller_enabled enables or disables the controller submodule."
+        }
+      },
+      "description": "Params defines the set of on-chain interchain accounts parameters.\nThe following parameters may be used to disable the controller submodule."
+    },
+    "ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        }
+      },
+      "description": "QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method."
+    },
+    "ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/ibc.applications.interchain_accounts.controller.v1.Params",
+          "description": "params defines the parameters of the module."
+        }
+      },
+      "description": "QueryParamsResponse is the response type for the Query/Params RPC method."
+    },
+    "ibc.applications.interchain_accounts.host.v1.Params": {
+      "type": "object",
+      "properties": {
+        "hostEnabled": {
+          "type": "boolean",
+          "description": "host_enabled enables or disables the host submodule."
+        },
+        "allowMessages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "allow_messages defines a list of sdk message typeURLs allowed to be executed on a host chain."
+        }
+      },
+      "description": "Params defines the set of on-chain interchain accounts parameters.\nThe following parameters may be used to disable the host submodule."
+    },
+    "ibc.applications.interchain_accounts.host.v1.QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/ibc.applications.interchain_accounts.host.v1.Params",
+          "description": "params defines the parameters of the module."
+        }
+      },
+      "description": "QueryParamsResponse is the response type for the Query/Params RPC method."
+    },
+    "ibc.applications.transfer.v1.Denom": {
+      "type": "object",
+      "properties": {
+        "base": {
+          "type": "string",
+          "title": "the base token denomination"
+        },
+        "trace": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.applications.transfer.v1.Hop"
+          },
+          "title": "the trace of the token"
+        }
+      },
+      "description": "Denom holds the base denom of a Token and a trace of the chains it was sent through."
+    },
+    "ibc.applications.transfer.v1.Hop": {
+      "type": "object",
+      "properties": {
+        "portId": {
+          "type": "string"
+        },
+        "channelId": {
+          "type": "string"
+        }
+      },
+      "title": "Hop defines a port ID, channel ID pair specifying a unique \"hop\" in a trace"
+    },
+    "ibc.applications.transfer.v1.Params": {
+      "type": "object",
+      "properties": {
+        "sendEnabled": {
+          "type": "boolean",
+          "description": "send_enabled enables or disables all cross-chain token transfers from this\nchain."
+        },
+        "receiveEnabled": {
+          "type": "boolean",
+          "description": "receive_enabled enables or disables all cross-chain token transfers to this\nchain."
+        }
+      },
+      "description": "Params defines the set of IBC transfer parameters.\nNOTE: To prevent a single token from being transferred, set the\nTransfersEnabled parameter to true and then set the bank module's SendEnabled\nparameter for the denomination to false."
+    },
+    "ibc.applications.transfer.v1.QueryDenomHashResponse": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "description": "hash (in hex format) of the denomination trace information."
+        }
+      },
+      "description": "QueryDenomHashResponse is the response type for the Query/DenomHash RPC\nmethod."
+    },
+    "ibc.applications.transfer.v1.QueryDenomResponse": {
+      "type": "object",
+      "properties": {
+        "denom": {
+          "$ref": "#/definitions/ibc.applications.transfer.v1.Denom",
+          "description": "denom returns the requested denomination."
+        }
+      },
+      "description": "QueryDenomResponse is the response type for the Query/Denom RPC\nmethod."
+    },
+    "ibc.applications.transfer.v1.QueryDenomsResponse": {
+      "type": "object",
+      "properties": {
+        "denoms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.applications.transfer.v1.Denom"
+          },
+          "description": "denoms returns all denominations."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response."
+        }
+      },
+      "description": "QueryDenomsResponse is the response type for the Query/Denoms RPC\nmethod."
+    },
+    "ibc.applications.transfer.v1.QueryEscrowAddressResponse": {
+      "type": "object",
+      "properties": {
+        "escrowAddress": {
+          "type": "string",
+          "title": "the escrow account address"
+        }
+      },
+      "description": "QueryEscrowAddressResponse is the response type of the EscrowAddress RPC method."
+    },
+    "ibc.applications.transfer.v1.QueryParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/ibc.applications.transfer.v1.Params",
+          "description": "params defines the parameters of the module."
+        }
+      },
+      "description": "QueryParamsResponse is the response type for the Query/Params RPC method."
+    },
+    "ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
+        }
+      },
+      "description": "QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method."
+    },
+    "ibc.core.channel.v1.Channel": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "$ref": "#/definitions/ibc.core.channel.v1.State",
+          "title": "current state of the channel end"
+        },
+        "ordering": {
+          "$ref": "#/definitions/ibc.core.channel.v1.Order",
+          "title": "whether the channel is ordered or unordered"
+        },
+        "counterparty": {
+          "$ref": "#/definitions/ibc.core.channel.v1.Counterparty",
+          "title": "counterparty channel end"
+        },
+        "connectionHops": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "list of connection identifiers, in order, along which packets sent on\nthis channel will travel"
+        },
+        "version": {
+          "type": "string",
+          "title": "opaque channel version, which is agreed upon during the handshake"
+        }
+      },
+      "description": "Channel defines pipeline for exactly-once packet delivery between specific\nmodules on separate blockchains, which has at least one end capable of\nsending packets and one end capable of receiving packets."
+    },
+    "ibc.core.channel.v1.Counterparty": {
+      "type": "object",
+      "properties": {
+        "portId": {
+          "type": "string",
+          "description": "port on the counterparty chain which owns the other end of the channel."
+        },
+        "channelId": {
+          "type": "string",
+          "title": "channel end on the counterparty chain"
+        }
+      },
+      "title": "Counterparty defines a channel end counterparty"
+    },
+    "ibc.core.channel.v1.IdentifiedChannel": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "$ref": "#/definitions/ibc.core.channel.v1.State",
+          "title": "current state of the channel end"
+        },
+        "ordering": {
+          "$ref": "#/definitions/ibc.core.channel.v1.Order",
+          "title": "whether the channel is ordered or unordered"
+        },
+        "counterparty": {
+          "$ref": "#/definitions/ibc.core.channel.v1.Counterparty",
+          "title": "counterparty channel end"
+        },
+        "connectionHops": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "list of connection identifiers, in order, along which packets sent on\nthis channel will travel"
+        },
+        "version": {
+          "type": "string",
+          "title": "opaque channel version, which is agreed upon during the handshake"
+        },
+        "portId": {
+          "type": "string",
+          "title": "port identifier"
+        },
+        "channelId": {
+          "type": "string",
+          "title": "channel identifier"
+        }
+      },
+      "description": "IdentifiedChannel defines a channel with additional port and channel\nidentifier fields."
+    },
+    "ibc.core.channel.v1.Order": {
+      "type": "string",
+      "enum": [
+        "ORDER_NONE_UNSPECIFIED",
+        "ORDER_UNORDERED",
+        "ORDER_ORDERED"
+      ],
+      "default": "ORDER_NONE_UNSPECIFIED",
+      "description": "- ORDER_NONE_UNSPECIFIED: zero-value for channel ordering\n - ORDER_UNORDERED: packets can be delivered in any order, which may differ from the order in\nwhich they were sent.\n - ORDER_ORDERED: packets are delivered exactly in the order which they were sent",
+      "title": "Order defines if a channel is ORDERED or UNORDERED"
+    },
+    "ibc.core.channel.v1.PacketState": {
+      "type": "object",
+      "properties": {
+        "portId": {
+          "type": "string",
+          "description": "channel port identifier."
+        },
+        "channelId": {
+          "type": "string",
+          "description": "channel unique identifier."
+        },
+        "sequence": {
+          "type": "string",
+          "format": "uint64",
+          "description": "packet sequence."
+        },
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "description": "embedded data that represents packet state."
+        }
+      },
+      "description": "PacketState defines the generic type necessary to retrieve and store\npacket commitments, acknowledgements, and receipts.\nCaller is responsible for knowing the context necessary to interpret this\nstate as a commitment, acknowledgement, or a receipt."
+    },
+    "ibc.core.channel.v1.QueryChannelClientStateResponse": {
+      "type": "object",
+      "properties": {
+        "identifiedClientState": {
+          "$ref": "#/definitions/ibc.core.client.v1.IdentifiedClientState",
+          "title": "client state associated with the channel"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryChannelClientStateResponse is the Response type for the\nQuery/QueryChannelClientState RPC method"
+    },
+    "ibc.core.channel.v1.QueryChannelConsensusStateResponse": {
+      "type": "object",
+      "properties": {
+        "consensusState": {
+          "$ref": "#/definitions/google.protobuf.Any",
+          "title": "consensus state associated with the channel"
+        },
+        "clientId": {
+          "type": "string",
+          "title": "client ID associated with the consensus state"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryChannelClientStateResponse is the Response type for the\nQuery/QueryChannelClientState RPC method"
+    },
+    "ibc.core.channel.v1.QueryChannelResponse": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "$ref": "#/definitions/ibc.core.channel.v1.Channel",
+          "title": "channel associated with the request identifiers"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "description": "QueryChannelResponse is the response type for the Query/Channel RPC method.\nBesides the Channel end, it includes a proof and the height from which the\nproof was retrieved."
+    },
+    "ibc.core.channel.v1.QueryChannelsResponse": {
+      "type": "object",
+      "properties": {
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.channel.v1.IdentifiedChannel"
+          },
+          "description": "list of stored channels of the chain."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "description": "QueryChannelsResponse is the response type for the Query/Channels RPC method."
+    },
+    "ibc.core.channel.v1.QueryConnectionChannelsResponse": {
+      "type": "object",
+      "properties": {
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.channel.v1.IdentifiedChannel"
+          },
+          "description": "list of channels associated with a connection."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryConnectionChannelsResponse is the Response type for the\nQuery/QueryConnectionChannels RPC method"
+    },
+    "ibc.core.channel.v1.QueryNextSequenceReceiveResponse": {
+      "type": "object",
+      "properties": {
+        "nextSequenceReceive": {
+          "type": "string",
+          "format": "uint64",
+          "title": "next sequence receive number"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QuerySequenceResponse is the response type for the\nQuery/QueryNextSequenceReceiveResponse RPC method"
+    },
+    "ibc.core.channel.v1.QueryNextSequenceSendResponse": {
+      "type": "object",
+      "properties": {
+        "nextSequenceSend": {
+          "type": "string",
+          "format": "uint64",
+          "title": "next sequence send number"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryNextSequenceSendResponse is the request type for the\nQuery/QueryNextSequenceSend RPC method"
+    },
+    "ibc.core.channel.v1.QueryPacketAcknowledgementResponse": {
+      "type": "object",
+      "properties": {
+        "acknowledgement": {
+          "type": "string",
+          "format": "byte",
+          "title": "packet associated with the request fields"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryPacketAcknowledgementResponse defines the client query response for a\npacket which also includes a proof and the height from which the\nproof was retrieved"
+    },
+    "ibc.core.channel.v1.QueryPacketAcknowledgementsResponse": {
+      "type": "object",
+      "properties": {
+        "acknowledgements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.channel.v1.PacketState"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryPacketAcknowledgemetsResponse is the request type for the\nQuery/QueryPacketAcknowledgements RPC method"
+    },
+    "ibc.core.channel.v1.QueryPacketCommitmentResponse": {
+      "type": "object",
+      "properties": {
+        "commitment": {
+          "type": "string",
+          "format": "byte",
+          "title": "packet associated with the request fields"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryPacketCommitmentResponse defines the client query response for a packet\nwhich also includes a proof and the height from which the proof was\nretrieved"
+    },
+    "ibc.core.channel.v1.QueryPacketCommitmentsResponse": {
+      "type": "object",
+      "properties": {
+        "commitments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.channel.v1.PacketState"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryPacketCommitmentsResponse is the request type for the\nQuery/QueryPacketCommitments RPC method"
+    },
+    "ibc.core.channel.v1.QueryPacketReceiptResponse": {
+      "type": "object",
+      "properties": {
+        "received": {
+          "type": "boolean",
+          "title": "success flag for if receipt exists"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryPacketReceiptResponse defines the client query response for a packet\nreceipt which also includes a proof, and the height from which the proof was\nretrieved"
+    },
+    "ibc.core.channel.v1.QueryUnreceivedAcksResponse": {
+      "type": "object",
+      "properties": {
+        "sequences": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "list of unreceived acknowledgement sequences"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryUnreceivedAcksResponse is the response type for the\nQuery/UnreceivedAcks RPC method"
+    },
+    "ibc.core.channel.v1.QueryUnreceivedPacketsResponse": {
+      "type": "object",
+      "properties": {
+        "sequences": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "list of unreceived packet sequences"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryUnreceivedPacketsResponse is the response type for the\nQuery/UnreceivedPacketCommitments RPC method"
+    },
+    "ibc.core.channel.v1.State": {
+      "type": "string",
+      "enum": [
+        "STATE_UNINITIALIZED_UNSPECIFIED",
+        "STATE_INIT",
+        "STATE_TRYOPEN",
+        "STATE_OPEN",
+        "STATE_CLOSED"
+      ],
+      "default": "STATE_UNINITIALIZED_UNSPECIFIED",
+      "description": "State defines if a channel is in one of the following states:\nCLOSED, INIT, TRYOPEN, OPEN, or UNINITIALIZED.\n\n - STATE_UNINITIALIZED_UNSPECIFIED: Default State\n - STATE_INIT: A channel has just started the opening handshake.\n - STATE_TRYOPEN: A channel has acknowledged the handshake step on the counterparty chain.\n - STATE_OPEN: A channel has completed the handshake. Open channels are\nready to send and receive packets.\n - STATE_CLOSED: A channel has been closed and can no longer be used to send or receive\npackets."
+    },
+    "ibc.core.channel.v2.PacketState": {
+      "type": "object",
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "description": "client unique identifier."
+        },
+        "sequence": {
+          "type": "string",
+          "format": "uint64",
+          "description": "packet sequence."
+        },
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "description": "embedded data that represents packet state."
+        }
+      },
+      "description": "PacketState defines the generic type necessary to retrieve and store\npacket commitments, acknowledgements, and receipts.\nCaller is responsible for knowing the context necessary to interpret this\nstate as a commitment, acknowledgement, or a receipt."
+    },
+    "ibc.core.channel.v2.QueryNextSequenceSendResponse": {
+      "type": "object",
+      "properties": {
+        "nextSequenceSend": {
+          "type": "string",
+          "format": "uint64",
+          "title": "next sequence send number"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryNextSequenceSendResponse is the response type for the Query/QueryNextSequenceSend RPC method"
+    },
+    "ibc.core.channel.v2.QueryPacketAcknowledgementResponse": {
+      "type": "object",
+      "properties": {
+        "acknowledgement": {
+          "type": "string",
+          "format": "byte",
+          "title": "acknowledgement associated with the request fields"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "description": "QueryPacketAcknowledgementResponse is the response type for the Query/PacketAcknowledgement RPC method."
+    },
+    "ibc.core.channel.v2.QueryPacketAcknowledgementsResponse": {
+      "type": "object",
+      "properties": {
+        "acknowledgements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.channel.v2.PacketState"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryPacketAcknowledgemetsResponse is the request type for the\nQuery/QueryPacketAcknowledgements RPC method"
+    },
+    "ibc.core.channel.v2.QueryPacketCommitmentResponse": {
+      "type": "object",
+      "properties": {
+        "commitment": {
+          "type": "string",
+          "format": "byte",
+          "title": "packet associated with the request fields"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "description": "QueryPacketCommitmentResponse is the response type for the Query/PacketCommitment RPC method."
+    },
+    "ibc.core.channel.v2.QueryPacketCommitmentsResponse": {
+      "type": "object",
+      "properties": {
+        "commitments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.channel.v2.PacketState"
+          },
+          "description": "collection of packet commitments for the requested channel identifier."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination response."
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "description": "query block height."
+        }
+      },
+      "description": "QueryPacketCommitmentResponse is the response type for the Query/PacketCommitment RPC method."
+    },
+    "ibc.core.channel.v2.QueryPacketReceiptResponse": {
+      "type": "object",
+      "properties": {
+        "received": {
+          "type": "boolean",
+          "title": "success flag for if receipt exists"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence or absence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "description": "QueryPacketReceiptResponse is the response type for the Query/PacketReceipt RPC method."
+    },
+    "ibc.core.channel.v2.QueryUnreceivedAcksResponse": {
+      "type": "object",
+      "properties": {
+        "sequences": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "list of unreceived acknowledgement sequences"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryUnreceivedAcksResponse is the response type for the\nQuery/UnreceivedAcks RPC method"
+    },
+    "ibc.core.channel.v2.QueryUnreceivedPacketsResponse": {
+      "type": "object",
+      "properties": {
+        "sequences": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "list of unreceived packet sequences"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryUnreceivedPacketsResponse is the response type for the Query/UnreceivedPacketCommitments RPC method"
+    },
+    "ibc.core.client.v1.ConsensusStateWithHeight": {
+      "type": "object",
+      "properties": {
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "consensus state height"
+        },
+        "consensusState": {
+          "$ref": "#/definitions/google.protobuf.Any",
+          "title": "consensus state"
+        }
+      },
+      "description": "ConsensusStateWithHeight defines a consensus state with an additional height\nfield."
+    },
+    "ibc.core.client.v1.Height": {
+      "type": "object",
+      "properties": {
+        "revisionNumber": {
+          "type": "string",
+          "format": "uint64",
+          "title": "the revision that the client is currently on"
+        },
+        "revisionHeight": {
+          "type": "string",
+          "format": "uint64",
+          "title": "the height within the given revision"
+        }
+      },
+      "description": "Normally the RevisionHeight is incremented at each height while keeping\nRevisionNumber the same. However some consensus algorithms may choose to\nreset the height in certain conditions e.g. hard forks, state-machine\nbreaking changes In these cases, the RevisionNumber is incremented so that\nheight continues to be monitonically increasing even as the RevisionHeight\ngets reset\n\nPlease note that json tags for generated Go code are overridden to explicitly exclude the omitempty jsontag.\nThis enforces the Go json marshaller to always emit zero values for both revision_number and revision_height.",
+      "title": "Height is a monotonically increasing data type\nthat can be compared against another Height for the purposes of updating and\nfreezing clients"
+    },
+    "ibc.core.client.v1.IdentifiedClientState": {
+      "type": "object",
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "title": "client identifier"
+        },
+        "clientState": {
+          "$ref": "#/definitions/google.protobuf.Any",
+          "title": "client state"
+        }
+      },
+      "description": "IdentifiedClientState defines a client state with an additional client\nidentifier field."
+    },
+    "ibc.core.client.v1.Params": {
+      "type": "object",
+      "properties": {
+        "allowedClients": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "allowed_clients defines the list of allowed client state types which can be created\nand interacted with. If a client type is removed from the allowed clients list, usage\nof this client will be disabled until it is added again to the list."
+        }
+      },
+      "description": "Params defines the set of IBC light client parameters."
+    },
+    "ibc.core.client.v1.QueryClientCreatorResponse": {
+      "type": "object",
+      "properties": {
+        "creator": {
+          "type": "string",
+          "title": "creator of the client"
+        }
+      },
+      "description": "QueryClientCreatorResponse is the response type for the Query/ClientCreator RPC\nmethod."
+    },
+    "ibc.core.client.v1.QueryClientParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/ibc.core.client.v1.Params",
+          "description": "params defines the parameters of the module."
+        }
+      },
+      "description": "QueryClientParamsResponse is the response type for the Query/ClientParams RPC\nmethod."
+    },
+    "ibc.core.client.v1.QueryClientStateResponse": {
+      "type": "object",
+      "properties": {
+        "clientState": {
+          "$ref": "#/definitions/google.protobuf.Any",
+          "title": "client state associated with the request identifier"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "description": "QueryClientStateResponse is the response type for the Query/ClientState RPC\nmethod. Besides the client state, it includes a proof and the height from\nwhich the proof was retrieved."
+    },
+    "ibc.core.client.v1.QueryClientStatesResponse": {
+      "type": "object",
+      "properties": {
+        "clientStates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.client.v1.IdentifiedClientState"
+          },
+          "description": "list of stored ClientStates of the chain."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        }
+      },
+      "description": "QueryClientStatesResponse is the response type for the Query/ClientStates RPC\nmethod."
+    },
+    "ibc.core.client.v1.QueryClientStatusResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "description": "QueryClientStatusResponse is the response type for the Query/ClientStatus RPC\nmethod. It returns the current status of the IBC client."
+    },
+    "ibc.core.client.v1.QueryConsensusStateHeightsResponse": {
+      "type": "object",
+      "properties": {
+        "consensusStateHeights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.client.v1.Height"
+          },
+          "title": "consensus state heights"
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        }
+      },
+      "title": "QueryConsensusStateHeightsResponse is the response type for the\nQuery/ConsensusStateHeights RPC method"
+    },
+    "ibc.core.client.v1.QueryConsensusStateResponse": {
+      "type": "object",
+      "properties": {
+        "consensusState": {
+          "$ref": "#/definitions/google.protobuf.Any",
+          "title": "consensus state associated with the client identifier at the given height"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryConsensusStateResponse is the response type for the Query/ConsensusState\nRPC method"
+    },
+    "ibc.core.client.v1.QueryConsensusStatesResponse": {
+      "type": "object",
+      "properties": {
+        "consensusStates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.client.v1.ConsensusStateWithHeight"
+          },
+          "title": "consensus states associated with the identifier"
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        }
+      },
+      "title": "QueryConsensusStatesResponse is the response type for the\nQuery/ConsensusStates RPC method"
+    },
+    "ibc.core.client.v1.QueryUpgradedClientStateResponse": {
+      "type": "object",
+      "properties": {
+        "upgradedClientState": {
+          "$ref": "#/definitions/google.protobuf.Any",
+          "title": "client state associated with the request identifier"
+        }
+      },
+      "description": "QueryUpgradedClientStateResponse is the response type for the\nQuery/UpgradedClientState RPC method."
+    },
+    "ibc.core.client.v1.QueryUpgradedConsensusStateResponse": {
+      "type": "object",
+      "properties": {
+        "upgradedConsensusState": {
+          "$ref": "#/definitions/google.protobuf.Any",
+          "title": "Consensus state associated with the request identifier"
+        }
+      },
+      "description": "QueryUpgradedConsensusStateResponse is the response type for the\nQuery/UpgradedConsensusState RPC method."
+    },
+    "ibc.core.client.v1.QueryVerifyMembershipRequest": {
+      "type": "object",
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "description": "client unique identifier."
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "description": "the proof to be verified by the client."
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "description": "the height of the commitment root at which the proof is verified."
+        },
+        "value": {
+          "type": "string",
+          "format": "byte",
+          "description": "the value which is proven."
+        },
+        "timeDelay": {
+          "type": "string",
+          "format": "uint64",
+          "title": "optional time delay"
+        },
+        "blockDelay": {
+          "type": "string",
+          "format": "uint64",
+          "title": "optional block delay"
+        },
+        "merklePath": {
+          "$ref": "#/definitions/ibc.core.commitment.v2.MerklePath",
+          "description": "the commitment key path."
+        }
+      },
+      "title": "QueryVerifyMembershipRequest is the request type for the Query/VerifyMembership RPC method"
+    },
+    "ibc.core.client.v1.QueryVerifyMembershipResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "boolean indicating success or failure of proof verification."
+        }
+      },
+      "title": "QueryVerifyMembershipResponse is the response type for the Query/VerifyMembership RPC method"
+    },
+    "ibc.core.client.v2.Config": {
+      "type": "object",
+      "properties": {
+        "allowedRelayers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "allowed_relayers defines the set of allowed relayers for IBC V2 protocol for the given client"
+        }
+      },
+      "title": "Config is a **per-client** configuration struct that sets which relayers are allowed to relay v2 IBC messages\nfor a given client.\nIf it is set, then only relayers in the allow list can send v2 messages\nIf it is not set, then the client allows permissionless relaying of v2 messages"
+    },
+    "ibc.core.client.v2.CounterpartyInfo": {
+      "type": "object",
+      "properties": {
+        "merklePrefix": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "merkle prefix key is the prefix that ics provable keys are stored under"
+        },
+        "clientId": {
+          "type": "string",
+          "title": "client identifier is the identifier used to send packet messages to our client"
+        }
+      },
+      "title": "CounterpartyInfo defines the key that the counterparty will use to message our client"
+    },
+    "ibc.core.client.v2.QueryConfigResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/ibc.core.client.v2.Config"
+        }
+      },
+      "title": "QueryConfigResponse is the response type for the Query/Config RPC method"
+    },
+    "ibc.core.client.v2.QueryCounterpartyInfoResponse": {
+      "type": "object",
+      "properties": {
+        "counterpartyInfo": {
+          "$ref": "#/definitions/ibc.core.client.v2.CounterpartyInfo"
+        }
+      },
+      "description": "QueryCounterpartyInfoResponse is the response type for the\nQuery/CounterpartyInfo RPC method."
+    },
+    "ibc.core.commitment.v1.MerklePrefix": {
+      "type": "object",
+      "properties": {
+        "keyPrefix": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "title": "MerklePrefix is merkle path prefixed to the key.\nThe constructed key from the Path and the key will be append(Path.KeyPath,\nappend(Path.KeyPrefix, key...))"
+    },
+    "ibc.core.commitment.v2.MerklePath": {
+      "type": "object",
+      "properties": {
+        "keyPath": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "description": "MerklePath is the path used to verify commitment proofs, which can be an\narbitrary structured object (defined by a commitment type).\nICS-23 verification supports membership proofs for nested merkle trees.\nThe ICS-24 standard provable keys MUST be stored in the lowest level tree with an optional prefix.\nThe IC24 provable tree may then be stored in a higher level tree(s) that hash up to the root hash\nstored in the consensus state of the client.\nEach element of the path represents the key of a merkle tree from the root to the leaf.\nThe elements of the path before the final element must be the path to the tree that contains\nthe ICS24 provable store. Thus, it should remain constant for all ICS24 proofs.\nThe final element of the path is the key of the leaf in the ICS24 provable store,\nThus IBC core will append the ICS24 path to the final element of the MerklePath\nstored in the counterparty to create the full path to the leaf for proof verification.\nExamples:\nCosmos SDK:\nThe Cosmos SDK commits to a multi-tree where each store is an IAVL tree and all store hashes\nare hashed in a simple merkle tree to get the final root hash. Thus, the MerklePath in the counterparty\nMerklePrefix has the following structure: [\"ibc\", \"\"]\nThe core IBC handler will append the ICS24 path to the final element of the MerklePath\nlike so: [\"ibc\", \"{packetCommitmentPath}\"] which will then be used for final verification.\nEthereum:\nThe Ethereum client commits to a single Patricia merkle trie. The ICS24 provable store is managed\nby the smart contract state. Each smart contract has a specific prefix reserved within the global trie.\nThus the MerklePath in the counterparty is the prefix to the smart contract state in the global trie.\nSince there is only one tree in the commitment structure of ethereum the MerklePath in the counterparty\nMerklePrefix has the following structure: [\"IBCCoreContractAddressStoragePrefix\"]\nThe core IBC handler will append the ICS24 path to the final element of the MerklePath\nlike so: [\"IBCCoreContractAddressStoragePrefix{packetCommitmentPath}\"] which will then be used for final\nverification. Thus the MerklePath in the counterparty MerklePrefix is the nested key path from the root hash of the\nconsensus state down to the ICS24 provable store. The IBC handler retrieves the counterparty key path to the ICS24\nprovable store from the MerklePath and appends the ICS24 path to get the final key path to the value being verified\nby the client against the root hash in the client's consensus state."
+    },
+    "ibc.core.connection.v1.ConnectionEnd": {
+      "type": "object",
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "description": "client associated with this connection."
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.connection.v1.Version"
+          },
+          "description": "IBC version which can be utilised to determine encodings or protocols for\nchannels or packets utilising this connection."
+        },
+        "state": {
+          "$ref": "#/definitions/ibc.core.connection.v1.State",
+          "description": "current state of the connection end."
+        },
+        "counterparty": {
+          "$ref": "#/definitions/ibc.core.connection.v1.Counterparty",
+          "description": "counterparty chain associated with this connection."
+        },
+        "delayPeriod": {
+          "type": "string",
+          "format": "uint64",
+          "description": "delay period that must pass before a consensus state can be used for\npacket-verification NOTE: delay period logic is only implemented by some\nclients."
+        }
+      },
+      "description": "ConnectionEnd defines a stateful object on a chain connected to another\nseparate one.\nNOTE: there must only be 2 defined ConnectionEnds to establish\na connection between two chains."
+    },
+    "ibc.core.connection.v1.Counterparty": {
+      "type": "object",
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "description": "identifies the client on the counterparty chain associated with a given\nconnection."
+        },
+        "connectionId": {
+          "type": "string",
+          "description": "identifies the connection end on the counterparty chain associated with a\ngiven connection."
+        },
+        "prefix": {
+          "$ref": "#/definitions/ibc.core.commitment.v1.MerklePrefix",
+          "description": "commitment merkle prefix of the counterparty chain."
+        }
+      },
+      "description": "Counterparty defines the counterparty chain associated with a connection end."
+    },
+    "ibc.core.connection.v1.IdentifiedConnection": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "connection identifier."
+        },
+        "clientId": {
+          "type": "string",
+          "description": "client associated with this connection."
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.connection.v1.Version"
+          },
+          "title": "IBC version which can be utilised to determine encodings or protocols for\nchannels or packets utilising this connection"
+        },
+        "state": {
+          "$ref": "#/definitions/ibc.core.connection.v1.State",
+          "description": "current state of the connection end."
+        },
+        "counterparty": {
+          "$ref": "#/definitions/ibc.core.connection.v1.Counterparty",
+          "description": "counterparty chain associated with this connection."
+        },
+        "delayPeriod": {
+          "type": "string",
+          "format": "uint64",
+          "description": "delay period associated with this connection."
+        }
+      },
+      "description": "IdentifiedConnection defines a connection with additional connection\nidentifier field."
+    },
+    "ibc.core.connection.v1.Params": {
+      "type": "object",
+      "properties": {
+        "maxExpectedTimePerBlock": {
+          "type": "string",
+          "format": "uint64",
+          "description": "maximum expected time per block (in nanoseconds), used to enforce block delay. This parameter should reflect the\nlargest amount of time that the chain might reasonably take to produce the next block under normal operating\nconditions. A safe choice is 3-5x the expected time per block."
+        }
+      },
+      "description": "Params defines the set of Connection parameters."
+    },
+    "ibc.core.connection.v1.QueryClientConnectionsResponse": {
+      "type": "object",
+      "properties": {
+        "connectionPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "slice of all the connection paths associated with a client."
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was generated"
+        }
+      },
+      "title": "QueryClientConnectionsResponse is the response type for the\nQuery/ClientConnections RPC method"
+    },
+    "ibc.core.connection.v1.QueryConnectionClientStateResponse": {
+      "type": "object",
+      "properties": {
+        "identifiedClientState": {
+          "$ref": "#/definitions/ibc.core.client.v1.IdentifiedClientState",
+          "title": "client state associated with the channel"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryConnectionClientStateResponse is the response type for the\nQuery/ConnectionClientState RPC method"
+    },
+    "ibc.core.connection.v1.QueryConnectionConsensusStateResponse": {
+      "type": "object",
+      "properties": {
+        "consensusState": {
+          "$ref": "#/definitions/google.protobuf.Any",
+          "title": "consensus state associated with the channel"
+        },
+        "clientId": {
+          "type": "string",
+          "title": "client ID associated with the consensus state"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "title": "QueryConnectionConsensusStateResponse is the response type for the\nQuery/ConnectionConsensusState RPC method"
+    },
+    "ibc.core.connection.v1.QueryConnectionParamsResponse": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "$ref": "#/definitions/ibc.core.connection.v1.Params",
+          "description": "params defines the parameters of the module."
+        }
+      },
+      "description": "QueryConnectionParamsResponse is the response type for the Query/ConnectionParams RPC method."
+    },
+    "ibc.core.connection.v1.QueryConnectionResponse": {
+      "type": "object",
+      "properties": {
+        "connection": {
+          "$ref": "#/definitions/ibc.core.connection.v1.ConnectionEnd",
+          "title": "connection associated with the request identifier"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "description": "QueryConnectionResponse is the response type for the Query/Connection RPC\nmethod. Besides the connection end, it includes a proof and the height from\nwhich the proof was retrieved."
+    },
+    "ibc.core.connection.v1.QueryConnectionsResponse": {
+      "type": "object",
+      "properties": {
+        "connections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.connection.v1.IdentifiedConnection"
+          },
+          "description": "list of stored connections of the chain."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "description": "QueryConnectionsResponse is the response type for the Query/Connections RPC\nmethod."
+    },
+    "ibc.core.connection.v1.State": {
+      "type": "string",
+      "enum": [
+        "STATE_UNINITIALIZED_UNSPECIFIED",
+        "STATE_INIT",
+        "STATE_TRYOPEN",
+        "STATE_OPEN"
+      ],
+      "default": "STATE_UNINITIALIZED_UNSPECIFIED",
+      "description": "State defines if a connection is in one of the following states:\nINIT, TRYOPEN, OPEN or UNINITIALIZED.\n\n - STATE_UNINITIALIZED_UNSPECIFIED: Default State\n - STATE_INIT: A connection end has just started the opening handshake.\n - STATE_TRYOPEN: A connection end has acknowledged the handshake step on the counterparty\nchain.\n - STATE_OPEN: A connection end has completed the handshake."
+    },
+    "ibc.core.connection.v1.Version": {
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "title": "unique version identifier"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "list of features compatible with the specified identifier"
+        }
+      },
+      "description": "Version defines the versioning scheme used to negotiate the IBC version in\nthe connection handshake."
+    },
+    "ibc.lightclients.wasm.v1.QueryChecksumsResponse": {
+      "type": "object",
+      "properties": {
+        "checksums": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "checksums is a list of the hex encoded checksums of all wasm codes stored."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination defines the pagination in the response."
+        }
+      },
+      "description": "QueryChecksumsResponse is the response type for the Query/Checksums RPC method."
+    },
+    "ibc.lightclients.wasm.v1.QueryCodeResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "description": "QueryCodeResponse is the response type for the Query/Code RPC method."
     }
   }
 }

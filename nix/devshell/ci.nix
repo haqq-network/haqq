@@ -1,5 +1,7 @@
 { ... }:
 {
+  git-hooks.enable = false;
+
   scripts.ci-check-version.exec = ''
     set -e
     export NIX_CONFIG="experimental-features = nix-command flakes"

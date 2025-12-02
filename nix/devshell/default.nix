@@ -22,8 +22,11 @@
     export PATH=node_modules/.bin:$PATH
   '';
 
-  pre-commit.hooks = {
-    golangci-lint.enable = true;
+  git-hooks.hooks = {
+    golangci-lint = {
+      enable = true;
+      package = pkgs.golangci-lint;
+    };
 
     gomod2nix-generate = {
       enable = true;

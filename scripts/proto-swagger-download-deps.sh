@@ -10,13 +10,24 @@ if [ -z "${THIRD_PARTY_DIR:-}" ]; then
 	exit 1
 fi
 
-IBC_VERSION=$(grep "github.com/cosmos/ibc" go.mod | awk '{print $2}')
-ICS_VERSION=$(grep "github.com/confio/ics23" go.mod | awk '{print $2}')
+# Extract IBC version - match specifically github.com/cosmos/ibc-go/v* (main IBC package)
+IBC_VERSION=$(grep "^[[:space:]]*github.com/cosmos/ibc-go/v[0-9]" go.mod | awk '{print $2}' | head -1)
+# Extract ICS23 version - match github.com/cosmos/ics23/go
+ICS_VERSION=$(grep "^[[:space:]]*github.com/cosmos/ics23/go" go.mod | awk '{print $2}' | head -1)
+
+if [ -z "${IBC_VERSION}" ]; then
+	echo "Error: Could not find github.com/cosmos/ibc-go/v* in go.mod"
+	exit 1
+fi
 
 mkdir -p $THIRD_PARTY_DIR
 
 # reuse buf.yaml after upgrading ibc
 
+# Clean up any existing ibc_tmp directory first
+rm -rf "${THIRD_PARTY_DIR}/ibc_tmp"
+
+# Download IBC proto files via git
 mkdir -p "${THIRD_PARTY_DIR}/ibc_tmp" && \
 	cd "${THIRD_PARTY_DIR}/ibc_tmp" && \
 	git init && \
@@ -25,23 +36,15 @@ mkdir -p "${THIRD_PARTY_DIR}/ibc_tmp" && \
 	printf "proto\n" > .git/info/sparse-checkout && \
 	git pull origin ${IBC_VERSION} --depth 1 && \
 	rm -f ./proto/buf.* && \
-	mv ./proto/* .. && \
+	mv ./proto/* "${THIRD_PARTY_DIR}/" && \
+	cd "${THIRD_PARTY_DIR}" && \
 	rm -rf "${THIRD_PARTY_DIR}/ibc_tmp"
-
-mkdir -p "${THIRD_PARTY_DIR}/ics_tmp" && \
-	cd "${THIRD_PARTY_DIR}/ics_tmp" && \
-	git init && \
-	git remote add origin "https://github.com/confio/ics23.git" && \
-	git fetch origin --tags && \
-	git checkout go/${ICS_VERSION} && \
-	mv ./*.proto .. && \
-	rm -rf "${THIRD_PARTY_DIR}/ics_tmp"
 
 # Return to the original directory
 cd "${ORIGINAL_DIR}"
 
-# Export buf dependencies without requiring yq
-# Read deps from buf.yaml and export each one
+# Export buf dependencies - ICS23 proto files need to be in cosmos/ics23/v1/ structure
+# ICS23 proto files are available via buf.build and must be exported
 if ! command -v yq &> /dev/null; then
 	# Fallback: manually extract deps from buf.yaml and export them
 	# This works for the current buf.yaml structure
@@ -49,8 +52,11 @@ if ! command -v yq &> /dev/null; then
 	buf export buf.build/cosmos/cosmos-proto -o ${THIRD_PARTY_DIR}
 	buf export buf.build/cosmos/gogo-proto -o ${THIRD_PARTY_DIR}
 	buf export buf.build/googleapis/googleapis -o ${THIRD_PARTY_DIR}
+	buf export buf.build/cosmos/ics23 -o ${THIRD_PARTY_DIR}
 else
 	# Use yq if available (preferred method)
 	cat proto/buf.yaml | yq '.deps | map( "buf export " + . + " -o '${THIRD_PARTY_DIR}'") | join(" && ")' | xargs bash -c
+	# Ensure ICS23 is exported even if not in buf.yaml deps
+	buf export buf.build/cosmos/ics23 -o ${THIRD_PARTY_DIR}
 fi
 

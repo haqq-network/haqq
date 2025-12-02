@@ -7,6 +7,7 @@
       clang-tools
       codespell
       jq
+      git
 
       go
       (pkgsUnstable.gomod2nix.override {

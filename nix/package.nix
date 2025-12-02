@@ -3,6 +3,7 @@
 , buildGoApplication
 , go
 , lib
+, stdenv
 }:
 let
   name = "haqq";
@@ -43,5 +44,14 @@ buildGoApplication rec {
   # tests require writeable $HOME
   preCheck = ''
     export HOME=$(mktemp -d)
+  '';
+
+  # Fix RPATH to remove forbidden /build/ references
+  # Process all ELF binaries in the output to remove problematic RPATHs
+  postFixup = lib.optionalString stdenv.isLinux ''
+    for binary in $out/bin/*; do
+      [ -f "$binary" ] || continue
+      patchelf --remove-rpath "$binary" 2>/dev/null || patchelf --set-rpath "" "$binary" 2>/dev/null || true
+    done
   '';
 }
