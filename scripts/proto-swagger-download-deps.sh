@@ -55,7 +55,10 @@ if ! command -v yq &> /dev/null; then
 	buf export buf.build/cosmos/ics23 -o ${THIRD_PARTY_DIR}
 else
 	# Use yq if available (preferred method)
-	cat proto/buf.yaml | yq '.deps | map( "buf export " + . + " -o '${THIRD_PARTY_DIR}'") | join(" && ")' | xargs bash -c
+	# Iterate over each dependency and export it
+	yq -r '.deps[]' proto/buf.yaml | while read -r dep; do
+		buf export "$dep" -o "${THIRD_PARTY_DIR}"
+	done
 	# Ensure ICS23 is exported even if not in buf.yaml deps
 	buf export buf.build/cosmos/ics23 -o ${THIRD_PARTY_DIR}
 fi
