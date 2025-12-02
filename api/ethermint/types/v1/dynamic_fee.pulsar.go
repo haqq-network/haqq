@@ -447,13 +447,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ExtensionOptionDynamicFeeTx is an extension option that specifies the maxPrioPrice for cosmos tx
+// ExtensionOptionDynamicFeeTx is an extension option that specifies the
+// maxPrioPrice for cosmos tx
 type ExtensionOptionDynamicFeeTx struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// max_priority_price is the same as `max_priority_fee_per_gas` in eip-1559 spec
+	// max_priority_price is the same as `max_priority_fee_per_gas` in eip-1559
+	// spec
 	MaxPriorityPrice string `protobuf:"bytes,1,opt,name=max_priority_price,json=maxPriorityPrice,proto3" json:"max_priority_price,omitempty"`
 }
 

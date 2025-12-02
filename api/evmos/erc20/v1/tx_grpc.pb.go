@@ -33,17 +33,21 @@ type MsgClient interface {
 	// ConvertERC20 mints a native Cosmos coin representation of the ERC20 token
 	// contract that is registered on the token mapping.
 	ConvertERC20(ctx context.Context, in *MsgConvertERC20, opts ...grpc.CallOption) (*MsgConvertERC20Response, error)
-	// UpdateParams defines a governance operation for updating the x/erc20 module parameters.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateParams defines a governance operation for updating the x/erc20 module
+	// parameters. The authority is hard-coded to the Cosmos SDK x/gov module
+	// account
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
-	// RegisterERC20 defines a governance operation for registering a token pair for the specified erc20 contract.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// RegisterERC20 defines a governance operation for registering a token pair
+	// for the specified erc20 contract. The authority is hard-coded to the Cosmos
+	// SDK x/gov module account
 	RegisterERC20(ctx context.Context, in *MsgRegisterERC20, opts ...grpc.CallOption) (*MsgRegisterERC20Response, error)
-	// ToggleConversion defines a governance operation for enabling/disablen a token pair conversion.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// ToggleConversion defines a governance operation for enabling/disablen a
+	// token pair conversion. The authority is hard-coded to the Cosmos SDK x/gov
+	// module account
 	ToggleConversion(ctx context.Context, in *MsgToggleConversion, opts ...grpc.CallOption) (*MsgToggleConversionResponse, error)
-	// UpdateCoinMetadata defines a governance operation for updating metadata of the registered token pair.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateCoinMetadata defines a governance operation for updating metadata of
+	// the registered token pair. The authority is hard-coded to the Cosmos SDK
+	// x/gov module account
 	UpdateCoinMetadata(ctx context.Context, in *MsgUpdateCoinMetadata, opts ...grpc.CallOption) (*MsgUpdateCoinMetadataResponse, error)
 }
 
@@ -107,17 +111,21 @@ type MsgServer interface {
 	// ConvertERC20 mints a native Cosmos coin representation of the ERC20 token
 	// contract that is registered on the token mapping.
 	ConvertERC20(context.Context, *MsgConvertERC20) (*MsgConvertERC20Response, error)
-	// UpdateParams defines a governance operation for updating the x/erc20 module parameters.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateParams defines a governance operation for updating the x/erc20 module
+	// parameters. The authority is hard-coded to the Cosmos SDK x/gov module
+	// account
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
-	// RegisterERC20 defines a governance operation for registering a token pair for the specified erc20 contract.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// RegisterERC20 defines a governance operation for registering a token pair
+	// for the specified erc20 contract. The authority is hard-coded to the Cosmos
+	// SDK x/gov module account
 	RegisterERC20(context.Context, *MsgRegisterERC20) (*MsgRegisterERC20Response, error)
-	// ToggleConversion defines a governance operation for enabling/disablen a token pair conversion.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// ToggleConversion defines a governance operation for enabling/disablen a
+	// token pair conversion. The authority is hard-coded to the Cosmos SDK x/gov
+	// module account
 	ToggleConversion(context.Context, *MsgToggleConversion) (*MsgToggleConversionResponse, error)
-	// UpdateCoinMetadata defines a governance operation for updating metadata of the registered token pair.
-	// The authority is hard-coded to the Cosmos SDK x/gov module account
+	// UpdateCoinMetadata defines a governance operation for updating metadata of
+	// the registered token pair. The authority is hard-coded to the Cosmos SDK
+	// x/gov module account
 	UpdateCoinMetadata(context.Context, *MsgUpdateCoinMetadata) (*MsgUpdateCoinMetadataResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }

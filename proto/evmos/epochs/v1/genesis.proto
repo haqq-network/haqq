@@ -8,8 +8,8 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/epochs/types";
 
-// EpochInfo defines the message interface containing the relevant informations about
-// an epoch.
+// EpochInfo defines the message interface containing the relevant informations
+// about an epoch.
 message EpochInfo {
   // identifier of the epoch
   string identifier = 1;
@@ -46,5 +46,6 @@ message EpochInfo {
 // GenesisState defines the epochs module's genesis state.
 message GenesisState {
   // epochs is a slice of EpochInfo that defines the epochs in the genesis state
-  repeated EpochInfo epochs = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  repeated EpochInfo epochs = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

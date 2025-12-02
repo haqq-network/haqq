@@ -2813,7 +2813,8 @@ type QueryTokenPairResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// token_pairs returns the info about a registered token pair for the erc20 module
+	// token_pairs returns the info about a registered token pair for the erc20
+	// module
 	TokenPair *TokenPair `protobuf:"bytes,1,opt,name=token_pair,json=tokenPair,proto3" json:"token_pair,omitempty"`
 }
 

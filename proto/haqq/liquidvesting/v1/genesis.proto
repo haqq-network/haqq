@@ -10,7 +10,8 @@ option go_package = "github.com/haqq-network/haqq/x/liquidvesting/types";
 // GenesisState defines the liquidvesting module's genesis state.
 message GenesisState {
   // params defines all the paramaters of the module.
-  Params params = 1 [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
   uint64 denom_counter = 2;
 

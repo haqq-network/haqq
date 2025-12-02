@@ -16,8 +16,10 @@ service Msg {
   option (cosmos.msg.v1.service) = true;
   // CreateClawbackVestingAccount creats a vesting account that is subject to
   // clawback and the configuration of vesting and lockup schedules.
-  rpc CreateClawbackVestingAccount(MsgCreateClawbackVestingAccount) returns (MsgCreateClawbackVestingAccountResponse) {
-    option (google.api.http).get = "/haqq/vesting/v1/tx/create_clawback_vesting_account";
+  rpc CreateClawbackVestingAccount(MsgCreateClawbackVestingAccount)
+      returns (MsgCreateClawbackVestingAccountResponse) {
+    option (google.api.http).get =
+        "/haqq/vesting/v1/tx/create_clawback_vesting_account";
   }
   // Clawback removes the unvested tokens from a ClawbackVestingAccount.
   rpc Clawback(MsgClawback) returns (MsgClawbackResponse) {
@@ -25,17 +27,22 @@ service Msg {
   }
   // UpdateVestingFunder updates the funder address of an existing
   // ClawbackVestingAccount.
-  rpc UpdateVestingFunder(MsgUpdateVestingFunder) returns (MsgUpdateVestingFunderResponse) {
+  rpc UpdateVestingFunder(MsgUpdateVestingFunder)
+      returns (MsgUpdateVestingFunderResponse) {
     option (google.api.http).get = "/haqq/vesting/v1/tx/update_vesting_funder";
   }
   // ConvertVestingAccount converts a ClawbackVestingAccount to an Eth account
-  rpc ConvertVestingAccount(MsgConvertVestingAccount) returns (MsgConvertVestingAccountResponse) {
-    option (google.api.http).get = "/haqq/vesting/v1/tx/convert_vesting_account";
+  rpc ConvertVestingAccount(MsgConvertVestingAccount)
+      returns (MsgConvertVestingAccountResponse) {
+    option (google.api.http).get =
+        "/haqq/vesting/v1/tx/convert_vesting_account";
   }
   // ConvertIntoVestingAccount converts a Eth account to a
   // ClawbackVestingAccount
-  rpc ConvertIntoVestingAccount(MsgConvertIntoVestingAccount) returns (MsgConvertIntoVestingAccountResponse) {
-    option (google.api.http).get = "/haqq/vesting/v1/tx/convert_into_vesting_account";
+  rpc ConvertIntoVestingAccount(MsgConvertIntoVestingAccount)
+      returns (MsgConvertIntoVestingAccountResponse) {
+    option (google.api.http).get =
+        "/haqq/vesting/v1/tx/convert_into_vesting_account";
   }
 }
 
@@ -52,19 +59,24 @@ message MsgCreateClawbackVestingAccount {
   // to_address specifies the account to receive the funds
   string to_address = 2;
   // start_time defines the time at which the vesting period begins
-  google.protobuf.Timestamp start_time = 3
-      [(gogoproto.stdtime) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  google.protobuf.Timestamp start_time = 3 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
   // lockup_periods defines the unlocking schedule relative to the start_time
   repeated cosmos.vesting.v1beta1.Period lockup_periods = 4 [
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true,
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/x/auth/vesting/types.Periods"
+    (gogoproto.castrepeated) =
+        "github.com/cosmos/cosmos-sdk/x/auth/vesting/types.Periods"
   ];
   // vesting_periods defines the vesting schedule relative to the start_time
   repeated cosmos.vesting.v1beta1.Period vesting_periods = 5 [
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true,
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/x/auth/vesting/types.Periods"
+    (gogoproto.castrepeated) =
+        "github.com/cosmos/cosmos-sdk/x/auth/vesting/types.Periods"
   ];
   // merge specifies a the creation mechanism for existing
   // ClawbackVestingAccounts. If true, merge this new grant into an existing
@@ -104,7 +116,8 @@ message MsgUpdateVestingFunder {
   option (cosmos.msg.v1.signer) = "funder_address";
   // funder_address is the current funder address of the ClawbackVestingAccount
   string funder_address = 1;
-  // new_funder_address is the new address to replace the existing funder_address
+  // new_funder_address is the new address to replace the existing
+  // funder_address
   string new_funder_address = 2;
   // vesting_address is the address of the ClawbackVestingAccount being updated
   string vesting_address = 3;
@@ -114,7 +127,8 @@ message MsgUpdateVestingFunder {
 // type.
 message MsgUpdateVestingFunderResponse {}
 
-// MsgConvertVestingAccount defines a message that enables converting a vesting account to an eth account
+// MsgConvertVestingAccount defines a message that enables converting a vesting
+// account to an eth account
 message MsgConvertVestingAccount {
   option (amino.name) = "haqq/MsgConvertVestingAccount";
   option (cosmos.msg.v1.signer) = "vesting_address";
@@ -138,8 +152,11 @@ message MsgConvertIntoVestingAccount {
   // to_address is the account to be converted into clawback vesting account
   string to_address = 2;
   // start_time defines the time at which the vesting period begins
-  google.protobuf.Timestamp start_time = 3
-  [(gogoproto.stdtime) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  google.protobuf.Timestamp start_time = 3 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
   // lockup_periods defines the unlocking schedule relative to the start_time
   repeated cosmos.vesting.v1beta1.Period lockup_periods = 4 [
     (gogoproto.nullable) = false,
