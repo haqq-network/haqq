@@ -56,6 +56,12 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/haqq/ucdao/v1/params";
   }
+
+  // EscrowAddress queries the escrow address for a given standard wallet address.
+  rpc EscrowAddress(QueryEscrowAddressRequest) returns (QueryEscrowAddressResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/haqq/ucdao/v1/escrow_address/{address}";
+  }
 }
 
 // QueryBalanceRequest is the request type for the Query/Balance RPC method.
@@ -161,4 +167,19 @@ message QueryHoldersResponse {
   //
   // Since: cosmos-sdk 0.43
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryEscrowAddressRequest is the request type for the Query/EscrowAddress RPC method.
+message QueryEscrowAddressRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // address is the standard wallet address to query escrow address for.
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+
+// QueryEscrowAddressResponse is the response type for the Query/EscrowAddress RPC method.
+message QueryEscrowAddressResponse {
+  // escrow_address is the escrow address for the given standard wallet address.
+  string escrow_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 }

@@ -12,10 +12,10 @@ import (
 	"github.com/haqq-network/haqq/x/liquidvesting/types"
 )
 
-var _ types.QueryServer = Keeper{}
+var _ types.QueryServer = BaseKeeper{}
 
 // Denom retrieves liquid token denom by its name
-func (k Keeper) Denom(goCtx context.Context, req *types.QueryDenomRequest) (*types.QueryDenomResponse, error) {
+func (k BaseKeeper) Denom(goCtx context.Context, req *types.QueryDenomRequest) (*types.QueryDenomResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
@@ -30,7 +30,7 @@ func (k Keeper) Denom(goCtx context.Context, req *types.QueryDenomRequest) (*typ
 }
 
 // Denoms retrieves liquid tokens denoms
-func (k Keeper) Denoms(goCtx context.Context, req *types.QueryDenomsRequest) (*types.QueryDenomsResponse, error) {
+func (k BaseKeeper) Denoms(goCtx context.Context, req *types.QueryDenomsRequest) (*types.QueryDenomsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}

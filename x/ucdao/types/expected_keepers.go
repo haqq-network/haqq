@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"cosmossdk.io/core/address"
-
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -36,12 +36,25 @@ type AccountKeeper interface {
 
 // BankKeeper defines the expected interface needed to retrieve account balances.
 type BankKeeper interface {
+	HasBalance(ctx context.Context, addr sdk.AccAddress, amt sdk.Coin) bool
+	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins
 	SpendableCoins(ctx context.Context, addr sdk.AccAddress) sdk.Coins
 
+	SendCoins(ctx context.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
 	SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 	SendCoinsFromModuleToModule(ctx context.Context, senderModule, recipientModule string, amt sdk.Coins) error
 	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 
 	BlockedAddr(addr sdk.AccAddress) bool
+}
+
+// LiquidVestingKeeper defines the expected interface needed to retrieve liquid vesting balances.
+type LiquidVestingKeeper interface {
+	Redeem(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) error
+}
+
+// EthiqKeeper defines the expected interface needed to retrieve ethiq balances.
+type EthiqKeeper interface {
+	ConvertToEthiq(ctx context.Context, ethiqAmount, maxISLMAmount sdkmath.Int, sender, receiver sdk.AccAddress) (sdkmath.Int, error)
 }

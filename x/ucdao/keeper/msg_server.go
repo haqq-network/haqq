@@ -115,3 +115,24 @@ func (k msgServer) TransferOwnershipWithAmount(goCtx context.Context, msg *types
 
 	return &types.MsgTransferOwnershipWithAmountResponse{}, nil
 }
+
+func (k msgServer) ConvertToEthiq(goCtx context.Context, msg *types.MsgConvertToEthiq) (*types.MsgConvertToEthiqResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	// Already validated in ValidateBasic
+	sender := sdk.MustAccAddressFromBech32(msg.Sender)
+	receiver := sdk.MustAccAddressFromBech32(msg.Receiver)
+
+	burntCoin, err := k.Keeper.ConvertToEthiq(ctx, sender, receiver, msg.Amount, msg.MaxIslmAmount)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.MsgConvertToEthiqResponse{
+		BurntCoin: burntCoin,
+	}, nil
+}

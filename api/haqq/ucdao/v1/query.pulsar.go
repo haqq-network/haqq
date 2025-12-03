@@ -4817,6 +4817,846 @@ func (x *fastReflection_QueryHoldersResponse) ProtoMethods() *protoiface.Methods
 	}
 }
 
+var (
+	md_QueryEscrowAddressRequest         protoreflect.MessageDescriptor
+	fd_QueryEscrowAddressRequest_address protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_haqq_ucdao_v1_query_proto_init()
+	md_QueryEscrowAddressRequest = File_haqq_ucdao_v1_query_proto.Messages().ByName("QueryEscrowAddressRequest")
+	fd_QueryEscrowAddressRequest_address = md_QueryEscrowAddressRequest.Fields().ByName("address")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryEscrowAddressRequest)(nil)
+
+type fastReflection_QueryEscrowAddressRequest QueryEscrowAddressRequest
+
+func (x *QueryEscrowAddressRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryEscrowAddressRequest)(x)
+}
+
+func (x *QueryEscrowAddressRequest) slowProtoReflect() protoreflect.Message {
+	mi := &file_haqq_ucdao_v1_query_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryEscrowAddressRequest_messageType fastReflection_QueryEscrowAddressRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryEscrowAddressRequest_messageType{}
+
+type fastReflection_QueryEscrowAddressRequest_messageType struct{}
+
+func (x fastReflection_QueryEscrowAddressRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryEscrowAddressRequest)(nil)
+}
+func (x fastReflection_QueryEscrowAddressRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryEscrowAddressRequest)
+}
+func (x fastReflection_QueryEscrowAddressRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryEscrowAddressRequest
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryEscrowAddressRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryEscrowAddressRequest
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryEscrowAddressRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryEscrowAddressRequest_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryEscrowAddressRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryEscrowAddressRequest)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryEscrowAddressRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryEscrowAddressRequest)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryEscrowAddressRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.Address != "" {
+		value := protoreflect.ValueOfString(x.Address)
+		if !f(fd_QueryEscrowAddressRequest_address, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryEscrowAddressRequest) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressRequest.address":
+		return x.Address != ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressRequest"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryEscrowAddressRequest) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressRequest.address":
+		x.Address = ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressRequest"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryEscrowAddressRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressRequest.address":
+		value := x.Address
+		return protoreflect.ValueOfString(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressRequest"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressRequest does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryEscrowAddressRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressRequest.address":
+		x.Address = value.Interface().(string)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressRequest"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryEscrowAddressRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressRequest.address":
+		panic(fmt.Errorf("field address of message haqq.ucdao.v1.QueryEscrowAddressRequest is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressRequest"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryEscrowAddressRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressRequest.address":
+		return protoreflect.ValueOfString("")
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressRequest"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryEscrowAddressRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in haqq.ucdao.v1.QueryEscrowAddressRequest", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryEscrowAddressRequest) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryEscrowAddressRequest) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryEscrowAddressRequest) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryEscrowAddressRequest) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryEscrowAddressRequest)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		l = len(x.Address)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryEscrowAddressRequest)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.Address) > 0 {
+			i -= len(x.Address)
+			copy(dAtA[i:], x.Address)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Address)))
+			i--
+			dAtA[i] = 0xa
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryEscrowAddressRequest)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryEscrowAddressRequest: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryEscrowAddressRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.Address = string(dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_QueryEscrowAddressResponse                protoreflect.MessageDescriptor
+	fd_QueryEscrowAddressResponse_escrow_address protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_haqq_ucdao_v1_query_proto_init()
+	md_QueryEscrowAddressResponse = File_haqq_ucdao_v1_query_proto.Messages().ByName("QueryEscrowAddressResponse")
+	fd_QueryEscrowAddressResponse_escrow_address = md_QueryEscrowAddressResponse.Fields().ByName("escrow_address")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryEscrowAddressResponse)(nil)
+
+type fastReflection_QueryEscrowAddressResponse QueryEscrowAddressResponse
+
+func (x *QueryEscrowAddressResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryEscrowAddressResponse)(x)
+}
+
+func (x *QueryEscrowAddressResponse) slowProtoReflect() protoreflect.Message {
+	mi := &file_haqq_ucdao_v1_query_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryEscrowAddressResponse_messageType fastReflection_QueryEscrowAddressResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryEscrowAddressResponse_messageType{}
+
+type fastReflection_QueryEscrowAddressResponse_messageType struct{}
+
+func (x fastReflection_QueryEscrowAddressResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryEscrowAddressResponse)(nil)
+}
+func (x fastReflection_QueryEscrowAddressResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryEscrowAddressResponse)
+}
+func (x fastReflection_QueryEscrowAddressResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryEscrowAddressResponse
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryEscrowAddressResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryEscrowAddressResponse
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryEscrowAddressResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryEscrowAddressResponse_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryEscrowAddressResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryEscrowAddressResponse)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryEscrowAddressResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryEscrowAddressResponse)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryEscrowAddressResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.EscrowAddress != "" {
+		value := protoreflect.ValueOfString(x.EscrowAddress)
+		if !f(fd_QueryEscrowAddressResponse_escrow_address, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryEscrowAddressResponse) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressResponse.escrow_address":
+		return x.EscrowAddress != ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryEscrowAddressResponse) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressResponse.escrow_address":
+		x.EscrowAddress = ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryEscrowAddressResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressResponse.escrow_address":
+		value := x.EscrowAddress
+		return protoreflect.ValueOfString(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressResponse does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryEscrowAddressResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressResponse.escrow_address":
+		x.EscrowAddress = value.Interface().(string)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryEscrowAddressResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressResponse.escrow_address":
+		panic(fmt.Errorf("field escrow_address of message haqq.ucdao.v1.QueryEscrowAddressResponse is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryEscrowAddressResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "haqq.ucdao.v1.QueryEscrowAddressResponse.escrow_address":
+		return protoreflect.ValueOfString("")
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.QueryEscrowAddressResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ucdao.v1.QueryEscrowAddressResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryEscrowAddressResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in haqq.ucdao.v1.QueryEscrowAddressResponse", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryEscrowAddressResponse) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryEscrowAddressResponse) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryEscrowAddressResponse) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryEscrowAddressResponse) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryEscrowAddressResponse)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		l = len(x.EscrowAddress)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryEscrowAddressResponse)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.EscrowAddress) > 0 {
+			i -= len(x.EscrowAddress)
+			copy(dAtA[i:], x.EscrowAddress)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.EscrowAddress)))
+			i--
+			dAtA[i] = 0xa
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryEscrowAddressResponse)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryEscrowAddressResponse: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryEscrowAddressResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field EscrowAddress", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.EscrowAddress = string(dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
 // Code generated by protoc-gen-go. DO NOT EDIT.
 // versions:
 // 	protoc-gen-go v1.27.0
@@ -5246,6 +6086,80 @@ func (x *QueryHoldersResponse) GetPagination() *v1beta11.PageResponse {
 	return nil
 }
 
+// QueryEscrowAddressRequest is the request type for the Query/EscrowAddress RPC method.
+type QueryEscrowAddressRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// address is the standard wallet address to query escrow address for.
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+}
+
+func (x *QueryEscrowAddressRequest) Reset() {
+	*x = QueryEscrowAddressRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_haqq_ucdao_v1_query_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryEscrowAddressRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryEscrowAddressRequest) ProtoMessage() {}
+
+// Deprecated: Use QueryEscrowAddressRequest.ProtoReflect.Descriptor instead.
+func (*QueryEscrowAddressRequest) Descriptor() ([]byte, []int) {
+	return file_haqq_ucdao_v1_query_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *QueryEscrowAddressRequest) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+// QueryEscrowAddressResponse is the response type for the Query/EscrowAddress RPC method.
+type QueryEscrowAddressResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// escrow_address is the escrow address for the given standard wallet address.
+	EscrowAddress string `protobuf:"bytes,1,opt,name=escrow_address,json=escrowAddress,proto3" json:"escrow_address,omitempty"`
+}
+
+func (x *QueryEscrowAddressResponse) Reset() {
+	*x = QueryEscrowAddressResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_haqq_ucdao_v1_query_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryEscrowAddressResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryEscrowAddressResponse) ProtoMessage() {}
+
+// Deprecated: Use QueryEscrowAddressResponse.ProtoReflect.Descriptor instead.
+func (*QueryEscrowAddressResponse) Descriptor() ([]byte, []int) {
+	return file_haqq_ucdao_v1_query_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *QueryEscrowAddressResponse) GetEscrowAddress() string {
+	if x != nil {
+		return x.EscrowAddress
+	}
+	return ""
+}
+
 var File_haqq_ucdao_v1_query_proto protoreflect.FileDescriptor
 
 var file_haqq_ucdao_v1_query_proto_rawDesc = []byte{
@@ -5346,60 +6260,81 @@ var file_haqq_ucdao_v1_query_proto_rawDesc = []byte{
 	0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x62, 0x61, 0x73,
 	0x65, 0x2e, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e,
 	0x50, 0x61, 0x67, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x0a, 0x70, 0x61,
-	0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x32, 0xa3, 0x05, 0x0a, 0x05, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x12, 0x8b, 0x01, 0x0a, 0x07, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x12, 0x22,
-	0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x23, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e,
-	0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x37, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3,
-	0xe4, 0x93, 0x02, 0x2c, 0x12, 0x2a, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61,
-	0x6f, 0x2f, 0x76, 0x31, 0x2f, 0x62, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x7b, 0x61,
-	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x2f, 0x62, 0x79, 0x5f, 0x64, 0x65, 0x6e, 0x6f, 0x6d,
-	0x12, 0x8e, 0x01, 0x0a, 0x0b, 0x41, 0x6c, 0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x73,
-	0x12, 0x26, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31,
-	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x6c, 0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65,
-	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e,
-	0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x6c,
-	0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x2e, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x23, 0x12, 0x21,
+	0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x59, 0x0a, 0x19, 0x51, 0x75, 0x65, 0x72,
+	0x79, 0x45, 0x73, 0x63, 0x72, 0x6f, 0x77, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x32, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d,
+	0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67,
+	0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x00, 0xe8,
+	0xa0, 0x1f, 0x00, 0x22, 0x5d, 0x0a, 0x1a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x45, 0x73, 0x63, 0x72,
+	0x6f, 0x77, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x3f, 0x0a, 0x0e, 0x65, 0x73, 0x63, 0x72, 0x6f, 0x77, 0x5f, 0x61, 0x64, 0x64, 0x72,
+	0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63,
+	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72,
+	0x69, 0x6e, 0x67, 0x52, 0x0d, 0x65, 0x73, 0x63, 0x72, 0x6f, 0x77, 0x41, 0x64, 0x64, 0x72, 0x65,
+	0x73, 0x73, 0x32, 0xc0, 0x06, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x8b, 0x01, 0x0a,
+	0x07, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x12, 0x22, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e,
+	0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x42, 0x61,
+	0x6c, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x68,
+	0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x37, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2c, 0x12, 0x2a,
 	0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f, 0x76, 0x31, 0x2f, 0x62,
 	0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x2f, 0x7b, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
-	0x7d, 0x12, 0x8c, 0x01, 0x0a, 0x0c, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e,
-	0x63, 0x65, 0x12, 0x27, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e,
-	0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x42, 0x61, 0x6c,
-	0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x68, 0x61,
-	0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x1e, 0x12, 0x1c, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f,
-	0x76, 0x31, 0x2f, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x62, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65,
-	0x12, 0x77, 0x0a, 0x07, 0x48, 0x6f, 0x6c, 0x64, 0x65, 0x72, 0x73, 0x12, 0x22, 0x2e, 0x68, 0x61,
-	0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x48, 0x6f, 0x6c, 0x64, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x23, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x48, 0x6f, 0x6c, 0x64, 0x65, 0x72, 0x73, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x23, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x18, 0x12, 0x16, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f, 0x76,
-	0x31, 0x2f, 0x68, 0x6f, 0x6c, 0x64, 0x65, 0x72, 0x73, 0x12, 0x73, 0x0a, 0x06, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x12, 0x21, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f,
-	0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63,
-	0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61,
-	0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x22, 0x88, 0xe7, 0xb0, 0x2a,
-	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x75,
-	0x63, 0x64, 0x61, 0x6f, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42, 0x9d,
-	0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61,
-	0x6f, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f,
-	0x50, 0x01, 0x5a, 0x26, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f,
-	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f,
-	0x76, 0x31, 0x3b, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x48, 0x55, 0x58,
-	0xaa, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x2e, 0x55, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x56, 0x31,
-	0xca, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x55, 0x63, 0x64, 0x61, 0x6f, 0x5c, 0x56, 0x31,
-	0xe2, 0x02, 0x19, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x55, 0x63, 0x64, 0x61, 0x6f, 0x5c, 0x56, 0x31,
-	0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48,
-	0x61, 0x71, 0x71, 0x3a, 0x3a, 0x55, 0x63, 0x64, 0x61, 0x6f, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x7d, 0x2f, 0x62, 0x79, 0x5f, 0x64, 0x65, 0x6e, 0x6f, 0x6d, 0x12, 0x8e, 0x01, 0x0a, 0x0b, 0x41,
+	0x6c, 0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x12, 0x26, 0x2e, 0x68, 0x61, 0x71,
+	0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x41, 0x6c, 0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x27, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e,
+	0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x6c, 0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e,
+	0x63, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2e, 0x88, 0xe7, 0xb0,
+	0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x23, 0x12, 0x21, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f,
+	0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f, 0x76, 0x31, 0x2f, 0x62, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65,
+	0x73, 0x2f, 0x7b, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x12, 0x8c, 0x01, 0x0a, 0x0c,
+	0x54, 0x6f, 0x74, 0x61, 0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x12, 0x27, 0x2e, 0x68,
+	0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64,
+	0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x6f, 0x74, 0x61, 0x6c,
+	0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x29, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1e, 0x12, 0x1c, 0x2f, 0x68,
+	0x61, 0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f, 0x76, 0x31, 0x2f, 0x74, 0x6f, 0x74,
+	0x61, 0x6c, 0x5f, 0x62, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x65, 0x12, 0x77, 0x0a, 0x07, 0x48, 0x6f,
+	0x6c, 0x64, 0x65, 0x72, 0x73, 0x12, 0x22, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64,
+	0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x48, 0x6f, 0x6c, 0x64, 0x65,
+	0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x68, 0x61, 0x71, 0x71,
+	0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x48,
+	0x6f, 0x6c, 0x64, 0x65, 0x72, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x23,
+	0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x18, 0x12, 0x16, 0x2f, 0x68, 0x61,
+	0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f, 0x76, 0x31, 0x2f, 0x68, 0x6f, 0x6c, 0x64,
+	0x65, 0x72, 0x73, 0x12, 0x73, 0x0a, 0x06, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x21, 0x2e,
+	0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x22, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31,
+	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x22, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x17, 0x12, 0x15, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f, 0x76,
+	0x31, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x9a, 0x01, 0x0a, 0x0d, 0x45, 0x73, 0x63,
+	0x72, 0x6f, 0x77, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x28, 0x2e, 0x68, 0x61, 0x71,
+	0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x45, 0x73, 0x63, 0x72, 0x6f, 0x77, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61,
+	0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x45, 0x73, 0x63, 0x72, 0x6f, 0x77,
+	0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x34, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x29, 0x12, 0x27, 0x2f, 0x68,
+	0x61, 0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f, 0x76, 0x31, 0x2f, 0x65, 0x73, 0x63,
+	0x72, 0x6f, 0x77, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x2f, 0x7b, 0x61, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0x7d, 0x42, 0x9d, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61,
+	0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x26, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x61, 0x71, 0x71,
+	0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f, 0x76, 0x31, 0x3b, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x76,
+	0x31, 0xa2, 0x02, 0x03, 0x48, 0x55, 0x58, 0xaa, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x2e, 0x55,
+	0x63, 0x64, 0x61, 0x6f, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x55,
+	0x63, 0x64, 0x61, 0x6f, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x19, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x55,
+	0x63, 0x64, 0x61, 0x6f, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64,
+	0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48, 0x61, 0x71, 0x71, 0x3a, 0x3a, 0x55, 0x63, 0x64, 0x61,
+	0x6f, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5414,48 +6349,52 @@ func file_haqq_ucdao_v1_query_proto_rawDescGZIP() []byte {
 	return file_haqq_ucdao_v1_query_proto_rawDescData
 }
 
-var file_haqq_ucdao_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_haqq_ucdao_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_haqq_ucdao_v1_query_proto_goTypes = []interface{}{
-	(*QueryBalanceRequest)(nil),       // 0: haqq.ucdao.v1.QueryBalanceRequest
-	(*QueryBalanceResponse)(nil),      // 1: haqq.ucdao.v1.QueryBalanceResponse
-	(*QueryAllBalancesRequest)(nil),   // 2: haqq.ucdao.v1.QueryAllBalancesRequest
-	(*QueryAllBalancesResponse)(nil),  // 3: haqq.ucdao.v1.QueryAllBalancesResponse
-	(*QueryTotalBalanceRequest)(nil),  // 4: haqq.ucdao.v1.QueryTotalBalanceRequest
-	(*QueryTotalBalanceResponse)(nil), // 5: haqq.ucdao.v1.QueryTotalBalanceResponse
-	(*QueryParamsRequest)(nil),        // 6: haqq.ucdao.v1.QueryParamsRequest
-	(*QueryParamsResponse)(nil),       // 7: haqq.ucdao.v1.QueryParamsResponse
-	(*QueryHoldersRequest)(nil),       // 8: haqq.ucdao.v1.QueryHoldersRequest
-	(*QueryHoldersResponse)(nil),      // 9: haqq.ucdao.v1.QueryHoldersResponse
-	(*v1beta1.Coin)(nil),              // 10: cosmos.base.v1beta1.Coin
-	(*v1beta11.PageRequest)(nil),      // 11: cosmos.base.query.v1beta1.PageRequest
-	(*v1beta11.PageResponse)(nil),     // 12: cosmos.base.query.v1beta1.PageResponse
-	(*Params)(nil),                    // 13: haqq.ucdao.v1.Params
-	(*Balance)(nil),                   // 14: haqq.ucdao.v1.Balance
+	(*QueryBalanceRequest)(nil),        // 0: haqq.ucdao.v1.QueryBalanceRequest
+	(*QueryBalanceResponse)(nil),       // 1: haqq.ucdao.v1.QueryBalanceResponse
+	(*QueryAllBalancesRequest)(nil),    // 2: haqq.ucdao.v1.QueryAllBalancesRequest
+	(*QueryAllBalancesResponse)(nil),   // 3: haqq.ucdao.v1.QueryAllBalancesResponse
+	(*QueryTotalBalanceRequest)(nil),   // 4: haqq.ucdao.v1.QueryTotalBalanceRequest
+	(*QueryTotalBalanceResponse)(nil),  // 5: haqq.ucdao.v1.QueryTotalBalanceResponse
+	(*QueryParamsRequest)(nil),         // 6: haqq.ucdao.v1.QueryParamsRequest
+	(*QueryParamsResponse)(nil),        // 7: haqq.ucdao.v1.QueryParamsResponse
+	(*QueryHoldersRequest)(nil),        // 8: haqq.ucdao.v1.QueryHoldersRequest
+	(*QueryHoldersResponse)(nil),       // 9: haqq.ucdao.v1.QueryHoldersResponse
+	(*QueryEscrowAddressRequest)(nil),  // 10: haqq.ucdao.v1.QueryEscrowAddressRequest
+	(*QueryEscrowAddressResponse)(nil), // 11: haqq.ucdao.v1.QueryEscrowAddressResponse
+	(*v1beta1.Coin)(nil),               // 12: cosmos.base.v1beta1.Coin
+	(*v1beta11.PageRequest)(nil),       // 13: cosmos.base.query.v1beta1.PageRequest
+	(*v1beta11.PageResponse)(nil),      // 14: cosmos.base.query.v1beta1.PageResponse
+	(*Params)(nil),                     // 15: haqq.ucdao.v1.Params
+	(*Balance)(nil),                    // 16: haqq.ucdao.v1.Balance
 }
 var file_haqq_ucdao_v1_query_proto_depIdxs = []int32{
-	10, // 0: haqq.ucdao.v1.QueryBalanceResponse.balance:type_name -> cosmos.base.v1beta1.Coin
-	11, // 1: haqq.ucdao.v1.QueryAllBalancesRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	10, // 2: haqq.ucdao.v1.QueryAllBalancesResponse.balances:type_name -> cosmos.base.v1beta1.Coin
-	12, // 3: haqq.ucdao.v1.QueryAllBalancesResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
-	11, // 4: haqq.ucdao.v1.QueryTotalBalanceRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	10, // 5: haqq.ucdao.v1.QueryTotalBalanceResponse.total_balance:type_name -> cosmos.base.v1beta1.Coin
-	12, // 6: haqq.ucdao.v1.QueryTotalBalanceResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
-	13, // 7: haqq.ucdao.v1.QueryParamsResponse.params:type_name -> haqq.ucdao.v1.Params
-	11, // 8: haqq.ucdao.v1.QueryHoldersRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	14, // 9: haqq.ucdao.v1.QueryHoldersResponse.balances:type_name -> haqq.ucdao.v1.Balance
-	12, // 10: haqq.ucdao.v1.QueryHoldersResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	12, // 0: haqq.ucdao.v1.QueryBalanceResponse.balance:type_name -> cosmos.base.v1beta1.Coin
+	13, // 1: haqq.ucdao.v1.QueryAllBalancesRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	12, // 2: haqq.ucdao.v1.QueryAllBalancesResponse.balances:type_name -> cosmos.base.v1beta1.Coin
+	14, // 3: haqq.ucdao.v1.QueryAllBalancesResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	13, // 4: haqq.ucdao.v1.QueryTotalBalanceRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	12, // 5: haqq.ucdao.v1.QueryTotalBalanceResponse.total_balance:type_name -> cosmos.base.v1beta1.Coin
+	14, // 6: haqq.ucdao.v1.QueryTotalBalanceResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	15, // 7: haqq.ucdao.v1.QueryParamsResponse.params:type_name -> haqq.ucdao.v1.Params
+	13, // 8: haqq.ucdao.v1.QueryHoldersRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	16, // 9: haqq.ucdao.v1.QueryHoldersResponse.balances:type_name -> haqq.ucdao.v1.Balance
+	14, // 10: haqq.ucdao.v1.QueryHoldersResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
 	0,  // 11: haqq.ucdao.v1.Query.Balance:input_type -> haqq.ucdao.v1.QueryBalanceRequest
 	2,  // 12: haqq.ucdao.v1.Query.AllBalances:input_type -> haqq.ucdao.v1.QueryAllBalancesRequest
 	4,  // 13: haqq.ucdao.v1.Query.TotalBalance:input_type -> haqq.ucdao.v1.QueryTotalBalanceRequest
 	8,  // 14: haqq.ucdao.v1.Query.Holders:input_type -> haqq.ucdao.v1.QueryHoldersRequest
 	6,  // 15: haqq.ucdao.v1.Query.Params:input_type -> haqq.ucdao.v1.QueryParamsRequest
-	1,  // 16: haqq.ucdao.v1.Query.Balance:output_type -> haqq.ucdao.v1.QueryBalanceResponse
-	3,  // 17: haqq.ucdao.v1.Query.AllBalances:output_type -> haqq.ucdao.v1.QueryAllBalancesResponse
-	5,  // 18: haqq.ucdao.v1.Query.TotalBalance:output_type -> haqq.ucdao.v1.QueryTotalBalanceResponse
-	9,  // 19: haqq.ucdao.v1.Query.Holders:output_type -> haqq.ucdao.v1.QueryHoldersResponse
-	7,  // 20: haqq.ucdao.v1.Query.Params:output_type -> haqq.ucdao.v1.QueryParamsResponse
-	16, // [16:21] is the sub-list for method output_type
-	11, // [11:16] is the sub-list for method input_type
+	10, // 16: haqq.ucdao.v1.Query.EscrowAddress:input_type -> haqq.ucdao.v1.QueryEscrowAddressRequest
+	1,  // 17: haqq.ucdao.v1.Query.Balance:output_type -> haqq.ucdao.v1.QueryBalanceResponse
+	3,  // 18: haqq.ucdao.v1.Query.AllBalances:output_type -> haqq.ucdao.v1.QueryAllBalancesResponse
+	5,  // 19: haqq.ucdao.v1.Query.TotalBalance:output_type -> haqq.ucdao.v1.QueryTotalBalanceResponse
+	9,  // 20: haqq.ucdao.v1.Query.Holders:output_type -> haqq.ucdao.v1.QueryHoldersResponse
+	7,  // 21: haqq.ucdao.v1.Query.Params:output_type -> haqq.ucdao.v1.QueryParamsResponse
+	11, // 22: haqq.ucdao.v1.Query.EscrowAddress:output_type -> haqq.ucdao.v1.QueryEscrowAddressResponse
+	17, // [17:23] is the sub-list for method output_type
+	11, // [11:17] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name
 	11, // [11:11] is the sub-list for extension extendee
 	0,  // [0:11] is the sub-list for field type_name
@@ -5589,6 +6528,30 @@ func file_haqq_ucdao_v1_query_proto_init() {
 				return nil
 			}
 		}
+		file_haqq_ucdao_v1_query_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryEscrowAddressRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_haqq_ucdao_v1_query_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryEscrowAddressResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -5596,7 +6559,7 @@ func file_haqq_ucdao_v1_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_haqq_ucdao_v1_query_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

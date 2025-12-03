@@ -231,23 +231,20 @@ func (suite *KeeperTestSuite) TestLiquidate() {
 			suite.T().Logf("spendable coins: %s", spendable.String())
 			suite.T().Logf("liquidation amount: %s", tc.amount.String())
 
-			msg := types.NewMsgLiquidate(fromAddr, toAddr, tc.amount)
-			resp, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, msg)
-			expResponse := &types.MsgLiquidateResponse{
-				Minted: sdk.NewCoin(types.DenomBaseNameFromID(0), tc.amount.Amount),
-			}
+			minted, contractAddr, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, tc.amount)
+			expMinted := sdk.NewCoin(types.DenomBaseNameFromID(0), tc.amount.Amount)
 
 			if tc.expectPass {
 				// check returns
 				suite.Require().NoError(err)
-				suite.Require().Equal(expResponse.Minted, resp.Minted)
-				suite.Require().NotEmpty(resp.ContractAddr)
+				suite.Require().Equal(expMinted, minted)
+				suite.Require().NotEmpty(contractAddr)
 
 				// check target account exists and has liquid token
 				toAcc := suite.network.App.AccountKeeper.GetAccount(ctx, toAddr)
 				suite.Require().NotNil(toAcc)
 				balanceTarget := suite.network.App.BankKeeper.GetBalance(ctx, toAddr, types.DenomBaseNameFromID(0))
-				suite.Require().Equal(expResponse.Minted.String(), balanceTarget.String())
+				suite.Require().Equal(expMinted.String(), balanceTarget.String())
 
 				// check liquidated vesting locked coins are decreased on initial account
 				fromAccAfter := suite.network.App.AccountKeeper.GetAccount(ctx, fromAddr)
@@ -301,16 +298,13 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.network.App.AccountKeeper.SetAccount(ctx, clawbackAccount)
 
 	// FIRST LIQUIDATION
-	msg := types.NewMsgLiquidate(fromAddr, toAddr, third[0])
-	resp, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, msg)
-	expResponse := &types.MsgLiquidateResponse{
-		Minted: sdk.NewCoin("aLIQUID0", third[0].Amount),
-	}
+	minted, contractAddr, err := suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, third[0])
+	expMinted := sdk.NewCoin("aLIQUID0", third[0].Amount)
 
 	// check returns
 	suite.Require().NoError(err)
-	suite.Require().Equal(expResponse.Minted, resp.Minted)
-	suite.Require().NotEmpty(resp.ContractAddr)
+	suite.Require().Equal(expMinted, minted)
+	suite.Require().NotEmpty(contractAddr)
 
 	// check target account exists and has liquid token
 	toAcc := suite.network.App.AccountKeeper.GetAccount(ctx, toAddr)
@@ -340,16 +334,13 @@ func (suite *KeeperTestSuite) TestMultipleLiquidationsFromOneAccount() {
 	suite.Require().Equal(third[0].Amount.String(), balanceOfLiquidTokeErc20Pair0.String())
 
 	// SECOND LIQUIDATION
-	msg = types.NewMsgLiquidate(fromAddr, toAddr, third[0])
-	resp, err = suite.network.App.LiquidVestingKeeper.Liquidate(ctx, msg)
-	expResponse = &types.MsgLiquidateResponse{
-		Minted: sdk.NewCoin("aLIQUID1", third[0].Amount),
-	}
+	minted, contractAddr, err = suite.network.App.LiquidVestingKeeper.Liquidate(ctx, fromAddr, toAddr, third[0])
+	expMinted = sdk.NewCoin("aLIQUID1", third[0].Amount)
 
 	// check returns
 	suite.Require().NoError(err)
-	suite.Require().Equal(expResponse.Minted, resp.Minted)
-	suite.Require().NotEmpty(resp.ContractAddr)
+	suite.Require().Equal(expMinted, minted)
+	suite.Require().NotEmpty(contractAddr)
 
 	// check target account exists and has liquid token
 	balanceTarget = suite.network.App.BankKeeper.GetBalance(ctx, toAddr, types.DenomBaseNameFromID(1))
@@ -598,13 +589,10 @@ func (suite *KeeperTestSuite) TestRedeem() {
 			tc.malleate()
 
 			redeemCoin := sdk.NewInt64Coin("aLIQUID0", tc.redeemAmount)
-			msg := types.NewMsgRedeem(fromAddr, toAddr, redeemCoin)
-			resp, err := suite.network.App.LiquidVestingKeeper.Redeem(ctx, msg)
-			expResponse := &types.MsgRedeemResponse{}
+			err := suite.network.App.LiquidVestingKeeper.Redeem(ctx, fromAddr, toAddr, redeemCoin)
 			if tc.expectPass {
 				// check returns
 				suite.Require().NoError(err)
-				suite.Require().Equal(expResponse, resp)
 
 				// check target account has original tokens
 				toAcc := suite.network.App.AccountKeeper.GetAccount(ctx, toAddr)

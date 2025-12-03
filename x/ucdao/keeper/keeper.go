@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/ucdao/types"
 )
@@ -28,13 +29,14 @@ type Keeper interface {
 
 	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	HasBalance(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coin) bool
-	IterateAccountBalances(ctx sdk.Context, addr sdk.AccAddress, cb func(sdk.Coin) bool)
 	GetAccountBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
-	IterateAllBalances(ctx sdk.Context, cb func(sdk.AccAddress, sdk.Coin) bool)
 	GetAccountsBalances(ctx sdk.Context) []types.Balance
+	GetHolders(ctx sdk.Context) []sdk.AccAddress
+	IsHolder(ctx sdk.Context, addr sdk.AccAddress) bool
 
 	Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
 	TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress, amount sdk.Coins) (sdk.Coins, error)
+	ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, ethiqAmount, maxISLMAmount sdkmath.Int) (sdk.Coin, error)
 
 	// grpc query endpoints
 	Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error)
@@ -42,6 +44,7 @@ type Keeper interface {
 	TotalBalance(ctx context.Context, req *types.QueryTotalBalanceRequest) (*types.QueryTotalBalanceResponse, error)
 	Holders(ctx context.Context, req *types.QueryHoldersRequest) (*types.QueryHoldersResponse, error)
 	Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error)
+	EscrowAddress(ctx context.Context, req *types.QueryEscrowAddressRequest) (*types.QueryEscrowAddressResponse, error)
 
 	// genesis methods
 	InitGenesis(ctx sdk.Context, genState *types.GenesisState)
@@ -53,8 +56,10 @@ type BaseKeeper struct {
 	cdc      codec.BinaryCodec
 	storeKey storetypes.StoreKey
 
-	ak types.AccountKeeper
-	bk types.BankKeeper
+	ak     types.AccountKeeper
+	bk     types.BankKeeper
+	lvk    types.LiquidVestingKeeper
+	ethiqk types.EthiqKeeper
 }
 
 func NewBaseKeeper(
@@ -62,6 +67,8 @@ func NewBaseKeeper(
 	storeKey storetypes.StoreKey,
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
+	lvk types.LiquidVestingKeeper,
+	ethiqk types.EthiqKeeper,
 	authority string,
 ) BaseKeeper {
 	if _, err := sdk.AccAddressFromBech32(authority); err != nil {
@@ -74,6 +81,8 @@ func NewBaseKeeper(
 		storeKey: storeKey,
 		ak:       ak,
 		bk:       bk,
+		lvk:      lvk,
+		ethiqk:   ethiqk,
 	}
 }
 
@@ -86,12 +95,9 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 		return types.ErrModuleDisabled
 	}
 
-	if err := k.bk.SendCoinsFromAccountToModule(ctx, sender, types.ModuleName, amount); err != nil {
-		return err
-	}
-
+	escrowAddr := types.GetEscrowAddress(sender)
 	for _, coin := range amount {
-		if coin.Denom != utils.BaseDenom && !IsLiquidToken(coin.Denom) {
+		if coin.Denom != utils.BaseDenom && !types.IsLiquidToken(coin.Denom) {
 			return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom %s is not allowed", coin.Denom)
 		}
 
@@ -99,14 +105,9 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 			continue
 		}
 
-		err := k.addCoinsToAccount(ctx, sender, sdk.NewCoins(coin))
-		if err != nil {
+		if err := k.escrowToken(ctx, sender, escrowAddr, coin); err != nil {
 			return err
 		}
-
-		bal := k.GetTotalBalanceOf(ctx, coin.Denom)
-		bal = bal.Add(coin)
-		k.setTotalBalanceOfCoin(ctx, bal)
 	}
 
 	// Update holders index
@@ -125,35 +126,17 @@ func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAd
 		return nil, types.ErrNotEligible
 	}
 
-	leftovers := sdk.NewCoins()
+	ownerEscrowAddr := types.GetEscrowAddress(owner)
+	newOwnerEscrowAddr := types.GetEscrowAddress(newOwner)
+
 	for _, coin := range amount {
 		if coin.IsZero() {
 			// should not happen
 			continue
 		}
 
-		ok, foundInBalance := balances.Find(coin.Denom)
-		if !ok {
-			return nil, sdkerrors.Wrapf(types.ErrInsufficientFunds, "zero balance of %s", coin.Denom)
-		}
-		leftCoin, err := foundInBalance.SafeSub(coin)
-		if err != nil {
-			return nil, sdkerrors.Wrapf(types.ErrInsufficientFunds, "%s on balance is lower than %s to transfer", foundInBalance, coin)
-		}
-
-		leftovers = append(leftovers, leftCoin)
-	}
-
-	// Add coins to new owner
-	err := k.addCoinsToAccount(ctx, newOwner, amount)
-	if err != nil {
-		return nil, err
-	}
-
-	// Remove coins from old owner
-	for _, coin := range leftovers {
-		if err := k.setBalance(ctx, owner, coin); err != nil {
-			return nil, err
+		if err := k.transferEscrowToken(ctx, ownerEscrowAddr, newOwnerEscrowAddr, coin); err != nil {
+			return nil, sdkerrors.Wrapf(err, "failed to transfer ownership of %s", coin)
 		}
 	}
 
@@ -162,6 +145,56 @@ func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAd
 	k.setHoldersIndex(ctx, owner)
 
 	return amount, nil
+}
+
+// ConvertToEthiq converts ISLM tokens to ethiq tokens for a holder.
+func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, ethiqAmount, maxISLMAmount sdkmath.Int) (sdk.Coin, error) {
+	if !k.IsModuleEnabled(ctx) {
+		return sdk.Coin{}, types.ErrModuleDisabled
+	}
+
+	// Validation: user should be listed as one of the holders in ucdao module
+	if !k.IsHolder(ctx, sender) {
+		return sdk.Coin{}, types.ErrNotEligible
+	}
+
+	// Get spender's ISLM balance
+	spenderISLMBalance := k.GetBalance(ctx, sender, utils.BaseDenom)
+	if spenderISLMBalance.Amount.LT(maxISLMAmount) {
+		// calculate the amount of ISLM to redeem from liquid vesting module
+		redeemISLMAmount := maxISLMAmount.Sub(spenderISLMBalance.Amount)
+
+		// Should proceed redeem from liquid vesting module
+		err := k.lvk.Redeem(ctx, sender, sender, sdk.NewCoin(utils.BaseDenom, redeemISLMAmount))
+		if err != nil {
+			return sdk.Coin{}, sdkerrors.Wrapf(err, "failed to redeem ISLM from liquid vesting module")
+		}
+
+		// Funding is necessary to keep track the total balance of aISLM as well as holders index in ucdao module
+		// Should fund redeemed aISLM to ucdao module escrow address
+		err = k.Fund(ctx, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, redeemISLMAmount)), sender)
+		if err != nil {
+			return sdk.Coin{}, sdkerrors.Wrapf(err, "failed to fund redeemed ISLM to ucdao module escrow address")
+		}
+	}
+
+	// Exchange aISLM to ethiq
+	spentISLMAmount, err := k.ethiqk.ConvertToEthiq(ctx, ethiqAmount, maxISLMAmount, sender, receiver)
+	if err != nil {
+		return sdk.Coin{}, sdkerrors.Wrapf(err, "failed to convert amount of aISLM to ethiq")
+	}
+
+	// Update total balance of aISLM in ucdao module
+	currentTotalISLMBalance := k.GetTotalBalanceOf(ctx, utils.BaseDenom)
+
+	// Deduct exchanged ISLM amount from total balance of aISLM in ucdao module
+	newTotalISLMBalance := currentTotalISLMBalance.Sub(sdk.NewCoin(utils.BaseDenom, spentISLMAmount))
+	k.setTotalBalanceOfCoin(ctx, newTotalISLMBalance)
+
+	// Update holders index
+	k.setHoldersIndex(ctx, sender)
+
+	return sdk.NewCoin(utils.BaseDenom, spentISLMAmount), nil
 }
 
 // Logger returns a module-specific logger.

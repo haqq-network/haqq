@@ -14,6 +14,7 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	"github.com/haqq-network/haqq/x/ucdao/keeper"
 )
 
 type KeeperTestSuite struct {
@@ -49,4 +50,9 @@ func (suite *KeeperTestSuite) SetupTest() {
 	s.factory = tf
 	s.handler = gh
 	s.keyring = kr
+}
+
+// getBaseKeeper returns the BaseKeeper from the DaoKeeper interface
+func (suite *KeeperTestSuite) getBaseKeeper() keeper.BaseKeeper {
+	return suite.network.App.DaoKeeper.(keeper.BaseKeeper)
 }
