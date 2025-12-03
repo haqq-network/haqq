@@ -4351,19 +4351,19 @@ func (x *fastReflection_MsgTransferOwnershipWithAmountResponse) ProtoMethods() *
 
 var (
 	md_MsgConvertToEthiq                 protoreflect.MessageDescriptor
+	fd_MsgConvertToEthiq_sender          protoreflect.FieldDescriptor
+	fd_MsgConvertToEthiq_receiver        protoreflect.FieldDescriptor
 	fd_MsgConvertToEthiq_amount          protoreflect.FieldDescriptor
 	fd_MsgConvertToEthiq_max_islm_amount protoreflect.FieldDescriptor
-	fd_MsgConvertToEthiq_receiver        protoreflect.FieldDescriptor
-	fd_MsgConvertToEthiq_sender          protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_haqq_ucdao_v1_tx_proto_init()
 	md_MsgConvertToEthiq = File_haqq_ucdao_v1_tx_proto.Messages().ByName("MsgConvertToEthiq")
+	fd_MsgConvertToEthiq_sender = md_MsgConvertToEthiq.Fields().ByName("sender")
+	fd_MsgConvertToEthiq_receiver = md_MsgConvertToEthiq.Fields().ByName("receiver")
 	fd_MsgConvertToEthiq_amount = md_MsgConvertToEthiq.Fields().ByName("amount")
 	fd_MsgConvertToEthiq_max_islm_amount = md_MsgConvertToEthiq.Fields().ByName("max_islm_amount")
-	fd_MsgConvertToEthiq_receiver = md_MsgConvertToEthiq.Fields().ByName("receiver")
-	fd_MsgConvertToEthiq_sender = md_MsgConvertToEthiq.Fields().ByName("sender")
 }
 
 var _ protoreflect.Message = (*fastReflection_MsgConvertToEthiq)(nil)
@@ -4431,15 +4431,9 @@ func (x *fastReflection_MsgConvertToEthiq) Interface() protoreflect.ProtoMessage
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_MsgConvertToEthiq) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Amount != "" {
-		value := protoreflect.ValueOfString(x.Amount)
-		if !f(fd_MsgConvertToEthiq_amount, value) {
-			return
-		}
-	}
-	if x.MaxIslmAmount != "" {
-		value := protoreflect.ValueOfString(x.MaxIslmAmount)
-		if !f(fd_MsgConvertToEthiq_max_islm_amount, value) {
+	if x.Sender != "" {
+		value := protoreflect.ValueOfString(x.Sender)
+		if !f(fd_MsgConvertToEthiq_sender, value) {
 			return
 		}
 	}
@@ -4449,9 +4443,15 @@ func (x *fastReflection_MsgConvertToEthiq) Range(f func(protoreflect.FieldDescri
 			return
 		}
 	}
-	if x.Sender != "" {
-		value := protoreflect.ValueOfString(x.Sender)
-		if !f(fd_MsgConvertToEthiq_sender, value) {
+	if x.Amount != "" {
+		value := protoreflect.ValueOfString(x.Amount)
+		if !f(fd_MsgConvertToEthiq_amount, value) {
+			return
+		}
+	}
+	if x.MaxIslmAmount != "" {
+		value := protoreflect.ValueOfString(x.MaxIslmAmount)
+		if !f(fd_MsgConvertToEthiq_max_islm_amount, value) {
 			return
 		}
 	}
@@ -4470,14 +4470,14 @@ func (x *fastReflection_MsgConvertToEthiq) Range(f func(protoreflect.FieldDescri
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_MsgConvertToEthiq) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
+		return x.Sender != ""
+	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
+		return x.Receiver != ""
 	case "haqq.ucdao.v1.MsgConvertToEthiq.amount":
 		return x.Amount != ""
 	case "haqq.ucdao.v1.MsgConvertToEthiq.max_islm_amount":
 		return x.MaxIslmAmount != ""
-	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
-		return x.Receiver != ""
-	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
-		return x.Sender != ""
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiq"))
@@ -4494,14 +4494,14 @@ func (x *fastReflection_MsgConvertToEthiq) Has(fd protoreflect.FieldDescriptor) 
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_MsgConvertToEthiq) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
+		x.Sender = ""
+	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
+		x.Receiver = ""
 	case "haqq.ucdao.v1.MsgConvertToEthiq.amount":
 		x.Amount = ""
 	case "haqq.ucdao.v1.MsgConvertToEthiq.max_islm_amount":
 		x.MaxIslmAmount = ""
-	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
-		x.Receiver = ""
-	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
-		x.Sender = ""
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiq"))
@@ -4518,17 +4518,17 @@ func (x *fastReflection_MsgConvertToEthiq) Clear(fd protoreflect.FieldDescriptor
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_MsgConvertToEthiq) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
+		value := x.Sender
+		return protoreflect.ValueOfString(value)
+	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
+		value := x.Receiver
+		return protoreflect.ValueOfString(value)
 	case "haqq.ucdao.v1.MsgConvertToEthiq.amount":
 		value := x.Amount
 		return protoreflect.ValueOfString(value)
 	case "haqq.ucdao.v1.MsgConvertToEthiq.max_islm_amount":
 		value := x.MaxIslmAmount
-		return protoreflect.ValueOfString(value)
-	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
-		value := x.Receiver
-		return protoreflect.ValueOfString(value)
-	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
-		value := x.Sender
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
@@ -4550,14 +4550,14 @@ func (x *fastReflection_MsgConvertToEthiq) Get(descriptor protoreflect.FieldDesc
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_MsgConvertToEthiq) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
+		x.Sender = value.Interface().(string)
+	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
+		x.Receiver = value.Interface().(string)
 	case "haqq.ucdao.v1.MsgConvertToEthiq.amount":
 		x.Amount = value.Interface().(string)
 	case "haqq.ucdao.v1.MsgConvertToEthiq.max_islm_amount":
 		x.MaxIslmAmount = value.Interface().(string)
-	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
-		x.Receiver = value.Interface().(string)
-	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
-		x.Sender = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiq"))
@@ -4578,14 +4578,14 @@ func (x *fastReflection_MsgConvertToEthiq) Set(fd protoreflect.FieldDescriptor, 
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_MsgConvertToEthiq) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
+		panic(fmt.Errorf("field sender of message haqq.ucdao.v1.MsgConvertToEthiq is not mutable"))
+	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
+		panic(fmt.Errorf("field receiver of message haqq.ucdao.v1.MsgConvertToEthiq is not mutable"))
 	case "haqq.ucdao.v1.MsgConvertToEthiq.amount":
 		panic(fmt.Errorf("field amount of message haqq.ucdao.v1.MsgConvertToEthiq is not mutable"))
 	case "haqq.ucdao.v1.MsgConvertToEthiq.max_islm_amount":
 		panic(fmt.Errorf("field max_islm_amount of message haqq.ucdao.v1.MsgConvertToEthiq is not mutable"))
-	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
-		panic(fmt.Errorf("field receiver of message haqq.ucdao.v1.MsgConvertToEthiq is not mutable"))
-	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
-		panic(fmt.Errorf("field sender of message haqq.ucdao.v1.MsgConvertToEthiq is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiq"))
@@ -4599,13 +4599,13 @@ func (x *fastReflection_MsgConvertToEthiq) Mutable(fd protoreflect.FieldDescript
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_MsgConvertToEthiq) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "haqq.ucdao.v1.MsgConvertToEthiq.amount":
-		return protoreflect.ValueOfString("")
-	case "haqq.ucdao.v1.MsgConvertToEthiq.max_islm_amount":
+	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
 		return protoreflect.ValueOfString("")
 	case "haqq.ucdao.v1.MsgConvertToEthiq.receiver":
 		return protoreflect.ValueOfString("")
-	case "haqq.ucdao.v1.MsgConvertToEthiq.sender":
+	case "haqq.ucdao.v1.MsgConvertToEthiq.amount":
+		return protoreflect.ValueOfString("")
+	case "haqq.ucdao.v1.MsgConvertToEthiq.max_islm_amount":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
@@ -4676,11 +4676,7 @@ func (x *fastReflection_MsgConvertToEthiq) ProtoMethods() *protoiface.Methods {
 		var n int
 		var l int
 		_ = l
-		l = len(x.Amount)
-		if l > 0 {
-			n += 1 + l + runtime.Sov(uint64(l))
-		}
-		l = len(x.MaxIslmAmount)
+		l = len(x.Sender)
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
@@ -4688,7 +4684,11 @@ func (x *fastReflection_MsgConvertToEthiq) ProtoMethods() *protoiface.Methods {
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
-		l = len(x.Sender)
+		l = len(x.Amount)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		l = len(x.MaxIslmAmount)
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
@@ -4721,31 +4721,31 @@ func (x *fastReflection_MsgConvertToEthiq) ProtoMethods() *protoiface.Methods {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if len(x.Sender) > 0 {
-			i -= len(x.Sender)
-			copy(dAtA[i:], x.Sender)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Sender)))
+		if len(x.MaxIslmAmount) > 0 {
+			i -= len(x.MaxIslmAmount)
+			copy(dAtA[i:], x.MaxIslmAmount)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.MaxIslmAmount)))
 			i--
 			dAtA[i] = 0x22
+		}
+		if len(x.Amount) > 0 {
+			i -= len(x.Amount)
+			copy(dAtA[i:], x.Amount)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Amount)))
+			i--
+			dAtA[i] = 0x1a
 		}
 		if len(x.Receiver) > 0 {
 			i -= len(x.Receiver)
 			copy(dAtA[i:], x.Receiver)
 			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Receiver)))
 			i--
-			dAtA[i] = 0x1a
-		}
-		if len(x.MaxIslmAmount) > 0 {
-			i -= len(x.MaxIslmAmount)
-			copy(dAtA[i:], x.MaxIslmAmount)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.MaxIslmAmount)))
-			i--
 			dAtA[i] = 0x12
 		}
-		if len(x.Amount) > 0 {
-			i -= len(x.Amount)
-			copy(dAtA[i:], x.Amount)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Amount)))
+		if len(x.Sender) > 0 {
+			i -= len(x.Sender)
+			copy(dAtA[i:], x.Sender)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Sender)))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -4800,7 +4800,7 @@ func (x *fastReflection_MsgConvertToEthiq) ProtoMethods() *protoiface.Methods {
 			switch fieldNum {
 			case 1:
 				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Sender", wireType)
 				}
 				var stringLen uint64
 				for shift := uint(0); ; shift += 7 {
@@ -4828,41 +4828,9 @@ func (x *fastReflection_MsgConvertToEthiq) ProtoMethods() *protoiface.Methods {
 				if postIndex > l {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
-				x.Amount = string(dAtA[iNdEx:postIndex])
+				x.Sender = string(dAtA[iNdEx:postIndex])
 				iNdEx = postIndex
 			case 2:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MaxIslmAmount", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.MaxIslmAmount = string(dAtA[iNdEx:postIndex])
-				iNdEx = postIndex
-			case 3:
 				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Receiver", wireType)
 				}
@@ -4894,9 +4862,9 @@ func (x *fastReflection_MsgConvertToEthiq) ProtoMethods() *protoiface.Methods {
 				}
 				x.Receiver = string(dAtA[iNdEx:postIndex])
 				iNdEx = postIndex
-			case 4:
+			case 3:
 				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Sender", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Amount", wireType)
 				}
 				var stringLen uint64
 				for shift := uint(0); ; shift += 7 {
@@ -4924,7 +4892,39 @@ func (x *fastReflection_MsgConvertToEthiq) ProtoMethods() *protoiface.Methods {
 				if postIndex > l {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
-				x.Sender = string(dAtA[iNdEx:postIndex])
+				x.Amount = string(dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
+			case 4:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MaxIslmAmount", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.MaxIslmAmount = string(dAtA[iNdEx:postIndex])
 				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
@@ -4962,12 +4962,14 @@ func (x *fastReflection_MsgConvertToEthiq) ProtoMethods() *protoiface.Methods {
 }
 
 var (
-	md_MsgConvertToEthiqResponse protoreflect.MessageDescriptor
+	md_MsgConvertToEthiqResponse            protoreflect.MessageDescriptor
+	fd_MsgConvertToEthiqResponse_burnt_coin protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_haqq_ucdao_v1_tx_proto_init()
 	md_MsgConvertToEthiqResponse = File_haqq_ucdao_v1_tx_proto.Messages().ByName("MsgConvertToEthiqResponse")
+	fd_MsgConvertToEthiqResponse_burnt_coin = md_MsgConvertToEthiqResponse.Fields().ByName("burnt_coin")
 }
 
 var _ protoreflect.Message = (*fastReflection_MsgConvertToEthiqResponse)(nil)
@@ -5035,6 +5037,12 @@ func (x *fastReflection_MsgConvertToEthiqResponse) Interface() protoreflect.Prot
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_MsgConvertToEthiqResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.BurntCoin != nil {
+		value := protoreflect.ValueOfMessage(x.BurntCoin.ProtoReflect())
+		if !f(fd_MsgConvertToEthiqResponse_burnt_coin, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -5050,6 +5058,8 @@ func (x *fastReflection_MsgConvertToEthiqResponse) Range(f func(protoreflect.Fie
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_MsgConvertToEthiqResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiqResponse.burnt_coin":
+		return x.BurntCoin != nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiqResponse"))
@@ -5066,6 +5076,8 @@ func (x *fastReflection_MsgConvertToEthiqResponse) Has(fd protoreflect.FieldDesc
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_MsgConvertToEthiqResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiqResponse.burnt_coin":
+		x.BurntCoin = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiqResponse"))
@@ -5082,6 +5094,9 @@ func (x *fastReflection_MsgConvertToEthiqResponse) Clear(fd protoreflect.FieldDe
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_MsgConvertToEthiqResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiqResponse.burnt_coin":
+		value := x.BurntCoin
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiqResponse"))
@@ -5102,6 +5117,8 @@ func (x *fastReflection_MsgConvertToEthiqResponse) Get(descriptor protoreflect.F
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_MsgConvertToEthiqResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiqResponse.burnt_coin":
+		x.BurntCoin = value.Message().Interface().(*v1beta1.Coin)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiqResponse"))
@@ -5122,6 +5139,11 @@ func (x *fastReflection_MsgConvertToEthiqResponse) Set(fd protoreflect.FieldDesc
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_MsgConvertToEthiqResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiqResponse.burnt_coin":
+		if x.BurntCoin == nil {
+			x.BurntCoin = new(v1beta1.Coin)
+		}
+		return protoreflect.ValueOfMessage(x.BurntCoin.ProtoReflect())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiqResponse"))
@@ -5135,6 +5157,9 @@ func (x *fastReflection_MsgConvertToEthiqResponse) Mutable(fd protoreflect.Field
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_MsgConvertToEthiqResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
+	case "haqq.ucdao.v1.MsgConvertToEthiqResponse.burnt_coin":
+		m := new(v1beta1.Coin)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ucdao.v1.MsgConvertToEthiqResponse"))
@@ -5204,6 +5229,10 @@ func (x *fastReflection_MsgConvertToEthiqResponse) ProtoMethods() *protoiface.Me
 		var n int
 		var l int
 		_ = l
+		if x.BurntCoin != nil {
+			l = options.Size(x.BurntCoin)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -5232,6 +5261,20 @@ func (x *fastReflection_MsgConvertToEthiqResponse) ProtoMethods() *protoiface.Me
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.BurntCoin != nil {
+			encoded, err := options.Marshal(x.BurntCoin)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0xa
 		}
 		if input.Buf != nil {
 			input.Buf = append(input.Buf, dAtA...)
@@ -5282,6 +5325,42 @@ func (x *fastReflection_MsgConvertToEthiqResponse) ProtoMethods() *protoiface.Me
 				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgConvertToEthiqResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field BurntCoin", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.BurntCoin == nil {
+					x.BurntCoin = &v1beta1.Coin{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.BurntCoin); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -5701,14 +5780,14 @@ type MsgConvertToEthiq struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// amount is the desired ethiq amount to receive.
-	Amount string `protobuf:"bytes,1,opt,name=amount,proto3" json:"amount,omitempty"`
-	// max_islm_amount is the maximum payable islam token amount.
-	MaxIslmAmount string `protobuf:"bytes,2,opt,name=max_islm_amount,json=maxIslmAmount,proto3" json:"max_islm_amount,omitempty"`
-	// receiver is the address to receive ethiq token.
-	Receiver string `protobuf:"bytes,3,opt,name=receiver,proto3" json:"receiver,omitempty"`
 	// sender is the address initiating the conversion (must be a holder).
-	Sender string `protobuf:"bytes,4,opt,name=sender,proto3" json:"sender,omitempty"`
+	Sender string `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
+	// receiver is the address to receive ethiq token.
+	Receiver string `protobuf:"bytes,2,opt,name=receiver,proto3" json:"receiver,omitempty"`
+	// amount is the desired ethiq amount to receive.
+	Amount string `protobuf:"bytes,3,opt,name=amount,proto3" json:"amount,omitempty"`
+	// max_islm_amount is the maximum payable islam token amount.
+	MaxIslmAmount string `protobuf:"bytes,4,opt,name=max_islm_amount,json=maxIslmAmount,proto3" json:"max_islm_amount,omitempty"`
 }
 
 func (x *MsgConvertToEthiq) Reset() {
@@ -5731,6 +5810,20 @@ func (*MsgConvertToEthiq) Descriptor() ([]byte, []int) {
 	return file_haqq_ucdao_v1_tx_proto_rawDescGZIP(), []int{9}
 }
 
+func (x *MsgConvertToEthiq) GetSender() string {
+	if x != nil {
+		return x.Sender
+	}
+	return ""
+}
+
+func (x *MsgConvertToEthiq) GetReceiver() string {
+	if x != nil {
+		return x.Receiver
+	}
+	return ""
+}
+
 func (x *MsgConvertToEthiq) GetAmount() string {
 	if x != nil {
 		return x.Amount
@@ -5745,25 +5838,13 @@ func (x *MsgConvertToEthiq) GetMaxIslmAmount() string {
 	return ""
 }
 
-func (x *MsgConvertToEthiq) GetReceiver() string {
-	if x != nil {
-		return x.Receiver
-	}
-	return ""
-}
-
-func (x *MsgConvertToEthiq) GetSender() string {
-	if x != nil {
-		return x.Sender
-	}
-	return ""
-}
-
 // MsgConvertToEthiqResponse defines the Msg/ConvertToEthiq response type.
 type MsgConvertToEthiqResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+
+	BurntCoin *v1beta1.Coin `protobuf:"bytes,1,opt,name=burnt_coin,json=burntCoin,proto3" json:"burnt_coin,omitempty"`
 }
 
 func (x *MsgConvertToEthiqResponse) Reset() {
@@ -5784,6 +5865,13 @@ func (*MsgConvertToEthiqResponse) ProtoMessage() {}
 // Deprecated: Use MsgConvertToEthiqResponse.ProtoReflect.Descriptor instead.
 func (*MsgConvertToEthiqResponse) Descriptor() ([]byte, []int) {
 	return file_haqq_ucdao_v1_tx_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *MsgConvertToEthiqResponse) GetBurntCoin() *v1beta1.Coin {
+	if x != nil {
+		return x.BurntCoin
+	}
+	return nil
 }
 
 var File_haqq_ucdao_v1_tx_proto protoreflect.FileDescriptor
@@ -5888,71 +5976,78 @@ var file_haqq_ucdao_v1_tx_proto_rawDesc = []byte{
 	0x0a, 0x26, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e,
 	0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57, 0x69, 0x74, 0x68, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74,
 	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xaf, 0x02, 0x0a, 0x11, 0x4d, 0x73, 0x67,
-	0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54, 0x6f, 0x45, 0x74, 0x68, 0x69, 0x71, 0x12, 0x35,
-	0x0a, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d,
-	0xc8, 0xde, 0x1f, 0x00, 0xda, 0xde, 0x1f, 0x15, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64,
-	0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x6d, 0x61, 0x74, 0x68, 0x2e, 0x49, 0x6e, 0x74, 0x52, 0x06, 0x61,
-	0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x45, 0x0a, 0x0f, 0x6d, 0x61, 0x78, 0x5f, 0x69, 0x73, 0x6c,
-	0x6d, 0x5f, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d,
-	0xc8, 0xde, 0x1f, 0x00, 0xda, 0xde, 0x1f, 0x15, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64,
-	0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x6d, 0x61, 0x74, 0x68, 0x2e, 0x49, 0x6e, 0x74, 0x52, 0x0d, 0x6d,
-	0x61, 0x78, 0x49, 0x73, 0x6c, 0x6d, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x34, 0x0a, 0x08,
-	0x72, 0x65, 0x63, 0x65, 0x69, 0x76, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18,
+	0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54, 0x6f, 0x45, 0x74, 0x68, 0x69, 0x71, 0x12, 0x30,
+	0x0a, 0x06, 0x73, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18,
 	0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65,
-	0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x08, 0x72, 0x65, 0x63, 0x65, 0x69, 0x76,
-	0x65, 0x72, 0x12, 0x30, 0x0a, 0x06, 0x73, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01,
+	0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x06, 0x73, 0x65, 0x6e, 0x64, 0x65, 0x72,
+	0x12, 0x34, 0x0a, 0x08, 0x72, 0x65, 0x63, 0x65, 0x69, 0x76, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01,
 	0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41,
-	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x06, 0x73, 0x65,
-	0x6e, 0x64, 0x65, 0x72, 0x3a, 0x34, 0x88, 0xa0, 0x1f, 0x00, 0xe8, 0xa0, 0x1f, 0x00, 0x82, 0xe7,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x08, 0x72, 0x65,
+	0x63, 0x65, 0x69, 0x76, 0x65, 0x72, 0x12, 0x35, 0x0a, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xc8, 0xde, 0x1f, 0x00, 0xda, 0xde, 0x1f, 0x15,
+	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x6d, 0x61, 0x74,
+	0x68, 0x2e, 0x49, 0x6e, 0x74, 0x52, 0x06, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x45, 0x0a,
+	0x0f, 0x6d, 0x61, 0x78, 0x5f, 0x69, 0x73, 0x6c, 0x6d, 0x5f, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xc8, 0xde, 0x1f, 0x00, 0xda, 0xde, 0x1f, 0x15,
+	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x6d, 0x61, 0x74,
+	0x68, 0x2e, 0x49, 0x6e, 0x74, 0x52, 0x0d, 0x6d, 0x61, 0x78, 0x49, 0x73, 0x6c, 0x6d, 0x41, 0x6d,
+	0x6f, 0x75, 0x6e, 0x74, 0x3a, 0x34, 0x88, 0xa0, 0x1f, 0x00, 0xe8, 0xa0, 0x1f, 0x00, 0x82, 0xe7,
 	0xb0, 0x2a, 0x06, 0x73, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x8a, 0xe7, 0xb0, 0x2a, 0x1c, 0x68, 0x61,
 	0x71, 0x71, 0x2f, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2f, 0x4d, 0x73, 0x67, 0x43, 0x6f, 0x6e, 0x76,
-	0x65, 0x72, 0x74, 0x54, 0x6f, 0x45, 0x74, 0x68, 0x69, 0x71, 0x22, 0x1b, 0x0a, 0x19, 0x4d, 0x73,
-	0x67, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54, 0x6f, 0x45, 0x74, 0x68, 0x69, 0x71, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0x9a, 0x04, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12,
-	0x3e, 0x0a, 0x04, 0x46, 0x75, 0x6e, 0x64, 0x12, 0x16, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75,
-	0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x46, 0x75, 0x6e, 0x64, 0x1a,
-	0x1e, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e,
-	0x4d, 0x73, 0x67, 0x46, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x65, 0x0a, 0x11, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72,
-	0x73, 0x68, 0x69, 0x70, 0x12, 0x23, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61,
-	0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x65, 0x72,
-	0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x1a, 0x2b, 0x2e, 0x68, 0x61, 0x71, 0x71,
-	0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x61,
-	0x6e, 0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x80, 0x01, 0x0a, 0x1a, 0x54, 0x72, 0x61, 0x6e, 0x73,
-	0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57, 0x69, 0x74, 0x68,
-	0x52, 0x61, 0x74, 0x69, 0x6f, 0x12, 0x2c, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64,
+	0x65, 0x72, 0x74, 0x54, 0x6f, 0x45, 0x74, 0x68, 0x69, 0x71, 0x22, 0x8b, 0x01, 0x0a, 0x19, 0x4d,
+	0x73, 0x67, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54, 0x6f, 0x45, 0x74, 0x68, 0x69, 0x71,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x6e, 0x0a, 0x0a, 0x62, 0x75, 0x72, 0x6e,
+	0x74, 0x5f, 0x63, 0x6f, 0x69, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x63,
+	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74,
+	0x61, 0x31, 0x2e, 0x43, 0x6f, 0x69, 0x6e, 0x42, 0x34, 0xc8, 0xde, 0x1f, 0x00, 0xfa, 0xde, 0x1f,
+	0x27, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x73, 0x6d,
+	0x6f, 0x73, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2d, 0x73, 0x64, 0x6b, 0x2f, 0x74, 0x79,
+	0x70, 0x65, 0x73, 0x2e, 0x43, 0x6f, 0x69, 0x6e, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x09, 0x62,
+	0x75, 0x72, 0x6e, 0x74, 0x43, 0x6f, 0x69, 0x6e, 0x32, 0x9a, 0x04, 0x0a, 0x03, 0x4d, 0x73, 0x67,
+	0x12, 0x3e, 0x0a, 0x04, 0x46, 0x75, 0x6e, 0x64, 0x12, 0x16, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e,
+	0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x46, 0x75, 0x6e, 0x64,
+	0x1a, 0x1e, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31,
+	0x2e, 0x4d, 0x73, 0x67, 0x46, 0x75, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x65, 0x0a, 0x11, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65,
+	0x72, 0x73, 0x68, 0x69, 0x70, 0x12, 0x23, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64,
 	0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x65,
-	0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57, 0x69, 0x74, 0x68, 0x52, 0x61,
-	0x74, 0x69, 0x6f, 0x1a, 0x34, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f,
-	0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x4f,
-	0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57, 0x69, 0x74, 0x68, 0x52, 0x61, 0x74, 0x69,
-	0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x83, 0x01, 0x0a, 0x1b, 0x54, 0x72,
+	0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x1a, 0x2b, 0x2e, 0x68, 0x61, 0x71,
+	0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72,
+	0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x80, 0x01, 0x0a, 0x1a, 0x54, 0x72, 0x61, 0x6e,
+	0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57, 0x69, 0x74,
+	0x68, 0x52, 0x61, 0x74, 0x69, 0x6f, 0x12, 0x2c, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63,
+	0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66,
+	0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57, 0x69, 0x74, 0x68, 0x52,
+	0x61, 0x74, 0x69, 0x6f, 0x1a, 0x34, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61,
+	0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x65, 0x72,
+	0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57, 0x69, 0x74, 0x68, 0x52, 0x61, 0x74,
+	0x69, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x83, 0x01, 0x0a, 0x1b, 0x54,
+	0x72, 0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70,
+	0x57, 0x69, 0x74, 0x68, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x2d, 0x2e, 0x68, 0x61, 0x71,
+	0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72,
 	0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57,
-	0x69, 0x74, 0x68, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x2d, 0x2e, 0x68, 0x61, 0x71, 0x71,
+	0x69, 0x74, 0x68, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x1a, 0x35, 0x2e, 0x68, 0x61, 0x71, 0x71,
 	0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x61,
 	0x6e, 0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57, 0x69,
-	0x74, 0x68, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x1a, 0x35, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e,
-	0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x72, 0x61, 0x6e,
-	0x73, 0x66, 0x65, 0x72, 0x4f, 0x77, 0x6e, 0x65, 0x72, 0x73, 0x68, 0x69, 0x70, 0x57, 0x69, 0x74,
-	0x68, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x5c, 0x0a, 0x0e, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54, 0x6f, 0x45, 0x74, 0x68, 0x69,
-	0x71, 0x12, 0x20, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76,
-	0x31, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54, 0x6f, 0x45, 0x74,
-	0x68, 0x69, 0x71, 0x1a, 0x28, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f,
-	0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54, 0x6f,
-	0x45, 0x74, 0x68, 0x69, 0x71, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80,
-	0xe7, 0xb0, 0x2a, 0x01, 0x42, 0x9a, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61, 0x71,
-	0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x42, 0x07, 0x54, 0x78, 0x50, 0x72,
-	0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x26, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b,
-	0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x75, 0x63, 0x64,
-	0x61, 0x6f, 0x2f, 0x76, 0x31, 0x3b, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x76, 0x31, 0xa2, 0x02, 0x03,
-	0x48, 0x55, 0x58, 0xaa, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x2e, 0x55, 0x63, 0x64, 0x61, 0x6f,
-	0x2e, 0x56, 0x31, 0xca, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x55, 0x63, 0x64, 0x61, 0x6f,
-	0x5c, 0x56, 0x31, 0xe2, 0x02, 0x19, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x55, 0x63, 0x64, 0x61, 0x6f,
-	0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea,
-	0x02, 0x0f, 0x48, 0x61, 0x71, 0x71, 0x3a, 0x3a, 0x55, 0x63, 0x64, 0x61, 0x6f, 0x3a, 0x3a, 0x56,
-	0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x68, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x5c, 0x0a, 0x0e, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54, 0x6f, 0x45, 0x74, 0x68,
+	0x69, 0x71, 0x12, 0x20, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e,
+	0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54, 0x6f, 0x45,
+	0x74, 0x68, 0x69, 0x71, 0x1a, 0x28, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61,
+	0x6f, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x6f, 0x6e, 0x76, 0x65, 0x72, 0x74, 0x54,
+	0x6f, 0x45, 0x74, 0x68, 0x69, 0x71, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05,
+	0x80, 0xe7, 0xb0, 0x2a, 0x01, 0x42, 0x9a, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61,
+	0x71, 0x71, 0x2e, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x2e, 0x76, 0x31, 0x42, 0x07, 0x54, 0x78, 0x50,
+	0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x26, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64,
+	0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x75, 0x63,
+	0x64, 0x61, 0x6f, 0x2f, 0x76, 0x31, 0x3b, 0x75, 0x63, 0x64, 0x61, 0x6f, 0x76, 0x31, 0xa2, 0x02,
+	0x03, 0x48, 0x55, 0x58, 0xaa, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x2e, 0x55, 0x63, 0x64, 0x61,
+	0x6f, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x55, 0x63, 0x64, 0x61,
+	0x6f, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x19, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x55, 0x63, 0x64, 0x61,
+	0x6f, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
+	0xea, 0x02, 0x0f, 0x48, 0x61, 0x71, 0x71, 0x3a, 0x3a, 0x55, 0x63, 0x64, 0x61, 0x6f, 0x3a, 0x3a,
+	0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5987,21 +6082,22 @@ var file_haqq_ucdao_v1_tx_proto_depIdxs = []int32{
 	11, // 1: haqq.ucdao.v1.MsgFundLegacy.amount:type_name -> cosmos.base.v1beta1.Coin
 	11, // 2: haqq.ucdao.v1.MsgTransferOwnershipWithRatioResponse.coins:type_name -> cosmos.base.v1beta1.Coin
 	11, // 3: haqq.ucdao.v1.MsgTransferOwnershipWithAmount.amount:type_name -> cosmos.base.v1beta1.Coin
-	0,  // 4: haqq.ucdao.v1.Msg.Fund:input_type -> haqq.ucdao.v1.MsgFund
-	3,  // 5: haqq.ucdao.v1.Msg.TransferOwnership:input_type -> haqq.ucdao.v1.MsgTransferOwnership
-	5,  // 6: haqq.ucdao.v1.Msg.TransferOwnershipWithRatio:input_type -> haqq.ucdao.v1.MsgTransferOwnershipWithRatio
-	7,  // 7: haqq.ucdao.v1.Msg.TransferOwnershipWithAmount:input_type -> haqq.ucdao.v1.MsgTransferOwnershipWithAmount
-	9,  // 8: haqq.ucdao.v1.Msg.ConvertToEthiq:input_type -> haqq.ucdao.v1.MsgConvertToEthiq
-	2,  // 9: haqq.ucdao.v1.Msg.Fund:output_type -> haqq.ucdao.v1.MsgFundResponse
-	4,  // 10: haqq.ucdao.v1.Msg.TransferOwnership:output_type -> haqq.ucdao.v1.MsgTransferOwnershipResponse
-	6,  // 11: haqq.ucdao.v1.Msg.TransferOwnershipWithRatio:output_type -> haqq.ucdao.v1.MsgTransferOwnershipWithRatioResponse
-	8,  // 12: haqq.ucdao.v1.Msg.TransferOwnershipWithAmount:output_type -> haqq.ucdao.v1.MsgTransferOwnershipWithAmountResponse
-	10, // 13: haqq.ucdao.v1.Msg.ConvertToEthiq:output_type -> haqq.ucdao.v1.MsgConvertToEthiqResponse
-	9,  // [9:14] is the sub-list for method output_type
-	4,  // [4:9] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	11, // 4: haqq.ucdao.v1.MsgConvertToEthiqResponse.burnt_coin:type_name -> cosmos.base.v1beta1.Coin
+	0,  // 5: haqq.ucdao.v1.Msg.Fund:input_type -> haqq.ucdao.v1.MsgFund
+	3,  // 6: haqq.ucdao.v1.Msg.TransferOwnership:input_type -> haqq.ucdao.v1.MsgTransferOwnership
+	5,  // 7: haqq.ucdao.v1.Msg.TransferOwnershipWithRatio:input_type -> haqq.ucdao.v1.MsgTransferOwnershipWithRatio
+	7,  // 8: haqq.ucdao.v1.Msg.TransferOwnershipWithAmount:input_type -> haqq.ucdao.v1.MsgTransferOwnershipWithAmount
+	9,  // 9: haqq.ucdao.v1.Msg.ConvertToEthiq:input_type -> haqq.ucdao.v1.MsgConvertToEthiq
+	2,  // 10: haqq.ucdao.v1.Msg.Fund:output_type -> haqq.ucdao.v1.MsgFundResponse
+	4,  // 11: haqq.ucdao.v1.Msg.TransferOwnership:output_type -> haqq.ucdao.v1.MsgTransferOwnershipResponse
+	6,  // 12: haqq.ucdao.v1.Msg.TransferOwnershipWithRatio:output_type -> haqq.ucdao.v1.MsgTransferOwnershipWithRatioResponse
+	8,  // 13: haqq.ucdao.v1.Msg.TransferOwnershipWithAmount:output_type -> haqq.ucdao.v1.MsgTransferOwnershipWithAmountResponse
+	10, // 14: haqq.ucdao.v1.Msg.ConvertToEthiq:output_type -> haqq.ucdao.v1.MsgConvertToEthiqResponse
+	10, // [10:15] is the sub-list for method output_type
+	5,  // [5:10] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_haqq_ucdao_v1_tx_proto_init() }
