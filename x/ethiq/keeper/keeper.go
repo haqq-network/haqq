@@ -120,10 +120,10 @@ func (k Keeper) CalculateRequiredISLM(ctx sdk.Context, ethiqAmount sdkmath.Int) 
 	return requiredISLM, pricePerUnit, nil
 }
 
-// Mint mints aethiq coins in exchange for aISLM coins
+// ConvertToEthiq mints aethiq coins in exchange for aISLM coins
 // It validates the mint request, calculates required ISLM, burns ISLM, and mints ethiq
 // Returns the actual ISLM amount used and any error
-func (k Keeper) Mint(ctx sdk.Context, ethiqAmount sdkmath.Int, maxIslmAmount sdkmath.Int, fromAddress sdk.AccAddress, toAddress sdk.AccAddress) (sdkmath.Int, error) {
+func (k Keeper) ConvertToEthiq(ctx sdk.Context, ethiqAmount, maxIslmAmount sdkmath.Int, fromAddress, toAddress sdk.AccAddress) (sdkmath.Int, error) {
 	params := k.GetParams(ctx)
 
 	// Short no-op circuit if module is disabled

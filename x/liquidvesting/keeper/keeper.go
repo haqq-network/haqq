@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"context"
+
 	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -9,8 +11,6 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-
-	"context"
 
 	"github.com/haqq-network/haqq/utils"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"

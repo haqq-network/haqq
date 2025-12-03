@@ -56,5 +56,5 @@ type LiquidVestingKeeper interface {
 
 // EthiqKeeper defines the expected interface needed to retrieve ethiq balances.
 type EthiqKeeper interface {
-	ConvertToEthiq(ctx context.Context, ethiqAmount, maxISLMAmount sdkmath.Int, sender, receiver sdk.AccAddress) (sdkmath.Int, error)
+	ConvertToEthiq(ctx sdk.Context, ethiqAmount, maxISLMAmount sdkmath.Int, sender, receiver sdk.AccAddress) (sdkmath.Int, error)
 }

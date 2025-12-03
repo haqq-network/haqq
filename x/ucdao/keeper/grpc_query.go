@@ -111,7 +111,7 @@ func (k BaseKeeper) Params(ctx context.Context, req *types.QueryParamsRequest) (
 }
 
 // EscrowAddress implements the Query/EscrowAddress gRPC method
-func (k BaseKeeper) EscrowAddress(ctx context.Context, req *types.QueryEscrowAddressRequest) (*types.QueryEscrowAddressResponse, error) {
+func (k BaseKeeper) EscrowAddress(_ context.Context, req *types.QueryEscrowAddressRequest) (*types.QueryEscrowAddressResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}

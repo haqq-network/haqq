@@ -83,21 +83,21 @@ func (suite *KeeperTestSuite) TestMigrate1to2() {
 		// Since balancesStore is a prefix store with BalancesPrefix, the key should be:
 		// address length prefix + address + denom (without the BalancesPrefix)
 		addrKey := address.MustLengthPrefix(wallet)
-		key := append(addrKey, []byte(denom)...)
+		addrKey = append(addrKey, []byte(denom)...)
 
 		// Marshal the amount
 		amountBytes, err := amounts[i].Marshal()
 		suite.Require().NoError(err)
 
 		// Set the balance in the store (old version format)
-		balancesStore.Set(key, amountBytes)
+		balancesStore.Set(addrKey, amountBytes)
 	}
 
 	// Verify balances are in the store before migration
 	for i, wallet := range testWallets {
 		addrKey := address.MustLengthPrefix(wallet)
-		key := append(addrKey, []byte(denom)...)
-		suite.Require().True(balancesStore.Has(key), "balance should exist in store for wallet %d", i)
+		addrKey = append(addrKey, []byte(denom)...)
+		suite.Require().True(balancesStore.Has(addrKey), "balance should exist in store for wallet %d", i)
 	}
 
 	// Run migration
@@ -138,8 +138,8 @@ func (suite *KeeperTestSuite) TestMigrate1to2() {
 	// Verify balances are removed from the store after migration
 	for i, wallet := range testWallets {
 		addrKey := address.MustLengthPrefix(wallet)
-		key := append(addrKey, []byte(denom)...)
-		suite.Require().False(balancesStore.Has(key),
+		addrKey = append(addrKey, []byte(denom)...)
+		suite.Require().False(balancesStore.Has(addrKey),
 			"balance should be removed from store for wallet %d after migration", i)
 	}
 

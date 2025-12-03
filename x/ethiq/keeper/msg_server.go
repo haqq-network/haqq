@@ -31,7 +31,7 @@ func (k msgServer) MintEthiq(goCtx context.Context, msg *types.MsgMintEthiq) (*t
 	fromAddress := sdk.MustAccAddressFromBech32(msg.FromAddress)
 
 	// Call keeper Mint function
-	if _, err := k.Keeper.Mint(ctx, msg.EthiqAmount, msg.MaxIslmAmount, fromAddress, toAddress); err != nil {
+	if _, err := k.Keeper.ConvertToEthiq(ctx, msg.EthiqAmount, msg.MaxIslmAmount, fromAddress, toAddress); err != nil {
 		return nil, err
 	}
 

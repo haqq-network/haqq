@@ -533,7 +533,12 @@ func NewHaqq(
 	)
 
 	app.DaoKeeper = ucdaokeeper.NewBaseKeeper(
-		appCodec, keys[ucdaotypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.LiquidVestingKeeper, authAddr,
+		appCodec, keys[ucdaotypes.StoreKey],
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.LiquidVestingKeeper,
+		app.EthiqKeeper,
+		authAddr,
 	)
 
 	app.EthiqKeeper = ethiqkeeper.NewKeeper(

@@ -155,7 +155,7 @@ Example:
 	return cmd
 }
 
-func GetCmdQueryTotalBalance() *cobra.Command {
+func GetCmdQueryTotalBalance() *cobra.Command { //nolint: dupl
 	cmd := &cobra.Command{
 		Use:   "total-balance",
 		Short: "Query the total balances of coins in the United Contributors DAO",
@@ -237,7 +237,7 @@ Example:
 	return cmd
 }
 
-func GetCmdQueryHolders() *cobra.Command {
+func GetCmdQueryHolders() *cobra.Command { //nolint: dupl
 	cmd := &cobra.Command{
 		Use:   "holders",
 		Short: "Query the holders of the United Contributors DAO",

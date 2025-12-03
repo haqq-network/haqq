@@ -179,7 +179,7 @@ func (suite *KeeperTestSuite) TestIterateTotalBalanceEarlyStop() {
 
 	// Iterate and stop early
 	count := 0
-	suite.network.App.DaoKeeper.IterateTotalBalance(ctx, func(c sdk.Coin) bool {
+	suite.network.App.DaoKeeper.IterateTotalBalance(ctx, func(_ sdk.Coin) bool {
 		count++
 		return true // stop iteration
 	})
@@ -282,7 +282,7 @@ func (suite *KeeperTestSuite) TestIterateTotalBalanceWithEmptyStore() {
 	suite.SetupTest()
 	ctx := suite.network.GetContext()
 	count := 0
-	suite.network.App.DaoKeeper.IterateTotalBalance(ctx, func(c sdk.Coin) bool {
+	suite.network.App.DaoKeeper.IterateTotalBalance(ctx, func(_ sdk.Coin) bool {
 		count++
 		return false
 	})
