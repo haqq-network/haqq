@@ -24,6 +24,7 @@ import (
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
@@ -59,6 +60,7 @@ func StoreKeys() (
 		coinomicstypes.StoreKey,
 		liquidvestingtypes.StoreKey,
 		ucdaotypes.StoreKey,
+		ethiqtypes.StoreKey,
 	)
 
 	// Add the EVM transient store key

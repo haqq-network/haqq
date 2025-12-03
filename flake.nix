@@ -36,7 +36,7 @@
         gomod = builtins.readFile ./go.mod;
         goVersion = builtins.match ".*[\n]go ([[:digit:]]*)\.([[:digit:]]*)[\.]*([[:digit:]]*)[\n].*" gomod;
 
-        go = pkgs."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
+        go = pkgsUnstable."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
       in
       {
         packages = rec {

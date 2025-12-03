@@ -155,6 +155,9 @@ import (
 	"github.com/haqq-network/haqq/x/coinomics"
 	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	"github.com/haqq-network/haqq/x/ethiq"
+	ethiqkeeper "github.com/haqq-network/haqq/x/ethiq/keeper"
+	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	"github.com/haqq-network/haqq/x/liquidvesting"
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
@@ -218,6 +221,7 @@ var (
 		vestingtypes.ModuleName:        nil, // Add vesting module account
 		liquidvestingtypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
 		ucdaotypes.ModuleName:          nil,
+		ethiqtypes.ModuleName:          {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -283,6 +287,7 @@ type Haqq struct {
 	// Haqq keepers
 	CoinomicsKeeper coinomicskeeper.Keeper
 	DaoKeeper       ucdaokeeper.Keeper
+	EthiqKeeper     ethiqkeeper.Keeper
 
 	// the module manager
 	mm                 *module.Manager
@@ -530,6 +535,15 @@ func NewHaqq(
 		appCodec, keys[ucdaotypes.StoreKey], app.AccountKeeper, app.BankKeeper, authAddr,
 	)
 
+	app.EthiqKeeper = ethiqkeeper.NewKeeper(
+		keys[ethiqtypes.StoreKey],
+		appCodec,
+		app.GetSubspace(ethiqtypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.Erc20Keeper,
+	)
+
 	// Initialize the packet forward middleware Keeper
 	// It's important to note that the PFM Keeper must be initialized before the Transfer Keeper
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
@@ -686,6 +700,7 @@ func NewHaqq(
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper.Keeper),
 		liquidvesting.NewAppModule(appCodec, app.LiquidVestingKeeper, app.AccountKeeper, app.BankKeeper, &app.Erc20Keeper),
 		ucdao.NewAppModule(appCodec, app.DaoKeeper, app.GetSubspace(ucdaotypes.ModuleName)),
+		ethiq.NewAppModule(app.EthiqKeeper, app.AccountKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager which is in charge of setting up basic,
@@ -780,6 +795,7 @@ func NewHaqq(
 		erc20types.ModuleName,
 		epochstypes.ModuleName,
 		ucdaotypes.ModuleName,
+		ethiqtypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 		consensusparamtypes.ModuleName,
@@ -1241,6 +1257,7 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(coinomicstypes.ModuleName)
 	paramsKeeper.Subspace(liquidvestingtypes.ModuleName)
 	paramsKeeper.Subspace(ucdaotypes.ModuleName)
+	paramsKeeper.Subspace(ethiqtypes.ModuleName).WithKeyTable(ethiqtypes.ParamKeyTable())
 
 	return paramsKeeper
 }

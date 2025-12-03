@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package haqq.ethiq.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/query/v1/query.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+import "haqq/ethiq/v1/ethiq.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/ethiq/types";
+
+// Query defines the gRPC querier service for ethiq module
+service Query {
+  // TotalBurned returns the total amount of burned coins
+  rpc TotalBurned(QueryTotalBurnedRequest) returns (QueryTotalBurnedResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/haqq/ethiq/v1/total_burned";
+  }
+
+  // Calculate returns the estimated amount of aISLM coins required to mint ethiqAmount of aethiq coins
+  rpc Calculate(QueryCalculateRequest) returns (QueryCalculateResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/haqq/ethiq/v1/calculate/{ethiq_amount}";
+  }
+
+  // Params queries the parameters of x/ethiq module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/haqq/ethiq/v1/params";
+  }
+}
+
+// QueryTotalBurnedRequest is the request type for the Query/TotalBurned RPC method.
+message QueryTotalBurnedRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+}
+
+// QueryTotalBurnedResponse is the response type for the Query/TotalBurned RPC method.
+message QueryTotalBurnedResponse {
+  // total_burned is the total amount of burned coins
+  cosmos.base.v1beta1.Coin total_burned = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+}
+
+// QueryCalculateRequest is the request type for the Query/Calculate RPC method.
+message QueryCalculateRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // ethiq_amount is the amount of aethiq coins to mint
+  // using string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)
+  string ethiq_amount = 1;
+}
+
+// QueryCalculateResponse is the response type for the Query/Calculate RPC method.
+message QueryCalculateResponse {
+  // required_islm is the amount of aISLM coins required
+  string required_islm = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // supply_before is the supply of aethiq before minting
+  string supply_before = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // supply_after is the supply of aethiq after minting
+  string supply_after = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // price_per_unit is the price per unit of aethiq
+  string price_per_unit = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+}
+
+// QueryParamsRequest defines the request type for querying x/ethiq parameters.
+message QueryParamsRequest {}
+
+// QueryParamsResponse defines the response type for querying x/ethiq parameters.
+message QueryParamsResponse {
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+

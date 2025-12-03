@@ -1,6 +1,6 @@
 module github.com/haqq-network/haqq
 
-go 1.23.10
+go 1.24.10
 
 require (
 	cosmossdk.io/api v0.7.6
@@ -52,6 +52,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/rs/cors v1.11.1
+	github.com/rsned/bigmath v0.0.1
 	github.com/spf13/cast v1.7.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
