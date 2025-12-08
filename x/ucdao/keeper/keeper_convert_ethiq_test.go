@@ -60,13 +60,14 @@ func (suite *KeeperTestSuite) TestConvertToEthiqNotHolder() {
 }
 
 // TestConvertToEthiqCalculateRequiredISLMError tests ConvertToEthiq when CalculateRequiredISLM returns an error
+// due to overflow in power calculation (either powerAfter at line 90 or powerBefore at line 95)
 func (suite *KeeperTestSuite) TestConvertToEthiqCalculateRequiredISLMError() {
 	suite.SetupTest()
 	ctx := suite.network.GetContext()
 	sender := suite.keyring.GetAccAddr(0)
 	receiver := suite.keyring.GetAccAddr(1)
 	ethiqAmount := sdkmath.NewInt(1000)
-	maxISLMAmount := sdkmath.NewInt(10000)
+	maxISLMAmount := sdkmath.NewInt(1000000000000000000) // Large max amount
 
 	// Enable module
 	params := ucdaotypes.DefaultParams()
@@ -77,27 +78,47 @@ func (suite *KeeperTestSuite) TestConvertToEthiqCalculateRequiredISLMError() {
 	// Set ethiq params (required for CalculateRequiredISLM)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
-	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
-	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000) // Set reasonable max for testing
+	ethiqParams.StartRate = sdkmath.LegacyNewDec(1)
+	ethiqParams.CurveCoefficient = sdkmath.LegacyNewDecWithPrec(5, 9)
+	ethiqParams.PowerCoefficient = sdkmath.LegacyNewDecWithPrec(11, 1) // 1.1
+	ethiqParams.MinMintPerTx = sdkmath.OneInt()
+	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000000000000000)
 	suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams)
 
 	// Fund sender to make them a holder with both ISLM and aLIQUID1 tokens
-	islmCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1000))
+	islmCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1000000000000000000)) // Large amount
 	liquidCoin := sdk.NewCoin("aLIQUID1", sdkmath.NewInt(5000))
 	err = suite.network.FundAccount(sender, sdk.NewCoins(islmCoin, liquidCoin))
 	suite.Require().NoError(err)
 	err = suite.network.App.DaoKeeper.Fund(ctx, sdk.NewCoins(islmCoin, liquidCoin), sender)
 	suite.Require().NoError(err)
 
-	// Use zero ethiqAmount which might cause CalculateRequiredISLM to error
-	// Note: This test depends on the actual implementation of CalculateRequiredISLM
-	// If it doesn't error on zero, we'll need to mock or use a different approach
-	result, err := suite.network.App.DaoKeeper.ConvertToEthiq(ctx, sender, receiver, ethiqAmount, maxISLMAmount)
-	// The actual behavior depends on ethiq module implementation
-	// If CalculateRequiredISLM errors, we should get an error
-	if err != nil {
-		suite.Require().True(result.Denom == "" || result.IsZero())
+	// Mint an extremely large amount of ethiq to create a huge supply
+	// This will cause power calculation to fail with overflow when raising to PowerCoefficient
+	// With a huge supply, powerAfter calculation (line 90) typically fails first since
+	// finalEthiqTotalSupply = currentEthiqTotalSupply + ethiqAmount is larger
+	// Create a very large number: 10^30 by multiplying repeatedly
+	hugeSupply := sdkmath.NewInt(1)
+	for i := 0; i < 30; i++ {
+		hugeSupply = hugeSupply.MulRaw(10)
 	}
+	ethiqCoin := sdk.NewCoin(ethiqtypes.BaseDenom, hugeSupply)
+	err = suite.network.App.BankKeeper.MintCoins(ctx, ethiqtypes.ModuleName, sdk.NewCoins(ethiqCoin))
+	suite.Require().NoError(err)
+
+	// Now try to convert more ethiq - this will call CalculateRequiredISLM
+	// which will try to calculate power with the huge supply, causing an overflow error
+	result, err := suite.network.App.DaoKeeper.ConvertToEthiq(ctx, sender, receiver, ethiqAmount, maxISLMAmount)
+	suite.Require().Error(err)
+	suite.Require().True(result.Denom == "" || result.IsZero())
+
+	// Debug: print the actual error message
+	errMsg := err.Error()
+	suite.T().Logf("Actual error message: %s", errMsg)
+
+	// Verify it's a calculation error from CalculateRequiredISLM
+	suite.Require().True(strings.Contains(errMsg, "failed to calculate required ISLM"), "Error should contain 'failed to calculate required ISLM', got: %s", errMsg)
+	suite.Require().True(strings.Contains(errMsg, "finalEthiqTotalSupply") || strings.Contains(errMsg, "currentEthiqTotalSupply"), "Error should contain 'finalEthiqTotalSupply' or 'currentEthiqTotalSupply', got: %s", errMsg)
 }
 
 // TestConvertToEthiqRequiredISLMGreaterThanMax tests ConvertToEthiq when required ISLM is greater than max ISLM
@@ -697,11 +718,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqRedeemLogicMultipleTokens() {
 	// The exact change depends on how much was redeemed vs spent
 	suite.Require().NotEqual(initialTotalBalance.Amount, finalTotalBalance.Amount, "Total balance should have changed due to redemption and spending")
 
-	// Verify that the conversion succeeded, meaning:
-	// 1. ✓ It iterated through liquid tokens correctly (lines 224-227)
-	// 2. ✓ It redeemed enough ISLM (lines 229-235)
-	// 3. ✓ It broke early when enough was redeemed (lines 242-245)
-	// 4. ✓ It tracked ISLM balance correctly (lines 237-241)
+	// Verify that the conversion succeeded
 	suite.Require().NoError(err, "ConvertToEthiq should succeed when enough liquid tokens are available")
 }
 
