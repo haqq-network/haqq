@@ -78,6 +78,11 @@ func (k Keeper) CalculateRequiredISLM(ctx sdk.Context, ethiqAmount sdkmath.Int) 
 		return sdkmath.Int{}, sdkmath.LegacyDec{}, types.ErrModuleDisabled
 	}
 
+	// Validate ethiqAmount is positive
+	if ethiqAmount.LTE(sdkmath.ZeroInt()) {
+		return sdkmath.Int{}, sdkmath.LegacyDec{}, errorsmod.Wrapf(types.ErrInvalidAmount, "ethiq_amount must be positive, got %s", ethiqAmount)
+	}
+
 	currentEthiqTotalSupply := sdkmath.LegacyNewDecFromInt(k.GetEthiqSupply(ctx))
 	finalEthiqTotalSupply := currentEthiqTotalSupply.Add(sdkmath.LegacyNewDecFromInt(ethiqAmount))
 
@@ -115,6 +120,7 @@ func (k Keeper) CalculateRequiredISLM(ctx sdk.Context, ethiqAmount sdkmath.Int) 
 	}
 
 	// Calculate average price per unit
+	// ethiqAmount is guaranteed to be positive due to validation above
 	pricePerUnit := result.Quo(sdkmath.LegacyNewDecFromInt(ethiqAmount))
 
 	return requiredISLM, pricePerUnit, nil
