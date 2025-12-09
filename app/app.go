@@ -532,15 +532,6 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, &app.Erc20Keeper, app.VestingKeeper,
 	)
 
-	app.DaoKeeper = ucdaokeeper.NewBaseKeeper(
-		appCodec, keys[ucdaotypes.StoreKey],
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.LiquidVestingKeeper,
-		app.EthiqKeeper,
-		authAddr,
-	)
-
 	app.EthiqKeeper = ethiqkeeper.NewKeeper(
 		keys[ethiqtypes.StoreKey],
 		appCodec,
@@ -548,6 +539,15 @@ func NewHaqq(
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.Erc20Keeper,
+	)
+
+	app.DaoKeeper = ucdaokeeper.NewBaseKeeper(
+		appCodec, keys[ucdaotypes.StoreKey],
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.LiquidVestingKeeper,
+		app.EthiqKeeper,
+		authAddr,
 	)
 
 	// Initialize the packet forward middleware Keeper

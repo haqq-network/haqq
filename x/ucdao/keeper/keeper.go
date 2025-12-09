@@ -147,6 +147,36 @@ func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAd
 	return amount, nil
 }
 
+func (k BaseKeeper) redeemISLM(ctx sdk.Context, sender sdk.AccAddress, redeemCoin sdk.Coin) (sdk.Coin, error) {
+	balance := k.bk.GetBalance(ctx, sender, redeemCoin.Denom)
+	if balance.IsZero() {
+		return sdk.Coin{}, sdkerrors.Wrapf(types.ErrInsufficientFunds, "sender %s does not have %s balance", sender, redeemCoin.Denom)
+	}
+
+	redeemAmount := redeemCoin.Amount
+	if balance.Amount.LT(redeemCoin.Amount) {
+		redeemAmount = balance.Amount
+	}
+
+	err := k.lvk.Redeem(ctx, sender, sender, sdk.NewCoin(redeemCoin.Denom, redeemAmount))
+	if err != nil {
+		return sdk.Coin{}, sdkerrors.Wrapf(err, "failed to redeem ISLM from liquid vesting module")
+	}
+
+	return sdk.NewCoin(utils.BaseDenom, redeemAmount), nil
+}
+
+func (k BaseKeeper) trackISLMBalance(ctx sdk.Context, sender sdk.AccAddress, redeemedCoin sdk.Coin) {
+	// redeemISLM function is sending redeemed ISLM to sender's escrow address directly, so we need to add it to total balance of aISLM in ucdao module
+	// Update total balance of aISLM in ucdao module
+	currentTotalISLMBalance := k.GetTotalBalanceOf(ctx, redeemedCoin.Denom)
+	newTotalISLMBalance := currentTotalISLMBalance.Add(redeemedCoin)
+	k.setTotalBalanceOfCoin(ctx, newTotalISLMBalance)
+
+	// Update holders index
+	k.setHoldersIndex(ctx, sender)
+}
+
 // ConvertToEthiq converts ISLM tokens to ethiq tokens for a holder.
 func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, ethiqAmount, maxISLMAmount sdkmath.Int) (sdk.Coin, error) {
 	if !k.IsModuleEnabled(ctx) {
@@ -158,28 +188,71 @@ func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddr
 		return sdk.Coin{}, types.ErrNotEligible
 	}
 
-	// Get spender's ISLM balance
-	spenderISLMBalance := k.GetBalance(ctx, sender, utils.BaseDenom)
-	if spenderISLMBalance.Amount.LT(maxISLMAmount) {
-		// calculate the amount of ISLM to redeem from liquid vesting module
-		redeemISLMAmount := maxISLMAmount.Sub(spenderISLMBalance.Amount)
+	// Calculate required ISLM amount
+	requiredISLM, _, err := k.ethiqk.CalculateRequiredISLM(ctx, ethiqAmount)
+	if err != nil {
+		return sdk.Coin{}, sdkerrors.Wrapf(err, "failed to calculate required ISLM")
+	}
 
-		// Should proceed redeem from liquid vesting module
-		err := k.lvk.Redeem(ctx, sender, sender, sdk.NewCoin(utils.BaseDenom, redeemISLMAmount))
-		if err != nil {
-			return sdk.Coin{}, sdkerrors.Wrapf(err, "failed to redeem ISLM from liquid vesting module")
+	// Return error if required ISLM amount is greater than max ISLM amount
+	if requiredISLM.GT(maxISLMAmount) {
+		return sdk.Coin{}, sdkerrors.Wrapf(types.ErrInsufficientFunds, "required ISLM %s is greater than max_ISLM_amount %s", requiredISLM, maxISLMAmount)
+	}
+
+	// Get sender's all balances
+	senderBalances := k.GetAccountBalances(ctx, sender)
+	senderBalancesAmount := sdkmath.ZeroInt()
+	for _, balance := range senderBalances {
+		senderBalancesAmount = senderBalancesAmount.Add(balance.Amount)
+	}
+
+	// Return error if sender's total balance is less than required ISLM amount
+	if senderBalancesAmount.LT(requiredISLM) {
+		return sdk.Coin{}, sdkerrors.Wrapf(types.ErrInsufficientFunds, "sender's total balance %s is less than required ISLM %s to convert to ethiq", senderBalancesAmount, requiredISLM)
+	}
+
+	senderISLMBalance := senderBalances.AmountOf(utils.BaseDenom)
+
+	// If sender's ISLM balance is less than required ISLM amount, redeem from liquid vesting module
+	if senderISLMBalance.LT(requiredISLM) {
+		// Calculate the amount of ISLM to redeem from liquid vesting module
+		requiredRedeemAmount := requiredISLM.Sub(senderISLMBalance)
+
+		redeemedAmount := sdkmath.ZeroInt()
+
+		// redeem non-ISLM balances from liquid vesting module until required ISLM amount is reached
+		for _, balance := range senderBalances {
+			if balance.Denom == utils.BaseDenom {
+				continue
+			}
+
+			redeemCoin := sdk.NewCoin(balance.Denom, requiredRedeemAmount.Sub(redeemedAmount))
+
+			// redeem balance from liquid vesting module
+			redeemedCoin, err := k.redeemISLM(ctx, types.GetEscrowAddress(sender), redeemCoin)
+			if err != nil {
+				continue
+			}
+
+			// track ISLM Balance
+			k.trackISLMBalance(ctx, sender, redeemedCoin)
+
+			// add redeemed amount to total redeemed amount
+			redeemedAmount = redeemedAmount.Add(redeemedCoin.Amount)
+			// if total redeemed amount is greater than or equal to required ISLM amount, break
+			if redeemedAmount.GTE(requiredRedeemAmount) {
+				break
+			}
 		}
 
-		// Funding is necessary to keep track the total balance of aISLM as well as holders index in ucdao module
-		// Should fund redeemed aISLM to ucdao module escrow address
-		err = k.Fund(ctx, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, redeemISLMAmount)), sender)
-		if err != nil {
-			return sdk.Coin{}, sdkerrors.Wrapf(err, "failed to fund redeemed ISLM to ucdao module escrow address")
+		// Return error if total redeemed amount is less than required redeem amount
+		if redeemedAmount.LT(requiredRedeemAmount) {
+			return sdk.Coin{}, sdkerrors.Wrapf(types.ErrInsufficientFunds, "sender's total redeemed amount %s is less than required redeem amount %s to convert to ethiq", redeemedAmount, requiredRedeemAmount)
 		}
 	}
 
 	// Exchange aISLM to ethiq
-	spentISLMAmount, err := k.ethiqk.ConvertToEthiq(ctx, ethiqAmount, maxISLMAmount, sender, receiver)
+	spentISLMAmount, err := k.ethiqk.ConvertToEthiq(ctx, ethiqAmount, maxISLMAmount, types.GetEscrowAddress(sender), receiver)
 	if err != nil {
 		return sdk.Coin{}, sdkerrors.Wrapf(err, "failed to convert amount of aISLM to ethiq")
 	}
@@ -193,6 +266,17 @@ func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddr
 
 	// Update holders index
 	k.setHoldersIndex(ctx, sender)
+
+	// Emit event
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeConvertToEthiqExecuted,
+			sdk.NewAttribute(types.AttributeKeySender, sender.String()),
+			sdk.NewAttribute(types.AttributeKeyReceiver, receiver.String()),
+			sdk.NewAttribute(types.AttributeKeyIslmSpent, spentISLMAmount.String()),
+			sdk.NewAttribute(types.AttributeKeyEthiqAmount, ethiqAmount.String()),
+		),
+	)
 
 	return sdk.NewCoin(utils.BaseDenom, spentISLMAmount), nil
 }
