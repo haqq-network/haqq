@@ -303,7 +303,7 @@ func TestHolders(t *testing.T) {
 		{
 			name: "valid - 5 holders, paginated by 2, page 2",
 			malleate: func() {
-				holders := make([]types.Balance, 2)
+				var holders []types.Balance
 				var nextKey []byte
 				for i := 0; i < testAccountsCount; i++ {
 					coins := balances.MulInt(sdkmath.NewInt(int64(i + 1)))
@@ -313,11 +313,12 @@ func TestHolders(t *testing.T) {
 					_, err := msgSrv.Fund(ctx, msg)
 					require.NoError(t, err, "error while funding the UC DAO account")
 
-					if i > 1 && i < 4 {
-						holders[i-2] = types.Balance{
+					// Page 2 contains accounts at indices 2 and 3 (offset 2, limit 2)
+					if i >= 2 && i < 4 {
+						holders = append(holders, types.Balance{
 							Address: testAccounts[i].String(),
 							Coins:   coins,
-						}
+						})
 					}
 					if i == 4 {
 						nextKey = address.MustLengthPrefix(testAccounts[i])
