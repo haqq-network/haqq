@@ -63,6 +63,10 @@ linters:
       - path: _test\.go
         linters:
           - dupl
+      - path: (^|.*/)(utils|types|common)/
+        linters:
+          - revive
+        text: "var-naming: avoid meaningless package names"
 formatters:
   enable:
     - gofumpt
