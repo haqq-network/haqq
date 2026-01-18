@@ -203,6 +203,7 @@ var _ = Describe("Calling distribution precompile from EOA", func() {
 			initialBalance := queryRes.Balance
 
 			txArgs.GasPrice = gasPrice.BigInt()
+			txArgs.GasLimit = 300_000
 			callArgs.Args = []interface{}{
 				s.keyring.GetAddr(0),
 				s.network.GetValidators()[0].OperatorAddress,
@@ -611,6 +612,8 @@ var _ = Describe("Calling distribution precompile from EOA", func() {
 			Expect(err).To(BeNil(), "error while calling BaseFee")
 			gasPrice := bfQuery.BaseFee
 			txArgs.GasPrice = gasPrice.BigInt()
+			// Set gas limit to avoid out of gas error when claiming from all validators
+			txArgs.GasLimit = 500_000
 
 			claimRewardsCheck := passCheck.WithExpEvents(distribution.EventTypeClaimRewards)
 
@@ -714,8 +717,7 @@ var _ = Describe("Calling distribution precompile from EOA", func() {
 				Quo(math.LegacyNewDec(3)).
 				// add 5% commission
 				Quo(math.LegacyNewDecWithPrec(95, 2)).
-				// Ceil(). // round up to get the same value
-				TruncateInt()
+				Ceil().TruncateInt() // round up to get the same value
 
 			Expect(rewards[0].Amount.String()).To(Equal(expRewardAmt.BigInt().String()))
 		})
@@ -1158,6 +1160,7 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 			Expect(err).To(BeNil())
 			initBalanceAmt := balRes.Balance.Amount
 
+			txArgs.GasLimit = 300_000
 			callArgs.Args = []interface{}{
 				s.keyring.GetAddr(0), s.network.GetValidators()[0].OperatorAddress,
 			}
@@ -1504,6 +1507,7 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 		})
 
 		It("should withdraw rewards successfully without origin check", func() {
+			txArgs.GasLimit = 300_000
 			callArgs.Args = []interface{}{s.network.GetValidators()[0].OperatorAddress}
 
 			logCheckArgs := passCheck.WithExpEvents(distribution.EventTypeWithdrawDelegatorRewards)
@@ -2113,6 +2117,7 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 		})
 
 		It("should claim rewards successfully", func() {
+			txArgs.GasLimit = 500_000
 			callArgs.Args = []interface{}{s.keyring.GetAddr(0), uint32(2)}
 
 			logCheckArgs := passCheck.
@@ -2273,6 +2278,7 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 
 			callArgs.Args = []interface{}{contractAddr, uint32(2)}
 			txArgs.GasPrice = gasPrice.BigInt()
+			txArgs.GasLimit = 500_000
 
 			logCheckArgs := passCheck.WithExpEvents(distribution.EventTypeClaimRewards)
 
@@ -2527,16 +2533,21 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 			})
 
 			It("should not get commission - validator without commission", func() {
-				// fund validator account to claim commission (if any)
+				// Fund validator account to pay for transaction fees
 				err = testutils.FundAccountWithBaseDenom(s.factory, s.network, s.keyring.GetKey(0), s.validatorsKeys[0].AccAddr, math.NewInt(1e18))
 				Expect(err).To(BeNil())
 				Expect(s.network.NextBlock()).To(BeNil())
 
-				// withdraw validator commission
+				// Set validator commission to 0%
+				err = s.setValidatorCommission(s.network.GetValidators()[0].OperatorAddress, s.validatorsKeys[0].Priv, math.ZeroInt())
+				Expect(err).To(BeNil(), "error while setting validator commission to 0%")
+
+				// withdraw any existing validator commission before checking
 				err = s.factory.WithdrawValidatorCommission(s.validatorsKeys[0].Priv)
 				Expect(err).To(BeNil())
 				Expect(s.network.NextBlock()).To(BeNil())
 
+				// Check initial commission (should be zero after withdrawal)
 				_, ethRes, err := s.factory.CallContractAndCheckLogs(
 					s.keyring.GetPrivKey(0),
 					txArgs,
@@ -2545,11 +2556,35 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 				)
 				Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
 
-				var commission []cmn.DecCoin
-				err = s.precompile.UnpackIntoInterface(&commission, distribution.ValidatorCommissionMethod, ethRes.Ret)
+				var initialCommission []cmn.DecCoin
+				err = s.precompile.UnpackIntoInterface(&initialCommission, distribution.ValidatorCommissionMethod, ethRes.Ret)
 				Expect(err).To(BeNil())
-				Expect(len(commission)).To(Equal(1))
-				Expect(commission[0].Amount.Int64()).To(Equal(int64(1486702434866))) // TODO Find out, why commission gained here
+				Expect(len(initialCommission)).To(Equal(1))
+				initialCommissionAmt := initialCommission[0].Amount.Int64()
+
+				// Wait a few blocks to ensure commission doesn't accumulate with 0% commission rate
+				Expect(s.network.NextBlock()).To(BeNil())
+				Expect(s.network.NextBlock()).To(BeNil())
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				// Check that commission hasn't changed (remains zero)
+				_, ethRes, err = s.factory.CallContractAndCheckLogs(
+					s.keyring.GetPrivKey(0),
+					txArgs,
+					callArgs,
+					passCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+
+				var finalCommission []cmn.DecCoin
+				err = s.precompile.UnpackIntoInterface(&finalCommission, distribution.ValidatorCommissionMethod, ethRes.Ret)
+				Expect(err).To(BeNil())
+				Expect(len(finalCommission)).To(Equal(1))
+				finalCommissionAmt := finalCommission[0].Amount.Int64()
+
+				// Commission should remain unchanged (zero) with 0% commission rate
+				Expect(initialCommissionAmt).To(Equal(int64(0)), "initial commission should be zero after withdrawal with 0% commission rate")
+				Expect(finalCommissionAmt).To(Equal(initialCommissionAmt), "commission should not accumulate with 0% commission rate")
 			})
 
 			It("should get commission - validator with commission", func() {

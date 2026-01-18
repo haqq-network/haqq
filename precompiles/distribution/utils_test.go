@@ -2,6 +2,7 @@ package distribution_test
 
 import (
 	"cosmossdk.io/math"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -9,6 +10,7 @@ import (
 	"github.com/haqq-network/haqq/precompiles/staking"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	stakingkeeper "github.com/haqq-network/haqq/x/staking/keeper"
 )
 
 type stakingRewards struct {
@@ -93,4 +95,56 @@ func generateKeys(count int) []keyring.Key {
 		accs = append(accs, acc)
 	}
 	return accs
+}
+
+// setValidatorCommission sets the minimum commission rate to the given value (if needed)
+// and updates the validator's commission rate using Cosmos SDK message server.
+// commissionRate should be a value between 0 and 1e18 (0% to 100% with 18 decimals precision).
+func (s *PrecompileTestSuite) setValidatorCommission(validatorOperatorAddr string, validatorPrivKey cryptotypes.PrivKey, commissionRate math.Int) error {
+	ctx := s.network.GetContext()
+
+	// Set minimum commission rate to 0% if setting commission to 0% to allow it
+	if commissionRate.IsZero() {
+		stakingParams, err := s.network.App.StakingKeeper.GetParams(ctx)
+		if err != nil {
+			return err
+		}
+		stakingParams.MinCommissionRate = math.LegacyZeroDec()
+		if err := s.network.App.StakingKeeper.SetParams(ctx, stakingParams); err != nil {
+			return err
+		}
+		if err := s.network.NextBlock(); err != nil {
+			return err
+		}
+		ctx = s.network.GetContext()
+	}
+
+	// Convert commission rate from math.Int to math.LegacyDec
+	// commissionRate is in range 0-1e18 (representing 0% to 100% with 18 decimals precision)
+	// Divide by 1e18 to get decimal value (0.0 to 1.0)
+	oneE18 := math.NewInt(1e18)
+	commissionRateDec := math.LegacyNewDecFromInt(commissionRate).QuoInt(oneE18)
+
+	// Create MsgEditValidator and execute via Cosmos SDK message server
+	// Use "[do-not-modify]" for all description fields to indicate we don't want to change them
+	msg := stakingtypes.NewMsgEditValidator(
+		validatorOperatorAddr,
+		stakingtypes.Description{
+			Moniker:         "[do-not-modify]",
+			Identity:        "[do-not-modify]",
+			Website:         "[do-not-modify]",
+			SecurityContact: "[do-not-modify]",
+			Details:         "[do-not-modify]",
+		},
+		&commissionRateDec,
+		nil, // do not modify min self delegation
+	)
+
+	msgServer := stakingkeeper.NewMsgServerImpl(&s.network.App.StakingKeeper)
+	_, err := msgServer.EditValidator(ctx, msg)
+	if err != nil {
+		return err
+	}
+
+	return s.network.NextBlock()
 }
