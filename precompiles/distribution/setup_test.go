@@ -14,6 +14,7 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 
 type PrecompileTestSuite struct {
@@ -38,6 +39,12 @@ func (s *PrecompileTestSuite) SetupTest() {
 	keyring := testkeyring.New(2)
 	s.validatorsKeys = generateKeys(3)
 	customGen := network.CustomGenesisState{}
+
+	// Increase reward coefficient for faster reward accrual in tests
+	// Default is 7.8 (78/10), we increase it to 780 (7800/10) for 100x faster rewards
+	coinomicsGenesis := coinomicstypes.DefaultGenesisState()
+	coinomicsGenesis.Params.RewardCoefficient = math.LegacyNewDecWithPrec(78000, 1) // 780 instead of 7.8
+	customGen[coinomicstypes.ModuleName] = coinomicsGenesis
 
 	operatorsAddr := make([]sdk.AccAddress, 3)
 	for i, k := range s.validatorsKeys {

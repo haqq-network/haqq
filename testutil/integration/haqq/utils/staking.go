@@ -15,7 +15,7 @@ import (
 func WaitToAccrueRewards(n network.Network, gh grpc.Handler, delegatorAddr string, expRewards sdk.DecCoins) (sdk.DecCoins, error) {
 	var (
 		err     error
-		lapse   = time.Hour * 24 * 7 // one week
+		lapse   = time.Hour * 24 * 7
 		rewards = sdk.DecCoins{}
 	)
 
@@ -51,7 +51,7 @@ func checkRewardsAfter(n network.Network, gh grpc.Handler, delegatorAddr string,
 func WaitToAccrueCommission(n network.Network, gh grpc.Handler, validatorAddr string, expCommission sdk.DecCoins) (sdk.DecCoins, error) {
 	var (
 		err        error
-		lapse      = time.Hour * 24 * 7 // one week
+		lapse      = time.Hour * 24 * 7
 		commission = sdk.DecCoins{}
 	)
 
