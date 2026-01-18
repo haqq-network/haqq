@@ -2539,7 +2539,7 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 				Expect(s.network.NextBlock()).To(BeNil())
 
 				// Set validator commission to 0%
-				err = s.setValidatorCommission(s.network.GetValidators()[0].OperatorAddress, s.validatorsKeys[0].Priv, math.ZeroInt())
+				err = s.setValidatorCommission(s.network.GetValidators()[0].OperatorAddress, math.ZeroInt())
 				Expect(err).To(BeNil(), "error while setting validator commission to 0%")
 
 				// withdraw any existing validator commission before checking

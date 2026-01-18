@@ -2,7 +2,6 @@ package distribution_test
 
 import (
 	"cosmossdk.io/math"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -100,7 +99,7 @@ func generateKeys(count int) []keyring.Key {
 // setValidatorCommission sets the minimum commission rate to the given value (if needed)
 // and updates the validator's commission rate using Cosmos SDK message server.
 // commissionRate should be a value between 0 and 1e18 (0% to 100% with 18 decimals precision).
-func (s *PrecompileTestSuite) setValidatorCommission(validatorOperatorAddr string, validatorPrivKey cryptotypes.PrivKey, commissionRate math.Int) error {
+func (s *PrecompileTestSuite) setValidatorCommission(validatorOperatorAddr string, commissionRate math.Int) error {
 	ctx := s.network.GetContext()
 
 	// Set minimum commission rate to 0% if setting commission to 0% to allow it
