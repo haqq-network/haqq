@@ -27,23 +27,24 @@ func NewTxCmd() *cobra.Command {
 	}
 
 	ethiqTxCmd.AddCommand(
-		NewMintEthiqCmd(),
+		NewMintHaqqCmd(),
+		NewMintHaqqByApplicationCmd(),
 	)
 
 	return ethiqTxCmd
 }
 
-// NewMintEthiqCmd returns a CLI command handler for creating a MsgMintEthiq transaction.
-func NewMintEthiqCmd() *cobra.Command {
+// NewMintHaqqCmd returns a CLI command handler for creating a MsgMintHaqq transaction.
+func NewMintHaqqCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "mint [ethiq-amount] [max-islm-amount] [to-address]",
-		Args:  cobra.ExactArgs(3),
-		Short: "Mint aethiq coins in exchange for aISLM coins",
+		Use:   "mint [islm-amount] [to-address]",
+		Args:  cobra.ExactArgs(2),
+		Short: "Mint aHAQQ coins in exchange for the given aISLM coins",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Mint aethiq coins in exchange for aISLM coins
+			fmt.Sprintf(`Mint aHAQQ coins in exchange for the given aISLM coins
 
 Example:
-$ %s tx %s mint 1000000000000000000 1000000000000000000 haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92 --from mykey
+$ %s tx %s mint 1000000000000000000 haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92 --from mykey
 `,
 				version.AppName, types.ModuleName,
 			),
@@ -54,28 +55,70 @@ $ %s tx %s mint 1000000000000000000 1000000000000000000 haqq1tjdjfavsy956d25hvhs
 				return err
 			}
 
-			ethiqAmount, ok := sdkmath.NewIntFromString(args[0])
+			islmAmount, ok := sdkmath.NewIntFromString(args[0])
 			if !ok {
-				return fmt.Errorf("invalid ethiq_amount: %s", args[0])
+				return fmt.Errorf("invalid islm_amount: %s", args[0])
 			}
 
-			maxISLMAmount, ok := sdkmath.NewIntFromString(args[1])
-			if !ok {
-				return fmt.Errorf("invalid max_islm_amount: %s", args[1])
-			}
-
-			toAddress, err := sdk.AccAddressFromBech32(args[2])
+			toAddress, err := sdk.AccAddressFromBech32(args[1])
 			if err != nil {
 				return fmt.Errorf("invalid to_address: %v", err)
 			}
 
 			fromAddress := clientCtx.GetFromAddress()
 
-			msg := &types.MsgMintEthiq{
+			msg := &types.MsgMintHaqq{
+				FromAddress: fromAddress.String(),
+				ToAddress:   toAddress.String(),
+				IslmAmount:  islmAmount,
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// NewMintHaqqByApplicationCmd returns a CLI command handler for creating a MsgMintHaqqByApplication transaction.
+func NewMintHaqqByApplicationCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "mint-by-app [app-id] [to-address]",
+		Args:  cobra.ExactArgs(2),
+		Short: "Mint aHAQQ coins in exchange for the aISLM coins declared in the given application",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Mint aHAQQ coins in exchange for the aISLM coins declared in the given application
+
+Example:
+$ %s tx %s mint-by-app 1 haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92 --from mykey
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			appID, ok := sdkmath.NewIntFromString(args[0])
+			if !ok {
+				return fmt.Errorf("invalid application_id: %s", args[0])
+			}
+
+			toAddress, err := sdk.AccAddressFromBech32(args[1])
+			if err != nil {
+				return fmt.Errorf("invalid to_address: %v", err)
+			}
+
+			fromAddress := clientCtx.GetFromAddress()
+
+			msg := &types.MsgMintHaqqByApplication{
 				FromAddress:   fromAddress.String(),
 				ToAddress:     toAddress.String(),
-				EthiqAmount:   ethiqAmount,
-				MaxIslmAmount: maxISLMAmount,
+				ApplicationId: appID,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

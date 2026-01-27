@@ -72,11 +72,11 @@ Example:
 
 func GetCmdQueryCalculate() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "calculate [ethiq-amount]",
+		Use:   "calculate [islm-amount]",
 		Short: "Calculate the required aISLM amount to mint aethiq coins",
 		Args:  cobra.ExactArgs(1),
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Calculate the required aISLM amount to mint the specified amount of aethiq coins.
+			fmt.Sprintf(`Calculate the estimated aHAQQ amount to be minted in exchange for the given amount of aISLM coins.
 
 Example:
   $ %s query %s calculate 1000000000000000000
@@ -90,16 +90,16 @@ Example:
 				return err
 			}
 
-			ethiqAmount, ok := sdkmath.NewIntFromString(args[0])
+			islmAmount, ok := sdkmath.NewIntFromString(args[0])
 			if !ok {
-				return fmt.Errorf("invalid ethiq_amount: %s", args[0])
+				return fmt.Errorf("invalid islm_amount: %s", args[0])
 			}
 
 			queryClient := types.NewQueryClient(clientCtx)
 			ctx := cmd.Context()
 
 			res, err := queryClient.Calculate(ctx, &types.QueryCalculateRequest{
-				EthiqAmount: ethiqAmount.String(),
+				IslmAmount: islmAmount.String(),
 			})
 			if err != nil {
 				return err
