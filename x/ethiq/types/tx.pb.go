@@ -32,30 +32,28 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgMintEthiq allows an account to mint aethiq coins in exchange for aISLM coins
-type MsgMintEthiq struct {
+// MsgMintHaqq allows an account to mint aHAQQ coins in exchange for aISLM coins
+type MsgMintHaqq struct {
 	// from_address is the address that will send the aISLM coins
 	FromAddress string `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
-	// to_address is the address that will receive the minted aethiq coins
+	// to_address is the address that will receive the minted aHAQQ coins
 	ToAddress string `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
-	// ethiq_amount is the amount of aethiq coins to mint
-	EthiqAmount cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=ethiq_amount,json=ethiqAmount,proto3,customtype=cosmossdk.io/math.Int" json:"ethiq_amount"`
-	// max_islm_amount is the maximum amount of aISLM coins the user is willing to spend
-	MaxIslmAmount cosmossdk_io_math.Int `protobuf:"bytes,4,opt,name=max_islm_amount,json=maxIslmAmount,proto3,customtype=cosmossdk.io/math.Int" json:"max_islm_amount"`
+	// islm_amount is the amount of aISLM to burn in exchange for aHAQQ
+	IslmAmount cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=islm_amount,json=islmAmount,proto3,customtype=cosmossdk.io/math.Int" json:"islm_amount"`
 }
 
-func (m *MsgMintEthiq) Reset()         { *m = MsgMintEthiq{} }
-func (m *MsgMintEthiq) String() string { return proto.CompactTextString(m) }
-func (*MsgMintEthiq) ProtoMessage()    {}
-func (*MsgMintEthiq) Descriptor() ([]byte, []int) {
+func (m *MsgMintHaqq) Reset()         { *m = MsgMintHaqq{} }
+func (m *MsgMintHaqq) String() string { return proto.CompactTextString(m) }
+func (*MsgMintHaqq) ProtoMessage()    {}
+func (*MsgMintHaqq) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f5a343caee143bc2, []int{0}
 }
-func (m *MsgMintEthiq) XXX_Unmarshal(b []byte) error {
+func (m *MsgMintHaqq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgMintEthiq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgMintHaqq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgMintEthiq.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgMintHaqq.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -65,34 +63,36 @@ func (m *MsgMintEthiq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (m *MsgMintEthiq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgMintEthiq.Merge(m, src)
+func (m *MsgMintHaqq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgMintHaqq.Merge(m, src)
 }
-func (m *MsgMintEthiq) XXX_Size() int {
+func (m *MsgMintHaqq) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgMintEthiq) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgMintEthiq.DiscardUnknown(m)
+func (m *MsgMintHaqq) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgMintHaqq.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgMintEthiq proto.InternalMessageInfo
+var xxx_messageInfo_MsgMintHaqq proto.InternalMessageInfo
 
-// MsgMintEthiqResponse defines the Msg/MintEthiq response type.
-type MsgMintEthiqResponse struct {
+// MsgMintHaqqResponse defines the Msg/MintHaqq response type.
+type MsgMintHaqqResponse struct {
+	// haqq_amount is the amount of minted aHAQQ coins
+	HaqqAmount cosmossdk_io_math.Int `protobuf:"bytes,1,opt,name=haqq_amount,json=haqqAmount,proto3,customtype=cosmossdk.io/math.Int" json:"haqq_amount"`
 }
 
-func (m *MsgMintEthiqResponse) Reset()         { *m = MsgMintEthiqResponse{} }
-func (m *MsgMintEthiqResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgMintEthiqResponse) ProtoMessage()    {}
-func (*MsgMintEthiqResponse) Descriptor() ([]byte, []int) {
+func (m *MsgMintHaqqResponse) Reset()         { *m = MsgMintHaqqResponse{} }
+func (m *MsgMintHaqqResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgMintHaqqResponse) ProtoMessage()    {}
+func (*MsgMintHaqqResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f5a343caee143bc2, []int{1}
 }
-func (m *MsgMintEthiqResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgMintHaqqResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgMintEthiqResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgMintHaqqResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgMintEthiqResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgMintHaqqResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -102,53 +102,143 @@ func (m *MsgMintEthiqResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *MsgMintEthiqResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgMintEthiqResponse.Merge(m, src)
+func (m *MsgMintHaqqResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgMintHaqqResponse.Merge(m, src)
 }
-func (m *MsgMintEthiqResponse) XXX_Size() int {
+func (m *MsgMintHaqqResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgMintEthiqResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgMintEthiqResponse.DiscardUnknown(m)
+func (m *MsgMintHaqqResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgMintHaqqResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgMintEthiqResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgMintHaqqResponse proto.InternalMessageInfo
+
+// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+// trough whitelisted application submitted earlier via smart-contract
+type MsgMintHaqqByApplication struct {
+	// from_address is the address that will send the aISLM coins
+	FromAddress string `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
+	// to_address is the address that will receive the minted aHAQQ coins
+	ToAddress string `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
+	// application_id is the id of application submitted earlier
+	ApplicationId cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=application_id,json=applicationId,proto3,customtype=cosmossdk.io/math.Int" json:"application_id"`
+}
+
+func (m *MsgMintHaqqByApplication) Reset()         { *m = MsgMintHaqqByApplication{} }
+func (m *MsgMintHaqqByApplication) String() string { return proto.CompactTextString(m) }
+func (*MsgMintHaqqByApplication) ProtoMessage()    {}
+func (*MsgMintHaqqByApplication) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f5a343caee143bc2, []int{2}
+}
+func (m *MsgMintHaqqByApplication) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgMintHaqqByApplication) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgMintHaqqByApplication.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgMintHaqqByApplication) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgMintHaqqByApplication.Merge(m, src)
+}
+func (m *MsgMintHaqqByApplication) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgMintHaqqByApplication) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgMintHaqqByApplication.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgMintHaqqByApplication proto.InternalMessageInfo
+
+// MsgMintHaqqResponse defines the Msg/MintHaqqByApplication response type.
+type MsgMintHaqqByApplicationResponse struct {
+	// haqq_amount is the amount of minted aHAQQ coins
+	HaqqAmount cosmossdk_io_math.Int `protobuf:"bytes,1,opt,name=haqq_amount,json=haqqAmount,proto3,customtype=cosmossdk.io/math.Int" json:"haqq_amount"`
+}
+
+func (m *MsgMintHaqqByApplicationResponse) Reset()         { *m = MsgMintHaqqByApplicationResponse{} }
+func (m *MsgMintHaqqByApplicationResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgMintHaqqByApplicationResponse) ProtoMessage()    {}
+func (*MsgMintHaqqByApplicationResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f5a343caee143bc2, []int{3}
+}
+func (m *MsgMintHaqqByApplicationResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgMintHaqqByApplicationResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgMintHaqqByApplicationResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgMintHaqqByApplicationResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgMintHaqqByApplicationResponse.Merge(m, src)
+}
+func (m *MsgMintHaqqByApplicationResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgMintHaqqByApplicationResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgMintHaqqByApplicationResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgMintHaqqByApplicationResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgMintEthiq)(nil), "haqq.ethiq.v1.MsgMintEthiq")
-	proto.RegisterType((*MsgMintEthiqResponse)(nil), "haqq.ethiq.v1.MsgMintEthiqResponse")
+	proto.RegisterType((*MsgMintHaqq)(nil), "haqq.ethiq.v1.MsgMintHaqq")
+	proto.RegisterType((*MsgMintHaqqResponse)(nil), "haqq.ethiq.v1.MsgMintHaqqResponse")
+	proto.RegisterType((*MsgMintHaqqByApplication)(nil), "haqq.ethiq.v1.MsgMintHaqqByApplication")
+	proto.RegisterType((*MsgMintHaqqByApplicationResponse)(nil), "haqq.ethiq.v1.MsgMintHaqqByApplicationResponse")
 }
 
 func init() { proto.RegisterFile("haqq/ethiq/v1/tx.proto", fileDescriptor_f5a343caee143bc2) }
 
 var fileDescriptor_f5a343caee143bc2 = []byte{
-	// 416 bytes of a gzipped FileDescriptorProto
+	// 483 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0xcb, 0x48, 0x2c, 0x2c,
 	0xd4, 0x4f, 0x2d, 0xc9, 0xc8, 0x2c, 0xd4, 0x2f, 0x33, 0xd4, 0x2f, 0xa9, 0xd0, 0x2b, 0x28, 0xca,
 	0x2f, 0xc9, 0x17, 0xe2, 0x05, 0x89, 0xeb, 0x81, 0xc5, 0xf5, 0xca, 0x0c, 0xa5, 0x44, 0xd2, 0xf3,
 	0xd3, 0xf3, 0xc1, 0x32, 0xfa, 0x20, 0x16, 0x44, 0x91, 0x94, 0x64, 0x72, 0x7e, 0x71, 0x6e, 0x7e,
 	0x71, 0x3c, 0x44, 0x02, 0xc2, 0x81, 0x4a, 0x89, 0x43, 0x78, 0xfa, 0xb9, 0xc5, 0xe9, 0x20, 0x73,
 	0x73, 0x8b, 0xd3, 0xa1, 0x12, 0x82, 0x89, 0xb9, 0x99, 0x79, 0xf9, 0xfa, 0x60, 0x12, 0x22, 0xa4,
-	0xf4, 0x80, 0x89, 0x8b, 0xc7, 0xb7, 0x38, 0xdd, 0x37, 0x33, 0xaf, 0xc4, 0x15, 0x64, 0xa1, 0x90,
-	0x35, 0x17, 0x4f, 0x5a, 0x51, 0x7e, 0x6e, 0x7c, 0x62, 0x4a, 0x4a, 0x51, 0x6a, 0x71, 0xb1, 0x04,
-	0xa3, 0x02, 0xa3, 0x06, 0xa7, 0x93, 0xc4, 0xa5, 0x2d, 0xba, 0x22, 0x50, 0x4b, 0x1c, 0x21, 0x32,
-	0xc1, 0x25, 0x45, 0x99, 0x79, 0xe9, 0x41, 0xdc, 0x20, 0xd5, 0x50, 0x21, 0x21, 0x73, 0x2e, 0xae,
-	0x92, 0x7c, 0xb8, 0x56, 0x26, 0x02, 0x5a, 0x39, 0x4b, 0xf2, 0x61, 0x1a, 0xfd, 0xb8, 0x78, 0xc0,
-	0xfe, 0x8d, 0x4f, 0xcc, 0xcd, 0x2f, 0xcd, 0x2b, 0x91, 0x60, 0x06, 0x6b, 0xd5, 0x3e, 0x71, 0x4f,
-	0x9e, 0xe1, 0xd6, 0x3d, 0x79, 0x51, 0x88, 0xf6, 0xe2, 0x94, 0x6c, 0xbd, 0xcc, 0x7c, 0xfd, 0xdc,
-	0xc4, 0x92, 0x0c, 0x3d, 0xcf, 0xbc, 0x92, 0x4b, 0x5b, 0x74, 0xb9, 0xa0, 0xe6, 0x7a, 0xe6, 0x95,
-	0x04, 0x71, 0x83, 0x0d, 0x70, 0x04, 0xeb, 0x17, 0x0a, 0xe6, 0xe2, 0xcf, 0x4d, 0xac, 0x88, 0xcf,
-	0x2c, 0xce, 0xc9, 0x85, 0x19, 0xc9, 0x42, 0xba, 0x91, 0xbc, 0xb9, 0x89, 0x15, 0x9e, 0xc5, 0x39,
-	0xb9, 0x10, 0x43, 0xad, 0x4c, 0x3b, 0x16, 0xc8, 0x33, 0xbc, 0x58, 0x20, 0xcf, 0xd0, 0xf4, 0x7c,
-	0x83, 0x16, 0x4a, 0x28, 0x75, 0x3d, 0xdf, 0xa0, 0x25, 0x8e, 0x14, 0x9b, 0xc8, 0x21, 0xaa, 0x24,
-	0xc6, 0x25, 0x82, 0xcc, 0x0f, 0x4a, 0x2d, 0x2e, 0xc8, 0xcf, 0x2b, 0x4e, 0x35, 0x8a, 0xe6, 0x62,
-	0xf6, 0x2d, 0x4e, 0x17, 0xf2, 0xe5, 0xe2, 0x44, 0x84, 0xbe, 0xb4, 0x1e, 0x4a, 0xdc, 0xeb, 0x21,
-	0x6b, 0x94, 0x52, 0xc6, 0x23, 0x09, 0x33, 0x55, 0x8a, 0xb5, 0xe1, 0xf9, 0x06, 0x2d, 0x46, 0x27,
-	0x97, 0x13, 0x8f, 0xe4, 0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63,
-	0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63, 0x88, 0xd2, 0x4a, 0xcf, 0x2c, 0xc9,
-	0x28, 0x4d, 0xd2, 0x4b, 0xce, 0xcf, 0xd5, 0x07, 0x99, 0xa7, 0x9b, 0x97, 0x5a, 0x52, 0x9e, 0x5f,
-	0x94, 0x0d, 0xe6, 0xe8, 0x57, 0x40, 0x7d, 0x50, 0x52, 0x59, 0x90, 0x5a, 0x9c, 0xc4, 0x06, 0x4e,
-	0x24, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x16, 0x9d, 0xda, 0x4b, 0xaa, 0x02, 0x00, 0x00,
+	0xd4, 0xce, 0xc4, 0xc5, 0xed, 0x5b, 0x9c, 0xee, 0x9b, 0x99, 0x57, 0xe2, 0x91, 0x58, 0x58, 0x28,
+	0x64, 0xcd, 0xc5, 0x93, 0x56, 0x94, 0x9f, 0x1b, 0x9f, 0x98, 0x92, 0x52, 0x94, 0x5a, 0x5c, 0x2c,
+	0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0xe9, 0x24, 0x71, 0x69, 0x8b, 0xae, 0x08, 0xd4, 0x0e, 0x47, 0x88,
+	0x4c, 0x70, 0x49, 0x51, 0x66, 0x5e, 0x7a, 0x10, 0x37, 0x48, 0x35, 0x54, 0x48, 0xc8, 0x9c, 0x8b,
+	0xab, 0x24, 0x1f, 0xae, 0x95, 0x89, 0x80, 0x56, 0xce, 0x92, 0x7c, 0x98, 0x46, 0x1f, 0x2e, 0xee,
+	0xcc, 0xe2, 0x9c, 0xdc, 0xf8, 0xc4, 0xdc, 0xfc, 0xd2, 0xbc, 0x12, 0x09, 0x66, 0xb0, 0x4e, 0xed,
+	0x13, 0xf7, 0xe4, 0x19, 0x6e, 0xdd, 0x93, 0x17, 0x85, 0xe8, 0x2e, 0x4e, 0xc9, 0xd6, 0xcb, 0xcc,
+	0xd7, 0xcf, 0x4d, 0x2c, 0xc9, 0xd0, 0xf3, 0xcc, 0x2b, 0xb9, 0xb4, 0x45, 0x97, 0x0b, 0x6a, 0xac,
+	0x67, 0x5e, 0x49, 0x10, 0x17, 0x48, 0xbf, 0x23, 0x58, 0xbb, 0x95, 0x49, 0xc7, 0x02, 0x79, 0x86,
+	0x17, 0x0b, 0xe4, 0x19, 0x9a, 0x9e, 0x6f, 0xd0, 0x42, 0xf1, 0x4e, 0xd7, 0xf3, 0x0d, 0x5a, 0xc8,
+	0xa1, 0x8e, 0xe4, 0x73, 0xa5, 0x64, 0x2e, 0x61, 0x24, 0x6e, 0x50, 0x6a, 0x71, 0x41, 0x7e, 0x5e,
+	0x71, 0x2a, 0xc8, 0x69, 0x20, 0x0d, 0x30, 0xa7, 0x31, 0x92, 0xe1, 0x34, 0x90, 0x7e, 0x88, 0xd3,
+	0x94, 0x96, 0x33, 0x71, 0x49, 0x20, 0xd9, 0xe2, 0x54, 0xe9, 0x58, 0x50, 0x90, 0x93, 0x99, 0x9c,
+	0x58, 0x92, 0x99, 0x9f, 0x37, 0x40, 0x61, 0x1f, 0xc4, 0xc5, 0x97, 0x88, 0x70, 0x44, 0x7c, 0x66,
+	0x0a, 0x39, 0xc1, 0xcf, 0x8b, 0x64, 0x84, 0x67, 0x8a, 0x95, 0x23, 0xde, 0x18, 0x50, 0xc6, 0x1e,
+	0x03, 0x28, 0x81, 0xa1, 0x54, 0xc0, 0xa5, 0x80, 0x4b, 0x8e, 0x36, 0x71, 0x63, 0x74, 0x9a, 0x91,
+	0x8b, 0xd9, 0xb7, 0x38, 0x5d, 0xc8, 0x8b, 0x8b, 0x03, 0x9e, 0x1d, 0xa4, 0xf4, 0x50, 0xf2, 0xa2,
+	0x1e, 0x92, 0x93, 0xa4, 0x94, 0x70, 0xcb, 0xc1, 0x5d, 0x58, 0xc8, 0x25, 0x8a, 0x3d, 0xae, 0xd5,
+	0x71, 0x6b, 0x46, 0x51, 0x28, 0xa5, 0x4f, 0xa4, 0x42, 0x98, 0x95, 0x52, 0xac, 0x0d, 0xcf, 0x37,
+	0x68, 0x31, 0x3a, 0xb9, 0x9c, 0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72,
+	0x8c, 0x13, 0x1e, 0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c, 0x43, 0x94, 0x56,
+	0x7a, 0x66, 0x49, 0x46, 0x69, 0x92, 0x5e, 0x72, 0x7e, 0xae, 0x3e, 0xc8, 0x6c, 0xdd, 0xbc, 0xd4,
+	0x92, 0xf2, 0xfc, 0xa2, 0x6c, 0x30, 0x47, 0xbf, 0x02, 0x1a, 0x31, 0x25, 0x95, 0x05, 0xa9, 0xc5,
+	0x49, 0x6c, 0xe0, 0x52, 0xc2, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x06, 0xa2, 0x9e, 0xa4, 0xab,
+	0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -163,8 +253,11 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// MintEthiq defines a method to mint aethiq coins in exchange for aISLM coins
-	MintEthiq(ctx context.Context, in *MsgMintEthiq, opts ...grpc.CallOption) (*MsgMintEthiqResponse, error)
+	// MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
+	MintHaqq(ctx context.Context, in *MsgMintHaqq, opts ...grpc.CallOption) (*MsgMintHaqqResponse, error)
+	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+	// trough whitelisted application submitted earlier via smart-contract
+	MintHaqqByApplication(ctx context.Context, in *MsgMintHaqqByApplication, opts ...grpc.CallOption) (*MsgMintHaqqByApplicationResponse, error)
 }
 
 type msgClient struct {
@@ -175,9 +268,18 @@ func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) MintEthiq(ctx context.Context, in *MsgMintEthiq, opts ...grpc.CallOption) (*MsgMintEthiqResponse, error) {
-	out := new(MsgMintEthiqResponse)
-	err := c.cc.Invoke(ctx, "/haqq.ethiq.v1.Msg/MintEthiq", in, out, opts...)
+func (c *msgClient) MintHaqq(ctx context.Context, in *MsgMintHaqq, opts ...grpc.CallOption) (*MsgMintHaqqResponse, error) {
+	out := new(MsgMintHaqqResponse)
+	err := c.cc.Invoke(ctx, "/haqq.ethiq.v1.Msg/MintHaqq", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) MintHaqqByApplication(ctx context.Context, in *MsgMintHaqqByApplication, opts ...grpc.CallOption) (*MsgMintHaqqByApplicationResponse, error) {
+	out := new(MsgMintHaqqByApplicationResponse)
+	err := c.cc.Invoke(ctx, "/haqq.ethiq.v1.Msg/MintHaqqByApplication", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -186,36 +288,60 @@ func (c *msgClient) MintEthiq(ctx context.Context, in *MsgMintEthiq, opts ...grp
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// MintEthiq defines a method to mint aethiq coins in exchange for aISLM coins
-	MintEthiq(context.Context, *MsgMintEthiq) (*MsgMintEthiqResponse, error)
+	// MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
+	MintHaqq(context.Context, *MsgMintHaqq) (*MsgMintHaqqResponse, error)
+	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+	// trough whitelisted application submitted earlier via smart-contract
+	MintHaqqByApplication(context.Context, *MsgMintHaqqByApplication) (*MsgMintHaqqByApplicationResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
 type UnimplementedMsgServer struct {
 }
 
-func (*UnimplementedMsgServer) MintEthiq(ctx context.Context, req *MsgMintEthiq) (*MsgMintEthiqResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MintEthiq not implemented")
+func (*UnimplementedMsgServer) MintHaqq(ctx context.Context, req *MsgMintHaqq) (*MsgMintHaqqResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MintHaqq not implemented")
+}
+func (*UnimplementedMsgServer) MintHaqqByApplication(ctx context.Context, req *MsgMintHaqqByApplication) (*MsgMintHaqqByApplicationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MintHaqqByApplication not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
 }
 
-func _Msg_MintEthiq_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgMintEthiq)
+func _Msg_MintHaqq_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgMintHaqq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).MintEthiq(ctx, in)
+		return srv.(MsgServer).MintHaqq(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/haqq.ethiq.v1.Msg/MintEthiq",
+		FullMethod: "/haqq.ethiq.v1.Msg/MintHaqq",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).MintEthiq(ctx, req.(*MsgMintEthiq))
+		return srv.(MsgServer).MintHaqq(ctx, req.(*MsgMintHaqq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_MintHaqqByApplication_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgMintHaqqByApplication)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).MintHaqqByApplication(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/haqq.ethiq.v1.Msg/MintHaqqByApplication",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).MintHaqqByApplication(ctx, req.(*MsgMintHaqqByApplication))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -225,15 +351,19 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "MintEthiq",
-			Handler:    _Msg_MintEthiq_Handler,
+			MethodName: "MintHaqq",
+			Handler:    _Msg_MintHaqq_Handler,
+		},
+		{
+			MethodName: "MintHaqqByApplication",
+			Handler:    _Msg_MintHaqqByApplication_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "haqq/ethiq/v1/tx.proto",
 }
 
-func (m *MsgMintEthiq) Marshal() (dAtA []byte, err error) {
+func (m *MsgMintHaqq) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -243,30 +373,20 @@ func (m *MsgMintEthiq) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgMintEthiq) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgMintHaqq) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgMintEthiq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgMintHaqq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	{
-		size := m.MaxIslmAmount.Size()
+		size := m.IslmAmount.Size()
 		i -= size
-		if _, err := m.MaxIslmAmount.MarshalTo(dAtA[i:]); err != nil {
-			return 0, err
-		}
-		i = encodeVarintTx(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x22
-	{
-		size := m.EthiqAmount.Size()
-		i -= size
-		if _, err := m.EthiqAmount.MarshalTo(dAtA[i:]); err != nil {
+		if _, err := m.IslmAmount.MarshalTo(dAtA[i:]); err != nil {
 			return 0, err
 		}
 		i = encodeVarintTx(dAtA, i, uint64(size))
@@ -290,7 +410,7 @@ func (m *MsgMintEthiq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgMintEthiqResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgMintHaqqResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -300,16 +420,106 @@ func (m *MsgMintEthiqResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgMintEthiqResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgMintHaqqResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgMintEthiqResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgMintHaqqResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	{
+		size := m.HaqqAmount.Size()
+		i -= size
+		if _, err := m.HaqqAmount.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgMintHaqqByApplication) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgMintHaqqByApplication) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgMintHaqqByApplication) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size := m.ApplicationId.Size()
+		i -= size
+		if _, err := m.ApplicationId.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	if len(m.ToAddress) > 0 {
+		i -= len(m.ToAddress)
+		copy(dAtA[i:], m.ToAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ToAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.FromAddress) > 0 {
+		i -= len(m.FromAddress)
+		copy(dAtA[i:], m.FromAddress)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.FromAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgMintHaqqByApplicationResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgMintHaqqByApplicationResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgMintHaqqByApplicationResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size := m.HaqqAmount.Size()
+		i -= size
+		if _, err := m.HaqqAmount.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -324,7 +534,7 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgMintEthiq) Size() (n int) {
+func (m *MsgMintHaqq) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -338,19 +548,49 @@ func (m *MsgMintEthiq) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTx(uint64(l))
 	}
-	l = m.EthiqAmount.Size()
-	n += 1 + l + sovTx(uint64(l))
-	l = m.MaxIslmAmount.Size()
+	l = m.IslmAmount.Size()
 	n += 1 + l + sovTx(uint64(l))
 	return n
 }
 
-func (m *MsgMintEthiqResponse) Size() (n int) {
+func (m *MsgMintHaqqResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	l = m.HaqqAmount.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgMintHaqqByApplication) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.FromAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ToAddress)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.ApplicationId.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgMintHaqqByApplicationResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.HaqqAmount.Size()
+	n += 1 + l + sovTx(uint64(l))
 	return n
 }
 
@@ -360,7 +600,7 @@ func sovTx(x uint64) (n int) {
 func sozTx(x uint64) (n int) {
 	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *MsgMintEthiq) Unmarshal(dAtA []byte) error {
+func (m *MsgMintHaqq) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -383,10 +623,10 @@ func (m *MsgMintEthiq) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgMintEthiq: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgMintHaqq: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgMintEthiq: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgMintHaqq: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -455,7 +695,7 @@ func (m *MsgMintEthiq) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EthiqAmount", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field IslmAmount", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -483,41 +723,7 @@ func (m *MsgMintEthiq) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.EthiqAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MaxIslmAmount", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.MaxIslmAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.IslmAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -542,7 +748,7 @@ func (m *MsgMintEthiq) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgMintEthiqResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgMintHaqqResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -565,12 +771,278 @@ func (m *MsgMintEthiqResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgMintEthiqResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgMintHaqqResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgMintEthiqResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgMintHaqqResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HaqqAmount", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.HaqqAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgMintHaqqByApplication) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgMintHaqqByApplication: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgMintHaqqByApplication: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FromAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ToAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ApplicationId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ApplicationId.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgMintHaqqByApplicationResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgMintHaqqByApplicationResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgMintHaqqByApplicationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HaqqAmount", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.HaqqAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])

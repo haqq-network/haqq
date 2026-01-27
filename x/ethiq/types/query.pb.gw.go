@@ -62,15 +62,15 @@ func request_Query_Calculate_0(ctx context.Context, marshaler runtime.Marshaler,
 		_   = err
 	)
 
-	val, ok = pathParams["ethiq_amount"]
+	val, ok = pathParams["islm_amount"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "ethiq_amount")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "islm_amount")
 	}
 
-	protoReq.EthiqAmount, err = runtime.String(val)
+	protoReq.IslmAmount, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "ethiq_amount", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "islm_amount", err)
 	}
 
 	msg, err := client.Calculate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -89,15 +89,15 @@ func local_request_Query_Calculate_0(ctx context.Context, marshaler runtime.Mars
 		_   = err
 	)
 
-	val, ok = pathParams["ethiq_amount"]
+	val, ok = pathParams["islm_amount"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "ethiq_amount")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "islm_amount")
 	}
 
-	protoReq.EthiqAmount, err = runtime.String(val)
+	protoReq.IslmAmount, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "ethiq_amount", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "islm_amount", err)
 	}
 
 	msg, err := server.Calculate(ctx, &protoReq)
@@ -305,7 +305,7 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 var (
 	pattern_Query_TotalBurned_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"haqq", "ethiq", "v1", "total_burned"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Calculate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"haqq", "ethiq", "v1", "calculate", "ethiq_amount"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_Calculate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"haqq", "ethiq", "v1", "calculate", "islm_amount"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_Params_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"haqq", "ethiq", "v1", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 )
