@@ -195,69 +195,62 @@ func (p Precompile) executeTransfer(
 	ownerAddr := sdk.AccAddress(owner.Bytes())
 	newOwnerAddr := sdk.AccAddress(newOwner.Bytes())
 
-	// Check authorization if caller is not the owner
-	isCallerOrigin := contract.CallerAddress == origin
 	isCallerOwner := contract.CallerAddress == owner
+	isCallerOrigin := contract.CallerAddress == origin
+	needsAuthorization := origin != owner && !isCallerOrigin
 
-	// The provided owner address should always be equal to the origin address.
-	// In case the contract caller address is the same as the owner address provided,
-	// update the owner address to be equal to the origin address.
-	// Otherwise, if the provided owner address is different from the origin address,
-	// check for authorization.
+	// If the contract caller address equals the owner address provided,
+	// update the owner address to be the origin address.
 	if isCallerOwner {
-		owner = origin
 		ownerAddr = sdk.AccAddress(origin.Bytes())
-	} else if origin != owner && !isCallerOrigin {
-		// Need authorization check
-		auth, expiration := p.AuthzKeeper.GetAuthorization(ctx, contract.CallerAddress.Bytes(), owner.Bytes(), TransferOwnershipMsgURL)
-		if auth == nil {
-			return nil, fmt.Errorf(ErrAuthorizationNotFound, contract.CallerAddress)
-		}
-
-		// Verify this is a SendAuthorization and check spend limit
-		sendAuth, ok := auth.(*banktypes.SendAuthorization)
-		if !ok {
-			return nil, fmt.Errorf("unexpected authorization type: %T", auth)
-		}
-
-		// Check if the requested amount is within the spend limit
-		for _, coin := range amount {
-			found := false
-			for _, limit := range sendAuth.SpendLimit {
-				if limit.Denom == coin.Denom {
-					found = true
-					if coin.Amount.GT(limit.Amount) {
-						return nil, fmt.Errorf(ErrInsufficientAllowance, coin.Amount, limit.Amount)
-					}
-					break
-				}
-			}
-			if !found && len(sendAuth.SpendLimit) > 0 {
-				return nil, fmt.Errorf(ErrInsufficientAllowance, coin.Amount, "0")
-			}
-		}
-
-		// Update the authorization after transfer
-		newSpendLimit := sendAuth.SpendLimit.Sub(amount...)
-		if newSpendLimit.IsZero() {
-			// Delete the authorization if spend limit is exhausted
-			if err := p.AuthzKeeper.DeleteGrant(ctx, contract.CallerAddress.Bytes(), owner.Bytes(), TransferOwnershipMsgURL); err != nil {
-				return nil, err
-			}
-		} else {
-			// Update with new spend limit
-			sendAuth.SpendLimit = newSpendLimit
-			if err := p.AuthzKeeper.SaveGrant(ctx, contract.CallerAddress.Bytes(), owner.Bytes(), sendAuth, expiration); err != nil {
-				return nil, err
-			}
+	} else if needsAuthorization {
+		if err := p.checkAndUpdateAuthorization(ctx, contract.CallerAddress, owner, amount); err != nil {
+			return nil, err
 		}
 	}
 
-	// Execute the actual transfer
-	transferred, err := p.ucdaoKeeper.TransferOwnership(ctx, ownerAddr, newOwnerAddr, amount)
-	if err != nil {
-		return nil, err
+	return p.ucdaoKeeper.TransferOwnership(ctx, ownerAddr, newOwnerAddr, amount)
+}
+
+// checkAndUpdateAuthorization verifies authorization and updates the spend limit.
+func (p Precompile) checkAndUpdateAuthorization(
+	ctx sdk.Context,
+	caller, owner common.Address,
+	amount sdk.Coins,
+) error {
+	auth, expiration := p.AuthzKeeper.GetAuthorization(ctx, caller.Bytes(), owner.Bytes(), TransferOwnershipMsgURL)
+	if auth == nil {
+		return fmt.Errorf(ErrAuthorizationNotFound, caller)
 	}
 
-	return transferred, nil
+	sendAuth, ok := auth.(*banktypes.SendAuthorization)
+	if !ok {
+		return fmt.Errorf("unexpected authorization type: %T", auth)
+	}
+
+	if err := validateSpendLimit(sendAuth.SpendLimit, amount); err != nil {
+		return err
+	}
+
+	newSpendLimit := sendAuth.SpendLimit.Sub(amount...)
+	if newSpendLimit.IsZero() {
+		return p.AuthzKeeper.DeleteGrant(ctx, caller.Bytes(), owner.Bytes(), TransferOwnershipMsgURL)
+	}
+
+	sendAuth.SpendLimit = newSpendLimit
+	return p.AuthzKeeper.SaveGrant(ctx, caller.Bytes(), owner.Bytes(), sendAuth, expiration)
+}
+
+// validateSpendLimit checks if the requested amount is within the spend limit.
+func validateSpendLimit(spendLimit, amount sdk.Coins) error {
+	for _, coin := range amount {
+		found, limitCoin := spendLimit.Find(coin.Denom)
+		if !found && len(spendLimit) > 0 {
+			return fmt.Errorf(ErrInsufficientAllowance, coin.Amount, "0")
+		}
+		if found && coin.Amount.GT(limitCoin.Amount) {
+			return fmt.Errorf(ErrInsufficientAllowance, coin.Amount, limitCoin.Amount)
+		}
+	}
+	return nil
 }

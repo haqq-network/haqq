@@ -96,17 +96,12 @@ func ParseAllowanceArgs(args []interface{}) (owner, spender common.Address, err 
 }
 
 // ParseFundArgs parses the arguments for the fund method.
-func ParseFundArgs(args []interface{}) (coins sdk.Coins, err error) {
+func ParseFundArgs(args []interface{}) (sdk.Coins, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 1, len(args))
 	}
 
-	coins, err = ParseCoinsArg(args[0])
-	if err != nil {
-		return nil, err
-	}
-
-	return coins, nil
+	return ParseCoinsArg(args[0])
 }
 
 // ParseTransferOwnershipArgs parses the arguments for the transferOwnership method.

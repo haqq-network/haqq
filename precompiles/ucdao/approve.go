@@ -121,19 +121,16 @@ func (p Precompile) IncreaseAllowance(
 		"amount", coins.String(),
 	)
 
-	// Get existing authorization
 	auth, expiration := p.AuthzKeeper.GetAuthorization(ctx, spender.Bytes(), origin.Bytes(), TransferOwnershipMsgURL)
 
 	var newSpendLimit sdk.Coins
 	if auth == nil {
-		// No existing authorization, create new one with the given amount
 		newSpendLimit = coins
 	} else {
-		sendAuth, ok := auth.(*banktypes.SendAuthorization)
-		if !ok {
-			return nil, fmt.Errorf("unexpected authorization type: %T", auth)
+		sendAuth, err := asSendAuthorization(auth)
+		if err != nil {
+			return nil, err
 		}
-		// Add to existing spend limit
 		newSpendLimit = sendAuth.SpendLimit.Add(coins...)
 	}
 
@@ -177,15 +174,14 @@ func (p Precompile) DecreaseAllowance(
 		"amount", coins.String(),
 	)
 
-	// Get existing authorization
 	auth, expiration := p.AuthzKeeper.GetAuthorization(ctx, spender.Bytes(), origin.Bytes(), TransferOwnershipMsgURL)
 	if auth == nil {
 		return nil, fmt.Errorf(ErrAuthorizationNotFound, spender)
 	}
 
-	sendAuth, ok := auth.(*banktypes.SendAuthorization)
-	if !ok {
-		return nil, fmt.Errorf("unexpected authorization type: %T", auth)
+	sendAuth, err := asSendAuthorization(auth)
+	if err != nil {
+		return nil, err
 	}
 
 	// Check that we have enough to subtract
@@ -246,17 +242,24 @@ func (p Precompile) Allowance(
 		return nil, err
 	}
 
-	// Get authorization
 	auth, _ := p.AuthzKeeper.GetAuthorization(ctx, spender.Bytes(), owner.Bytes(), TransferOwnershipMsgURL)
 	if auth == nil {
-		// Return empty coins if no authorization
 		return method.Outputs.Pack(cmn.NewCoinsResponse(sdk.Coins{}))
 	}
 
+	sendAuth, err := asSendAuthorization(auth)
+	if err != nil {
+		return nil, err
+	}
+
+	return method.Outputs.Pack(cmn.NewCoinsResponse(sendAuth.SpendLimit))
+}
+
+// asSendAuthorization casts an authorization to SendAuthorization or returns an error.
+func asSendAuthorization(auth interface{}) (*banktypes.SendAuthorization, error) {
 	sendAuth, ok := auth.(*banktypes.SendAuthorization)
 	if !ok {
 		return nil, fmt.Errorf("unexpected authorization type: %T", auth)
 	}
-
-	return method.Outputs.Pack(cmn.NewCoinsResponse(sendAuth.SpendLimit))
+	return sendAuth, nil
 }

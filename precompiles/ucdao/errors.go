@@ -4,8 +4,6 @@
 package ucdao
 
 const (
-	// ErrDifferentOriginFromOwner is raised when the origin address is not the same as the owner address.
-	ErrDifferentOriginFromOwner = "origin address %s is not the same as owner address %s"
 	// ErrAuthorizationNotFound is raised when the authorization is not found.
 	ErrAuthorizationNotFound = "authorization not found for spender %s"
 	// ErrInsufficientAllowance is raised when the allowance is insufficient.
