@@ -20,11 +20,13 @@ import (
 	ics20precompile "github.com/haqq-network/haqq/precompiles/ics20"
 	"github.com/haqq-network/haqq/precompiles/p256"
 	stakingprecompile "github.com/haqq-network/haqq/precompiles/staking"
+	ucdaoprecompile "github.com/haqq-network/haqq/precompiles/ucdao"
 	erc20Keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	"github.com/haqq-network/haqq/x/evm/types"
 	transferkeeper "github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 	stakingkeeper "github.com/haqq-network/haqq/x/staking/keeper"
+	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 	vestingkeeper "github.com/haqq-network/haqq/x/vesting/keeper"
 )
 
@@ -41,6 +43,7 @@ func NewAvailableStaticPrecompiles(
 	authzKeeper authzkeeper.Keeper,
 	transferKeeper transferkeeper.Keeper,
 	channelKeeper channelkeeper.Keeper,
+	ucdaoKeeper ucdaokeeper.Keeper,
 ) map[common.Address]vm.PrecompiledContract {
 	// Clone the mapping from the latest EVM fork.
 	precompiles := maps.Clone(vm.PrecompiledContractsBerlin)
@@ -87,6 +90,11 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate bank precompile: %w", err))
 	}
 
+	ucdaoPrecompile, err := ucdaoprecompile.NewPrecompile(ucdaoKeeper, bankKeeper, authzKeeper)
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate ucdao precompile: %w", err))
+	}
+
 	// Stateless precompiles
 	precompiles[bech32Precompile.Address()] = bech32Precompile
 	precompiles[p256Precompile.Address()] = p256Precompile
@@ -97,6 +105,7 @@ func NewAvailableStaticPrecompiles(
 	precompiles[ibcTransferPrecompile.Address()] = ibcTransferPrecompile
 	// precompiles[vestingPrecompile.Address()] = vestingPrecompile
 	precompiles[bankPrecompile.Address()] = bankPrecompile
+	precompiles[ucdaoPrecompile.Address()] = ucdaoPrecompile
 	return precompiles
 }
 

@@ -32,7 +32,8 @@ var (
 		DistributionPrecompileAddress, // Distribution precompile
 		ICS20PrecompileAddress,        // ICS20 transfer precompile
 		// VestingPrecompileAddress,      // Vesting precompile
-		BankPrecompileAddress, // Bank precompile
+		BankPrecompileAddress,  // Bank precompile
+		UcdaoPrecompileAddress, // UCDAO precompile
 	}
 	// DefaultExtraEIPs defines the default extra EIPs to be included
 	// On v15, EIP 3855 was enabled

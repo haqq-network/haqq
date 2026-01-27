@@ -571,6 +571,7 @@ func NewHaqq(
 			app.AuthzKeeper,
 			app.TransferKeeper,
 			app.IBCKeeper.ChannelKeeper,
+			app.DaoKeeper,
 		),
 	)
 
