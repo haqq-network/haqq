@@ -17,4 +17,8 @@ var (
 
 	// TotalBurnedAmountKey is the key for total burned amount
 	TotalBurnedAmountKey = []byte{0x01}
+	// TotalBurnedFromApplicationsAmountKey is the key for total burned amount
+	TotalBurnedFromApplicationsAmountKey = []byte{0x02}
+	// ExecutedApplicationsPrefix is the key prefix for the index of executed application IDs
+	ExecutedApplicationsPrefix = []byte{0x03}
 )

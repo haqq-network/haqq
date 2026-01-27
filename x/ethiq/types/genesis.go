@@ -10,8 +10,9 @@ import (
 // DefaultGenesisState returns a default ethiq module genesis state.
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		Params:            DefaultParams(),
-		TotalBurnedAmount: sdk.NewCoin(utils.BaseDenom, sdkmath.ZeroInt()),
+		Params:               DefaultParams(),
+		TotalBurnedAmount:    sdk.NewCoin(utils.BaseDenom, sdkmath.ZeroInt()),
+		ExecutedApplications: nil,
 	}
 }
 
@@ -24,6 +25,12 @@ func (gs GenesisState) Validate() error {
 
 	if gs.TotalBurnedAmount.Denom != utils.BaseDenom {
 		return ErrInvalidAmount
+	}
+
+	for _, app := range gs.ExecutedApplications {
+		if _, ok := sdkmath.NewIntFromString(app); !ok {
+			return ErrInvalidApplicationID
+		}
 	}
 
 	return nil
