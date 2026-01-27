@@ -19,15 +19,19 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_MintEthiq_FullMethodName = "/haqq.ethiq.v1.Msg/MintEthiq"
+	Msg_MintHaqq_FullMethodName              = "/haqq.ethiq.v1.Msg/MintHaqq"
+	Msg_MintHaqqByApplication_FullMethodName = "/haqq.ethiq.v1.Msg/MintHaqqByApplication"
 )
 
 // MsgClient is the client API for Msg service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// MintEthiq defines a method to mint aethiq coins in exchange for aISLM coins
-	MintEthiq(ctx context.Context, in *MsgMintEthiq, opts ...grpc.CallOption) (*MsgMintEthiqResponse, error)
+	// MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
+	MintHaqq(ctx context.Context, in *MsgMintHaqq, opts ...grpc.CallOption) (*MsgMintHaqqResponse, error)
+	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+	// trough whitelisted application submitted earlier via smart-contract
+	MintHaqqByApplication(ctx context.Context, in *MsgMintHaqqByApplication, opts ...grpc.CallOption) (*MsgMintHaqqByApplicationResponse, error)
 }
 
 type msgClient struct {
@@ -38,9 +42,18 @@ func NewMsgClient(cc grpc.ClientConnInterface) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) MintEthiq(ctx context.Context, in *MsgMintEthiq, opts ...grpc.CallOption) (*MsgMintEthiqResponse, error) {
-	out := new(MsgMintEthiqResponse)
-	err := c.cc.Invoke(ctx, Msg_MintEthiq_FullMethodName, in, out, opts...)
+func (c *msgClient) MintHaqq(ctx context.Context, in *MsgMintHaqq, opts ...grpc.CallOption) (*MsgMintHaqqResponse, error) {
+	out := new(MsgMintHaqqResponse)
+	err := c.cc.Invoke(ctx, Msg_MintHaqq_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *msgClient) MintHaqqByApplication(ctx context.Context, in *MsgMintHaqqByApplication, opts ...grpc.CallOption) (*MsgMintHaqqByApplicationResponse, error) {
+	out := new(MsgMintHaqqByApplicationResponse)
+	err := c.cc.Invoke(ctx, Msg_MintHaqqByApplication_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +64,11 @@ func (c *msgClient) MintEthiq(ctx context.Context, in *MsgMintEthiq, opts ...grp
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// MintEthiq defines a method to mint aethiq coins in exchange for aISLM coins
-	MintEthiq(context.Context, *MsgMintEthiq) (*MsgMintEthiqResponse, error)
+	// MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
+	MintHaqq(context.Context, *MsgMintHaqq) (*MsgMintHaqqResponse, error)
+	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+	// trough whitelisted application submitted earlier via smart-contract
+	MintHaqqByApplication(context.Context, *MsgMintHaqqByApplication) (*MsgMintHaqqByApplicationResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -60,8 +76,11 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
-func (UnimplementedMsgServer) MintEthiq(context.Context, *MsgMintEthiq) (*MsgMintEthiqResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MintEthiq not implemented")
+func (UnimplementedMsgServer) MintHaqq(context.Context, *MsgMintHaqq) (*MsgMintHaqqResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MintHaqq not implemented")
+}
+func (UnimplementedMsgServer) MintHaqqByApplication(context.Context, *MsgMintHaqqByApplication) (*MsgMintHaqqByApplicationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MintHaqqByApplication not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -76,20 +95,38 @@ func RegisterMsgServer(s grpc.ServiceRegistrar, srv MsgServer) {
 	s.RegisterService(&Msg_ServiceDesc, srv)
 }
 
-func _Msg_MintEthiq_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgMintEthiq)
+func _Msg_MintHaqq_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgMintHaqq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).MintEthiq(ctx, in)
+		return srv.(MsgServer).MintHaqq(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Msg_MintEthiq_FullMethodName,
+		FullMethod: Msg_MintHaqq_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).MintEthiq(ctx, req.(*MsgMintEthiq))
+		return srv.(MsgServer).MintHaqq(ctx, req.(*MsgMintHaqq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Msg_MintHaqqByApplication_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgMintHaqqByApplication)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).MintHaqqByApplication(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_MintHaqqByApplication_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).MintHaqqByApplication(ctx, req.(*MsgMintHaqqByApplication))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -102,8 +139,12 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "MintEthiq",
-			Handler:    _Msg_MintEthiq_Handler,
+			MethodName: "MintHaqq",
+			Handler:    _Msg_MintHaqq_Handler,
+		},
+		{
+			MethodName: "MintHaqqByApplication",
+			Handler:    _Msg_MintHaqqByApplication_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -19,5 +19,9 @@ message GenesisState {
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
-}
 
+  // executed_applications defines the list of executed applications
+  repeated string executed_applications = 3 [
+    (amino.dont_omitempty) = true
+  ];
+}

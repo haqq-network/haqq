@@ -173,8 +173,8 @@ schema = 3
     version = "v0.7.9"
     hash = "sha256-ZWIXIXcHGjeCNgMrpXymry8/8esDDauGFfF/+gEoO1Y="
   [mod."github.com/cometbft/cometbft"]
-    version = "v0.38.19"
-    hash = "sha256-mhWIhRVJ5dL3v7hfkhX9jiPfuvWN1FsegxBEWuKuBRc="
+    version = "v0.38.21"
+    hash = "sha256-kBuePBARHL3NxpqimOyzgkGAv0A7lrWES7NgcdSGu5Y="
   [mod."github.com/cometbft/cometbft-db"]
     version = "v0.14.1"
     hash = "sha256-QvWMRGsdgCsSfL+DHp3w1Bm4jXa14SeT7oRK3PiNGV0="
@@ -610,9 +610,6 @@ schema = 3
   [mod."github.com/rs/zerolog"]
     version = "v1.33.0"
     hash = "sha256-jT/Y/izhZiCdrDbC/ty83FGs8UQavTU+OW03O4vKFkY="
-  [mod."github.com/rsned/bigmath"]
-    version = "v0.0.1"
-    hash = "sha256-xVAt8NYlIGZ7FB2NnQimKSmc7SzB9nEyml0dbP6jmEc="
   [mod."github.com/sagikazarmark/locafero"]
     version = "v0.4.0"
     hash = "sha256-7I1Oatc7GAaHgAqBFO6Tv4IbzFiYeU9bJAfJhXuWaXk="

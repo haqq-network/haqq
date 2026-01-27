@@ -16,39 +16,17 @@ message Params {
   // enabled defines whether the module is enabled
   bool enabled = 1;
 
-  // start_rate defines the starting price rate
-  string start_rate = 2 [
-    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
-
-  // curve_coefficient defines the curve coefficient for the bonding curve
-  string curve_coefficient = 3 [
-    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
-
-  // power_coefficient defines the power coefficient for the bonding curve
-  string power_coefficient = 4 [
-    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
-
   // min_mint_per_tx defines the minimum amount that can be minted per transaction
-  string min_mint_per_tx = 5 [
+  string min_mint_per_tx = 2 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
 
   // max_mint_per_tx defines the maximum amount that can be minted per transaction
-  string max_mint_per_tx = 6 [
+  string max_mint_per_tx = 3 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
 }
-

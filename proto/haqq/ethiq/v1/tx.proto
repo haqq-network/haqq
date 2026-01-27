@@ -13,14 +13,18 @@ option go_package = "github.com/haqq-network/haqq/x/ethiq/types";
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  // MintEthiq defines a method to mint aethiq coins in exchange for aISLM coins
-  rpc MintEthiq(MsgMintEthiq) returns (MsgMintEthiqResponse);
+  // MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
+  rpc MintHaqq(MsgMintHaqq) returns (MsgMintHaqqResponse);
+
+  // MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+  // trough whitelisted application submitted earlier via smart-contract
+  rpc MintHaqqByApplication(MsgMintHaqqByApplication) returns (MsgMintHaqqByApplicationResponse);
 }
 
-// MsgMintEthiq allows an account to mint aethiq coins in exchange for aISLM coins
-message MsgMintEthiq {
+// MsgMintHaqq allows an account to mint aHAQQ coins in exchange for aISLM coins
+message MsgMintHaqq {
   option (cosmos.msg.v1.signer) = "from_address";
-  option (amino.name) = "haqq/ethiq/MsgMintEthiq";
+  option (amino.name) = "haqq/ethiq/MsgMintHaqq";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
@@ -28,24 +32,56 @@ message MsgMintEthiq {
   // from_address is the address that will send the aISLM coins
   string from_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 
-  // to_address is the address that will receive the minted aethiq coins
+  // to_address is the address that will receive the minted aHAQQ coins
   string to_address = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 
-  // ethiq_amount is the amount of aethiq coins to mint
-  string ethiq_amount = 3 [
-    (cosmos_proto.scalar)  = "cosmos.Int",
-    (gogoproto.customtype) = "cosmossdk.io/math.Int",
-    (gogoproto.nullable) = false
-  ];
-
-  // max_islm_amount is the maximum amount of aISLM coins the user is willing to spend
-  string max_islm_amount = 4 [
+  // islm_amount is the amount of aISLM to burn in exchange for aHAQQ
+  string islm_amount = 3 [
     (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 }
 
-// MsgMintEthiqResponse defines the Msg/MintEthiq response type.
-message MsgMintEthiqResponse {}
+// MsgMintHaqqResponse defines the Msg/MintHaqq response type.
+message MsgMintHaqqResponse {
+  // haqq_amount is the amount of minted aHAQQ coins
+  string haqq_amount = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
 
+// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+// trough whitelisted application submitted earlier via smart-contract
+message MsgMintHaqqByApplication {
+  option (cosmos.msg.v1.signer) = "from_address";
+  option (amino.name) = "haqq/ethiq/MsgMintHaqqByApplication";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // from_address is the address that will send the aISLM coins
+  string from_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // to_address is the address that will receive the minted aHAQQ coins
+  string to_address = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // application_id is the id of application submitted earlier
+  string application_id = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// MsgMintHaqqResponse defines the Msg/MintHaqqByApplication response type.
+message MsgMintHaqqByApplicationResponse {
+  // haqq_amount is the amount of minted aHAQQ coins
+  string haqq_amount = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}

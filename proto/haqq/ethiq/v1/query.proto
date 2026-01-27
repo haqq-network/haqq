@@ -20,10 +20,10 @@ service Query {
     option (google.api.http).get = "/haqq/ethiq/v1/total_burned";
   }
 
-  // Calculate returns the estimated amount of aISLM coins required to mint ethiqAmount of aethiq coins
+  // Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount
   rpc Calculate(QueryCalculateRequest) returns (QueryCalculateResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/haqq/ethiq/v1/calculate/{ethiq_amount}";
+    option (google.api.http).get = "/haqq/ethiq/v1/calculate/{islm_amount}";
   }
 
   // Params queries the parameters of x/ethiq module.
@@ -46,6 +46,12 @@ message QueryTotalBurnedResponse {
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
+
+  // git reset --soft HEAD~1 is the total amount of coins burned from applications
+  cosmos.base.v1beta1.Coin total_burned_from_applications = 2 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
 }
 
 // QueryCalculateRequest is the request type for the Query/Calculate RPC method.
@@ -53,22 +59,22 @@ message QueryCalculateRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
-  // ethiq_amount is the amount of aethiq coins to mint
+  // islm_amount is the amount of aISLM coins to burn in exchange for aHAQQ
   // using string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)
-  string ethiq_amount = 1;
+  string islm_amount = 1;
 }
 
 // QueryCalculateResponse is the response type for the Query/Calculate RPC method.
 message QueryCalculateResponse {
-  // required_islm is the amount of aISLM coins required
-  string required_islm = 1 [
+  // estimated_haqq_amount is the amount of aHAQQ coins to be minted
+  string estimated_haqq_amount = 1 [
     (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
 
-  // supply_before is the supply of aethiq before minting
+  // supply_before is the supply of aHAQQ before minting
   string supply_before = 2 [
     (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
@@ -76,7 +82,7 @@ message QueryCalculateResponse {
     (amino.dont_omitempty) = true
   ];
 
-  // supply_after is the supply of aethiq after minting
+  // supply_after is the supply of aHAQQ after minting
   string supply_after = 3 [
     (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
@@ -84,7 +90,7 @@ message QueryCalculateResponse {
     (amino.dont_omitempty) = true
   ];
 
-  // price_per_unit is the price per unit of aethiq
+  // price_per_unit is the price per unit of aHAQQ
   string price_per_unit = 4 [
     (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
@@ -100,4 +106,3 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
-

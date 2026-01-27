@@ -17,31 +17,29 @@ import (
 )
 
 var (
-	md_MsgMintEthiq                 protoreflect.MessageDescriptor
-	fd_MsgMintEthiq_from_address    protoreflect.FieldDescriptor
-	fd_MsgMintEthiq_to_address      protoreflect.FieldDescriptor
-	fd_MsgMintEthiq_ethiq_amount    protoreflect.FieldDescriptor
-	fd_MsgMintEthiq_max_islm_amount protoreflect.FieldDescriptor
+	md_MsgMintHaqq              protoreflect.MessageDescriptor
+	fd_MsgMintHaqq_from_address protoreflect.FieldDescriptor
+	fd_MsgMintHaqq_to_address   protoreflect.FieldDescriptor
+	fd_MsgMintHaqq_islm_amount  protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_haqq_ethiq_v1_tx_proto_init()
-	md_MsgMintEthiq = File_haqq_ethiq_v1_tx_proto.Messages().ByName("MsgMintEthiq")
-	fd_MsgMintEthiq_from_address = md_MsgMintEthiq.Fields().ByName("from_address")
-	fd_MsgMintEthiq_to_address = md_MsgMintEthiq.Fields().ByName("to_address")
-	fd_MsgMintEthiq_ethiq_amount = md_MsgMintEthiq.Fields().ByName("ethiq_amount")
-	fd_MsgMintEthiq_max_islm_amount = md_MsgMintEthiq.Fields().ByName("max_islm_amount")
+	md_MsgMintHaqq = File_haqq_ethiq_v1_tx_proto.Messages().ByName("MsgMintHaqq")
+	fd_MsgMintHaqq_from_address = md_MsgMintHaqq.Fields().ByName("from_address")
+	fd_MsgMintHaqq_to_address = md_MsgMintHaqq.Fields().ByName("to_address")
+	fd_MsgMintHaqq_islm_amount = md_MsgMintHaqq.Fields().ByName("islm_amount")
 }
 
-var _ protoreflect.Message = (*fastReflection_MsgMintEthiq)(nil)
+var _ protoreflect.Message = (*fastReflection_MsgMintHaqq)(nil)
 
-type fastReflection_MsgMintEthiq MsgMintEthiq
+type fastReflection_MsgMintHaqq MsgMintHaqq
 
-func (x *MsgMintEthiq) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_MsgMintEthiq)(x)
+func (x *MsgMintHaqq) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgMintHaqq)(x)
 }
 
-func (x *MsgMintEthiq) slowProtoReflect() protoreflect.Message {
+func (x *MsgMintHaqq) slowProtoReflect() protoreflect.Message {
 	mi := &file_haqq_ethiq_v1_tx_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -53,43 +51,43 @@ func (x *MsgMintEthiq) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_MsgMintEthiq_messageType fastReflection_MsgMintEthiq_messageType
-var _ protoreflect.MessageType = fastReflection_MsgMintEthiq_messageType{}
+var _fastReflection_MsgMintHaqq_messageType fastReflection_MsgMintHaqq_messageType
+var _ protoreflect.MessageType = fastReflection_MsgMintHaqq_messageType{}
 
-type fastReflection_MsgMintEthiq_messageType struct{}
+type fastReflection_MsgMintHaqq_messageType struct{}
 
-func (x fastReflection_MsgMintEthiq_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_MsgMintEthiq)(nil)
+func (x fastReflection_MsgMintHaqq_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgMintHaqq)(nil)
 }
-func (x fastReflection_MsgMintEthiq_messageType) New() protoreflect.Message {
-	return new(fastReflection_MsgMintEthiq)
+func (x fastReflection_MsgMintHaqq_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgMintHaqq)
 }
-func (x fastReflection_MsgMintEthiq_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgMintEthiq
+func (x fastReflection_MsgMintHaqq_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgMintHaqq
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_MsgMintEthiq) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgMintEthiq
+func (x *fastReflection_MsgMintHaqq) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgMintHaqq
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_MsgMintEthiq) Type() protoreflect.MessageType {
-	return _fastReflection_MsgMintEthiq_messageType
+func (x *fastReflection_MsgMintHaqq) Type() protoreflect.MessageType {
+	return _fastReflection_MsgMintHaqq_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_MsgMintEthiq) New() protoreflect.Message {
-	return new(fastReflection_MsgMintEthiq)
+func (x *fastReflection_MsgMintHaqq) New() protoreflect.Message {
+	return new(fastReflection_MsgMintHaqq)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_MsgMintEthiq) Interface() protoreflect.ProtoMessage {
-	return (*MsgMintEthiq)(x)
+func (x *fastReflection_MsgMintHaqq) Interface() protoreflect.ProtoMessage {
+	return (*MsgMintHaqq)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -97,28 +95,22 @@ func (x *fastReflection_MsgMintEthiq) Interface() protoreflect.ProtoMessage {
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_MsgMintEthiq) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_MsgMintHaqq) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.FromAddress != "" {
 		value := protoreflect.ValueOfString(x.FromAddress)
-		if !f(fd_MsgMintEthiq_from_address, value) {
+		if !f(fd_MsgMintHaqq_from_address, value) {
 			return
 		}
 	}
 	if x.ToAddress != "" {
 		value := protoreflect.ValueOfString(x.ToAddress)
-		if !f(fd_MsgMintEthiq_to_address, value) {
+		if !f(fd_MsgMintHaqq_to_address, value) {
 			return
 		}
 	}
-	if x.EthiqAmount != "" {
-		value := protoreflect.ValueOfString(x.EthiqAmount)
-		if !f(fd_MsgMintEthiq_ethiq_amount, value) {
-			return
-		}
-	}
-	if x.MaxIslmAmount != "" {
-		value := protoreflect.ValueOfString(x.MaxIslmAmount)
-		if !f(fd_MsgMintEthiq_max_islm_amount, value) {
+	if x.IslmAmount != "" {
+		value := protoreflect.ValueOfString(x.IslmAmount)
+		if !f(fd_MsgMintHaqq_islm_amount, value) {
 			return
 		}
 	}
@@ -135,21 +127,19 @@ func (x *fastReflection_MsgMintEthiq) Range(f func(protoreflect.FieldDescriptor,
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_MsgMintEthiq) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_MsgMintHaqq) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "haqq.ethiq.v1.MsgMintEthiq.from_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.from_address":
 		return x.FromAddress != ""
-	case "haqq.ethiq.v1.MsgMintEthiq.to_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.to_address":
 		return x.ToAddress != ""
-	case "haqq.ethiq.v1.MsgMintEthiq.ethiq_amount":
-		return x.EthiqAmount != ""
-	case "haqq.ethiq.v1.MsgMintEthiq.max_islm_amount":
-		return x.MaxIslmAmount != ""
+	case "haqq.ethiq.v1.MsgMintHaqq.islm_amount":
+		return x.IslmAmount != ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiq"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqq"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiq does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqq does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -159,21 +149,19 @@ func (x *fastReflection_MsgMintEthiq) Has(fd protoreflect.FieldDescriptor) bool 
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgMintEthiq) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_MsgMintHaqq) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "haqq.ethiq.v1.MsgMintEthiq.from_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.from_address":
 		x.FromAddress = ""
-	case "haqq.ethiq.v1.MsgMintEthiq.to_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.to_address":
 		x.ToAddress = ""
-	case "haqq.ethiq.v1.MsgMintEthiq.ethiq_amount":
-		x.EthiqAmount = ""
-	case "haqq.ethiq.v1.MsgMintEthiq.max_islm_amount":
-		x.MaxIslmAmount = ""
+	case "haqq.ethiq.v1.MsgMintHaqq.islm_amount":
+		x.IslmAmount = ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiq"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqq"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiq does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqq does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -183,25 +171,22 @@ func (x *fastReflection_MsgMintEthiq) Clear(fd protoreflect.FieldDescriptor) {
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_MsgMintEthiq) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgMintHaqq) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "haqq.ethiq.v1.MsgMintEthiq.from_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.from_address":
 		value := x.FromAddress
 		return protoreflect.ValueOfString(value)
-	case "haqq.ethiq.v1.MsgMintEthiq.to_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.to_address":
 		value := x.ToAddress
 		return protoreflect.ValueOfString(value)
-	case "haqq.ethiq.v1.MsgMintEthiq.ethiq_amount":
-		value := x.EthiqAmount
-		return protoreflect.ValueOfString(value)
-	case "haqq.ethiq.v1.MsgMintEthiq.max_islm_amount":
-		value := x.MaxIslmAmount
+	case "haqq.ethiq.v1.MsgMintHaqq.islm_amount":
+		value := x.IslmAmount
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiq"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqq"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiq does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqq does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -215,21 +200,19 @@ func (x *fastReflection_MsgMintEthiq) Get(descriptor protoreflect.FieldDescripto
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgMintEthiq) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_MsgMintHaqq) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "haqq.ethiq.v1.MsgMintEthiq.from_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.from_address":
 		x.FromAddress = value.Interface().(string)
-	case "haqq.ethiq.v1.MsgMintEthiq.to_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.to_address":
 		x.ToAddress = value.Interface().(string)
-	case "haqq.ethiq.v1.MsgMintEthiq.ethiq_amount":
-		x.EthiqAmount = value.Interface().(string)
-	case "haqq.ethiq.v1.MsgMintEthiq.max_islm_amount":
-		x.MaxIslmAmount = value.Interface().(string)
+	case "haqq.ethiq.v1.MsgMintHaqq.islm_amount":
+		x.IslmAmount = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiq"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqq"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiq does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqq does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -243,52 +226,48 @@ func (x *fastReflection_MsgMintEthiq) Set(fd protoreflect.FieldDescriptor, value
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgMintEthiq) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgMintHaqq) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "haqq.ethiq.v1.MsgMintEthiq.from_address":
-		panic(fmt.Errorf("field from_address of message haqq.ethiq.v1.MsgMintEthiq is not mutable"))
-	case "haqq.ethiq.v1.MsgMintEthiq.to_address":
-		panic(fmt.Errorf("field to_address of message haqq.ethiq.v1.MsgMintEthiq is not mutable"))
-	case "haqq.ethiq.v1.MsgMintEthiq.ethiq_amount":
-		panic(fmt.Errorf("field ethiq_amount of message haqq.ethiq.v1.MsgMintEthiq is not mutable"))
-	case "haqq.ethiq.v1.MsgMintEthiq.max_islm_amount":
-		panic(fmt.Errorf("field max_islm_amount of message haqq.ethiq.v1.MsgMintEthiq is not mutable"))
+	case "haqq.ethiq.v1.MsgMintHaqq.from_address":
+		panic(fmt.Errorf("field from_address of message haqq.ethiq.v1.MsgMintHaqq is not mutable"))
+	case "haqq.ethiq.v1.MsgMintHaqq.to_address":
+		panic(fmt.Errorf("field to_address of message haqq.ethiq.v1.MsgMintHaqq is not mutable"))
+	case "haqq.ethiq.v1.MsgMintHaqq.islm_amount":
+		panic(fmt.Errorf("field islm_amount of message haqq.ethiq.v1.MsgMintHaqq is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiq"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqq"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiq does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqq does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_MsgMintEthiq) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgMintHaqq) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "haqq.ethiq.v1.MsgMintEthiq.from_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.from_address":
 		return protoreflect.ValueOfString("")
-	case "haqq.ethiq.v1.MsgMintEthiq.to_address":
+	case "haqq.ethiq.v1.MsgMintHaqq.to_address":
 		return protoreflect.ValueOfString("")
-	case "haqq.ethiq.v1.MsgMintEthiq.ethiq_amount":
-		return protoreflect.ValueOfString("")
-	case "haqq.ethiq.v1.MsgMintEthiq.max_islm_amount":
+	case "haqq.ethiq.v1.MsgMintHaqq.islm_amount":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiq"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqq"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiq does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqq does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_MsgMintEthiq) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_MsgMintHaqq) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in haqq.ethiq.v1.MsgMintEthiq", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in haqq.ethiq.v1.MsgMintHaqq", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -296,7 +275,7 @@ func (x *fastReflection_MsgMintEthiq) WhichOneof(d protoreflect.OneofDescriptor)
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_MsgMintEthiq) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_MsgMintHaqq) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -307,7 +286,7 @@ func (x *fastReflection_MsgMintEthiq) GetUnknown() protoreflect.RawFields {
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgMintEthiq) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_MsgMintHaqq) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -319,7 +298,7 @@ func (x *fastReflection_MsgMintEthiq) SetUnknown(fields protoreflect.RawFields) 
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_MsgMintEthiq) IsValid() bool {
+func (x *fastReflection_MsgMintHaqq) IsValid() bool {
 	return x != nil
 }
 
@@ -329,9 +308,9 @@ func (x *fastReflection_MsgMintEthiq) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_MsgMintEthiq) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_MsgMintHaqq) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*MsgMintEthiq)
+		x := input.Message.Interface().(*MsgMintHaqq)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -351,11 +330,7 @@ func (x *fastReflection_MsgMintEthiq) ProtoMethods() *protoiface.Methods {
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
-		l = len(x.EthiqAmount)
-		if l > 0 {
-			n += 1 + l + runtime.Sov(uint64(l))
-		}
-		l = len(x.MaxIslmAmount)
+		l = len(x.IslmAmount)
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
@@ -369,7 +344,7 @@ func (x *fastReflection_MsgMintEthiq) ProtoMethods() *protoiface.Methods {
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*MsgMintEthiq)
+		x := input.Message.Interface().(*MsgMintHaqq)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -388,17 +363,10 @@ func (x *fastReflection_MsgMintEthiq) ProtoMethods() *protoiface.Methods {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if len(x.MaxIslmAmount) > 0 {
-			i -= len(x.MaxIslmAmount)
-			copy(dAtA[i:], x.MaxIslmAmount)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.MaxIslmAmount)))
-			i--
-			dAtA[i] = 0x22
-		}
-		if len(x.EthiqAmount) > 0 {
-			i -= len(x.EthiqAmount)
-			copy(dAtA[i:], x.EthiqAmount)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.EthiqAmount)))
+		if len(x.IslmAmount) > 0 {
+			i -= len(x.IslmAmount)
+			copy(dAtA[i:], x.IslmAmount)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.IslmAmount)))
 			i--
 			dAtA[i] = 0x1a
 		}
@@ -427,7 +395,7 @@ func (x *fastReflection_MsgMintEthiq) ProtoMethods() *protoiface.Methods {
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*MsgMintEthiq)
+		x := input.Message.Interface().(*MsgMintHaqq)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -459,10 +427,10 @@ func (x *fastReflection_MsgMintEthiq) ProtoMethods() *protoiface.Methods {
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintEthiq: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintHaqq: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintEthiq: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintHaqq: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -531,7 +499,7 @@ func (x *fastReflection_MsgMintEthiq) ProtoMethods() *protoiface.Methods {
 				iNdEx = postIndex
 			case 3:
 				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field EthiqAmount", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field IslmAmount", wireType)
 				}
 				var stringLen uint64
 				for shift := uint(0); ; shift += 7 {
@@ -559,39 +527,7 @@ func (x *fastReflection_MsgMintEthiq) ProtoMethods() *protoiface.Methods {
 				if postIndex > l {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
-				x.EthiqAmount = string(dAtA[iNdEx:postIndex])
-				iNdEx = postIndex
-			case 4:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MaxIslmAmount", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.MaxIslmAmount = string(dAtA[iNdEx:postIndex])
+				x.IslmAmount = string(dAtA[iNdEx:postIndex])
 				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
@@ -629,23 +565,25 @@ func (x *fastReflection_MsgMintEthiq) ProtoMethods() *protoiface.Methods {
 }
 
 var (
-	md_MsgMintEthiqResponse protoreflect.MessageDescriptor
+	md_MsgMintHaqqResponse             protoreflect.MessageDescriptor
+	fd_MsgMintHaqqResponse_haqq_amount protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_haqq_ethiq_v1_tx_proto_init()
-	md_MsgMintEthiqResponse = File_haqq_ethiq_v1_tx_proto.Messages().ByName("MsgMintEthiqResponse")
+	md_MsgMintHaqqResponse = File_haqq_ethiq_v1_tx_proto.Messages().ByName("MsgMintHaqqResponse")
+	fd_MsgMintHaqqResponse_haqq_amount = md_MsgMintHaqqResponse.Fields().ByName("haqq_amount")
 }
 
-var _ protoreflect.Message = (*fastReflection_MsgMintEthiqResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_MsgMintHaqqResponse)(nil)
 
-type fastReflection_MsgMintEthiqResponse MsgMintEthiqResponse
+type fastReflection_MsgMintHaqqResponse MsgMintHaqqResponse
 
-func (x *MsgMintEthiqResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_MsgMintEthiqResponse)(x)
+func (x *MsgMintHaqqResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgMintHaqqResponse)(x)
 }
 
-func (x *MsgMintEthiqResponse) slowProtoReflect() protoreflect.Message {
+func (x *MsgMintHaqqResponse) slowProtoReflect() protoreflect.Message {
 	mi := &file_haqq_ethiq_v1_tx_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -657,43 +595,43 @@ func (x *MsgMintEthiqResponse) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_MsgMintEthiqResponse_messageType fastReflection_MsgMintEthiqResponse_messageType
-var _ protoreflect.MessageType = fastReflection_MsgMintEthiqResponse_messageType{}
+var _fastReflection_MsgMintHaqqResponse_messageType fastReflection_MsgMintHaqqResponse_messageType
+var _ protoreflect.MessageType = fastReflection_MsgMintHaqqResponse_messageType{}
 
-type fastReflection_MsgMintEthiqResponse_messageType struct{}
+type fastReflection_MsgMintHaqqResponse_messageType struct{}
 
-func (x fastReflection_MsgMintEthiqResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_MsgMintEthiqResponse)(nil)
+func (x fastReflection_MsgMintHaqqResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgMintHaqqResponse)(nil)
 }
-func (x fastReflection_MsgMintEthiqResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_MsgMintEthiqResponse)
+func (x fastReflection_MsgMintHaqqResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgMintHaqqResponse)
 }
-func (x fastReflection_MsgMintEthiqResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgMintEthiqResponse
+func (x fastReflection_MsgMintHaqqResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgMintHaqqResponse
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_MsgMintEthiqResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgMintEthiqResponse
+func (x *fastReflection_MsgMintHaqqResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgMintHaqqResponse
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_MsgMintEthiqResponse) Type() protoreflect.MessageType {
-	return _fastReflection_MsgMintEthiqResponse_messageType
+func (x *fastReflection_MsgMintHaqqResponse) Type() protoreflect.MessageType {
+	return _fastReflection_MsgMintHaqqResponse_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_MsgMintEthiqResponse) New() protoreflect.Message {
-	return new(fastReflection_MsgMintEthiqResponse)
+func (x *fastReflection_MsgMintHaqqResponse) New() protoreflect.Message {
+	return new(fastReflection_MsgMintHaqqResponse)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_MsgMintEthiqResponse) Interface() protoreflect.ProtoMessage {
-	return (*MsgMintEthiqResponse)(x)
+func (x *fastReflection_MsgMintHaqqResponse) Interface() protoreflect.ProtoMessage {
+	return (*MsgMintHaqqResponse)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -701,7 +639,13 @@ func (x *fastReflection_MsgMintEthiqResponse) Interface() protoreflect.ProtoMess
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_MsgMintEthiqResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_MsgMintHaqqResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.HaqqAmount != "" {
+		value := protoreflect.ValueOfString(x.HaqqAmount)
+		if !f(fd_MsgMintHaqqResponse_haqq_amount, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -715,13 +659,15 @@ func (x *fastReflection_MsgMintEthiqResponse) Range(f func(protoreflect.FieldDes
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_MsgMintEthiqResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_MsgMintHaqqResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqResponse.haqq_amount":
+		return x.HaqqAmount != ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiqResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqResponse"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiqResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -731,13 +677,15 @@ func (x *fastReflection_MsgMintEthiqResponse) Has(fd protoreflect.FieldDescripto
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgMintEthiqResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_MsgMintHaqqResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqResponse.haqq_amount":
+		x.HaqqAmount = ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiqResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqResponse"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiqResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -747,13 +695,16 @@ func (x *fastReflection_MsgMintEthiqResponse) Clear(fd protoreflect.FieldDescrip
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_MsgMintEthiqResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgMintHaqqResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqResponse.haqq_amount":
+		value := x.HaqqAmount
+		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiqResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqResponse"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiqResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqResponse does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -767,13 +718,15 @@ func (x *fastReflection_MsgMintEthiqResponse) Get(descriptor protoreflect.FieldD
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgMintEthiqResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_MsgMintHaqqResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqResponse.haqq_amount":
+		x.HaqqAmount = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiqResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqResponse"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiqResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -787,36 +740,40 @@ func (x *fastReflection_MsgMintEthiqResponse) Set(fd protoreflect.FieldDescripto
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgMintEthiqResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgMintHaqqResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqResponse.haqq_amount":
+		panic(fmt.Errorf("field haqq_amount of message haqq.ethiq.v1.MsgMintHaqqResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiqResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqResponse"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiqResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_MsgMintEthiqResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgMintHaqqResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqResponse.haqq_amount":
+		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintEthiqResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqResponse"))
 		}
-		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintEthiqResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_MsgMintEthiqResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_MsgMintHaqqResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in haqq.ethiq.v1.MsgMintEthiqResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in haqq.ethiq.v1.MsgMintHaqqResponse", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -824,7 +781,7 @@ func (x *fastReflection_MsgMintEthiqResponse) WhichOneof(d protoreflect.OneofDes
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_MsgMintEthiqResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_MsgMintHaqqResponse) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -835,7 +792,7 @@ func (x *fastReflection_MsgMintEthiqResponse) GetUnknown() protoreflect.RawField
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgMintEthiqResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_MsgMintHaqqResponse) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -847,7 +804,7 @@ func (x *fastReflection_MsgMintEthiqResponse) SetUnknown(fields protoreflect.Raw
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_MsgMintEthiqResponse) IsValid() bool {
+func (x *fastReflection_MsgMintHaqqResponse) IsValid() bool {
 	return x != nil
 }
 
@@ -857,9 +814,9 @@ func (x *fastReflection_MsgMintEthiqResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_MsgMintEthiqResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_MsgMintHaqqResponse) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*MsgMintEthiqResponse)
+		x := input.Message.Interface().(*MsgMintHaqqResponse)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -871,6 +828,10 @@ func (x *fastReflection_MsgMintEthiqResponse) ProtoMethods() *protoiface.Methods
 		var n int
 		var l int
 		_ = l
+		l = len(x.HaqqAmount)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -881,7 +842,7 @@ func (x *fastReflection_MsgMintEthiqResponse) ProtoMethods() *protoiface.Methods
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*MsgMintEthiqResponse)
+		x := input.Message.Interface().(*MsgMintHaqqResponse)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -900,6 +861,13 @@ func (x *fastReflection_MsgMintEthiqResponse) ProtoMethods() *protoiface.Methods
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
+		if len(x.HaqqAmount) > 0 {
+			i -= len(x.HaqqAmount)
+			copy(dAtA[i:], x.HaqqAmount)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.HaqqAmount)))
+			i--
+			dAtA[i] = 0xa
+		}
 		if input.Buf != nil {
 			input.Buf = append(input.Buf, dAtA...)
 		} else {
@@ -911,7 +879,7 @@ func (x *fastReflection_MsgMintEthiqResponse) ProtoMethods() *protoiface.Methods
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*MsgMintEthiqResponse)
+		x := input.Message.Interface().(*MsgMintHaqqResponse)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -943,12 +911,1012 @@ func (x *fastReflection_MsgMintEthiqResponse) ProtoMethods() *protoiface.Methods
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintEthiqResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintHaqqResponse: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintEthiqResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintHaqqResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field HaqqAmount", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.HaqqAmount = string(dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_MsgMintHaqqByApplication                protoreflect.MessageDescriptor
+	fd_MsgMintHaqqByApplication_from_address   protoreflect.FieldDescriptor
+	fd_MsgMintHaqqByApplication_to_address     protoreflect.FieldDescriptor
+	fd_MsgMintHaqqByApplication_application_id protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_haqq_ethiq_v1_tx_proto_init()
+	md_MsgMintHaqqByApplication = File_haqq_ethiq_v1_tx_proto.Messages().ByName("MsgMintHaqqByApplication")
+	fd_MsgMintHaqqByApplication_from_address = md_MsgMintHaqqByApplication.Fields().ByName("from_address")
+	fd_MsgMintHaqqByApplication_to_address = md_MsgMintHaqqByApplication.Fields().ByName("to_address")
+	fd_MsgMintHaqqByApplication_application_id = md_MsgMintHaqqByApplication.Fields().ByName("application_id")
+}
+
+var _ protoreflect.Message = (*fastReflection_MsgMintHaqqByApplication)(nil)
+
+type fastReflection_MsgMintHaqqByApplication MsgMintHaqqByApplication
+
+func (x *MsgMintHaqqByApplication) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgMintHaqqByApplication)(x)
+}
+
+func (x *MsgMintHaqqByApplication) slowProtoReflect() protoreflect.Message {
+	mi := &file_haqq_ethiq_v1_tx_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_MsgMintHaqqByApplication_messageType fastReflection_MsgMintHaqqByApplication_messageType
+var _ protoreflect.MessageType = fastReflection_MsgMintHaqqByApplication_messageType{}
+
+type fastReflection_MsgMintHaqqByApplication_messageType struct{}
+
+func (x fastReflection_MsgMintHaqqByApplication_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgMintHaqqByApplication)(nil)
+}
+func (x fastReflection_MsgMintHaqqByApplication_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgMintHaqqByApplication)
+}
+func (x fastReflection_MsgMintHaqqByApplication_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgMintHaqqByApplication
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_MsgMintHaqqByApplication) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgMintHaqqByApplication
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_MsgMintHaqqByApplication) Type() protoreflect.MessageType {
+	return _fastReflection_MsgMintHaqqByApplication_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_MsgMintHaqqByApplication) New() protoreflect.Message {
+	return new(fastReflection_MsgMintHaqqByApplication)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_MsgMintHaqqByApplication) Interface() protoreflect.ProtoMessage {
+	return (*MsgMintHaqqByApplication)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_MsgMintHaqqByApplication) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.FromAddress != "" {
+		value := protoreflect.ValueOfString(x.FromAddress)
+		if !f(fd_MsgMintHaqqByApplication_from_address, value) {
+			return
+		}
+	}
+	if x.ToAddress != "" {
+		value := protoreflect.ValueOfString(x.ToAddress)
+		if !f(fd_MsgMintHaqqByApplication_to_address, value) {
+			return
+		}
+	}
+	if x.ApplicationId != "" {
+		value := protoreflect.ValueOfString(x.ApplicationId)
+		if !f(fd_MsgMintHaqqByApplication_application_id, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_MsgMintHaqqByApplication) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.from_address":
+		return x.FromAddress != ""
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.to_address":
+		return x.ToAddress != ""
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.application_id":
+		return x.ApplicationId != ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplication"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplication does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgMintHaqqByApplication) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.from_address":
+		x.FromAddress = ""
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.to_address":
+		x.ToAddress = ""
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.application_id":
+		x.ApplicationId = ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplication"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplication does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_MsgMintHaqqByApplication) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.from_address":
+		value := x.FromAddress
+		return protoreflect.ValueOfString(value)
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.to_address":
+		value := x.ToAddress
+		return protoreflect.ValueOfString(value)
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.application_id":
+		value := x.ApplicationId
+		return protoreflect.ValueOfString(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplication"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplication does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgMintHaqqByApplication) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.from_address":
+		x.FromAddress = value.Interface().(string)
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.to_address":
+		x.ToAddress = value.Interface().(string)
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.application_id":
+		x.ApplicationId = value.Interface().(string)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplication"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplication does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgMintHaqqByApplication) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.from_address":
+		panic(fmt.Errorf("field from_address of message haqq.ethiq.v1.MsgMintHaqqByApplication is not mutable"))
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.to_address":
+		panic(fmt.Errorf("field to_address of message haqq.ethiq.v1.MsgMintHaqqByApplication is not mutable"))
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.application_id":
+		panic(fmt.Errorf("field application_id of message haqq.ethiq.v1.MsgMintHaqqByApplication is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplication"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplication does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_MsgMintHaqqByApplication) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.from_address":
+		return protoreflect.ValueOfString("")
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.to_address":
+		return protoreflect.ValueOfString("")
+	case "haqq.ethiq.v1.MsgMintHaqqByApplication.application_id":
+		return protoreflect.ValueOfString("")
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplication"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplication does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_MsgMintHaqqByApplication) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in haqq.ethiq.v1.MsgMintHaqqByApplication", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_MsgMintHaqqByApplication) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgMintHaqqByApplication) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_MsgMintHaqqByApplication) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_MsgMintHaqqByApplication) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*MsgMintHaqqByApplication)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		l = len(x.FromAddress)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		l = len(x.ToAddress)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		l = len(x.ApplicationId)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*MsgMintHaqqByApplication)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.ApplicationId) > 0 {
+			i -= len(x.ApplicationId)
+			copy(dAtA[i:], x.ApplicationId)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.ApplicationId)))
+			i--
+			dAtA[i] = 0x1a
+		}
+		if len(x.ToAddress) > 0 {
+			i -= len(x.ToAddress)
+			copy(dAtA[i:], x.ToAddress)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.ToAddress)))
+			i--
+			dAtA[i] = 0x12
+		}
+		if len(x.FromAddress) > 0 {
+			i -= len(x.FromAddress)
+			copy(dAtA[i:], x.FromAddress)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.FromAddress)))
+			i--
+			dAtA[i] = 0xa
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*MsgMintHaqqByApplication)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintHaqqByApplication: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintHaqqByApplication: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.FromAddress = string(dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
+			case 2:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ToAddress", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.ToAddress = string(dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
+			case 3:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ApplicationId", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.ApplicationId = string(dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_MsgMintHaqqByApplicationResponse             protoreflect.MessageDescriptor
+	fd_MsgMintHaqqByApplicationResponse_haqq_amount protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_haqq_ethiq_v1_tx_proto_init()
+	md_MsgMintHaqqByApplicationResponse = File_haqq_ethiq_v1_tx_proto.Messages().ByName("MsgMintHaqqByApplicationResponse")
+	fd_MsgMintHaqqByApplicationResponse_haqq_amount = md_MsgMintHaqqByApplicationResponse.Fields().ByName("haqq_amount")
+}
+
+var _ protoreflect.Message = (*fastReflection_MsgMintHaqqByApplicationResponse)(nil)
+
+type fastReflection_MsgMintHaqqByApplicationResponse MsgMintHaqqByApplicationResponse
+
+func (x *MsgMintHaqqByApplicationResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgMintHaqqByApplicationResponse)(x)
+}
+
+func (x *MsgMintHaqqByApplicationResponse) slowProtoReflect() protoreflect.Message {
+	mi := &file_haqq_ethiq_v1_tx_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_MsgMintHaqqByApplicationResponse_messageType fastReflection_MsgMintHaqqByApplicationResponse_messageType
+var _ protoreflect.MessageType = fastReflection_MsgMintHaqqByApplicationResponse_messageType{}
+
+type fastReflection_MsgMintHaqqByApplicationResponse_messageType struct{}
+
+func (x fastReflection_MsgMintHaqqByApplicationResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgMintHaqqByApplicationResponse)(nil)
+}
+func (x fastReflection_MsgMintHaqqByApplicationResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgMintHaqqByApplicationResponse)
+}
+func (x fastReflection_MsgMintHaqqByApplicationResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgMintHaqqByApplicationResponse
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgMintHaqqByApplicationResponse
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) Type() protoreflect.MessageType {
+	return _fastReflection_MsgMintHaqqByApplicationResponse_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) New() protoreflect.Message {
+	return new(fastReflection_MsgMintHaqqByApplicationResponse)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) Interface() protoreflect.ProtoMessage {
+	return (*MsgMintHaqqByApplicationResponse)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.HaqqAmount != "" {
+		value := protoreflect.ValueOfString(x.HaqqAmount)
+		if !f(fd_MsgMintHaqqByApplicationResponse_haqq_amount, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplicationResponse.haqq_amount":
+		return x.HaqqAmount != ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplicationResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplicationResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplicationResponse.haqq_amount":
+		x.HaqqAmount = ""
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplicationResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplicationResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplicationResponse.haqq_amount":
+		value := x.HaqqAmount
+		return protoreflect.ValueOfString(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplicationResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplicationResponse does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplicationResponse.haqq_amount":
+		x.HaqqAmount = value.Interface().(string)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplicationResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplicationResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplicationResponse.haqq_amount":
+		panic(fmt.Errorf("field haqq_amount of message haqq.ethiq.v1.MsgMintHaqqByApplicationResponse is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplicationResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplicationResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "haqq.ethiq.v1.MsgMintHaqqByApplicationResponse.haqq_amount":
+		return protoreflect.ValueOfString("")
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MsgMintHaqqByApplicationResponse"))
+		}
+		panic(fmt.Errorf("message haqq.ethiq.v1.MsgMintHaqqByApplicationResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in haqq.ethiq.v1.MsgMintHaqqByApplicationResponse", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_MsgMintHaqqByApplicationResponse) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*MsgMintHaqqByApplicationResponse)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		l = len(x.HaqqAmount)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*MsgMintHaqqByApplicationResponse)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.HaqqAmount) > 0 {
+			i -= len(x.HaqqAmount)
+			copy(dAtA[i:], x.HaqqAmount)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.HaqqAmount)))
+			i--
+			dAtA[i] = 0xa
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*MsgMintHaqqByApplicationResponse)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintHaqqByApplicationResponse: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgMintHaqqByApplicationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field HaqqAmount", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.HaqqAmount = string(dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -997,24 +1965,22 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MsgMintEthiq allows an account to mint aethiq coins in exchange for aISLM coins
-type MsgMintEthiq struct {
+// MsgMintHaqq allows an account to mint aHAQQ coins in exchange for aISLM coins
+type MsgMintHaqq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// from_address is the address that will send the aISLM coins
 	FromAddress string `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
-	// to_address is the address that will receive the minted aethiq coins
+	// to_address is the address that will receive the minted aHAQQ coins
 	ToAddress string `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
-	// ethiq_amount is the amount of aethiq coins to mint
-	EthiqAmount string `protobuf:"bytes,3,opt,name=ethiq_amount,json=ethiqAmount,proto3" json:"ethiq_amount,omitempty"`
-	// max_islm_amount is the maximum amount of aISLM coins the user is willing to spend
-	MaxIslmAmount string `protobuf:"bytes,4,opt,name=max_islm_amount,json=maxIslmAmount,proto3" json:"max_islm_amount,omitempty"`
+	// islm_amount is the amount of aISLM to burn in exchange for aHAQQ
+	IslmAmount string `protobuf:"bytes,3,opt,name=islm_amount,json=islmAmount,proto3" json:"islm_amount,omitempty"`
 }
 
-func (x *MsgMintEthiq) Reset() {
-	*x = MsgMintEthiq{}
+func (x *MsgMintHaqq) Reset() {
+	*x = MsgMintHaqq{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_haqq_ethiq_v1_tx_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1022,54 +1988,50 @@ func (x *MsgMintEthiq) Reset() {
 	}
 }
 
-func (x *MsgMintEthiq) String() string {
+func (x *MsgMintHaqq) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MsgMintEthiq) ProtoMessage() {}
+func (*MsgMintHaqq) ProtoMessage() {}
 
-// Deprecated: Use MsgMintEthiq.ProtoReflect.Descriptor instead.
-func (*MsgMintEthiq) Descriptor() ([]byte, []int) {
+// Deprecated: Use MsgMintHaqq.ProtoReflect.Descriptor instead.
+func (*MsgMintHaqq) Descriptor() ([]byte, []int) {
 	return file_haqq_ethiq_v1_tx_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *MsgMintEthiq) GetFromAddress() string {
+func (x *MsgMintHaqq) GetFromAddress() string {
 	if x != nil {
 		return x.FromAddress
 	}
 	return ""
 }
 
-func (x *MsgMintEthiq) GetToAddress() string {
+func (x *MsgMintHaqq) GetToAddress() string {
 	if x != nil {
 		return x.ToAddress
 	}
 	return ""
 }
 
-func (x *MsgMintEthiq) GetEthiqAmount() string {
+func (x *MsgMintHaqq) GetIslmAmount() string {
 	if x != nil {
-		return x.EthiqAmount
+		return x.IslmAmount
 	}
 	return ""
 }
 
-func (x *MsgMintEthiq) GetMaxIslmAmount() string {
-	if x != nil {
-		return x.MaxIslmAmount
-	}
-	return ""
-}
-
-// MsgMintEthiqResponse defines the Msg/MintEthiq response type.
-type MsgMintEthiqResponse struct {
+// MsgMintHaqqResponse defines the Msg/MintHaqq response type.
+type MsgMintHaqqResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+
+	// haqq_amount is the amount of minted aHAQQ coins
+	HaqqAmount string `protobuf:"bytes,1,opt,name=haqq_amount,json=haqqAmount,proto3" json:"haqq_amount,omitempty"`
 }
 
-func (x *MsgMintEthiqResponse) Reset() {
-	*x = MsgMintEthiqResponse{}
+func (x *MsgMintHaqqResponse) Reset() {
+	*x = MsgMintHaqqResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_haqq_ethiq_v1_tx_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1077,15 +2039,115 @@ func (x *MsgMintEthiqResponse) Reset() {
 	}
 }
 
-func (x *MsgMintEthiqResponse) String() string {
+func (x *MsgMintHaqqResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MsgMintEthiqResponse) ProtoMessage() {}
+func (*MsgMintHaqqResponse) ProtoMessage() {}
 
-// Deprecated: Use MsgMintEthiqResponse.ProtoReflect.Descriptor instead.
-func (*MsgMintEthiqResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use MsgMintHaqqResponse.ProtoReflect.Descriptor instead.
+func (*MsgMintHaqqResponse) Descriptor() ([]byte, []int) {
 	return file_haqq_ethiq_v1_tx_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *MsgMintHaqqResponse) GetHaqqAmount() string {
+	if x != nil {
+		return x.HaqqAmount
+	}
+	return ""
+}
+
+// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+// trough whitelisted application submitted earlier via smart-contract
+type MsgMintHaqqByApplication struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// from_address is the address that will send the aISLM coins
+	FromAddress string `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
+	// to_address is the address that will receive the minted aHAQQ coins
+	ToAddress string `protobuf:"bytes,2,opt,name=to_address,json=toAddress,proto3" json:"to_address,omitempty"`
+	// application_id is the id of application submitted earlier
+	ApplicationId string `protobuf:"bytes,3,opt,name=application_id,json=applicationId,proto3" json:"application_id,omitempty"`
+}
+
+func (x *MsgMintHaqqByApplication) Reset() {
+	*x = MsgMintHaqqByApplication{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_haqq_ethiq_v1_tx_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgMintHaqqByApplication) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgMintHaqqByApplication) ProtoMessage() {}
+
+// Deprecated: Use MsgMintHaqqByApplication.ProtoReflect.Descriptor instead.
+func (*MsgMintHaqqByApplication) Descriptor() ([]byte, []int) {
+	return file_haqq_ethiq_v1_tx_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *MsgMintHaqqByApplication) GetFromAddress() string {
+	if x != nil {
+		return x.FromAddress
+	}
+	return ""
+}
+
+func (x *MsgMintHaqqByApplication) GetToAddress() string {
+	if x != nil {
+		return x.ToAddress
+	}
+	return ""
+}
+
+func (x *MsgMintHaqqByApplication) GetApplicationId() string {
+	if x != nil {
+		return x.ApplicationId
+	}
+	return ""
+}
+
+// MsgMintHaqqResponse defines the Msg/MintHaqqByApplication response type.
+type MsgMintHaqqByApplicationResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// haqq_amount is the amount of minted aHAQQ coins
+	HaqqAmount string `protobuf:"bytes,1,opt,name=haqq_amount,json=haqqAmount,proto3" json:"haqq_amount,omitempty"`
+}
+
+func (x *MsgMintHaqqByApplicationResponse) Reset() {
+	*x = MsgMintHaqqByApplicationResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_haqq_ethiq_v1_tx_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgMintHaqqByApplicationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgMintHaqqByApplicationResponse) ProtoMessage() {}
+
+// Deprecated: Use MsgMintHaqqByApplicationResponse.ProtoReflect.Descriptor instead.
+func (*MsgMintHaqqByApplicationResponse) Descriptor() ([]byte, []int) {
+	return file_haqq_ethiq_v1_tx_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *MsgMintHaqqByApplicationResponse) GetHaqqAmount() string {
+	if x != nil {
+		return x.HaqqAmount
+	}
+	return ""
 }
 
 var File_haqq_ethiq_v1_tx_proto protoreflect.FileDescriptor
@@ -1099,47 +2161,79 @@ var file_haqq_ethiq_v1_tx_proto_rawDesc = []byte{
 	0x6f, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x17, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
 	0x2f, 0x6d, 0x73, 0x67, 0x2f, 0x76, 0x31, 0x2f, 0x6d, 0x73, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x1a, 0x11, 0x61, 0x6d, 0x69, 0x6e, 0x6f, 0x2f, 0x61, 0x6d, 0x69, 0x6e, 0x6f, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x22, 0xe0, 0x02, 0x0a, 0x0c, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74,
-	0x45, 0x74, 0x68, 0x69, 0x71, 0x12, 0x3b, 0x0a, 0x0c, 0x66, 0x72, 0x6f, 0x6d, 0x5f, 0x61, 0x64,
-	0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d,
-	0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53,
-	0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x0b, 0x66, 0x72, 0x6f, 0x6d, 0x41, 0x64, 0x64, 0x72, 0x65,
-	0x73, 0x73, 0x12, 0x37, 0x0a, 0x0a, 0x74, 0x6f, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d,
+	0x72, 0x6f, 0x74, 0x6f, 0x22, 0x87, 0x02, 0x0a, 0x0b, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74,
+	0x48, 0x61, 0x71, 0x71, 0x12, 0x3b, 0x0a, 0x0c, 0x66, 0x72, 0x6f, 0x6d, 0x5f, 0x61, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14,
+	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74,
+	0x72, 0x69, 0x6e, 0x67, 0x52, 0x0b, 0x66, 0x72, 0x6f, 0x6d, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73,
+	0x73, 0x12, 0x37, 0x0a, 0x0a, 0x74, 0x6f, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52,
+	0x09, 0x74, 0x6f, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x4c, 0x0a, 0x0b, 0x69, 0x73,
+	0x6c, 0x6d, 0x5f, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42,
+	0x2b, 0xc8, 0xde, 0x1f, 0x00, 0xda, 0xde, 0x1f, 0x15, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73,
+	0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x6d, 0x61, 0x74, 0x68, 0x2e, 0x49, 0x6e, 0x74, 0xd2, 0xb4,
+	0x2d, 0x0a, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x49, 0x6e, 0x74, 0x52, 0x0a, 0x69, 0x73,
+	0x6c, 0x6d, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x3a, 0x34, 0x88, 0xa0, 0x1f, 0x00, 0xe8, 0xa0,
+	0x1f, 0x00, 0x82, 0xe7, 0xb0, 0x2a, 0x0c, 0x66, 0x72, 0x6f, 0x6d, 0x5f, 0x61, 0x64, 0x64, 0x72,
+	0x65, 0x73, 0x73, 0x8a, 0xe7, 0xb0, 0x2a, 0x16, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68,
+	0x69, 0x71, 0x2f, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x22, 0x63,
+	0x0a, 0x13, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4c, 0x0a, 0x0b, 0x68, 0x61, 0x71, 0x71, 0x5f, 0x61, 0x6d,
+	0x6f, 0x75, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x2b, 0xc8, 0xde, 0x1f, 0x00,
+	0xda, 0xde, 0x1f, 0x15, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f,
+	0x2f, 0x6d, 0x61, 0x74, 0x68, 0x2e, 0x49, 0x6e, 0x74, 0xd2, 0xb4, 0x2d, 0x0a, 0x63, 0x6f, 0x73,
+	0x6d, 0x6f, 0x73, 0x2e, 0x49, 0x6e, 0x74, 0x52, 0x0a, 0x68, 0x61, 0x71, 0x71, 0x41, 0x6d, 0x6f,
+	0x75, 0x6e, 0x74, 0x22, 0xa7, 0x02, 0x0a, 0x18, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x48,
+	0x61, 0x71, 0x71, 0x42, 0x79, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x12, 0x3b, 0x0a, 0x0c, 0x66, 0x72, 0x6f, 0x6d, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d,
 	0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67,
-	0x52, 0x09, 0x74, 0x6f, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x4e, 0x0a, 0x0c, 0x65,
-	0x74, 0x68, 0x69, 0x71, 0x5f, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28,
-	0x09, 0x42, 0x2b, 0xc8, 0xde, 0x1f, 0x00, 0xda, 0xde, 0x1f, 0x15, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
-	0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x6d, 0x61, 0x74, 0x68, 0x2e, 0x49, 0x6e, 0x74,
-	0xd2, 0xb4, 0x2d, 0x0a, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x49, 0x6e, 0x74, 0x52, 0x0b,
-	0x65, 0x74, 0x68, 0x69, 0x71, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x53, 0x0a, 0x0f, 0x6d,
-	0x61, 0x78, 0x5f, 0x69, 0x73, 0x6c, 0x6d, 0x5f, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x04,
-	0x20, 0x01, 0x28, 0x09, 0x42, 0x2b, 0xc8, 0xde, 0x1f, 0x00, 0xda, 0xde, 0x1f, 0x15, 0x63, 0x6f,
-	0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x6d, 0x61, 0x74, 0x68, 0x2e,
-	0x49, 0x6e, 0x74, 0xd2, 0xb4, 0x2d, 0x0a, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x49, 0x6e,
-	0x74, 0x52, 0x0d, 0x6d, 0x61, 0x78, 0x49, 0x73, 0x6c, 0x6d, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74,
-	0x3a, 0x35, 0x88, 0xa0, 0x1f, 0x00, 0xe8, 0xa0, 0x1f, 0x00, 0x82, 0xe7, 0xb0, 0x2a, 0x0c, 0x66,
-	0x72, 0x6f, 0x6d, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x8a, 0xe7, 0xb0, 0x2a, 0x17,
-	0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2f, 0x4d, 0x73, 0x67, 0x4d, 0x69,
-	0x6e, 0x74, 0x45, 0x74, 0x68, 0x69, 0x71, 0x22, 0x16, 0x0a, 0x14, 0x4d, 0x73, 0x67, 0x4d, 0x69,
-	0x6e, 0x74, 0x45, 0x74, 0x68, 0x69, 0x71, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32,
-	0x5b, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x4d, 0x0a, 0x09, 0x4d, 0x69, 0x6e, 0x74, 0x45, 0x74,
-	0x68, 0x69, 0x71, 0x12, 0x1b, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71,
-	0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x45, 0x74, 0x68, 0x69, 0x71,
-	0x1a, 0x23, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2e, 0x76, 0x31,
-	0x2e, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x45, 0x74, 0x68, 0x69, 0x71, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80, 0xe7, 0xb0, 0x2a, 0x01, 0x42, 0x9a, 0x01, 0x0a,
-	0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2e,
-	0x76, 0x31, 0x42, 0x07, 0x54, 0x78, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x26, 0x63,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f,
-	0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2f, 0x76, 0x31, 0x3b, 0x65, 0x74,
-	0x68, 0x69, 0x71, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x48, 0x45, 0x58, 0xaa, 0x02, 0x0d, 0x48, 0x61,
-	0x71, 0x71, 0x2e, 0x45, 0x74, 0x68, 0x69, 0x71, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0d, 0x48, 0x61,
-	0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x19, 0x48, 0x61,
-	0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d,
-	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48, 0x61, 0x71, 0x71, 0x3a, 0x3a,
-	0x45, 0x74, 0x68, 0x69, 0x71, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x52, 0x0b, 0x66, 0x72, 0x6f, 0x6d, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x37, 0x0a,
+	0x0a, 0x74, 0x6f, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x09, 0x74, 0x6f, 0x41,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x52, 0x0a, 0x0e, 0x61, 0x70, 0x70, 0x6c, 0x69, 0x63,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x2b,
+	0xc8, 0xde, 0x1f, 0x00, 0xda, 0xde, 0x1f, 0x15, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64,
+	0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x6d, 0x61, 0x74, 0x68, 0x2e, 0x49, 0x6e, 0x74, 0xd2, 0xb4, 0x2d,
+	0x0a, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x49, 0x6e, 0x74, 0x52, 0x0d, 0x61, 0x70, 0x70,
+	0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x3a, 0x41, 0x88, 0xa0, 0x1f, 0x00,
+	0xe8, 0xa0, 0x1f, 0x00, 0x82, 0xe7, 0xb0, 0x2a, 0x0c, 0x66, 0x72, 0x6f, 0x6d, 0x5f, 0x61, 0x64,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x8a, 0xe7, 0xb0, 0x2a, 0x23, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x65,
+	0x74, 0x68, 0x69, 0x71, 0x2f, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71,
+	0x42, 0x79, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x70, 0x0a,
+	0x20, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x42, 0x79, 0x41, 0x70,
+	0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x4c, 0x0a, 0x0b, 0x68, 0x61, 0x71, 0x71, 0x5f, 0x61, 0x6d, 0x6f, 0x75, 0x6e, 0x74,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x2b, 0xc8, 0xde, 0x1f, 0x00, 0xda, 0xde, 0x1f, 0x15,
+	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x6d, 0x61, 0x74,
+	0x68, 0x2e, 0x49, 0x6e, 0x74, 0xd2, 0xb4, 0x2d, 0x0a, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
+	0x49, 0x6e, 0x74, 0x52, 0x0a, 0x68, 0x61, 0x71, 0x71, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x32,
+	0xcb, 0x01, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x4a, 0x0a, 0x08, 0x4d, 0x69, 0x6e, 0x74, 0x48,
+	0x61, 0x71, 0x71, 0x12, 0x1a, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71,
+	0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x1a,
+	0x22, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2e, 0x76, 0x31, 0x2e,
+	0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x71, 0x0a, 0x15, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x42,
+	0x79, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x27, 0x2e, 0x68,
+	0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67,
+	0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x42, 0x79, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x2f, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68,
+	0x69, 0x71, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x73, 0x67, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71,
+	0x71, 0x42, 0x79, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80, 0xe7, 0xb0, 0x2a, 0x01, 0x42, 0x9a, 0x01,
+	0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71,
+	0x2e, 0x76, 0x31, 0x42, 0x07, 0x54, 0x78, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x26,
+	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69,
+	0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2f, 0x76, 0x31, 0x3b, 0x65,
+	0x74, 0x68, 0x69, 0x71, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x48, 0x45, 0x58, 0xaa, 0x02, 0x0d, 0x48,
+	0x61, 0x71, 0x71, 0x2e, 0x45, 0x74, 0x68, 0x69, 0x71, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0d, 0x48,
+	0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x19, 0x48,
+	0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42,
+	0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48, 0x61, 0x71, 0x71, 0x3a,
+	0x3a, 0x45, 0x74, 0x68, 0x69, 0x71, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -1154,16 +2248,20 @@ func file_haqq_ethiq_v1_tx_proto_rawDescGZIP() []byte {
 	return file_haqq_ethiq_v1_tx_proto_rawDescData
 }
 
-var file_haqq_ethiq_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_haqq_ethiq_v1_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_haqq_ethiq_v1_tx_proto_goTypes = []interface{}{
-	(*MsgMintEthiq)(nil),         // 0: haqq.ethiq.v1.MsgMintEthiq
-	(*MsgMintEthiqResponse)(nil), // 1: haqq.ethiq.v1.MsgMintEthiqResponse
+	(*MsgMintHaqq)(nil),                      // 0: haqq.ethiq.v1.MsgMintHaqq
+	(*MsgMintHaqqResponse)(nil),              // 1: haqq.ethiq.v1.MsgMintHaqqResponse
+	(*MsgMintHaqqByApplication)(nil),         // 2: haqq.ethiq.v1.MsgMintHaqqByApplication
+	(*MsgMintHaqqByApplicationResponse)(nil), // 3: haqq.ethiq.v1.MsgMintHaqqByApplicationResponse
 }
 var file_haqq_ethiq_v1_tx_proto_depIdxs = []int32{
-	0, // 0: haqq.ethiq.v1.Msg.MintEthiq:input_type -> haqq.ethiq.v1.MsgMintEthiq
-	1, // 1: haqq.ethiq.v1.Msg.MintEthiq:output_type -> haqq.ethiq.v1.MsgMintEthiqResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	0, // 0: haqq.ethiq.v1.Msg.MintHaqq:input_type -> haqq.ethiq.v1.MsgMintHaqq
+	2, // 1: haqq.ethiq.v1.Msg.MintHaqqByApplication:input_type -> haqq.ethiq.v1.MsgMintHaqqByApplication
+	1, // 2: haqq.ethiq.v1.Msg.MintHaqq:output_type -> haqq.ethiq.v1.MsgMintHaqqResponse
+	3, // 3: haqq.ethiq.v1.Msg.MintHaqqByApplication:output_type -> haqq.ethiq.v1.MsgMintHaqqByApplicationResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -1176,7 +2274,7 @@ func file_haqq_ethiq_v1_tx_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_haqq_ethiq_v1_tx_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgMintEthiq); i {
+			switch v := v.(*MsgMintHaqq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1188,7 +2286,31 @@ func file_haqq_ethiq_v1_tx_proto_init() {
 			}
 		}
 		file_haqq_ethiq_v1_tx_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgMintEthiqResponse); i {
+			switch v := v.(*MsgMintHaqqResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_haqq_ethiq_v1_tx_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MsgMintHaqqByApplication); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_haqq_ethiq_v1_tx_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MsgMintHaqqByApplicationResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1206,7 +2328,7 @@ func file_haqq_ethiq_v1_tx_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_haqq_ethiq_v1_tx_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

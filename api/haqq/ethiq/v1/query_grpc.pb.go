@@ -30,7 +30,7 @@ const (
 type QueryClient interface {
 	// TotalBurned returns the total amount of burned coins
 	TotalBurned(ctx context.Context, in *QueryTotalBurnedRequest, opts ...grpc.CallOption) (*QueryTotalBurnedResponse, error)
-	// Calculate returns the estimated amount of aISLM coins required to mint ethiqAmount of aethiq coins
+	// Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount
 	Calculate(ctx context.Context, in *QueryCalculateRequest, opts ...grpc.CallOption) (*QueryCalculateResponse, error)
 	// Params queries the parameters of x/ethiq module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
@@ -77,7 +77,7 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 type QueryServer interface {
 	// TotalBurned returns the total amount of burned coins
 	TotalBurned(context.Context, *QueryTotalBurnedRequest) (*QueryTotalBurnedResponse, error)
-	// Calculate returns the estimated amount of aISLM coins required to mint ethiqAmount of aethiq coins
+	// Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount
 	Calculate(context.Context, *QueryCalculateRequest) (*QueryCalculateResponse, error)
 	// Params queries the parameters of x/ethiq module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)

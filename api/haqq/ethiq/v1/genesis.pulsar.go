@@ -15,10 +15,57 @@ import (
 	sync "sync"
 )
 
+var _ protoreflect.List = (*_GenesisState_3_list)(nil)
+
+type _GenesisState_3_list struct {
+	list *[]string
+}
+
+func (x *_GenesisState_3_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_GenesisState_3_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfString((*x.list)[i])
+}
+
+func (x *_GenesisState_3_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.String()
+	concreteValue := valueUnwrapped
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_GenesisState_3_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.String()
+	concreteValue := valueUnwrapped
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_GenesisState_3_list) AppendMutable() protoreflect.Value {
+	panic(fmt.Errorf("AppendMutable can not be called on message GenesisState at list field ExecutedApplications as it is not of Message kind"))
+}
+
+func (x *_GenesisState_3_list) Truncate(n int) {
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_GenesisState_3_list) NewElement() protoreflect.Value {
+	v := ""
+	return protoreflect.ValueOfString(v)
+}
+
+func (x *_GenesisState_3_list) IsValid() bool {
+	return x.list != nil
+}
+
 var (
-	md_GenesisState                     protoreflect.MessageDescriptor
-	fd_GenesisState_params              protoreflect.FieldDescriptor
-	fd_GenesisState_total_burned_amount protoreflect.FieldDescriptor
+	md_GenesisState                       protoreflect.MessageDescriptor
+	fd_GenesisState_params                protoreflect.FieldDescriptor
+	fd_GenesisState_total_burned_amount   protoreflect.FieldDescriptor
+	fd_GenesisState_executed_applications protoreflect.FieldDescriptor
 )
 
 func init() {
@@ -26,6 +73,7 @@ func init() {
 	md_GenesisState = File_haqq_ethiq_v1_genesis_proto.Messages().ByName("GenesisState")
 	fd_GenesisState_params = md_GenesisState.Fields().ByName("params")
 	fd_GenesisState_total_burned_amount = md_GenesisState.Fields().ByName("total_burned_amount")
+	fd_GenesisState_executed_applications = md_GenesisState.Fields().ByName("executed_applications")
 }
 
 var _ protoreflect.Message = (*fastReflection_GenesisState)(nil)
@@ -105,6 +153,12 @@ func (x *fastReflection_GenesisState) Range(f func(protoreflect.FieldDescriptor,
 			return
 		}
 	}
+	if len(x.ExecutedApplications) != 0 {
+		value := protoreflect.ValueOfList(&_GenesisState_3_list{list: &x.ExecutedApplications})
+		if !f(fd_GenesisState_executed_applications, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -124,6 +178,8 @@ func (x *fastReflection_GenesisState) Has(fd protoreflect.FieldDescriptor) bool 
 		return x.Params != nil
 	case "haqq.ethiq.v1.GenesisState.total_burned_amount":
 		return x.TotalBurnedAmount != nil
+	case "haqq.ethiq.v1.GenesisState.executed_applications":
+		return len(x.ExecutedApplications) != 0
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.GenesisState"))
@@ -144,6 +200,8 @@ func (x *fastReflection_GenesisState) Clear(fd protoreflect.FieldDescriptor) {
 		x.Params = nil
 	case "haqq.ethiq.v1.GenesisState.total_burned_amount":
 		x.TotalBurnedAmount = nil
+	case "haqq.ethiq.v1.GenesisState.executed_applications":
+		x.ExecutedApplications = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.GenesisState"))
@@ -166,6 +224,12 @@ func (x *fastReflection_GenesisState) Get(descriptor protoreflect.FieldDescripto
 	case "haqq.ethiq.v1.GenesisState.total_burned_amount":
 		value := x.TotalBurnedAmount
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	case "haqq.ethiq.v1.GenesisState.executed_applications":
+		if len(x.ExecutedApplications) == 0 {
+			return protoreflect.ValueOfList(&_GenesisState_3_list{})
+		}
+		listValue := &_GenesisState_3_list{list: &x.ExecutedApplications}
+		return protoreflect.ValueOfList(listValue)
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.GenesisState"))
@@ -190,6 +254,10 @@ func (x *fastReflection_GenesisState) Set(fd protoreflect.FieldDescriptor, value
 		x.Params = value.Message().Interface().(*Params)
 	case "haqq.ethiq.v1.GenesisState.total_burned_amount":
 		x.TotalBurnedAmount = value.Message().Interface().(*v1beta1.Coin)
+	case "haqq.ethiq.v1.GenesisState.executed_applications":
+		lv := value.List()
+		clv := lv.(*_GenesisState_3_list)
+		x.ExecutedApplications = *clv.list
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.GenesisState"))
@@ -220,6 +288,12 @@ func (x *fastReflection_GenesisState) Mutable(fd protoreflect.FieldDescriptor) p
 			x.TotalBurnedAmount = new(v1beta1.Coin)
 		}
 		return protoreflect.ValueOfMessage(x.TotalBurnedAmount.ProtoReflect())
+	case "haqq.ethiq.v1.GenesisState.executed_applications":
+		if x.ExecutedApplications == nil {
+			x.ExecutedApplications = []string{}
+		}
+		value := &_GenesisState_3_list{list: &x.ExecutedApplications}
+		return protoreflect.ValueOfList(value)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.GenesisState"))
@@ -239,6 +313,9 @@ func (x *fastReflection_GenesisState) NewField(fd protoreflect.FieldDescriptor) 
 	case "haqq.ethiq.v1.GenesisState.total_burned_amount":
 		m := new(v1beta1.Coin)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	case "haqq.ethiq.v1.GenesisState.executed_applications":
+		list := []string{}
+		return protoreflect.ValueOfList(&_GenesisState_3_list{list: &list})
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.GenesisState"))
@@ -316,6 +393,12 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 			l = options.Size(x.TotalBurnedAmount)
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
+		if len(x.ExecutedApplications) > 0 {
+			for _, s := range x.ExecutedApplications {
+				l = len(s)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -344,6 +427,15 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.ExecutedApplications) > 0 {
+			for iNdEx := len(x.ExecutedApplications) - 1; iNdEx >= 0; iNdEx-- {
+				i -= len(x.ExecutedApplications[iNdEx])
+				copy(dAtA[i:], x.ExecutedApplications[iNdEx])
+				i = runtime.EncodeVarint(dAtA, i, uint64(len(x.ExecutedApplications[iNdEx])))
+				i--
+				dAtA[i] = 0x1a
+			}
 		}
 		if x.TotalBurnedAmount != nil {
 			encoded, err := options.Marshal(x.TotalBurnedAmount)
@@ -494,6 +586,38 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
 				}
 				iNdEx = postIndex
+			case 3:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ExecutedApplications", wireType)
+				}
+				var stringLen uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					stringLen |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				intStringLen := int(stringLen)
+				if intStringLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + intStringLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.ExecutedApplications = append(x.ExecutedApplications, string(dAtA[iNdEx:postIndex]))
+				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -552,6 +676,8 @@ type GenesisState struct {
 	Params *Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
 	// total_burned_amount defines the total amount of coins burned
 	TotalBurnedAmount *v1beta1.Coin `protobuf:"bytes,2,opt,name=total_burned_amount,json=totalBurnedAmount,proto3" json:"total_burned_amount,omitempty"`
+	// executed_applications defines the list of executed applications
+	ExecutedApplications []string `protobuf:"bytes,3,rep,name=executed_applications,json=executedApplications,proto3" json:"executed_applications,omitempty"`
 }
 
 func (x *GenesisState) Reset() {
@@ -588,6 +714,13 @@ func (x *GenesisState) GetTotalBurnedAmount() *v1beta1.Coin {
 	return nil
 }
 
+func (x *GenesisState) GetExecutedApplications() []string {
+	if x != nil {
+		return x.ExecutedApplications
+	}
+	return nil
+}
+
 var File_haqq_ethiq_v1_genesis_proto protoreflect.FileDescriptor
 
 var file_haqq_ethiq_v1_genesis_proto_rawDesc = []byte{
@@ -600,7 +733,7 @@ var file_haqq_ethiq_v1_genesis_proto_rawDesc = []byte{
 	0x74, 0x6f, 0x1a, 0x11, 0x61, 0x6d, 0x69, 0x6e, 0x6f, 0x2f, 0x61, 0x6d, 0x69, 0x6e, 0x6f, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x19, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69,
 	0x71, 0x2f, 0x76, 0x31, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x22, 0x9e, 0x01, 0x0a, 0x0c, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69, 0x73, 0x53, 0x74, 0x61, 0x74,
+	0x22, 0xda, 0x01, 0x0a, 0x0c, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69, 0x73, 0x53, 0x74, 0x61, 0x74,
 	0x65, 0x12, 0x38, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x0b, 0x32, 0x15, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2e, 0x76,
 	0x31, 0x2e, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7,
@@ -610,17 +743,21 @@ var file_haqq_ethiq_v1_genesis_proto_rawDesc = []byte{
 	0x73, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x43,
 	0x6f, 0x69, 0x6e, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x11,
 	0x74, 0x6f, 0x74, 0x61, 0x6c, 0x42, 0x75, 0x72, 0x6e, 0x65, 0x64, 0x41, 0x6d, 0x6f, 0x75, 0x6e,
-	0x74, 0x42, 0x9f, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65,
-	0x74, 0x68, 0x69, 0x71, 0x2e, 0x76, 0x31, 0x42, 0x0c, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69, 0x73,
-	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x26, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73,
-	0x64, 0x6b, 0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x65,
-	0x74, 0x68, 0x69, 0x71, 0x2f, 0x76, 0x31, 0x3b, 0x65, 0x74, 0x68, 0x69, 0x71, 0x76, 0x31, 0xa2,
-	0x02, 0x03, 0x48, 0x45, 0x58, 0xaa, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x2e, 0x45, 0x74, 0x68,
-	0x69, 0x71, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68,
-	0x69, 0x71, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x19, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68,
-	0x69, 0x71, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
-	0x61, 0xea, 0x02, 0x0f, 0x48, 0x61, 0x71, 0x71, 0x3a, 0x3a, 0x45, 0x74, 0x68, 0x69, 0x71, 0x3a,
-	0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x12, 0x3a, 0x0a, 0x15, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x64, 0x5f, 0x61, 0x70,
+	0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09,
+	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x14, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65,
+	0x64, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x9f, 0x01,
+	0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71,
+	0x2e, 0x76, 0x31, 0x42, 0x0c, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69, 0x73, 0x50, 0x72, 0x6f, 0x74,
+	0x6f, 0x50, 0x01, 0x5a, 0x26, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69,
+	0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71,
+	0x2f, 0x76, 0x31, 0x3b, 0x65, 0x74, 0x68, 0x69, 0x71, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x48, 0x45,
+	0x58, 0xaa, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x2e, 0x45, 0x74, 0x68, 0x69, 0x71, 0x2e, 0x56,
+	0x31, 0xca, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c, 0x56,
+	0x31, 0xe2, 0x02, 0x19, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c, 0x56,
+	0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f,
+	0x48, 0x61, 0x71, 0x71, 0x3a, 0x3a, 0x45, 0x74, 0x68, 0x69, 0x71, 0x3a, 0x3a, 0x56, 0x31, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
