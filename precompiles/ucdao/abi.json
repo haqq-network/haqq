@@ -1,209 +1,218 @@
-[
-  {
-    "name": "approve",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      {"name": "spender", "type": "address"},
-      {"name": "amount", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ],
-    "outputs": [{"name": "success", "type": "bool"}]
-  },
-  {
-    "name": "revoke",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [{"name": "spender", "type": "address"}],
-    "outputs": [{"name": "success", "type": "bool"}]
-  },
-  {
-    "name": "increaseAllowance",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      {"name": "spender", "type": "address"},
-      {"name": "amount", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ],
-    "outputs": [{"name": "success", "type": "bool"}]
-  },
-  {
-    "name": "decreaseAllowance",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      {"name": "spender", "type": "address"},
-      {"name": "amount", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ],
-    "outputs": [{"name": "success", "type": "bool"}]
-  },
-  {
-    "name": "allowance",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [
-      {"name": "owner", "type": "address"},
-      {"name": "spender", "type": "address"}
-    ],
-    "outputs": [
-      {"name": "remaining", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ]
-  },
-  {
-    "name": "fund",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      {"name": "amount", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ],
-    "outputs": [{"name": "success", "type": "bool"}]
-  },
-  {
-    "name": "transferOwnership",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      {"name": "owner", "type": "address"},
-      {"name": "newOwner", "type": "address"}
-    ],
-    "outputs": [
-      {"name": "transferred", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ]
-  },
-  {
-    "name": "transferOwnershipWithRatio",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      {"name": "owner", "type": "address"},
-      {"name": "newOwner", "type": "address"},
-      {"name": "ratio", "type": "uint256"}
-    ],
-    "outputs": [
-      {"name": "transferred", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ]
-  },
-  {
-    "name": "transferOwnershipWithAmount",
-    "type": "function",
-    "stateMutability": "nonpayable",
-    "inputs": [
-      {"name": "owner", "type": "address"},
-      {"name": "newOwner", "type": "address"},
-      {"name": "amount", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ],
-    "outputs": [
-      {"name": "transferred", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ]
-  },
-  {
-    "name": "balance",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [
-      {"name": "account", "type": "address"},
-      {"name": "denom", "type": "string"}
-    ],
-    "outputs": [{"name": "amount", "type": "uint256"}]
-  },
-  {
-    "name": "allBalances",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [{"name": "account", "type": "address"}],
-    "outputs": [
-      {"name": "balances", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ]
-  },
-  {
-    "name": "totalBalance",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [],
-    "outputs": [
-      {"name": "total", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ]}
-    ]
-  },
-  {
-    "name": "enabled",
-    "type": "function",
-    "stateMutability": "view",
-    "inputs": [],
-    "outputs": [{"name": "isEnabled", "type": "bool"}]
-  },
-  {
-    "name": "Approval",
-    "type": "event",
-    "inputs": [
-      {"name": "owner", "type": "address", "indexed": true},
-      {"name": "spender", "type": "address", "indexed": true},
-      {"name": "amount", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ], "indexed": false}
-    ]
-  },
-  {
-    "name": "Revocation",
-    "type": "event",
-    "inputs": [
-      {"name": "owner", "type": "address", "indexed": true},
-      {"name": "spender", "type": "address", "indexed": true}
-    ]
-  },
-  {
-    "name": "Fund",
-    "type": "event",
-    "inputs": [
-      {"name": "depositor", "type": "address", "indexed": true},
-      {"name": "amount", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ], "indexed": false}
-    ]
-  },
-  {
-    "name": "TransferOwnership",
-    "type": "event",
-    "inputs": [
-      {"name": "from", "type": "address", "indexed": true},
-      {"name": "to", "type": "address", "indexed": true},
-      {"name": "amount", "type": "tuple[]", "components": [
-        {"name": "denom", "type": "string"},
-        {"name": "amount", "type": "uint256"}
-      ], "indexed": false}
-    ]
-  }
-]
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IUCDAO",
+  "sourceName": "solidity/precompiles/ucdao/IUCDAO.sol",
+  "abi": [
+    {
+      "name": "approve",
+      "type": "function",
+      "stateMutability": "nonpayable",
+      "inputs": [
+        {"name": "spender", "type": "address"},
+        {"name": "amount", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ],
+      "outputs": [{"name": "success", "type": "bool"}]
+    },
+    {
+      "name": "revoke",
+      "type": "function",
+      "stateMutability": "nonpayable",
+      "inputs": [{"name": "spender", "type": "address"}],
+      "outputs": [{"name": "success", "type": "bool"}]
+    },
+    {
+      "name": "increaseAllowance",
+      "type": "function",
+      "stateMutability": "nonpayable",
+      "inputs": [
+        {"name": "spender", "type": "address"},
+        {"name": "amount", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ],
+      "outputs": [{"name": "success", "type": "bool"}]
+    },
+    {
+      "name": "decreaseAllowance",
+      "type": "function",
+      "stateMutability": "nonpayable",
+      "inputs": [
+        {"name": "spender", "type": "address"},
+        {"name": "amount", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ],
+      "outputs": [{"name": "success", "type": "bool"}]
+    },
+    {
+      "name": "allowance",
+      "type": "function",
+      "stateMutability": "view",
+      "inputs": [
+        {"name": "owner", "type": "address"},
+        {"name": "spender", "type": "address"}
+      ],
+      "outputs": [
+        {"name": "remaining", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ]
+    },
+    {
+      "name": "fund",
+      "type": "function",
+      "stateMutability": "nonpayable",
+      "inputs": [
+        {"name": "amount", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ],
+      "outputs": [{"name": "success", "type": "bool"}]
+    },
+    {
+      "name": "transferOwnership",
+      "type": "function",
+      "stateMutability": "nonpayable",
+      "inputs": [
+        {"name": "owner", "type": "address"},
+        {"name": "newOwner", "type": "address"}
+      ],
+      "outputs": [
+        {"name": "transferred", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ]
+    },
+    {
+      "name": "transferOwnershipWithRatio",
+      "type": "function",
+      "stateMutability": "nonpayable",
+      "inputs": [
+        {"name": "owner", "type": "address"},
+        {"name": "newOwner", "type": "address"},
+        {"name": "ratio", "type": "uint256"}
+      ],
+      "outputs": [
+        {"name": "transferred", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ]
+    },
+    {
+      "name": "transferOwnershipWithAmount",
+      "type": "function",
+      "stateMutability": "nonpayable",
+      "inputs": [
+        {"name": "owner", "type": "address"},
+        {"name": "newOwner", "type": "address"},
+        {"name": "amount", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ],
+      "outputs": [
+        {"name": "transferred", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ]
+    },
+    {
+      "name": "balance",
+      "type": "function",
+      "stateMutability": "view",
+      "inputs": [
+        {"name": "account", "type": "address"},
+        {"name": "denom", "type": "string"}
+      ],
+      "outputs": [{"name": "amount", "type": "uint256"}]
+    },
+    {
+      "name": "allBalances",
+      "type": "function",
+      "stateMutability": "view",
+      "inputs": [{"name": "account", "type": "address"}],
+      "outputs": [
+        {"name": "balances", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ]
+    },
+    {
+      "name": "totalBalance",
+      "type": "function",
+      "stateMutability": "view",
+      "inputs": [],
+      "outputs": [
+        {"name": "total", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ]}
+      ]
+    },
+    {
+      "name": "enabled",
+      "type": "function",
+      "stateMutability": "view",
+      "inputs": [],
+      "outputs": [{"name": "isEnabled", "type": "bool"}]
+    },
+    {
+      "name": "Approval",
+      "type": "event",
+      "inputs": [
+        {"name": "owner", "type": "address", "indexed": true},
+        {"name": "spender", "type": "address", "indexed": true},
+        {"name": "amount", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ], "indexed": false}
+      ]
+    },
+    {
+      "name": "Revocation",
+      "type": "event",
+      "inputs": [
+        {"name": "owner", "type": "address", "indexed": true},
+        {"name": "spender", "type": "address", "indexed": true}
+      ]
+    },
+    {
+      "name": "Fund",
+      "type": "event",
+      "inputs": [
+        {"name": "depositor", "type": "address", "indexed": true},
+        {"name": "amount", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ], "indexed": false}
+      ]
+    },
+    {
+      "name": "TransferOwnership",
+      "type": "event",
+      "inputs": [
+        {"name": "from", "type": "address", "indexed": true},
+        {"name": "to", "type": "address", "indexed": true},
+        {"name": "amount", "type": "tuple[]", "components": [
+          {"name": "denom", "type": "string"},
+          {"name": "amount", "type": "uint256"}
+        ], "indexed": false}
+      ]
+    }
+  ],
+  "bytecode": "",
+  "deployedBytecode": "",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
