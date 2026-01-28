@@ -1,6 +1,7 @@
 package ethiq
 
 import (
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/haqq-network/haqq/x/ethiq/keeper"
@@ -17,23 +18,33 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 		k.SetTotalBurnedAmount(ctx, genState.TotalBurnedAmount)
 	}
 
+	// Set total burned from applications amount
+	for _, ea := range genState.ExecutedApplications {
+		aID, ok := sdkmath.NewIntFromString(ea)
+		if !ok {
+			panic("invalid executed application id, failed to parse string to math.Int")
+		}
+
+		k.SetApplicationAsExecuted(ctx, aID)
+		// add k.AddToTotalBurnedFromApplicationsAmount(ctx, amt)
+	}
+
 	// Ensure metadata is set up
-	if err := k.EnsureEthiqMetadata(ctx); err != nil {
+	if err := k.EnsureHaqqMetadata(ctx); err != nil {
 		panic(err)
 	}
 
-	// Ensure ERC20 registration (only if module is enabled)
-	if genState.Params.Enabled {
-		if err := k.EnsureEthiqERC20Registration(ctx); err != nil {
-			panic(err)
-		}
+	// Ensure ERC20 registration
+	if err := k.EnsureHaqqERC20Registration(ctx); err != nil {
+		panic(err)
 	}
 }
 
 // ExportGenesis returns the ethiq module's exported genesis state
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	return &types.GenesisState{
-		Params:            k.GetParams(ctx),
-		TotalBurnedAmount: k.GetTotalBurnedAmount(ctx),
+		Params:               k.GetParams(ctx),
+		TotalBurnedAmount:    k.GetTotalBurnedAmount(ctx),
+		ExecutedApplications: k.GetAllExecutedApplicationsIDsString(ctx),
 	}
 }

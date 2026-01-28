@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/ethiq/types"
 )
 
@@ -23,9 +24,11 @@ func (k Keeper) TotalBurned(ctx context.Context, req *types.QueryTotalBurnedRequ
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	totalBurned := k.GetTotalBurnedAmount(sdkCtx)
+	totalBurnedFromApplications := k.GetTotalBurnedFromApplicationsAmount(sdkCtx)
 
 	return &types.QueryTotalBurnedResponse{
-		TotalBurned: totalBurned,
+		TotalBurned:                 totalBurned,
+		TotalBurnedFromApplications: totalBurnedFromApplications,
 	}, nil
 }
 
@@ -35,30 +38,40 @@ func (k Keeper) Calculate(ctx context.Context, req *types.QueryCalculateRequest)
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	ethiqAmount, ok := sdkmath.NewIntFromString(req.EthiqAmount)
+	islmAmount, ok := sdkmath.NewIntFromString(req.IslmAmount)
 	if !ok {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid ethiq amount: %s", req.EthiqAmount))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid islm amount: %s", req.IslmAmount))
 	}
 
-	if ethiqAmount.LTE(sdkmath.ZeroInt()) {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("ethiq_amount must be positive: %x", req.EthiqAmount))
+	if islmAmount.LTE(sdkmath.ZeroInt()) {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("islm_amount must be positive and greater than zero: %x", req.IslmAmount))
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	supplyBefore := k.GetEthiqSupply(sdkCtx)
-	supplyAfter := supplyBefore.Add(ethiqAmount)
+	haqqSupplyBefore := k.bankKeeper.GetSupply(ctx, types.BaseDenom)
 
-	requiredISLM, pricePerUnit, err := k.CalculateRequiredISLM(sdkCtx, ethiqAmount)
+	// Get burnt islm amount
+	sumOfAllApplications, err := SumOfAllApplications()
+	if err != nil {
+		return nil, err
+	}
+	totalBurnedAmount := k.GetTotalBurnedAmount(sdkCtx)
+	totalBurnedFromApplicationsAmount := k.GetTotalBurnedFromApplicationsAmount(sdkCtx)
+	alreadyBurntIslmAmount := totalBurnedAmount.Add(sdk.NewCoin(utils.BaseDenom, sumOfAllApplications)).Sub(totalBurnedFromApplicationsAmount)
+
+	haqqToBeMinted, pricePerUnit, err := k.CalculateHaqqCoinsToMint(sdkCtx, alreadyBurntIslmAmount.Amount, islmAmount)
 	if err != nil {
 		return nil, status.Error(codes.Internal, errorsmod.Wrap(err, "failed to calculate required ISLM").Error())
 	}
 
+	haqqSupplyAfter := haqqSupplyBefore.Amount.Add(haqqToBeMinted)
+
 	return &types.QueryCalculateResponse{
-		RequiredIslm: requiredISLM,
-		SupplyBefore: supplyBefore,
-		SupplyAfter:  supplyAfter,
-		PricePerUnit: pricePerUnit,
+		EstimatedHaqqAmount: haqqToBeMinted,
+		SupplyBefore:        haqqSupplyBefore.Amount,
+		SupplyAfter:         haqqSupplyAfter,
+		PricePerUnit:        pricePerUnit,
 	}, nil
 }
 
