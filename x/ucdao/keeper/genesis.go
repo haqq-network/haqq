@@ -56,6 +56,7 @@ func (k BaseKeeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 // initBalances sets the balance (multiple coins) for an account by address.
 // An error is returned upon failure.
+// CONTRACT: SDK bank module must be initialized first as this module relies on bank balances of escrow accounts
 func (k BaseKeeper) initBalances(ctx sdk.Context, addr sdk.AccAddress, balances sdk.Coins) error {
 	accountStore := k.getAccountStore(ctx, addr)
 	denomPrefixStores := make(map[string]prefix.Store) // memoize prefix stores

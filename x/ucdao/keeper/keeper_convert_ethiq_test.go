@@ -59,7 +59,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqNotHolder() {
 	suite.Require().ErrorIs(err, ucdaotypes.ErrNotEligible)
 }
 
-// TestConvertToEthiqCalculateRequiredISLMError tests ConvertToEthiq when CalculateRequiredISLM returns an error
+// TestConvertToEthiqCalculateRequiredISLMError tests ConvertToEthiq when CalculateHaqqCoinsToMint returns an error
 // due to overflow in power calculation (either powerAfter at line 90 or powerBefore at line 95)
 func (suite *KeeperTestSuite) TestConvertToEthiqCalculateRequiredISLMError() {
 	suite.SetupTest()
@@ -75,7 +75,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqCalculateRequiredISLMError() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.StartRate = sdkmath.LegacyNewDec(1)
@@ -106,7 +106,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqCalculateRequiredISLMError() {
 	err = suite.network.App.BankKeeper.MintCoins(ctx, ethiqtypes.ModuleName, sdk.NewCoins(ethiqCoin))
 	suite.Require().NoError(err)
 
-	// Now try to convert more ethiq - this will call CalculateRequiredISLM
+	// Now try to convert more ethiq - this will call CalculateHaqqCoinsToMint
 	// which will try to calculate power with the huge supply, causing an overflow error
 	result, err := suite.network.App.DaoKeeper.ConvertToEthiq(ctx, sender, receiver, ethiqAmount, maxISLMAmount)
 	suite.Require().Error(err)
@@ -116,7 +116,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqCalculateRequiredISLMError() {
 	errMsg := err.Error()
 	suite.T().Logf("Actual error message: %s", errMsg)
 
-	// Verify it's a calculation error from CalculateRequiredISLM
+	// Verify it's a calculation error from CalculateHaqqCoinsToMint
 	suite.Require().True(strings.Contains(errMsg, "failed to calculate required ISLM"), "Error should contain 'failed to calculate required ISLM', got: %s", errMsg)
 	suite.Require().True(strings.Contains(errMsg, "finalEthiqTotalSupply") || strings.Contains(errMsg, "currentEthiqTotalSupply"), "Error should contain 'finalEthiqTotalSupply' or 'currentEthiqTotalSupply', got: %s", errMsg)
 }
@@ -136,7 +136,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqRequiredISLMGreaterThanMax() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
@@ -152,7 +152,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqRequiredISLMGreaterThanMax() {
 
 	// Try to convert - should fail if required ISLM > maxISLMAmount
 	result, err := suite.network.App.DaoKeeper.ConvertToEthiq(ctx, sender, receiver, ethiqAmount, maxISLMAmount)
-	// This will fail if CalculateRequiredISLM returns a value greater than maxISLMAmount
+	// This will fail if CalculateHaqqCoinsToMint returns a value greater than maxISLMAmount
 	if err != nil {
 		suite.Require().True(result.Denom == "" || result.IsZero())
 		// Error should be about insufficient funds or required ISLM > max
@@ -175,7 +175,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqInsufficientTotalBalance() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
@@ -192,7 +192,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqInsufficientTotalBalance() {
 
 	// Try to convert - should fail if total balance < required ISLM
 	result, err := suite.network.App.DaoKeeper.ConvertToEthiq(ctx, sender, receiver, ethiqAmount, maxISLMAmount)
-	// This will fail if CalculateRequiredISLM returns a value greater than sender's total balance
+	// This will fail if CalculateHaqqCoinsToMint returns a value greater than sender's total balance
 	if err != nil {
 		suite.Require().True(result.Denom == "" || result.IsZero())
 		// Error should be about insufficient funds
@@ -215,7 +215,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqSuccessWithSufficientISLM() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
@@ -269,7 +269,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqSuccessWithRedeemFromLiquidVesti
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
@@ -396,7 +396,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqInsufficientRedeemedAmount() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
@@ -439,7 +439,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqConvertToEthiqError() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
@@ -477,7 +477,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqMultipleLiquidTokens() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
@@ -532,7 +532,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqRedeemPartialBalance() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
@@ -655,7 +655,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqRedeemLogicMultipleTokens() {
 	suite.Require().NoError(err)
 
 	// Calculate required ISLM first to determine how much ISLM to give sender
-	requiredISLM, _, err := suite.network.App.EthiqKeeper.CalculateRequiredISLM(ctx, ethiqAmount)
+	requiredISLM, _, err := suite.network.App.EthiqKeeper.CalculateHaqqCoinsToMint(ctx, ethiqAmount)
 	suite.Require().NoError(err)
 
 	// Fund sender with ISLM amount that's less than required (to trigger redemption)
@@ -737,7 +737,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqZeroEthiqAmount() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
@@ -772,7 +772,7 @@ func (suite *KeeperTestSuite) TestConvertToEthiqZeroMaxISLMAmount() {
 	err := suite.getBaseKeeper().SetParams(ctx, params)
 	suite.Require().NoError(err)
 
-	// Set ethiq params (required for CalculateRequiredISLM)
+	// Set ethiq params (required for CalculateHaqqCoinsToMint)
 	ethiqParams := ethiqtypes.DefaultParams()
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing

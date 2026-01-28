@@ -17,11 +17,9 @@ func (k BaseKeeper) GetTotalBalance(ctx sdk.Context) sdk.Coins {
 	balance := sdk.NewCoins()
 
 	k.IterateTotalBalance(ctx, func(c sdk.Coin) bool {
-		if c.IsZero() {
-			return false
+		if !c.IsZero() {
+			balance = balance.Add(c)
 		}
-
-		balance = balance.Add(c)
 
 		return false
 	})
@@ -91,7 +89,7 @@ func (k BaseKeeper) GetTotalBalanceOf(ctx sdk.Context, denom string) sdk.Coin {
 	if bz == nil {
 		return sdk.Coin{
 			Denom:  denom,
-			Amount: math.NewInt(0),
+			Amount: math.ZeroInt(),
 		}
 	}
 

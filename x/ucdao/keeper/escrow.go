@@ -5,6 +5,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+func (k BaseKeeper) trackAddBalance(ctx sdk.Context, coin sdk.Coin) {
+	currentTotalEscrow := k.GetTotalBalanceOf(ctx, coin.Denom)
+	newTotalEscrow := currentTotalEscrow.Add(coin)
+	k.setTotalBalanceOfCoin(ctx, newTotalEscrow)
+}
+
+func (k BaseKeeper) trackSubBalance(ctx sdk.Context, coin sdk.Coin) {
+	currentTotalEscrow := k.GetTotalBalanceOf(ctx, coin.Denom)
+	newTotalEscrow := currentTotalEscrow.Sub(coin)
+	k.setTotalBalanceOfCoin(ctx, newTotalEscrow)
+}
+
 func (k BaseKeeper) escrowToken(ctx sdk.Context, sender, escrowAddress sdk.AccAddress, coin sdk.Coin) error {
 	if err := k.bk.SendCoins(ctx, sender, escrowAddress, sdk.NewCoins(coin)); err != nil {
 		// failure is expected for insufficient balances
@@ -12,9 +24,7 @@ func (k BaseKeeper) escrowToken(ctx sdk.Context, sender, escrowAddress sdk.AccAd
 	}
 
 	// track the total amount in escrow keyed by denomination to allow for efficient iteration
-	currentTotalEscrow := k.GetTotalBalanceOf(ctx, coin.Denom)
-	newTotalEscrow := currentTotalEscrow.Add(coin)
-	k.setTotalBalanceOfCoin(ctx, newTotalEscrow)
+	k.trackAddBalance(ctx, coin)
 
 	return nil
 }
@@ -29,15 +39,13 @@ func (k BaseKeeper) unescrowToken(ctx sdk.Context, escrowAddress, receiver sdk.A
 	}
 
 	// track the total amount in escrow keyed by denomination to allow for efficient iteration
-	currentTotalEscrow := k.GetTotalBalanceOf(ctx, coin.Denom)
-	newTotalEscrow := currentTotalEscrow.Sub(coin)
-	k.setTotalBalanceOfCoin(ctx, newTotalEscrow)
+	k.trackSubBalance(ctx, coin)
 
 	return nil
 }
 
-func (k BaseKeeper) transferEscrowToken(ctx sdk.Context, escrowAddress, newEscrowAddress sdk.AccAddress, token sdk.Coin) error {
-	if err := k.bk.SendCoins(ctx, escrowAddress, newEscrowAddress, sdk.NewCoins(token)); err != nil {
+func (k BaseKeeper) transferEscrowToken(ctx sdk.Context, escrowAddress, newEscrowAddress sdk.AccAddress, amt sdk.Coins) error {
+	if err := k.bk.SendCoins(ctx, escrowAddress, newEscrowAddress, amt); err != nil {
 		// NOTE: this error is only expected to occur given an unexpected bug or a malicious
 		// counterparty module. The bug may occur in bank or any part of the code that allows
 		// the escrow address to be drained. A malicious counterparty module could drain the

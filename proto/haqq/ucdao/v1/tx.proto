@@ -162,14 +162,8 @@ message MsgConvertToEthiq {
   // receiver is the address to receive ethiq token.
   string receiver = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 
-  // amount is the desired ethiq amount to receive.
-  string amount = 3 [
-    (gogoproto.customtype) = "cosmossdk.io/math.Int",
-    (gogoproto.nullable) = false
-  ];
-
-  // max_islm_amount is the maximum payable islam token amount.
-  string max_islm_amount = 4 [
+  // islm_amount is the amount of aISLM to burn in exchange for aHAQQ tokens
+  string islm_amount = 3 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
@@ -177,7 +171,7 @@ message MsgConvertToEthiq {
 
 // MsgConvertToEthiqResponse defines the Msg/ConvertToEthiq response type.
 message MsgConvertToEthiqResponse {
-  cosmos.base.v1beta1.Coin burnt_coin = 1 [
+  cosmos.base.v1beta1.Coin minted_coin = 1 [
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.Coin",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
