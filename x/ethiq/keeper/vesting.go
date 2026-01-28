@@ -1,0 +1,67 @@
+package keeper
+
+import (
+	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/haqq-network/haqq/utils"
+	"github.com/haqq-network/haqq/x/ethiq/types"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
+)
+
+func (k Keeper) unlockVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, amt sdk.Coin) (sdk.Coin, error) {
+	zeroCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.ZeroInt())
+
+	fromAcc := k.accountKeeper.GetAccount(ctx, fromAddress)
+	if fromAcc == nil {
+		return zeroCoin, errorsmod.Wrapf(errortypes.ErrNotFound, "account %s does not exist", fromAddress)
+	}
+
+	// check from account is vesting account
+	va, isClawback := fromAcc.(*vestingtypes.ClawbackVestingAccount)
+	if !isClawback {
+		// If it's not a vesting account, there's no error, just return zero coins
+		return zeroCoin, nil
+	}
+
+	// check there is not vesting periods on the schedule
+	if !va.GetVestingCoins(ctx.BlockTime()).IsZero() {
+		// we can't burn unvested coins
+		return zeroCoin, nil
+	}
+
+	// check account has target denom locked in vesting
+	hasTargetDenom, lockedBalance := va.GetLockedUpCoins(ctx.BlockTime()).Find(amt.Denom)
+	if !(hasTargetDenom) {
+		// if there's no aISLM coins locked, do nothing
+		return zeroCoin, nil
+	}
+
+	// unlock only coins we have on account
+	unlockCoins := amt
+	if lockedBalance.IsLT(amt) {
+		unlockCoins = lockedBalance
+	}
+
+	upcomingPeriods := liquidvestingtypes.ExtractUpcomingPeriods(va.GetStartTime(), va.GetEndTime(), va.LockupPeriods, ctx.BlockTime().Unix())
+	decreasedPeriods, _, err := liquidvestingtypes.SubtractAmountFromPeriods(upcomingPeriods, unlockCoins)
+	if err != nil {
+		return zeroCoin, errorsmod.Wrapf(types.ErrUnlockCoins, "failed to calculate new schedule: %s", err.Error())
+	}
+
+	// all vesting periods are completed at this point, so we can reduce amounts without additional extracting logic
+	decreasedVestingPeriods, _, err := liquidvestingtypes.SubtractAmountFromPeriods(va.VestingPeriods, unlockCoins)
+	if err != nil {
+		return zeroCoin, errorsmod.Wrapf(types.ErrUnlockCoins, "failed to calculate new schedule: %s", err.Error())
+	}
+
+	va.LockupPeriods = liquidvestingtypes.ReplacePeriodsTail(va.LockupPeriods, decreasedPeriods)
+	va.OriginalVesting = va.OriginalVesting.Sub(unlockCoins)
+	va.VestingPeriods = liquidvestingtypes.ReplacePeriodsTail(va.VestingPeriods, decreasedVestingPeriods)
+	k.accountKeeper.SetAccount(ctx, va)
+
+	return unlockCoins, nil
+}

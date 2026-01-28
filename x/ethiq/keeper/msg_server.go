@@ -4,6 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/haqq-network/haqq/x/ethiq/types"
 )
 
@@ -18,8 +19,12 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
-func (k msgServer) MintEthiq(goCtx context.Context, msg *types.MsgMintEthiq) (*types.MsgMintEthiqResponse, error) {
+func (k msgServer) MintHaqq(goCtx context.Context, msg *types.MsgMintHaqq) (*types.MsgMintHaqqResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if !k.IsModuleEnabled(ctx) {
+		return nil, types.ErrModuleDisabled
+	}
 
 	// Validate message
 	if err := msg.ValidateBasic(); err != nil {
@@ -30,10 +35,34 @@ func (k msgServer) MintEthiq(goCtx context.Context, msg *types.MsgMintEthiq) (*t
 	toAddress := sdk.MustAccAddressFromBech32(msg.ToAddress)
 	fromAddress := sdk.MustAccAddressFromBech32(msg.FromAddress)
 
-	// Call keeper Mint function
-	if _, err := k.Keeper.ConvertToEthiq(ctx, msg.EthiqAmount, msg.MaxIslmAmount, fromAddress, toAddress); err != nil {
+	mintedHaqqAmt, err := k.Keeper.BurnIslmForHaqq(ctx, msg.IslmAmount, fromAddress, toAddress)
+	if err != nil {
 		return nil, err
 	}
 
-	return &types.MsgMintEthiqResponse{}, nil
+	return &types.MsgMintHaqqResponse{
+		HaqqAmount: mintedHaqqAmt,
+	}, nil
+}
+
+func (k msgServer) MintHaqqByApplication(goCtx context.Context, msg *types.MsgMintHaqqByApplication) (*types.MsgMintHaqqByApplicationResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if !k.IsModuleEnabled(ctx) {
+		return nil, types.ErrModuleDisabled
+	}
+
+	// Validate message
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	mintedHaqqAmt, err := k.Keeper.BurnIslmForHaqqByApplicationID(ctx, msg.ApplicationId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.MsgMintHaqqByApplicationResponse{
+		HaqqAmount: mintedHaqqAmt,
+	}, nil
 }
