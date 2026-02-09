@@ -21,7 +21,15 @@ message MintHaqqAuthorization {
   
   // allow list of receivers, an empty allow list permits any receiver address
   repeated string allow_list = 2;
+}
+
+// MintHaqqByApplicationIDAuthorization allows the grantee to execute application sent by
+// the granter's account earlier.
+// NOTE: Spent limit is a whole amount of application.
+message MintHaqqByApplicationIDAuthorization {
+  option (cosmos_proto.implements_interface) = "cosmos.authz.v1beta1.Authorization";
+  option (amino.name)                        = "haqq/ethiq/MintHaqqByApplicationIDAuthorization";
 
   // applications list of allowed ids, an empty list permits any application id
-  repeated string applications_list = 3;
+  repeated string applications_list = 1;
 }
