@@ -22,14 +22,16 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 		malleate func()
 	}{
 		{
-			"no pair registered", func() { expRes = types.DefaultTokenPairs },
+			"no pair registered", func() {
+				expRes = append(types.DefaultTokenPairs, haqqTokenPair)
+			},
 		},
 		{
 			"1 pair registered",
 			func() {
 				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				suite.network.App.Erc20Keeper.SetTokenPair(ctx, pair)
-				expRes = types.DefaultTokenPairs
+				expRes = append(types.DefaultTokenPairs, haqqTokenPair)
 				expRes = append(expRes, pair)
 			},
 		},
@@ -40,7 +42,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 				pair2 := types.NewTokenPair(utiltx.GenerateAddress(), "coin2", types.OWNER_MODULE)
 				suite.network.App.Erc20Keeper.SetTokenPair(ctx, pair)
 				suite.network.App.Erc20Keeper.SetTokenPair(ctx, pair2)
-				expRes = types.DefaultTokenPairs
+				expRes = append(types.DefaultTokenPairs, haqqTokenPair)
 				expRes = append(expRes, []types.TokenPair{pair, pair2}...)
 			},
 		},

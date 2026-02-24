@@ -14,6 +14,17 @@ import (
 	evm "github.com/haqq-network/haqq/x/evm/types"
 )
 
+// haqqDynamicPrecompileAddr This dynamic precompile is being registered on chain init by ethiq module
+const haqqDynamicPrecompileAddr = "0x3af1695e3354Ec35F892b3d0880D4f7E12F4A172"
+
+// haqqTokenPair This token pair is being registered on chain init by ethiq module
+var haqqTokenPair = types.TokenPair{
+	Erc20Address:  haqqDynamicPrecompileAddr,
+	Denom:         "aHAQQ",
+	Enabled:       true,
+	ContractOwner: types.OWNER_MODULE,
+}
+
 // MintFeeCollector mints some coins to the fee collector address.
 // Use this only for unit tests. For integration tests, you can use the
 // mintFeeCollector flag to setup some balance on genesis

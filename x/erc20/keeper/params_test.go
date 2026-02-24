@@ -20,7 +20,10 @@ func (suite *KeeperTestSuite) TestParams() {
 		{
 			"success - Checks if the default params are set correctly",
 			func() interface{} {
-				return types.DefaultParams()
+				params := types.DefaultParams()
+				params.DynamicPrecompiles = append(params.DynamicPrecompiles, haqqDynamicPrecompileAddr)
+
+				return params
 			},
 			func() interface{} {
 				return suite.network.App.Erc20Keeper.GetParams(ctx)

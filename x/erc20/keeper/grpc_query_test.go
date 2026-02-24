@@ -28,9 +28,9 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 				req = &types.QueryTokenPairsRequest{}
 				expRes = &types.QueryTokenPairsResponse{
 					Pagination: &query.PageResponse{
-						Total: 0,
+						Total: 1,
 					},
-					TokenPairs: types.DefaultTokenPairs,
+					TokenPairs: append(types.DefaultTokenPairs, haqqTokenPair),
 				}
 			},
 			true,
@@ -41,7 +41,7 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 				req = &types.QueryTokenPairsRequest{
 					Pagination: &query.PageRequest{Limit: 10, CountTotal: true},
 				}
-				pairs := types.DefaultTokenPairs
+				pairs := append(types.DefaultTokenPairs, haqqTokenPair)
 				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				suite.network.App.Erc20Keeper.SetTokenPair(ctx, pair)
 				pairs = append(pairs, pair)
@@ -57,7 +57,7 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 			"2 pairs registered wo/pagination",
 			func() {
 				req = &types.QueryTokenPairsRequest{}
-				pairs := types.DefaultTokenPairs
+				pairs := append(types.DefaultTokenPairs, haqqTokenPair)
 
 				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				pair2 := types.NewTokenPair(utiltx.GenerateAddress(), "coin2", types.OWNER_MODULE)
@@ -173,6 +173,7 @@ func (suite *KeeperTestSuite) TestQueryParams() {
 	suite.SetupTest()
 	ctx := suite.network.GetContext()
 	expParams := types.DefaultParams()
+	expParams.DynamicPrecompiles = append(expParams.DynamicPrecompiles, haqqDynamicPrecompileAddr)
 
 	res, err := suite.queryClient.Params(ctx, &types.QueryParamsRequest{})
 	suite.Require().NoError(err)

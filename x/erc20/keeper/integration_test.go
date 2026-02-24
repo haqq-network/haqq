@@ -107,7 +107,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 					Expect(err).To(BeNil())
 
 					tokenPairs := res.TokenPairs
-					Expect(tokenPairs).To(HaveLen(1))
+					Expect(tokenPairs).To(HaveLen(2))
 					Expect(tokenPairs[0].ContractOwner).To(Equal(types.OWNER_EXTERNAL))
 				})
 			})
@@ -130,7 +130,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 					Expect(err).To(BeNil())
 
 					tokenPairs := res.TokenPairs
-					Expect(tokenPairs).To(HaveLen(2))
+					Expect(tokenPairs).To(HaveLen(3))
 					for i, tokenPair := range tokenPairs {
 						if tokenPair.Erc20Address == contract2.Hex() {
 							Expect(tokenPairs[i].ContractOwner).To(Equal(types.OWNER_EXTERNAL))
