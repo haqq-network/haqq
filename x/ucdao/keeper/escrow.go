@@ -5,13 +5,17 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k BaseKeeper) trackAddBalance(ctx sdk.Context, coin sdk.Coin) {
+// TrackAddBalance update internal total balance value.
+// NOTE: This method intentionally has been exported as such feature required by ethiq module.
+func (k BaseKeeper) TrackAddBalance(ctx sdk.Context, coin sdk.Coin) {
 	currentTotalEscrow := k.GetTotalBalanceOf(ctx, coin.Denom)
 	newTotalEscrow := currentTotalEscrow.Add(coin)
 	k.setTotalBalanceOfCoin(ctx, newTotalEscrow)
 }
 
-func (k BaseKeeper) trackSubBalance(ctx sdk.Context, coin sdk.Coin) {
+// TrackSubBalance update internal total balance value.
+// NOTE: This method intentionally has been exported as such feature required by ethiq module.
+func (k BaseKeeper) TrackSubBalance(ctx sdk.Context, coin sdk.Coin) {
 	currentTotalEscrow := k.GetTotalBalanceOf(ctx, coin.Denom)
 	newTotalEscrow := currentTotalEscrow.Sub(coin)
 	k.setTotalBalanceOfCoin(ctx, newTotalEscrow)
@@ -24,7 +28,7 @@ func (k BaseKeeper) escrowToken(ctx sdk.Context, sender, escrowAddress sdk.AccAd
 	}
 
 	// track the total amount in escrow keyed by denomination to allow for efficient iteration
-	k.trackAddBalance(ctx, coin)
+	k.TrackAddBalance(ctx, coin)
 
 	return nil
 }
@@ -39,7 +43,7 @@ func (k BaseKeeper) unescrowToken(ctx sdk.Context, escrowAddress, receiver sdk.A
 	}
 
 	// track the total amount in escrow keyed by denomination to allow for efficient iteration
-	k.trackSubBalance(ctx, coin)
+	k.TrackSubBalance(ctx, coin)
 
 	return nil
 }

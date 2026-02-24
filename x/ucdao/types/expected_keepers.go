@@ -56,6 +56,5 @@ type LiquidVestingKeeper interface {
 
 // EthiqKeeper defines the expected interface needed to retrieve ethiq balances.
 type EthiqKeeper interface {
-	CalculateHaqqCoinsToMint(ctx sdk.Context, islmTotalBurnedBefore, islmAmountToBurn sdkmath.Int) (sdkmath.Int, sdkmath.LegacyDec, error)
 	BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAddress, toAddress sdk.AccAddress) (sdkmath.Int, error)
 }

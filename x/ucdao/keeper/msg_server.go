@@ -116,7 +116,7 @@ func (k msgServer) TransferOwnershipWithAmount(goCtx context.Context, msg *types
 	return &types.MsgTransferOwnershipWithAmountResponse{}, nil
 }
 
-func (k msgServer) ConvertToEthiq(goCtx context.Context, msg *types.MsgConvertToEthiq) (*types.MsgConvertToEthiqResponse, error) {
+func (k msgServer) ConvertToHaqq(goCtx context.Context, msg *types.MsgConvertToHaqq) (*types.MsgConvertToHaqqResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if err := msg.ValidateBasic(); err != nil {
@@ -127,12 +127,12 @@ func (k msgServer) ConvertToEthiq(goCtx context.Context, msg *types.MsgConvertTo
 	sender := sdk.MustAccAddressFromBech32(msg.Sender)
 	receiver := sdk.MustAccAddressFromBech32(msg.Receiver)
 
-	burntCoin, err := k.Keeper.ConvertToEthiq(ctx, sender, receiver, msg.Amount, msg.MaxIslmAmount)
+	mintedCoin, err := k.Keeper.ConvertToHaqq(ctx, sender, receiver, msg.IslmAmount)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.MsgConvertToEthiqResponse{
-		BurntCoin: burntCoin,
+	return &types.MsgConvertToHaqqResponse{
+		MintedCoin: mintedCoin,
 	}, nil
 }

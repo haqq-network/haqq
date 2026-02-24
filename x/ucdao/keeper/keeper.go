@@ -37,7 +37,7 @@ type Keeper interface {
 
 	Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
 	TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAddress, amount sdk.Coins) (sdk.Coins, error)
-	ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, islmAmount sdkmath.Int) (sdk.Coin, error)
+	ConvertToHaqq(ctx sdk.Context, sender, receiver sdk.AccAddress, islmAmount sdkmath.Int) (sdk.Coin, error)
 
 	// grpc query endpoints
 	Balance(ctx context.Context, req *types.QueryBalanceRequest) (*types.QueryBalanceResponse, error)
@@ -50,6 +50,11 @@ type Keeper interface {
 	// genesis methods
 	InitGenesis(ctx sdk.Context, genState *types.GenesisState)
 	ExportGenesis(ctx sdk.Context) *types.GenesisState
+
+	// export methods to use them from ethiq module
+	TrackAddBalance(sdk.Context, sdk.Coin)
+	TrackSubBalance(sdk.Context, sdk.Coin)
+	SetHoldersIndex(sdk.Context, sdk.AccAddress)
 }
 
 // BaseKeeper manages transfers between accounts. It implements the Keeper interface.
@@ -112,7 +117,7 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 	}
 
 	// Update holders index
-	k.setHoldersIndex(ctx, sender)
+	k.SetHoldersIndex(ctx, sender)
 
 	return nil
 }
@@ -135,14 +140,14 @@ func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAd
 	}
 
 	// Update holders index
-	k.setHoldersIndex(ctx, newOwner)
-	k.setHoldersIndex(ctx, owner)
+	k.SetHoldersIndex(ctx, newOwner)
+	k.SetHoldersIndex(ctx, owner)
 
 	return amount, nil
 }
 
-// ConvertToEthiq converts ISLM tokens to ethiq tokens for a holder.
-func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddress, islmAmount sdkmath.Int) (sdk.Coin, error) {
+// ConvertToHaqq converts ISLM tokens to ethiq tokens for a holder.
+func (k BaseKeeper) ConvertToHaqq(ctx sdk.Context, sender, receiver sdk.AccAddress, islmAmount sdkmath.Int) (sdk.Coin, error) {
 	if !k.IsModuleEnabled(ctx) {
 		return sdk.Coin{}, types.ErrModuleDisabled
 	}
@@ -179,9 +184,9 @@ func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddr
 
 		// track internal module total balances
 		// add redeemed aISLM
-		k.trackAddBalance(ctx, sdk.NewCoin(utils.BaseDenom, balance.Amount))
+		k.TrackAddBalance(ctx, sdk.NewCoin(utils.BaseDenom, balance.Amount))
 		// sub redeemed aLIQUID
-		k.trackSubBalance(ctx, balance)
+		k.TrackSubBalance(ctx, balance)
 	}
 
 	mintedHaqqAmt, err := k.ethiqk.BurnIslmForHaqq(ctx, islmAmount, senderEscrowAddr, receiver)
@@ -190,10 +195,10 @@ func (k BaseKeeper) ConvertToEthiq(ctx sdk.Context, sender, receiver sdk.AccAddr
 	}
 
 	// Update total balance of aISLM in ucdao module
-	k.trackSubBalance(ctx, sdk.NewCoin(utils.BaseDenom, islmAmount))
+	k.TrackSubBalance(ctx, sdk.NewCoin(utils.BaseDenom, islmAmount))
 
 	// Update holders index
-	k.setHoldersIndex(ctx, sender)
+	k.SetHoldersIndex(ctx, sender)
 
 	// Emit event
 	ctx.EventManager().EmitEvent(

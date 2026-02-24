@@ -8,7 +8,7 @@ import (
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
 
-// TestSetHoldersIndex tests setHoldersIndex indirectly through Fund
+// TestSetHoldersIndex tests SetHoldersIndex indirectly through Fund
 func (suite *KeeperTestSuite) TestSetHoldersIndex() {
 	suite.SetupTest()
 	ctx := suite.network.GetContext()
@@ -30,7 +30,7 @@ func (suite *KeeperTestSuite) TestSetHoldersIndex() {
 	suite.Require().Contains(holders, addr)
 }
 
-// TestSetHoldersIndexRemoval tests setHoldersIndex removal when balance becomes zero
+// TestSetHoldersIndexRemoval tests SetHoldersIndex removal when balance becomes zero
 func (suite *KeeperTestSuite) TestSetHoldersIndexRemoval() {
 	suite.SetupTest()
 	ctx := suite.network.GetContext()

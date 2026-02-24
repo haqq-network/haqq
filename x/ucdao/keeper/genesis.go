@@ -31,7 +31,7 @@ func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 		totalBalance = totalBalance.Add(balance.Coins...)
 
 		// Set the holders store if the balance is not zero
-		k.setHoldersIndex(ctx, addr)
+		k.SetHoldersIndex(ctx, addr)
 	}
 
 	if !genState.TotalBalance.Empty() && !genState.TotalBalance.Equal(totalBalance) {

@@ -25,9 +25,10 @@ func (k BaseKeeper) getHoldersStore(ctx sdk.Context) prefix.Store {
 	return prefix.NewStore(ctx.KVStore(k.storeKey), types.HoldersPrefix)
 }
 
-// setHoldersIndex registers account as shareholder or remove it from index
+// SetHoldersIndex registers account as shareholder or remove it from index
 // if there are no coins on designated escrow account.
-func (k BaseKeeper) setHoldersIndex(ctx sdk.Context, addr sdk.AccAddress) {
+// NOTE: This method intentionally has been exported as such feature required by ethiq module.
+func (k BaseKeeper) SetHoldersIndex(ctx sdk.Context, addr sdk.AccAddress) {
 	holdersStore := k.getHoldersStore(ctx)
 	addrKey := address.MustLengthPrefix(addr)
 

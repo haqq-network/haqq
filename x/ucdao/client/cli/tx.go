@@ -116,14 +116,14 @@ $ %s tx %s transfer-ownership haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92 haqq1h
 // NewConvertToEthiqCmd returns a CLI command handler for creating a MsgConvertToEthiq transaction.
 func NewConvertToEthiqCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "convert-to-ethiq [receiver] [ethiq_amount] [max_islm_amount] ",
+		Use:   "convert-to-haqq [from_address] [to_address] [islm_amount]",
 		Args:  cobra.ExactArgs(3),
-		Short: "Convert ISLM tokens to ethiq tokens",
+		Short: "Convert aISLM tokens to aHAQQ tokens",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Convert ISLM tokens to ethiq tokens. The sender must be a holder in the ucdao module.
+			fmt.Sprintf(`Convert aISLM tokens to aHAQQ tokens. The sender must be a holder in the ucdao module.
 
 Example:
-$ %s tx %s convert-to-ethiq 100 1000 haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq --from mykey
+$ %s tx %s convert-to-haqq haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq 1000 --from mykey
 `,
 				version.AppName, types.ModuleName,
 			),
@@ -134,24 +134,22 @@ $ %s tx %s convert-to-ethiq 100 1000 haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq
 				return err
 			}
 
-			senderAddr := clientCtx.GetFromAddress()
-
-			receiver, err := sdk.AccAddressFromBech32(args[0])
+			fromAddress, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
-				return fmt.Errorf("invalid receiver address: %s", args[0])
+				return err
 			}
 
-			ethiqAmount, ok := sdkmath.NewIntFromString(args[1])
+			toAddr, err := sdk.AccAddressFromBech32(args[1])
+			if err != nil {
+				return err
+			}
+
+			islmAmount, ok := sdkmath.NewIntFromString(args[2])
 			if !ok {
-				return fmt.Errorf("invalid ethiq amount: %s", args[1])
+				return fmt.Errorf("invalid ethiq amount: %s", args[2])
 			}
 
-			maxISLMAmount, ok := sdkmath.NewIntFromString(args[2])
-			if !ok {
-				return fmt.Errorf("invalid max ISLM amount: %s", args[2])
-			}
-
-			msg := types.NewMsgConvertToEthiq(senderAddr, ethiqAmount, maxISLMAmount, receiver)
+			msg := types.NewMsgConvertToHaqq(fromAddress, toAddr, islmAmount)
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
