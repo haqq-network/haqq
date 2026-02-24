@@ -65,15 +65,8 @@ message MsgMintHaqqByApplication {
   // from_address is the address that will send the aISLM coins
   string from_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 
-  // to_address is the address that will receive the minted aHAQQ coins
-  string to_address = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-
   // application_id is the id of application submitted earlier
-  string application_id = 3 [
-    (cosmos_proto.scalar)  = "cosmos.Int",
-    (gogoproto.customtype) = "cosmossdk.io/math.Int",
-    (gogoproto.nullable) = false
-  ];
+  uint64 application_id = 3;
 }
 
 // MsgMintHaqqResponse defines the Msg/MintHaqqByApplication response type.
@@ -84,4 +77,7 @@ message MsgMintHaqqByApplicationResponse {
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
+
+  // to_address is a receiver's address
+  string to_address = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 }

@@ -16,63 +16,15 @@ import (
 	sync "sync"
 )
 
-var _ protoreflect.List = (*_MintHaqqAuthorization_2_list)(nil)
-
-type _MintHaqqAuthorization_2_list struct {
-	list *[]string
-}
-
-func (x *_MintHaqqAuthorization_2_list) Len() int {
-	if x.list == nil {
-		return 0
-	}
-	return len(*x.list)
-}
-
-func (x *_MintHaqqAuthorization_2_list) Get(i int) protoreflect.Value {
-	return protoreflect.ValueOfString((*x.list)[i])
-}
-
-func (x *_MintHaqqAuthorization_2_list) Set(i int, value protoreflect.Value) {
-	valueUnwrapped := value.String()
-	concreteValue := valueUnwrapped
-	(*x.list)[i] = concreteValue
-}
-
-func (x *_MintHaqqAuthorization_2_list) Append(value protoreflect.Value) {
-	valueUnwrapped := value.String()
-	concreteValue := valueUnwrapped
-	*x.list = append(*x.list, concreteValue)
-}
-
-func (x *_MintHaqqAuthorization_2_list) AppendMutable() protoreflect.Value {
-	panic(fmt.Errorf("AppendMutable can not be called on message MintHaqqAuthorization at list field AllowList as it is not of Message kind"))
-}
-
-func (x *_MintHaqqAuthorization_2_list) Truncate(n int) {
-	*x.list = (*x.list)[:n]
-}
-
-func (x *_MintHaqqAuthorization_2_list) NewElement() protoreflect.Value {
-	v := ""
-	return protoreflect.ValueOfString(v)
-}
-
-func (x *_MintHaqqAuthorization_2_list) IsValid() bool {
-	return x.list != nil
-}
-
 var (
 	md_MintHaqqAuthorization             protoreflect.MessageDescriptor
 	fd_MintHaqqAuthorization_spend_limit protoreflect.FieldDescriptor
-	fd_MintHaqqAuthorization_allow_list  protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_haqq_ethiq_v1_authz_proto_init()
 	md_MintHaqqAuthorization = File_haqq_ethiq_v1_authz_proto.Messages().ByName("MintHaqqAuthorization")
 	fd_MintHaqqAuthorization_spend_limit = md_MintHaqqAuthorization.Fields().ByName("spend_limit")
-	fd_MintHaqqAuthorization_allow_list = md_MintHaqqAuthorization.Fields().ByName("allow_list")
 }
 
 var _ protoreflect.Message = (*fastReflection_MintHaqqAuthorization)(nil)
@@ -146,12 +98,6 @@ func (x *fastReflection_MintHaqqAuthorization) Range(f func(protoreflect.FieldDe
 			return
 		}
 	}
-	if len(x.AllowList) != 0 {
-		value := protoreflect.ValueOfList(&_MintHaqqAuthorization_2_list{list: &x.AllowList})
-		if !f(fd_MintHaqqAuthorization_allow_list, value) {
-			return
-		}
-	}
 }
 
 // Has reports whether a field is populated.
@@ -169,8 +115,6 @@ func (x *fastReflection_MintHaqqAuthorization) Has(fd protoreflect.FieldDescript
 	switch fd.FullName() {
 	case "haqq.ethiq.v1.MintHaqqAuthorization.spend_limit":
 		return x.SpendLimit != nil
-	case "haqq.ethiq.v1.MintHaqqAuthorization.allow_list":
-		return len(x.AllowList) != 0
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MintHaqqAuthorization"))
@@ -189,8 +133,6 @@ func (x *fastReflection_MintHaqqAuthorization) Clear(fd protoreflect.FieldDescri
 	switch fd.FullName() {
 	case "haqq.ethiq.v1.MintHaqqAuthorization.spend_limit":
 		x.SpendLimit = nil
-	case "haqq.ethiq.v1.MintHaqqAuthorization.allow_list":
-		x.AllowList = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MintHaqqAuthorization"))
@@ -210,12 +152,6 @@ func (x *fastReflection_MintHaqqAuthorization) Get(descriptor protoreflect.Field
 	case "haqq.ethiq.v1.MintHaqqAuthorization.spend_limit":
 		value := x.SpendLimit
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
-	case "haqq.ethiq.v1.MintHaqqAuthorization.allow_list":
-		if len(x.AllowList) == 0 {
-			return protoreflect.ValueOfList(&_MintHaqqAuthorization_2_list{})
-		}
-		listValue := &_MintHaqqAuthorization_2_list{list: &x.AllowList}
-		return protoreflect.ValueOfList(listValue)
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MintHaqqAuthorization"))
@@ -238,10 +174,6 @@ func (x *fastReflection_MintHaqqAuthorization) Set(fd protoreflect.FieldDescript
 	switch fd.FullName() {
 	case "haqq.ethiq.v1.MintHaqqAuthorization.spend_limit":
 		x.SpendLimit = value.Message().Interface().(*v1beta1.Coin)
-	case "haqq.ethiq.v1.MintHaqqAuthorization.allow_list":
-		lv := value.List()
-		clv := lv.(*_MintHaqqAuthorization_2_list)
-		x.AllowList = *clv.list
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MintHaqqAuthorization"))
@@ -267,12 +199,6 @@ func (x *fastReflection_MintHaqqAuthorization) Mutable(fd protoreflect.FieldDesc
 			x.SpendLimit = new(v1beta1.Coin)
 		}
 		return protoreflect.ValueOfMessage(x.SpendLimit.ProtoReflect())
-	case "haqq.ethiq.v1.MintHaqqAuthorization.allow_list":
-		if x.AllowList == nil {
-			x.AllowList = []string{}
-		}
-		value := &_MintHaqqAuthorization_2_list{list: &x.AllowList}
-		return protoreflect.ValueOfList(value)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MintHaqqAuthorization"))
@@ -289,9 +215,6 @@ func (x *fastReflection_MintHaqqAuthorization) NewField(fd protoreflect.FieldDes
 	case "haqq.ethiq.v1.MintHaqqAuthorization.spend_limit":
 		m := new(v1beta1.Coin)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
-	case "haqq.ethiq.v1.MintHaqqAuthorization.allow_list":
-		list := []string{}
-		return protoreflect.ValueOfList(&_MintHaqqAuthorization_2_list{list: &list})
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: haqq.ethiq.v1.MintHaqqAuthorization"))
@@ -365,12 +288,6 @@ func (x *fastReflection_MintHaqqAuthorization) ProtoMethods() *protoiface.Method
 			l = options.Size(x.SpendLimit)
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
-		if len(x.AllowList) > 0 {
-			for _, s := range x.AllowList {
-				l = len(s)
-				n += 1 + l + runtime.Sov(uint64(l))
-			}
-		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -399,15 +316,6 @@ func (x *fastReflection_MintHaqqAuthorization) ProtoMethods() *protoiface.Method
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
-		}
-		if len(x.AllowList) > 0 {
-			for iNdEx := len(x.AllowList) - 1; iNdEx >= 0; iNdEx-- {
-				i -= len(x.AllowList[iNdEx])
-				copy(dAtA[i:], x.AllowList[iNdEx])
-				i = runtime.EncodeVarint(dAtA, i, uint64(len(x.AllowList[iNdEx])))
-				i--
-				dAtA[i] = 0x12
-			}
 		}
 		if x.SpendLimit != nil {
 			encoded, err := options.Marshal(x.SpendLimit)
@@ -508,38 +416,6 @@ func (x *fastReflection_MintHaqqAuthorization) ProtoMethods() *protoiface.Method
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
 				}
 				iNdEx = postIndex
-			case 2:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field AllowList", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.AllowList = append(x.AllowList, string(dAtA[iNdEx:postIndex]))
-				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -578,7 +454,7 @@ func (x *fastReflection_MintHaqqAuthorization) ProtoMethods() *protoiface.Method
 var _ protoreflect.List = (*_MintHaqqByApplicationIDAuthorization_1_list)(nil)
 
 type _MintHaqqByApplicationIDAuthorization_1_list struct {
-	list *[]string
+	list *[]uint64
 }
 
 func (x *_MintHaqqByApplicationIDAuthorization_1_list) Len() int {
@@ -589,17 +465,17 @@ func (x *_MintHaqqByApplicationIDAuthorization_1_list) Len() int {
 }
 
 func (x *_MintHaqqByApplicationIDAuthorization_1_list) Get(i int) protoreflect.Value {
-	return protoreflect.ValueOfString((*x.list)[i])
+	return protoreflect.ValueOfUint64((*x.list)[i])
 }
 
 func (x *_MintHaqqByApplicationIDAuthorization_1_list) Set(i int, value protoreflect.Value) {
-	valueUnwrapped := value.String()
+	valueUnwrapped := value.Uint()
 	concreteValue := valueUnwrapped
 	(*x.list)[i] = concreteValue
 }
 
 func (x *_MintHaqqByApplicationIDAuthorization_1_list) Append(value protoreflect.Value) {
-	valueUnwrapped := value.String()
+	valueUnwrapped := value.Uint()
 	concreteValue := valueUnwrapped
 	*x.list = append(*x.list, concreteValue)
 }
@@ -613,8 +489,8 @@ func (x *_MintHaqqByApplicationIDAuthorization_1_list) Truncate(n int) {
 }
 
 func (x *_MintHaqqByApplicationIDAuthorization_1_list) NewElement() protoreflect.Value {
-	v := ""
-	return protoreflect.ValueOfString(v)
+	v := uint64(0)
+	return protoreflect.ValueOfUint64(v)
 }
 
 func (x *_MintHaqqByApplicationIDAuthorization_1_list) IsValid() bool {
@@ -806,7 +682,7 @@ func (x *fastReflection_MintHaqqByApplicationIDAuthorization) Mutable(fd protore
 	switch fd.FullName() {
 	case "haqq.ethiq.v1.MintHaqqByApplicationIDAuthorization.applications_list":
 		if x.ApplicationsList == nil {
-			x.ApplicationsList = []string{}
+			x.ApplicationsList = []uint64{}
 		}
 		value := &_MintHaqqByApplicationIDAuthorization_1_list{list: &x.ApplicationsList}
 		return protoreflect.ValueOfList(value)
@@ -824,7 +700,7 @@ func (x *fastReflection_MintHaqqByApplicationIDAuthorization) Mutable(fd protore
 func (x *fastReflection_MintHaqqByApplicationIDAuthorization) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
 	case "haqq.ethiq.v1.MintHaqqByApplicationIDAuthorization.applications_list":
-		list := []string{}
+		list := []uint64{}
 		return protoreflect.ValueOfList(&_MintHaqqByApplicationIDAuthorization_1_list{list: &list})
 	default:
 		if fd.IsExtension() {
@@ -896,10 +772,11 @@ func (x *fastReflection_MintHaqqByApplicationIDAuthorization) ProtoMethods() *pr
 		var l int
 		_ = l
 		if len(x.ApplicationsList) > 0 {
-			for _, s := range x.ApplicationsList {
-				l = len(s)
-				n += 1 + l + runtime.Sov(uint64(l))
+			l = 0
+			for _, e := range x.ApplicationsList {
+				l += runtime.Sov(uint64(e))
 			}
+			n += 1 + runtime.Sov(uint64(l)) + l
 		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
@@ -931,13 +808,24 @@ func (x *fastReflection_MintHaqqByApplicationIDAuthorization) ProtoMethods() *pr
 			copy(dAtA[i:], x.unknownFields)
 		}
 		if len(x.ApplicationsList) > 0 {
-			for iNdEx := len(x.ApplicationsList) - 1; iNdEx >= 0; iNdEx-- {
-				i -= len(x.ApplicationsList[iNdEx])
-				copy(dAtA[i:], x.ApplicationsList[iNdEx])
-				i = runtime.EncodeVarint(dAtA, i, uint64(len(x.ApplicationsList[iNdEx])))
-				i--
-				dAtA[i] = 0xa
+			var pksize2 int
+			for _, num := range x.ApplicationsList {
+				pksize2 += runtime.Sov(uint64(num))
 			}
+			i -= pksize2
+			j1 := i
+			for _, num := range x.ApplicationsList {
+				for num >= 1<<7 {
+					dAtA[j1] = uint8(uint64(num)&0x7f | 0x80)
+					num >>= 7
+					j1++
+				}
+				dAtA[j1] = uint8(num)
+				j1++
+			}
+			i = runtime.EncodeVarint(dAtA, i, uint64(pksize2))
+			i--
+			dAtA[i] = 0xa
 		}
 		if input.Buf != nil {
 			input.Buf = append(input.Buf, dAtA...)
@@ -989,37 +877,81 @@ func (x *fastReflection_MintHaqqByApplicationIDAuthorization) ProtoMethods() *pr
 			}
 			switch fieldNum {
 			case 1:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ApplicationsList", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				if wireType == 0 {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+						}
+						if iNdEx >= l {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
 					}
-					if iNdEx >= l {
+					x.ApplicationsList = append(x.ApplicationsList, v)
+				} else if wireType == 2 {
+					var packedLen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+						}
+						if iNdEx >= l {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						packedLen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if packedLen < 0 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+					}
+					postIndex := iNdEx + packedLen
+					if postIndex < 0 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+					}
+					if postIndex > l {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
+					var elementCount int
+					var count int
+					for _, integer := range dAtA[iNdEx:postIndex] {
+						if integer < 128 {
+							count++
+						}
 					}
+					elementCount = count
+					if elementCount != 0 && len(x.ApplicationsList) == 0 {
+						x.ApplicationsList = make([]uint64, 0, elementCount)
+					}
+					for iNdEx < postIndex {
+						var v uint64
+						for shift := uint(0); ; shift += 7 {
+							if shift >= 64 {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+							}
+							if iNdEx >= l {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+							}
+							b := dAtA[iNdEx]
+							iNdEx++
+							v |= uint64(b&0x7F) << shift
+							if b < 0x80 {
+								break
+							}
+						}
+						x.ApplicationsList = append(x.ApplicationsList, v)
+					}
+				} else {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ApplicationsList", wireType)
 				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.ApplicationsList = append(x.ApplicationsList, string(dAtA[iNdEx:postIndex]))
-				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -1078,8 +1010,6 @@ type MintHaqqAuthorization struct {
 	// spend_limit specifies the maximum amount of tokens can be spent to mint haqq tokens. If it is
 	// empty, there is no spend limit and any amount of coins can be spent.
 	SpendLimit *v1beta1.Coin `protobuf:"bytes,1,opt,name=spend_limit,json=spendLimit,proto3" json:"spend_limit,omitempty"`
-	// allow list of receivers, an empty allow list permits any receiver address
-	AllowList []string `protobuf:"bytes,2,rep,name=allow_list,json=allowList,proto3" json:"allow_list,omitempty"`
 }
 
 func (x *MintHaqqAuthorization) Reset() {
@@ -1109,13 +1039,6 @@ func (x *MintHaqqAuthorization) GetSpendLimit() *v1beta1.Coin {
 	return nil
 }
 
-func (x *MintHaqqAuthorization) GetAllowList() []string {
-	if x != nil {
-		return x.AllowList
-	}
-	return nil
-}
-
 // MintHaqqByApplicationIDAuthorization allows the grantee to execute application sent by
 // the granter's account earlier.
 // NOTE: Spent limit is a whole amount of application.
@@ -1125,7 +1048,7 @@ type MintHaqqByApplicationIDAuthorization struct {
 	unknownFields protoimpl.UnknownFields
 
 	// applications list of allowed ids, an empty list permits any application id
-	ApplicationsList []string `protobuf:"bytes,1,rep,name=applications_list,json=applicationsList,proto3" json:"applications_list,omitempty"`
+	ApplicationsList []uint64 `protobuf:"varint,1,rep,packed,name=applications_list,json=applicationsList,proto3" json:"applications_list,omitempty"`
 }
 
 func (x *MintHaqqByApplicationIDAuthorization) Reset() {
@@ -1148,7 +1071,7 @@ func (*MintHaqqByApplicationIDAuthorization) Descriptor() ([]byte, []int) {
 	return file_haqq_ethiq_v1_authz_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *MintHaqqByApplicationIDAuthorization) GetApplicationsList() []string {
+func (x *MintHaqqByApplicationIDAuthorization) GetApplicationsList() []uint64 {
 	if x != nil {
 		return x.ApplicationsList
 	}
@@ -1166,7 +1089,7 @@ var file_haqq_ethiq_v1_authz_proto_rawDesc = []byte{
 	0x6f, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x14, 0x67, 0x6f, 0x67, 0x6f, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x67, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1e,
 	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x62, 0x61, 0x73, 0x65, 0x2f, 0x76, 0x31, 0x62, 0x65,
-	0x74, 0x61, 0x31, 0x2f, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xec,
+	0x74, 0x61, 0x31, 0x2f, 0x63, 0x6f, 0x69, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xcd,
 	0x01, 0x0a, 0x15, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x41, 0x75, 0x74, 0x68, 0x6f,
 	0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x67, 0x0a, 0x0b, 0x73, 0x70, 0x65, 0x6e,
 	0x64, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e,
@@ -1175,35 +1098,33 @@ var file_haqq_ethiq_v1_authz_proto_rawDesc = []byte{
 	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f,
 	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2d, 0x73, 0x64, 0x6b, 0x2f, 0x74, 0x79, 0x70, 0x65, 0x73,
 	0x2e, 0x43, 0x6f, 0x69, 0x6e, 0x52, 0x0a, 0x73, 0x70, 0x65, 0x6e, 0x64, 0x4c, 0x69, 0x6d, 0x69,
-	0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x18,
-	0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x09, 0x61, 0x6c, 0x6c, 0x6f, 0x77, 0x4c, 0x69, 0x73, 0x74,
-	0x3a, 0x4b, 0xca, 0xb4, 0x2d, 0x22, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x61, 0x75, 0x74,
-	0x68, 0x7a, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x41, 0x75, 0x74, 0x68, 0x6f,
-	0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x8a, 0xe7, 0xb0, 0x2a, 0x20, 0x68, 0x61, 0x71,
-	0x71, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2f, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71,
-	0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0xaf, 0x01,
-	0x0a, 0x24, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x42, 0x79, 0x41, 0x70, 0x70, 0x6c,
-	0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x44, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69,
-	0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x2b, 0x0a, 0x11, 0x61, 0x70, 0x70, 0x6c, 0x69, 0x63,
-	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x18, 0x01, 0x20, 0x03, 0x28,
-	0x09, 0x52, 0x10, 0x61, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x4c,
-	0x69, 0x73, 0x74, 0x3a, 0x5a, 0xca, 0xb4, 0x2d, 0x22, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
-	0x61, 0x75, 0x74, 0x68, 0x7a, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x41, 0x75,
-	0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x8a, 0xe7, 0xb0, 0x2a, 0x2f,
-	0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2f, 0x4d, 0x69, 0x6e, 0x74, 0x48,
-	0x61, 0x71, 0x71, 0x42, 0x79, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x49, 0x44, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x42,
-	0x9d, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68,
-	0x69, 0x71, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x41, 0x75, 0x74, 0x68, 0x7a, 0x50, 0x72, 0x6f, 0x74,
-	0x6f, 0x50, 0x01, 0x5a, 0x26, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e, 0x69,
-	0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71,
-	0x2f, 0x76, 0x31, 0x3b, 0x65, 0x74, 0x68, 0x69, 0x71, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x48, 0x45,
-	0x58, 0xaa, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x2e, 0x45, 0x74, 0x68, 0x69, 0x71, 0x2e, 0x56,
-	0x31, 0xca, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c, 0x56,
-	0x31, 0xe2, 0x02, 0x19, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c, 0x56,
-	0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f,
-	0x48, 0x61, 0x71, 0x71, 0x3a, 0x3a, 0x45, 0x74, 0x68, 0x69, 0x71, 0x3a, 0x3a, 0x56, 0x31, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x3a, 0x4b, 0xca, 0xb4, 0x2d, 0x22, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x61, 0x75,
+	0x74, 0x68, 0x7a, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x41, 0x75, 0x74, 0x68,
+	0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x8a, 0xe7, 0xb0, 0x2a, 0x20, 0x68, 0x61,
+	0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2f, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71,
+	0x71, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0xaf,
+	0x01, 0x0a, 0x24, 0x4d, 0x69, 0x6e, 0x74, 0x48, 0x61, 0x71, 0x71, 0x42, 0x79, 0x41, 0x70, 0x70,
+	0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x44, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72,
+	0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x2b, 0x0a, 0x11, 0x61, 0x70, 0x70, 0x6c, 0x69,
+	0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x18, 0x01, 0x20, 0x03,
+	0x28, 0x04, 0x52, 0x10, 0x61, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x4c, 0x69, 0x73, 0x74, 0x3a, 0x5a, 0xca, 0xb4, 0x2d, 0x22, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73,
+	0x2e, 0x61, 0x75, 0x74, 0x68, 0x7a, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x41,
+	0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x8a, 0xe7, 0xb0, 0x2a,
+	0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69, 0x71, 0x2f, 0x4d, 0x69, 0x6e, 0x74,
+	0x48, 0x61, 0x71, 0x71, 0x42, 0x79, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x49, 0x44, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x42, 0x9d, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74,
+	0x68, 0x69, 0x71, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x41, 0x75, 0x74, 0x68, 0x7a, 0x50, 0x72, 0x6f,
+	0x74, 0x6f, 0x50, 0x01, 0x5a, 0x26, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e,
+	0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x61, 0x71, 0x71, 0x2f, 0x65, 0x74, 0x68, 0x69,
+	0x71, 0x2f, 0x76, 0x31, 0x3b, 0x65, 0x74, 0x68, 0x69, 0x71, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x48,
+	0x45, 0x58, 0xaa, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x2e, 0x45, 0x74, 0x68, 0x69, 0x71, 0x2e,
+	0x56, 0x31, 0xca, 0x02, 0x0d, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c,
+	0x56, 0x31, 0xe2, 0x02, 0x19, 0x48, 0x61, 0x71, 0x71, 0x5c, 0x45, 0x74, 0x68, 0x69, 0x71, 0x5c,
+	0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02,
+	0x0f, 0x48, 0x61, 0x71, 0x71, 0x3a, 0x3a, 0x45, 0x74, 0x68, 0x69, 0x71, 0x3a, 0x3a, 0x56, 0x31,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (

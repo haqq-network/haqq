@@ -23,7 +23,7 @@ const (
 	Msg_TransferOwnership_FullMethodName           = "/haqq.ucdao.v1.Msg/TransferOwnership"
 	Msg_TransferOwnershipWithRatio_FullMethodName  = "/haqq.ucdao.v1.Msg/TransferOwnershipWithRatio"
 	Msg_TransferOwnershipWithAmount_FullMethodName = "/haqq.ucdao.v1.Msg/TransferOwnershipWithAmount"
-	Msg_ConvertToEthiq_FullMethodName              = "/haqq.ucdao.v1.Msg/ConvertToEthiq"
+	Msg_ConvertToHaqq_FullMethodName               = "/haqq.ucdao.v1.Msg/ConvertToHaqq"
 )
 
 // MsgClient is the client API for Msg service.
@@ -42,8 +42,8 @@ type MsgClient interface {
 	// transfer the ownership of shares to another account with certain amount of
 	// coins.
 	TransferOwnershipWithAmount(ctx context.Context, in *MsgTransferOwnershipWithAmount, opts ...grpc.CallOption) (*MsgTransferOwnershipWithAmountResponse, error)
-	// ConvertToEthiq defines a method to allow a holder to convert ISLM tokens to ethiq tokens.
-	ConvertToEthiq(ctx context.Context, in *MsgConvertToEthiq, opts ...grpc.CallOption) (*MsgConvertToEthiqResponse, error)
+	// ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to aHAQQ tokens.
+	ConvertToHaqq(ctx context.Context, in *MsgConvertToHaqq, opts ...grpc.CallOption) (*MsgConvertToHaqqResponse, error)
 }
 
 type msgClient struct {
@@ -90,9 +90,9 @@ func (c *msgClient) TransferOwnershipWithAmount(ctx context.Context, in *MsgTran
 	return out, nil
 }
 
-func (c *msgClient) ConvertToEthiq(ctx context.Context, in *MsgConvertToEthiq, opts ...grpc.CallOption) (*MsgConvertToEthiqResponse, error) {
-	out := new(MsgConvertToEthiqResponse)
-	err := c.cc.Invoke(ctx, Msg_ConvertToEthiq_FullMethodName, in, out, opts...)
+func (c *msgClient) ConvertToHaqq(ctx context.Context, in *MsgConvertToHaqq, opts ...grpc.CallOption) (*MsgConvertToHaqqResponse, error) {
+	out := new(MsgConvertToHaqqResponse)
+	err := c.cc.Invoke(ctx, Msg_ConvertToHaqq_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,8 +115,8 @@ type MsgServer interface {
 	// transfer the ownership of shares to another account with certain amount of
 	// coins.
 	TransferOwnershipWithAmount(context.Context, *MsgTransferOwnershipWithAmount) (*MsgTransferOwnershipWithAmountResponse, error)
-	// ConvertToEthiq defines a method to allow a holder to convert ISLM tokens to ethiq tokens.
-	ConvertToEthiq(context.Context, *MsgConvertToEthiq) (*MsgConvertToEthiqResponse, error)
+	// ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to aHAQQ tokens.
+	ConvertToHaqq(context.Context, *MsgConvertToHaqq) (*MsgConvertToHaqqResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -136,8 +136,8 @@ func (UnimplementedMsgServer) TransferOwnershipWithRatio(context.Context, *MsgTr
 func (UnimplementedMsgServer) TransferOwnershipWithAmount(context.Context, *MsgTransferOwnershipWithAmount) (*MsgTransferOwnershipWithAmountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TransferOwnershipWithAmount not implemented")
 }
-func (UnimplementedMsgServer) ConvertToEthiq(context.Context, *MsgConvertToEthiq) (*MsgConvertToEthiqResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ConvertToEthiq not implemented")
+func (UnimplementedMsgServer) ConvertToHaqq(context.Context, *MsgConvertToHaqq) (*MsgConvertToHaqqResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConvertToHaqq not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -224,20 +224,20 @@ func _Msg_TransferOwnershipWithAmount_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_ConvertToEthiq_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgConvertToEthiq)
+func _Msg_ConvertToHaqq_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgConvertToHaqq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).ConvertToEthiq(ctx, in)
+		return srv.(MsgServer).ConvertToHaqq(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Msg_ConvertToEthiq_FullMethodName,
+		FullMethod: Msg_ConvertToHaqq_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).ConvertToEthiq(ctx, req.(*MsgConvertToEthiq))
+		return srv.(MsgServer).ConvertToHaqq(ctx, req.(*MsgConvertToHaqq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -266,8 +266,8 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Msg_TransferOwnershipWithAmount_Handler,
 		},
 		{
-			MethodName: "ConvertToEthiq",
-			Handler:    _Msg_ConvertToEthiq_Handler,
+			MethodName: "ConvertToHaqq",
+			Handler:    _Msg_ConvertToHaqq_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

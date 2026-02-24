@@ -4,8 +4,48 @@ package haqq.ethiq.v1;
 
 import "gogoproto/gogo.proto";
 import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "github.com/haqq-network/haqq/x/ethiq/types";
+
+// SourceOfFunds enumerates the valid options for a source of funds.
+enum SourceOfFunds {
+  // SOURCE_OF_FUNDS_BANK defines a bank balance as a source of funds option
+  SOURCE_OF_FUNDS_BANK = 0;
+
+  // SOURCE_OF_FUNDS_UCDAO defines a UC DAO module balance as a source of funds option
+  SOURCE_OF_FUNDS_UCDAO = 1;
+}
+
+message BurnApplication {
+  // id is an unique BurnApplication identification number
+  uint64 id = 1;
+
+  // from_address is a sender's address
+  string from_address = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // to_address is a receiver's address
+  string to_address = 3 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // source is an amount
+  SourceOfFunds source = 4;
+
+  // burn_amount is an amount to be burned by this BurnApplication
+  cosmos.base.v1beta1.Coin burn_amount = 5 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // burned_before_amount is a sum of burn_amount's of all previous BurnApplication's
+  cosmos.base.v1beta1.Coin burned_before_amount = 6 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // is_executed is a flag of application status
+  bool is_executed = 7;
+}
 
 // Params defines the parameters for the ethiq module.
 message Params {

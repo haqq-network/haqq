@@ -18,7 +18,7 @@ import (
 var _ protoreflect.List = (*_GenesisState_3_list)(nil)
 
 type _GenesisState_3_list struct {
-	list *[]string
+	list *[]uint64
 }
 
 func (x *_GenesisState_3_list) Len() int {
@@ -29,17 +29,17 @@ func (x *_GenesisState_3_list) Len() int {
 }
 
 func (x *_GenesisState_3_list) Get(i int) protoreflect.Value {
-	return protoreflect.ValueOfString((*x.list)[i])
+	return protoreflect.ValueOfUint64((*x.list)[i])
 }
 
 func (x *_GenesisState_3_list) Set(i int, value protoreflect.Value) {
-	valueUnwrapped := value.String()
+	valueUnwrapped := value.Uint()
 	concreteValue := valueUnwrapped
 	(*x.list)[i] = concreteValue
 }
 
 func (x *_GenesisState_3_list) Append(value protoreflect.Value) {
-	valueUnwrapped := value.String()
+	valueUnwrapped := value.Uint()
 	concreteValue := valueUnwrapped
 	*x.list = append(*x.list, concreteValue)
 }
@@ -53,8 +53,8 @@ func (x *_GenesisState_3_list) Truncate(n int) {
 }
 
 func (x *_GenesisState_3_list) NewElement() protoreflect.Value {
-	v := ""
-	return protoreflect.ValueOfString(v)
+	v := uint64(0)
+	return protoreflect.ValueOfUint64(v)
 }
 
 func (x *_GenesisState_3_list) IsValid() bool {
@@ -290,7 +290,7 @@ func (x *fastReflection_GenesisState) Mutable(fd protoreflect.FieldDescriptor) p
 		return protoreflect.ValueOfMessage(x.TotalBurnedAmount.ProtoReflect())
 	case "haqq.ethiq.v1.GenesisState.executed_applications":
 		if x.ExecutedApplications == nil {
-			x.ExecutedApplications = []string{}
+			x.ExecutedApplications = []uint64{}
 		}
 		value := &_GenesisState_3_list{list: &x.ExecutedApplications}
 		return protoreflect.ValueOfList(value)
@@ -314,7 +314,7 @@ func (x *fastReflection_GenesisState) NewField(fd protoreflect.FieldDescriptor) 
 		m := new(v1beta1.Coin)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	case "haqq.ethiq.v1.GenesisState.executed_applications":
-		list := []string{}
+		list := []uint64{}
 		return protoreflect.ValueOfList(&_GenesisState_3_list{list: &list})
 	default:
 		if fd.IsExtension() {
@@ -394,10 +394,11 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
 		if len(x.ExecutedApplications) > 0 {
-			for _, s := range x.ExecutedApplications {
-				l = len(s)
-				n += 1 + l + runtime.Sov(uint64(l))
+			l = 0
+			for _, e := range x.ExecutedApplications {
+				l += runtime.Sov(uint64(e))
 			}
+			n += 1 + runtime.Sov(uint64(l)) + l
 		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
@@ -429,13 +430,24 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 			copy(dAtA[i:], x.unknownFields)
 		}
 		if len(x.ExecutedApplications) > 0 {
-			for iNdEx := len(x.ExecutedApplications) - 1; iNdEx >= 0; iNdEx-- {
-				i -= len(x.ExecutedApplications[iNdEx])
-				copy(dAtA[i:], x.ExecutedApplications[iNdEx])
-				i = runtime.EncodeVarint(dAtA, i, uint64(len(x.ExecutedApplications[iNdEx])))
-				i--
-				dAtA[i] = 0x1a
+			var pksize2 int
+			for _, num := range x.ExecutedApplications {
+				pksize2 += runtime.Sov(uint64(num))
 			}
+			i -= pksize2
+			j1 := i
+			for _, num := range x.ExecutedApplications {
+				for num >= 1<<7 {
+					dAtA[j1] = uint8(uint64(num)&0x7f | 0x80)
+					num >>= 7
+					j1++
+				}
+				dAtA[j1] = uint8(num)
+				j1++
+			}
+			i = runtime.EncodeVarint(dAtA, i, uint64(pksize2))
+			i--
+			dAtA[i] = 0x1a
 		}
 		if x.TotalBurnedAmount != nil {
 			encoded, err := options.Marshal(x.TotalBurnedAmount)
@@ -587,37 +599,81 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 				}
 				iNdEx = postIndex
 			case 3:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ExecutedApplications", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				if wireType == 0 {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+						}
+						if iNdEx >= l {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
 					}
-					if iNdEx >= l {
+					x.ExecutedApplications = append(x.ExecutedApplications, v)
+				} else if wireType == 2 {
+					var packedLen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+						}
+						if iNdEx >= l {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						packedLen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if packedLen < 0 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+					}
+					postIndex := iNdEx + packedLen
+					if postIndex < 0 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+					}
+					if postIndex > l {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
+					var elementCount int
+					var count int
+					for _, integer := range dAtA[iNdEx:postIndex] {
+						if integer < 128 {
+							count++
+						}
 					}
+					elementCount = count
+					if elementCount != 0 && len(x.ExecutedApplications) == 0 {
+						x.ExecutedApplications = make([]uint64, 0, elementCount)
+					}
+					for iNdEx < postIndex {
+						var v uint64
+						for shift := uint(0); ; shift += 7 {
+							if shift >= 64 {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+							}
+							if iNdEx >= l {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+							}
+							b := dAtA[iNdEx]
+							iNdEx++
+							v |= uint64(b&0x7F) << shift
+							if b < 0x80 {
+								break
+							}
+						}
+						x.ExecutedApplications = append(x.ExecutedApplications, v)
+					}
+				} else {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ExecutedApplications", wireType)
 				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.ExecutedApplications = append(x.ExecutedApplications, string(dAtA[iNdEx:postIndex]))
-				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -677,7 +733,7 @@ type GenesisState struct {
 	// total_burned_amount defines the total amount of coins burned
 	TotalBurnedAmount *v1beta1.Coin `protobuf:"bytes,2,opt,name=total_burned_amount,json=totalBurnedAmount,proto3" json:"total_burned_amount,omitempty"`
 	// executed_applications defines the list of executed applications
-	ExecutedApplications []string `protobuf:"bytes,3,rep,name=executed_applications,json=executedApplications,proto3" json:"executed_applications,omitempty"`
+	ExecutedApplications []uint64 `protobuf:"varint,3,rep,packed,name=executed_applications,json=executedApplications,proto3" json:"executed_applications,omitempty"`
 }
 
 func (x *GenesisState) Reset() {
@@ -714,7 +770,7 @@ func (x *GenesisState) GetTotalBurnedAmount() *v1beta1.Coin {
 	return nil
 }
 
-func (x *GenesisState) GetExecutedApplications() []string {
+func (x *GenesisState) GetExecutedApplications() []uint64 {
 	if x != nil {
 		return x.ExecutedApplications
 	}
@@ -744,7 +800,7 @@ var file_haqq_ethiq_v1_genesis_proto_rawDesc = []byte{
 	0x6f, 0x69, 0x6e, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x11,
 	0x74, 0x6f, 0x74, 0x61, 0x6c, 0x42, 0x75, 0x72, 0x6e, 0x65, 0x64, 0x41, 0x6d, 0x6f, 0x75, 0x6e,
 	0x74, 0x12, 0x3a, 0x0a, 0x15, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65, 0x64, 0x5f, 0x61, 0x70,
-	0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09,
+	0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x04,
 	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x14, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x65,
 	0x64, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x42, 0x9f, 0x01,
 	0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x61, 0x71, 0x71, 0x2e, 0x65, 0x74, 0x68, 0x69, 0x71,

@@ -18,9 +18,6 @@ message MintHaqqAuthorization {
   // spend_limit specifies the maximum amount of tokens can be spent to mint haqq tokens. If it is
   // empty, there is no spend limit and any amount of coins can be spent.
   cosmos.base.v1beta1.Coin spend_limit = 1 [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coin"];
-  
-  // allow list of receivers, an empty allow list permits any receiver address
-  repeated string allow_list = 2;
 }
 
 // MintHaqqByApplicationIDAuthorization allows the grantee to execute application sent by
@@ -31,5 +28,5 @@ message MintHaqqByApplicationIDAuthorization {
   option (amino.name)                        = "haqq/ethiq/MintHaqqByApplicationIDAuthorization";
 
   // applications list of allowed ids, an empty list permits any application id
-  repeated string applications_list = 1;
+  repeated uint64 applications_list = 1;
 }

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package haqq.ethiq.v1;
 
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/v1beta1/coin.proto";
@@ -24,6 +25,24 @@ service Query {
   rpc Calculate(QueryCalculateRequest) returns (QueryCalculateResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/haqq/ethiq/v1/calculate/{islm_amount}";
+  }
+
+  // CalculateForApplication returns the estimated amount of aHAQQ coins to be minted for given BurnApplication ID.
+  rpc CalculateForApplication(QueryCalculateForApplicationRequest) returns (QueryCalculateForApplicationResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/haqq/ethiq/v1/calculate-for-application/{application_id}";
+  }
+
+  // GetApplications returns the paginated list of all registered applications.
+  rpc GetApplications(QueryGetApplicationsRequest) returns (QueryGetApplicationsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/haqq/ethiq/v1/get-applications";
+  }
+
+  // GetSendersApplications returns the paginated list of all applications registered for a given sender_address.
+  rpc GetSendersApplications(QueryGetSendersApplicationsRequest) returns (QueryGetSendersApplicationsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/haqq/ethiq/v1/get-senders-applications/{sender_address}";
   }
 
   // Params queries the parameters of x/ethiq module.
@@ -90,13 +109,104 @@ message QueryCalculateResponse {
     (amino.dont_omitempty) = true
   ];
 
-  // price_per_unit is the price per unit of aHAQQ
-  string price_per_unit = 4 [
+  // average_price is the average price per aHAQQ coin
+  string average_price = 4 [
     (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
+}
+
+// QueryCalculateForApplicationRequest is the request type for the Query/CalculateForApplication RPC method.
+message QueryCalculateForApplicationRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // application_id is the unique ID of BurnApplication containing the amount of aISLM coins to burn in exchange for aHAQQ.
+  // using string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)
+  uint64 application_id = 1;
+}
+
+// QueryCalculateForApplicationResponse is the response type for the Query/CalculateForApplication RPC method.
+message QueryCalculateForApplicationResponse {
+  // estimated_haqq_amount is the amount of aHAQQ coins to be minted
+  string estimated_haqq_amount = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // supply_before is the supply of aHAQQ before minting
+  string supply_before = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // supply_after is the supply of aHAQQ after minting
+  string supply_after = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // average_price is the average price per aHAQQ coin
+  string average_price = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // to_address is a receiver's address
+  string to_address = 5 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}
+
+message QueryGetApplicationsRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryGetApplicationsResponse is the response type for the Query/GetApplications RPC method.
+message QueryGetApplicationsResponse {
+  // applications is the list of all registered applications.
+  repeated BurnApplication applications = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryGetSendersApplicationsRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // sender_address is the address to query applications for.
+  string sender_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryGetSendersApplicationsResponse is the response type for the Query/GetSendersApplications RPC method.
+message QueryGetSendersApplicationsResponse {
+  // applications is the list of all applications registered for sender.
+  repeated BurnApplication applications = 1 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryParamsRequest defines the request type for querying x/ethiq parameters.

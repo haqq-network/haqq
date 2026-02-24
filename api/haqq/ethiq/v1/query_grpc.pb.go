@@ -19,9 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_TotalBurned_FullMethodName = "/haqq.ethiq.v1.Query/TotalBurned"
-	Query_Calculate_FullMethodName   = "/haqq.ethiq.v1.Query/Calculate"
-	Query_Params_FullMethodName      = "/haqq.ethiq.v1.Query/Params"
+	Query_TotalBurned_FullMethodName             = "/haqq.ethiq.v1.Query/TotalBurned"
+	Query_Calculate_FullMethodName               = "/haqq.ethiq.v1.Query/Calculate"
+	Query_CalculateForApplication_FullMethodName = "/haqq.ethiq.v1.Query/CalculateForApplication"
+	Query_GetApplications_FullMethodName         = "/haqq.ethiq.v1.Query/GetApplications"
+	Query_GetSendersApplications_FullMethodName  = "/haqq.ethiq.v1.Query/GetSendersApplications"
+	Query_Params_FullMethodName                  = "/haqq.ethiq.v1.Query/Params"
 )
 
 // QueryClient is the client API for Query service.
@@ -32,6 +35,12 @@ type QueryClient interface {
 	TotalBurned(ctx context.Context, in *QueryTotalBurnedRequest, opts ...grpc.CallOption) (*QueryTotalBurnedResponse, error)
 	// Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount
 	Calculate(ctx context.Context, in *QueryCalculateRequest, opts ...grpc.CallOption) (*QueryCalculateResponse, error)
+	// CalculateForApplication returns the estimated amount of aHAQQ coins to be minted for given BurnApplication ID.
+	CalculateForApplication(ctx context.Context, in *QueryCalculateForApplicationRequest, opts ...grpc.CallOption) (*QueryCalculateForApplicationResponse, error)
+	// GetApplications returns the paginated list of all registered applications.
+	GetApplications(ctx context.Context, in *QueryGetApplicationsRequest, opts ...grpc.CallOption) (*QueryGetApplicationsResponse, error)
+	// GetSendersApplications returns the paginated list of all applications registered for a given sender_address.
+	GetSendersApplications(ctx context.Context, in *QueryGetSendersApplicationsRequest, opts ...grpc.CallOption) (*QueryGetSendersApplicationsResponse, error)
 	// Params queries the parameters of x/ethiq module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 }
@@ -62,6 +71,33 @@ func (c *queryClient) Calculate(ctx context.Context, in *QueryCalculateRequest, 
 	return out, nil
 }
 
+func (c *queryClient) CalculateForApplication(ctx context.Context, in *QueryCalculateForApplicationRequest, opts ...grpc.CallOption) (*QueryCalculateForApplicationResponse, error) {
+	out := new(QueryCalculateForApplicationResponse)
+	err := c.cc.Invoke(ctx, Query_CalculateForApplication_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) GetApplications(ctx context.Context, in *QueryGetApplicationsRequest, opts ...grpc.CallOption) (*QueryGetApplicationsResponse, error) {
+	out := new(QueryGetApplicationsResponse)
+	err := c.cc.Invoke(ctx, Query_GetApplications_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) GetSendersApplications(ctx context.Context, in *QueryGetSendersApplicationsRequest, opts ...grpc.CallOption) (*QueryGetSendersApplicationsResponse, error) {
+	out := new(QueryGetSendersApplicationsResponse)
+	err := c.cc.Invoke(ctx, Query_GetSendersApplications_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
 	out := new(QueryParamsResponse)
 	err := c.cc.Invoke(ctx, Query_Params_FullMethodName, in, out, opts...)
@@ -79,6 +115,12 @@ type QueryServer interface {
 	TotalBurned(context.Context, *QueryTotalBurnedRequest) (*QueryTotalBurnedResponse, error)
 	// Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount
 	Calculate(context.Context, *QueryCalculateRequest) (*QueryCalculateResponse, error)
+	// CalculateForApplication returns the estimated amount of aHAQQ coins to be minted for given BurnApplication ID.
+	CalculateForApplication(context.Context, *QueryCalculateForApplicationRequest) (*QueryCalculateForApplicationResponse, error)
+	// GetApplications returns the paginated list of all registered applications.
+	GetApplications(context.Context, *QueryGetApplicationsRequest) (*QueryGetApplicationsResponse, error)
+	// GetSendersApplications returns the paginated list of all applications registered for a given sender_address.
+	GetSendersApplications(context.Context, *QueryGetSendersApplicationsRequest) (*QueryGetSendersApplicationsResponse, error)
 	// Params queries the parameters of x/ethiq module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	mustEmbedUnimplementedQueryServer()
@@ -93,6 +135,15 @@ func (UnimplementedQueryServer) TotalBurned(context.Context, *QueryTotalBurnedRe
 }
 func (UnimplementedQueryServer) Calculate(context.Context, *QueryCalculateRequest) (*QueryCalculateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Calculate not implemented")
+}
+func (UnimplementedQueryServer) CalculateForApplication(context.Context, *QueryCalculateForApplicationRequest) (*QueryCalculateForApplicationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CalculateForApplication not implemented")
+}
+func (UnimplementedQueryServer) GetApplications(context.Context, *QueryGetApplicationsRequest) (*QueryGetApplicationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetApplications not implemented")
+}
+func (UnimplementedQueryServer) GetSendersApplications(context.Context, *QueryGetSendersApplicationsRequest) (*QueryGetSendersApplicationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSendersApplications not implemented")
 }
 func (UnimplementedQueryServer) Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
@@ -146,6 +197,60 @@ func _Query_Calculate_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_CalculateForApplication_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryCalculateForApplicationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).CalculateForApplication(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_CalculateForApplication_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).CalculateForApplication(ctx, req.(*QueryCalculateForApplicationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_GetApplications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryGetApplicationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetApplications(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetApplications_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetApplications(ctx, req.(*QueryGetApplicationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_GetSendersApplications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryGetSendersApplicationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetSendersApplications(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetSendersApplications_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetSendersApplications(ctx, req.(*QueryGetSendersApplicationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryParamsRequest)
 	if err := dec(in); err != nil {
@@ -178,6 +283,18 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Calculate",
 			Handler:    _Query_Calculate_Handler,
+		},
+		{
+			MethodName: "CalculateForApplication",
+			Handler:    _Query_CalculateForApplication_Handler,
+		},
+		{
+			MethodName: "GetApplications",
+			Handler:    _Query_GetApplications_Handler,
+		},
+		{
+			MethodName: "GetSendersApplications",
+			Handler:    _Query_GetSendersApplications_Handler,
 		},
 		{
 			MethodName: "Params",
