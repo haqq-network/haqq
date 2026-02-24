@@ -73,49 +73,38 @@ func (k Keeper) AddToTotalBurnedFromApplicationsAmount(ctx sdk.Context, amount s
 	k.SetTotalBurnedFromApplicationsAmount(ctx, sdk.NewCoin(utils.BaseDenom, newAmount))
 }
 
-func (k Keeper) IsApplicationExecuted(ctx sdk.Context, appID sdkmath.Int) bool {
+func (k Keeper) IsApplicationExecuted(ctx sdk.Context, appID uint64) bool {
+	id := sdkmath.NewIntFromUint64(appID)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
-	return store.Has(appID.BigInt().Bytes())
+	return store.Has(id.BigInt().Bytes())
 }
 
-func (k Keeper) SetApplicationAsExecuted(ctx sdk.Context, appID sdkmath.Int) {
+func (k Keeper) SetApplicationAsExecuted(ctx sdk.Context, appID uint64) {
+	id := sdkmath.NewIntFromUint64(appID)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
-	store.Set(appID.BigInt().Bytes(), []byte{0})
-}
-
-func (k Keeper) ResetApplicationByID(ctx sdk.Context, appID sdkmath.Int) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
-	if store.Has(appID.BigInt().Bytes()) {
-		store.Delete(appID.BigInt().Bytes())
+	if !store.Has(id.BigInt().Bytes()) {
+		store.Set(id.BigInt().Bytes(), []byte{0})
 	}
 }
 
-func (k Keeper) GetAllExecutedApplicationsIDs(ctx sdk.Context) []sdkmath.Int {
+func (k Keeper) ResetApplicationByID(ctx sdk.Context, appID uint64) {
+	id := sdkmath.NewIntFromUint64(appID)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
-	apps := make([]sdkmath.Int, 0)
+	if store.Has(id.BigInt().Bytes()) {
+		store.Delete(id.BigInt().Bytes())
+	}
+}
+
+func (k Keeper) GetAllExecutedApplicationsIDs(ctx sdk.Context) []uint64 {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
+	apps := make([]uint64, 0)
 
 	iterator := store.Iterator(nil, nil)
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
 		bigIntKey := (&big.Int{}).SetBytes(iterator.Key())
-		appID := sdkmath.NewIntFromBigInt(bigIntKey)
-		apps = append(apps, appID)
-	}
-
-	return apps
-}
-
-func (k Keeper) GetAllExecutedApplicationsIDsString(ctx sdk.Context) []string {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
-	apps := make([]string, 0)
-
-	iterator := store.Iterator(nil, nil)
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		bigIntKey := (&big.Int{}).SetBytes(iterator.Key())
-		apps = append(apps, bigIntKey.String())
+		apps = append(apps, bigIntKey.Uint64())
 	}
 
 	return apps

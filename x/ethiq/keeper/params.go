@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/haqq-network/haqq/x/ethiq/types"
@@ -22,4 +23,11 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 // SetParams sets the ethiq parameters to the param space.
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramstore.SetParamSet(ctx, &params)
+}
+
+// GetMaxSupply returns the value of MaxSupply param
+func (k Keeper) GetMaxSupply(ctx sdk.Context) sdkmath.Int {
+	var params types.Params
+	k.paramstore.GetParamSet(ctx, &params)
+	return params.MaxSupply
 }

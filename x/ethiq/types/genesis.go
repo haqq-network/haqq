@@ -27,8 +27,8 @@ func (gs GenesisState) Validate() error {
 		return ErrInvalidAmount
 	}
 
-	for _, app := range gs.ExecutedApplications {
-		if _, ok := sdkmath.NewIntFromString(app); !ok {
+	for _, appID := range gs.ExecutedApplications {
+		if !IsApplicationExists(appID) {
 			return ErrInvalidApplicationID
 		}
 	}

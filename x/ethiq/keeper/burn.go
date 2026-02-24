@@ -36,17 +36,8 @@ func (k Keeper) BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAdd
 		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInvalidAmount, "islm_amount must be greater than zero, got %s", islmAmount)
 	}
 
-	// Get burnt islm amount
-	sumOfAllApplications, err := SumOfAllApplications()
-	if err != nil {
-		return sdkmath.ZeroInt(), err
-	}
-	totalBurnedAmount := k.GetTotalBurnedAmount(ctx)
-	totalBurnedFromApplicationsAmount := k.GetTotalBurnedFromApplicationsAmount(ctx)
-	alreadyBurntIslmAmount := totalBurnedAmount.Add(sdk.NewCoin(utils.BaseDenom, sumOfAllApplications)).Sub(totalBurnedFromApplicationsAmount)
-
 	// Calculate aHAQQ amount to be minted
-	haqqAmount, _, err := k.CalculateHaqqCoinsToMint(ctx, alreadyBurntIslmAmount.Amount, islmAmount)
+	haqqAmount, err := k.CalculateHaqqCoinsToMint(ctx, islmAmount)
 	if err != nil {
 		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to calculate aHAQQ amount to be minted")
 	}
@@ -55,9 +46,9 @@ func (k Keeper) BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAdd
 		return sdkmath.ZeroInt(), err
 	}
 
-	// aHAQQ supply before mint
-	haqqSupplyBefore := k.GetHaqqSupply(ctx)
-
+	if err := k.redeemAllLiquidVestingCoins(ctx, fromAddress, false); err != nil {
+		return sdkmath.ZeroInt(), err
+	}
 	vestingIslmUsed, err := k.unlockVestingCoins(ctx, fromAddress, sdk.NewCoin(utils.BaseDenom, islmAmount))
 	if err != nil {
 		return sdkmath.ZeroInt(), err
@@ -74,7 +65,11 @@ func (k Keeper) BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAdd
 		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to mint aHAQQ coins")
 	}
 
+	haqqSupplyBefore := k.GetHaqqSupply(ctx)
 	haqqSupplyAfter := haqqSupplyBefore.Add(haqqAmount)
+	if haqqSupplyAfter.GT(k.GetMaxSupply(ctx)) {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrExceedsMaxSupply, "aHAQQ supply after tx: %s", haqqSupplyAfter.String())
+	}
 
 	// Emit event
 	ctx.EventManager().EmitEvent(
@@ -86,7 +81,7 @@ func (k Keeper) BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAdd
 			sdk.NewAttribute(types.AttributeKeyIslmSpent, islmAmount.String()),
 			sdk.NewAttribute(types.AttributeKeyHaqqSupplyBefore, haqqSupplyBefore.String()),
 			sdk.NewAttribute(types.AttributeKeyHaqqSupplyAfter, haqqSupplyAfter.String()),
-			sdk.NewAttribute(types.AttributeKeyIslmVestingUsed, vestingIslmUsed.String()),
+			sdk.NewAttribute(types.AttributeKeyIslmVestingUsed, vestingIslmUsed.Amount.String()),
 			sdk.NewAttribute(types.AttributeKeyIslmFreeUsed, freeIslmUsed.String()),
 		),
 	)
@@ -94,40 +89,38 @@ func (k Keeper) BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAdd
 	return haqqAmount, nil
 }
 
-func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, appID sdkmath.Int) (sdkmath.Int, error) {
+func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, appID uint64) (sdkmath.Int, error) {
 	// Short no-op circuit if module is disabled
 	if !k.IsModuleEnabled(ctx) {
 		return sdkmath.ZeroInt(), types.ErrModuleDisabled
 	}
 
-	appIDUint := appID.Uint64()
-	if appIDUint >= uint64(len(registeredApplications)) {
+	application, err := types.GetApplicationByID(appID)
+	if err != nil {
 		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInvalidApplicationID, "application %d not found", appID)
 	}
 
-	if k.IsApplicationExecuted(ctx, appID) {
-		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInvalidApplicationID, "application ID %d is already executed", appID)
+	if k.IsApplicationExecuted(ctx, application.Id) {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInvalidApplicationID, "application ID %d is already executed", application.Id)
 	}
 
-	application := registeredApplications[appIDUint]
-	fromAddress, toAddress, islmAmount, err := application.ValidateAndParse()
-	if err != nil {
-		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrParseApplication, "application id %d: %e", appID, err)
-	}
+	isUcdao := application.Source == types.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO
+	fromAddress := sdk.MustAccAddressFromBech32(application.FromAddress)
+	toAddress := sdk.MustAccAddressFromBech32(application.ToAddress)
+	islmCoinsToBurn := application.BurnAmount
+	islmPreBurntByApplications := application.BurnedBeforeAmount
 
 	// use UCDAO escrow address if needed
-	if application.FundSource == types.FundSource_UCDAO {
+	if isUcdao {
 		fromAddress = GetUCDAOEscrowAddress(fromAddress)
 	}
 
-	// Get "passed burn" for application in queue
-	alreadyBurntIslmAmount, err := SumOfAllApplicationsBeforeID(appIDUint)
-	if err != nil {
+	// redeem liquid tokens on UCDAO escrow account
+	if err := k.redeemAllLiquidVestingCoins(ctx, fromAddress, isUcdao); err != nil {
 		return sdkmath.ZeroInt(), err
 	}
-
 	// Calculate aHAQQ amount to be minted
-	haqqAmount, _, err := k.CalculateHaqqCoinsToMint(ctx, alreadyBurntIslmAmount, islmAmount)
+	haqqAmount, err := CalculateHaqqAmount(islmPreBurntByApplications.Amount, islmCoinsToBurn.Amount)
 	if err != nil {
 		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to calculate aHAQQ amount to be minted")
 	}
@@ -136,25 +129,27 @@ func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, appID sdkmath.In
 		return sdkmath.ZeroInt(), err
 	}
 
-	// aHAQQ supply before mint
-	haqqSupplyBefore := k.GetHaqqSupply(ctx)
-
-	vestingIslmUsed, err := k.unlockVestingCoins(ctx, fromAddress, sdk.NewCoin(utils.BaseDenom, islmAmount))
+	vestingIslmUsed, err := k.unlockVestingCoins(ctx, fromAddress, islmCoinsToBurn)
 	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
-	freeIslmUsed := islmAmount.Sub(vestingIslmUsed.Amount)
+	freeIslmUsed := islmCoinsToBurn.Sub(vestingIslmUsed)
 
-	if err := k.burnCoins(ctx, fromAddress, islmAmount, true); err != nil {
-		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrBurnCoins, err.Error())
+	if err := k.burnCoins(ctx, fromAddress, islmCoinsToBurn.Amount, true); err != nil {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrBurnCoins, "%e", err)
 	}
 
 	if err := k.mintCoins(ctx, toAddress, haqqAmount); err != nil {
-		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrMintCoins, err.Error())
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrMintCoins, "%e", err)
 	}
 
-	// aHAQQ supply after mint
+	haqqSupplyBefore := k.GetHaqqSupply(ctx)
 	haqqSupplyAfter := haqqSupplyBefore.Add(haqqAmount)
+	if haqqSupplyAfter.GT(k.GetMaxSupply(ctx)) {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrExceedsMaxSupply, "aHAQQ supply after tx: %s", haqqSupplyAfter.String())
+	}
+
+	k.SetApplicationAsExecuted(ctx, appID)
 
 	// Emit event
 	ctx.EventManager().EmitEvent(
@@ -163,13 +158,13 @@ func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, appID sdkmath.In
 			sdk.NewAttribute(types.AttributeKeySender, fromAddress.String()),
 			sdk.NewAttribute(types.AttributeKeyReceiver, toAddress.String()),
 			sdk.NewAttribute(types.AttributeKeyHaqqMinted, haqqAmount.String()),
-			sdk.NewAttribute(types.AttributeKeyIslmSpent, islmAmount.String()),
+			sdk.NewAttribute(types.AttributeKeyIslmSpent, islmCoinsToBurn.Amount.String()),
 			sdk.NewAttribute(types.AttributeKeyHaqqSupplyBefore, haqqSupplyBefore.String()),
 			sdk.NewAttribute(types.AttributeKeyHaqqSupplyAfter, haqqSupplyAfter.String()),
-			sdk.NewAttribute(types.AttributeKeyIslmVestingUsed, vestingIslmUsed.String()),
-			sdk.NewAttribute(types.AttributeKeyIslmFreeUsed, freeIslmUsed.String()),
+			sdk.NewAttribute(types.AttributeKeyIslmVestingUsed, vestingIslmUsed.Amount.String()),
+			sdk.NewAttribute(types.AttributeKeyIslmFreeUsed, freeIslmUsed.Amount.String()),
 			sdk.NewAttribute(types.AttributeKeyApplicationID, fmt.Sprintf("%d", appID)),
-			sdk.NewAttribute(types.AttributeKeyApplicationFundsSource, types.FundSources[application.FundSource]),
+			sdk.NewAttribute(types.AttributeKeyApplicationFundsSource, types.FundSources[application.Source]),
 		),
 	)
 

@@ -7,10 +7,10 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/ethiq/types"
 )
 
@@ -49,29 +49,152 @@ func (k Keeper) Calculate(ctx context.Context, req *types.QueryCalculateRequest)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+	haqqToBeMinted, err := k.CalculateHaqqCoinsToMint(sdkCtx, islmAmount)
+	if err != nil {
+		return nil, status.Error(codes.Internal, errorsmod.Wrap(err, "failed to calculate aHAQQ amount").Error())
+	}
+
+	// Calculate average price per unit
+	averagePrice := sdkmath.LegacyZeroDec()
+	if !haqqToBeMinted.IsZero() {
+		// both islmAmount and haqqToBeMinted are not zero
+		averagePrice = sdkmath.LegacyNewDecFromInt(islmAmount).Quo(sdkmath.LegacyNewDecFromInt(haqqToBeMinted))
+	}
+
 	haqqSupplyBefore := k.bankKeeper.GetSupply(ctx, types.BaseDenom)
-
-	// Get burnt islm amount
-	sumOfAllApplications, err := SumOfAllApplications()
-	if err != nil {
-		return nil, err
-	}
-	totalBurnedAmount := k.GetTotalBurnedAmount(sdkCtx)
-	totalBurnedFromApplicationsAmount := k.GetTotalBurnedFromApplicationsAmount(sdkCtx)
-	alreadyBurntIslmAmount := totalBurnedAmount.Add(sdk.NewCoin(utils.BaseDenom, sumOfAllApplications)).Sub(totalBurnedFromApplicationsAmount)
-
-	haqqToBeMinted, pricePerUnit, err := k.CalculateHaqqCoinsToMint(sdkCtx, alreadyBurntIslmAmount.Amount, islmAmount)
-	if err != nil {
-		return nil, status.Error(codes.Internal, errorsmod.Wrap(err, "failed to calculate required ISLM").Error())
-	}
-
 	haqqSupplyAfter := haqqSupplyBefore.Amount.Add(haqqToBeMinted)
 
 	return &types.QueryCalculateResponse{
 		EstimatedHaqqAmount: haqqToBeMinted,
 		SupplyBefore:        haqqSupplyBefore.Amount,
 		SupplyAfter:         haqqSupplyAfter,
-		PricePerUnit:        pricePerUnit,
+		AveragePrice:        averagePrice,
+	}, nil
+}
+
+func (k Keeper) CalculateForApplication(ctx context.Context, req *types.QueryCalculateForApplicationRequest) (*types.QueryCalculateForApplicationResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	burnApplication, err := types.GetApplicationByID(req.ApplicationId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	haqqToBeMinted, err := CalculateHaqqAmount(burnApplication.BurnedBeforeAmount.Amount, burnApplication.BurnAmount.Amount)
+	if err != nil {
+		return nil, status.Error(codes.Internal, errorsmod.Wrap(err, "failed to calculate aHAQQ amount").Error())
+	}
+
+	// Calculate average price per unit
+	averagePrice := sdkmath.LegacyZeroDec()
+	if !haqqToBeMinted.IsZero() {
+		// both islmAmount and haqqToBeMinted are not zero
+		averagePrice = sdkmath.LegacyNewDecFromInt(burnApplication.BurnAmount.Amount).Quo(sdkmath.LegacyNewDecFromInt(haqqToBeMinted))
+	}
+
+	haqqSupplyBefore := k.bankKeeper.GetSupply(ctx, types.BaseDenom)
+	haqqSupplyAfter := haqqSupplyBefore.Amount.Add(haqqToBeMinted)
+
+	return &types.QueryCalculateForApplicationResponse{
+		EstimatedHaqqAmount: haqqToBeMinted,
+		SupplyBefore:        haqqSupplyBefore.Amount,
+		SupplyAfter:         haqqSupplyAfter,
+		AveragePrice:        averagePrice,
+		ToAddress:           burnApplication.ToAddress,
+	}, nil
+}
+
+func (k Keeper) GetApplications(ctx context.Context, req *types.QueryGetApplicationsRequest) (*types.QueryGetApplicationsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	applications := make([]types.BurnApplication, 0)
+
+	total := types.TotalNumberOfApplications()
+	page, limit, err := query.ParsePagination(req.Pagination)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	offset := (page - 1) * limit
+	lastOnThisPage := offset + limit - 1
+	if lastOnThisPage >= total {
+		lastOnThisPage = total - 1
+	}
+
+	paginationResponse := &query.PageResponse{
+		Total: uint64(total),
+	}
+
+	if offset >= total {
+		return &types.QueryGetApplicationsResponse{
+			Applications: applications,
+			Pagination:   paginationResponse,
+		}, nil
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	for i := offset; i < total && i <= lastOnThisPage; i++ {
+		burnApplication, err := types.GetApplicationByID(uint64(i))
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		burnApplication.IsExecuted = k.IsApplicationExecuted(sdkCtx, burnApplication.Id)
+		applications = append(applications, *burnApplication)
+	}
+
+	return &types.QueryGetApplicationsResponse{
+		Applications: applications,
+		Pagination:   paginationResponse,
+	}, nil
+}
+
+func (k Keeper) GetSendersApplications(ctx context.Context, req *types.QueryGetSendersApplicationsRequest) (*types.QueryGetSendersApplicationsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	applications := make([]types.BurnApplication, 0)
+
+	total := types.TotalNumberOfApplicationsBySender(req.SenderAddress)
+	page, limit, err := query.ParsePagination(req.Pagination)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	offset := (page - 1) * limit
+	lastOnThisPage := offset + limit - 1
+	if lastOnThisPage >= total {
+		lastOnThisPage = total - 1
+	}
+
+	paginationResponse := &query.PageResponse{
+		Total: uint64(total),
+	}
+
+	if offset >= total {
+		return &types.QueryGetSendersApplicationsResponse{
+			Applications: applications,
+			Pagination:   paginationResponse,
+		}, nil
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	for i := offset; i < total && i <= lastOnThisPage; i++ {
+		burnApplication, err := types.GetSendersApplicationIDByIndex(req.SenderAddress, i)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		burnApplication.IsExecuted = k.IsApplicationExecuted(sdkCtx, burnApplication.Id)
+		applications = append(applications, *burnApplication)
+	}
+
+	return &types.QueryGetSendersApplicationsResponse{
+		Applications: applications,
+		Pagination:   paginationResponse,
 	}, nil
 }
 

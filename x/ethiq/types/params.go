@@ -19,6 +19,7 @@ var (
 	ParamStoreKeyEnabled      = []byte("Enabled")
 	ParamStoreKeyMinMintPerTx = []byte("MinMintPerTx")
 	ParamStoreKeyMaxMintPerTx = []byte("MaxMintPerTx")
+	ParamStoreKeyMaxSupply    = []byte("MaxSupply")
 )
 
 func ParamKeyTable() paramtypes.KeyTable {
@@ -27,9 +28,10 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 func DefaultParams() Params {
 	return Params{
-		Enabled:      false,
+		Enabled:      true,
 		MinMintPerTx: sdkmath.OneInt().MulRaw(1e18),             // 1 * 10^18
-		MaxMintPerTx: sdkmath.OneInt().MulRaw(1e18).MulRaw(1e9), // 1 * 10^9 * 10^18
+		MaxMintPerTx: sdkmath.OneInt().MulRaw(1e18).MulRaw(1e8), // 1 * 10^8 * 10^18 = 100m HAQQ
+		MaxSupply:    sdkmath.OneInt().MulRaw(1e18).MulRaw(1e8), // 1 * 10^8 * 10^18 = 100m HAQQ
 	}
 }
 
@@ -39,6 +41,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreKeyEnabled, &p.Enabled, validateBool),
 		paramtypes.NewParamSetPair(ParamStoreKeyMinMintPerTx, &p.MinMintPerTx, validateInt),
 		paramtypes.NewParamSetPair(ParamStoreKeyMaxMintPerTx, &p.MaxMintPerTx, validateInt),
+		paramtypes.NewParamSetPair(ParamStoreKeyMaxSupply, &p.MaxSupply, validateInt),
 	}
 }
 
@@ -68,10 +71,23 @@ func (p Params) Validate() error {
 	if err := validateInt(p.MaxMintPerTx); err != nil {
 		return err
 	}
+	if err := validateInt(p.MaxSupply); err != nil {
+		return err
+	}
 
 	// Validate that MinMintPerTx < MaxMintPerTx
 	if p.MinMintPerTx.GTE(p.MaxMintPerTx) {
 		return fmt.Errorf("min_mint_per_tx (%s) must be less than max_mint_per_tx (%s)", p.MinMintPerTx, p.MaxMintPerTx)
+	}
+
+	// Validate that MinMintPerTx < MaxSupply
+	if p.MinMintPerTx.GTE(p.MaxSupply) {
+		return fmt.Errorf("min_mint_per_tx (%s) must be less than max_supply (%s)", p.MinMintPerTx, p.MaxSupply)
+	}
+
+	// Validate that MaxMintPerTx <= MaxSupply
+	if p.MaxMintPerTx.GT(p.MaxSupply) {
+		return fmt.Errorf("max_mint_per_tx (%s) must be less or equal to max_supply (%s)", p.MaxMintPerTx, p.MaxSupply)
 	}
 
 	return nil

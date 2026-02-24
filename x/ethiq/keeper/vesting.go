@@ -12,6 +12,31 @@ import (
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
+func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, isUcdao bool) error {
+	balances := k.bankKeeper.GetAllBalances(ctx, fromAddress)
+
+	// redeem all aLIQUID balances from liquid vesting module
+	for _, balance := range balances {
+		if balance.Denom == utils.BaseDenom {
+			continue
+		}
+
+		// redeem balance from liquid vesting module
+		if err := k.liquidVestingKeeper.Redeem(ctx, fromAddress, fromAddress, balance); err != nil {
+			return errorsmod.Wrap(err, "failed to redeem liquid coins")
+		}
+
+		if isUcdao {
+			// track total balance of UCDAO module
+			// intended usage of methods that should be internal..
+			k.ucdaoKeeper.TrackAddBalance(ctx, sdk.NewCoin(utils.BaseDenom, balance.Amount))
+			k.ucdaoKeeper.TrackSubBalance(ctx, balance)
+		}
+	}
+
+	return nil
+}
+
 func (k Keeper) unlockVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, amt sdk.Coin) (sdk.Coin, error) {
 	zeroCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.ZeroInt())
 
@@ -58,8 +83,8 @@ func (k Keeper) unlockVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, 
 		return zeroCoin, errorsmod.Wrapf(types.ErrUnlockCoins, "failed to calculate new schedule: %s", err.Error())
 	}
 
-	va.LockupPeriods = liquidvestingtypes.ReplacePeriodsTail(va.LockupPeriods, decreasedPeriods)
 	va.OriginalVesting = va.OriginalVesting.Sub(unlockCoins)
+	va.LockupPeriods = liquidvestingtypes.ReplacePeriodsTail(va.LockupPeriods, decreasedPeriods)
 	va.VestingPeriods = liquidvestingtypes.ReplacePeriodsTail(va.VestingPeriods, decreasedVestingPeriods)
 	k.accountKeeper.SetAccount(ctx, va)
 

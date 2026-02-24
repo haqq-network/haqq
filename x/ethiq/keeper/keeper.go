@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	erc20keeper "github.com/haqq-network/haqq/x/erc20/keeper"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/ethiq/types"
 )
@@ -21,9 +20,11 @@ type Keeper struct {
 	cdc        codec.BinaryCodec
 	paramstore paramtypes.Subspace
 
-	accountKeeper types.AccountKeeper
-	bankKeeper    types.BankKeeper
-	erc20Keeper   erc20keeper.Keeper
+	accountKeeper       types.AccountKeeper
+	bankKeeper          types.BankKeeper
+	erc20Keeper         types.ERC20Keeper
+	liquidVestingKeeper types.LiquidVestingKeeper
+	ucdaoKeeper         types.UCDAOKeeper
 }
 
 // NewKeeper creates a new ethiq Keeper instance
@@ -33,7 +34,9 @@ func NewKeeper(
 	ps paramtypes.Subspace,
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
-	ek erc20keeper.Keeper,
+	ek types.ERC20Keeper,
+	lk types.LiquidVestingKeeper,
+	uc types.UCDAOKeeper,
 ) Keeper {
 	// ensure ethiq module account is set
 	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
@@ -46,12 +49,14 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		storeKey:      storeKey,
-		cdc:           cdc,
-		paramstore:    ps,
-		accountKeeper: ak,
-		bankKeeper:    bk,
-		erc20Keeper:   ek,
+		storeKey:            storeKey,
+		cdc:                 cdc,
+		paramstore:          ps,
+		accountKeeper:       ak,
+		bankKeeper:          bk,
+		erc20Keeper:         ek,
+		liquidVestingKeeper: lk,
+		ucdaoKeeper:         uc,
 	}
 }
 

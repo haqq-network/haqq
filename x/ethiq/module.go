@@ -95,13 +95,13 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule implements an application module for the ethiq module.
 type AppModule struct {
 	AppModuleBasic
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 	ak     types.AccountKeeper
 }
 
 // NewAppModule creates a new AppModule Object
 func NewAppModule(
-	k keeper.Keeper,
+	k *keeper.Keeper,
 	ak types.AccountKeeper,
 ) AppModule {
 	return AppModule{

@@ -6,52 +6,80 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common/math"
+
+	"github.com/haqq-network/haqq/utils"
 )
 
-type FundSource int8
-
-const (
-	FundSource_BANK  FundSource = 1
-	FundSource_UCDAO FundSource = 2
-)
-
-var (
-	FundSources = map[FundSource]string{
-		FundSource_BANK:  "bank",
-		FundSource_UCDAO: "ucdao",
-	}
-)
-
-type Application struct {
-	FromAddress string
-	ToAddress   string
-	FundSource  FundSource
-	IslmAmount  string
+type ApplicationListItem struct {
+	ID                         uint64
+	FromAddress                string
+	ToAddress                  string
+	FundSource                 SourceOfFunds
+	IslmAmount                 string
+	IslmAccumulatedBurntAmount string
 }
 
-func (a Application) ValidateAndParse() (sdk.AccAddress, sdk.AccAddress, sdkmath.Int, error) {
-	toAddress, err := sdk.AccAddressFromBech32(a.ToAddress)
-	if err != nil {
-		return nil, nil, sdkmath.ZeroInt(), errorsmod.Wrapf(ErrInvalidAddress, "invalid to_address: %v", err)
-	}
-
-	fromAddress, err := sdk.AccAddressFromBech32(a.FromAddress)
-	if err != nil {
-		return nil, nil, sdkmath.ZeroInt(), errorsmod.Wrapf(ErrInvalidAddress, "invalid from_address: %v", err)
-	}
-
-	if a.FundSource != FundSource_BANK && a.FundSource != FundSource_UCDAO {
-		return nil, nil, sdkmath.ZeroInt(), errorsmod.Wrap(ErrInvalidFundsSource, "invalid fund_source")
-	}
-
+func (a ApplicationListItem) AsBurnApplication() (*BurnApplication, error) {
 	islmAmount, ok := sdkmath.NewIntFromString(a.IslmAmount)
 	if !ok {
-		return nil, nil, sdkmath.ZeroInt(), fmt.Errorf("invalid islm_amount: %s", a.IslmAmount)
+		return nil, fmt.Errorf("invalid islm_amount: %s", a.IslmAmount)
 	}
 
-	if islmAmount.LTE(sdkmath.ZeroInt()) {
-		return nil, nil, sdkmath.ZeroInt(), errorsmod.Wrap(ErrInvalidAmount, "islm_amount must be positive and greater than zero")
+	islmAccumulatedBurntAmount, ok := sdkmath.NewIntFromString(a.IslmAccumulatedBurntAmount)
+	if !ok {
+		return nil, fmt.Errorf("invalid islm_accumulated_burnt_amount: %s", a.IslmAccumulatedBurntAmount)
 	}
 
-	return fromAddress, toAddress, islmAmount, nil
+	burnApplication := &BurnApplication{
+		Id:                 a.ID,
+		FromAddress:        a.FromAddress,
+		ToAddress:          a.ToAddress,
+		Source:             a.FundSource,
+		BurnAmount:         sdk.NewCoin(utils.BaseDenom, islmAmount),
+		BurnedBeforeAmount: sdk.NewCoin(utils.BaseDenom, islmAccumulatedBurntAmount),
+		IsExecuted:         false,
+	}
+
+	if err := burnApplication.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	return burnApplication, nil
+}
+
+func (ba *BurnApplication) ValidateBasic() error {
+	if ba.Id > math.MaxUint64 {
+		return errorsmod.Wrapf(ErrInvalidApplicationID, "uint64 overflow; id: %d", ba.Id)
+	}
+
+	if _, err := sdk.AccAddressFromBech32(ba.FromAddress); err != nil {
+		return errorsmod.Wrapf(ErrInvalidAddress, "invalid from_address: %v", err)
+	}
+
+	if _, err := sdk.AccAddressFromBech32(ba.ToAddress); err != nil {
+		return errorsmod.Wrapf(ErrInvalidAddress, "invalid to_address: %v", err)
+	}
+
+	if ba.Source != SourceOfFunds_SOURCE_OF_FUNDS_BANK && ba.Source != SourceOfFunds_SOURCE_OF_FUNDS_UCDAO {
+		return errorsmod.Wrapf(ErrInvalidFundsSource, "invalid source_of_funds: %d", ba.Source)
+	}
+
+	if !ba.BurnAmount.IsValid() || ba.BurnAmount.IsZero() {
+		return errorsmod.Wrapf(ErrInvalidAmount, "islm_amount must be positive and greater than zero; got %s", ba.BurnAmount.String())
+	}
+
+	if ba.BurnAmount.Denom != utils.BaseDenom {
+		return errorsmod.Wrapf(ErrInvalidAmount, "invalid denom for islm_amount; expected aISLM, got %s", ba.BurnAmount.Denom)
+	}
+
+	if !ba.BurnedBeforeAmount.IsValid() {
+		return errorsmod.Wrap(ErrInvalidAmount, "islm_accumulated_burnt_amount must be positive or zero")
+	}
+
+	if ba.BurnedBeforeAmount.Denom != utils.BaseDenom {
+		return errorsmod.Wrapf(ErrInvalidAmount, "invalid denom for islm_accumulated_burnt_amount; expected aISLM, got %s", ba.BurnedBeforeAmount.Denom)
+	}
+
+	return nil
 }

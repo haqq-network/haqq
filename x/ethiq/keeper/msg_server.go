@@ -11,11 +11,11 @@ import (
 var _ types.MsgServer = &msgServer{}
 
 type msgServer struct {
-	Keeper
+	*Keeper
 }
 
 // NewMsgServerImpl returns an implementation of the ethiq MsgServer interface
-func NewMsgServerImpl(keeper Keeper) types.MsgServer {
+func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
@@ -57,12 +57,18 @@ func (k msgServer) MintHaqqByApplication(goCtx context.Context, msg *types.MsgMi
 		return nil, err
 	}
 
-	mintedHaqqAmt, err := k.Keeper.BurnIslmForHaqqByApplicationID(ctx, msg.ApplicationId)
+	burnApplication, err := types.GetApplicationByID(msg.ApplicationId)
+	if err != nil {
+		return nil, err
+	}
+
+	mintedHaqqAmt, err := k.Keeper.BurnIslmForHaqqByApplicationID(ctx, burnApplication.Id)
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.MsgMintHaqqByApplicationResponse{
 		HaqqAmount: mintedHaqqAmt,
+		ToAddress:  burnApplication.ToAddress,
 	}, nil
 }
