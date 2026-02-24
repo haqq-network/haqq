@@ -168,6 +168,7 @@ import (
 	v190 "github.com/haqq-network/haqq/app/upgrades/v1.9.0"
 	v191 "github.com/haqq-network/haqq/app/upgrades/v1.9.1"
 	v192 "github.com/haqq-network/haqq/app/upgrades/v1.9.2"
+	v193 "github.com/haqq-network/haqq/app/upgrades/v1.9.3"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -288,7 +289,7 @@ type Haqq struct {
 	// Haqq keepers
 	CoinomicsKeeper coinomicskeeper.Keeper
 	DaoKeeper       ucdaokeeper.Keeper
-	EthiqKeeper     ethiqkeeper.Keeper
+	EthiqKeeper     *ethiqkeeper.Keeper
 
 	// the module manager
 	mm                 *module.Manager
@@ -532,15 +533,6 @@ func NewHaqq(
 		app.AccountKeeper, app.BankKeeper, &app.Erc20Keeper, app.VestingKeeper,
 	)
 
-	app.EthiqKeeper = ethiqkeeper.NewKeeper(
-		keys[ethiqtypes.StoreKey],
-		appCodec,
-		app.GetSubspace(ethiqtypes.ModuleName),
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.Erc20Keeper,
-	)
-
 	app.DaoKeeper = ucdaokeeper.NewBaseKeeper(
 		appCodec, keys[ucdaotypes.StoreKey],
 		app.AccountKeeper,
@@ -549,6 +541,18 @@ func NewHaqq(
 		app.EthiqKeeper,
 		authAddr,
 	)
+
+	ethiqKeeper := ethiqkeeper.NewKeeper(
+		keys[ethiqtypes.StoreKey],
+		appCodec,
+		app.GetSubspace(ethiqtypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		&app.Erc20Keeper,
+		app.LiquidVestingKeeper,
+		app.DaoKeeper,
+	)
+	app.EthiqKeeper = &ethiqKeeper
 
 	// Initialize the packet forward middleware Keeper
 	// It's important to note that the PFM Keeper must be initialized before the Transfer Keeper
@@ -591,6 +595,7 @@ func NewHaqq(
 			app.AuthzKeeper,
 			app.TransferKeeper,
 			app.IBCKeeper.ChannelKeeper,
+			app.EthiqKeeper,
 		),
 	)
 
@@ -1287,6 +1292,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v192.CreateUpgradeHandler(app.mm, app.configurator),
 	)
 
+	// v1.9.3 Add Ethiq module
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v193.UpgradeName,
+		v193.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1302,15 +1313,12 @@ func (app *Haqq) setupUpgradeHandlers() {
 	var storeUpgrades *storetypes.StoreUpgrades
 	//nolint: revive // Example for further upgrades
 	switch upgradeInfo.Name {
-	// case v177.UpgradeName:
-	//	storeUpgrades = &storetypes.StoreUpgrades{
-	//		Renamed: []storetypes.StoreRename{
-	//			{
-	//				OldKey: ucdaotypes.ModuleOldName,
-	//				NewKey: ucdaotypes.ModuleName,
-	//			},
-	//		},
-	//	}
+	case v193.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{
+				ethiqtypes.ModuleName,
+			},
+		}
 	}
 
 	if storeUpgrades != nil {
