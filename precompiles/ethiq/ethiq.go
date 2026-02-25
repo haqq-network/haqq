@@ -110,6 +110,8 @@ func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 			// Queries
 			case Calculate:
 				bz, err = p.Calculate(ctx, contract, method, args)
+			case CalculateForApplication:
+				bz, err = p.CalculateForApplication(ctx, contract, method, args)
 			case authorization.AllowanceMethod:
 				bz, err = p.Allowance(ctx, method, contract, args)
 			default:

@@ -88,6 +88,23 @@ func NewCalculateRequest(args []interface{}) (*ethiqtypes.QueryCalculateRequest,
 	return req, nil
 }
 
+func NewCalculateForApplicationRequest(args []interface{}) (*ethiqtypes.QueryCalculateForApplicationRequest, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf("invalid input arguments. Expected 1, got %d", len(args))
+	}
+
+	appID, ok := args[0].(*big.Int)
+	if !ok || appID == nil {
+		return nil, errorsmod.Wrapf(ethiqtypes.ErrInvalidApplicationID, ErrInvalidApplicationID, args[0])
+	}
+
+	req := &ethiqtypes.QueryCalculateForApplicationRequest{
+		ApplicationId: appID.Uint64(),
+	}
+
+	return req, nil
+}
+
 func NewMintHaqqAuthorization(args []interface{}) (common.Address, common.Address, *ethiqtypes.MintHaqqAuthorization, error) {
 	grantee, granter, amount, err := checkMintHaqqAuthzArgs(args)
 	if err != nil {

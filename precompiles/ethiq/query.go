@@ -3,10 +3,10 @@ package ethiq
 import (
 	"fmt"
 	"math/big"
-	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
@@ -17,6 +17,9 @@ import (
 const (
 	// Calculate defines the ABI query method name for the calculation of ethiq coins to be minted for a given aISLM.
 	Calculate = "calculate"
+	// CalculateForApplication defines the ABI query method name for the calculation of ethiq coins
+	// to be minted for a given application ID.
+	CalculateForApplication = "calculateForApplication"
 )
 
 // Calculate returns the estimated amount of aHAQQ coins to be minted for a given aISLM.
@@ -33,9 +36,6 @@ func (p Precompile) Calculate(
 
 	res, err := p.ethiqKeeper.Calculate(ctx, req)
 	if err != nil {
-		if strings.Contains(err.Error(), ErrCalculationFailed) {
-			return method.Outputs.Pack(big.NewInt(0), big.NewInt(0), big.NewInt(0), "")
-		}
 		return nil, err
 	}
 
@@ -44,6 +44,34 @@ func (p Precompile) Calculate(
 		res.SupplyBefore.BigInt(),
 		res.SupplyAfter.BigInt(),
 		res.AveragePrice.String(),
+	)
+}
+
+// CalculateForApplication returns the estimated amount of aHAQQ coins to be minted for a given application ID.
+func (p Precompile) CalculateForApplication(
+	ctx sdk.Context,
+	_ *vm.Contract,
+	method *abi.Method,
+	args []interface{},
+) ([]byte, error) {
+	req, err := NewCalculateForApplicationRequest(args)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := p.ethiqKeeper.CalculateForApplication(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	receiver := common.BytesToAddress(sdk.MustAccAddressFromBech32(res.ToAddress).Bytes())
+
+	return method.Outputs.Pack(
+		res.EstimatedHaqqAmount.BigInt(),
+		res.SupplyBefore.BigInt(),
+		res.SupplyAfter.BigInt(),
+		res.AveragePrice.String(),
+		receiver,
 	)
 }
 

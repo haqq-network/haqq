@@ -106,4 +106,24 @@ interface EthiqI is AuthorizationI {
             uint256 supplyAfter,
             string memory pricePerUnit
         );
+
+    /// @dev Calculates the estimated amount of aHAQQ coins to be minted for a given application ID
+    /// @param applicationId The application ID used for minting
+    /// @return estimatedHaqqAmount The estimated amount of aHAQQ coins to be minted
+    /// @return supplyBefore The supply of aHAQQ before minting
+    /// @return supplyAfter The supply of aHAQQ after minting
+    /// @return pricePerUnit The price per unit of aHAQQ as a decimal string
+    /// @return receiver The address that would receive the minted aHAQQ coins
+    function calculateForApplication(
+        uint256 applicationId
+    )
+        external
+        view
+        returns (
+            uint256 estimatedHaqqAmount,
+            uint256 supplyBefore,
+            uint256 supplyAfter,
+            string memory pricePerUnit,
+            address receiver
+        );
 }
