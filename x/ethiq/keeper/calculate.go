@@ -75,7 +75,7 @@ func CalculateHaqqAmount(currentIslmTotalBurned, restAmountToBeBurned sdkmath.In
 		restAmountToBeBurned = restAmountToBeBurned.Sub(burnOnThisLevel)
 
 		// track minting
-		haqqToBeMintedOnThisLevel := burnOnThisLevel.Quo(unitPrice)
+		haqqToBeMintedOnThisLevel := burnOnThisLevel.Quo(unitPrice).Mul(sdkmath.NewIntFromUint64(1e18))
 		totalHaqqToBeMinted = totalHaqqToBeMinted.Add(haqqToBeMintedOnThisLevel)
 	}
 
