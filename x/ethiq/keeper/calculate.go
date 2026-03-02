@@ -44,6 +44,7 @@ func CalculateHaqqAmount(currentIslmTotalBurned, restAmountToBeBurned sdkmath.In
 		}
 
 		levelMaxAmount := pl.ToAmount()
+		levelMinAmount := pl.FromAmount()
 
 		// exclude threshold amount
 		if currentIslmTotalBurned.GTE(levelMaxAmount.Sub(sdkmath.OneInt())) {
@@ -51,10 +52,8 @@ func CalculateHaqqAmount(currentIslmTotalBurned, restAmountToBeBurned sdkmath.In
 			continue
 		}
 
-		levelMinAmount := pl.FromAmount()
-
 		// just in case... check that we are within the range
-		if !(currentIslmTotalBurned.GTE(levelMinAmount) && currentIslmTotalBurned.LT(levelMaxAmount)) {
+		if !(currentIslmTotalBurned.GTE(levelMinAmount.Sub(sdkmath.OneInt())) && currentIslmTotalBurned.LT(levelMaxAmount)) {
 			// should never happen
 			return sdkmath.Int{}, errorsmod.Wrap(types.ErrCalculationFailed, "failed to find price level")
 		}
@@ -75,7 +74,7 @@ func CalculateHaqqAmount(currentIslmTotalBurned, restAmountToBeBurned sdkmath.In
 		restAmountToBeBurned = restAmountToBeBurned.Sub(burnOnThisLevel)
 
 		// track minting
-		haqqToBeMintedOnThisLevel := burnOnThisLevel.Quo(unitPrice).Mul(sdkmath.NewIntFromUint64(1e18))
+		haqqToBeMintedOnThisLevel := sdkmath.LegacyNewDecFromInt(burnOnThisLevel).Quo(unitPrice).TruncateInt()
 		totalHaqqToBeMinted = totalHaqqToBeMinted.Add(haqqToBeMintedOnThisLevel)
 	}
 

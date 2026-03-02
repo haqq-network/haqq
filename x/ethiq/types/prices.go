@@ -49,9 +49,9 @@ func (pl PriceLevel) ToAmount() sdkmath.Int {
 	return amt
 }
 
-func (pl PriceLevel) UnitPrice() sdkmath.Int {
-	amt, ok := sdkmath.NewIntFromString(pl.Price)
-	if !ok {
+func (pl PriceLevel) UnitPrice() sdkmath.LegacyDec {
+	amt, err := sdkmath.LegacyNewDecFromStr(pl.Price)
+	if err != nil {
 		// should never happen as we know the original data
 		panic("invalid price")
 	}
