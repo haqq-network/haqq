@@ -1295,7 +1295,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	// v1.9.3 Add Ethiq module
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v193.UpgradeName,
-		v193.CreateUpgradeHandler(app.mm, app.configurator),
+		v193.CreateUpgradeHandler(app.mm, app.configurator, app.EvmKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic
