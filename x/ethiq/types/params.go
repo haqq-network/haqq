@@ -29,7 +29,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 func DefaultParams() Params {
 	return Params{
 		Enabled:      true,
-		MinMintPerTx: sdkmath.OneInt().MulRaw(1e18),             // 1 * 10^18
+		MinMintPerTx: sdkmath.OneInt(),                          // 1 aHAQQ
 		MaxMintPerTx: sdkmath.OneInt().MulRaw(1e18).MulRaw(1e8), // 1 * 10^8 * 10^18 = 100m HAQQ
 		MaxSupply:    sdkmath.OneInt().MulRaw(1e18).MulRaw(1e8), // 1 * 10^8 * 10^18 = 100m HAQQ
 	}
