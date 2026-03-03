@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	sdkerrors "cosmossdk.io/errors"
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/haqq-network/haqq/utils"
@@ -104,7 +105,7 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 	escrowAddr := types.GetEscrowAddress(sender)
 	for _, coin := range amount {
 		if coin.Denom != utils.BaseDenom && !types.IsLiquidToken(coin.Denom) {
-			return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom %s is not allowed", coin.Denom)
+			return errorsmod.Wrapf(types.ErrInvalidDenom, "denom %s is not allowed", coin.Denom)
 		}
 
 		if coin.IsZero() {
@@ -136,7 +137,7 @@ func (k BaseKeeper) TransferOwnership(ctx sdk.Context, owner, newOwner sdk.AccAd
 	newOwnerEscrowAddr := types.GetEscrowAddress(newOwner)
 
 	if err := k.transferEscrowToken(ctx, ownerEscrowAddr, newOwnerEscrowAddr, amount); err != nil {
-		return nil, sdkerrors.Wrap(err, "failed to transfer ownership of coins")
+		return nil, errorsmod.Wrap(err, "failed to transfer ownership of coins")
 	}
 
 	// Update holders index
@@ -166,7 +167,7 @@ func (k BaseKeeper) ConvertToHaqq(ctx sdk.Context, sender, receiver sdk.AccAddre
 
 	// Return error if sender's total balance is less than required ISLM amount
 	if senderBalancesAmount.LT(islmAmount) {
-		return sdk.Coin{}, sdkerrors.Wrapf(types.ErrInsufficientFunds, "sender's total balance is less than required amount: %s < %s", senderBalancesAmount, islmAmount)
+		return sdk.Coin{}, errorsmod.Wrapf(types.ErrInsufficientFunds, "sender's total balance is less than required amount: %s < %s", senderBalancesAmount, islmAmount)
 	}
 
 	senderEscrowAddr := types.GetEscrowAddress(sender)
@@ -179,7 +180,7 @@ func (k BaseKeeper) ConvertToHaqq(ctx sdk.Context, sender, receiver sdk.AccAddre
 
 		// redeem balance from liquid vesting module
 		if err := k.lvk.Redeem(ctx, senderEscrowAddr, senderEscrowAddr, balance); err != nil {
-			return sdk.Coin{}, sdkerrors.Wrap(err, "failed to redeem liquid coins")
+			return sdk.Coin{}, errorsmod.Wrap(err, "failed to redeem liquid coins")
 		}
 
 		// track internal module total balances
@@ -189,9 +190,13 @@ func (k BaseKeeper) ConvertToHaqq(ctx sdk.Context, sender, receiver sdk.AccAddre
 		k.TrackSubBalance(ctx, balance)
 	}
 
+	if k.ethiqk == nil {
+		return sdk.Coin{}, errorsmod.Wrap(sdkerrors.ErrLogic, "ethiq module is not initialized")
+	}
+
 	mintedHaqqAmt, err := k.ethiqk.BurnIslmForHaqq(ctx, islmAmount, senderEscrowAddr, receiver)
 	if err != nil {
-		return sdk.Coin{}, sdkerrors.Wrap(err, "failed to convert amount of aISLM to aHAQQ")
+		return sdk.Coin{}, errorsmod.Wrap(err, "failed to convert amount of aISLM to aHAQQ")
 	}
 
 	// Update total balance of aISLM in ucdao module
