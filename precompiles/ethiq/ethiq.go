@@ -25,13 +25,13 @@ var f embed.FS
 // Precompile defines the precompiled contract for ethiq.
 type Precompile struct {
 	cmn.Precompile
-	ethiqKeeper *ethiqkeeper.Keeper
+	ethiqKeeper ethiqkeeper.Keeper
 }
 
 // NewPrecompile creates a new ethiq Precompile instance as a
 // PrecompiledContract interface.
 func NewPrecompile(
-	ethiqKeeper *ethiqkeeper.Keeper,
+	ethiqKeeper ethiqkeeper.Keeper,
 	authzKeeper authzkeeper.Keeper,
 ) (*Precompile, error) {
 	loadedAbi, err := cmn.LoadABI(f, "abi.json")

@@ -289,7 +289,7 @@ type Haqq struct {
 	// Haqq keepers
 	CoinomicsKeeper coinomicskeeper.Keeper
 	DaoKeeper       ucdaokeeper.Keeper
-	EthiqKeeper     *ethiqkeeper.Keeper
+	EthiqKeeper     ethiqkeeper.Keeper
 
 	// the module manager
 	mm                 *module.Manager
@@ -538,11 +538,12 @@ func NewHaqq(
 		app.AccountKeeper,
 		app.BankKeeper,
 		app.LiquidVestingKeeper,
-		app.EthiqKeeper,
+		// FIX: Temporary solution to solve keeper interdependency
+		&app.EthiqKeeper,
 		authAddr,
 	)
 
-	ethiqKeeper := ethiqkeeper.NewKeeper(
+	app.EthiqKeeper = ethiqkeeper.NewKeeper(
 		keys[ethiqtypes.StoreKey],
 		appCodec,
 		app.GetSubspace(ethiqtypes.ModuleName),
@@ -552,7 +553,6 @@ func NewHaqq(
 		app.LiquidVestingKeeper,
 		app.DaoKeeper,
 	)
-	app.EthiqKeeper = &ethiqKeeper
 
 	// Initialize the packet forward middleware Keeper
 	// It's important to note that the PFM Keeper must be initialized before the Transfer Keeper
@@ -596,6 +596,7 @@ func NewHaqq(
 			app.TransferKeeper,
 			app.IBCKeeper.ChannelKeeper,
 			app.EthiqKeeper,
+			app.DaoKeeper,
 		),
 	)
 
