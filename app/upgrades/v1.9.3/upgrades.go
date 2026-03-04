@@ -29,10 +29,20 @@ func CreateUpgradeHandler(
 			return vm, err
 		}
 
-		// Enable Ethiq precompile after add the corresponding module
+		// Enable Ethiq and UCDAO precompiles
+		var addPrecompiles []common.Address
+		ethiqAddr := common.HexToAddress(types.EthiqPrecompileAddress)
+		ucdaoAddr := common.HexToAddress(types.UcdaoPrecompileAddress)
 		params := ek.GetParams(ctx)
-		if !ek.IsAvailableStaticPrecompile(&params, common.HexToAddress(types.EthiqPrecompileAddress)) {
-			err = ek.EnableStaticPrecompiles(ctx, common.HexToAddress(types.EthiqPrecompileAddress))
+		if !ek.IsAvailableStaticPrecompile(&params, ethiqAddr) {
+			addPrecompiles = append(addPrecompiles, ethiqAddr)
+		}
+		if !ek.IsAvailableStaticPrecompile(&params, ucdaoAddr) {
+			addPrecompiles = append(addPrecompiles, ucdaoAddr)
+		}
+
+		if len(addPrecompiles) > 0 {
+			err = ek.EnableStaticPrecompiles(ctx, addPrecompiles...)
 		}
 
 		return vm, err
