@@ -17,7 +17,7 @@ func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.Acc
 
 	// redeem all aLIQUID balances from liquid vesting module
 	for _, balance := range balances {
-		if balance.Denom == utils.BaseDenom {
+		if !utils.IsLiquidToken(balance.Denom) {
 			continue
 		}
 

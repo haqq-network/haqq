@@ -2,16 +2,9 @@ package types
 
 import (
 	"crypto/sha256"
-	"regexp"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
-
-var aLiquidDenom = regexp.MustCompile(`^aLIQUID[0-9]+$`)
-
-func IsLiquidToken(denom string) bool {
-	return aLiquidDenom.MatchString(denom)
-}
 
 // GetEscrowAddress returns the escrow address for the specified share owner.
 // This function is based on native GetEscrowAddress of IBC Transfer module and

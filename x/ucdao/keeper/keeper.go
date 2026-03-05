@@ -104,7 +104,7 @@ func (k BaseKeeper) Fund(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddres
 
 	escrowAddr := types.GetEscrowAddress(sender)
 	for _, coin := range amount {
-		if coin.Denom != utils.BaseDenom && !types.IsLiquidToken(coin.Denom) {
+		if coin.Denom != utils.BaseDenom && !utils.IsLiquidToken(coin.Denom) {
 			return errorsmod.Wrapf(types.ErrInvalidDenom, "denom %s is not allowed", coin.Denom)
 		}
 

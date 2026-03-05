@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -213,4 +214,10 @@ func SortSlice[T constraints.Ordered](slice []T) {
 	sort.Slice(slice, func(i, j int) bool {
 		return slice[i] < slice[j]
 	})
+}
+
+var aLiquidDenom = regexp.MustCompile(`^aLIQUID[0-9]+$`)
+
+func IsLiquidToken(denom string) bool {
+	return aLiquidDenom.MatchString(denom)
 }
