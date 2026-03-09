@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"math/big"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
 	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
-	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 const (
@@ -129,8 +129,8 @@ func NewTransferOwnershipWithAmountMsg(args []interface{}) (*ucdaotypes.MsgTrans
 func (p Precompile) ConvertToHaqq(
 	ctx sdk.Context,
 	origin common.Address,
-	contract *vm.Contract,
-	stateDB vm.StateDB,
+	_ *vm.Contract,
+	_ vm.StateDB,
 	method *abi.Method,
 	args []interface{},
 ) ([]byte, error) {
@@ -157,7 +157,7 @@ func (p Precompile) ConvertToHaqq(
 func (p Precompile) TransferOwnership(
 	ctx sdk.Context,
 	origin common.Address,
-	contract *vm.Contract,
+	_ *vm.Contract,
 	_ vm.StateDB,
 	_ *abi.Method,
 	args []interface{},
@@ -184,7 +184,7 @@ func (p Precompile) TransferOwnership(
 func (p Precompile) TransferOwnershipWithAmount(
 	ctx sdk.Context,
 	origin common.Address,
-	contract *vm.Contract,
+	_ *vm.Contract,
 	_ vm.StateDB,
 	_ *abi.Method,
 	args []interface{},
@@ -207,4 +207,3 @@ func (p Precompile) TransferOwnershipWithAmount(
 
 	return []byte{}, nil
 }
-

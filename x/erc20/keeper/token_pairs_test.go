@@ -23,7 +23,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 	}{
 		{
 			"no pair registered", func() {
-				expRes = append(types.DefaultTokenPairs, haqqTokenPair)
+				expRes = append(types.DefaultTokenPairs, haqqTokenPair) //nolint: gocritic // intended use of append
 			},
 		},
 		{
@@ -31,7 +31,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 			func() {
 				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				suite.network.App.Erc20Keeper.SetTokenPair(ctx, pair)
-				expRes = append(types.DefaultTokenPairs, haqqTokenPair)
+				expRes = append(types.DefaultTokenPairs, haqqTokenPair) //nolint: gocritic // intended use of append
 				expRes = append(expRes, pair)
 			},
 		},
@@ -42,7 +42,7 @@ func (suite *KeeperTestSuite) TestGetTokenPairs() {
 				pair2 := types.NewTokenPair(utiltx.GenerateAddress(), "coin2", types.OWNER_MODULE)
 				suite.network.App.Erc20Keeper.SetTokenPair(ctx, pair)
 				suite.network.App.Erc20Keeper.SetTokenPair(ctx, pair2)
-				expRes = append(types.DefaultTokenPairs, haqqTokenPair)
+				expRes = append(types.DefaultTokenPairs, haqqTokenPair) //nolint: gocritic // intended use of append
 				expRes = append(expRes, []types.TokenPair{pair, pair2}...)
 			},
 		},

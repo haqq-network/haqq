@@ -82,12 +82,12 @@ func (p Precompile) Allowance(
 	_ *vm.Contract,
 	args []interface{},
 ) ([]byte, error) {
-	grantee, granter, msgTypeUrl, err := authorization.CheckAllowanceArgs(args)
+	grantee, granter, msgTypeURL, err := authorization.CheckAllowanceArgs(args)
 	if err != nil {
 		return nil, err
 	}
 
-	msgAuthz, _ := p.AuthzKeeper.GetAuthorization(ctx, grantee.Bytes(), granter.Bytes(), msgTypeUrl)
+	msgAuthz, _ := p.AuthzKeeper.GetAuthorization(ctx, grantee.Bytes(), granter.Bytes(), msgTypeURL)
 
 	if msgAuthz == nil {
 		return method.Outputs.Pack(big.NewInt(0))

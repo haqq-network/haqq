@@ -261,7 +261,7 @@ func (p Precompile) createMintHaqqAuthz(
 	ctx sdk.Context,
 	grantee, granter common.Address,
 	coin *sdk.Coin,
-	msgURL string,
+	_ string,
 ) error {
 	mintAuthz := &ethiqtypes.MintHaqqAuthorization{
 		SpendLimit: coin,
@@ -376,7 +376,7 @@ func (p Precompile) EmitApprovalEvent(ctx sdk.Context, stateDB vm.StateDB, grant
 		Address:     p.Address(),
 		Topics:      topics,
 		Data:        packed,
-		BlockNumber: uint64(ctx.BlockHeight()),
+		BlockNumber: uint64(ctx.BlockHeight()), //nolint: gosec // blockHeight can't overflow uint64
 	})
 
 	return nil
@@ -424,7 +424,7 @@ func (p Precompile) EmitAllowanceChangeEvent(ctx sdk.Context, stateDB vm.StateDB
 		Address:     p.Address(),
 		Topics:      topics,
 		Data:        packed,
-		BlockNumber: uint64(ctx.BlockHeight()),
+		BlockNumber: uint64(ctx.BlockHeight()), //nolint: gosec // blockHeight can't overflow uint64
 	})
 
 	return nil

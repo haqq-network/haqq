@@ -10,9 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
-	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 )
 
 //go:embed abi.json
@@ -129,4 +129,3 @@ func (Precompile) IsTransaction(method string) bool {
 func (p Precompile) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("evm extension", "ucdao")
 }
-

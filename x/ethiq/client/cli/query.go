@@ -71,7 +71,7 @@ Example:
 	return cmd
 }
 
-func GetCmdQueryCalculate() *cobra.Command {
+func GetCmdQueryCalculate() *cobra.Command { //nolint: dupl // similar, but not the duplicate
 	cmd := &cobra.Command{
 		Use:   "calculate [islm-amount]",
 		Short: "Calculate the estimated aHAQQ amount to be minted for a given aISLM amount",
@@ -115,7 +115,7 @@ Example:
 	return cmd
 }
 
-func GetCmdQueryCalculateForApplication() *cobra.Command {
+func GetCmdQueryCalculateForApplication() *cobra.Command { //nolint: dupl // similar, but not the duplicate
 	cmd := &cobra.Command{
 		Use:   "calculate-for-app [app_id]",
 		Short: "Calculate the estimated aHAQQ amount to be minted by an execution of present application",
@@ -173,7 +173,7 @@ Example:
 				version.AppName, types.ModuleName,
 			),
 		),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err

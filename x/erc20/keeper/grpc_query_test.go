@@ -41,7 +41,7 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 				req = &types.QueryTokenPairsRequest{
 					Pagination: &query.PageRequest{Limit: 10, CountTotal: true},
 				}
-				pairs := append(types.DefaultTokenPairs, haqqTokenPair)
+				pairs := append(types.DefaultTokenPairs, haqqTokenPair) //nolint: gocritic // intended use of append
 				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				suite.network.App.Erc20Keeper.SetTokenPair(ctx, pair)
 				pairs = append(pairs, pair)
@@ -57,7 +57,7 @@ func (suite *KeeperTestSuite) TestTokenPairs() {
 			"2 pairs registered wo/pagination",
 			func() {
 				req = &types.QueryTokenPairsRequest{}
-				pairs := append(types.DefaultTokenPairs, haqqTokenPair)
+				pairs := append(types.DefaultTokenPairs, haqqTokenPair) //nolint: gocritic // intended use of append
 
 				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
 				pair2 := types.NewTokenPair(utiltx.GenerateAddress(), "coin2", types.OWNER_MODULE)

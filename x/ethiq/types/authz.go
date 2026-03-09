@@ -6,6 +6,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
+
 	"github.com/haqq-network/haqq/utils"
 )
 
@@ -13,7 +14,7 @@ func (m *MintHaqqAuthorization) MsgTypeURL() string {
 	return sdk.MsgTypeURL(&MsgMintHaqq{})
 }
 
-func (m *MintHaqqAuthorization) Accept(ctx context.Context, msg sdk.Msg) (authz.AcceptResponse, error) {
+func (m *MintHaqqAuthorization) Accept(_ context.Context, msg sdk.Msg) (authz.AcceptResponse, error) {
 	mintMsg, ok := msg.(*MsgMintHaqq)
 	if !ok {
 		return authz.AcceptResponse{}, fmt.Errorf("expected %T, got %T", &MsgMintHaqq{}, msg)
@@ -74,7 +75,7 @@ func (m *MintHaqqByApplicationIDAuthorization) MsgTypeURL() string {
 	return sdk.MsgTypeURL(&MsgMintHaqqByApplication{})
 }
 
-func (m *MintHaqqByApplicationIDAuthorization) Accept(ctx context.Context, msg sdk.Msg) (authz.AcceptResponse, error) {
+func (m *MintHaqqByApplicationIDAuthorization) Accept(_ context.Context, msg sdk.Msg) (authz.AcceptResponse, error) {
 	mintMsg, ok := msg.(*MsgMintHaqqByApplication)
 	if !ok {
 		return authz.AcceptResponse{}, fmt.Errorf("expected %T, got %T", &MsgMintHaqqByApplication{}, msg)

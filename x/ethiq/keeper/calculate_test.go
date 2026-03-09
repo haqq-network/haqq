@@ -2,7 +2,7 @@ package keeper_test
 
 import (
 	sdkmath "cosmossdk.io/math"
-	
+
 	"github.com/haqq-network/haqq/x/ethiq/keeper"
 )
 
@@ -17,10 +17,7 @@ func (us *UnitTestSuite) TestCalculate() {
 	}{
 		{
 			"success - level 1, 3m burn, 1m mint",
-			func() sdkmath.Int {
-				// zero burnt, start from very beginning
-				return sdkmath.ZeroInt()
-			},
+			sdkmath.ZeroInt,
 			func() sdkmath.Int {
 				// burn 3m ISLM within single price level 1:3
 				amt, _ := sdkmath.NewIntFromString("3000000000000000000000000")
@@ -36,10 +33,7 @@ func (us *UnitTestSuite) TestCalculate() {
 		},
 		{
 			"success - level 1, full burn",
-			func() sdkmath.Int {
-				// zero burnt, start from very beginning
-				return sdkmath.ZeroInt()
-			},
+			sdkmath.ZeroInt,
 			func() sdkmath.Int {
 				// birn full amount of price level, 40m ISLM
 				amt, _ := sdkmath.NewIntFromString("40000000000000000000000000")

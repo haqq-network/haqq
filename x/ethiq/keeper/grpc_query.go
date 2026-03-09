@@ -125,7 +125,7 @@ func (k Keeper) GetApplications(ctx context.Context, req *types.QueryGetApplicat
 	}
 
 	paginationResponse := &query.PageResponse{
-		Total: uint64(total),
+		Total: uint64(total), //nolint: gosec // There won't be an overflow
 	}
 
 	if offset >= total {
@@ -137,7 +137,7 @@ func (k Keeper) GetApplications(ctx context.Context, req *types.QueryGetApplicat
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	for i := offset; i < total && i <= lastOnThisPage; i++ {
-		burnApplication, err := types.GetApplicationByID(uint64(i))
+		burnApplication, err := types.GetApplicationByID(uint64(i)) //nolint: gosec // There won't be an overflow
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -171,7 +171,7 @@ func (k Keeper) GetSendersApplications(ctx context.Context, req *types.QueryGetS
 	}
 
 	paginationResponse := &query.PageResponse{
-		Total: uint64(total),
+		Total: uint64(total), //nolint: gosec // There won't be an overflow
 	}
 
 	if offset >= total {

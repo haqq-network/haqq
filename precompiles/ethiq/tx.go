@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	ethiqkeeper "github.com/haqq-network/haqq/x/ethiq/keeper"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
@@ -62,37 +61,8 @@ func (p Precompile) MintHaqq(
 	}
 
 	// Check and accept authorization if needed
-	if contract.CallerAddress != origin {
-		auth, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, contract.CallerAddress, origin, MintHaqqMsgURL)
-		if err != nil {
-			return nil, fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, contract.CallerAddress, origin)
-		}
-
-		// Accept the grant with the actual message
-		mintAuthz, ok := auth.(*ethiqtypes.MintHaqqAuthorization)
-		if !ok {
-			return nil, fmt.Errorf("expected MintHaqqAuthorization, got %T", auth)
-		}
-
-		resp, err := mintAuthz.Accept(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
-
-		if !resp.Accept {
-			return nil, fmt.Errorf("authorization not accepted")
-		}
-
-		// Update grant if needed
-		if resp.Delete {
-			if err = p.AuthzKeeper.DeleteGrant(ctx, contract.CallerAddress.Bytes(), origin.Bytes(), MintHaqqMsgURL); err != nil {
-				return nil, err
-			}
-		} else if resp.Updated != nil {
-			if err = p.AuthzKeeper.SaveGrant(ctx, contract.CallerAddress.Bytes(), origin.Bytes(), resp.Updated, expiration); err != nil {
-				return nil, err
-			}
-		}
+	if err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, origin, p.AuthzKeeper, msg); err != nil {
+		return nil, err
 	}
 
 	// Execute the transaction using the message server
@@ -157,37 +127,8 @@ func (p Precompile) MintHaqqByApplication(
 	}
 
 	// Check and accept authorization if needed
-	if contract.CallerAddress != origin {
-		auth, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, contract.CallerAddress, origin, MsgMintHaqqByApplicationMsgURL)
-		if err != nil {
-			return nil, fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, contract.CallerAddress, origin)
-		}
-
-		// Accept the grant with the actual message
-		appAuthz, ok := auth.(*ethiqtypes.MintHaqqByApplicationIDAuthorization)
-		if !ok {
-			return nil, fmt.Errorf("expected MintHaqqByApplicationIDAuthorization, got %T", auth)
-		}
-
-		resp, err := appAuthz.Accept(ctx, msg)
-		if err != nil {
-			return nil, err
-		}
-
-		if !resp.Accept {
-			return nil, fmt.Errorf("authorization not accepted")
-		}
-
-		// Update grant if needed (application-based authz is always deleted after use)
-		if resp.Delete {
-			if err = p.AuthzKeeper.DeleteGrant(ctx, contract.CallerAddress.Bytes(), origin.Bytes(), MsgMintHaqqByApplicationMsgURL); err != nil {
-				return nil, err
-			}
-		} else if resp.Updated != nil {
-			if err = p.AuthzKeeper.SaveGrant(ctx, contract.CallerAddress.Bytes(), origin.Bytes(), resp.Updated, expiration); err != nil {
-				return nil, err
-			}
-		}
+	if err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, origin, p.AuthzKeeper, msg); err != nil {
+		return nil, err
 	}
 
 	// Execute the transaction using the message server

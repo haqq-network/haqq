@@ -3,12 +3,10 @@ package ethiq
 import (
 	"fmt"
 	"math/big"
-	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/haqq-network/haqq/utils"
@@ -154,26 +152,43 @@ func CheckAndAcceptAuthorizationIfNeeded(
 	contract *vm.Contract,
 	origin common.Address,
 	authzKeeper authzkeeper.Keeper,
-	msgURL string,
-) (*authz.AcceptResponse, *time.Time, error) {
+	msg sdk.Msg,
+) error {
 	if contract.CallerAddress == origin {
-		return nil, nil, nil
+		return nil
 	}
 
-	_, expiration, err := authorization.CheckAuthzExists(ctx, authzKeeper, contract.CallerAddress, origin, msgURL)
+	auth, expiration, err := authorization.CheckAuthzExists(ctx, authzKeeper, contract.CallerAddress, origin, sdk.MsgTypeURL(msg))
 	if err != nil {
-		return nil, nil, fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, contract.CallerAddress, origin)
+		return fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, contract.CallerAddress, origin)
 	}
 
-	switch msgURL {
-	case MintHaqqMsgURL:
-		// We need the actual message to accept, but we don't have it here
-		// This will be handled in the transaction method
-		return nil, expiration, nil
-	case MsgMintHaqqByApplicationMsgURL:
-		// Same as above
-		return nil, expiration, nil
-	default:
-		return nil, nil, fmt.Errorf("unknown message URL: %s", msgURL)
+	// Accept the grant with the actual message
+	_, isMintAuth := auth.(*ethiqtypes.MintHaqqAuthorization)
+	_, isMintByAppAuth := auth.(*ethiqtypes.MintHaqqByApplicationIDAuthorization)
+	if !isMintAuth && !isMintByAppAuth {
+		return fmt.Errorf("expected MintHaqqAuthorization or MintHaqqByApplicationIDAuthorization, got %T", auth)
 	}
+
+	resp, err := auth.Accept(ctx, msg)
+	if err != nil {
+		return err
+	}
+
+	if !resp.Accept {
+		return fmt.Errorf("authorization not accepted")
+	}
+
+	// Update grant if needed (application-based authz is always deleted after use)
+	if resp.Delete {
+		if err = authzKeeper.DeleteGrant(ctx, contract.CallerAddress.Bytes(), origin.Bytes(), sdk.MsgTypeURL(msg)); err != nil {
+			return err
+		}
+	} else if resp.Updated != nil {
+		if err = authzKeeper.SaveGrant(ctx, contract.CallerAddress.Bytes(), origin.Bytes(), resp.Updated, expiration); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

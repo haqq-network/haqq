@@ -1312,7 +1312,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	}
 
 	var storeUpgrades *storetypes.StoreUpgrades
-	//nolint: revive // Example for further upgrades
+	//nolint: gocritic // intended use of switch
 	switch upgradeInfo.Name {
 	case v193.UpgradeName:
 		storeUpgrades = &storetypes.StoreUpgrades{
