@@ -14,12 +14,14 @@ import (
 	channelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
 	"github.com/ethereum/go-ethereum/common"
 	ethiqkeeper "github.com/haqq-network/haqq/x/ethiq/keeper"
+	liquidkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 
 	bankprecompile "github.com/haqq-network/haqq/precompiles/bank"
 	"github.com/haqq-network/haqq/precompiles/bech32"
 	distprecompile "github.com/haqq-network/haqq/precompiles/distribution"
 	ethiqprecompile "github.com/haqq-network/haqq/precompiles/ethiq"
 	ics20precompile "github.com/haqq-network/haqq/precompiles/ics20"
+	"github.com/haqq-network/haqq/precompiles/liquid"
 	"github.com/haqq-network/haqq/precompiles/p256"
 	stakingprecompile "github.com/haqq-network/haqq/precompiles/staking"
 	ucdaoprecompile "github.com/haqq-network/haqq/precompiles/ucdao"
@@ -47,6 +49,7 @@ func NewAvailableStaticPrecompiles(
 	channelKeeper channelkeeper.Keeper,
 	ethiqKeeper ethiqkeeper.Keeper,
 	daoKeeper ucdaokeeper.Keeper,
+	liquidVestingKeeper liquidkeeper.Keeper,
 ) map[common.Address]vm.PrecompiledContract {
 	// Clone the mapping from the latest EVM fork.
 	precompiles := maps.Clone(vm.PrecompiledContractsBerlin)
@@ -99,6 +102,12 @@ func NewAvailableStaticPrecompiles(
 		panic(fmt.Errorf("failed to instantiate ethiq precompile: %w", err))
 	}
 
+	// Liquidvesting module precompile
+	liquidPrecompile, err := liquid.NewPrecompile(liquidVestingKeeper, authzKeeper)
+	if err != nil {
+		panic(fmt.Errorf("failed to instantiate liquid precompile: %w", err))
+	}
+
 	// UCDAO module precompile
 	ucdaoPrecompile, err := ucdaoprecompile.NewPrecompile(daoKeeper)
 	if err != nil {
@@ -115,6 +124,7 @@ func NewAvailableStaticPrecompiles(
 	precompiles[ibcTransferPrecompile.Address()] = ibcTransferPrecompile
 	// precompiles[vestingPrecompile.Address()] = vestingPrecompile
 	precompiles[bankPrecompile.Address()] = bankPrecompile
+	precompiles[liquidPrecompile.Address()] = liquidPrecompile
 	precompiles[ethiqPrecompile.Address()] = ethiqPrecompile
 	precompiles[ucdaoPrecompile.Address()] = ucdaoPrecompile
 

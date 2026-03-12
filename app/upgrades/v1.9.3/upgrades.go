@@ -33,12 +33,16 @@ func CreateUpgradeHandler(
 		var addPrecompiles []common.Address
 		ethiqAddr := common.HexToAddress(types.EthiqPrecompileAddress)
 		ucdaoAddr := common.HexToAddress(types.UcdaoPrecompileAddress)
+		liquidAddr := common.HexToAddress(types.LiquidPrecompileAddress)
 		params := ek.GetParams(ctx)
 		if !ek.IsAvailableStaticPrecompile(&params, ethiqAddr) {
 			addPrecompiles = append(addPrecompiles, ethiqAddr)
 		}
 		if !ek.IsAvailableStaticPrecompile(&params, ucdaoAddr) {
 			addPrecompiles = append(addPrecompiles, ucdaoAddr)
+		}
+		if !ek.IsAvailableStaticPrecompile(&params, liquidAddr) {
+			addPrecompiles = append(addPrecompiles, liquidAddr)
 		}
 
 		if len(addPrecompiles) > 0 {

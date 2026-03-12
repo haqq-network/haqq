@@ -16,6 +16,7 @@ const (
 	BankPrecompileAddress         = "0x0000000000000000000000000000000000000804"
 	EthiqPrecompileAddress        = "0x0000000000000000000000000000000000000900"
 	UcdaoPrecompileAddress        = "0x0000000000000000000000000000000000000901"
+	LiquidPrecompileAddress       = "0x0000000000000000000000000000000000000902"
 )
 
 // AvailableStaticPrecompiles defines the full list of all available EVM extension addresses.
@@ -32,4 +33,5 @@ var AvailableStaticPrecompiles = []string{
 	BankPrecompileAddress,
 	EthiqPrecompileAddress,
 	UcdaoPrecompileAddress,
+	LiquidPrecompileAddress,
 }

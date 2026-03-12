@@ -597,6 +597,7 @@ func NewHaqq(
 			app.IBCKeeper.ChannelKeeper,
 			app.EthiqKeeper,
 			app.DaoKeeper,
+			app.LiquidVestingKeeper,
 		),
 	)
 
