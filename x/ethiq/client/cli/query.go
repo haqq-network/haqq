@@ -28,6 +28,7 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryTotalBurned(),
 		GetCmdQueryCalculate(),
 		GetCmdQueryCalculateForApplication(),
+		GetCmdQueryGetApplications(),
 		GetCmdQueryParams(),
 	)
 
@@ -163,7 +164,7 @@ func GetCmdQueryGetApplications() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get-applications",
 		Short: "Get the paginated list of present applications",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.NoArgs,
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Get the paginated list of present applications.
 

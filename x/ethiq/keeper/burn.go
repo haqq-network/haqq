@@ -49,6 +49,12 @@ func (k Keeper) BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAdd
 	if err := k.redeemAllLiquidVestingCoins(ctx, fromAddress, false); err != nil {
 		return sdkmath.ZeroInt(), err
 	}
+	haqqSupplyBefore := k.GetHaqqSupply(ctx)
+	haqqSupplyAfter := haqqSupplyBefore.Add(haqqAmount)
+	if haqqSupplyAfter.GT(k.GetMaxSupply(ctx)) {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrExceedsMaxSupply, "aHAQQ supply after tx: %s", haqqSupplyAfter.String())
+	}
+
 	vestingIslmUsed, err := k.unlockVestingCoins(ctx, fromAddress, sdk.NewCoin(utils.BaseDenom, islmAmount))
 	if err != nil {
 		return sdkmath.ZeroInt(), err
@@ -63,12 +69,6 @@ func (k Keeper) BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAdd
 	// Mint aHAQQ coins to module account and send to recipient
 	if err := k.mintCoins(ctx, toAddress, haqqAmount); err != nil {
 		return sdkmath.ZeroInt(), errorsmod.Wrap(err, "failed to mint aHAQQ coins")
-	}
-
-	haqqSupplyBefore := k.GetHaqqSupply(ctx)
-	haqqSupplyAfter := haqqSupplyBefore.Add(haqqAmount)
-	if haqqSupplyAfter.GT(k.GetMaxSupply(ctx)) {
-		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrExceedsMaxSupply, "aHAQQ supply after tx: %s", haqqSupplyAfter.String())
 	}
 
 	// Emit event
@@ -129,6 +129,12 @@ func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, appID uint64) (s
 		return sdkmath.ZeroInt(), err
 	}
 
+	haqqSupplyBefore := k.GetHaqqSupply(ctx)
+	haqqSupplyAfter := haqqSupplyBefore.Add(haqqAmount)
+	if haqqSupplyAfter.GT(k.GetMaxSupply(ctx)) {
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrExceedsMaxSupply, "aHAQQ supply after tx: %s", haqqSupplyAfter.String())
+	}
+
 	vestingIslmUsed, err := k.unlockVestingCoins(ctx, fromAddress, islmCoinsToBurn)
 	if err != nil {
 		return sdkmath.ZeroInt(), err
@@ -136,17 +142,11 @@ func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, appID uint64) (s
 	freeIslmUsed := islmCoinsToBurn.Sub(vestingIslmUsed)
 
 	if err := k.burnCoins(ctx, fromAddress, islmCoinsToBurn.Amount, true); err != nil {
-		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrBurnCoins, "%e", err)
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrBurnCoins, "%v", err)
 	}
 
 	if err := k.mintCoins(ctx, toAddress, haqqAmount); err != nil {
-		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrMintCoins, "%e", err)
-	}
-
-	haqqSupplyBefore := k.GetHaqqSupply(ctx)
-	haqqSupplyAfter := haqqSupplyBefore.Add(haqqAmount)
-	if haqqSupplyAfter.GT(k.GetMaxSupply(ctx)) {
-		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrExceedsMaxSupply, "aHAQQ supply after tx: %s", haqqSupplyAfter.String())
+		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrMintCoins, "%v", err)
 	}
 
 	k.SetApplicationAsExecuted(ctx, appID)
@@ -214,7 +214,7 @@ func (k Keeper) burnCoins(ctx sdk.Context, from sdk.AccAddress, amt sdkmath.Int,
 	return nil
 }
 
-// mintCoins burns aHAQQ coins to the given address using standard bank MintCoins method
+// mintCoins mints aHAQQ coins to the given address using standard bank MintCoins method
 func (k Keeper) mintCoins(ctx sdk.Context, to sdk.AccAddress, amt sdkmath.Int) error {
 	haqqCoin := sdk.NewCoin(types.BaseDenom, amt)
 	if err := k.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(haqqCoin)); err != nil {

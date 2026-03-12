@@ -158,11 +158,20 @@ func (k BaseKeeper) ConvertToHaqq(ctx sdk.Context, sender, receiver sdk.AccAddre
 		return sdk.Coin{}, types.ErrNotEligible
 	}
 
-	// Get sender's all balances
+	// Get sender's all balances; collect non-base-denom coins in a single pass
 	senderBalances := k.GetAccountBalances(ctx, sender)
 	senderBalancesAmount := sdkmath.ZeroInt()
+	var liquidBalances sdk.Coins
 	for _, balance := range senderBalances {
+		// due to migration to usage of escrow accounts, there might be unsupported coins on balance
+		if !utils.IsLiquidToken(balance.Denom) && balance.Denom != utils.BaseDenom {
+			continue
+		}
+
 		senderBalancesAmount = senderBalancesAmount.Add(balance.Amount)
+		if balance.Denom != utils.BaseDenom {
+			liquidBalances = append(liquidBalances, balance)
+		}
 	}
 
 	// Return error if sender's total balance is less than required ISLM amount
@@ -173,11 +182,7 @@ func (k BaseKeeper) ConvertToHaqq(ctx sdk.Context, sender, receiver sdk.AccAddre
 	senderEscrowAddr := types.GetEscrowAddress(sender)
 
 	// redeem all aLIQUID balances from liquid vesting module
-	for _, balance := range senderBalances {
-		if balance.Denom == utils.BaseDenom {
-			continue
-		}
-
+	for _, balance := range liquidBalances {
 		// redeem balance from liquid vesting module
 		if err := k.lvk.Redeem(ctx, senderEscrowAddr, senderEscrowAddr, balance); err != nil {
 			return sdk.Coin{}, errorsmod.Wrap(err, "failed to redeem liquid coins")

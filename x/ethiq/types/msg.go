@@ -1,8 +1,6 @@
 package types
 
 import (
-	"math"
-
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -46,10 +44,6 @@ func (msg *MsgMintHaqqByApplication) GetSigners() []sdk.AccAddress {
 func (msg *MsgMintHaqqByApplication) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.FromAddress); err != nil {
 		return errorsmod.Wrapf(ErrInvalidAddress, "invalid from_address: %v", err)
-	}
-
-	if msg.ApplicationId > math.MaxUint64 {
-		return errorsmod.Wrapf(ErrInvalidApplicationID, "uint64 overflow; application_id: %d", msg.ApplicationId)
 	}
 
 	return nil

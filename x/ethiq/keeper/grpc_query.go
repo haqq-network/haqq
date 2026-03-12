@@ -44,7 +44,7 @@ func (k Keeper) Calculate(ctx context.Context, req *types.QueryCalculateRequest)
 	}
 
 	if islmAmount.LTE(sdkmath.ZeroInt()) {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("islm_amount must be positive and greater than zero: %x", req.IslmAmount))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("islm_amount must be positive and greater than zero: %s", req.IslmAmount))
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

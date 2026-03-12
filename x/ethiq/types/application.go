@@ -6,7 +6,6 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common/math"
 
 	"github.com/haqq-network/haqq/utils"
 )
@@ -49,10 +48,6 @@ func (a ApplicationListItem) AsBurnApplication() (*BurnApplication, error) {
 }
 
 func (ba *BurnApplication) ValidateBasic() error {
-	if ba.Id > math.MaxUint64 {
-		return errorsmod.Wrapf(ErrInvalidApplicationID, "uint64 overflow; id: %d", ba.Id)
-	}
-
 	if _, err := sdk.AccAddressFromBech32(ba.FromAddress); err != nil {
 		return errorsmod.Wrapf(ErrInvalidAddress, "invalid from_address: %v", err)
 	}
