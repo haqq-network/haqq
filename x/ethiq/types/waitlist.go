@@ -2,7 +2,7 @@ package types
 
 var (
 	// ApplicationListItem field order: ID, FromAddress, ToAddress, FundSource, IslmAmount, IslmAccumulatedBurntAmount.
-	// IslmAmount == "0" denotes a cancelled application.
+	// IslmAmount == "0" denotes a canceled application.
 	//
 	// registeredApplications represents the list of applications present in smart-contract.
 	//
