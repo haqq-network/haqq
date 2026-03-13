@@ -319,7 +319,7 @@ func (w *ledgerDriver) ledgerSignTypedMessage(derivationPath gethaccounts.Deriva
 		binary.BigEndian.PutUint32(path[1+4*i:], component)
 	}
 	// Create the 712 message
-	var payload []byte
+	payload := make([]byte, 0, len(path)+len(domainHash)+len(messageHash))
 	payload = append(payload, path...)
 	payload = append(payload, domainHash...)
 	payload = append(payload, messageHash...)
@@ -342,7 +342,7 @@ func (w *ledgerDriver) ledgerSignTypedMessage(derivationPath gethaccounts.Deriva
 		return nil, errors.New("reply lacks signature")
 	}
 
-	var signature []byte
+	signature := make([]byte, 0, len(reply))
 	signature = append(signature, reply[1:]...)
 	signature = append(signature, reply[0])
 
