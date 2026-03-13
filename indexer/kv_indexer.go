@@ -83,8 +83,8 @@ func (kv *KVIndexer) IndexBlock(block *cmttypes.Block, txResults []*abci.ExecTxR
 
 			txResult := haqqtypes.TxResult{
 				Height:     height,
-				TxIndex:    uint32(txIndex),  //nolint: gosec // G115 txIndex can't overflow in normal conditions
-				MsgIndex:   uint32(msgIndex), //nolint: gosec // G115 msgIndex can't overflow in normal conditions
+				TxIndex:    uint32(txIndex),
+				MsgIndex:   uint32(msgIndex),
 				EthTxIndex: ethTxIndex,
 			}
 			if result.Code != abci.CodeTypeOK {

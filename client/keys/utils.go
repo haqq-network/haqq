@@ -37,7 +37,7 @@ func printKeyringRecord(w io.Writer, k *cryptokeyring.Record, bechKeyOut bechKey
 			return err
 		}
 
-		if _, err := fmt.Fprintln(w, string(out)); err != nil {
+		if _, err := fmt.Fprintln(w, string(out)); err != nil { // #nosec G705 -- structured output to writer, not HTML
 			return err
 		}
 	}
@@ -51,7 +51,7 @@ func printTextRecords(w io.Writer, kos []keys.KeyOutput) error {
 		return err
 	}
 
-	if _, err := fmt.Fprintln(w, string(out)); err != nil {
+	if _, err := fmt.Fprintln(w, string(out)); err != nil { // #nosec G705 -- structured output to writer, not HTML
 		return err
 	}
 

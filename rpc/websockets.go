@@ -316,7 +316,7 @@ func (s *websocketsServer) tcpGetAndSendResponse(wsConn *wsConn, mb []byte) erro
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- request to configured RPC address only
 	if err != nil {
 		return errors.Wrap(err, "Could not perform request")
 	}
