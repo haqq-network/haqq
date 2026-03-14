@@ -382,7 +382,7 @@ func (b *Backend) RPCBlockFromTendermintBlock(
 
 		tx := ethMsg.AsTransaction()
 		height := uint64(block.Height) //nolint: gosec // G115 -- height is positive int64
-		index := uint64(txIndex)
+		index := uint64(txIndex)       //nolint: gosec // G115 -- already checked for int overflow
 		rpcTx, err := rpctypes.NewRPCTransaction(
 			tx,
 			common.BytesToHash(block.Hash()),

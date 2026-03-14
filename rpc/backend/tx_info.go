@@ -59,7 +59,7 @@ func (b *Backend) GetTransactionByHash(txHash common.Hash) (*rpctypes.RPCTransac
 				if i > math.MaxInt32 {
 					return nil, errors.New("tx index overflow")
 				}
-				res.EthTxIndex = int32(i)
+				res.EthTxIndex = int32(i) //nolint: gosec // G115 -- checked for int overflow already
 				break
 			}
 		}
@@ -212,7 +212,7 @@ func (b *Backend) GetTransactionReceipt(hash common.Hash) (map[string]interface{
 				if i > math.MaxInt32 {
 					return nil, errors.New("tx index overflow")
 				}
-				res.EthTxIndex = int32(i)
+				res.EthTxIndex = int32(i) //nolint: gosec // G115 -- checked for int overflow already
 				break
 			}
 		}

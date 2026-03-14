@@ -399,6 +399,7 @@ func (w *ledgerDriver) ledgerExchange(opcode ledgerOpcode, p1 ledgerParam1, p2 l
 	for i := 0; len(apdu) > 0; i++ {
 		// Construct the new message to stream
 		chunk = append(chunk[:0], header...)
+		//nolint: gosec // gosec G115 will raise a warning on this integer conversion for potential overflow
 		binary.BigEndian.PutUint16(chunk[3:], uint16(i))
 
 		if len(apdu) > space {

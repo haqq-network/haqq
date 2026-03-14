@@ -64,6 +64,7 @@ func (b *Backend) GetProof(address common.Address, storageKeys []string, blockNr
 		if bn > math.MaxInt64 {
 			return nil, fmt.Errorf("not able to query block number greater than MaxInt64")
 		}
+		//nolint: gosec // G115 -- check for overflow above
 		height = int64(bn)
 	}
 

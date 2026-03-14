@@ -235,7 +235,7 @@ func (n *IntegrationNetwork) configureAndInitChain() error {
 	// Set networks global parameters
 	var blockMaxGas uint64 = math.MaxUint64
 	if consensusParams.Block != nil && consensusParams.Block.MaxGas > 0 {
-		blockMaxGas = uint64(consensusParams.Block.MaxGas)
+		blockMaxGas = uint64(consensusParams.Block.MaxGas) //nolint:gosec // G115
 	}
 
 	n.ctx = haqqApp.BaseApp.NewUncachedContext(false, header).
