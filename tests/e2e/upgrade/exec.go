@@ -18,12 +18,8 @@ type E2ETxArgs struct {
 
 // CreateModuleTxExec creates the execution command for an Haqq transaction.
 func (m *Manager) CreateModuleTxExec(txArgs E2ETxArgs) (string, error) {
-	cmd := []string{
-		"haqqd",
-		"tx",
-		txArgs.ModuleName,
-		txArgs.SubCommand,
-	}
+	cmd := make([]string, 0, 11+len(txArgs.Args))
+	cmd = append(cmd, "haqqd", "tx", txArgs.ModuleName, txArgs.SubCommand)
 	cmd = append(cmd, txArgs.Args...)
 	cmd = append(cmd,
 		fmt.Sprintf("--chain-id=%s", txArgs.ChainID),

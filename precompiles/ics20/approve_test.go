@@ -314,7 +314,9 @@ func (s *PrecompileTestSuite) TestRevoke() {
 func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 	method := s.precompile.Methods[authorization.IncreaseAllowanceMethod]
 
-	testCases := []allowanceTestCase{
+	defaultCases := s.defaultAllowanceCases()
+	testCases := make([]allowanceTestCase, 0, 4+len(defaultCases))
+	testCases = append(testCases, []allowanceTestCase{
 		{
 			"fail - the new spend limit overflows the maxUint256",
 			func() []interface{} {
@@ -428,8 +430,8 @@ func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 			false,
 			"",
 		},
-	}
-	testCases = append(testCases, s.defaultAllowanceCases()...)
+	}...)
+	testCases = append(testCases, defaultCases...)
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
@@ -453,7 +455,9 @@ func (s *PrecompileTestSuite) TestIncreaseAllowance() {
 func (s *PrecompileTestSuite) TestDecreaseAllowance() {
 	method := s.precompile.Methods[authorization.DecreaseAllowanceMethod]
 
-	testCases := []allowanceTestCase{
+	defaultCases := s.defaultAllowanceCases()
+	testCases := make([]allowanceTestCase, 0, 4+len(defaultCases))
+	testCases = append(testCases, []allowanceTestCase{
 		{
 			"fail - the new spend limit is negative",
 			func() []interface{} {
@@ -577,9 +581,9 @@ func (s *PrecompileTestSuite) TestDecreaseAllowance() {
 			false,
 			"",
 		},
-	}
+	}...)
 
-	testCases = append(testCases, s.defaultAllowanceCases()...)
+	testCases = append(testCases, defaultCases...)
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {

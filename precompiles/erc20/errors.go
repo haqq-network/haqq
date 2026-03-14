@@ -58,7 +58,7 @@ func BuildExecRevertedErr(reason string) (error, error) {
 		return nil, errors.New("failed to pack revert reason")
 	}
 
-	var reasonBytes []byte
+	reasonBytes := make([]byte, 0, len(errorSignature)+len(packedReason))
 	reasonBytes = append(reasonBytes, errorSignature...)
 	reasonBytes = append(reasonBytes, packedReason...)
 

@@ -28,9 +28,11 @@ func (k BaseKeeper) HasBalance(ctx sdk.Context, addr sdk.AccAddress, amt sdk.Coi
 
 // GetAccountsBalances returns all the accounts balances from the store.
 func (k BaseKeeper) GetAccountsBalances(ctx sdk.Context) []types.Balance {
-	balances := make([]types.Balance, 0)
-
 	holders := k.GetHolders(ctx)
+	if len(holders) == 0 {
+		return nil
+	}
+	balances := make([]types.Balance, 0, len(holders))
 	for _, holder := range holders {
 		holderBalances := k.GetAccountBalances(ctx, holder)
 		accountBalance := types.Balance{
