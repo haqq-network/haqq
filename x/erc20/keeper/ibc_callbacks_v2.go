@@ -108,8 +108,6 @@ func (k Keeper) OnRecvPacketV2(
 	// Case 1. token pair is not registered and is a single hop IBC Coin
 	// by checking the prefix we ensure that only coins not native from this chain are evaluated.
 	// IsNativeFromSourceChain will check if the coin is native from the source chain.
-	// If the coin denom starts with `factory/` then it is a token factory coin, and we should not convert it
-	// NOTE: Check https://docs.osmosis.zone/osmosis-core/modules/tokenfactory/ for more information
 	case !found && strings.HasPrefix(coin.Denom, "ibc/") && ibc.IsBaseDenomFromSourceChain(data.Denom):
 		tokenPair, err := k.RegisterERC20Extension(ctx, coin.Denom)
 		if err != nil {
@@ -155,6 +153,15 @@ func (k Keeper) OnRecvPacketV2(
 	return ack
 }
 
+// unmarshalV2PacketData unmarshals FungibleTokenPacketData from an IBC v2 payload.
+func unmarshalV2PacketData(payload channeltypesv2.Payload) (transfertypes.FungibleTokenPacketData, error) {
+	var data transfertypes.FungibleTokenPacketData
+	if err := transfertypes.ModuleCdc.UnmarshalJSON(payload.Value, &data); err != nil {
+		return data, errorsmod.Wrapf(errortypes.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
+	}
+	return data, nil
+}
+
 // OnAcknowledgementPacketV2 responds to the success or failure of a packet
 // acknowledgement written on the receiving chain for IBC v2.
 // If the acknowledgement was a success then nothing occurs. If the acknowledgement failed,
@@ -164,10 +171,9 @@ func (k Keeper) OnAcknowledgementPacketV2(
 	payload channeltypesv2.Payload,
 	ack channeltypes.Acknowledgement,
 ) error {
-	// Unmarshal the packet data from payload
-	var data transfertypes.FungibleTokenPacketData
-	if err := transfertypes.ModuleCdc.UnmarshalJSON(payload.Value, &data); err != nil {
-		return errorsmod.Wrapf(errortypes.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
+	data, err := unmarshalV2PacketData(payload)
+	if err != nil {
+		return err
 	}
 
 	switch ack.Response.(type) {
@@ -187,11 +193,9 @@ func (k Keeper) OnTimeoutPacketV2(
 	ctx sdk.Context,
 	payload channeltypesv2.Payload,
 ) error {
-	// Unmarshal the packet data from payload
-	var data transfertypes.FungibleTokenPacketData
-	if err := transfertypes.ModuleCdc.UnmarshalJSON(payload.Value, &data); err != nil {
-		return errorsmod.Wrapf(errortypes.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
+	data, err := unmarshalV2PacketData(payload)
+	if err != nil {
+		return err
 	}
-
 	return k.ConvertCoinToERC20FromPacket(ctx, data)
 }

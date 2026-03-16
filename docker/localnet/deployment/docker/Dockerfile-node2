@@ -46,7 +46,7 @@ COPY deployment/docker/cosmovisor-wrapper.sh /usr/local/bin/cosmovisor-wrapper.s
 
 # Set proper permissions and ownership
 RUN chown -R nobody:nogroup $HOME && \
-    chmod -R 777 $DAEMON_HOME && \
+    chmod -R 755 $DAEMON_HOME && \
     chown nobody:nogroup /usr/local/bin/cosmovisor-wrapper.sh && \
     chmod +x /usr/local/bin/cosmovisor-wrapper.sh
 

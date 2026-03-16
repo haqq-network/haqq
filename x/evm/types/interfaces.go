@@ -5,7 +5,7 @@ package types
 import (
 	"context"
 	"math/big"
-	time "time"
+	"time"
 
 	"cosmossdk.io/core/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
