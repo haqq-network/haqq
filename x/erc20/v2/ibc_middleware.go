@@ -75,7 +75,8 @@ func (im *IBCMiddleware) OnRecvPacket(
 	// Unmarshal the acknowledgement to check if it's successful
 	var ack channeltypes.Acknowledgement
 	if err := transfertypes.ModuleCdc.UnmarshalJSON(ackBytes, &ack); err != nil {
-		// If we can't unmarshal, return the result as-is
+		// Skip ERC20 conversion if the ack format is unexpected (e.g. v2-native format)
+		ctx.Logger().Error("erc20 ibc_middleware v2: failed to unmarshal acknowledgement, skipping ERC20 conversion", "error", err)
 		return result
 	}
 
@@ -88,33 +89,24 @@ func (im *IBCMiddleware) OnRecvPacket(
 	// Use the v2-specific keeper method that works with payloads
 	updatedAck := im.keeper.OnRecvPacketV2(ctx, payload.SourcePort, payload.DestinationPort, payload, ack)
 
-	// If keeper returned a different acknowledgement, we need to update the result
-	// The keeper's OnRecvPacket returns exported.Acknowledgement, which is typically
-	// a channeltypes.Acknowledgement. We need to check if it changed from the original.
-	if updatedAck != nil && updatedAck != ack {
-		// Type assert to channeltypes.Acknowledgement to marshal it
+	// If the keeper returned an error acknowledgement, update the result to reflect the failure.
+	// We check Success() semantically rather than comparing interface identity, which is fragile
+	// for struct-typed acknowledgements.
+	if !updatedAck.Success() {
 		if channelAck, ok := updatedAck.(channeltypes.Acknowledgement); ok {
-			// Convert the acknowledgement to bytes using the transfer module codec
 			updatedAckBytes, err := transfertypes.ModuleCdc.MarshalJSON(&channelAck)
 			if err != nil {
 				// If marshaling fails, return the original result
 				return result
 			}
-
-			// Determine the status based on the acknowledgement
-			status := channeltypesv2.PacketStatus_Success
-			if !updatedAck.Success() {
-				status = channeltypesv2.PacketStatus_Failure
-			}
-
 			return channeltypesv2.RecvPacketResult{
-				Status:          status,
+				Status:          channeltypesv2.PacketStatus_Failure,
 				Acknowledgement: updatedAckBytes,
 			}
 		}
 	}
 
-	// Return the original result if no changes
+	// Return the original result — the keeper either succeeded (no-op) or returned an error above
 	return result
 }
 

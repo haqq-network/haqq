@@ -1,7 +1,12 @@
 const hre = require("hardhat");
 
-// Pre-defined wallet address to receive all tokens
-const RECIPIENT_WALLET = "[YOUR_WALLET_ADDRESS]";
+// Wallet address to receive all tokens, read from environment variable
+const RECIPIENT_WALLET = process.env.RECIPIENT_WALLET;
+if (!RECIPIENT_WALLET) {
+  console.error("Error: RECIPIENT_WALLET environment variable is not set.");
+  console.error("Usage: RECIPIENT_WALLET=0xYourAddress npx hardhat run scripts/deploy.js --network <network>");
+  process.exit(1);
+}
 
 async function main() {
   console.log("Deploying HaqqTestToken contract...\n");
@@ -33,7 +38,7 @@ async function main() {
 
   // Deploy the contract
   const HaqqTestToken = await hre.ethers.getContractFactory("HaqqTestToken");
-  const haqqTestToken = await HaqqTestToken.deploy(tokenName, tokenSymbol, initialSupply);
+  const haqqTestToken = await HaqqTestToken.deploy(tokenName, tokenSymbol, initialSupply, 18);
 
   console.log("Waiting for deployment transaction to be mined...");
   await haqqTestToken.waitForDeployment();
