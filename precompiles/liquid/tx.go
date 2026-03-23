@@ -38,7 +38,7 @@ func (p Precompile) Liquidate(
 	}
 
 	p.Logger(ctx).Debug(
-		"liquidvesting.Liquidate called",
+		"tx called",
 		"sender", sender,
 		"method", method.Name,
 		"from_address", msg.LiquidateFrom,
@@ -46,57 +46,43 @@ func (p Precompile) Liquidate(
 		"amount", msg.Amount.String(),
 	)
 
-	senderAddr := sdk.AccAddress(sender.Bytes())
 	originAddr := sdk.AccAddress(origin.Bytes())
 	callerAddr := sdk.AccAddress(contract.CallerAddress.Bytes())
 
+	// isCallerSender is true when the contract caller is the same as the sender
+	isCallerSender := contract.CallerAddress == sender
+
 	// Ensure the logical sender matches the origin when going through a contract.
-	if !callerAddr.Equals(originAddr) && !senderAddr.Equals(originAddr) {
-		return nil, fmt.Errorf(ErrDifferentOriginFromSender, originAddr.String(), senderAddr.String())
+	if !isCallerSender && origin != sender {
+		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
-	// If the contract caller is the origin, execute directly without authorization.
-	if contract.CallerAddress == origin {
-		msgSrv := liquidkeeper.NewMsgServerImpl(p.keeper)
-		res, err := msgSrv.Liquidate(ctx, msg)
+	// Check and accept authorization if needed
+	if contract.CallerAddress != origin {
+		msgURL := sdk.MsgTypeURL(msg)
+		authzGrant, expiration := p.AuthzKeeper.GetAuthorization(ctx, callerAddr, originAddr, msgURL)
+		if authzGrant == nil {
+			return nil, fmt.Errorf(ErrAuthzDoesNotExistOrExpired, msgURL, callerAddr.String())
+		}
+
+		resp, err := authzGrant.Accept(ctx, msg)
 		if err != nil {
 			return nil, err
 		}
 
-		minted := res.Minted.Amount.BigInt()
-		erc20Addr := common.HexToAddress(res.ContractAddr)
-
-		if err := p.EmitLiquidateEvent(ctx, stateDB, sender, common.HexToAddress(msg.LiquidateTo), erc20Addr, minted); err != nil {
-			return nil, err
+		if !resp.Accept {
+			return nil, fmt.Errorf("authorization not accepted")
 		}
 
-		return method.Outputs.Pack(minted, erc20Addr)
-	}
-
-	// Otherwise, require an authz grant from the origin (granter) to the contract caller (grantee).
-	msgURL := sdk.MsgTypeURL(msg)
-	authzGrant, expiration := p.AuthzKeeper.GetAuthorization(ctx, callerAddr, originAddr, msgURL)
-	if authzGrant == nil {
-		return nil, fmt.Errorf(ErrAuthzDoesNotExistOrExpired, msgURL, callerAddr.String())
-	}
-
-	resp, err := authzGrant.Accept(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	if !resp.Accept {
-		return nil, fmt.Errorf("authorization not accepted")
-	}
-
-	// Update or delete the grant if required.
-	if resp.Delete {
-		if err := p.AuthzKeeper.DeleteGrant(ctx, callerAddr, originAddr, msgURL); err != nil {
-			return nil, err
-		}
-	} else if resp.Updated != nil {
-		if err := p.AuthzKeeper.SaveGrant(ctx, callerAddr, originAddr, resp.Updated, expiration); err != nil {
-			return nil, err
+		// Update or delete the grant if required.
+		if resp.Delete {
+			if err := p.AuthzKeeper.DeleteGrant(ctx, callerAddr, originAddr, msgURL); err != nil {
+				return nil, err
+			}
+		} else if resp.Updated != nil {
+			if err := p.AuthzKeeper.SaveGrant(ctx, callerAddr, originAddr, resp.Updated, expiration); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -138,7 +124,7 @@ func (p Precompile) Redeem(
 	}
 
 	p.Logger(ctx).Debug(
-		"liquidvesting.Redeem called",
+		"tx called",
 		"sender", sender,
 		"method", method.Name,
 		"from_address", msg.RedeemFrom,
@@ -146,46 +132,45 @@ func (p Precompile) Redeem(
 		"amount", msg.Amount.String(),
 	)
 
-	senderAddr := sdk.AccAddress(sender.Bytes())
 	originAddr := sdk.AccAddress(origin.Bytes())
 	callerAddr := sdk.AccAddress(contract.CallerAddress.Bytes())
 
-	// Enforce that redeem is only callable via allowance (authz).
-	// This means the contract caller must NOT be the origin directly.
-	if contract.CallerAddress == origin {
-		return nil, fmt.Errorf(ErrRedeemRequiresAuthorization)
+	// isCallerSender is true when the contract caller is the same as the sender
+	isCallerSender := contract.CallerAddress == sender
+
+	// If the contract caller is not the same as the sender, the sender must be the origin
+	if !isCallerSender && origin != sender {
+		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
-	// Additionally require the origin to match the logical sender.
-	if !senderAddr.Equals(originAddr) {
-		return nil, fmt.Errorf(ErrDifferentOriginFromSender, originAddr.String(), senderAddr.String())
-	}
+	// Check and accept authorization if needed
+	if contract.CallerAddress != origin {
+		msgURL := sdk.MsgTypeURL(msg)
 
-	msgURL := sdk.MsgTypeURL(msg)
+		// Require an authz grant from the origin (granter) to the contract caller (grantee).
+		authzGrant, expiration := p.AuthzKeeper.GetAuthorization(ctx, callerAddr, originAddr, msgURL)
+		if authzGrant == nil {
+			return nil, fmt.Errorf(ErrAuthzDoesNotExistOrExpired, msgURL, callerAddr.String())
+		}
 
-	// Require an authz grant from the origin (granter) to the contract caller (grantee).
-	authzGrant, expiration := p.AuthzKeeper.GetAuthorization(ctx, callerAddr, originAddr, msgURL)
-	if authzGrant == nil {
-		return nil, fmt.Errorf(ErrAuthzDoesNotExistOrExpired, msgURL, callerAddr.String())
-	}
-
-	resp, err := authzGrant.Accept(ctx, msg)
-	if err != nil {
-		return nil, err
-	}
-
-	if !resp.Accept {
-		return nil, fmt.Errorf("authorization not accepted")
-	}
-
-	// Update or delete the grant if required.
-	if resp.Delete {
-		if err := p.AuthzKeeper.DeleteGrant(ctx, callerAddr, originAddr, msgURL); err != nil {
+		resp, err := authzGrant.Accept(ctx, msg)
+		if err != nil {
 			return nil, err
 		}
-	} else if resp.Updated != nil {
-		if err := p.AuthzKeeper.SaveGrant(ctx, callerAddr, originAddr, resp.Updated, expiration); err != nil {
-			return nil, err
+
+		if !resp.Accept {
+			return nil, fmt.Errorf("authorization not accepted")
+		}
+
+		// Update or delete the grant if required.
+		if resp.Delete {
+			if err := p.AuthzKeeper.DeleteGrant(ctx, callerAddr, originAddr, msgURL); err != nil {
+				return nil, err
+			}
+		} else if resp.Updated != nil {
+			if err := p.AuthzKeeper.SaveGrant(ctx, callerAddr, originAddr, resp.Updated, expiration); err != nil {
+				return nil, err
+			}
 		}
 	}
 
