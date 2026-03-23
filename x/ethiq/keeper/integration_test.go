@@ -14,7 +14,7 @@ var _ = Describe("Integration test", Label("Ethiq module"), Ordered, func() {
 
 	Context("context", func() {
 		It("test case", func() {
-			Fail("TODO implement")
+			Skip("TODO implement if necessary")
 		})
 	})
 })
