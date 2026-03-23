@@ -57,18 +57,16 @@ func (k msgServer) MintHaqqByApplication(goCtx context.Context, msg *types.MsgMi
 		return nil, err
 	}
 
-	burnApplication, err := types.GetApplicationByID(msg.ApplicationId)
-	if err != nil {
-		return nil, err
-	}
+	// Addresses are already validated above
+	fromAddress := sdk.MustAccAddressFromBech32(msg.FromAddress)
 
-	mintedHaqqAmt, err := k.Keeper.BurnIslmForHaqqByApplicationID(ctx, burnApplication.Id)
+	mintedHaqqAmt, toAddress, err := k.Keeper.BurnIslmForHaqqByApplicationID(ctx, fromAddress, msg.ApplicationId)
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.MsgMintHaqqByApplicationResponse{
 		HaqqAmount: mintedHaqqAmt,
-		ToAddress:  burnApplication.ToAddress,
+		ToAddress:  toAddress.String(),
 	}, nil
 }

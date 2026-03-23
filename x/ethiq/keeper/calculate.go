@@ -17,7 +17,7 @@ func (k Keeper) CalculateHaqqCoinsToMint(ctx sdk.Context, islmAmountToBurn sdkma
 	}
 
 	// Validate islmAmountToBurn is positive and greater than zero
-	if islmAmountToBurn.LTE(sdkmath.ZeroInt()) {
+	if !islmAmountToBurn.GT(sdkmath.ZeroInt()) {
 		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrInvalidAmount, "islm_amount must be positive and greater than zero, got %s", islmAmountToBurn.String())
 	}
 

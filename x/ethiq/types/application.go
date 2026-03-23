@@ -38,6 +38,7 @@ func (a ApplicationListItem) AsBurnApplication() (*BurnApplication, error) {
 		BurnAmount:         sdk.NewCoin(utils.BaseDenom, islmAmount),
 		BurnedBeforeAmount: sdk.NewCoin(utils.BaseDenom, islmAccumulatedBurntAmount),
 		IsExecuted:         false,
+		IsCanceled:         islmAmount.IsZero(),
 	}
 
 	if err := burnApplication.ValidateBasic(); err != nil {
@@ -60,8 +61,8 @@ func (ba *BurnApplication) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidFundsSource, "invalid source_of_funds: %d", ba.Source)
 	}
 
-	if !ba.BurnAmount.IsValid() || ba.BurnAmount.IsZero() {
-		return errorsmod.Wrapf(ErrInvalidAmount, "islm_amount must be positive and greater than zero; got %s", ba.BurnAmount.String())
+	if !ba.BurnAmount.IsValid() {
+		return errorsmod.Wrapf(ErrInvalidAmount, "islm_amount must be positive or zero; got %s", ba.BurnAmount.String())
 	}
 
 	if ba.BurnAmount.Denom != utils.BaseDenom {
@@ -69,7 +70,7 @@ func (ba *BurnApplication) ValidateBasic() error {
 	}
 
 	if !ba.BurnedBeforeAmount.IsValid() {
-		return errorsmod.Wrap(ErrInvalidAmount, "islm_accumulated_burnt_amount must be positive or zero")
+		return errorsmod.Wrapf(ErrInvalidAmount, "islm_accumulated_burnt_amount must be positive or zero; got %s", ba.BurnedBeforeAmount.String())
 	}
 
 	if ba.BurnedBeforeAmount.Denom != utils.BaseDenom {

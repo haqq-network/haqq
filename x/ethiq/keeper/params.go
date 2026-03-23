@@ -16,18 +16,17 @@ func (k Keeper) IsModuleEnabled(ctx sdk.Context) bool {
 // GetParams returns the total set of ethiq parameters.
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	var params types.Params
-	k.paramstore.GetParamSet(ctx, &params)
+	k.paramStore.GetParamSet(ctx, &params)
 	return params
 }
 
 // SetParams sets the ethiq parameters to the param space.
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
-	k.paramstore.SetParamSet(ctx, &params)
+	k.paramStore.SetParamSet(ctx, &params)
 }
 
 // GetMaxSupply returns the value of MaxSupply param
 func (k Keeper) GetMaxSupply(ctx sdk.Context) sdkmath.Int {
-	var params types.Params
-	k.paramstore.GetParamSet(ctx, &params)
+	params := k.GetParams(ctx)
 	return params.MaxSupply
 }

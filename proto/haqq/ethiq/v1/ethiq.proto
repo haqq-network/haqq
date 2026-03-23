@@ -43,8 +43,11 @@ message BurnApplication {
     (amino.dont_omitempty) = true
   ];
 
-  // is_executed is a flag of application status
+  // is_executed is a flag of application execution status
   bool is_executed = 7;
+
+  // is_canceled is a flag of application cancellation status
+  bool is_canceled = 8;
 }
 
 // Params defines the parameters for the ethiq module.

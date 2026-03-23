@@ -23,7 +23,7 @@ func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.Acc
 
 		// redeem balance from liquid vesting module
 		if err := k.liquidVestingKeeper.Redeem(ctx, fromAddress, fromAddress, balance); err != nil {
-			return errorsmod.Wrap(err, "failed to redeem liquid coins")
+			return errorsmod.Wrap(err, types.ErrRedeemLiquidCoins.Error())
 		}
 
 		if isUcdao {
@@ -60,7 +60,7 @@ func (k Keeper) unlockVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, 
 
 	// check account has target denom locked in vesting
 	hasTargetDenom, lockedBalance := va.GetLockedUpCoins(ctx.BlockTime()).Find(amt.Denom)
-	if !(hasTargetDenom) {
+	if !hasTargetDenom {
 		// if there's no aISLM coins locked, do nothing
 		return zeroCoin, nil
 	}

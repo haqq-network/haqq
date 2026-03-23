@@ -18,7 +18,7 @@ import (
 type Keeper struct {
 	storeKey   storetypes.StoreKey
 	cdc        codec.BinaryCodec
-	paramstore paramtypes.Subspace
+	paramStore paramtypes.Subspace
 
 	accountKeeper       types.AccountKeeper
 	bankKeeper          types.BankKeeper
@@ -51,7 +51,7 @@ func NewKeeper(
 	return Keeper{
 		storeKey:            storeKey,
 		cdc:                 cdc,
-		paramstore:          ps,
+		paramStore:          ps,
 		accountKeeper:       ak,
 		bankKeeper:          bk,
 		erc20Keeper:         ek,

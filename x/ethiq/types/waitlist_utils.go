@@ -14,17 +14,17 @@ func IsApplicationExists(appID uint64) bool {
 	return appID < uint64(len(registeredApplications))
 }
 
-func TotalNumberOfApplications() int {
-	return len(registeredApplications)
+func TotalNumberOfApplications() uint64 {
+	return uint64(len(registeredApplications))
 }
 
-func TotalNumberOfApplicationsBySender(sender string) int {
+func TotalNumberOfApplicationsBySender(sender string) uint64 {
 	apps, ok := registeredApplicationsBySender[sender]
 	if !ok {
 		return 0
 	}
 
-	return len(apps)
+	return uint64(len(apps))
 }
 
 func GetLastApplication() ApplicationListItem {
@@ -33,7 +33,7 @@ func GetLastApplication() ApplicationListItem {
 
 func GetApplicationByID(appID uint64) (*BurnApplication, error) {
 	if !IsApplicationExists(appID) {
-		return nil, errorsmod.Wrapf(ErrInvalidApplicationID, "application ID %d not found", appID)
+		return nil, errorsmod.Wrapf(ErrInvalidApplicationID, "application not found: id = %d", appID)
 	}
 
 	appItem := registeredApplications[appID]
@@ -41,19 +41,17 @@ func GetApplicationByID(appID uint64) (*BurnApplication, error) {
 	return appItem.AsBurnApplication()
 }
 
-func GetSendersApplicationIDByIndex(sender string, i int) (*BurnApplication, error) {
+func GetSendersApplicationIDByIndex(sender string, i uint64) (*BurnApplication, error) {
 	apps, ok := registeredApplicationsBySender[sender]
 	if !ok {
 		return nil, errorsmod.Wrapf(ErrInvalidApplicationID, "applications for %s not found", sender)
 	}
 
-	if i >= len(apps) {
+	if i >= uint64(len(apps)) {
 		return nil, errorsmod.Wrapf(ErrInvalidApplicationID, "out of range, %s has %d applications, requested %d", sender, len(apps), i)
 	}
 
-	appID := apps[i]
-
-	return GetApplicationByID(appID)
+	return GetApplicationByID(apps[i])
 }
 
 func GetSumOfAllApplications() sdkmath.Int {

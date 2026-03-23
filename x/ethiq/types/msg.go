@@ -27,7 +27,7 @@ func (msg *MsgMintHaqq) ValidateBasic() error {
 		return errorsmod.Wrapf(ErrInvalidAddress, "invalid from_address: %v", err)
 	}
 
-	if msg.IslmAmount.LT(sdkmath.OneInt()) {
+	if !msg.IslmAmount.GT(sdkmath.ZeroInt()) {
 		return errorsmod.Wrap(ErrInvalidAmount, "islm_amount must be positive and greater than zero")
 	}
 

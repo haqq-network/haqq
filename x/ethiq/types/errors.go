@@ -13,7 +13,7 @@ var (
 	ErrInvalidFundsSource   = sdkerrors.Register(ModuleName, 6, "invalid funds source")
 	ErrInvalidApplicationID = sdkerrors.Register(ModuleName, 7, "invalid application ID")
 	ErrParseApplication     = sdkerrors.Register(ModuleName, 8, "failed to parse application")
-	ErrRedeemLiquidCoins    = sdkerrors.Register(ModuleName, 9, "failed to redeem aLIQUID coins on source account")
+	ErrRedeemLiquidCoins    = sdkerrors.Register(ModuleName, 9, "failed to redeem aLIQUID coins")
 	ErrUnlockCoins          = sdkerrors.Register(ModuleName, 10, "failed to unlock coins on vesting account")
 	ErrBurnCoins            = sdkerrors.Register(ModuleName, 11, "failed to burn coins")
 	ErrMintCoins            = sdkerrors.Register(ModuleName, 12, "failed to mint coins")

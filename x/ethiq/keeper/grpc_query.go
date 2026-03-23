@@ -43,7 +43,7 @@ func (k Keeper) Calculate(ctx context.Context, req *types.QueryCalculateRequest)
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid islm amount: %s", req.IslmAmount))
 	}
 
-	if islmAmount.LTE(sdkmath.ZeroInt()) {
+	if !islmAmount.GT(sdkmath.ZeroInt()) {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("islm_amount must be positive and greater than zero: %s", req.IslmAmount))
 	}
 
@@ -111,24 +111,24 @@ func (k Keeper) GetApplications(ctx context.Context, req *types.QueryGetApplicat
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	applications := make([]types.BurnApplication, 0)
-
 	total := types.TotalNumberOfApplications()
-	page, limit, err := query.ParsePagination(req.Pagination)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	limit := req.Pagination.Limit
+	if limit == 0 {
+		limit = uint64(query.DefaultLimit)
 	}
-	offset := (page - 1) * limit
-	lastOnThisPage := offset + limit - 1
+
+	lastOnThisPage := req.Pagination.Offset + limit - 1
 	if lastOnThisPage >= total {
 		lastOnThisPage = total - 1
 	}
 
-	paginationResponse := &query.PageResponse{
-		Total: uint64(total), //nolint: gosec // There won't be an overflow
+	applications := make([]types.BurnApplication, 0, limit)
+	paginationResponse := &query.PageResponse{}
+	if req.Pagination.CountTotal {
+		paginationResponse.Total = total
 	}
 
-	if offset >= total {
+	if req.Pagination.Offset >= total {
 		return &types.QueryGetApplicationsResponse{
 			Applications: applications,
 			Pagination:   paginationResponse,
@@ -136,8 +136,8 @@ func (k Keeper) GetApplications(ctx context.Context, req *types.QueryGetApplicat
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	for i := offset; i < total && i <= lastOnThisPage; i++ {
-		burnApplication, err := types.GetApplicationByID(uint64(i)) //nolint: gosec // There won't be an overflow
+	for i := req.Pagination.Offset; i < total && i <= lastOnThisPage; i++ {
+		burnApplication, err := types.GetApplicationByID(i)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -157,24 +157,24 @@ func (k Keeper) GetSendersApplications(ctx context.Context, req *types.QueryGetS
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	applications := make([]types.BurnApplication, 0)
-
 	total := types.TotalNumberOfApplicationsBySender(req.SenderAddress)
-	page, limit, err := query.ParsePagination(req.Pagination)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	limit := req.Pagination.Limit
+	if limit == 0 {
+		limit = uint64(query.DefaultLimit)
 	}
-	offset := (page - 1) * limit
-	lastOnThisPage := offset + limit - 1
+
+	lastOnThisPage := req.Pagination.Offset + limit - 1
 	if lastOnThisPage >= total {
 		lastOnThisPage = total - 1
 	}
 
-	paginationResponse := &query.PageResponse{
-		Total: uint64(total), //nolint: gosec // There won't be an overflow
+	applications := make([]types.BurnApplication, 0, limit)
+	paginationResponse := &query.PageResponse{}
+	if req.Pagination.CountTotal {
+		paginationResponse.Total = total
 	}
 
-	if offset >= total {
+	if req.Pagination.Offset >= total {
 		return &types.QueryGetSendersApplicationsResponse{
 			Applications: applications,
 			Pagination:   paginationResponse,
@@ -182,7 +182,7 @@ func (k Keeper) GetSendersApplications(ctx context.Context, req *types.QueryGetS
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	for i := offset; i < total && i <= lastOnThisPage; i++ {
+	for i := req.Pagination.Offset; i < total && i <= lastOnThisPage; i++ {
 		burnApplication, err := types.GetSendersApplicationIDByIndex(req.SenderAddress, i)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
