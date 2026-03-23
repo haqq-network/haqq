@@ -16,6 +16,14 @@ func (us *UnitTestSuite) TestCalculate() {
 		success         bool
 	}{
 		{
+			"success - zero amount",
+			sdkmath.ZeroInt,
+			sdkmath.ZeroInt,
+			sdkmath.ZeroInt,
+			"",
+			true,
+		},
+		{
 			"success - level 1, 3m burn, 1m mint",
 			sdkmath.ZeroInt,
 			func() sdkmath.Int {

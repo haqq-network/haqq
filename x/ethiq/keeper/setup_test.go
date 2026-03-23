@@ -29,23 +29,30 @@ type UnitTestSuite struct {
 	suite.Suite
 }
 
+type IntegrationTestSuite struct {
+	KeeperTestSuite
+}
+
 var s *KeeperTestSuite
 
 func TestKeeperTestSuite(t *testing.T) {
 	s = new(KeeperTestSuite)
 	suite.Run(t, s)
+}
 
-	// Run UnitTestSuite
+func TestUnitTestSuite(t *testing.T) {
 	unitTestSuite := new(UnitTestSuite)
 	suite.Run(t, unitTestSuite)
+}
 
+func TestIntegrationTestSuite(t *testing.T) {
 	// Run Ginkgo integration tests
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Keeper Suite")
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
-	keys := keyring.New(2)
+	keys := keyring.New(4)
 
 	nw := network.NewUnitTestNetwork(
 		network.WithPreFundedAccounts(keys.GetAllAccAddrs()...),
