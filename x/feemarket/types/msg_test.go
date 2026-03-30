@@ -17,6 +17,15 @@ func TestMsgsTestSuite(t *testing.T) {
 	suite.Run(t, new(MsgsTestSuite))
 }
 
+func (suite *MsgsTestSuite) TestMsgUpdateGetSignBytes() {
+	msg := MsgUpdateParams{
+		Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		Params:    DefaultParams(),
+	}
+	bz := msg.GetSignBytes()
+	suite.Require().NotEmpty(bz)
+}
+
 func (suite *MsgsTestSuite) TestMsgUpdateValidateBasic() {
 	testCases := []struct {
 		name      string
