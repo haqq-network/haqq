@@ -57,8 +57,16 @@ var (
 		{46, "haqq1twl2zfe76n0dzddh9tcle7a9rqcmvfm43elxvm", "haqq1twl2zfe76n0dzddh9tcle7a9rqcmvfm43elxvm", 0, "500000000000000000000", "122638406885266457488974249"},
 		{47, "haqq1twl2zfe76n0dzddh9tcle7a9rqcmvfm43elxvm", "haqq1twl2zfe76n0dzddh9tcle7a9rqcmvfm43elxvm", 0, "0", "122638906885266457488974249"},
 		{48, "haqq1twl2zfe76n0dzddh9tcle7a9rqcmvfm43elxvm", "haqq1twl2zfe76n0dzddh9tcle7a9rqcmvfm43elxvm", 0, "1000000000000000000000000", "122638906885266457488974249"},
+		{49, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 0, "20000000000000000000", "123638906885266457488974249"},
+		{50, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 0, "20000000000000000000", "123638926885266457488974249"},
+		{51, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 0, "20000000000000000000", "123638946885266457488974249"},
+		{52, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 0, "20000000000000000000", "123638966885266457488974249"},
+		{53, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 1, "10000000000000000000", "123638986885266457488974249"},
+		{54, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 1, "10000000000000000000", "123638996885266457488974249"},
+		{55, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 1, "10000000000000000000", "123639006885266457488974249"},
+		{56, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 1, "10000000000000000000", "123639016885266457488974249"},
 	}
-	// 122638906885266457488974249 + 1000000000000000000000000 = total aISLM (sumAmount of last + amount of last)
+	// 123639016885266457488974249 + 10000000000000000000 = total aISLM (sumAmount of last + amount of last)
 
 	// registeredApplicationsBySender is a helper index of applications grouped by sender address.
 	registeredApplicationsBySender = map[string][]uint64{
@@ -73,5 +81,6 @@ var (
 		"haqq1twl2zfe76n0dzddh9tcle7a9rqcmvfm43elxvm": {43, 44, 45, 46, 47, 48},
 		"haqq1wk0qkkzxrs9262pzu5mgm4zv4a3qy8kxqqa7cp": {21, 23},
 		"haqq1wxytrgv06zdquatkp9g6ukrhawla6upxt9lttz": {34, 35, 36},
+		"haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp": {49, 50, 51, 52, 53, 54, 55, 56},
 	}
 )
