@@ -12,6 +12,13 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 )
 
+func TestLogger(t *testing.T) {
+	nw := network.NewUnitTestNetwork()
+	ctx := nw.GetContext()
+	logger := nw.App.FeeMarketKeeper.Logger(ctx)
+	require.NotNil(t, logger)
+}
+
 func TestSetGetBlockGasWanted(t *testing.T) {
 	var (
 		nw  *network.UnitTestNetwork

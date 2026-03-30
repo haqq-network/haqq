@@ -130,6 +130,98 @@ func (suite *MsgsTestSuite) TestMsgConvertERC20() {
 	}
 }
 
+func (suite *MsgsTestSuite) TestMsgUpdateParamsGetSignBytes() {
+	authority := authtypes.NewModuleAddress(govtypes.ModuleName).String()
+	msg := &types.MsgUpdateParams{
+		Authority: authority,
+		Params:    types.DefaultParams(),
+	}
+	bz := msg.GetSignBytes()
+	suite.Require().NotEmpty(bz)
+}
+
+func (suite *MsgsTestSuite) TestMsgRegisterERC20ValidateBasic() {
+	testCases := []struct {
+		name        string
+		msg         *types.MsgRegisterERC20
+		expectError bool
+	}{
+		{
+			"valid - single address",
+			&types.MsgRegisterERC20{
+				Erc20Addresses: []string{utiltx.GenerateAddress().String()},
+			},
+			false,
+		},
+		{
+			"valid - empty addresses",
+			&types.MsgRegisterERC20{
+				Erc20Addresses: []string{},
+			},
+			false,
+		},
+		{
+			"invalid - non-hex address",
+			&types.MsgRegisterERC20{
+				Erc20Addresses: []string{"not-a-hex-address"},
+			},
+			true,
+		},
+		{
+			"invalid - one bad address among good ones",
+			&types.MsgRegisterERC20{
+				Erc20Addresses: []string{utiltx.GenerateAddress().String(), "bad"},
+			},
+			true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			err := tc.msg.ValidateBasic()
+			if tc.expectError {
+				suite.Require().Error(err)
+			} else {
+				suite.Require().NoError(err)
+			}
+		})
+	}
+}
+
+func (suite *MsgsTestSuite) TestMsgToggleConversionValidateBasic() {
+	testCases := []struct {
+		name        string
+		msg         *types.MsgToggleConversion
+		expectError bool
+	}{
+		{
+			"valid",
+			&types.MsgToggleConversion{
+				Authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+			},
+			false,
+		},
+		{
+			"invalid authority",
+			&types.MsgToggleConversion{
+				Authority: "invalid",
+			},
+			true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			err := tc.msg.ValidateBasic()
+			if tc.expectError {
+				suite.Require().Error(err)
+			} else {
+				suite.Require().NoError(err)
+			}
+		})
+	}
+}
+
 func (suite *MsgsTestSuite) TestMsgUpdateValidateBasic() {
 	testCases := []struct {
 		name      string

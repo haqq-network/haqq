@@ -13,6 +13,22 @@ import (
 	"github.com/haqq-network/haqq/x/epochs/types"
 )
 
+func TestEpochInfosNilRequest(t *testing.T) {
+	suite := SetupTest([]types.EpochInfo{})
+	ctx := suite.network.GetContext()
+	resp, err := suite.network.App.EpochsKeeper.EpochInfos(ctx, nil)
+	require.Error(t, err)
+	require.Nil(t, resp)
+}
+
+func TestCurrentEpochNilRequest(t *testing.T) {
+	suite := SetupTest([]types.EpochInfo{})
+	ctx := suite.network.GetContext()
+	resp, err := suite.network.App.EpochsKeeper.CurrentEpoch(ctx, nil)
+	require.Error(t, err)
+	require.Nil(t, resp)
+}
+
 func TestEpochInfo(t *testing.T) {
 	var (
 		// suite is defined here so it is available inside the malleate function.

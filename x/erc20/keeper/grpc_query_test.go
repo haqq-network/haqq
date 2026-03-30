@@ -169,6 +169,22 @@ func (suite *KeeperTestSuite) TestTokenPair() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestTokenPairsNilRequest() {
+	suite.SetupTest()
+	ctx := suite.network.GetContext()
+	resp, err := suite.network.App.Erc20Keeper.TokenPairs(ctx, nil)
+	suite.Require().Error(err)
+	suite.Require().Nil(resp)
+}
+
+func (suite *KeeperTestSuite) TestTokenPairNilRequest() {
+	suite.SetupTest()
+	ctx := suite.network.GetContext()
+	resp, err := suite.network.App.Erc20Keeper.TokenPair(ctx, nil)
+	suite.Require().Error(err)
+	suite.Require().Nil(resp)
+}
+
 func (suite *KeeperTestSuite) TestQueryParams() {
 	suite.SetupTest()
 	ctx := suite.network.GetContext()

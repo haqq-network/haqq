@@ -20,6 +20,16 @@ func TestProposalTestSuite(t *testing.T) {
 	suite.Run(t, new(ProposalTestSuite))
 }
 
+func (suite *ProposalTestSuite) TestRegisterCoinProposal() {
+	proposal := &types.RegisterCoinProposal{}
+	suite.Require().Equal("erc20", proposal.ProposalRoute())
+	suite.Require().Equal("RegisterCoin", proposal.ProposalType())
+
+	err := proposal.ValidateBasic()
+	suite.Require().Error(err)
+	suite.Require().Contains(err.Error(), "deprecated")
+}
+
 func (suite *ProposalTestSuite) TestKeysTypes() {
 	suite.Require().Equal("erc20", (&types.RegisterERC20Proposal{}).ProposalRoute())
 	suite.Require().Equal("RegisterERC20", (&types.RegisterERC20Proposal{}).ProposalType())
