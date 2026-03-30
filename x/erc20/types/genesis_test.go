@@ -136,6 +136,54 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 			genState: &types.GenesisState{},
 			expPass:  true,
 		},
+		{
+			name: "valid genesis - with precompile matching enabled token pair",
+			genState: &types.GenesisState{
+				Params: types.Params{
+					EnableErc20:        true,
+					DynamicPrecompiles: []string{"0xdac17f958d2ee523a2206206994597c13d831ec7"},
+					NativePrecompiles:  []string{},
+				},
+				TokenPairs: []types.TokenPair{
+					{
+						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+						Denom:        "usdt",
+						Enabled:      true,
+					},
+				},
+			},
+			expPass: true,
+		},
+		{
+			name: "invalid genesis - precompile not in token pairs",
+			genState: &types.GenesisState{
+				Params: types.Params{
+					EnableErc20:        true,
+					DynamicPrecompiles: []string{"0xdac17f958d2ee523a2206206994597c13d831ec7"},
+					NativePrecompiles:  []string{},
+				},
+				TokenPairs: []types.TokenPair{},
+			},
+			expPass: false,
+		},
+		{
+			name: "invalid genesis - precompile in disabled token pair",
+			genState: &types.GenesisState{
+				Params: types.Params{
+					EnableErc20:        true,
+					DynamicPrecompiles: []string{"0xdac17f958d2ee523a2206206994597c13d831ec7"},
+					NativePrecompiles:  []string{},
+				},
+				TokenPairs: []types.TokenPair{
+					{
+						Erc20Address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+						Denom:        "usdt",
+						Enabled:      false,
+					},
+				},
+			},
+			expPass: false,
+		},
 	}
 
 	for _, tc := range testCases {

@@ -259,6 +259,88 @@ func (suite *KeeperTestSuite) TestIsDenomRegistered() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestGetCoinAddress() {
+	testCases := []struct {
+		name        string
+		denom       string
+		malleate    func(ctx sdk.Context)
+		expectError bool
+	}{
+		{
+			name:  "registered denom",
+			denom: "coin",
+			malleate: func(ctx sdk.Context) {
+				pair := types.NewTokenPair(utiltx.GenerateAddress(), "coin", types.OWNER_MODULE)
+				suite.network.App.Erc20Keeper.SetToken(ctx, pair)
+			},
+			expectError: false,
+		},
+		{
+			name:        "valid IBC denom - not registered",
+			denom:       "ibc/DF63978F803A2E27CA5CC9B7631654CCF0BBC788B3B7F0A10200508E37C70992",
+			malleate:    func(_ sdk.Context) {},
+			expectError: false,
+		},
+		{
+			name:        "invalid unregistered denom",
+			denom:       "usdt",
+			malleate:    func(_ sdk.Context) {},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			ctx := suite.network.GetContext()
+			tc.malleate(ctx)
+
+			addr, err := suite.network.App.Erc20Keeper.GetCoinAddress(ctx, tc.denom)
+			if tc.expectError {
+				suite.Require().Error(err)
+			} else {
+				suite.Require().NoError(err)
+				suite.Require().NotEqual(common.Address{}, addr)
+			}
+		})
+	}
+}
+
+func (suite *KeeperTestSuite) TestCreateNewTokenPair() {
+	testCases := []struct {
+		name        string
+		denom       string
+		expectError bool
+	}{
+		{
+			name:        "valid IBC denom",
+			denom:       "ibc/DF63978F803A2E27CA5CC9B7631654CCF0BBC788B3B7F0A10200508E37C70992",
+			expectError: false,
+		},
+		{
+			name:        "invalid plain denom",
+			denom:       "usdt",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			ctx := suite.network.GetContext()
+
+			pair, err := suite.network.App.Erc20Keeper.CreateNewTokenPair(ctx, tc.denom)
+			if tc.expectError {
+				suite.Require().Error(err)
+			} else {
+				suite.Require().NoError(err)
+				suite.Require().Equal(tc.denom, pair.Denom)
+				suite.Require().True(pair.Enabled)
+			}
+		})
+	}
+}
+
 func (suite *KeeperTestSuite) TestGetTokenDenom() {
 	var ctx sdk.Context
 	tokenAddress := utiltx.GenerateAddress()
