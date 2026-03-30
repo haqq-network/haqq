@@ -85,3 +85,8 @@ func (suite *GenesisTestSuite) TestValidateGenesis() {
 		}
 	}
 }
+
+func (suite *GenesisTestSuite) TestValidateMaxSupplyWrongType() {
+	err := validateMaxSupply("not-a-coin")
+	suite.Require().Error(err)
+}
