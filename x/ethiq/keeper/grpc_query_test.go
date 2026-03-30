@@ -227,6 +227,13 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 			errContains: "empty request",
 		},
 		{
+			name:     "success - with nil pagination",
+			req:      &ethiqtypes.QueryGetApplicationsRequest{},
+			expLen:   int(ethiqtypes.TotalNumberOfApplications()), //nolint: gosec // G115
+			expTotal: 0,
+			expErr:   false,
+		},
+		{
 			name: "success - with limited pagination, no count total",
 			req: &ethiqtypes.QueryGetApplicationsRequest{
 				Pagination: &query.PageRequest{
@@ -311,6 +318,15 @@ func (suite *KeeperTestSuite) TestGetSendersApplicationsGRPC() {
 			req:         nil,
 			expErr:      true,
 			errContains: "empty request",
+		},
+		{
+			name: "success - known sender, with nil pagination",
+			req: &ethiqtypes.QueryGetSendersApplicationsRequest{
+				SenderAddress: knownSender,
+			},
+			expLen:   int(ethiqtypes.TotalNumberOfApplicationsBySender(knownSender)), //nolint: gosec // G115
+			expTotal: 0,
+			expErr:   false,
 		},
 		{
 			name: "success - known sender, with limited pagination, no count total",
