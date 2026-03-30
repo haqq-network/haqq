@@ -273,6 +273,68 @@ func (suite *ScheduleTestSuite) TestReplacePeriodsTail() {
 	}
 }
 
+func (suite *ScheduleTestSuite) TestExtractPastPeriods() {
+	testCases := []struct {
+		name            string
+		startDate       int64
+		endDate         int64
+		periods         sdkvesting.Periods
+		readTime        int64
+		expectedPeriods sdkvesting.Periods
+	}{
+		{
+			name:      "Standard extraction",
+			startDate: 1700000000,
+			endDate:   1700000300,
+			periods: []sdkvesting.Period{
+				{Length: 100},
+				{Length: 100},
+				{Length: 100},
+			},
+			readTime: 1700000200,
+			expectedPeriods: []sdkvesting.Period{
+				{Length: 100},
+				{Length: 100},
+			},
+		},
+		{
+			name:      "All periods in the past",
+			startDate: 1700000000,
+			endDate:   1700000300,
+			periods: []sdkvesting.Period{
+				{Length: 100},
+				{Length: 100},
+				{Length: 100},
+			},
+			readTime: 1700000400,
+			expectedPeriods: []sdkvesting.Period{
+				{Length: 100},
+				{Length: 100},
+				{Length: 100},
+			},
+		},
+		{
+			name:      "No periods in the past",
+			startDate: 1700000000,
+			endDate:   1700000300,
+			periods: []sdkvesting.Period{
+				{Length: 100},
+				{Length: 100},
+				{Length: 100},
+			},
+			readTime:        1600000000,
+			expectedPeriods: []sdkvesting.Period{},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			result := ExtractPastPeriods(tc.startDate, tc.endDate, tc.periods, tc.readTime)
+			suite.Require().Equal(tc.expectedPeriods, result)
+		})
+	}
+}
+
 func (suite *ScheduleTestSuite) TestCurrentPeriodShift() {
 	testCases := []struct {
 		name          string
