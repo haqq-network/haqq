@@ -10,8 +10,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
 
@@ -537,6 +539,105 @@ func (suite *VestingAccountTestSuite) TestComputeClawback() {
 			suite.Require().Equal(tc.expVestingPeriods, va2.VestingPeriods)
 		})
 	}
+}
+
+func (suite *VestingAccountTestSuite) TestNewClawbackVestingAccountWithCodeHash() {
+	addr := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	bacc := authtypes.NewBaseAccountWithAddress(addr)
+	codeHash := common.HexToHash("0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd")
+	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress("funder"), origCoins, cmttime.Now(), lockupPeriods, vestingPeriods, &codeHash)
+	suite.Require().Equal(codeHash, va.GetCodeHash())
+}
+
+func (suite *VestingAccountTestSuite) TestGetVestingPeriods() {
+	addr := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	bacc := authtypes.NewBaseAccountWithAddress(addr)
+	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress("funder"), origCoins, time.Now(), lockupPeriods, vestingPeriods, nil)
+	suite.Require().Equal(vestingPeriods, va.GetVestingPeriods())
+}
+
+func (suite *VestingAccountTestSuite) TestHasLockedCoins() {
+	now := time.Now()
+	addr := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	bacc := authtypes.NewBaseAccountWithAddress(addr)
+	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress("funder"), origCoins, now, lockupPeriods, vestingPeriods, nil)
+	// lockupPeriods has 16 hours length, so coins are locked before that
+	suite.Require().True(va.HasLockedCoins(now))
+	// after 24 hours all lockup periods have passed
+	suite.Require().False(va.HasLockedCoins(now.Add(24 * time.Hour)))
+}
+
+func (suite *VestingAccountTestSuite) TestAddGrant() {
+	now := time.Now()
+	addr := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	bacc := authtypes.NewBaseAccountWithAddress(addr)
+
+	// Case 1: Add grant to an unfunded account (no lockup or vesting periods)
+	va := &types.ClawbackVestingAccount{
+		BaseVestingAccount: &sdkvesting.BaseVestingAccount{
+			BaseAccount:     bacc,
+			OriginalVesting: sdk.Coins{},
+			EndTime:         0,
+		},
+		FunderAddress:  sdk.AccAddress("funder").String(),
+		StartTime:      time.Unix(0, 0),
+		LockupPeriods:  sdkvesting.Periods{},
+		VestingPeriods: sdkvesting.Periods{},
+	}
+	grantCoins := sdk.NewCoins(sdk.NewInt64Coin(stakeDenom, 100))
+	grantLockup := sdkvesting.Periods{{Length: int64(16 * 60 * 60), Amount: grantCoins}}
+	grantVesting := sdkvesting.Periods{{Length: int64(16 * 60 * 60), Amount: grantCoins}}
+	err := va.AddGrant(now.Unix(), grantLockup, grantVesting, grantCoins)
+	suite.Require().NoError(err)
+	suite.Require().Equal(grantCoins, va.OriginalVesting)
+	suite.Require().Equal(grantLockup, va.LockupPeriods)
+	suite.Require().Equal(grantVesting, va.VestingPeriods)
+
+	// Case 2: Add another grant on top of an existing funded account
+	extraCoins := sdk.NewCoins(sdk.NewInt64Coin(stakeDenom, 50))
+	extraLockup := sdkvesting.Periods{{Length: int64(16 * 60 * 60), Amount: extraCoins}}
+	extraVesting := sdkvesting.Periods{{Length: int64(16 * 60 * 60), Amount: extraCoins}}
+	err = va.AddGrant(now.Unix(), extraLockup, extraVesting, extraCoins)
+	suite.Require().NoError(err)
+	suite.Require().Equal(grantCoins.Add(extraCoins...), va.OriginalVesting)
+}
+
+func (suite *VestingAccountTestSuite) TestEthAddress() {
+	ethAddr := utiltx.GenerateAddress()
+	addr := sdk.AccAddress(ethAddr.Bytes())
+	bacc := authtypes.NewBaseAccountWithAddress(addr)
+	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress("funder"), origCoins, time.Now(), lockupPeriods, vestingPeriods, nil)
+	suite.Require().Equal(ethAddr, va.EthAddress())
+}
+
+func (suite *VestingAccountTestSuite) TestGetSetCodeHash() {
+	addr := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	bacc := authtypes.NewBaseAccountWithAddress(addr)
+	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress("funder"), origCoins, time.Now(), lockupPeriods, vestingPeriods, nil)
+
+	// default code hash should be set (empty = EOA hash)
+	defaultHash := va.GetCodeHash()
+	suite.Require().NotEqual(common.Hash{}, defaultHash)
+
+	// set a new hash
+	newHash := common.HexToHash("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+	err := va.SetCodeHash(newHash)
+	suite.Require().NoError(err)
+	suite.Require().Equal(newHash, va.GetCodeHash())
+}
+
+func (suite *VestingAccountTestSuite) TestType() {
+	addr := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	bacc := authtypes.NewBaseAccountWithAddress(addr)
+	va := types.NewClawbackVestingAccount(bacc, sdk.AccAddress("funder"), origCoins, time.Now(), lockupPeriods, vestingPeriods, nil)
+
+	// Default is EOA (empty code hash)
+	suite.Require().Equal(haqqtypes.AccountTypeEOA, va.Type())
+
+	// Set non-empty code hash -> Contract
+	contractHash := common.HexToHash("0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd")
+	_ = va.SetCodeHash(contractHash)
+	suite.Require().Equal(haqqtypes.AccountTypeContract, va.Type())
 }
 
 // getPercentOfVestingCoins is a helper function to calculate
