@@ -1,421 +1,398 @@
 package ethiq_test
 
 import (
+	"fmt"
 	"math/big"
-	"time"
+	"testing"
+
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive // dot imports are fine for Ginkgo
+	. "github.com/onsi/gomega"
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/haqq-network/haqq/precompiles/authorization"
+	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/ethiq"
 	"github.com/haqq-network/haqq/precompiles/testutil"
-	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
+	testutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
+	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
-	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
+	"github.com/haqq-network/haqq/x/evm/core/vm"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
-// appID6FromAddrBech32 is the from-address of application ID 6 in the waitlist.
-const appID6FromAddrBech32 = "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z"
+func TestPrecompileIntegrationTestSuite(t *testing.T) {
+	// Run Ginkgo integration tests
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Ethiq Precompile Integration Suite")
+}
 
-// ---------------------------------------------------------------------------
-// TestMintHaqqDirectly tests MintHaqq when called directly from an EOA
-// (contract.CallerAddress == origin == sender).
-// ---------------------------------------------------------------------------
+// General variables used for integration tests
+var (
+	// differentAddr is an address generated for testing purposes that e.g. raises the different origin error
+	// differentAddr, diffKey = testutiltx.NewAddrKey()
 
-func (s *PrecompileTestSuite) TestMintHaqqDirectly() {
-	s.SetupTest()
-	ctx := s.network.GetContext()
+	// gasPrice is the gas price used for the transactions
+	gasPrice = sdkmath.NewInt(1e9)
+	// callArgs  are the default arguments for calling the smart contract
+	//
+	// NOTE: this has to be populated in a BeforeEach block because the contractAddr would otherwise be a nil address.
+	callArgs, approveCallArgs factory.CallArgs
 
-	sender := s.keyring.GetAddr(0)
-	receiver := s.keyring.GetAddr(1)
-	burnAmount := big.NewInt(1e18)
+	// defaultLogCheck instantiates a log check arguments struct with the precompile ABI events populated.
+	defaultLogCheck testutil.LogCheckArgs
+	// passCheck defines the arguments to check if the precompile returns no error
+	passCheck testutil.LogCheckArgs
+	// outOfGasCheck defines the arguments to check if the precompile returns out of gas error
+	outOfGasCheck testutil.LogCheckArgs
+	// txArgs are the EVM transaction arguments to use in the transactions
+	txArgs evmtypes.EvmTxArgs
+	// islmCoin defines the 1 ISLM coin
+	islmCoin = sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1e18))
+)
 
-	// Fund sender with enough aISLM to burn
-	senderAccAddr := sdk.AccAddress(sender.Bytes())
-	coins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewIntFromBigInt(burnAmount).MulRaw(2)))
-	err := s.network.App.BankKeeper.MintCoins(ctx, coinomicstypes.ModuleName, coins)
-	s.Require().NoError(err)
-	err = s.network.App.BankKeeper.SendCoinsFromModuleToAccount(ctx, coinomicstypes.ModuleName, senderAccAddr, coins)
-	s.Require().NoError(err)
+var _ = Describe("Calling ethiq precompile from EOA", func() {
+	s := new(PrecompileTestSuite)
 
-	method := s.precompile.Methods[ethiq.MintHaqq]
+	BeforeEach(func() {
+		s.SetupTest()
 
-	// contract.CallerAddress == sender == origin → no authz required
-	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, sender, s.precompile, 200000)
+		// set the default call & check arguments
+		callArgs = factory.CallArgs{ContractABI: s.precompile.ABI}
+		approveCallArgs = factory.CallArgs{ContractABI: s.precompile.ABI}
+		defaultLogCheck = testutil.LogCheckArgs{ABIEvents: s.precompile.Events}
+		passCheck = defaultLogCheck.WithExpPass(true)
+		outOfGasCheck = defaultLogCheck.WithErrContains(vm.ErrOutOfGas.Error())
 
-	bz, err := s.precompile.MintHaqq(ctx, sender, contract, s.network.GetStateDB(), &method, []any{
-		sender,
-		receiver,
-		burnAmount,
+		// reset tx args each test to avoid keeping custom
+		// values of previous tests (e.g. gasLimit)
+		precompileAddr := s.precompile.Address()
+		txArgs = evmtypes.EvmTxArgs{To: &precompileAddr}
 	})
-	s.Require().NoError(err)
-	s.Require().NotNil(bz)
 
-	// Verify return value is a non-zero haqqAmount
-	result := new(big.Int).SetBytes(bz)
-	s.Require().True(result.Sign() > 0, "expected positive haqqAmount in return value")
-}
-
-// ---------------------------------------------------------------------------
-// TestMintHaqqViaThirdPartyContract tests MintHaqq called through a "dummy"
-// smart contract (contract.CallerAddress != origin).
-//
-// Flow:
-//  1. granter (EOA) grants MintHaqqAuthorization to a dummy contract address.
-//  2. The dummy contract calls MintHaqq on behalf of the granter.
-//  3. The grant is consumed (deleted) after MintHaqq.
-// ---------------------------------------------------------------------------
-
-func (s *PrecompileTestSuite) TestMintHaqqViaThirdPartyContract() {
-	s.SetupTest()
-	ctx := s.network.GetContext()
-
-	// The EOA that owns the funds and creates the authorization
-	origin := s.keyring.GetAddr(0)
-	receiver := s.keyring.GetAddr(1)
-	burnAmount := big.NewInt(1e18)
-
-	// A dummy "contract" address acting as the third-party caller
-	dummyContract := utiltx.GenerateAddress()
-
-	// Fund the origin (sender) with aISLM
-	originAccAddr := sdk.AccAddress(origin.Bytes())
-	coins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewIntFromBigInt(burnAmount).MulRaw(2)))
-	err := s.network.App.BankKeeper.MintCoins(ctx, coinomicstypes.ModuleName, coins)
-	s.Require().NoError(err)
-	err = s.network.App.BankKeeper.SendCoinsFromModuleToAccount(ctx, coinomicstypes.ModuleName, originAccAddr, coins)
-	s.Require().NoError(err)
-
-	// Grant MintHaqqAuthorization from origin to dummyContract with a spend limit
-	spendCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewIntFromBigInt(burnAmount).MulRaw(2))
-	mintAuthz := &ethiqtypes.MintHaqqAuthorization{SpendLimit: &spendCoin}
-	expiration := ctx.BlockTime().Add(time.Hour).UTC()
-	err = s.network.App.AuthzKeeper.SaveGrant(ctx, dummyContract.Bytes(), origin.Bytes(), mintAuthz, &expiration)
-	s.Require().NoError(err)
-
-	// Verify the grant was saved
-	savedAuthz, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, dummyContract.Bytes(), origin.Bytes(), ethiq.MintHaqqMsgURL)
-	s.Require().NotNil(savedAuthz)
-
-	// Create contract where CallerAddress = dummyContract (not origin)
-	// This simulates a call through a proxy/dummy smart contract
-	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, dummyContract, s.precompile, 200000)
-
-	method := s.precompile.Methods[ethiq.MintHaqq]
-	bz, err := s.precompile.MintHaqq(
-		ctx,
-		origin,
-		contract,
-		s.network.GetStateDB(),
-		&method,
-		[]any{
-			origin,   // sender == origin
-			receiver, // receiver
-			burnAmount,
-		},
-	)
-	s.Require().NoError(err)
-	s.Require().NotNil(bz)
-
-	// Verify return value
-	result := new(big.Int).SetBytes(bz)
-	s.Require().True(result.Sign() > 0, "expected positive haqqAmount in return value")
-}
-
-// ---------------------------------------------------------------------------
-// TestMintHaqqViaContractWithoutGrant verifies that calling MintHaqq
-// through a third-party contract without any authorization grant fails.
-// ---------------------------------------------------------------------------
-
-func (s *PrecompileTestSuite) TestMintHaqqViaContractWithoutGrant() {
-	s.SetupTest()
-	ctx := s.network.GetContext()
-
-	origin := s.keyring.GetAddr(0)
-	receiver := s.keyring.GetAddr(1)
-	dummyContract := utiltx.GenerateAddress()
-
-	// No grant is set up – just attempt the call
-	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, dummyContract, s.precompile, 200000)
-	method := s.precompile.Methods[ethiq.MintHaqq]
-
-	_, err := s.precompile.MintHaqq(ctx, origin, contract, s.network.GetStateDB(), &method, []any{
-		origin,
-		receiver,
-		big.NewInt(1e18),
-	})
-	s.Require().Error(err)
-	s.Require().ErrorContains(err, "authorization")
-}
-
-// ---------------------------------------------------------------------------
-// TestMintHaqqViaContractUnlimitedGrant verifies that an unlimited grant
-// (nil SpendLimit) allows the third-party contract to mint multiple times
-// without being deleted.
-// ---------------------------------------------------------------------------
-
-func (s *PrecompileTestSuite) TestMintHaqqViaContractUnlimitedGrant() {
-	s.SetupTest()
-	ctx := s.network.GetContext()
-
-	origin := s.keyring.GetAddr(0)
-	receiver := s.keyring.GetAddr(1)
-	dummyContract := utiltx.GenerateAddress()
-	burnAmount := big.NewInt(1e18)
-
-	// Fund origin
-	originAccAddr := sdk.AccAddress(origin.Bytes())
-	coins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewIntFromBigInt(burnAmount).MulRaw(4)))
-	err := s.network.App.BankKeeper.MintCoins(ctx, coinomicstypes.ModuleName, coins)
-	s.Require().NoError(err)
-	err = s.network.App.BankKeeper.SendCoinsFromModuleToAccount(ctx, coinomicstypes.ModuleName, originAccAddr, coins)
-	s.Require().NoError(err)
-
-	// Create unlimited grant (SpendLimit == nil)
-	mintAuthz := &ethiqtypes.MintHaqqAuthorization{SpendLimit: nil}
-	expiration := ctx.BlockTime().Add(time.Hour).UTC()
-	err = s.network.App.AuthzKeeper.SaveGrant(ctx, dummyContract.Bytes(), origin.Bytes(), mintAuthz, &expiration)
-	s.Require().NoError(err)
-
-	method := s.precompile.Methods[ethiq.MintHaqq]
-	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, dummyContract, s.precompile, 200000)
-
-	// First mint call
-	bz, err := s.precompile.MintHaqq(ctx, origin, contract, s.network.GetStateDB(), &method, []any{
-		origin, receiver, burnAmount,
-	})
-	s.Require().NoError(err)
-	s.Require().NotNil(bz)
-
-	// Grant should still exist (unlimited → Updated, not Deleted)
-	savedAuthz, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, dummyContract.Bytes(), origin.Bytes(), ethiq.MintHaqqMsgURL)
-	s.Require().NotNil(savedAuthz)
-}
-
-// ---------------------------------------------------------------------------
-// TestCheckAndAcceptAuthorizationIfNeeded covers types.go directly.
-// ---------------------------------------------------------------------------
-
-func (s *PrecompileTestSuite) TestCheckAndAcceptAuthorizationCallerIsOrigin() {
-	s.SetupTest()
-	ctx := s.network.GetContext()
-
-	origin := s.keyring.GetAddr(0)
-
-	// When CallerAddress == origin, no authz check needed → always succeeds
-	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, origin, s.precompile, 200000)
-	msg := &ethiqtypes.MsgMintHaqq{
-		FromAddress: sdk.AccAddress(origin.Bytes()).String(),
-		ToAddress:   sdk.AccAddress(s.keyring.GetAddr(1).Bytes()).String(),
-		IslmAmount:  sdkmath.NewInt(1e18),
-	}
-
-	err := ethiq.CheckAndAcceptAuthorizationIfNeeded(ctx, contract, origin, s.network.App.AuthzKeeper, msg)
-	s.Require().NoError(err)
-}
-
-func (s *PrecompileTestSuite) TestCheckAndAcceptAuthorizationWrongType() {
-	s.SetupTest()
-	ctx := s.network.GetContext()
-
-	origin := s.keyring.GetAddr(0)
-	dummyContract := utiltx.GenerateAddress()
-
-	// Save a grant with the wrong authorization type (use MintHaqqByApplicationIDAuthorization
-	// as grantee for MsgMintHaqq message type — the type assertion will fail)
-	wrongAuthz := &ethiqtypes.MintHaqqByApplicationIDAuthorization{
-		ApplicationsList: []uint64{0},
-	}
-	expiration := ctx.BlockTime().Add(time.Hour).UTC()
-	// Save under MintHaqqMsgURL so CheckAuthzExists finds it but type assertion fails
-	err := s.network.App.AuthzKeeper.SaveGrant(ctx, dummyContract.Bytes(), origin.Bytes(), wrongAuthz, &expiration)
-	s.Require().NoError(err)
-
-	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, dummyContract, s.precompile, 200000)
-	msg := &ethiqtypes.MsgMintHaqq{
-		FromAddress: sdk.AccAddress(origin.Bytes()).String(),
-		ToAddress:   sdk.AccAddress(s.keyring.GetAddr(1).Bytes()).String(),
-		IslmAmount:  sdkmath.NewInt(1e18),
-	}
-
-	err = ethiq.CheckAndAcceptAuthorizationIfNeeded(ctx, contract, origin, s.network.App.AuthzKeeper, msg)
-	// Expected error: wrong authz type saved under the message URL
-	s.Require().Error(err)
-}
-
-// ---------------------------------------------------------------------------
-// TestAllowanceWithGrant covers the Allowance query with an existing grant.
-// ---------------------------------------------------------------------------
-
-func (s *PrecompileTestSuite) TestAllowanceWithGrant() {
-	s.SetupTest()
-	ctx := s.network.GetContext()
-
-	granter := s.keyring.GetAddr(0)
-	grantee := common.BytesToAddress(utiltx.GenerateAddress().Bytes())
-	limitAmount := sdkmath.NewInt(5e18)
-	coin := sdk.NewCoin(utils.BaseDenom, limitAmount)
-	authzGrant := &ethiqtypes.MintHaqqAuthorization{SpendLimit: &coin}
-	expiration := ctx.BlockTime().Add(time.Hour).UTC()
-	err := s.network.App.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), authzGrant, &expiration)
-	s.Require().NoError(err)
-
-	method := s.precompile.Methods["allowance"]
-	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, granter, s.precompile, 200000)
-
-	bz, err := s.precompile.Allowance(ctx, &method, contract, []any{
-		grantee,
-		granter,
-		mintHaqqMsgURL, // defined in query_test.go
-	})
-	s.Require().NoError(err)
-	s.Require().NotNil(bz)
-
-	// Unpack and check allowance equals limitAmount
-	results, err := method.Outputs.Unpack(bz)
-	s.Require().NoError(err)
-	s.Require().Len(results, 1)
-	allowance, ok := results[0].(*big.Int)
-	s.Require().True(ok)
-	s.Require().Equal(limitAmount.BigInt(), allowance)
-}
-
-// ---------------------------------------------------------------------------
-// TestAllowanceUnlimitedGrant covers the nil SpendLimit → MaxUint256 branch.
-// ---------------------------------------------------------------------------
-
-func (s *PrecompileTestSuite) TestAllowanceUnlimitedGrant() {
-	s.SetupTest()
-	ctx := s.network.GetContext()
-
-	granter := s.keyring.GetAddr(0)
-	grantee := common.BytesToAddress(utiltx.GenerateAddress().Bytes())
-	authzGrant := &ethiqtypes.MintHaqqAuthorization{SpendLimit: nil} // unlimited
-	expiration := ctx.BlockTime().Add(time.Hour).UTC()
-	err := s.network.App.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), authzGrant, &expiration)
-	s.Require().NoError(err)
-
-	method := s.precompile.Methods["allowance"]
-	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, granter, s.precompile, 200000)
-
-	bz, err := s.precompile.Allowance(ctx, &method, contract, []any{
-		grantee,
-		granter,
-		mintHaqqMsgURL,
-	})
-	s.Require().NoError(err)
-	s.Require().NotNil(bz)
-
-	results, err := method.Outputs.Unpack(bz)
-	s.Require().NoError(err)
-	s.Require().Len(results, 1)
-	allowance, ok := results[0].(*big.Int)
-	s.Require().True(ok)
-	s.Require().Equal(0, abi.MaxUint256.Cmp(allowance))
-}
-
-// ---------------------------------------------------------------------------
-// TestMintHaqqByApplicationWithFunds covers the success path of MintHaqqByApplication.
-// Application 6 uses address haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z and
-// requires burning 100 aISLM (100e18 aISLM).
-// ---------------------------------------------------------------------------
-
-func (s *PrecompileTestSuite) TestMintHaqqByApplicationWithFunds() {
-	s.SetupTest()
-	ctx := s.network.GetContext()
-
-	// Get EVM address for the application's from-address
-	appAccAddr := sdk.MustAccAddressFromBech32(appID6FromAddrBech32)
-	appEvmAddr := common.BytesToAddress(appAccAddr.Bytes())
-
-	// Fund the application's address (application 6 burn amount = 100e18 aISLM)
-	burnAmount := sdkmath.NewInt(1e18).MulRaw(100)
-	coins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, burnAmount))
-	err := s.network.App.BankKeeper.MintCoins(ctx, coinomicstypes.ModuleName, coins)
-	s.Require().NoError(err)
-	err = s.network.App.BankKeeper.SendCoinsFromModuleToAccount(ctx, coinomicstypes.ModuleName, appAccAddr, coins)
-	s.Require().NoError(err)
-
-	method := s.precompile.Methods[ethiq.MintHaqqByApplication]
-
-	// CallerAddress == sender == origin → no authz required
-	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, appEvmAddr, s.precompile, 200000)
-
-	bz, err := s.precompile.MintHaqqByApplication(ctx, appEvmAddr, contract, s.network.GetStateDB(), &method, []any{
-		appEvmAddr,
-		big.NewInt(6),
-	})
-	s.Require().NoError(err)
-	s.Require().NotNil(bz)
-
-	result := new(big.Int).SetBytes(bz)
-	s.Require().True(result.Sign() > 0, "expected positive haqqAmount")
-}
-
-// ---------------------------------------------------------------------------
-// TestNewMintHaqqAuthorization covers the types.go helper.
-// ---------------------------------------------------------------------------
-
-func (s *PrecompileTestSuite) TestNewMintHaqqAuthorization() {
-	owner := s.keyring.GetAddr(0)
-	spender := s.keyring.GetAddr(1)
-
-	testCases := []struct {
-		name        string
-		args        []any
-		expError    bool
-		errContains string
-	}{
-		{
-			"fail - wrong arg count",
-			[]any{},
-			true,
-			"",
-		},
-		{
-			"fail - invalid owner (non-address)",
-			[]any{"not-an-address", spender, big.NewInt(1e18)},
-			true,
-			"invalid owner",
-		},
-		{
-			"fail - invalid spender (non-address)",
-			[]any{owner, "not-an-address", big.NewInt(1e18)},
-			true,
-			"invalid spender",
-		},
-		{
-			"fail - nil amount",
-			[]any{owner, spender, nil},
-			true,
-			"invalid amount",
-		},
-		{
-			"success - valid args",
-			[]any{owner, spender, big.NewInt(1e18)},
-			false,
-			"",
-		},
-	}
-
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			retOwner, retSpender, authz, err := ethiq.NewMintHaqqAuthorization(tc.args)
-			if tc.expError {
-				s.Require().Error(err)
-				if tc.errContains != "" {
-					s.Require().ErrorContains(err, tc.errContains)
-				}
-			} else {
-				s.Require().NoError(err)
-				s.Require().Equal(owner, retOwner)
-				s.Require().Equal(spender, retSpender)
-				s.Require().NotNil(authz)
-				s.Require().NotNil(authz.SpendLimit)
-			}
+	// =====================================
+	// 				TRANSACTIONS
+	// =====================================
+	Describe("Execute MintHaqq transaction", func() {
+		BeforeEach(func() {
+			// set the default call arguments
+			callArgs.MethodName = ethiq.MintHaqq
 		})
-	}
-}
+
+		Describe("when the precompile is not enabled in the EVM params", func() {
+			It("should succeed but not perform burn/mint", func() {
+				sender := s.keyring.GetKey(0)
+
+				// disable the precompile
+				resParams, err := s.grpcHandler.GetEvmParams()
+				Expect(err).To(BeNil())
+
+				var activePrecompiles []string
+				for _, precompile := range resParams.Params.ActiveStaticPrecompiles {
+					if precompile != s.precompile.Address().String() {
+						activePrecompiles = append(activePrecompiles, precompile)
+					}
+				}
+				resParams.Params.ActiveStaticPrecompiles = activePrecompiles
+
+				err = testutils.UpdateEvmParams(testutils.UpdateParamsInput{
+					Tf:      s.factory,
+					Network: s.network,
+					Pk:      sender.Priv,
+					Params:  resParams.Params,
+				})
+				Expect(err).To(BeNil(), "error while setting params")
+
+				senderBalanceBeforeRes, err := s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil(), "error while retrieving sender's balance")
+
+				txArgs.GasPrice = gasPrice.BigInt()
+				txArgs.GasLimit = 30000
+				callArgs.Args = []interface{}{
+					sender.Addr,
+					sender.Addr,
+					islmCoin.Amount.BigInt(),
+				}
+
+				// Contract should not be called but the transaction should be successful
+				// This is the expected behavior in Ethereum where there is a contract call
+				// to a non existing contract
+				expectedCheck := defaultLogCheck.
+					WithExpEvents([]string{}...).
+					WithExpPass(true)
+
+				res, _, err := s.factory.CallContractAndCheckLogs(
+					sender.Priv,
+					txArgs,
+					callArgs,
+					expectedCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the precompile")
+				Expect(s.network.NextBlock()).To(BeNil(), "error on NextBlock")
+
+				fees := gasPrice.Mul(sdkmath.NewInt(res.GasUsed))
+				expFinalBalanceAmt := senderBalanceBeforeRes.Balance.Amount.Sub(fees)
+
+				// sender's balance should remain unchanged
+				senderBalanceAfterRes, err := s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil(), "error while retrieving sender's balance")
+				Expect(senderBalanceAfterRes.Balance.Amount).To(Equal(expFinalBalanceAmt), "sender balance is incorrect")
+			})
+		})
+
+		Describe("Revert transaction", func() {
+			It("should run out of gas if the gas limit is too low", func() {
+				sender := s.keyring.GetKey(0)
+
+				txArgs.GasPrice = gasPrice.BigInt()
+				txArgs.GasLimit = 30000
+				callArgs.Args = []interface{}{
+					sender.Addr,
+					sender.Addr,
+					islmCoin.Amount.BigInt(),
+				}
+
+				senderBalanceBeforeRes, err := s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil(), "error while retrieving sender's balance")
+				Expect(senderBalanceBeforeRes.Balance.Amount).To(Equal(network.PrefundedAccountInitialBalance), "sender balance is incorrect")
+
+				res, _, err := s.factory.CallContractAndCheckLogs(
+					sender.Priv,
+					txArgs,
+					callArgs,
+					outOfGasCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the precompile")
+				Expect(s.network.NextBlock()).To(BeNil(), "error on NextBlock")
+
+				fees := gasPrice.Mul(sdkmath.NewInt(res.GasUsed))
+				expFinalBalanceAmt := senderBalanceBeforeRes.Balance.Amount.Sub(fees)
+
+				// sender's balance should remain unchanged
+				senderBalanceAfterRes, err := s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil(), "error while retrieving sender's balance")
+				Expect(senderBalanceAfterRes.Balance.Amount).To(Equal(expFinalBalanceAmt), "sender balance is incorrect")
+			})
+		})
+
+		Describe("Execute approve transaction", func() {
+			var granter, grantee keyring.Key
+
+			BeforeEach(func() {
+				granter = s.keyring.GetKey(0)
+				grantee = s.keyring.GetKey(1)
+
+				approveCallArgs.MethodName = authorization.ApproveMethod
+			})
+
+			It("should return error if the given method is not supported on the precompile", func() {
+				approveCallArgs.Args = []interface{}{
+					grantee.Addr,
+					abi.MaxUint256,
+					[]string{"unknownMethod"},
+				}
+
+				logCheckArgs := defaultLogCheck.WithErrContains(cmn.ErrInvalidMsgType, "ethiq", "unknownMethod")
+
+				_, _, err := s.factory.CallContractAndCheckLogs(
+					granter.Priv,
+					txArgs,
+					approveCallArgs,
+					logCheckArgs,
+				)
+				Expect(err).To(BeNil(), "error while calling the contract and checking logs")
+			})
+
+			It("should approve the mintHaqq method with the max uint256 value", func() {
+				s.SetupApproval(granter.Priv, grantee.Addr, abi.MaxUint256, []string{ethiq.MintHaqqMsgURL})
+				s.ExpectAuthorization(ethiq.MintHaqqMsgURL, grantee.Addr, granter.Addr, nil, 0)
+			})
+
+			It("should approve the mintHaqq method with the limited value", func() {
+				amt := big.NewInt(1e18)
+				s.SetupApproval(granter.Priv, grantee.Addr, amt, []string{ethiq.MintHaqqMsgURL})
+				expCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewIntFromBigInt(amt))
+				s.ExpectAuthorization(ethiq.MintHaqqMsgURL, grantee.Addr, granter.Addr, &expCoin, 0)
+			})
+
+			It("should refund leftover gas", func() {
+				resBal, err := s.grpcHandler.GetBalance(granter.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil(), "error while getting balance")
+				balancePre := resBal.Balance
+				gasPrice := big.NewInt(1e9)
+
+				// Call the precompile with a lot of gas
+				approveCallArgs.Args = []interface{}{
+					s.precompile.Address(),
+					big.NewInt(1e18),
+					[]string{ethiq.MintHaqqMsgURL},
+				}
+				txArgs.GasPrice = gasPrice
+
+				approvalCheck := passCheck.WithExpEvents(authorization.EventTypeApproval)
+
+				res, _, err := s.factory.CallContractAndCheckLogs(
+					granter.Priv,
+					txArgs, approveCallArgs,
+					approvalCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				resBal, err = s.grpcHandler.GetBalance(granter.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil(), "error while getting balance")
+				balancePost := resBal.Balance
+				difference := balancePre.Sub(*balancePost)
+
+				// NOTE: the expected difference is the gas price multiplied by the gas used, because the rest should be refunded
+				expDifference := gasPrice.Int64() * res.GasUsed
+				Expect(difference.Amount.Int64()).To(Equal(expDifference), "expected different total transaction cost")
+			})
+		})
+
+		Describe("to burn/mint", func() {
+			Context("as the token owner", func() {
+				It("should burn/mint without need for authorization", func() {
+					sender := s.keyring.GetKey(0)
+
+					// get initial sender's balances
+					senderIslmBalanceBeforeRes, err := s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aISLM")
+					Expect(senderIslmBalanceBeforeRes.Balance.Amount).To(Equal(network.PrefundedAccountInitialBalance), "sender balance of aISLM is incorrect")
+					senderHaqqBalanceBeforeRes, err := s.grpcHandler.GetBalance(sender.AccAddr, ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aHAQQ")
+					Expect(senderHaqqBalanceBeforeRes.Balance.IsZero()).To(BeTrue(), "sender balance of aHAQQ is incorrect")
+
+					// prepare and execute tx
+					txArgs.GasPrice = gasPrice.BigInt()
+					txArgs.GasLimit = 300000
+					callArgs.Args = []interface{}{
+						sender.Addr,
+						sender.Addr,
+						islmCoin.Amount.BigInt(),
+					}
+					logCheckArgs := passCheck.WithExpEvents(ethiq.EventTypeMintHaqq)
+
+					res, _, err := s.factory.CallContractAndCheckLogs(
+						sender.Priv,
+						txArgs,
+						callArgs,
+						logCheckArgs,
+					)
+					Expect(err).To(BeNil(), "error while calling the precompile")
+					Expect(s.network.NextBlock()).To(BeNil(), "error on NextBlock")
+
+					fees := gasPrice.Mul(sdkmath.NewInt(res.GasUsed))
+					expFinalIslmBalanceAmt := senderIslmBalanceBeforeRes.Balance.Amount.Sub(fees).Sub(islmCoin.Amount)
+
+					// sender's balances should change
+					senderIslmBalanceAfterRes, err := s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aISLM")
+					Expect(senderIslmBalanceAfterRes.Balance.Amount).To(Equal(expFinalIslmBalanceAmt), "sender balance of aISLM after tx is incorrect")
+					senderHaqqBalanceAfterRes, err := s.grpcHandler.GetBalance(sender.AccAddr, ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aHAQQ")
+					Expect(senderHaqqBalanceAfterRes.Balance.IsZero()).To(BeFalse(), "sender balance of aHAQQ after tx is incorrect")
+				})
+
+				It("should not burn/mint if the account has no sufficient balance", func() {
+					newAddr, newAddrPriv := testutiltx.NewAccAddressAndKey()
+					err := testutils.FundAccountWithBaseDenom(s.factory, s.network, s.keyring.GetKey(0), newAddr, sdkmath.NewInt(1e17))
+					Expect(err).To(BeNil(), "error while sending coins")
+					Expect(s.network.NextBlock()).To(BeNil())
+
+					// prepare and execute tx
+					txArgs.GasPrice = gasPrice.BigInt()
+					txArgs.GasLimit = 300000
+					callArgs.Args = []interface{}{
+						common.BytesToAddress(newAddr),
+						common.BytesToAddress(newAddr),
+						islmCoin.Amount.BigInt(),
+					}
+					logCheckArgs := defaultLogCheck.WithErrContains("insufficient funds")
+
+					res, _, err := s.factory.CallContractAndCheckLogs(
+						newAddrPriv,
+						txArgs,
+						callArgs,
+						logCheckArgs,
+					)
+					Expect(err).To(BeNil(), "error while calling the precompile")
+					Expect(s.network.NextBlock()).To(BeNil(), "error on NextBlock")
+
+					fees := gasPrice.Mul(sdkmath.NewInt(res.GasUsed))
+					expFinalIslmBalanceAmt := sdkmath.NewInt(1e17).Sub(fees)
+
+					senderIslmBalanceAfterRes, err := s.grpcHandler.GetBalance(newAddr, utils.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aISLM")
+					Expect(senderIslmBalanceAfterRes.Balance.Amount).To(Equal(expFinalIslmBalanceAmt), "sender balance of aISLM after tx is incorrect")
+					senderHaqqBalanceAfterRes, err := s.grpcHandler.GetBalance(newAddr, ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aHAQQ")
+					Expect(senderHaqqBalanceAfterRes.Balance.IsZero()).To(BeTrue(), "sender balance of aHAQQ after tx is incorrect")
+				})
+			})
+
+			Context("on behalf of another account", func() {
+				It("should not burn/mint if sender address is not the origin", func() {
+					sender := s.keyring.GetKey(0)
+					differentAddr := testutiltx.GenerateAddress()
+
+					// get initial sender's balances
+					senderIslmBalanceBeforeRes, err := s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aISLM")
+					Expect(senderIslmBalanceBeforeRes.Balance.Amount).To(Equal(network.PrefundedAccountInitialBalance), "sender balance of aISLM is incorrect")
+					senderHaqqBalanceBeforeRes, err := s.grpcHandler.GetBalance(sender.AccAddr, ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aHAQQ")
+					Expect(senderHaqqBalanceBeforeRes.Balance.IsZero()).To(BeTrue(), "sender balance of aHAQQ is incorrect")
+
+					// prepare and execute tx
+					txArgs.GasPrice = gasPrice.BigInt()
+					txArgs.GasLimit = 300000
+					callArgs.Args = []interface{}{
+						differentAddr,
+						sender.Addr,
+						islmCoin.Amount.BigInt(),
+					}
+					logCheckArgs := defaultLogCheck.WithErrContains(
+						fmt.Sprintf(ethiq.ErrDifferentOriginFromSender, sender.Addr, differentAddr),
+					)
+
+					res, _, err := s.factory.CallContractAndCheckLogs(
+						sender.Priv,
+						txArgs,
+						callArgs,
+						logCheckArgs,
+					)
+					Expect(err).To(BeNil(), "error while calling the precompile")
+					Expect(s.network.NextBlock()).To(BeNil(), "error on NextBlock")
+
+					fees := gasPrice.Mul(sdkmath.NewInt(res.GasUsed))
+					expFinalIslmBalanceAmt := senderIslmBalanceBeforeRes.Balance.Amount.Sub(fees)
+
+					senderIslmBalanceAfterRes, err := s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aISLM")
+					Expect(senderIslmBalanceAfterRes.Balance.Amount).To(Equal(expFinalIslmBalanceAmt), "sender balance of aISLM after tx is incorrect")
+					senderHaqqBalanceAfterRes, err := s.grpcHandler.GetBalance(sender.AccAddr, ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil(), "error while retrieving sender's balance of aHAQQ")
+					Expect(senderHaqqBalanceAfterRes.Balance.IsZero()).To(BeTrue(), "sender balance of aHAQQ after tx is incorrect")
+				})
+			})
+		})
+	})
+})
+
+var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
+	Describe("when the precompile is not enabled in the EVM params", func() {
+		It("should return an error", func() {
+			Skip("TODO Implement solidity tests")
+		})
+	})
+})

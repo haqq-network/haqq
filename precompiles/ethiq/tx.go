@@ -54,14 +54,18 @@ func (p Precompile) MintHaqq(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == sender
+	// isCallerOrigin is true when the contract caller is the same as the origin
+	isCallerOrigin := contract.CallerAddress == origin
 
 	// If the contract caller is not the same as the sender, the sender must be the origin
-	if !isCallerSender && origin != sender {
+	if isCallerSender {
+		sender = origin
+	} else if origin != sender {
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
 	// Check and accept authorization if needed
-	if err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, origin, p.AuthzKeeper, msg); err != nil {
+	if err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, sender, p.AuthzKeeper, msg); err != nil {
 		return nil, err
 	}
 
@@ -72,13 +76,14 @@ func (p Precompile) MintHaqq(
 		return nil, err
 	}
 
-	if contract.CallerAddress != origin {
+	if !isCallerOrigin {
+		// get the delegator address from the message
+		originAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
+		originHexAddr := common.BytesToAddress(originAccAddr)
 		// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB
-		// when calling the precompile from another smart contract.
+		// when calling the precompile from a smart contract
 		// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
-		p.SetBalanceChangeEntries(
-			cmn.NewBalanceChangeEntry(sender, msg.IslmAmount.BigInt(), cmn.Sub),
-		)
+		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(originHexAddr, msg.IslmAmount.BigInt(), cmn.Sub))
 	}
 
 	if err = EmitMintHaqqEventWithAmount(
@@ -120,14 +125,18 @@ func (p Precompile) MintHaqqByApplication(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == sender
+	// isCallerOrigin is true when the contract caller is the same as the origin
+	isCallerOrigin := contract.CallerAddress == origin
 
 	// If the contract caller is not the same as the sender, the sender must be the origin
-	if !isCallerSender && origin != sender {
+	if isCallerSender {
+		sender = origin
+	} else if origin != sender {
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
 	// Check and accept authorization if needed
-	if err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, origin, p.AuthzKeeper, msg); err != nil {
+	if err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, sender, p.AuthzKeeper, msg); err != nil {
 		return nil, err
 	}
 
@@ -139,6 +148,22 @@ func (p Precompile) MintHaqqByApplication(
 	}
 
 	receiver := common.BytesToAddress(sdk.MustAccAddressFromBech32(res.ToAddress).Bytes())
+
+	if !isCallerOrigin {
+		application, _ := ethiqtypes.GetApplicationByID(msg.ApplicationId)
+
+		// get the source address from the message
+		originAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
+		if application.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO {
+			originAccAddr = ethiqkeeper.GetUCDAOEscrowAddress(originAccAddr)
+		}
+		originHexAddr := common.BytesToAddress(originAccAddr)
+		// at this point we've already checked on error during execution
+		// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB
+		// when calling the precompile from a smart contract
+		// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
+		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(originHexAddr, application.BurnAmount.Amount.BigInt(), cmn.Sub))
+	}
 
 	if err = EmitMintHaqqEventWithApplicationID(
 		ctx,

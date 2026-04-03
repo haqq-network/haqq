@@ -20,7 +20,6 @@ type PrecompileTestSuite struct {
 	grpcHandler grpc.Handler
 	keyring     testkeyring.Keyring
 	precompile  *ethiq.Precompile
-	bondDenom   string
 }
 
 func TestPrecompileUnitTestSuite(t *testing.T) {
@@ -35,19 +34,12 @@ func (s *PrecompileTestSuite) SetupTest() {
 	grpcHandler := grpc.NewIntegrationHandler(nw)
 	txFactory := factory.New(nw, grpcHandler)
 
-	ctx := nw.GetContext()
-	sk := nw.App.StakingKeeper
-	bondDenom, err := sk.BondDenom(ctx)
-	if err != nil {
-		panic(err)
-	}
-
 	s.factory = txFactory
 	s.grpcHandler = grpcHandler
 	s.keyring = keyring
 	s.network = nw
-	s.bondDenom = bondDenom
 
+	var err error
 	s.precompile, err = ethiq.NewPrecompile(
 		s.network.App.EthiqKeeper,
 		s.network.App.AuthzKeeper,

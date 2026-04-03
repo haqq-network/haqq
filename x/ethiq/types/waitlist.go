@@ -65,8 +65,17 @@ var (
 		{54, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 1, "10000000000000000000", "123638996885266457488974249"},
 		{55, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 1, "10000000000000000000", "123639006885266457488974249"},
 		{56, "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", "haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp", 1, "10000000000000000000", "123639016885266457488974249"},
+		{57, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 0, "1000000000000000000000", "123639026885266457488974249"},
+		{58, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 1, "2000000000000000000000", "123640026885266457488974249"},
+		{59, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 0, "3000000000000000000000", "123642026885266457488974249"},
+		{60, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 1, "4000000000000000000000", "123645026885266457488974249"},
+		{61, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 0, "5000000000000000000000", "123649026885266457488974249"},
+		{62, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 1, "100000000000000000000", "123654026885266457488974249"},
+		{63, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 0, "200000000000000000000", "123654126885266457488974249"},
+		{64, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 1, "300000000000000000000", "123654326885266457488974249"},
+		{65, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 0, "400000000000000000000", "123654626885266457488974249"},
 	}
-	// 123639016885266457488974249 + 10000000000000000000 = total aISLM (sumAmount of last + amount of last)
+	// 123654626885266457488974249 + 400000000000000000000 = total aISLM (sumAmount of last + amount of last)
 
 	// registeredApplicationsBySender is a helper index of applications grouped by sender address.
 	registeredApplicationsBySender = map[string][]uint64{
@@ -82,5 +91,6 @@ var (
 		"haqq1wk0qkkzxrs9262pzu5mgm4zv4a3qy8kxqqa7cp": {21, 23},
 		"haqq1wxytrgv06zdquatkp9g6ukrhawla6upxt9lttz": {34, 35, 36},
 		"haqq16dyuec59falt80znndwfhg3lqltdz9e8f5yzcp": {49, 50, 51, 52, 53, 54, 55, 56},
+		"haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd": {57, 58, 59, 60, 61, 62, 63, 64, 65},
 	}
 )
