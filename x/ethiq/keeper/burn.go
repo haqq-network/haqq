@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"fmt"
 
 	errorsmod "cosmossdk.io/errors"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/ethiq/types"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 // BurnIslmForHaqq burns aISLM coins and mints aHAQQ coins.
@@ -122,7 +122,7 @@ func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, fromAddress sdk.
 
 	// use UCDAO escrow address if needed
 	if isUcdao {
-		fromAddress = GetUCDAOEscrowAddress(fromAddress)
+		fromAddress = ucdaotypes.GetEscrowAddress(fromAddress)
 	}
 
 	// Calculate aHAQQ amount to be minted
@@ -238,16 +238,4 @@ func (k Keeper) mintCoins(ctx sdk.Context, to sdk.AccAddress, amt sdkmath.Int) e
 	}
 
 	return nil
-}
-
-// GetUCDAOEscrowAddress returns the escrow address for the specified share owner.
-// This function is based on native GetEscrowAddress of IBC Transfer module and
-// follows the format as outlined in ADR 028 with minimal changes:
-// https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md
-func GetUCDAOEscrowAddress(owner sdk.AccAddress) sdk.AccAddress {
-	preImage := []byte("ucdao")
-	preImage = append(preImage, 0)
-	preImage = append(preImage, owner.Bytes()...)
-	hash := sha256.Sum256(preImage)
-	return hash[:20]
 }

@@ -23,7 +23,10 @@ func (k Keeper) CalculateHaqqCoinsToMint(ctx sdk.Context, islmAmountToBurn sdkma
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	sumOfAllApplications := types.GetSumOfAllApplications()
+	sumOfAllApplications, err := types.GetSumOfAllApplications()
+	if err != nil {
+		return sdkmath.ZeroInt(), errorsmod.Wrap(types.ErrCalculationFailed, err.Error())
+	}
 	totalBurnedAmount := k.GetTotalBurnedAmount(sdkCtx)
 	totalBurnedFromApplicationsAmount := k.GetTotalBurnedFromApplicationsAmount(sdkCtx)
 
@@ -46,13 +49,18 @@ func CalculateHaqqAmount(currentIslmTotalBurned, restAmountToBeBurned sdkmath.In
 		levelMaxAmount := pl.ToAmount()
 		levelMinAmount := pl.FromAmount()
 
-		// exclude threshold amount
+		// Price levels use inclusive upper bounds: the valid burn range is [from, to-1].
+		// The value at "to" itself is the "from" of the next level, so it is excluded here.
+		// This means each level's last valid position is to-1, and the level is considered
+		// fully consumed when currentIslmTotalBurned >= to-1.
 		if currentIslmTotalBurned.GTE(levelMaxAmount.Sub(sdkmath.OneInt())) {
 			// go to next level if level is fulfilled
 			continue
 		}
 
-		// just in case... check that we are within the range
+		// Verify we are within the current level's inclusive range [from-1, to).
+		// The from-1 accounts for the case when we enter this level at position to[N-1]-1
+		// from the previous level (since from[N] == to[N-1]).
 		if !(currentIslmTotalBurned.GTE(levelMinAmount.Sub(sdkmath.OneInt())) && currentIslmTotalBurned.LT(levelMaxAmount)) {
 			// should never happen
 			return sdkmath.Int{}, errorsmod.Wrap(types.ErrCalculationFailed, "failed to find price level")
@@ -60,7 +68,8 @@ func CalculateHaqqAmount(currentIslmTotalBurned, restAmountToBeBurned sdkmath.In
 
 		unitPrice := pl.UnitPrice()
 
-		// get the rest amount on this level,
+		// Remaining capacity at this level: (to - 1) - currentBurned, because the
+		// last valid position is to-1 (the "to" boundary is exclusive).
 		restAmountForThisLevel := levelMaxAmount.Sub(currentIslmTotalBurned).Sub(sdkmath.OneInt())
 
 		// get amount to burn on this level
@@ -76,6 +85,10 @@ func CalculateHaqqAmount(currentIslmTotalBurned, restAmountToBeBurned sdkmath.In
 		// track minting
 		haqqToBeMintedOnThisLevel := sdkmath.LegacyNewDecFromInt(burnOnThisLevel).Quo(unitPrice).TruncateInt()
 		totalHaqqToBeMinted = totalHaqqToBeMinted.Add(haqqToBeMintedOnThisLevel)
+	}
+
+	if restAmountToBeBurned.IsPositive() {
+		return sdkmath.Int{}, errorsmod.Wrapf(types.ErrExceedsPricingCurve, "remaining unaccounted burn amount: %s", restAmountToBeBurned.String())
 	}
 
 	return totalHaqqToBeMinted, nil

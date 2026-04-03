@@ -54,15 +54,14 @@ func GetSendersApplicationIDByIndex(sender string, i uint64) (*BurnApplication, 
 	return GetApplicationByID(apps[i])
 }
 
-func GetSumOfAllApplications() sdkmath.Int {
+func GetSumOfAllApplications() (sdkmath.Int, error) {
 	lastApplication := GetLastApplication()
 	burnApplication, err := lastApplication.AsBurnApplication()
 	if err != nil {
-		// should never happen
-		panic(err)
+		return sdkmath.Int{}, errorsmod.Wrap(err, "failed to parse last application")
 	}
 
 	sum := burnApplication.BurnAmount.Add(burnApplication.BurnedBeforeAmount)
 
-	return sum.Amount
+	return sum.Amount, nil
 }

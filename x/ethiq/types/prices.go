@@ -27,6 +27,14 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	// Validate all price levels eagerly so that any invalid numeric strings
+	// cause a panic at startup rather than at runtime during tx execution.
+	for _, pl := range Prices {
+		pl.FromAmount()
+		pl.ToAmount()
+		pl.UnitPrice()
+	}
 }
 
 func (pl PriceLevel) FromAmount() sdkmath.Int {

@@ -10,6 +10,7 @@ import (
 	ethiqkeeper "github.com/haqq-network/haqq/x/ethiq/keeper"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 const (
@@ -150,12 +151,15 @@ func (p Precompile) MintHaqqByApplication(
 	receiver := common.BytesToAddress(sdk.MustAccAddressFromBech32(res.ToAddress).Bytes())
 
 	if !isCallerOrigin {
-		application, _ := ethiqtypes.GetApplicationByID(msg.ApplicationId)
+		application, err := ethiqtypes.GetApplicationByID(msg.ApplicationId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get application by ID %d: %w", msg.ApplicationId, err)
+		}
 
 		// get the source address from the message
 		originAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
 		if application.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO {
-			originAccAddr = ethiqkeeper.GetUCDAOEscrowAddress(originAccAddr)
+			originAccAddr = ucdaotypes.GetEscrowAddress(originAccAddr)
 		}
 		originHexAddr := common.BytesToAddress(originAccAddr)
 		// at this point we've already checked on error during execution
