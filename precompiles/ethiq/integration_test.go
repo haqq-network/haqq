@@ -19,6 +19,7 @@ import (
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/ethiq"
 	"github.com/haqq-network/haqq/precompiles/testutil"
+	safecontracts "github.com/haqq-network/haqq/precompiles/testutil/contracts/safe"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
@@ -394,5 +395,348 @@ var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
 		It("should return an error", func() {
 			Skip("TODO Implement solidity tests")
 		})
+	})
+})
+
+// Full Safe (Smart Contract Wallet) flow integration tests.
+var _ = Describe("Full Safe (Smart Contract Wallet) flow", Ordered, func() {
+	var (
+		s                *PrecompileTestSuite
+		safeOwnerOne     keyring.Key
+		safeOwnerTwo     keyring.Key
+		safeWalletAddr   common.Address
+		gnosisSafe       evmtypes.CompiledContract
+		gnosisSafeAddr   common.Address
+		proxyFactory     evmtypes.CompiledContract
+		proxyFactoryAddr common.Address
+		safeSetupData    []byte
+		deployErr        error
+	)
+
+	BeforeEach(func() {
+		s = new(PrecompileTestSuite)
+		s.SetupTest()
+
+		gnosisSafe, deployErr = safecontracts.LoadGnosisSafeContract()
+		Expect(deployErr).ToNot(HaveOccurred(), "failed to load GnosisSafe singleton contract")
+
+		proxyFactory, deployErr = safecontracts.LoadGnosisSafeProxyFactoryContract()
+		Expect(deployErr).ToNot(HaveOccurred(), "failed to load GnosisSafeProxyFactory contract")
+
+		sender := s.keyring.GetKey(0)
+		safeOwnerOneAddr, safeOwnerOnePriv := testutiltx.NewAddrKey()
+		safeOwnerOne = keyring.Key{
+			Addr:    safeOwnerOneAddr,
+			AccAddr: sdk.AccAddress(safeOwnerOneAddr.Bytes()),
+			Priv:    safeOwnerOnePriv,
+		}
+		safeOwnerTwoAddr, safeOwnerTwoPriv := testutiltx.NewAddrKey()
+		safeOwnerTwo = keyring.Key{
+			Addr:    safeOwnerTwoAddr,
+			AccAddr: sdk.AccAddress(safeOwnerTwoAddr.Bytes()),
+			Priv:    safeOwnerTwoPriv,
+		}
+
+		fundAmount := sdkmath.NewInt(1500).MulRaw(1e18)
+		deployErr = s.network.FundAccountWithBaseDenom(safeOwnerOne.AccAddr, fundAmount)
+		Expect(deployErr).ToNot(HaveOccurred(), "failed to fund first Safe owner")
+		deployErr = s.network.FundAccountWithBaseDenom(safeOwnerTwo.AccAddr, fundAmount)
+		Expect(deployErr).ToNot(HaveOccurred(), "failed to fund second Safe owner")
+
+		gnosisSafeAddr, deployErr = s.factory.DeployContract(
+			sender.Priv,
+			evmtypes.EvmTxArgs{},
+			factory.ContractDeploymentData{
+				Contract: gnosisSafe,
+			},
+		)
+		Expect(deployErr).ToNot(HaveOccurred(), "failed to deploy GnosisSafe singleton")
+		Expect(gnosisSafeAddr).ToNot(Equal(common.Address{}), "singleton address should be non-zero")
+
+		proxyFactoryAddr, deployErr = s.factory.DeployContract(
+			sender.Priv,
+			evmtypes.EvmTxArgs{},
+			factory.ContractDeploymentData{
+				Contract: proxyFactory,
+			},
+		)
+		Expect(deployErr).ToNot(HaveOccurred(), "failed to deploy GnosisSafeProxyFactory")
+		Expect(proxyFactoryAddr).ToNot(Equal(common.Address{}), "factory address should be non-zero")
+
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred(), "failed to advance block")
+	})
+
+	It("should execute full Safe flow against ethiq precompile", func() {
+		initialParticipantBalance := sdkmath.NewInt(1500).MulRaw(1e18)
+		transferToSafeAmount := sdkmath.NewInt(500).MulRaw(1e18)
+		expectedSafeBalance := sdkmath.NewInt(1000).MulRaw(1e18)
+		expectedParticipantFinalBalance := sdkmath.NewInt(1000).MulRaw(1e18)
+
+		ownerOneBalanceBeforeRes, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get first owner balance before Safe creation")
+		ownerTwoBalanceBeforeRes, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get second owner balance before Safe creation")
+		Expect(ownerOneBalanceBeforeRes.Balance.Amount).To(Equal(initialParticipantBalance), "unexpected first owner initial balance")
+		Expect(ownerTwoBalanceBeforeRes.Balance.Amount).To(Equal(initialParticipantBalance), "unexpected second owner initial balance")
+
+		safeSetupData, deployErr = gnosisSafe.ABI.Pack(
+			"setup",
+			[]common.Address{safeOwnerOne.Addr, safeOwnerTwo.Addr},
+			big.NewInt(1), // threshold = 1 out of 2 owners
+			common.Address{},
+			[]byte{},
+			common.Address{},
+			common.Address{},
+			big.NewInt(0),
+			common.Address{},
+		)
+		Expect(deployErr).ToNot(HaveOccurred(), "failed to pack GnosisSafe setup calldata")
+
+		createProxyArgs := factory.CallArgs{
+			ContractABI: proxyFactory.ABI,
+			MethodName:  "createProxy",
+			Args: []interface{}{
+				gnosisSafeAddr,
+				safeSetupData,
+			},
+		}
+
+		createProxyTxArgs := evmtypes.EvmTxArgs{
+			To: &proxyFactoryAddr,
+		}
+
+		createProxyRes, err := s.factory.ExecuteContractCall(
+			safeOwnerOne.Priv,
+			createProxyTxArgs,
+			createProxyArgs,
+		)
+		Expect(err).ToNot(HaveOccurred(), "failed to broadcast createProxy tx")
+
+		ethRes, err := s.factory.GetEvmTransactionResponseFromTxResult(createProxyRes)
+		Expect(err).ToNot(HaveOccurred(), "failed to decode createProxy tx response")
+
+		proxyCreationEvent := proxyFactory.ABI.Events["ProxyCreation"]
+		var proxyCreationLog *evmtypes.Log
+		for i := range ethRes.Logs {
+			l := ethRes.Logs[i]
+			if len(l.Topics) == 0 {
+				continue
+			}
+			if l.Topics[0] != proxyCreationEvent.ID.String() {
+				continue
+			}
+			if common.HexToAddress(l.Address) != proxyFactoryAddr {
+				continue
+			}
+			proxyCreationLog = l
+			break
+		}
+		Expect(proxyCreationLog).ToNot(BeNil(), "ProxyCreation event not found in createProxy logs")
+
+		eventInputs, err := proxyFactory.ABI.Events["ProxyCreation"].Inputs.Unpack(proxyCreationLog.Data)
+		Expect(err).ToNot(HaveOccurred(), "failed to decode ProxyCreation event data")
+		Expect(eventInputs).To(HaveLen(2), "unexpected ProxyCreation event payload")
+
+		var ok bool
+		safeWalletAddr, ok = eventInputs[0].(common.Address)
+		Expect(ok).To(BeTrue(), "invalid proxy address type in ProxyCreation event")
+		Expect(safeWalletAddr).ToNot(Equal(common.Address{}), "created Safe wallet address should be non-zero")
+		Expect(eventInputs[1]).To(Equal(gnosisSafeAddr), "singleton in event should match deployed GnosisSafe")
+
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred(), "failed to advance block after Safe wallet creation")
+
+		thresholdQueryTxArgs := evmtypes.EvmTxArgs{
+			To: &safeWalletAddr,
+		}
+		thresholdQueryArgs := factory.CallArgs{
+			ContractABI: gnosisSafe.ABI,
+			MethodName:  "getThreshold",
+		}
+		_, thresholdRes, err := s.factory.CallContractAndCheckLogs(
+			safeOwnerOne.Priv,
+			thresholdQueryTxArgs,
+			thresholdQueryArgs,
+			testutil.LogCheckArgs{ExpPass: true},
+		)
+		Expect(err).ToNot(HaveOccurred(), "failed to query Safe threshold")
+
+		thresholdOutputs, err := gnosisSafe.ABI.Methods["getThreshold"].Outputs.Unpack(thresholdRes.Ret)
+		Expect(err).ToNot(HaveOccurred(), "failed to decode getThreshold output")
+		Expect(thresholdOutputs).To(HaveLen(1))
+		Expect(thresholdOutputs[0]).To(Equal(big.NewInt(1)), "expected threshold to be 1")
+
+		ownersQueryArgs := factory.CallArgs{
+			ContractABI: gnosisSafe.ABI,
+			MethodName:  "getOwners",
+		}
+		_, ownersRes, err := s.factory.CallContractAndCheckLogs(
+			safeOwnerOne.Priv,
+			thresholdQueryTxArgs,
+			ownersQueryArgs,
+			testutil.LogCheckArgs{ExpPass: true},
+		)
+		Expect(err).ToNot(HaveOccurred(), "failed to query Safe owners")
+
+		ownersOutputs, err := gnosisSafe.ABI.Methods["getOwners"].Outputs.Unpack(ownersRes.Ret)
+		Expect(err).ToNot(HaveOccurred(), "failed to decode getOwners output")
+		Expect(ownersOutputs).To(HaveLen(1))
+		owners, ok := ownersOutputs[0].([]common.Address)
+		Expect(ok).To(BeTrue(), "invalid owners output type")
+		Expect(owners).To(ContainElements(safeOwnerOne.Addr, safeOwnerTwo.Addr), "Safe owners mismatch")
+		Expect(owners).To(HaveLen(2), "expected exactly two Safe owners")
+
+		safeWalletAccAddr := sdk.AccAddress(safeWalletAddr.Bytes())
+		transferCoins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, transferToSafeAmount))
+		ctx := s.network.GetContext()
+
+		err = s.network.App.BankKeeper.SendCoins(ctx, safeOwnerOne.AccAddr, safeWalletAccAddr, transferCoins)
+		Expect(err).ToNot(HaveOccurred(), "failed to transfer 500 ISLM from first owner to Safe")
+		err = s.network.App.BankKeeper.SendCoins(ctx, safeOwnerTwo.AccAddr, safeWalletAccAddr, transferCoins)
+		Expect(err).ToNot(HaveOccurred(), "failed to transfer 500 ISLM from second owner to Safe")
+
+		safeBalanceRes, err := s.grpcHandler.GetBalance(safeWalletAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get Safe wallet balance")
+		Expect(safeBalanceRes.Balance.Amount).To(Equal(expectedSafeBalance), "Safe wallet balance should be 1000 ISLM")
+
+		ownerOneBalanceBeforeMintRes, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get first owner balance before Safe mint tx")
+		ownerTwoBalanceBeforeMintRes, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get second owner balance before Safe mint tx")
+		safeIslmBeforeMintRes, err := s.grpcHandler.GetBalance(safeWalletAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get Safe ISLM balance before mint tx")
+		safeHaqqBeforeMintRes, err := s.grpcHandler.GetBalance(safeWalletAccAddr, ethiqtypes.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get Safe HAQQ balance before mint tx")
+
+		mintAmount := sdkmath.NewInt(500).MulRaw(1e18)
+		// Grant Safe wallet authorization to mint on behalf of owner1 for the exact mint amount.
+		s.SetupApproval(
+			safeOwnerOne.Priv,
+			safeWalletAddr,
+			mintAmount.BigInt(),
+			[]string{ethiq.MintHaqqMsgURL},
+		)
+
+		mintCallData, err := s.precompile.ABI.Pack(
+			ethiq.MintHaqq,
+			safeWalletAddr,
+			safeWalletAddr, // receiver must be Safe wallet
+			mintAmount.BigInt(),
+		)
+		Expect(err).ToNot(HaveOccurred(), "failed to pack ethiq mintHaqq call data")
+
+		getTxHashArgs := factory.CallArgs{
+			ContractABI: gnosisSafe.ABI,
+			MethodName:  "getTransactionHash",
+			Args: []interface{}{
+				s.precompile.Address(),
+				big.NewInt(0),
+				mintCallData,
+				uint8(0), // CALL
+				big.NewInt(300000),
+				big.NewInt(0),
+				big.NewInt(0),
+				common.Address{},
+				common.Address{},
+				big.NewInt(0), // nonce after createProxy
+			},
+		}
+		_, txHashRes, err := s.factory.CallContractAndCheckLogs(
+			safeOwnerOne.Priv,
+			evmtypes.EvmTxArgs{To: &safeWalletAddr},
+			getTxHashArgs,
+			testutil.LogCheckArgs{ExpPass: true},
+		)
+		Expect(err).ToNot(HaveOccurred(), "failed to get Safe transaction hash")
+		txHashOutputs, err := gnosisSafe.ABI.Methods["getTransactionHash"].Outputs.Unpack(txHashRes.Ret)
+		Expect(err).ToNot(HaveOccurred(), "failed to decode Safe transaction hash output")
+		Expect(txHashOutputs).To(HaveLen(1))
+		txHash, ok := txHashOutputs[0].([32]byte)
+		Expect(ok).To(BeTrue(), "unexpected tx hash type")
+		Expect(txHash).ToNot(Equal([32]byte{}), "Safe tx hash should not be zero")
+
+		// Safe signature format is {r}{s}{v}. For threshold=1 we can use "approved hash" style signature:
+		// v=1 and r=owner address (msg.sender is owner1, so hash is considered approved by sender).
+		signature := make([]byte, 65)
+		copy(signature[12:32], safeOwnerOne.Addr.Bytes()) // r contains owner address in last 20 bytes
+		signature[64] = 1                                 // v = 1 approved-hash signature
+
+		execTxArgs := factory.CallArgs{
+			ContractABI: gnosisSafe.ABI,
+			MethodName:  "execTransaction",
+			Args: []interface{}{
+				s.precompile.Address(),
+				big.NewInt(0),
+				mintCallData,
+				uint8(0), // CALL
+				big.NewInt(300000),
+				big.NewInt(0),
+				big.NewInt(0),
+				common.Address{},
+				common.Address{},
+				signature,
+			},
+		}
+		execTxRes, err := s.factory.ExecuteContractCall(
+			safeOwnerOne.Priv,
+			evmtypes.EvmTxArgs{To: &safeWalletAddr},
+			execTxArgs,
+		)
+		Expect(err).ToNot(HaveOccurred(), "failed to execute Safe mintHaqq transaction")
+		execRes, err := s.factory.GetEvmTransactionResponseFromTxResult(execTxRes)
+		Expect(err).ToNot(HaveOccurred(), "failed to decode execTransaction response")
+		execOutputs, err := gnosisSafe.ABI.Methods["execTransaction"].Outputs.Unpack(execRes.Ret)
+		Expect(err).ToNot(HaveOccurred(), "failed to decode execTransaction output")
+		Expect(execOutputs).To(HaveLen(1))
+		execSuccess, ok := execOutputs[0].(bool)
+		Expect(ok).To(BeTrue(), "unexpected execTransaction output type")
+		Expect(execSuccess).To(BeTrue(), "Safe execTransaction should succeed")
+
+		executionSuccessEvent := gnosisSafe.ABI.Events["ExecutionSuccess"]
+		executionSuccessFound := false
+		for i := range execRes.Logs {
+			l := execRes.Logs[i]
+			if len(l.Topics) == 0 {
+				continue
+			}
+			if l.Topics[0] != executionSuccessEvent.ID.String() {
+				continue
+			}
+			if common.HexToAddress(l.Address) != safeWalletAddr {
+				continue
+			}
+			executionSuccessFound = true
+			break
+		}
+		Expect(executionSuccessFound).To(BeTrue(), "ExecutionSuccess event should be emitted by Safe")
+
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred(), "failed to advance block after Safe mint tx")
+
+		ownerOneBalanceAfterMintRes, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get first owner balance after Safe mint tx")
+		ownerTwoBalanceAfterMintRes, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get second owner balance after Safe mint tx")
+		safeIslmAfterMintRes, err := s.grpcHandler.GetBalance(safeWalletAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get Safe ISLM balance after mint tx")
+		safeHaqqAfterMintRes, err := s.grpcHandler.GetBalance(safeWalletAccAddr, ethiqtypes.BaseDenom)
+		Expect(err).ToNot(HaveOccurred(), "failed to get Safe HAQQ balance after mint tx")
+
+		ownerOneSpentForMint := ownerOneBalanceBeforeMintRes.Balance.Amount.Sub(ownerOneBalanceAfterMintRes.Balance.Amount)
+		Expect(ownerOneSpentForMint.IsNegative()).To(BeFalse(), "first owner balance should not increase after mint tx")
+		Expect(ownerOneSpentForMint.LTE(sdkmath.NewInt(1).MulRaw(1e18))).To(BeTrue(), "first owner balance change should be at most 1 ISLM")
+
+		ownerTwoSpentForMint := ownerTwoBalanceBeforeMintRes.Balance.Amount.Sub(ownerTwoBalanceAfterMintRes.Balance.Amount)
+		Expect(ownerTwoSpentForMint.IsNegative()).To(BeFalse(), "second owner balance should not increase after mint tx")
+		Expect(ownerTwoSpentForMint.LTE(sdkmath.NewInt(1).MulRaw(1e18))).To(BeTrue(), "second owner balance change should be at most 1 ISLM")
+
+		safeHaqqDelta := safeHaqqAfterMintRes.Balance.Amount.Sub(safeHaqqBeforeMintRes.Balance.Amount)
+		Expect(safeHaqqDelta.IsPositive()).To(BeTrue(), "Safe wallet should receive HAQQ tokens")
+
+		safeIslmDelta := safeIslmBeforeMintRes.Balance.Amount.Sub(safeIslmAfterMintRes.Balance.Amount)
+		Expect(safeIslmDelta).To(Equal(mintAmount), "Safe ISLM balance should decrease by 500 ISLM")
+
+		Expect(gnosisSafeAddr).NotTo(BeZero(), "GnosisSafe singleton must be deployed in BeforeEach")
+		Expect(proxyFactoryAddr).NotTo(BeZero(), "GnosisSafeProxyFactory must be deployed in BeforeEach")
+		Expect(safeWalletAddr).NotTo(BeZero(), "Safe wallet must be created")
+		Expect(ownerTwoBalanceBeforeMintRes.Balance.Amount).To(Equal(expectedParticipantFinalBalance), "second owner baseline before mint should be 1000 ISLM")
 	})
 })
