@@ -30,7 +30,7 @@ var MintHaqqMsgURL = sdk.MsgTypeURL(&ethiqtypes.MsgMintHaqq{})
 // MsgMintHaqqByApplicationMsgURL defines the authorization type for MsgMintHaqqByApplication
 var MsgMintHaqqByApplicationMsgURL = sdk.MsgTypeURL(&ethiqtypes.MsgMintHaqqByApplication{})
 
-func (p Precompile) MintHaqq(
+func (p *Precompile) MintHaqq(
 	ctx sdk.Context,
 	origin common.Address,
 	contract *vm.Contract,
@@ -77,13 +77,15 @@ func (p Precompile) MintHaqq(
 	}
 
 	if !isCallerOrigin {
-		// get the delegator address from the message
-		originAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
-		originHexAddr := common.BytesToAddress(originAccAddr)
+		// get the from address from the message (funds debited in bank on this account)
+		fromAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
+		fromHexAddr := common.BytesToAddress(fromAccAddr)
+
 		// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB
 		// when calling the precompile from a smart contract
 		// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(originHexAddr, msg.IslmAmount.BigInt(), cmn.Sub))
+		// Use *Precompile receiver so journalEntries are stored on the same instance Run uses for AddJournalEntries (see staking.Delegate).
+		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(fromHexAddr, msg.IslmAmount.BigInt(), cmn.Sub))
 	}
 
 	if err = EmitMintHaqqEventWithAmount(
@@ -102,7 +104,7 @@ func (p Precompile) MintHaqq(
 	return method.Outputs.Pack(res.HaqqAmount.BigInt())
 }
 
-func (p Precompile) MintHaqqByApplication(
+func (p *Precompile) MintHaqqByApplication(
 	ctx sdk.Context,
 	origin common.Address,
 	contract *vm.Contract,
