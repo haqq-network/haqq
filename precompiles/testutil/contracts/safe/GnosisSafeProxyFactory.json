@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "GnosisSafeProxyFactory",
-  "sourceName": "precompiles/testutil/contracts/GnosisSafeProxyFactory.sol",
+  "sourceName": "precompiles/testutil/contracts/safe/GnosisSafeProxyFactory.sol",
   "abi": [
     {
       "anonymous": false,
