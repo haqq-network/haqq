@@ -45,11 +45,15 @@ func (p *Precompile) MintHaqq(
 
 	p.Logger(ctx).Debug(
 		"tx called",
-		"sender", sender,
+		"origin", origin.String(),
+		"caller", contract.CallerAddress.String(),
 		"method", method.Name,
-		"from_address", msg.FromAddress,
-		"to_address", msg.ToAddress,
-		"islm_amount", msg.IslmAmount.String(),
+		"args", fmt.Sprintf(
+			"{ from_address: %s, to_address: %s, islm_amount: %s }",
+			msg.FromAddress,
+			msg.ToAddress,
+			msg.IslmAmount.String(),
+		),
 	)
 
 	// isCallerSender is true when the contract caller is the same as the sender
@@ -119,10 +123,14 @@ func (p *Precompile) MintHaqqByApplication(
 
 	p.Logger(ctx).Debug(
 		"tx called",
-		"sender", sender,
+		"origin", origin.String(),
+		"caller", contract.CallerAddress.String(),
 		"method", method.Name,
-		"from_address", msg.FromAddress,
-		"application_id", msg.ApplicationId,
+		"args", fmt.Sprintf(
+			"{ from_address: %s, application_id: %d }",
+			msg.FromAddress,
+			msg.ApplicationId,
+		),
 	)
 
 	// isCallerSender is true when the contract caller is the same as the sender

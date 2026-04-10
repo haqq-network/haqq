@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
@@ -18,7 +19,9 @@ import (
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/ethiq"
+	"github.com/haqq-network/haqq/precompiles/ethiq/testdata"
 	"github.com/haqq-network/haqq/precompiles/testutil"
+	"github.com/haqq-network/haqq/precompiles/testutil/contracts"
 	safecontracts "github.com/haqq-network/haqq/precompiles/testutil/contracts/safe"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
@@ -391,9 +394,925 @@ var _ = Describe("Calling ethiq precompile from EOA", func() {
 })
 
 var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
+	var (
+		// s is the precompile test suite to use for the tests
+		s *PrecompileTestSuite
+		// contractAddr is the address of the smart contract that will be deployed
+		contractAddr    common.Address
+		contractTwoAddr common.Address
+		reverterAddr    common.Address
+
+		// ethiqCallerContract is the contract instance calling into the ethiq precompile
+		ethiqCallerContract    evmtypes.CompiledContract
+		ethiqCallerTwoContract evmtypes.CompiledContract
+		ethiqReverterContract  evmtypes.CompiledContract
+
+		// approvalCheck is a configuration for the log checker to see if an approval event was emitted.
+		approvalCheck testutil.LogCheckArgs
+		// execRevertedCheck defines the default log checking arguments which include the
+		// standard revert message
+		execRevertedCheck testutil.LogCheckArgs
+		// err is a basic error type
+		err error
+
+		// nonExistingAddr is an address that does not exist in the state of the test suite
+		// nonExistingAddr = testutiltx.GenerateAddress()
+		// nonExistingVal is a validator address that does not exist in the state of the test suite
+		testContractInitialBalance = sdkmath.NewInt(1e18)
+	)
+
+	BeforeAll(func() {
+		ethiqCallerContract, err = testdata.LoadEthiqCallerContract()
+		Expect(err).To(BeNil(), "error while loading the EthiqCaller contract")
+		ethiqCallerTwoContract, err = testdata.LoadEthiqCallerTwoContract()
+		Expect(err).To(BeNil(), "error while loading the EthiqCallerTwo contract")
+		ethiqReverterContract, err = contracts.LoadEthiqReverterContract()
+		Expect(err).To(BeNil(), "error while loading the DEthiqReverter contract")
+	})
+
+	BeforeEach(func() {
+		s = new(PrecompileTestSuite)
+		s.SetupTest()
+		burner := s.keyring.GetKey(0)
+
+		contractAddr, err = s.factory.DeployContract(
+			burner.Priv,
+			evmtypes.EvmTxArgs{}, // NOTE: passing empty struct to use default values
+			factory.ContractDeploymentData{
+				Contract: ethiqCallerContract,
+			},
+		)
+		Expect(err).To(BeNil(), "error while deploying the smart contract: %v", err)
+		Expect(s.network.NextBlock()).To(BeNil())
+
+		// Deploy EthiqCallerTwo contract
+		contractTwoAddr, err = s.factory.DeployContract(
+			burner.Priv,
+			evmtypes.EvmTxArgs{}, // NOTE: passing empty struct to use default values
+			factory.ContractDeploymentData{
+				Contract: ethiqCallerTwoContract,
+			},
+		)
+		Expect(err).To(BeNil(), "error while deploying the EthiqCallerTwo contract")
+		Expect(s.network.NextBlock()).To(BeNil())
+
+		// Deploy EthiqReverter contract
+		reverterAddr, err = s.factory.DeployContract(
+			burner.Priv,
+			evmtypes.EvmTxArgs{}, // NOTE: passing empty struct to use default values
+			factory.ContractDeploymentData{
+				Contract: ethiqReverterContract,
+			},
+		)
+		Expect(err).To(BeNil(), "error while deploying the EthiqReverter contract")
+		Expect(s.network.NextBlock()).To(BeNil())
+
+		// send some funds to the EthiqCallerTwo & EthiqReverter contracts to transfer to the
+		// burner during the tx
+		err := testutils.FundAccountWithBaseDenom(s.factory, s.network, burner, contractTwoAddr.Bytes(), testContractInitialBalance)
+		Expect(err).To(BeNil(), "error while funding the smart contract: %v", err)
+		Expect(s.network.NextBlock()).To(BeNil())
+		err = testutils.FundAccountWithBaseDenom(s.factory, s.network, burner, reverterAddr.Bytes(), testContractInitialBalance)
+		Expect(err).To(BeNil(), "error while funding the smart contract: %v", err)
+		Expect(s.network.NextBlock()).To(BeNil())
+
+		// check contract was correctly deployed
+		cAcc := s.network.App.EvmKeeper.GetAccount(s.network.GetContext(), contractAddr)
+		Expect(cAcc).ToNot(BeNil(), "contract account should exist")
+		Expect(cAcc.IsContract()).To(BeTrue(), "account should be a contract")
+
+		// populate default TxArgs
+		txArgs.To = &contractAddr
+		txArgs.GasLimit = 300000
+		// populate default call args
+		callArgs = factory.CallArgs{
+			ContractABI: ethiqCallerContract.ABI,
+		}
+		// populate default approval args
+		approveCallArgs = factory.CallArgs{
+			ContractABI: ethiqCallerContract.ABI,
+			MethodName:  "testApprove",
+		}
+		// populate default log check args
+		defaultLogCheck = testutil.LogCheckArgs{
+			ABIEvents: s.precompile.Events,
+		}
+		execRevertedCheck = defaultLogCheck.WithErrContains(vm.ErrExecutionReverted.Error())
+		passCheck = defaultLogCheck.WithExpPass(true)
+		approvalCheck = passCheck.WithExpEvents(authorization.EventTypeApproval)
+	})
+
 	Describe("when the precompile is not enabled in the EVM params", func() {
 		It("should return an error", func() {
-			Skip("TODO Implement solidity tests")
+			sender := s.keyring.GetKey(0)
+
+			// disable the precompile
+			res, err := s.grpcHandler.GetEvmParams()
+			Expect(err).To(BeNil(), "error while setting params")
+			params := res.Params
+			var activePrecompiles []string
+			for _, precompile := range params.ActiveStaticPrecompiles {
+				if precompile != s.precompile.Address().String() {
+					activePrecompiles = append(activePrecompiles, precompile)
+				}
+			}
+			params.ActiveStaticPrecompiles = activePrecompiles
+
+			err = testutils.UpdateEvmParams(testutils.UpdateParamsInput{
+				Tf:      s.factory,
+				Network: s.network,
+				Pk:      sender.Priv,
+				Params:  params,
+			})
+			Expect(err).To(BeNil(), "error while setting params")
+
+			// try to call the precompile
+			callArgs.MethodName = "testMintHaqq"
+			callArgs.Args = []interface{}{
+				sender.Addr, sender.Addr, big.NewInt(2e18),
+			}
+
+			_, _, err = s.factory.CallContractAndCheckLogs(
+				sender.Priv,
+				txArgs, callArgs,
+				execRevertedCheck,
+			)
+			Expect(err).To(BeNil(), "expected error while calling the precompile")
+		})
+	})
+
+	Context("approving methods", func() {
+		Context("with valid input", func() {
+			It("should approve one method", func() {
+				granter := s.keyring.GetKey(0)
+
+				approveCallArgs.Args = []interface{}{
+					contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
+				}
+
+				s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+			})
+
+			It("should update a previous approval", func() {
+				granter := s.keyring.GetKey(0)
+
+				approveCallArgs.Args = []interface{}{
+					contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
+				}
+
+				s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+
+				// update approval
+				approveCallArgs.Args = []interface{}{
+					contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(2e18),
+				}
+				_, _, err = s.factory.CallContractAndCheckLogs(
+					granter.Priv,
+					txArgs, approveCallArgs,
+					approvalCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				// check approvals
+				authorization, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, ethiq.MintHaqqMsgURL, contractAddr, granter.Addr)
+				Expect(err).To(BeNil())
+				Expect(authorization).ToNot(BeNil(), "expected authorization to not be nil")
+				Expect(expirationTime).ToNot(BeNil(), "expected expiration time to not be nil")
+				authzMintHaqq, ok := authorization.(*ethiqtypes.MintHaqqAuthorization)
+				Expect(ok).To(BeTrue())
+				Expect(authzMintHaqq.MsgTypeURL()).To(Equal(ethiq.MintHaqqMsgURL), "expected authorization msg type url to be %s", ethiq.MintHaqqMsgURL)
+				Expect(authzMintHaqq.SpendLimit.Amount).To(Equal(sdkmath.NewInt(2e18)), "expected different max tokens after updated approval")
+			})
+
+			It("should remove approval when setting amount to zero", func() {
+				granter := s.keyring.GetKey(0)
+
+				approveCallArgs.Args = []interface{}{
+					contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
+				}
+				s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				// check approvals pre-removal
+				allAuthz, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), granter.AccAddr.String())
+				Expect(err).To(BeNil(), "error while reading authorizations")
+				Expect(allAuthz).To(HaveLen(1), "expected no authorizations")
+
+				approveCallArgs.Args = []interface{}{
+					contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(0),
+				}
+
+				_, _, err = s.factory.CallContractAndCheckLogs(
+					granter.Priv,
+					txArgs, approveCallArgs,
+					approvalCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract")
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				// check approvals after approving with amount 0
+				allAuthz, err = s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), granter.AccAddr.String())
+				Expect(err).To(BeNil(), "error while reading authorizations")
+				Expect(allAuthz).To(HaveLen(0), "expected no authorizations")
+			})
+
+			It("should not approve if the gas is not enough", func() {
+				granter := s.keyring.GetKey(0)
+
+				txArgs.GasLimit = 30000
+				approveCallArgs.Args = []interface{}{
+					contractAddr,
+					[]string{
+						ethiq.MintHaqqMsgURL,
+					},
+					big.NewInt(1e18),
+				}
+
+				_, _, err = s.factory.CallContractAndCheckLogs(
+					granter.Priv,
+					txArgs, approveCallArgs,
+					execRevertedCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract")
+			})
+		})
+
+		Context("with invalid input", func() {
+			It("shouldn't approve for invalid methods", func() {
+				granter := s.keyring.GetKey(0)
+
+				approveCallArgs.Args = []interface{}{
+					contractAddr, []string{"invalid method"}, big.NewInt(1e18),
+				}
+
+				_, _, err = s.factory.CallContractAndCheckLogs(
+					granter.Priv,
+					txArgs, approveCallArgs,
+					execRevertedCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract")
+
+				// check approvals
+				allAuthz, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), granter.AccAddr.String())
+				Expect(err).To(BeNil(), "error while reading authorizations")
+				Expect(allAuthz).To(HaveLen(0), "expected no authorizations")
+			})
+		})
+	})
+
+	Context("to revoke an approval", func() {
+		BeforeEach(func() {
+			callArgs.MethodName = "testRevoke"
+		})
+
+		It("should revoke when sending as the granter", func() {
+			granter := s.keyring.GetKey(0)
+
+			// set up an approval to be revoked
+			approveCallArgs.Args = []interface{}{
+				contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
+			}
+
+			s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+
+			callArgs.Args = []interface{}{contractAddr, []string{ethiq.MintHaqqMsgURL}}
+
+			revocationCheck := passCheck.WithExpEvents(authorization.EventTypeRevocation)
+
+			_, _, err = s.factory.CallContractAndCheckLogs(
+				granter.Priv,
+				txArgs, callArgs,
+				revocationCheck,
+			)
+			Expect(err).To(BeNil(), "error while calling the smart contract")
+			Expect(s.network.NextBlock()).To(BeNil())
+
+			// check approvals
+			authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, ethiq.MintHaqqMsgURL, contractAddr, granter.Addr)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("no authorizations found for grantee %s and granter %s", contractAddr.Hex(), granter.Addr.Hex())))
+			Expect(authz).To(BeNil(), "expected authorization to be revoked")
+		})
+
+		It("should not revoke when approval is issued by a different granter", func() {
+			// Create a MintHaqq authorization where the granter is a different account from the default test suite one
+			granter := s.keyring.GetKey(0)
+			grantee := s.keyring.GetKey(1)
+			differentGranterIdx := s.keyring.AddKey()
+			differentGranter := s.keyring.GetKey(differentGranterIdx)
+
+			mintHaqqAuthz, err := ethiqtypes.NewMintHaqqAuthorization(
+				&sdk.Coin{Denom: utils.BaseDenom, Amount: sdkmath.NewInt(1e18)},
+			)
+			Expect(err).To(BeNil(), "failed to create authorization")
+
+			expiration := s.network.GetContext().BlockTime().Add(time.Hour * 24 * 365).UTC()
+			err = s.network.App.AuthzKeeper.SaveGrant(s.network.GetContext(), grantee.AccAddr, differentGranter.AccAddr, mintHaqqAuthz, &expiration)
+			Expect(err).ToNot(HaveOccurred(), "failed to save authorization")
+			authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, ethiq.MintHaqqMsgURL, grantee.Addr, differentGranter.Addr)
+			Expect(err).To(BeNil())
+			Expect(authz).ToNot(BeNil(), "expected authorization to be created")
+
+			callArgs.Args = []interface{}{grantee.Addr, []string{ethiq.MintHaqqMsgURL}}
+
+			_, _, err = s.factory.CallContractAndCheckLogs(
+				granter.Priv,
+				txArgs, callArgs,
+				execRevertedCheck,
+			)
+			Expect(err).To(BeNil(), "error while calling the smart contract")
+
+			// check approvals
+			authz, _, err = CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, ethiq.MintHaqqMsgURL, grantee.Addr, differentGranter.Addr)
+			Expect(err).To(BeNil())
+			Expect(authz).ToNot(BeNil(), "expected authorization not to be revoked")
+		})
+
+		It("should revert the execution when no approval is found", func() {
+			granter := s.keyring.GetKey(0)
+			callArgs.Args = []interface{}{contractAddr, []string{ethiq.MintHaqqMsgURL}}
+
+			_, _, err = s.factory.CallContractAndCheckLogs(
+				granter.Priv,
+				txArgs, callArgs,
+				execRevertedCheck,
+			)
+			Expect(err).To(BeNil(), "error while calling the smart contract")
+
+			// check approvals
+			authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, ethiq.MintHaqqMsgURL, contractAddr, granter.Addr)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("no authorizations found for grantee %s and granter %s", contractAddr.Hex(), granter.Addr.Hex())))
+			Expect(authz).To(BeNil(), "expected no authorization to be found")
+		})
+
+		It("should not revoke if the approval is for a different message type", func() {
+			granter := s.keyring.GetKey(0)
+
+			// set up an approval
+			approveCallArgs.Args = []interface{}{
+				contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
+			}
+
+			s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+
+			Expect(s.network.NextBlock()).To(BeNil(), "failed to advance block")
+
+			callArgs.Args = []interface{}{contractAddr, []string{ethiq.MsgMintHaqqByApplicationMsgURL}}
+
+			_, _, err = s.factory.CallContractAndCheckLogs(
+				granter.Priv,
+				txArgs, callArgs,
+				execRevertedCheck,
+			)
+			Expect(err).To(BeNil(), "error while calling the smart contract")
+
+			// check approval is still there
+			s.ExpectAuthorization(
+				ethiq.MintHaqqMsgURL,
+				contractAddr,
+				granter.Addr,
+				&sdk.Coin{Denom: utils.BaseDenom, Amount: sdkmath.NewInt(1e18)},
+				0,
+			)
+		})
+	})
+
+	Context("querying allowance", func() {
+		BeforeEach(func() {
+			callArgs.MethodName = "getAllowance"
+		})
+		It("without approval set it should show no allowance", func() {
+			granter := s.keyring.GetKey(0)
+
+			callArgs.Args = []interface{}{
+				contractAddr, ethiq.MintHaqqMsgURL,
+			}
+
+			_, ethRes, err := s.factory.CallContractAndCheckLogs(
+				granter.Priv,
+				txArgs, callArgs,
+				passCheck,
+			)
+			Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+
+			var allowanceInt *big.Int
+			err = s.precompile.UnpackIntoInterface(&allowanceInt, "allowance", ethRes.Ret)
+			Expect(err).To(BeNil(), "error while unmarshalling the allowance: %v", err)
+			Expect(allowanceInt.Int64()).To(Equal(int64(0)), "expected empty allowance")
+		})
+
+		It("with approval set it should show the granted allowance", func() {
+			granter := s.keyring.GetKey(0)
+
+			// setup approval
+			approveCallArgs.Args = []interface{}{
+				contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
+			}
+
+			s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+
+			// query allowance
+			callArgs.Args = []interface{}{
+				contractAddr, ethiq.MintHaqqMsgURL,
+			}
+
+			_, ethRes, err := s.factory.CallContractAndCheckLogs(
+				granter.Priv,
+				txArgs, callArgs,
+				passCheck,
+			)
+			Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+
+			var allowanceInt *big.Int
+			err = s.precompile.UnpackIntoInterface(&allowanceInt, "allowance", ethRes.Ret)
+			Expect(err).To(BeNil(), "error while unmarshalling the allowance: %v", err)
+			Expect(allowanceInt).To(Equal(big.NewInt(1e18)), "expected allowance to be 1e18")
+		})
+	})
+
+	Context("burning and minting", func() {
+		var balanceIslmBefore, balanceHaqqBefore *sdk.Coin
+
+		BeforeEach(func() {
+			burner := s.keyring.GetKey(0)
+
+			// get the initial balances prior to the test
+			res, err := s.grpcHandler.GetBalance(burner.AccAddr, ethiqtypes.BaseDenom)
+			Expect(err).To(BeNil())
+			Expect(res.Balance).NotTo(BeNil())
+			balanceHaqqBefore = res.Balance
+
+			res2, err := s.grpcHandler.GetBalance(burner.AccAddr, utils.BaseDenom)
+			Expect(err).To(BeNil())
+			Expect(res2.Balance).NotTo(BeNil())
+			balanceIslmBefore = res2.Balance
+
+			callArgs.MethodName = "testMintHaqq"
+		})
+		Context("without approval set", func() {
+			BeforeEach(func() {
+				granter := s.keyring.GetKey(0)
+
+				authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, ethiq.MintHaqqMsgURL, contractAddr, granter.Addr)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("no authorizations found for grantee %s and granter %s", contractAddr.Hex(), granter.Addr.Hex())))
+				Expect(authz).To(BeNil(), "expected authorization to be nil")
+			})
+
+			It("should not burn/mint", func() {
+				Expect(s.network.App.EvmKeeper.GetAccount(s.network.GetContext(), contractAddr)).ToNot(BeNil(), "expected contract to exist")
+				burner := s.keyring.GetKey(0)
+
+				txArgs.GasPrice = big.NewInt(1e9)
+				callArgs.Args = []interface{}{
+					burner.Addr, burner.Addr, big.NewInt(1e18),
+				}
+
+				res, _, err := s.factory.CallContractAndCheckLogs(
+					burner.Priv,
+					txArgs, callArgs,
+					execRevertedCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				feePaid := txArgs.GasPrice.Int64() * res.GasUsed
+
+				// get the final balances after the test
+				resBal1, err := s.grpcHandler.GetBalance(burner.AccAddr, ethiqtypes.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(resBal1.Balance).NotTo(BeNil())
+				balanceHaqqAfter := resBal1.Balance
+
+				resBal2, err := s.grpcHandler.GetBalance(burner.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(resBal2.Balance).NotTo(BeNil())
+				balanceIslmAfter := resBal2.Balance
+
+				Expect(balanceHaqqAfter.Amount).To(Equal(balanceHaqqBefore.Amount), "balances of aHAQQ are not equal as expected")
+				Expect(balanceIslmAfter.Amount).To(Equal(balanceIslmBefore.Amount.Sub(sdkmath.NewInt(feePaid))), "incorrect aISLM balance after")
+			})
+		})
+
+		Context("with approval set", func() {
+			BeforeEach(func() {
+				granter := s.keyring.GetKey(0)
+
+				approveCallArgs.Args = []interface{}{
+					contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
+				}
+
+				s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+				// add gas limit to avoid out of gas error
+				txArgs.GasLimit = 500_000
+				txArgs.GasPrice = big.NewInt(1e9)
+
+				// get the initial balances prior to the test
+				res, err := s.grpcHandler.GetBalance(granter.AccAddr, ethiqtypes.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res.Balance).NotTo(BeNil())
+				balanceHaqqBefore = res.Balance
+
+				res2, err := s.grpcHandler.GetBalance(granter.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res2.Balance).NotTo(BeNil())
+				balanceIslmBefore = res2.Balance
+			})
+
+			It("should burn/mint when not exceeding the allowance", func() {
+				burner := s.keyring.GetKey(0)
+
+				callArgs.Args = []interface{}{
+					burner.Addr, burner.Addr, big.NewInt(1e18),
+				}
+
+				logCheckArgs := passCheck.WithExpEvents(ethiq.EventTypeMintHaqq)
+
+				res, _, err := s.factory.CallContractAndCheckLogs(
+					burner.Priv,
+					txArgs, callArgs,
+					logCheckArgs,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				feePaid := txArgs.GasPrice.Int64() * res.GasUsed
+
+				// get the final balances after the test
+				resBal1, err := s.grpcHandler.GetBalance(burner.AccAddr, ethiqtypes.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(resBal1.Balance).NotTo(BeNil())
+				balanceHaqqAfter := resBal1.Balance
+
+				resBal2, err := s.grpcHandler.GetBalance(burner.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(resBal2.Balance).NotTo(BeNil())
+				balanceIslmAfter := resBal2.Balance
+
+				Expect(balanceHaqqAfter.Amount.GT(balanceHaqqBefore.Amount)).To(BeTrue(), "balances of aHAQQ should be increased by minted amount")
+				Expect(balanceIslmAfter.Amount).To(Equal(balanceIslmBefore.Amount.Sub(sdkmath.NewInt(feePaid)).Sub(sdkmath.NewInt(1e18))), "aISLM balance should be reduced by burnt amount and fees")
+			})
+
+			It("should not burn/mint when exceeding the allowance", func() {
+				burner := s.keyring.GetKey(0)
+
+				callArgs.Args = []interface{}{
+					burner.Addr, burner.Addr, big.NewInt(2e18),
+				}
+				res, _, err := s.factory.CallContractAndCheckLogs(
+					burner.Priv,
+					txArgs, callArgs,
+					execRevertedCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				feePaid := txArgs.GasPrice.Int64() * res.GasUsed
+
+				// get the final balances after the test
+				resBal1, err := s.grpcHandler.GetBalance(burner.AccAddr, ethiqtypes.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(resBal1.Balance).NotTo(BeNil())
+				balanceHaqqAfter := resBal1.Balance
+
+				resBal2, err := s.grpcHandler.GetBalance(burner.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(resBal2.Balance).NotTo(BeNil())
+				balanceIslmAfter := resBal2.Balance
+
+				Expect(balanceHaqqAfter.Amount).To(Equal(balanceHaqqBefore.Amount), "aHAQQ balance should stay untouched")
+				Expect(balanceIslmAfter.Amount).To(Equal(balanceIslmBefore.Amount.Sub(sdkmath.NewInt(feePaid))), "aISLM balance should be reduced by fees amount")
+			})
+
+			It("should not burn/mint when sending from a different address", func() {
+				burner := s.keyring.GetKey(0)
+				differentBurner := s.keyring.GetKey(1)
+
+				callArgs.Args = []interface{}{
+					burner.Addr, burner.Addr, big.NewInt(2e18),
+				}
+				_, _, err = s.factory.CallContractAndCheckLogs(
+					differentBurner.Priv,
+					txArgs, callArgs,
+					execRevertedCheck,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				// get the final balances after the test
+				resBal1, err := s.grpcHandler.GetBalance(burner.AccAddr, ethiqtypes.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(resBal1.Balance).NotTo(BeNil())
+				balanceHaqqAfter := resBal1.Balance
+
+				resBal2, err := s.grpcHandler.GetBalance(burner.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(resBal2.Balance).NotTo(BeNil())
+				balanceIslmAfter := resBal2.Balance
+
+				Expect(balanceHaqqAfter.Amount).To(Equal(balanceHaqqBefore.Amount), "aHAQQ balance should stay untouched")
+				Expect(balanceIslmAfter.Amount).To(Equal(balanceIslmBefore.Amount), "aISLM balance should stay untouched")
+			})
+
+			Context("Calling the precompile from the EthiqReverter contract", func() {
+				var (
+					txSenderInitialBalIslm, txSenderInitialBalHaqq *sdk.Coin
+					contractInitialBalIslm, contractInitialBalHaqq *sdk.Coin
+				)
+				gasPrice := sdkmath.NewInt(1e9)
+				burnAmt := sdkmath.NewInt(1e18)
+
+				BeforeEach(func() {
+					// set approval for the EthiqReverter contract
+					s.SetupApproval(s.keyring.GetPrivKey(0), reverterAddr, burnAmt.BigInt(), []string{ethiq.MintHaqqMsgURL})
+
+					balRes, err := s.grpcHandler.GetBalance(s.keyring.GetAccAddr(0), utils.BaseDenom)
+					Expect(err).To(BeNil())
+					txSenderInitialBalIslm = balRes.Balance
+
+					balRes, err = s.grpcHandler.GetBalance(s.keyring.GetAccAddr(0), ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil())
+					txSenderInitialBalHaqq = balRes.Balance
+
+					balRes, err = s.grpcHandler.GetBalance(reverterAddr.Bytes(), utils.BaseDenom)
+					Expect(err).To(BeNil())
+					contractInitialBalIslm = balRes.Balance
+
+					balRes, err = s.grpcHandler.GetBalance(reverterAddr.Bytes(), ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil())
+					contractInitialBalHaqq = balRes.Balance
+				})
+
+				It("should revert the changes and NOT burn/mint - successful tx", func() {
+					sender := s.keyring.GetKey(0)
+
+					callArgs := factory.CallArgs{
+						ContractABI: ethiqReverterContract.ABI,
+						MethodName:  "run",
+						Args: []interface{}{
+							big.NewInt(5), sender.Addr,
+						},
+					}
+
+					// Tx should be successful, but no state changes happened
+					res, _, err := s.factory.CallContractAndCheckLogs(
+						sender.Priv,
+						evmtypes.EvmTxArgs{
+							To:       &reverterAddr,
+							GasPrice: gasPrice.BigInt(),
+						},
+						callArgs,
+						passCheck,
+					)
+					Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+					Expect(s.network.NextBlock()).To(BeNil())
+
+					fees := gasPrice.MulRaw(res.GasUsed)
+
+					// contract balance should remain unchanged
+					balRes, err := s.grpcHandler.GetBalance(reverterAddr.Bytes(), utils.BaseDenom)
+					Expect(err).To(BeNil())
+					contractFinalBalIslm := balRes.Balance
+					Expect(contractFinalBalIslm.Amount).To(Equal(contractInitialBalIslm.Amount))
+					balRes, err = s.grpcHandler.GetBalance(reverterAddr.Bytes(), ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil())
+					contractFinalBalHaqq := balRes.Balance
+					Expect(contractFinalBalHaqq.Amount).To(Equal(contractInitialBalHaqq.Amount))
+
+					// No burn/mint should be occurred
+					balRes, err = s.grpcHandler.GetBalance(sender.AccAddr, ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil())
+					txSenderFinalBalHaqq := balRes.Balance
+					Expect(txSenderFinalBalHaqq.Amount).To(Equal(txSenderInitialBalHaqq.Amount))
+
+					// Only fees deducted on tx sender
+					balRes, err = s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+					Expect(err).To(BeNil())
+					txSenderFinalBalIslm := balRes.Balance
+					Expect(txSenderFinalBalIslm.Amount).To(Equal(txSenderInitialBalIslm.Amount.Sub(fees)))
+				})
+
+				It("should revert the changes and NOT burn/mint - failed tx - max precompile calls reached", func() {
+					sender := s.keyring.GetKey(0)
+
+					callArgs := factory.CallArgs{
+						ContractABI: ethiqReverterContract.ABI,
+						MethodName:  "multipleBurnMints",
+						Args: []interface{}{
+							big.NewInt(int64(evmtypes.MaxPrecompileCalls + 2)), sender.Addr,
+						},
+					}
+
+					// Tx should fail due to MaxPrecompileCalls
+					res, _, err := s.factory.CallContractAndCheckLogs(
+						s.keyring.GetPrivKey(0),
+						evmtypes.EvmTxArgs{
+							To:       &reverterAddr,
+							GasPrice: gasPrice.BigInt(),
+						},
+						callArgs,
+						execRevertedCheck,
+					)
+					Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+					Expect(s.network.NextBlock()).To(BeNil())
+
+					fees := gasPrice.MulRaw(res.GasUsed)
+
+					// contract balance should remain unchanged
+					balRes, err := s.grpcHandler.GetBalance(reverterAddr.Bytes(), utils.BaseDenom)
+					Expect(err).To(BeNil())
+					contractFinalBalIslm := balRes.Balance
+					Expect(contractFinalBalIslm.Amount).To(Equal(contractInitialBalIslm.Amount))
+					balRes, err = s.grpcHandler.GetBalance(reverterAddr.Bytes(), ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil())
+					contractFinalBalHaqq := balRes.Balance
+					Expect(contractFinalBalHaqq.Amount).To(Equal(contractInitialBalHaqq.Amount))
+
+					// No burn/mint should be occurred
+					balRes, err = s.grpcHandler.GetBalance(sender.AccAddr, ethiqtypes.BaseDenom)
+					Expect(err).To(BeNil())
+					txSenderFinalBalHaqq := balRes.Balance
+					Expect(txSenderFinalBalHaqq.Amount).To(Equal(txSenderInitialBalHaqq.Amount))
+
+					// Only fees deducted on tx sender
+					balRes, err = s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+					Expect(err).To(BeNil())
+					txSenderFinalBalIslm := balRes.Balance
+					Expect(txSenderFinalBalIslm.Amount).To(Equal(txSenderInitialBalIslm.Amount.Sub(fees)))
+				})
+			})
+		})
+	})
+
+	Context("when using special call opcodes", func() {
+		testcases := []struct {
+			// calltype is the opcode to use
+			calltype string
+			// expTxPass defines if executing transactions should be possible with the given opcode.
+			// Queries should work for all options.
+			expTxPass bool
+		}{
+			{"call", true},
+			// {"callcode", false}, // TODO Find out the reason of failing
+			{"staticcall", false},
+			{"delegatecall", false},
+		}
+
+		var (
+			senderBalIslmBefore, senderBalIslmAfter *sdk.Coin
+			senderBalHaqqBefore, senderBalHaqqAfter *sdk.Coin
+		)
+
+		BeforeEach(func() {
+			granter := s.keyring.GetKey(0)
+
+			// approve mintHaqq message
+			approveCallArgs.Args = []interface{}{
+				contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
+			}
+
+			s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+			Expect(s.network.NextBlock()).To(BeNil(), "failed to advance block")
+
+			// get the initial balances prior to the test
+			res, err := s.grpcHandler.GetBalance(granter.AccAddr, ethiqtypes.BaseDenom)
+			Expect(err).To(BeNil())
+			Expect(res.Balance).NotTo(BeNil())
+			senderBalHaqqBefore = res.Balance
+
+			res2, err := s.grpcHandler.GetBalance(granter.AccAddr, utils.BaseDenom)
+			Expect(err).To(BeNil())
+			Expect(res2.Balance).NotTo(BeNil())
+			senderBalIslmBefore = res2.Balance
+		})
+
+		for _, tc := range testcases {
+			// NOTE: this is necessary because of Ginkgo behavior -- if not done, the value of tc
+			// inside the It block will always be the last entry in the testcases slice
+			testcase := tc
+
+			It(fmt.Sprintf("should not execute transactions for calltype %q", testcase.calltype), func() {
+				sender := s.keyring.GetKey(0)
+
+				callArgs.MethodName = "testCallMintHaqq"
+				callArgs.Args = []interface{}{
+					sender.Addr, sender.Addr, big.NewInt(1e18), testcase.calltype,
+				}
+
+				checkArgs := execRevertedCheck
+				if testcase.expTxPass {
+					checkArgs = passCheck.WithExpEvents(ethiq.EventTypeMintHaqq)
+				}
+
+				txArgs.GasPrice = gasPrice.BigInt()
+				resCall, _, err := s.factory.CallContractAndCheckLogs(
+					sender.Priv,
+					txArgs, callArgs,
+					checkArgs,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract for calltype %s: %v", testcase.calltype, err)
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				fees := gasPrice.MulRaw(resCall.GasUsed)
+
+				// check final balances
+				res, err := s.grpcHandler.GetBalance(sender.AccAddr, ethiqtypes.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res.Balance).NotTo(BeNil())
+				senderBalHaqqAfter = res.Balance
+
+				res2, err := s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res2.Balance).NotTo(BeNil())
+				senderBalIslmAfter = res2.Balance
+
+				if testcase.expTxPass {
+					Expect(senderBalHaqqAfter.Amount.GT(senderBalHaqqBefore.Amount)).To(BeTrue(), "aHAQQ should be minted")
+					Expect(senderBalIslmAfter.Amount).To(Equal(senderBalIslmBefore.Amount.Sub(fees).Sub(sdkmath.NewInt(1e18))), "aISLM should be burnt")
+				} else {
+					Expect(senderBalHaqqAfter.Amount).To(Equal(senderBalHaqqBefore.Amount), "aHAQQ balance should remain untouched")
+					Expect(senderBalIslmAfter.Amount).To(Equal(senderBalIslmBefore.Amount.Sub(fees)), "aISLM balance should be reduced by fees only")
+				}
+			})
+
+			It(fmt.Sprintf("emulate safe tx for calltype %q", testcase.calltype), func() {
+				sender := s.keyring.GetKey(0)
+
+				// fund contract before test from another account
+				err := s.factory.FundAccount(s.keyring.GetKey(1), contractAddr.Bytes(), sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1e18))))
+				Expect(err).To(BeNil())
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				// get initial balances of contract before the test
+				res, err := s.grpcHandler.GetBalance(contractAddr.Bytes(), ethiqtypes.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res.Balance).NotTo(BeNil())
+				contractBalHaqqBefore := res.Balance
+
+				res, err = s.grpcHandler.GetBalance(contractAddr.Bytes(), utils.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res.Balance).NotTo(BeNil())
+				contractBalIslmBefore := res.Balance
+
+				callArgs.MethodName = "testCallMintHaqq"
+				callArgs.Args = []interface{}{
+					contractAddr, contractAddr, big.NewInt(1e18), testcase.calltype,
+				}
+
+				checkArgs := execRevertedCheck
+				if testcase.expTxPass {
+					checkArgs = passCheck.WithExpEvents(ethiq.EventTypeMintHaqq)
+				}
+
+				txArgs.GasPrice = gasPrice.BigInt()
+				resCall, _, err := s.factory.CallContractAndCheckLogs(
+					sender.Priv,
+					txArgs, callArgs,
+					checkArgs,
+				)
+				Expect(err).To(BeNil(), "error while calling the smart contract for calltype %s: %v", testcase.calltype, err)
+				Expect(s.network.NextBlock()).To(BeNil())
+
+				fees := gasPrice.MulRaw(resCall.GasUsed)
+
+				// check final balances
+				res, err = s.grpcHandler.GetBalance(sender.AccAddr, ethiqtypes.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res.Balance).NotTo(BeNil())
+				senderBalHaqqAfter = res.Balance
+
+				res, err = s.grpcHandler.GetBalance(sender.AccAddr, utils.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res.Balance).NotTo(BeNil())
+				senderBalIslmAfter = res.Balance
+
+				res, err = s.grpcHandler.GetBalance(contractAddr.Bytes(), ethiqtypes.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res.Balance).NotTo(BeNil())
+				contractBalHaqqAfter := res.Balance
+
+				res, err = s.grpcHandler.GetBalance(contractAddr.Bytes(), utils.BaseDenom)
+				Expect(err).To(BeNil())
+				Expect(res.Balance).NotTo(BeNil())
+				contractBalIslmAfter := res.Balance
+
+				if testcase.expTxPass {
+					Expect(senderBalHaqqAfter.Amount.String()).To(Equal(senderBalHaqqBefore.Amount.String()), "sender's aHAQQ balance should remain untouched")
+					Expect(contractBalHaqqAfter.Amount.GT(contractBalHaqqBefore.Amount)).To(BeTrue(), "aHAQQ should be minted to contract account balance")
+					Expect(senderBalIslmAfter.Amount.String()).To(Equal(senderBalIslmBefore.Amount.Sub(fees).String()), "sender's aISLM should be reduced by fees")
+					Expect(contractBalIslmAfter.Amount.String()).To(Equal(contractBalIslmBefore.Amount.Sub(sdkmath.NewInt(1e18)).String()), "contract aISLM should be burnt")
+				} else {
+					Expect(senderBalHaqqAfter.Amount.String()).To(Equal(senderBalHaqqBefore.Amount.String()), "sender's aHAQQ balance should remain untouched")
+					Expect(contractBalHaqqAfter.Amount.String()).To(Equal(contractBalHaqqBefore.Amount.String()), "contract aHAQQ balance should remain untouched")
+					Expect(senderBalIslmAfter.Amount.String()).To(Equal(senderBalIslmBefore.Amount.Sub(fees).String()), "sender's aISLM balance should be reduced by fees only")
+					Expect(contractBalIslmAfter.Amount.String()).To(Equal(contractBalIslmBefore.Amount.String()), "contract aISLM balance should remain untouched")
+				}
+			})
+		}
+
+		It("when emulating call via Safe contract", func() {
 		})
 	})
 })

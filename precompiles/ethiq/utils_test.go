@@ -9,7 +9,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
+	"github.com/haqq-network/haqq/precompiles/ethiq"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
+	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 
 	//nolint:revive // dot imports are fine for Ginkgo
@@ -67,6 +69,58 @@ func (s *PrecompileTestSuite) SetupApproval(
 		msgTypes,
 		amount,
 	)
+}
+
+// SetupApprovalWithContractCalls is a helper function used to setup the allowance for the given spender.
+func (s *PrecompileTestSuite) SetupApprovalWithContractCalls(
+	granter testkeyring.Key,
+	txArgs evmtypes.EvmTxArgs,
+	approvalArgs factory.CallArgs,
+) {
+	msgTypes, ok := approvalArgs.Args[1].([]string)
+	Expect(ok).To(BeTrue(), "failed to convert msgTypes to []string")
+	expAmount, ok := approvalArgs.Args[2].(*big.Int)
+	Expect(ok).To(BeTrue(), "failed to convert amount to big.Int")
+
+	logCheckArgs := testutil.LogCheckArgs{
+		ABIEvents: s.precompile.Events,
+		ExpEvents: []string{authorization.EventTypeApproval},
+		ExpPass:   true,
+	}
+
+	_, _, err := s.factory.CallContractAndCheckLogs(
+		granter.Priv,
+		txArgs,
+		approvalArgs,
+		logCheckArgs,
+	)
+	Expect(err).To(BeNil(), "error while approving: %v", err)
+	Expect(s.network.NextBlock()).To(BeNil())
+
+	// iterate over args
+	var (
+		authzMint      *ethiqtypes.MintHaqqAuthorization
+		authzMintByApp *ethiqtypes.MintHaqqByApplicationIDAuthorization
+	)
+	for _, msgType := range msgTypes {
+		authz, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, msgType, *txArgs.To, granter.Addr)
+		Expect(err).To(BeNil())
+		Expect(authz).ToNot(BeNil(), "expected authorization to be set")
+
+		switch msgType {
+		case ethiq.MintHaqqMsgURL:
+			authzMint, ok = authz.(*ethiqtypes.MintHaqqAuthorization)
+			Expect(ok).To(BeTrue())
+			Expect(authzMint.SpendLimit.Amount.String()).To(Equal(expAmount.String()), "expected different allowance")
+		case ethiq.MsgMintHaqqByApplicationMsgURL:
+			authzMintByApp, ok = authz.(*ethiqtypes.MintHaqqByApplicationIDAuthorization)
+			Expect(ok).To(BeTrue())
+			Expect(slices.Contains(authzMintByApp.ApplicationsList, expAmount.Uint64())).To(BeTrue(), "expected application ID to be allowed")
+		default:
+			s.Fail("msg type %s is not supported", msgType)
+		}
+		Expect(expirationTime).ToNot(BeNil(), "expected expiration time to not be nil")
+	}
 }
 
 // ExpectAuthorization is a helper function for tests using the Ginkgo BDD style tests, to check that the

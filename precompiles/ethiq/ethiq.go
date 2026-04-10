@@ -8,6 +8,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
@@ -16,6 +17,8 @@ import (
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
+
+var _ vm.PrecompiledContract = &Precompile{}
 
 // Embed abi json file to the executable binary. Needed when importing as dependency.
 //
@@ -28,20 +31,26 @@ type Precompile struct {
 	ethiqKeeper ethiqkeeper.Keeper
 }
 
+// LoadABI loads the staking ABI from the embedded abi.json file
+// for the staking precompile.
+func LoadABI() (abi.ABI, error) {
+	return cmn.LoadABI(f, "abi.json")
+}
+
 // NewPrecompile creates a new ethiq Precompile instance as a
 // PrecompiledContract interface.
 func NewPrecompile(
 	ethiqKeeper ethiqkeeper.Keeper,
 	authzKeeper authzkeeper.Keeper,
 ) (*Precompile, error) {
-	loadedAbi, err := cmn.LoadABI(f, "abi.json")
+	loadABI, err := LoadABI()
 	if err != nil {
 		return nil, err
 	}
 
 	p := &Precompile{
 		Precompile: cmn.Precompile{
-			ABI:                  loadedAbi,
+			ABI:                  loadABI,
 			AuthzKeeper:          authzKeeper,
 			KvGasConfig:          storetypes.KVGasConfig(),
 			TransientKVGasConfig: storetypes.TransientGasConfig(),
