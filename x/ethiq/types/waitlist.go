@@ -74,6 +74,16 @@ var (
 		{63, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 0, "200000000000000000000", "123654126885266457488974249"},
 		{64, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 1, "300000000000000000000", "123654326885266457488974249"},
 		{65, "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", "haqq13h2fn6qj8w2w5ul73w9havugx2c0r9y8k55agd", 0, "400000000000000000000", "123654626885266457488974249"},
+		{66, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 0, "500000000000000000000", "123655026885266457488974249"},
+		{67, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 0, "600000000000000000000", "123655526885266457488974249"},
+		{68, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 0, "700000000000000000000", "123656126885266457488974249"},
+		{69, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 0, "800000000000000000000", "123656826885266457488974249"},
+		{70, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 0, "900000000000000000000", "123657626885266457488974249"},
+		{71, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 1, "400000000000000000000", "123658526885266457488974249"},
+		{72, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 1, "300000000000000000000", "123658926885266457488974249"},
+		{73, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 1, "200000000000000000000", "123659226885266457488974249"},
+		{74, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 1, "100000000000000000000", "123659426885266457488974249"},
+		{75, "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z", 1, "975000000000000000000", "123659526885266457488974249"},
 	}
 	// 123654626885266457488974249 + 400000000000000000000 = total aISLM (sumAmount of last + amount of last)
 
@@ -83,7 +93,7 @@ var (
 		"haqq19pxv2r4key79twjfv0gdc5yhc4xmw9vqxkj2nl": {0, 1, 31},
 		"haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq": {8, 10, 16, 19, 25, 26, 27, 29, 30, 32},
 		"haqq1gcwaegn8j68t02qersxdk95y53dey5xfq9alp0": {2, 3, 4, 5, 9, 12, 13, 14, 15, 22},
-		"haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z": {6, 7, 17, 18, 20, 24},
+		"haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z": {6, 7, 17, 18, 20, 24, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75},
 		"haqq1m2q0lsn655c7gxudz3srepgpm5sfv0dfwuje52": {11, 28, 37},
 		"haqq1rt5ewr3un923xn83cs5q8njgl2wxvyq4kszepf": {40, 41, 42},
 		"haqq1s873eyxj6v6k5ycut3sd00uvuf3kw8xfa2nql6": {38, 39},

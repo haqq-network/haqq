@@ -10,6 +10,18 @@ import (
 	"github.com/haqq-network/haqq/utils"
 )
 
+func NewMintHaqqAuthorization(amount *sdk.Coin) (*MintHaqqAuthorization, error) {
+	a := MintHaqqAuthorization{
+		SpendLimit: amount,
+	}
+
+	if err := a.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	return &a, nil
+}
+
 func (m *MintHaqqAuthorization) MsgTypeURL() string {
 	return sdk.MsgTypeURL(&MsgMintHaqq{})
 }
