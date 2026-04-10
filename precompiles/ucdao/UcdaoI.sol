@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity >=0.8.18;
 
-/// @dev The IUCDAO contract's address.
-address constant IUCDAO_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000000901;
+/// @dev The UCDAO contract's address.
+address constant UCDAO_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000000901;
 
-/// @dev The IUCDAO contract's instance.
-IUCDAO constant IUCDAO_CONTRACT = IUCDAO(IUCDAO_PRECOMPILE_ADDRESS);
+/// @dev The UCDAO contract's instance.
+UcdaoI constant UCDAO_CONTRACT = UcdaoI(UCDAO_PRECOMPILE_ADDRESS);
 
 /**
  * @title UCDAO Interface
  * @dev Interface for interacting with the ucdao module via precompile.
  */
-interface IUCDAO {
+interface UcdaoI {
   /// @dev ConvertToHaqq allows a holder to convert aISLM tokens to aHAQQ tokens.
   /// @param sender the hex address of the sender (ucdao holder)
   /// @param receiver the bech32-mapped recipient address as hex

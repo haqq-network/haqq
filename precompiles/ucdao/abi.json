@@ -1,25 +1,49 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "IUCDAO",
+  "contractName": "UcdaoI",
   "sourceName": "solidity/precompiles/ucdao/UcdaoI.sol",
   "abi": [
     {
       "inputs": [
-        { "internalType": "address", "name": "sender", "type": "address" },
-        { "internalType": "address", "name": "receiver", "type": "address" },
-        { "internalType": "uint256", "name": "islmAmount", "type": "uint256" }
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "islmAmount",
+          "type": "uint256"
+        }
       ],
       "name": "convertToHaqq",
       "outputs": [
-        { "internalType": "uint256", "name": "haqqAmount", "type": "uint256" }
+        {
+          "internalType": "uint256",
+          "name": "haqqAmount",
+          "type": "uint256"
+        }
       ],
       "stateMutability": "nonpayable",
       "type": "function"
     },
     {
       "inputs": [
-        { "internalType": "address", "name": "owner", "type": "address" },
-        { "internalType": "address", "name": "newOwner", "type": "address" }
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
       ],
       "name": "transferOwnership",
       "outputs": [],
@@ -28,10 +52,26 @@
     },
     {
       "inputs": [
-        { "internalType": "address", "name": "owner", "type": "address" },
-        { "internalType": "address", "name": "newOwner", "type": "address" },
-        { "internalType": "string[]", "name": "denoms", "type": "string[]" },
-        { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "string[]",
+          "name": "denoms",
+          "type": "string[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "amounts",
+          "type": "uint256[]"
+        }
       ],
       "name": "transferOwnershipWithAmount",
       "outputs": [],
@@ -44,5 +84,3 @@
   "linkReferences": {},
   "deployedLinkReferences": {}
 }
-
-

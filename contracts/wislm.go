@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	//go:embed compiled_contracts/WISLM.json
+	//go:embed WISLM.json
 	WISLMJSON []byte
 
 	// WISLMContract is the compiled contract of WISLM
