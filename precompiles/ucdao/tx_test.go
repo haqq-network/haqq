@@ -57,7 +57,7 @@ func (s *PrecompileTestSuite) TestConvertToHaqq() {
 			},
 			200000,
 			true,
-			"origin",
+			"must match transaction origin",
 		},
 		{
 			"fail - nil amount",
@@ -136,7 +136,7 @@ func (s *PrecompileTestSuite) TestTransferOwnership() {
 			},
 			200000,
 			true,
-			"origin",
+			"must match transaction origin",
 		},
 	}
 
@@ -206,7 +206,7 @@ func (s *PrecompileTestSuite) TestTransferOwnershipWithAmount() {
 			},
 			200000,
 			true,
-			"origin",
+			"must match transaction origin",
 		},
 		{
 			"fail - denoms and amounts length mismatch",

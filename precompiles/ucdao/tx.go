@@ -129,7 +129,7 @@ func NewTransferOwnershipWithAmountMsg(args []interface{}) (*ucdaotypes.MsgTrans
 func (p Precompile) ConvertToHaqq(
 	ctx sdk.Context,
 	origin common.Address,
-	_ *vm.Contract,
+	contract *vm.Contract,
 	_ vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -139,9 +139,14 @@ func (p Precompile) ConvertToHaqq(
 		return nil, err
 	}
 
-	// Ensure origin is the sender (no authz support for now)
-	if origin != sender {
-		return nil, fmt.Errorf("origin (%s) must be the sender (%s)", origin.String(), sender.String())
+	// Same pattern as staking Delegate: EOA calls require origin == sender; smart contract wallets (e.g. Gnosis Safe)
+	// call with sender == holder in calldata and contract.CallerAddress == sender while origin is the EOA signer.
+	isCallerSender := contract.CallerAddress == sender
+	if !isCallerSender && origin != sender {
+		return nil, fmt.Errorf(
+			"sender (%s) must match transaction origin (%s) or contract caller (%s)",
+			sender.String(), origin.String(), contract.CallerAddress.String(),
+		)
 	}
 
 	msgSrv := ucdaokeeper.NewMsgServerImpl(p.daoKeeper)
@@ -157,7 +162,7 @@ func (p Precompile) ConvertToHaqq(
 func (p Precompile) TransferOwnership(
 	ctx sdk.Context,
 	origin common.Address,
-	_ *vm.Contract,
+	contract *vm.Contract,
 	_ vm.StateDB,
 	_ *abi.Method,
 	args []interface{},
@@ -167,9 +172,12 @@ func (p Precompile) TransferOwnership(
 		return nil, err
 	}
 
-	// Ensure origin is the owner
-	if origin != owner {
-		return nil, fmt.Errorf("origin (%s) must be the owner (%s)", origin.String(), owner.String())
+	isCallerOwner := contract.CallerAddress == owner
+	if !isCallerOwner && origin != owner {
+		return nil, fmt.Errorf(
+			"owner (%s) must match transaction origin (%s) or contract caller (%s)",
+			owner.String(), origin.String(), contract.CallerAddress.String(),
+		)
 	}
 
 	msgSrv := ucdaokeeper.NewMsgServerImpl(p.daoKeeper)
@@ -184,7 +192,7 @@ func (p Precompile) TransferOwnership(
 func (p Precompile) TransferOwnershipWithAmount(
 	ctx sdk.Context,
 	origin common.Address,
-	_ *vm.Contract,
+	contract *vm.Contract,
 	_ vm.StateDB,
 	_ *abi.Method,
 	args []interface{},
@@ -194,9 +202,12 @@ func (p Precompile) TransferOwnershipWithAmount(
 		return nil, err
 	}
 
-	// Ensure origin is the owner
-	if origin != owner {
-		return nil, fmt.Errorf("origin (%s) must be the owner (%s)", origin.String(), owner.String())
+	isCallerOwner := contract.CallerAddress == owner
+	if !isCallerOwner && origin != owner {
+		return nil, fmt.Errorf(
+			"owner (%s) must match transaction origin (%s) or contract caller (%s)",
+			owner.String(), origin.String(), contract.CallerAddress.String(),
+		)
 	}
 
 	msgSrv := ucdaokeeper.NewMsgServerImpl(p.daoKeeper)

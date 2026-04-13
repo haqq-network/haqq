@@ -380,7 +380,9 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		nonceOut, err := gnosisSafe.ABI.Methods["nonce"].Outputs.Unpack(nonceRes.Ret)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(nonceOut[0]).To(Equal(big.NewInt(0)), "first Safe exec must use nonce 0 (no prior execTransaction)")
+		nonceBI, ok := nonceOut[0].(*big.Int)
+		Expect(ok).To(BeTrue())
+		Expect(nonceBI.Sign()).To(Equal(0), "first Safe exec must use nonce 0 (no prior execTransaction)")
 
 		ctxEthiq := s.network.GetContext()
 		expectedHaqqMint, err := s.network.App.EthiqKeeper.CalculateHaqqCoinsToMint(ctxEthiq, fiveHundredIslm)
