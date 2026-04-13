@@ -1,6 +1,7 @@
 package ethiq_test
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"testing"
@@ -13,6 +14,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -24,6 +26,7 @@ import (
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	"github.com/haqq-network/haqq/precompiles/testutil/contracts"
 	safecontracts "github.com/haqq-network/haqq/precompiles/testutil/contracts/safe"
+	commonfactory "github.com/haqq-network/haqq/testutil/integration/common/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
@@ -33,6 +36,9 @@ import (
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
+	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
+	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
 func TestPrecompileIntegrationTestSuite(t *testing.T) {
@@ -2211,5 +2217,302 @@ var _ = Describe("EOA waitlist application flow", Ordered, func() {
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeTrue(),
 			"application must remain executed after failed EOA replay")
+	})
+})
+
+// EOA waitlist with UCDAO fund source: same shape as BANK EOA flow, but burn targets ucDAO escrow (no position funded yet).
+var _ = Describe("EOA waitlist application flow (UCDAO funds)", Ordered, func() {
+	const (
+		eoaUcdaoWaitlistInitialFundIslm int64 = 1000
+		eoaUcdaoWaitlistBurnIslm        int64 = 250
+		eoaUcdaoWaitlistMsgFundIslm     int64 = 300
+	)
+
+	var (
+		s          *PrecompileTestSuite
+		eoaAddr    common.Address
+		eoaPriv    *ethsecp256k1.PrivKey
+		eoaAccAddr sdk.AccAddress
+	)
+
+	BeforeEach(func() {
+		s = new(PrecompileTestSuite)
+		s.SetupTest()
+
+		eoaAddr, eoaPriv = testutiltx.NewAddrKey()
+		eoaAccAddr = sdk.AccAddress(eoaAddr.Bytes())
+
+		// aISLM for EOA gas only; ucDAO escrow for this owner is intentionally not funded.
+		fundAmount := sdkmath.NewInt(eoaUcdaoWaitlistInitialFundIslm).MulRaw(1e18)
+		Expect(s.network.FundAccountWithBaseDenom(eoaAccAddr, fundAmount)).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+	})
+
+	It("should fail mint until ucDAO is funded, then succeed after MsgFund from bank", func() {
+		waitlistAppIslm := sdkmath.NewInt(eoaUcdaoWaitlistBurnIslm).MulRaw(1e18)
+		eoaBech32 := eoaAccAddr.String()
+		waitlistItem := ethiqtypes.ApplicationListItem{
+			FromAddress:                eoaBech32,
+			ToAddress:                  eoaBech32,
+			FundSource:                 ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO,
+			IslmAmount:                 waitlistAppIslm.String(),
+			IslmAccumulatedBurntAmount: "0",
+		}
+		_, err := waitlistItem.AsBurnApplication()
+		Expect(err).ToNot(HaveOccurred())
+
+		waitlistAppID, restoreWaitlist := ethiqtypes.PushRegisteredApplicationForIntegrationTest(waitlistItem)
+		defer restoreWaitlist()
+
+		precompileAddr := s.precompile.Address()
+		mintByAppArgs := factory.CallArgs{
+			ContractABI: s.precompile.ABI,
+			MethodName:  ethiq.MintHaqqByApplication,
+			Args: []interface{}{
+				eoaAddr,
+				new(big.Int).SetUint64(waitlistAppID),
+			},
+		}
+		txArgsToPrecompile := evmtypes.EvmTxArgs{
+			To: &precompileAddr,
+		}
+
+		_, err = s.factory.ExecuteContractCall(eoaPriv, txArgsToPrecompile, mintByAppArgs)
+		Expect(err).To(HaveOccurred(), "mint with UCDAO source must fail until escrow holds spendable aISLM")
+
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeFalse(),
+			"application must not be executed when burn from ucDAO escrow fails")
+
+		fundCoins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(eoaUcdaoWaitlistMsgFundIslm).MulRaw(1e18)))
+		fundMsg := ucdaotypes.NewMsgFund(fundCoins, eoaAccAddr)
+		cosmosGasLimit := uint64(400_000)
+		resFund, err := s.factory.CommitCosmosTx(eoaPriv, commonfactory.CosmosTxArgs{
+			Msgs:     []sdk.Msg{fundMsg},
+			GasPrice: &gasPrice,
+			Gas:      &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resFund.IsOK()).To(BeTrue(), resFund.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		ucdaoClient := s.network.GetUCDAOClient()
+		eoaUcdaoAfterFund, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
+			Address: eoaAccAddr.String(),
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(eoaUcdaoAfterFund.Balances.AmountOf(utils.BaseDenom)).To(Equal(fundCoins.AmountOf(utils.BaseDenom)),
+			"ucDAO escrow for the EOA should hold the funded aISLM")
+
+		ucdaoIslmBeforeSuccessMint := eoaUcdaoAfterFund.Balances.AmountOf(utils.BaseDenom)
+		eoaBankBeforeSuccessMint, err := s.grpcHandler.GetBalance(eoaAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = s.factory.ExecuteContractCall(eoaPriv, txArgsToPrecompile, mintByAppArgs)
+		Expect(err).ToNot(HaveOccurred(), "mintHaqqByApplication should succeed once ucDAO holds enough aISLM")
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		expectedUcdaoRemaining := sdkmath.NewInt(eoaUcdaoWaitlistMsgFundIslm - eoaUcdaoWaitlistBurnIslm).MulRaw(1e18)
+		eoaUcdaoAfterMint, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
+			Address: eoaAccAddr.String(),
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(eoaUcdaoAfterMint.Balances.AmountOf(utils.BaseDenom)).To(Equal(expectedUcdaoRemaining),
+			"ucDAO balance should be fund amount minus burn (50 ISLM)")
+
+		ucdaoBurnedOnMint := ucdaoIslmBeforeSuccessMint.Sub(eoaUcdaoAfterMint.Balances.AmountOf(utils.BaseDenom))
+		Expect(ucdaoBurnedOnMint).To(Equal(waitlistAppIslm),
+			"ucDAO balance must decrease by exactly the application burn amount")
+
+		eoaBankAfterSuccessMint, err := s.grpcHandler.GetBalance(eoaAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		eoaBankIslmSpentOnMint := eoaBankBeforeSuccessMint.Balance.Amount.Sub(eoaBankAfterSuccessMint.Balance.Amount)
+		oneIslm := sdkmath.NewInt(1).MulRaw(1e18)
+		Expect(eoaBankIslmSpentOnMint.LT(oneIslm)).To(BeTrue(),
+			"EOA bank aISLM spent on successful mint should be under 1 ISLM (gas only; principal burns from ucDAO)")
+
+		afterHaqq, err := s.grpcHandler.GetBalance(eoaAccAddr, ethiqtypes.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(afterHaqq.Balance.Amount.IsPositive()).To(BeTrue(), "EOA should receive minted aHAQQ on bank balance")
+
+		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeTrue(),
+			"application must be marked executed after successful mint")
+	})
+})
+
+// EOA waitlist with UCDAO funded by aISLM plus liquid vesting (aLIQUID): vesting schedule matches precompiles/ucdao integration flow.
+// Liquidation uses 1000 ISLM (module default MinimumLiquidationAmount); only 300 aISLM + 300 aLIQUID are MsgFund'd into ucDAO.
+var _ = Describe("EOA waitlist application flow (UCDAO funds, liquid vesting)", Ordered, func() {
+	const (
+		eoaUcdaoLiqInitialBankIslm       int64 = 1200
+		eoaUcdaoLiqGranterFundIslm       int64 = 1001
+		eoaUcdaoLiqVestingLiquidateIslm  int64 = 1000
+		eoaUcdaoLiqFundUcdaoBaseIslm     int64 = 300
+		eoaUcdaoLiqFundUcdaoLiquidIslm   int64 = 300
+		eoaUcdaoLiqBurnIslm              int64 = 500
+		eoaUcdaoLiqExpectedUcdaoBaseIslm int64 = 100
+	)
+
+	var (
+		s          *PrecompileTestSuite
+		eoaAddr    common.Address
+		eoaPriv    *ethsecp256k1.PrivKey
+		eoaAccAddr sdk.AccAddress
+	)
+
+	BeforeEach(func() {
+		s = new(PrecompileTestSuite)
+		s.SetupTest()
+
+		eoaAddr, eoaPriv = testutiltx.NewAddrKey()
+		eoaAccAddr = sdk.AccAddress(eoaAddr.Bytes())
+
+		fundAmount := sdkmath.NewInt(eoaUcdaoLiqInitialBankIslm).MulRaw(1e18)
+		Expect(s.network.FundAccountWithBaseDenom(eoaAccAddr, fundAmount)).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+	})
+
+	It("should fund ucDAO with aISLM and liquid vesting then burn across both on mint", func() {
+		waitlistAppIslm := sdkmath.NewInt(eoaUcdaoLiqBurnIslm).MulRaw(1e18)
+		eoaBech32 := eoaAccAddr.String()
+		waitlistItem := ethiqtypes.ApplicationListItem{
+			FromAddress:                eoaBech32,
+			ToAddress:                  eoaBech32,
+			FundSource:                 ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO,
+			IslmAmount:                 waitlistAppIslm.String(),
+			IslmAccumulatedBurntAmount: "0",
+		}
+		_, err := waitlistItem.AsBurnApplication()
+		Expect(err).ToNot(HaveOccurred())
+
+		waitlistAppID, restoreWaitlist := ethiqtypes.PushRegisteredApplicationForIntegrationTest(waitlistItem)
+		defer restoreWaitlist()
+
+		precompileAddr := s.precompile.Address()
+		mintByAppArgs := factory.CallArgs{
+			ContractABI: s.precompile.ABI,
+			MethodName:  ethiq.MintHaqqByApplication,
+			Args: []interface{}{
+				eoaAddr,
+				new(big.Int).SetUint64(waitlistAppID),
+			},
+		}
+		txArgsToPrecompile := evmtypes.EvmTxArgs{
+			To: &precompileAddr,
+		}
+
+		_, err = s.factory.ExecuteContractCall(eoaPriv, txArgsToPrecompile, mintByAppArgs)
+		Expect(err).To(HaveOccurred(), "mint with empty ucDAO escrow must fail")
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeFalse())
+
+		coinVesting := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(eoaUcdaoLiqVestingLiquidateIslm).MulRaw(1e18))
+		ctx := s.network.GetContext()
+		startTime := ctx.BlockTime()
+		oneYearSec := int64(365 * 24 * 3600)
+		lockupPeriods := sdkvesting.Periods{{Length: oneYearSec, Amount: sdk.NewCoins(coinVesting)}}
+		vestingPeriods := sdkvesting.Periods{{Length: 1, Amount: sdk.NewCoins(coinVesting)}}
+		var emptyValAddr sdk.ValAddress
+
+		granterAddr, granterPriv := testutiltx.NewAddrKey()
+		granterAcc := sdk.AccAddress(granterAddr.Bytes())
+		granterFundAmt := sdkmath.NewInt(eoaUcdaoLiqGranterFundIslm).MulRaw(1e18)
+		Expect(s.network.FundAccountWithBaseDenom(granterAcc, granterFundAmt)).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		convertMsg := vestingtypes.NewMsgConvertIntoVestingAccount(
+			granterAcc,
+			eoaAccAddr,
+			startTime,
+			lockupPeriods,
+			vestingPeriods,
+			false,
+			false,
+			emptyValAddr,
+		)
+		cosmosGasLimit := uint64(400_000)
+		resVest, err := s.factory.CommitCosmosTx(granterPriv, commonfactory.CosmosTxArgs{
+			Msgs:     []sdk.Msg{convertMsg},
+			GasPrice: &gasPrice,
+			Gas:      &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resVest.IsOK()).To(BeTrue(), resVest.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		liquidMsg := liquidvestingtypes.NewMsgLiquidate(eoaAccAddr, eoaAccAddr, coinVesting)
+		resLiq, err := s.factory.CommitCosmosTx(eoaPriv, commonfactory.CosmosTxArgs{
+			Msgs:     []sdk.Msg{liquidMsg},
+			GasPrice: &gasPrice,
+			Gas:      &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resLiq.IsOK()).To(BeTrue(), resLiq.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		liquidDenom := liquidvestingtypes.DenomBaseNameFromID(0)
+		eoaLiquidBank, err := s.grpcHandler.GetBalance(eoaAccAddr, liquidDenom)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(eoaLiquidBank.Balance.Amount).To(Equal(coinVesting.Amount),
+			"liquid vesting token balance should match vested ISLM liquidated")
+
+		fundUcdaoCoins := sdk.NewCoins(
+			sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(eoaUcdaoLiqFundUcdaoBaseIslm).MulRaw(1e18)),
+			sdk.NewCoin(liquidDenom, sdkmath.NewInt(eoaUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)),
+		)
+		fundMsg := ucdaotypes.NewMsgFund(fundUcdaoCoins, eoaAccAddr)
+		resFund, err := s.factory.CommitCosmosTx(eoaPriv, commonfactory.CosmosTxArgs{
+			Msgs:     []sdk.Msg{fundMsg},
+			GasPrice: &gasPrice,
+			Gas:      &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resFund.IsOK()).To(BeTrue(), resFund.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		ucdaoClient := s.network.GetUCDAOClient()
+		eoaUcdaoFunded, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
+			Address: eoaAccAddr.String(),
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(eoaUcdaoFunded.Balances.AmountOf(utils.BaseDenom)).To(Equal(sdkmath.NewInt(eoaUcdaoLiqFundUcdaoBaseIslm).MulRaw(1e18)))
+		Expect(eoaUcdaoFunded.Balances.AmountOf(liquidDenom)).To(Equal(sdkmath.NewInt(eoaUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)))
+
+		totalUcdaoIslmEquivBefore := eoaUcdaoFunded.Balances.AmountOf(utils.BaseDenom).Add(
+			eoaUcdaoFunded.Balances.AmountOf(liquidDenom))
+		eoaBankBeforeMint, err := s.grpcHandler.GetBalance(eoaAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = s.factory.ExecuteContractCall(eoaPriv, txArgsToPrecompile, mintByAppArgs)
+		Expect(err).ToNot(HaveOccurred(), "mint should redeem liquid in escrow then burn 500 aISLM total")
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		expectedBaseRemaining := sdkmath.NewInt(eoaUcdaoLiqExpectedUcdaoBaseIslm).MulRaw(1e18)
+		eoaUcdaoAfterMint, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
+			Address: eoaAccAddr.String(),
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(eoaUcdaoAfterMint.Balances.AmountOf(utils.BaseDenom)).To(Equal(expectedBaseRemaining),
+			"after500 ISLM burn from 300 aISLM + 300 liquid→aISLM, ucDAO aISLM should be 100")
+		Expect(eoaUcdaoAfterMint.Balances.AmountOf(liquidDenom).IsZero()).To(BeTrue(),
+			"liquid vesting in ucDAO should be fully redeemed during mint")
+
+		totalUcdaoIslmEquivAfter := eoaUcdaoAfterMint.Balances.AmountOf(utils.BaseDenom).Add(
+			eoaUcdaoAfterMint.Balances.AmountOf(liquidDenom))
+		Expect(totalUcdaoIslmEquivBefore.Sub(totalUcdaoIslmEquivAfter)).To(Equal(waitlistAppIslm),
+			"ucDAO should lose ISLM-equivalent value equal to the application (aISLM + liquid,1:1)")
+
+		eoaBankAfterMint, err := s.grpcHandler.GetBalance(eoaAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		eoaBankIslmSpent := eoaBankBeforeMint.Balance.Amount.Sub(eoaBankAfterMint.Balance.Amount)
+		oneIslm := sdkmath.NewInt(1).MulRaw(1e18)
+		Expect(eoaBankIslmSpent.LT(oneIslm)).To(BeTrue(),
+			"EOA bank aISLM spent on mint should be under 1 ISLM (gas only)")
+
+		afterHaqq, err := s.grpcHandler.GetBalance(eoaAccAddr, ethiqtypes.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(afterHaqq.Balance.Amount.IsPositive()).To(BeTrue())
+
+		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeTrue())
 	})
 })
