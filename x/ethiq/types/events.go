@@ -14,4 +14,5 @@ const (
 	AttributeKeySender                 = "sender"
 	AttributeKeyApplicationID          = "application_id"
 	AttributeKeyApplicationFundsSource = "application_funds_source"
+	AttributeKeyRedeemedLiquidAmount   = "redeemed_liquid_amount"
 )

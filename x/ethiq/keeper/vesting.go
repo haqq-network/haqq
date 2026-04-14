@@ -12,10 +12,11 @@ import (
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
-func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, isUcdao bool) error {
+func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, isUcdao bool) (*sdkmath.Int, error) {
 	balances := k.bankKeeper.GetAllBalances(ctx, fromAddress)
 
 	// redeem all aLIQUID balances from liquid vesting module
+	redeemedAmount := sdkmath.ZeroInt()
 	for _, balance := range balances {
 		if !utils.IsLiquidToken(balance.Denom) {
 			continue
@@ -23,8 +24,10 @@ func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.Acc
 
 		// redeem balance from liquid vesting module
 		if err := k.liquidVestingKeeper.Redeem(ctx, fromAddress, fromAddress, balance); err != nil {
-			return errorsmod.Wrap(err, types.ErrRedeemLiquidCoins.Error())
+			return nil, errorsmod.Wrap(err, types.ErrRedeemLiquidCoins.Error())
 		}
+
+		redeemedAmount = redeemedAmount.Add(balance.Amount)
 
 		if isUcdao {
 			// track total balance of UCDAO module
@@ -34,7 +37,7 @@ func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.Acc
 		}
 	}
 
-	return nil
+	return &redeemedAmount, nil
 }
 
 func (k Keeper) unlockVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, amt sdk.Coin) (sdk.Coin, error) {

@@ -53,7 +53,8 @@ func (k Keeper) BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAdd
 		return sdkmath.ZeroInt(), errorsmod.Wrapf(types.ErrExceedsMaxSupply, "aHAQQ supply after tx: %s", haqqSupplyAfter.String())
 	}
 
-	if err := k.redeemAllLiquidVestingCoins(ctx, fromAddress, false); err != nil {
+	redeemedLiquidAmount, err := k.redeemAllLiquidVestingCoins(ctx, fromAddress, false)
+	if err != nil {
 		return sdkmath.ZeroInt(), err
 	}
 
@@ -85,6 +86,7 @@ func (k Keeper) BurnIslmForHaqq(ctx sdk.Context, islmAmount sdkmath.Int, fromAdd
 			sdk.NewAttribute(types.AttributeKeyHaqqSupplyAfter, haqqSupplyAfter.String()),
 			sdk.NewAttribute(types.AttributeKeyIslmVestingUsed, vestingIslmUsed.Amount.String()),
 			sdk.NewAttribute(types.AttributeKeyIslmFreeUsed, freeIslmUsed.String()),
+			sdk.NewAttribute(types.AttributeKeyRedeemedLiquidAmount, redeemedLiquidAmount.String()),
 		),
 	)
 
@@ -142,7 +144,8 @@ func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, fromAddress sdk.
 	}
 
 	// redeem liquid tokens on UCDAO escrow account
-	if err := k.redeemAllLiquidVestingCoins(ctx, fromAddress, isUcdao); err != nil {
+	redeemedLiquidAmount, err := k.redeemAllLiquidVestingCoins(ctx, fromAddress, isUcdao)
+	if err != nil {
 		return sdkmath.ZeroInt(), sdk.AccAddress{}, err
 	}
 
@@ -176,6 +179,7 @@ func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, fromAddress sdk.
 			sdk.NewAttribute(types.AttributeKeyIslmFreeUsed, freeIslmUsed.Amount.String()),
 			sdk.NewAttribute(types.AttributeKeyApplicationID, fmt.Sprintf("%d", appID)),
 			sdk.NewAttribute(types.AttributeKeyApplicationFundsSource, types.FundSources[application.Source]),
+			sdk.NewAttribute(types.AttributeKeyRedeemedLiquidAmount, redeemedLiquidAmount.String()),
 		),
 	)
 

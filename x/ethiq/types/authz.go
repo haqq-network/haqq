@@ -11,7 +11,7 @@ import (
 )
 
 func NewMintHaqqAuthorization(amount *sdk.Coin) (*MintHaqqAuthorization, error) {
-	a := MintHaqqAuthorization{
+	a := &MintHaqqAuthorization{
 		SpendLimit: amount,
 	}
 
@@ -19,7 +19,7 @@ func NewMintHaqqAuthorization(amount *sdk.Coin) (*MintHaqqAuthorization, error) 
 		return nil, err
 	}
 
-	return &a, nil
+	return a, nil
 }
 
 func (m *MintHaqqAuthorization) MsgTypeURL() string {
@@ -81,6 +81,18 @@ func (m *MintHaqqAuthorization) ValidateBasic() error {
 	}
 
 	return nil
+}
+
+func NewMintHaqqByApplicationAuthorization(appID uint64) (*MintHaqqByApplicationIDAuthorization, error) {
+	a := &MintHaqqByApplicationIDAuthorization{}
+	a.ApplicationsList = make([]uint64, 0, 1)
+	a.ApplicationsList = append(a.ApplicationsList, appID)
+
+	if err := a.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	return a, nil
 }
 
 func (m *MintHaqqByApplicationIDAuthorization) MsgTypeURL() string {
