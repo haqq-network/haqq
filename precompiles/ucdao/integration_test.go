@@ -386,7 +386,7 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		expectedHaqqMint, err := s.network.App.EthiqKeeper.CalculateHaqqCoinsToMint(ctxEthiq, fiveHundredIslm)
 		Expect(err).NotTo(HaveOccurred())
 
-		ucdaoPc, err := ucdao.NewPrecompile(s.network.App.DaoKeeper)
+		ucdaoPc, err := ucdao.NewPrecompile(s.network.App.DaoKeeper, s.network.App.AuthzKeeper)
 		Expect(err).NotTo(HaveOccurred())
 		convertCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, safeWalletAddr, safeWalletAddr, fiveHundredIslm.BigInt())
 		Expect(err).NotTo(HaveOccurred())

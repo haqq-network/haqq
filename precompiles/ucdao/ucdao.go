@@ -7,6 +7,7 @@ import (
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
@@ -30,6 +31,7 @@ type Precompile struct {
 // NewPrecompile creates a new ucdao Precompile instance as a PrecompiledContract.
 func NewPrecompile(
 	daoKeeper ucdaokeeper.Keeper,
+	authzKeeper authzkeeper.Keeper,
 ) (*Precompile, error) {
 	loadedAbi, err := cmn.LoadABI(f, "abi.json")
 	if err != nil {
@@ -39,6 +41,7 @@ func NewPrecompile(
 	p := &Precompile{
 		Precompile: cmn.Precompile{
 			ABI:                  loadedAbi,
+			AuthzKeeper:          authzKeeper,
 			KvGasConfig:          storetypes.KVGasConfig(),
 			TransientKVGasConfig: storetypes.TransientGasConfig(),
 		},
