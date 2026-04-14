@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/haqq-network/haqq/utils"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/ethiq/types"
 )
@@ -68,6 +69,12 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 // GetHaqqSupply returns the current supply of aHAQQ coins
 func (k Keeper) GetHaqqSupply(ctx sdk.Context) sdkmath.Int {
 	return k.bankKeeper.GetSupply(ctx, types.BaseDenom).Amount
+}
+
+// BaseDenomBankBalance returns the bank balance of aISLM for addr (utils.BaseDenom).
+// On Haqq, EvmDenom defaults to utils.BaseDenom; this is the balance x/evm/keeper.SetBalance reconciles for native EVM accounts.
+func (k Keeper) BaseDenomBankBalance(ctx sdk.Context, addr sdk.AccAddress) sdkmath.Int {
+	return k.bankKeeper.GetAllBalances(ctx, addr).AmountOf(utils.BaseDenom)
 }
 
 // EnsureHaqqMetadata ensures that the aethiq denom metadata is set up correctly
