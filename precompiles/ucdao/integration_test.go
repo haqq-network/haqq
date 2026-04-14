@@ -17,6 +17,7 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/haqq-network/haqq/precompiles/authorization"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	safecontracts "github.com/haqq-network/haqq/precompiles/testutil/contracts/safe"
 	"github.com/haqq-network/haqq/precompiles/ucdao"
@@ -380,7 +381,9 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		nonceOut, err := gnosisSafe.ABI.Methods["nonce"].Outputs.Unpack(nonceRes.Ret)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(nonceOut[0]).To(Equal(big.NewInt(0)), "first Safe exec must use nonce 0 (no prior execTransaction)")
+		nonce, ok := nonceOut[0].(*big.Int)
+		Expect(ok).To(BeTrue())
+		Expect(nonce.Cmp(big.NewInt(0))).To(Equal(0), "first Safe exec must use nonce 0 (no prior execTransaction)")
 
 		ctxEthiq := s.network.GetContext()
 		expectedHaqqMint, err := s.network.App.EthiqKeeper.CalculateHaqqCoinsToMint(ctxEthiq, fiveHundredIslm)
@@ -392,6 +395,29 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		ucdaoPrecompileAddr := common.HexToAddress(evmtypes.UcdaoPrecompileAddress)
+		approveTxRes, err := s.factory.ExecuteContractCall(
+			safeOwnerOne.Priv,
+			evmtypes.EvmTxArgs{To: &ucdaoPrecompileAddr},
+			factory.CallArgs{
+				ContractABI: ucdaoPc.ABI,
+				MethodName:  authorization.ApproveMethod,
+				Args: []interface{}{
+					safeWalletAddr,
+					fiveHundredIslm.BigInt(),
+					[]string{ucdao.ConvertToHaqqMsgURL},
+				},
+			},
+		)
+		Expect(err).NotTo(HaveOccurred())
+		approveRes, err := s.factory.GetEvmTransactionResponseFromTxResult(approveTxRes)
+		Expect(err).NotTo(HaveOccurred())
+		approveOut, err := ucdaoPc.ABI.Methods[authorization.ApproveMethod].Outputs.Unpack(approveRes.Ret)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(approveOut).To(HaveLen(1))
+		approved, ok := approveOut[0].(bool)
+		Expect(ok).To(BeTrue())
+		Expect(approved).To(BeTrue(), "owner should approve Safe for convertToHaqq")
+
 		// getTransactionHash args must match execTransaction (except signatures); last arg is Safe nonce.
 		getTxHashArgs := factory.CallArgs{
 			ContractABI: gnosisSafe.ABI,
