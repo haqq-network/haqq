@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	sdkmath "cosmossdk.io/math"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -2340,8 +2341,8 @@ var _ = Describe("EOA waitlist application flow (UCDAO funds)", Ordered, func() 
 	})
 })
 
-// EOA waitlist with UCDAO funded by aISLM plus liquid vesting (aLIQUID): vesting schedule matches precompiles/ucdao integration flow.
-// Liquidation uses 1000 ISLM (module default MinimumLiquidationAmount); only 300 aISLM + 300 aLIQUID are MsgFund'd into ucDAO.
+// EOA waitlist with UCDAO funded by ISLM plus liquid vesting: vesting schedule matches precompiles/ucdao integration flow.
+// Liquidation uses 1000 ISLM (module default MinimumLiquidationAmount); only 300 ISLM + 300 liquid are MsgFund'd into ucDAO.
 var _ = Describe("EOA waitlist application flow (UCDAO funds, liquid vesting)", Ordered, func() {
 	const (
 		eoaUcdaoLiqInitialBankIslm       int64 = 1200
@@ -2372,7 +2373,7 @@ var _ = Describe("EOA waitlist application flow (UCDAO funds, liquid vesting)", 
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 	})
 
-	It("should fund ucDAO with aISLM and liquid vesting then burn across both on mint", func() {
+	It("should fund ucDAO with ISLM and liquid vesting then burn across both on mint", func() {
 		waitlistAppIslm := sdkmath.NewInt(eoaUcdaoLiqBurnIslm).MulRaw(1e18)
 		eoaBech32 := eoaAccAddr.String()
 		waitlistItem := ethiqtypes.ApplicationListItem{
@@ -2484,7 +2485,7 @@ var _ = Describe("EOA waitlist application flow (UCDAO funds, liquid vesting)", 
 		Expect(err).ToNot(HaveOccurred())
 
 		_, err = s.factory.ExecuteContractCall(eoaPriv, txArgsToPrecompile, mintByAppArgs)
-		Expect(err).ToNot(HaveOccurred(), "mint should redeem liquid in escrow then burn 500 aISLM total")
+		Expect(err).ToNot(HaveOccurred(), "mint should redeem liquid in escrow then burn 500 ISLM total")
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 
 		expectedBaseRemaining := sdkmath.NewInt(eoaUcdaoLiqExpectedUcdaoBaseIslm).MulRaw(1e18)
@@ -2493,25 +2494,629 @@ var _ = Describe("EOA waitlist application flow (UCDAO funds, liquid vesting)", 
 		})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(eoaUcdaoAfterMint.Balances.AmountOf(utils.BaseDenom)).To(Equal(expectedBaseRemaining),
-			"after500 ISLM burn from 300 aISLM + 300 liquid→aISLM, ucDAO aISLM should be 100")
+			"after 500 ISLM burn from 300 ISLM + 300 liquid→ISLM, ucDAO should hold 100 ISLM")
 		Expect(eoaUcdaoAfterMint.Balances.AmountOf(liquidDenom).IsZero()).To(BeTrue(),
 			"liquid vesting in ucDAO should be fully redeemed during mint")
 
 		totalUcdaoIslmEquivAfter := eoaUcdaoAfterMint.Balances.AmountOf(utils.BaseDenom).Add(
 			eoaUcdaoAfterMint.Balances.AmountOf(liquidDenom))
 		Expect(totalUcdaoIslmEquivBefore.Sub(totalUcdaoIslmEquivAfter)).To(Equal(waitlistAppIslm),
-			"ucDAO should lose ISLM-equivalent value equal to the application (aISLM + liquid,1:1)")
+			"ucDAO should lose ISLM-equivalent value equal to the application (ISLM + liquid, 1:1)")
 
 		eoaBankAfterMint, err := s.grpcHandler.GetBalance(eoaAccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
 		eoaBankIslmSpent := eoaBankBeforeMint.Balance.Amount.Sub(eoaBankAfterMint.Balance.Amount)
 		oneIslm := sdkmath.NewInt(1).MulRaw(1e18)
 		Expect(eoaBankIslmSpent.LT(oneIslm)).To(BeTrue(),
-			"EOA bank aISLM spent on mint should be under 1 ISLM (gas only)")
+			"EOA bank ISLM spent on mint should be under 1 ISLM (gas only)")
 
 		afterHaqq, err := s.grpcHandler.GetBalance(eoaAccAddr, ethiqtypes.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(afterHaqq.Balance.Amount.IsPositive()).To(BeTrue())
+
+		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeTrue())
+	})
+})
+
+// safeExecMintHaqqByApplication signs and runs execTransaction on a Gnosis Safe calling ethiq mintHaqqByApplication.
+// safeNonce must match the current Safe nonce (query "nonce" on the Safe contract).
+func safeExecMintHaqqByApplication(
+	s *PrecompileTestSuite,
+	gnosisSafe evmtypes.CompiledContract,
+	safeWalletAddr common.Address,
+	ownerPriv cryptotypes.PrivKey,
+	ownerEthAddr common.Address,
+	precompileAddr common.Address,
+	mintByAppCallData []byte,
+	safeNonce *big.Int,
+) (execSuccess bool, ret []byte, err error) {
+	getTxHashArgs := factory.CallArgs{
+		ContractABI: gnosisSafe.ABI,
+		MethodName:  "getTransactionHash",
+		Args: []interface{}{
+			precompileAddr,
+			big.NewInt(0),
+			mintByAppCallData,
+			uint8(0),
+			big.NewInt(300_000),
+			big.NewInt(0),
+			big.NewInt(0),
+			common.Address{},
+			common.Address{},
+			safeNonce,
+		},
+	}
+	_, txHashRes, err := s.factory.CallContractAndCheckLogs(
+		ownerPriv,
+		evmtypes.EvmTxArgs{To: &safeWalletAddr},
+		getTxHashArgs,
+		testutil.LogCheckArgs{ExpPass: true},
+	)
+	if err != nil {
+		return false, nil, err
+	}
+	txHashOutputs, err := gnosisSafe.ABI.Methods["getTransactionHash"].Outputs.Unpack(txHashRes.Ret)
+	if err != nil {
+		return false, nil, err
+	}
+	_, ok := txHashOutputs[0].([32]byte)
+	if !ok {
+		return false, nil, fmt.Errorf("unexpected getTransactionHash output type")
+	}
+
+	signature := make([]byte, 65)
+	copy(signature[12:32], ownerEthAddr.Bytes())
+	signature[64] = 1
+
+	execTxArgs := factory.CallArgs{
+		ContractABI: gnosisSafe.ABI,
+		MethodName:  "execTransaction",
+		Args: []interface{}{
+			precompileAddr,
+			big.NewInt(0),
+			mintByAppCallData,
+			uint8(0),
+			big.NewInt(300_000),
+			big.NewInt(0),
+			big.NewInt(0),
+			common.Address{},
+			common.Address{},
+			signature,
+		},
+	}
+	execTxRes, err := s.factory.ExecuteContractCall(
+		ownerPriv,
+		evmtypes.EvmTxArgs{To: &safeWalletAddr},
+		execTxArgs,
+	)
+	if err != nil {
+		return false, nil, err
+	}
+	execRes, err := s.factory.GetEvmTransactionResponseFromTxResult(execTxRes)
+	if err != nil {
+		return false, nil, err
+	}
+	execOutputs, err := gnosisSafe.ABI.Methods["execTransaction"].Outputs.Unpack(execRes.Ret)
+	if err != nil {
+		return false, nil, err
+	}
+	if len(execOutputs) != 1 {
+		return false, nil, fmt.Errorf("execTransaction: expected 1 output")
+	}
+	execOk, ok := execOutputs[0].(bool)
+	if !ok {
+		return false, nil, fmt.Errorf("unexpected execTransaction bool output type")
+	}
+	return execOk, execRes.Ret, nil
+}
+
+func readSafeNonce(
+	s *PrecompileTestSuite,
+	gnosisSafe evmtypes.CompiledContract,
+	safeWalletAddr common.Address,
+	ownerPriv cryptotypes.PrivKey,
+) (*big.Int, error) {
+	_, nonceRes, err := s.factory.CallContractAndCheckLogs(
+		ownerPriv,
+		evmtypes.EvmTxArgs{To: &safeWalletAddr},
+		factory.CallArgs{ContractABI: gnosisSafe.ABI, MethodName: "nonce"},
+		testutil.LogCheckArgs{ExpPass: true},
+	)
+	if err != nil {
+		return nil, err
+	}
+	nonceOut, err := gnosisSafe.ABI.Methods["nonce"].Outputs.Unpack(nonceRes.Ret)
+	if err != nil {
+		return nil, err
+	}
+	n, ok := nonceOut[0].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("unexpected Safe nonce type")
+	}
+	return n, nil
+}
+
+// Same amounts and expectations as "EOA waitlist application flow (UCDAO funds)"; ucDAO is funded via helper MsgFund + MsgTransferOwnershipWithAmount (precompiles/ucdao).
+var _ = Describe("Safe waitlist application flow (UCDAO funds)", Ordered, func() {
+	const (
+		safeUcdaoWaitlistOwnerFundIslm    int64 = 1500
+		safeUcdaoWaitlistTransferIslm     int64 = 500
+		safeUcdaoWaitlistSafeBankIslm     int64 = 1000
+		safeUcdaoWaitlistBurnIslm         int64 = 250
+		safeUcdaoWaitlistMsgFundIslm      int64 = 300
+		safeUcdaoWaitlistHelperBankIslm   int64 = 400
+		safeUcdaoWaitlistExpectedUcdaoRem int64 = 50
+	)
+
+	var (
+		s                *PrecompileTestSuite
+		safeOwnerOne     keyring.Key
+		safeOwnerTwo     keyring.Key
+		gnosisSafe       evmtypes.CompiledContract
+		gnosisSafeAddr   common.Address
+		proxyFactory     evmtypes.CompiledContract
+		proxyFactoryAddr common.Address
+	)
+
+	BeforeEach(func() {
+		s = new(PrecompileTestSuite)
+		s.SetupTest()
+
+		var deployErr error
+		gnosisSafe, deployErr = safecontracts.LoadGnosisSafeContract()
+		Expect(deployErr).ToNot(HaveOccurred())
+		proxyFactory, deployErr = safecontracts.LoadGnosisSafeProxyFactoryContract()
+		Expect(deployErr).ToNot(HaveOccurred())
+
+		sender := s.keyring.GetKey(0)
+		safeOwnerOneAddr, safeOwnerOnePriv := testutiltx.NewAddrKey()
+		safeOwnerOne = keyring.Key{Addr: safeOwnerOneAddr, AccAddr: sdk.AccAddress(safeOwnerOneAddr.Bytes()), Priv: safeOwnerOnePriv}
+		safeOwnerTwoAddr, safeOwnerTwoPriv := testutiltx.NewAddrKey()
+		safeOwnerTwo = keyring.Key{Addr: safeOwnerTwoAddr, AccAddr: sdk.AccAddress(safeOwnerTwoAddr.Bytes()), Priv: safeOwnerTwoPriv}
+
+		fundOwners := sdkmath.NewInt(safeUcdaoWaitlistOwnerFundIslm).MulRaw(1e18)
+		Expect(s.network.FundAccountWithBaseDenom(safeOwnerOne.AccAddr, fundOwners)).ToNot(HaveOccurred())
+		Expect(s.network.FundAccountWithBaseDenom(safeOwnerTwo.AccAddr, fundOwners)).ToNot(HaveOccurred())
+
+		gnosisSafeAddr, deployErr = s.factory.DeployContract(sender.Priv, evmtypes.EvmTxArgs{}, factory.ContractDeploymentData{Contract: gnosisSafe})
+		Expect(deployErr).ToNot(HaveOccurred())
+		proxyFactoryAddr, deployErr = s.factory.DeployContract(sender.Priv, evmtypes.EvmTxArgs{}, factory.ContractDeploymentData{Contract: proxyFactory})
+		Expect(deployErr).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+	})
+
+	It("should fail Safe exec until ucDAO is funded, then succeed after transfer from helper", func() {
+		safeSetupData, err := gnosisSafe.ABI.Pack(
+			"setup",
+			[]common.Address{safeOwnerOne.Addr, safeOwnerTwo.Addr},
+			big.NewInt(1),
+			common.Address{},
+			[]byte{},
+			common.Address{},
+			common.Address{},
+			big.NewInt(0),
+			common.Address{},
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		createProxyRes, err := s.factory.ExecuteContractCall(
+			safeOwnerOne.Priv,
+			evmtypes.EvmTxArgs{To: &proxyFactoryAddr},
+			factory.CallArgs{ContractABI: proxyFactory.ABI, MethodName: "createProxy", Args: []interface{}{gnosisSafeAddr, safeSetupData}},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		ethRes, err := s.factory.GetEvmTransactionResponseFromTxResult(createProxyRes)
+		Expect(err).ToNot(HaveOccurred())
+
+		proxyCreationEvent := proxyFactory.ABI.Events["ProxyCreation"]
+		var proxyCreationLog *evmtypes.Log
+		for i := range ethRes.Logs {
+			l := ethRes.Logs[i]
+			if len(l.Topics) > 0 && l.Topics[0] == proxyCreationEvent.ID.String() && common.HexToAddress(l.Address) == proxyFactoryAddr {
+				proxyCreationLog = l
+				break
+			}
+		}
+		Expect(proxyCreationLog).ToNot(BeNil())
+
+		eventInputs, err := proxyFactory.ABI.Events["ProxyCreation"].Inputs.Unpack(proxyCreationLog.Data)
+		Expect(err).ToNot(HaveOccurred())
+		safeWalletAddr, ok := eventInputs[0].(common.Address)
+		Expect(ok).To(BeTrue())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		safeWalletAccAddr := sdk.AccAddress(safeWalletAddr.Bytes())
+		transferAmt := sdkmath.NewInt(safeUcdaoWaitlistTransferIslm).MulRaw(1e18)
+		coinsTransfer := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, transferAmt))
+		ctx := s.network.GetContext()
+		Expect(s.network.App.BankKeeper.SendCoins(ctx, safeOwnerOne.AccAddr, safeWalletAccAddr, coinsTransfer)).ToNot(HaveOccurred())
+		Expect(s.network.App.BankKeeper.SendCoins(ctx, safeOwnerTwo.AccAddr, safeWalletAccAddr, coinsTransfer)).ToNot(HaveOccurred())
+
+		expectedSafeBank := sdkmath.NewInt(safeUcdaoWaitlistSafeBankIslm).MulRaw(1e18)
+		safeBankAfterFund, err := s.grpcHandler.GetBalance(safeWalletAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(safeBankAfterFund.Balance.Amount).To(Equal(expectedSafeBank))
+
+		waitlistAppIslm := sdkmath.NewInt(safeUcdaoWaitlistBurnIslm).MulRaw(1e18)
+		safeBech32 := safeWalletAccAddr.String()
+		waitlistItem := ethiqtypes.ApplicationListItem{
+			FromAddress:                safeBech32,
+			ToAddress:                  safeBech32,
+			FundSource:                 ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO,
+			IslmAmount:                 waitlistAppIslm.String(),
+			IslmAccumulatedBurntAmount: "0",
+		}
+		_, err = waitlistItem.AsBurnApplication()
+		Expect(err).ToNot(HaveOccurred())
+		waitlistAppID, restoreWaitlist := ethiqtypes.PushRegisteredApplicationForIntegrationTest(waitlistItem)
+		defer restoreWaitlist()
+
+		precompileAddr := s.precompile.Address()
+		approveArgs := factory.CallArgs{
+			ContractABI: s.precompile.ABI,
+			MethodName:  ethiq.ApproveApplicationIDMethod,
+			Args: []interface{}{
+				safeWalletAddr,
+				new(big.Int).SetUint64(waitlistAppID),
+				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
+			},
+		}
+		approveTxArgs := evmtypes.EvmTxArgs{To: &precompileAddr}
+		_, _, err = s.factory.CallContractAndCheckLogs(
+			safeOwnerOne.Priv,
+			approveTxArgs,
+			approveArgs,
+			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval}, ExpPass: true},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		mintByAppCallData, err := s.precompile.ABI.Pack(ethiq.MintHaqqByApplication, safeWalletAddr, new(big.Int).SetUint64(waitlistAppID))
+		Expect(err).ToNot(HaveOccurred())
+
+		safeNonce0, err := readSafeNonce(s, gnosisSafe, safeWalletAddr, safeOwnerOne.Priv)
+		Expect(err).ToNot(HaveOccurred())
+		execFail, _, err := safeExecMintHaqqByApplication(s, gnosisSafe, safeWalletAddr, safeOwnerOne.Priv, safeOwnerOne.Addr, precompileAddr, mintByAppCallData, safeNonce0)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(execFail).To(BeFalse(), "mint with empty Safe ucDAO should fail inside Safe")
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeFalse())
+
+		helperAddr, helperPriv := testutiltx.NewAddrKey()
+		helperAcc := sdk.AccAddress(helperAddr.Bytes())
+		Expect(s.network.FundAccountWithBaseDenom(helperAcc, sdkmath.NewInt(safeUcdaoWaitlistHelperBankIslm).MulRaw(1e18))).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		fundCoins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoWaitlistMsgFundIslm).MulRaw(1e18)))
+		cosmosGasLimit := uint64(400_000)
+		resFund, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
+			Msgs:     []sdk.Msg{ucdaotypes.NewMsgFund(fundCoins, helperAcc)},
+			GasPrice: &gasPrice,
+			Gas:      &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resFund.IsOK()).To(BeTrue(), resFund.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		transferUcdaoMsg := ucdaotypes.NewMsgTransferOwnershipWithAmount(helperAcc, safeWalletAccAddr, fundCoins)
+		resXfer, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
+			Msgs:     []sdk.Msg{transferUcdaoMsg},
+			GasPrice: &gasPrice,
+			Gas:      &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resXfer.IsOK()).To(BeTrue(), resXfer.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		ucdaoClient := s.network.GetUCDAOClient()
+		safeUcdaoFunded, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{Address: safeWalletAccAddr.String()})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(safeUcdaoFunded.Balances.AmountOf(utils.BaseDenom)).To(Equal(fundCoins.AmountOf(utils.BaseDenom)))
+
+		ucdaoIslmBeforeSuccessMint := safeUcdaoFunded.Balances.AmountOf(utils.BaseDenom)
+		ownerOneBankBeforeSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, _, err = s.factory.CallContractAndCheckLogs(
+			safeOwnerOne.Priv,
+			approveTxArgs,
+			approveArgs,
+			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval}, ExpPass: true},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		safeNonce1, err := readSafeNonce(s, gnosisSafe, safeWalletAddr, safeOwnerOne.Priv)
+		Expect(err).ToNot(HaveOccurred())
+		execOk, _, err := safeExecMintHaqqByApplication(s, gnosisSafe, safeWalletAddr, safeOwnerOne.Priv, safeOwnerOne.Addr, precompileAddr, mintByAppCallData, safeNonce1)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(execOk).To(BeTrue())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		expectedUcdaoRem := sdkmath.NewInt(safeUcdaoWaitlistExpectedUcdaoRem).MulRaw(1e18)
+		safeUcdaoAfter, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{Address: safeWalletAccAddr.String()})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom)).To(Equal(expectedUcdaoRem))
+
+		ucdaoBurnedOnMint := ucdaoIslmBeforeSuccessMint.Sub(safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom))
+		Expect(ucdaoBurnedOnMint).To(Equal(waitlistAppIslm),
+			"ucDAO balance must decrease by exactly the application burn amount")
+
+		ownerOneBankAfterSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		ownerOneIslmSpentOnMint := ownerOneBankBeforeSuccessMint.Balance.Amount.Sub(ownerOneBankAfterSuccessMint.Balance.Amount)
+		oneIslm := sdkmath.NewInt(1).MulRaw(1e18)
+		Expect(ownerOneIslmSpentOnMint.LT(oneIslm)).To(BeTrue(),
+			"Safe owner bank ISLM spent on successful exec should be under 1 ISLM (gas only; principal burns from ucDAO)")
+
+		safeBankAfterMint, err := s.grpcHandler.GetBalance(safeWalletAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(safeBankAfterMint.Balance.Amount).To(Equal(expectedSafeBank), "Safe bank ISLM is unchanged (burn is from ucDAO)")
+
+		safeHaqq, err := s.grpcHandler.GetBalance(safeWalletAccAddr, ethiqtypes.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(safeHaqq.Balance.Amount.IsPositive()).To(BeTrue())
+
+		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeTrue())
+	})
+})
+
+// Same amounts and expectations as "EOA waitlist application flow (UCDAO funds, liquid vesting)"; only Safe deployment, approve, and exec differ.
+var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)", Ordered, func() {
+	const (
+		safeUcdaoLiqOwnerFundIslm         int64 = 1500
+		safeUcdaoLiqTransferIslm          int64 = 500
+		safeUcdaoLiqSafeBankIslm          int64 = 1000
+		safeUcdaoLiqHelperInitialIslm     int64 = 3000
+		safeUcdaoLiqGranterFundIslm       int64 = 1001
+		safeUcdaoLiqVestingLiquidateIslm  int64 = 1000
+		safeUcdaoLiqFundUcdaoBaseIslm     int64 = 300
+		safeUcdaoLiqFundUcdaoLiquidIslm   int64 = 300
+		safeUcdaoLiqBurnIslm              int64 = 500
+		safeUcdaoLiqExpectedUcdaoBaseIslm int64 = 100
+	)
+
+	var (
+		s                *PrecompileTestSuite
+		safeOwnerOne     keyring.Key
+		safeOwnerTwo     keyring.Key
+		gnosisSafe       evmtypes.CompiledContract
+		gnosisSafeAddr   common.Address
+		proxyFactory     evmtypes.CompiledContract
+		proxyFactoryAddr common.Address
+	)
+
+	BeforeEach(func() {
+		s = new(PrecompileTestSuite)
+		s.SetupTest()
+
+		var deployErr error
+		gnosisSafe, deployErr = safecontracts.LoadGnosisSafeContract()
+		Expect(deployErr).ToNot(HaveOccurred())
+		proxyFactory, deployErr = safecontracts.LoadGnosisSafeProxyFactoryContract()
+		Expect(deployErr).ToNot(HaveOccurred())
+
+		sender := s.keyring.GetKey(0)
+		safeOwnerOneAddr, safeOwnerOnePriv := testutiltx.NewAddrKey()
+		safeOwnerOne = keyring.Key{Addr: safeOwnerOneAddr, AccAddr: sdk.AccAddress(safeOwnerOneAddr.Bytes()), Priv: safeOwnerOnePriv}
+		safeOwnerTwoAddr, safeOwnerTwoPriv := testutiltx.NewAddrKey()
+		safeOwnerTwo = keyring.Key{Addr: safeOwnerTwoAddr, AccAddr: sdk.AccAddress(safeOwnerTwoAddr.Bytes()), Priv: safeOwnerTwoPriv}
+
+		fundOwners := sdkmath.NewInt(safeUcdaoLiqOwnerFundIslm).MulRaw(1e18)
+		Expect(s.network.FundAccountWithBaseDenom(safeOwnerOne.AccAddr, fundOwners)).ToNot(HaveOccurred())
+		Expect(s.network.FundAccountWithBaseDenom(safeOwnerTwo.AccAddr, fundOwners)).ToNot(HaveOccurred())
+
+		gnosisSafeAddr, deployErr = s.factory.DeployContract(sender.Priv, evmtypes.EvmTxArgs{}, factory.ContractDeploymentData{Contract: gnosisSafe})
+		Expect(deployErr).ToNot(HaveOccurred())
+		proxyFactoryAddr, deployErr = s.factory.DeployContract(sender.Priv, evmtypes.EvmTxArgs{}, factory.ContractDeploymentData{Contract: proxyFactory})
+		Expect(deployErr).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+	})
+
+	It("should move liquid-backed ucDAO position to Safe and burn across ISLM + liquid", func() {
+		safeSetupData, err := gnosisSafe.ABI.Pack(
+			"setup",
+			[]common.Address{safeOwnerOne.Addr, safeOwnerTwo.Addr},
+			big.NewInt(1),
+			common.Address{},
+			[]byte{},
+			common.Address{},
+			common.Address{},
+			big.NewInt(0),
+			common.Address{},
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		createProxyRes, err := s.factory.ExecuteContractCall(
+			safeOwnerOne.Priv,
+			evmtypes.EvmTxArgs{To: &proxyFactoryAddr},
+			factory.CallArgs{ContractABI: proxyFactory.ABI, MethodName: "createProxy", Args: []interface{}{gnosisSafeAddr, safeSetupData}},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		ethRes, err := s.factory.GetEvmTransactionResponseFromTxResult(createProxyRes)
+		Expect(err).ToNot(HaveOccurred())
+
+		proxyCreationEvent := proxyFactory.ABI.Events["ProxyCreation"]
+		var proxyCreationLog *evmtypes.Log
+		for i := range ethRes.Logs {
+			l := ethRes.Logs[i]
+			if len(l.Topics) > 0 && l.Topics[0] == proxyCreationEvent.ID.String() && common.HexToAddress(l.Address) == proxyFactoryAddr {
+				proxyCreationLog = l
+				break
+			}
+		}
+		Expect(proxyCreationLog).ToNot(BeNil())
+
+		eventInputs, err := proxyFactory.ABI.Events["ProxyCreation"].Inputs.Unpack(proxyCreationLog.Data)
+		Expect(err).ToNot(HaveOccurred())
+		safeWalletAddr, ok := eventInputs[0].(common.Address)
+		Expect(ok).To(BeTrue())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		safeWalletAccAddr := sdk.AccAddress(safeWalletAddr.Bytes())
+		transferAmt := sdkmath.NewInt(safeUcdaoLiqTransferIslm).MulRaw(1e18)
+		coinsTransfer := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, transferAmt))
+		ctx := s.network.GetContext()
+		Expect(s.network.App.BankKeeper.SendCoins(ctx, safeOwnerOne.AccAddr, safeWalletAccAddr, coinsTransfer)).ToNot(HaveOccurred())
+		Expect(s.network.App.BankKeeper.SendCoins(ctx, safeOwnerTwo.AccAddr, safeWalletAccAddr, coinsTransfer)).ToNot(HaveOccurred())
+
+		expectedSafeBank := sdkmath.NewInt(safeUcdaoLiqSafeBankIslm).MulRaw(1e18)
+
+		waitlistAppIslm := sdkmath.NewInt(safeUcdaoLiqBurnIslm).MulRaw(1e18)
+		safeBech32 := safeWalletAccAddr.String()
+		waitlistItem := ethiqtypes.ApplicationListItem{
+			FromAddress:                safeBech32,
+			ToAddress:                  safeBech32,
+			FundSource:                 ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO,
+			IslmAmount:                 waitlistAppIslm.String(),
+			IslmAccumulatedBurntAmount: "0",
+		}
+		_, err = waitlistItem.AsBurnApplication()
+		Expect(err).ToNot(HaveOccurred())
+		waitlistAppID, restoreWaitlist := ethiqtypes.PushRegisteredApplicationForIntegrationTest(waitlistItem)
+		defer restoreWaitlist()
+
+		precompileAddr := s.precompile.Address()
+		approveArgs := factory.CallArgs{
+			ContractABI: s.precompile.ABI,
+			MethodName:  ethiq.ApproveApplicationIDMethod,
+			Args: []interface{}{
+				safeWalletAddr,
+				new(big.Int).SetUint64(waitlistAppID),
+				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
+			},
+		}
+		approveTxArgs := evmtypes.EvmTxArgs{To: &precompileAddr}
+		_, _, err = s.factory.CallContractAndCheckLogs(
+			safeOwnerOne.Priv,
+			approveTxArgs,
+			approveArgs,
+			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval}, ExpPass: true},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		mintByAppCallData, err := s.precompile.ABI.Pack(ethiq.MintHaqqByApplication, safeWalletAddr, new(big.Int).SetUint64(waitlistAppID))
+		Expect(err).ToNot(HaveOccurred())
+
+		safeNonce0, err := readSafeNonce(s, gnosisSafe, safeWalletAddr, safeOwnerOne.Priv)
+		Expect(err).ToNot(HaveOccurred())
+		execFail, _, err := safeExecMintHaqqByApplication(s, gnosisSafe, safeWalletAddr, safeOwnerOne.Priv, safeOwnerOne.Addr, precompileAddr, mintByAppCallData, safeNonce0)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(execFail).To(BeFalse())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeFalse())
+
+		helperAddr, helperPriv := testutiltx.NewAddrKey()
+		helperAcc := sdk.AccAddress(helperAddr.Bytes())
+		Expect(s.network.FundAccountWithBaseDenom(helperAcc, sdkmath.NewInt(safeUcdaoLiqHelperInitialIslm).MulRaw(1e18))).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		coinVesting := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoLiqVestingLiquidateIslm).MulRaw(1e18))
+		startTime := s.network.GetContext().BlockTime()
+		oneYearSec := int64(365 * 24 * 3600)
+		lockupPeriods := sdkvesting.Periods{{Length: oneYearSec, Amount: sdk.NewCoins(coinVesting)}}
+		vestingPeriods := sdkvesting.Periods{{Length: 1, Amount: sdk.NewCoins(coinVesting)}}
+		var emptyValAddr sdk.ValAddress
+
+		granterAddr, granterPriv := testutiltx.NewAddrKey()
+		granterAcc := sdk.AccAddress(granterAddr.Bytes())
+		Expect(s.network.FundAccountWithBaseDenom(granterAcc, sdkmath.NewInt(safeUcdaoLiqGranterFundIslm).MulRaw(1e18))).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		convertMsg := vestingtypes.NewMsgConvertIntoVestingAccount(
+			granterAcc, helperAcc, startTime, lockupPeriods, vestingPeriods, false, false, emptyValAddr,
+		)
+		cosmosGasLimit := uint64(400_000)
+		resVest, err := s.factory.CommitCosmosTx(granterPriv, commonfactory.CosmosTxArgs{
+			Msgs: []sdk.Msg{convertMsg}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resVest.IsOK()).To(BeTrue(), resVest.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		resLiq, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
+			Msgs: []sdk.Msg{liquidvestingtypes.NewMsgLiquidate(helperAcc, helperAcc, coinVesting)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resLiq.IsOK()).To(BeTrue(), resLiq.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		liquidDenom := liquidvestingtypes.DenomBaseNameFromID(0)
+		helperLiquidBank, err := s.grpcHandler.GetBalance(helperAcc, liquidDenom)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(helperLiquidBank.Balance.Amount).To(Equal(coinVesting.Amount),
+			"liquid vesting token balance should match vested ISLM liquidated")
+		fundUcdaoCoins := sdk.NewCoins(
+			sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoLiqFundUcdaoBaseIslm).MulRaw(1e18)),
+			sdk.NewCoin(liquidDenom, sdkmath.NewInt(safeUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)),
+		)
+		resFund, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
+			Msgs: []sdk.Msg{ucdaotypes.NewMsgFund(fundUcdaoCoins, helperAcc)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resFund.IsOK()).To(BeTrue(), resFund.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		resXfer, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
+			Msgs: []sdk.Msg{ucdaotypes.NewMsgTransferOwnershipWithAmount(helperAcc, safeWalletAccAddr, fundUcdaoCoins)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resXfer.IsOK()).To(BeTrue(), resXfer.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		ucdaoClient := s.network.GetUCDAOClient()
+		safeUcdaoFunded, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{Address: safeWalletAccAddr.String()})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(safeUcdaoFunded.Balances.AmountOf(utils.BaseDenom)).To(Equal(sdkmath.NewInt(safeUcdaoLiqFundUcdaoBaseIslm).MulRaw(1e18)))
+		Expect(safeUcdaoFunded.Balances.AmountOf(liquidDenom)).To(Equal(sdkmath.NewInt(safeUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)))
+
+		totalUcdaoIslmEquivBefore := safeUcdaoFunded.Balances.AmountOf(utils.BaseDenom).Add(safeUcdaoFunded.Balances.AmountOf(liquidDenom))
+		ownerOneBankBeforeSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, _, err = s.factory.CallContractAndCheckLogs(
+			safeOwnerOne.Priv,
+			approveTxArgs,
+			approveArgs,
+			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval}, ExpPass: true},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		safeNonce1, err := readSafeNonce(s, gnosisSafe, safeWalletAddr, safeOwnerOne.Priv)
+		Expect(err).ToNot(HaveOccurred())
+		execOk, _, err := safeExecMintHaqqByApplication(s, gnosisSafe, safeWalletAddr, safeOwnerOne.Priv, safeOwnerOne.Addr, precompileAddr, mintByAppCallData, safeNonce1)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(execOk).To(BeTrue())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		expectedBaseRemaining := sdkmath.NewInt(safeUcdaoLiqExpectedUcdaoBaseIslm).MulRaw(1e18)
+		safeUcdaoAfter, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{Address: safeWalletAccAddr.String()})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom)).To(Equal(expectedBaseRemaining),
+			"after 500 ISLM burn from 300 ISLM + 300 liquid→ISLM, ucDAO should hold 100 ISLM")
+		Expect(safeUcdaoAfter.Balances.AmountOf(liquidDenom).IsZero()).To(BeTrue(),
+			"liquid vesting in ucDAO should be fully redeemed during mint")
+
+		totalUcdaoIslmEquivAfter := safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom).Add(safeUcdaoAfter.Balances.AmountOf(liquidDenom))
+		Expect(totalUcdaoIslmEquivBefore.Sub(totalUcdaoIslmEquivAfter)).To(Equal(waitlistAppIslm),
+			"ucDAO should lose ISLM-equivalent value equal to the application (ISLM + liquid, 1:1)")
+
+		ownerOneBankAfterSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		ownerOneIslmSpentOnMint := ownerOneBankBeforeSuccessMint.Balance.Amount.Sub(ownerOneBankAfterSuccessMint.Balance.Amount)
+		oneIslm := sdkmath.NewInt(1).MulRaw(1e18)
+		Expect(ownerOneIslmSpentOnMint.LT(oneIslm)).To(BeTrue(),
+			"Safe owner bank ISLM spent on successful exec should be under 1 ISLM (gas only)")
+
+		safeBankAfterMint, err := s.grpcHandler.GetBalance(safeWalletAccAddr, utils.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(safeBankAfterMint.Balance.Amount).To(Equal(expectedSafeBank))
+
+		safeHaqq, err := s.grpcHandler.GetBalance(safeWalletAccAddr, ethiqtypes.BaseDenom)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(safeHaqq.Balance.Amount.IsPositive()).To(BeTrue())
 
 		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeTrue())
 	})
