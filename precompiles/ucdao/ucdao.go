@@ -9,11 +9,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 )
+
+var _ vm.PrecompiledContract = &Precompile{}
 
 //go:embed abi.json
 var f embed.FS
@@ -83,12 +86,25 @@ func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 		stateDB,
 		func() ([]byte, error) {
 			switch method.Name {
+			// Authorization Methods:
+			case authorization.ApproveMethod:
+				bz, err = p.Approve(ctx, evm.Origin, stateDB, method, args)
+			case authorization.RevokeMethod:
+				bz, err = p.Revoke(ctx, evm.Origin, stateDB, method, args)
+			case authorization.IncreaseAllowanceMethod:
+				bz, err = p.IncreaseAllowance(ctx, evm.Origin, stateDB, method, args)
+			case authorization.DecreaseAllowanceMethod:
+				bz, err = p.DecreaseAllowance(ctx, evm.Origin, stateDB, method, args)
+			// Txs
 			case ConvertToHaqqMethod:
 				bz, err = p.ConvertToHaqq(ctx, evm.Origin, contract, stateDB, method, args)
 			case TransferOwnershipMethod:
 				bz, err = p.TransferOwnership(ctx, evm.Origin, contract, stateDB, method, args)
 			case TransferOwnershipWithAmountMethod:
 				bz, err = p.TransferOwnershipWithAmount(ctx, evm.Origin, contract, stateDB, method, args)
+			// Queries
+			case authorization.AllowanceMethod:
+				bz, err = p.Allowance(ctx, method, contract, args)
 			default:
 				return nil, fmt.Errorf(cmn.ErrUnknownMethod, method.Name)
 			}

@@ -18,8 +18,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/testutil"
-	"github.com/haqq-network/haqq/precompiles/ucdao"
 	safecontracts "github.com/haqq-network/haqq/precompiles/testutil/contracts/safe"
+	"github.com/haqq-network/haqq/precompiles/ucdao"
 	commonfactory "github.com/haqq-network/haqq/testutil/integration/common/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
@@ -27,11 +27,11 @@ import (
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
+	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
-	evmtypes "github.com/haqq-network/haqq/x/evm/types"
-	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 )
 
 func TestUCDAOSafeIntegrationSuite(t *testing.T) {

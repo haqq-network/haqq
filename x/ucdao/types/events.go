@@ -3,8 +3,9 @@ package types
 const (
 	EventTypeConvertToEthiqExecuted = "convert_to_ethiq_executed"
 
-	AttributeKeyIslmSpent   = "aISLM_spent"
-	AttributeKeyEthiqAmount = "ethiq_amount"
-	AttributeKeyReceiver    = "receiver"
-	AttributeKeySender      = "sender"
+	AttributeKeyIslmSpent      = "aISLM_spent"
+	AttributeKeyEthiqAmount    = "ethiq_amount"
+	AttributeKeyReceiver       = "receiver"
+	AttributeKeySender         = "sender"
+	AttributeKeyRedeemedAmount = "redeemed_liquid_amount"
 )
