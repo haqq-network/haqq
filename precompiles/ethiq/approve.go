@@ -65,8 +65,33 @@ func (p Precompile) ApproveApplicationID(
 		}
 	}
 
+	appID := applicationID.Uint64()
+	appIDs := []uint64{appID}
+	// Application-based authz is keyed by message type URL, so we merge with an existing grant
+	// instead of overwriting it when approveApplicationID is called multiple times.
+	if existingAuthz, _ := p.AuthzKeeper.GetAuthorization(ctx, grantee.Bytes(), origin.Bytes(), MsgMintHaqqByApplicationMsgURL); existingAuthz != nil {
+		existingMintByAppAuthz, ok := existingAuthz.(*ethiqtypes.MintHaqqByApplicationIDAuthorization)
+		if !ok {
+			return nil, errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *ethiqtypes.MintHaqqByApplicationIDAuthorization, received: %T", existingAuthz)
+		}
+
+		appIDs = make([]uint64, 0, len(existingMintByAppAuthz.ApplicationsList)+1)
+		appIDs = append(appIDs, existingMintByAppAuthz.ApplicationsList...)
+
+		found := false
+		for _, existingAppID := range existingMintByAppAuthz.ApplicationsList {
+			if existingAppID == appID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			appIDs = append(appIDs, appID)
+		}
+	}
+
 	authz := &ethiqtypes.MintHaqqByApplicationIDAuthorization{
-		ApplicationsList: []uint64{applicationID.Uint64()},
+		ApplicationsList: appIDs,
 	}
 
 	if err = authz.ValidateBasic(); err != nil {

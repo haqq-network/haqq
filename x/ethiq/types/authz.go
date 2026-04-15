@@ -105,25 +105,37 @@ func (m *MintHaqqByApplicationIDAuthorization) Accept(_ context.Context, msg sdk
 		return authz.AcceptResponse{}, fmt.Errorf("expected %T, got %T", &MsgMintHaqqByApplication{}, msg)
 	}
 
-	// Check if application ID is in allow list (if allow list is not empty)
-	if len(m.ApplicationsList) > 0 {
-		appID := mintMsg.ApplicationId
-		allowed := false
-		for _, allowedID := range m.ApplicationsList {
-			if allowedID == appID {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
-			return authz.AcceptResponse{Accept: false}, fmt.Errorf("application ID %d is not in allow list", appID)
-		}
+	appID := mintMsg.ApplicationId
+	if len(m.ApplicationsList) == 0 {
+		return authz.AcceptResponse{Accept: false}, fmt.Errorf("application ID %d is not in allow list", appID)
 	}
 
-	// For application-based authorization, we delete after use since the whole application amount is spent
+	remaining := make([]uint64, 0, len(m.ApplicationsList))
+	allowed := false
+	for _, allowedID := range m.ApplicationsList {
+		if allowedID == appID {
+			allowed = true
+			continue
+		}
+		remaining = append(remaining, allowedID)
+	}
+	if !allowed {
+		return authz.AcceptResponse{Accept: false}, fmt.Errorf("application ID %d is not in allow list", appID)
+	}
+
+	if len(remaining) == 0 {
+		return authz.AcceptResponse{
+			Accept: true,
+			Delete: true,
+		}, nil
+	}
+
 	return authz.AcceptResponse{
 		Accept: true,
-		Delete: true,
+		Updated: &MintHaqqByApplicationIDAuthorization{
+			ApplicationsList: remaining,
+		},
+		Delete: false,
 	}, nil
 }
 
