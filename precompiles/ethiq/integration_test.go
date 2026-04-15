@@ -3049,6 +3049,95 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 	})
 
+	createSafeWallet := func() (common.Address, sdk.AccAddress) {
+		safeSetupData, err := gnosisSafe.ABI.Pack(
+			"setup",
+			[]common.Address{safeOwnerOne.Addr, safeOwnerTwo.Addr},
+			big.NewInt(1),
+			common.Address{},
+			[]byte{},
+			common.Address{},
+			common.Address{},
+			big.NewInt(0),
+			common.Address{},
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		createProxyRes, err := s.factory.ExecuteContractCall(
+			safeOwnerOne.Priv,
+			evmtypes.EvmTxArgs{To: &proxyFactoryAddr},
+			factory.CallArgs{ContractABI: proxyFactory.ABI, MethodName: "createProxy", Args: []interface{}{gnosisSafeAddr, safeSetupData}},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		ethRes, err := s.factory.GetEvmTransactionResponseFromTxResult(createProxyRes)
+		Expect(err).ToNot(HaveOccurred())
+
+		proxyCreationEvent := proxyFactory.ABI.Events["ProxyCreation"]
+		var proxyCreationLog *evmtypes.Log
+		for i := range ethRes.Logs {
+			l := ethRes.Logs[i]
+			if len(l.Topics) > 0 && l.Topics[0] == proxyCreationEvent.ID.String() && common.HexToAddress(l.Address) == proxyFactoryAddr {
+				proxyCreationLog = l
+				break
+			}
+		}
+		Expect(proxyCreationLog).ToNot(BeNil())
+
+		eventInputs, err := proxyFactory.ABI.Events["ProxyCreation"].Inputs.Unpack(proxyCreationLog.Data)
+		Expect(err).ToNot(HaveOccurred())
+		safeWalletAddr, ok := eventInputs[0].(common.Address)
+		Expect(ok).To(BeTrue())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+		return safeWalletAddr, sdk.AccAddress(safeWalletAddr.Bytes())
+	}
+
+	fundSafeBankFromOwners := func(safeWalletAccAddr sdk.AccAddress, amountPerOwner sdkmath.Int) {
+		coinsTransfer := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, amountPerOwner))
+		ctx := s.network.GetContext()
+		Expect(s.network.App.BankKeeper.SendCoins(ctx, safeOwnerOne.AccAddr, safeWalletAccAddr, coinsTransfer)).ToNot(HaveOccurred())
+		Expect(s.network.App.BankKeeper.SendCoins(ctx, safeOwnerTwo.AccAddr, safeWalletAccAddr, coinsTransfer)).ToNot(HaveOccurred())
+	}
+
+	prepareHelperWithLiquidVesting := func() (sdk.AccAddress, cryptotypes.PrivKey, string, sdkmath.Int) {
+		helperAddr, helperPriv := testutiltx.NewAddrKey()
+		helperAcc := sdk.AccAddress(helperAddr.Bytes())
+		Expect(s.network.FundAccountWithBaseDenom(helperAcc, sdkmath.NewInt(safeUcdaoLiqHelperInitialIslm).MulRaw(1e18))).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		liquidationCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoLiqVestingLiquidateIslm).MulRaw(1e18))
+		startTime := s.network.GetContext().BlockTime()
+		oneYearSec := int64(365 * 24 * 3600)
+		lockupPeriods := sdkvesting.Periods{{Length: oneYearSec, Amount: sdk.NewCoins(liquidationCoin)}}
+		vestingPeriods := sdkvesting.Periods{{Length: 1, Amount: sdk.NewCoins(liquidationCoin)}}
+		var emptyValAddr sdk.ValAddress
+
+		granterAddr, granterPriv := testutiltx.NewAddrKey()
+		granterAcc := sdk.AccAddress(granterAddr.Bytes())
+		Expect(s.network.FundAccountWithBaseDenom(granterAcc, sdkmath.NewInt(safeUcdaoLiqGranterFundIslm).MulRaw(1e18))).ToNot(HaveOccurred())
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		convertMsg := vestingtypes.NewMsgConvertIntoVestingAccount(
+			granterAcc, helperAcc, startTime, lockupPeriods, vestingPeriods, false, false, emptyValAddr,
+		)
+		cosmosGasLimit := uint64(400_000)
+		resVest, err := s.factory.CommitCosmosTx(granterPriv, commonfactory.CosmosTxArgs{
+			Msgs: []sdk.Msg{convertMsg}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resVest.IsOK()).To(BeTrue(), resVest.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		resLiq, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
+			Msgs: []sdk.Msg{liquidvestingtypes.NewMsgLiquidate(helperAcc, helperAcc, liquidationCoin)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resLiq.IsOK()).To(BeTrue(), resLiq.Log)
+		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+
+		liquidDenom := liquidvestingtypes.DenomBaseNameFromID(0)
+		return helperAcc, helperPriv, liquidDenom, liquidationCoin.Amount
+	}
+
 	It("should move liquid-backed ucDAO position to Safe and burn across ISLM + liquid", func() {
 		safeSetupData, err := gnosisSafe.ABI.Pack(
 			"setup",
@@ -3143,50 +3232,16 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeFalse())
 
-		helperAddr, helperPriv := testutiltx.NewAddrKey()
-		helperAcc := sdk.AccAddress(helperAddr.Bytes())
-		Expect(s.network.FundAccountWithBaseDenom(helperAcc, sdkmath.NewInt(safeUcdaoLiqHelperInitialIslm).MulRaw(1e18))).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		coinVesting := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoLiqVestingLiquidateIslm).MulRaw(1e18))
-		startTime := s.network.GetContext().BlockTime()
-		oneYearSec := int64(365 * 24 * 3600)
-		lockupPeriods := sdkvesting.Periods{{Length: oneYearSec, Amount: sdk.NewCoins(coinVesting)}}
-		vestingPeriods := sdkvesting.Periods{{Length: 1, Amount: sdk.NewCoins(coinVesting)}}
-		var emptyValAddr sdk.ValAddress
-
-		granterAddr, granterPriv := testutiltx.NewAddrKey()
-		granterAcc := sdk.AccAddress(granterAddr.Bytes())
-		Expect(s.network.FundAccountWithBaseDenom(granterAcc, sdkmath.NewInt(safeUcdaoLiqGranterFundIslm).MulRaw(1e18))).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		convertMsg := vestingtypes.NewMsgConvertIntoVestingAccount(
-			granterAcc, helperAcc, startTime, lockupPeriods, vestingPeriods, false, false, emptyValAddr,
-		)
-		cosmosGasLimit := uint64(400_000)
-		resVest, err := s.factory.CommitCosmosTx(granterPriv, commonfactory.CosmosTxArgs{
-			Msgs: []sdk.Msg{convertMsg}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resVest.IsOK()).To(BeTrue(), resVest.Log)
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		resLiq, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
-			Msgs: []sdk.Msg{liquidvestingtypes.NewMsgLiquidate(helperAcc, helperAcc, coinVesting)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resLiq.IsOK()).To(BeTrue(), resLiq.Log)
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		liquidDenom := liquidvestingtypes.DenomBaseNameFromID(0)
+		helperAcc, helperPriv, liquidDenom, liquidatedAmount := prepareHelperWithLiquidVesting()
 		helperLiquidBank, err := s.grpcHandler.GetBalance(helperAcc, liquidDenom)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(helperLiquidBank.Balance.Amount).To(Equal(coinVesting.Amount),
+		Expect(helperLiquidBank.Balance.Amount).To(Equal(liquidatedAmount),
 			"liquid vesting token balance should match vested ISLM liquidated")
 		fundUcdaoCoins := sdk.NewCoins(
 			sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoLiqFundUcdaoBaseIslm).MulRaw(1e18)),
 			sdk.NewCoin(liquidDenom, sdkmath.NewInt(safeUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)),
 		)
+		cosmosGasLimit := uint64(400_000)
 		resFund, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
 			Msgs: []sdk.Msg{ucdaotypes.NewMsgFund(fundUcdaoCoins, helperAcc)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
 		})
@@ -3273,46 +3328,8 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 	})
 
 	It("should execute application mint and free mint in one Safe batch from Safe balances", func() {
-		safeSetupData, err := gnosisSafe.ABI.Pack(
-			"setup",
-			[]common.Address{safeOwnerOne.Addr, safeOwnerTwo.Addr},
-			big.NewInt(1),
-			common.Address{},
-			[]byte{},
-			common.Address{},
-			common.Address{},
-			big.NewInt(0),
-			common.Address{},
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		createProxyRes, err := s.factory.ExecuteContractCall(
-			safeOwnerOne.Priv,
-			evmtypes.EvmTxArgs{To: &proxyFactoryAddr},
-			factory.CallArgs{ContractABI: proxyFactory.ABI, MethodName: "createProxy", Args: []interface{}{gnosisSafeAddr, safeSetupData}},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		ethRes, err := s.factory.GetEvmTransactionResponseFromTxResult(createProxyRes)
-		Expect(err).ToNot(HaveOccurred())
-
-		proxyCreationEvent := proxyFactory.ABI.Events["ProxyCreation"]
-		var proxyCreationLog *evmtypes.Log
-		for i := range ethRes.Logs {
-			l := ethRes.Logs[i]
-			if len(l.Topics) > 0 && l.Topics[0] == proxyCreationEvent.ID.String() && common.HexToAddress(l.Address) == proxyFactoryAddr {
-				proxyCreationLog = l
-				break
-			}
-		}
-		Expect(proxyCreationLog).ToNot(BeNil())
-
-		eventInputs, err := proxyFactory.ABI.Events["ProxyCreation"].Inputs.Unpack(proxyCreationLog.Data)
-		Expect(err).ToNot(HaveOccurred())
-		safeWalletAddr, ok := eventInputs[0].(common.Address)
-		Expect(ok).To(BeTrue())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		safeWalletAccAddr := sdk.AccAddress(safeWalletAddr.Bytes())
+		var err error
+		safeWalletAddr, safeWalletAccAddr := createSafeWallet()
 		transferAmt := sdkmath.NewInt(safeUcdaoLiqFundUcdaoBaseIslm).MulRaw(1e18)
 		coinsTransfer := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, transferAmt))
 		ctx := s.network.GetContext()
@@ -3334,42 +3351,7 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		waitlistAppID, restoreWaitlist := ethiqtypes.PushRegisteredApplicationForIntegrationTest(waitlistItem)
 		defer restoreWaitlist()
 
-		helperAddr, helperPriv := testutiltx.NewAddrKey()
-		helperAcc := sdk.AccAddress(helperAddr.Bytes())
-		Expect(s.network.FundAccountWithBaseDenom(helperAcc, sdkmath.NewInt(safeUcdaoLiqHelperInitialIslm).MulRaw(1e18))).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		coinVesting := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoLiqVestingLiquidateIslm).MulRaw(1e18))
-		startTime := s.network.GetContext().BlockTime()
-		oneYearSec := int64(365 * 24 * 3600)
-		lockupPeriods := sdkvesting.Periods{{Length: oneYearSec, Amount: sdk.NewCoins(coinVesting)}}
-		vestingPeriods := sdkvesting.Periods{{Length: 1, Amount: sdk.NewCoins(coinVesting)}}
-		var emptyValAddr sdk.ValAddress
-
-		granterAddr, granterPriv := testutiltx.NewAddrKey()
-		granterAcc := sdk.AccAddress(granterAddr.Bytes())
-		Expect(s.network.FundAccountWithBaseDenom(granterAcc, sdkmath.NewInt(safeUcdaoLiqGranterFundIslm).MulRaw(1e18))).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		convertMsg := vestingtypes.NewMsgConvertIntoVestingAccount(
-			granterAcc, helperAcc, startTime, lockupPeriods, vestingPeriods, false, false, emptyValAddr,
-		)
-		cosmosGasLimit := uint64(400_000)
-		resVest, err := s.factory.CommitCosmosTx(granterPriv, commonfactory.CosmosTxArgs{
-			Msgs: []sdk.Msg{convertMsg}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resVest.IsOK()).To(BeTrue(), resVest.Log)
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		resLiq, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
-			Msgs: []sdk.Msg{liquidvestingtypes.NewMsgLiquidate(helperAcc, helperAcc, coinVesting)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resLiq.IsOK()).To(BeTrue(), resLiq.Log)
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		liquidDenom := liquidvestingtypes.DenomBaseNameFromID(0)
+		helperAcc, _, liquidDenom, _ := prepareHelperWithLiquidVesting()
 		liquidTransferToSafe := sdk.NewCoins(
 			sdk.NewCoin(liquidDenom, sdkmath.NewInt(safeUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)),
 		)
@@ -3494,51 +3476,10 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 	})
 
 	It("should execute two waitlist mints in one Safe batch transaction", func() {
-		safeSetupData, err := gnosisSafe.ABI.Pack(
-			"setup",
-			[]common.Address{safeOwnerOne.Addr, safeOwnerTwo.Addr},
-			big.NewInt(1),
-			common.Address{},
-			[]byte{},
-			common.Address{},
-			common.Address{},
-			big.NewInt(0),
-			common.Address{},
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		createProxyRes, err := s.factory.ExecuteContractCall(
-			safeOwnerOne.Priv,
-			evmtypes.EvmTxArgs{To: &proxyFactoryAddr},
-			factory.CallArgs{ContractABI: proxyFactory.ABI, MethodName: "createProxy", Args: []interface{}{gnosisSafeAddr, safeSetupData}},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		ethRes, err := s.factory.GetEvmTransactionResponseFromTxResult(createProxyRes)
-		Expect(err).ToNot(HaveOccurred())
-
-		proxyCreationEvent := proxyFactory.ABI.Events["ProxyCreation"]
-		var proxyCreationLog *evmtypes.Log
-		for i := range ethRes.Logs {
-			l := ethRes.Logs[i]
-			if len(l.Topics) > 0 && l.Topics[0] == proxyCreationEvent.ID.String() && common.HexToAddress(l.Address) == proxyFactoryAddr {
-				proxyCreationLog = l
-				break
-			}
-		}
-		Expect(proxyCreationLog).ToNot(BeNil())
-
-		eventInputs, err := proxyFactory.ABI.Events["ProxyCreation"].Inputs.Unpack(proxyCreationLog.Data)
-		Expect(err).ToNot(HaveOccurred())
-		safeWalletAddr, ok := eventInputs[0].(common.Address)
-		Expect(ok).To(BeTrue())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		safeWalletAccAddr := sdk.AccAddress(safeWalletAddr.Bytes())
+		var err error
+		safeWalletAddr, safeWalletAccAddr := createSafeWallet()
 		transferAmt := sdkmath.NewInt(safeUcdaoLiqTransferIslm).MulRaw(1e18)
-		coinsTransfer := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, transferAmt))
-		ctx := s.network.GetContext()
-		Expect(s.network.App.BankKeeper.SendCoins(ctx, safeOwnerOne.AccAddr, safeWalletAccAddr, coinsTransfer)).ToNot(HaveOccurred())
-		Expect(s.network.App.BankKeeper.SendCoins(ctx, safeOwnerTwo.AccAddr, safeWalletAccAddr, coinsTransfer)).ToNot(HaveOccurred())
+		fundSafeBankFromOwners(safeWalletAccAddr, transferAmt)
 
 		expectedSafeBank := sdkmath.NewInt(safeUcdaoLiqSafeBankIslm).MulRaw(1e18)
 
@@ -3590,46 +3531,12 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		approveTxArgs := evmtypes.EvmTxArgs{To: &precompileAddr}
 		approveTxArgs.GasLimit = 500_000
 
-		helperAddr, helperPriv := testutiltx.NewAddrKey()
-		helperAcc := sdk.AccAddress(helperAddr.Bytes())
-		Expect(s.network.FundAccountWithBaseDenom(helperAcc, sdkmath.NewInt(safeUcdaoLiqHelperInitialIslm).MulRaw(1e18))).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		coinVesting := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoLiqVestingLiquidateIslm).MulRaw(1e18))
-		startTime := s.network.GetContext().BlockTime()
-		oneYearSec := int64(365 * 24 * 3600)
-		lockupPeriods := sdkvesting.Periods{{Length: oneYearSec, Amount: sdk.NewCoins(coinVesting)}}
-		vestingPeriods := sdkvesting.Periods{{Length: 1, Amount: sdk.NewCoins(coinVesting)}}
-		var emptyValAddr sdk.ValAddress
-
-		granterAddr, granterPriv := testutiltx.NewAddrKey()
-		granterAcc := sdk.AccAddress(granterAddr.Bytes())
-		Expect(s.network.FundAccountWithBaseDenom(granterAcc, sdkmath.NewInt(safeUcdaoLiqGranterFundIslm).MulRaw(1e18))).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		convertMsg := vestingtypes.NewMsgConvertIntoVestingAccount(
-			granterAcc, helperAcc, startTime, lockupPeriods, vestingPeriods, false, false, emptyValAddr,
-		)
-		cosmosGasLimit := uint64(400_000)
-		resVest, err := s.factory.CommitCosmosTx(granterPriv, commonfactory.CosmosTxArgs{
-			Msgs: []sdk.Msg{convertMsg}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resVest.IsOK()).To(BeTrue(), resVest.Log)
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		resLiq, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
-			Msgs: []sdk.Msg{liquidvestingtypes.NewMsgLiquidate(helperAcc, helperAcc, coinVesting)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resLiq.IsOK()).To(BeTrue(), resLiq.Log)
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		liquidDenom := liquidvestingtypes.DenomBaseNameFromID(0)
+		helperAcc, helperPriv, liquidDenom, _ := prepareHelperWithLiquidVesting()
 		fundUcdaoCoins := sdk.NewCoins(
 			sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoLiqFundUcdaoBaseIslm).MulRaw(1e18)),
 			sdk.NewCoin(liquidDenom, sdkmath.NewInt(safeUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)),
 		)
+		cosmosGasLimit := uint64(400_000)
 		resFund, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
 			Msgs: []sdk.Msg{ucdaotypes.NewMsgFund(fundUcdaoCoins, helperAcc)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
 		})
@@ -3749,46 +3656,8 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 	})
 
 	It("should revert whole Safe batch when second call is not approved", func() {
-		safeSetupData, err := gnosisSafe.ABI.Pack(
-			"setup",
-			[]common.Address{safeOwnerOne.Addr, safeOwnerTwo.Addr},
-			big.NewInt(1),
-			common.Address{},
-			[]byte{},
-			common.Address{},
-			common.Address{},
-			big.NewInt(0),
-			common.Address{},
-		)
-		Expect(err).ToNot(HaveOccurred())
-
-		createProxyRes, err := s.factory.ExecuteContractCall(
-			safeOwnerOne.Priv,
-			evmtypes.EvmTxArgs{To: &proxyFactoryAddr},
-			factory.CallArgs{ContractABI: proxyFactory.ABI, MethodName: "createProxy", Args: []interface{}{gnosisSafeAddr, safeSetupData}},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		ethRes, err := s.factory.GetEvmTransactionResponseFromTxResult(createProxyRes)
-		Expect(err).ToNot(HaveOccurred())
-
-		proxyCreationEvent := proxyFactory.ABI.Events["ProxyCreation"]
-		var proxyCreationLog *evmtypes.Log
-		for i := range ethRes.Logs {
-			l := ethRes.Logs[i]
-			if len(l.Topics) > 0 && l.Topics[0] == proxyCreationEvent.ID.String() && common.HexToAddress(l.Address) == proxyFactoryAddr {
-				proxyCreationLog = l
-				break
-			}
-		}
-		Expect(proxyCreationLog).ToNot(BeNil())
-
-		eventInputs, err := proxyFactory.ABI.Events["ProxyCreation"].Inputs.Unpack(proxyCreationLog.Data)
-		Expect(err).ToNot(HaveOccurred())
-		safeWalletAddr, ok := eventInputs[0].(common.Address)
-		Expect(ok).To(BeTrue())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		safeWalletAccAddr := sdk.AccAddress(safeWalletAddr.Bytes())
+		var err error
+		safeWalletAddr, safeWalletAccAddr := createSafeWallet()
 		transferAmt := sdkmath.NewInt(safeUcdaoLiqFundUcdaoBaseIslm).MulRaw(1e18)
 		coinsTransfer := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, transferAmt))
 		ctx := s.network.GetContext()
@@ -3810,42 +3679,7 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		waitlistAppID, restoreWaitlist := ethiqtypes.PushRegisteredApplicationForIntegrationTest(waitlistItem)
 		defer restoreWaitlist()
 
-		helperAddr, helperPriv := testutiltx.NewAddrKey()
-		helperAcc := sdk.AccAddress(helperAddr.Bytes())
-		Expect(s.network.FundAccountWithBaseDenom(helperAcc, sdkmath.NewInt(safeUcdaoLiqHelperInitialIslm).MulRaw(1e18))).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		coinVesting := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoLiqVestingLiquidateIslm).MulRaw(1e18))
-		startTime := s.network.GetContext().BlockTime()
-		oneYearSec := int64(365 * 24 * 3600)
-		lockupPeriods := sdkvesting.Periods{{Length: oneYearSec, Amount: sdk.NewCoins(coinVesting)}}
-		vestingPeriods := sdkvesting.Periods{{Length: 1, Amount: sdk.NewCoins(coinVesting)}}
-		var emptyValAddr sdk.ValAddress
-
-		granterAddr, granterPriv := testutiltx.NewAddrKey()
-		granterAcc := sdk.AccAddress(granterAddr.Bytes())
-		Expect(s.network.FundAccountWithBaseDenom(granterAcc, sdkmath.NewInt(safeUcdaoLiqGranterFundIslm).MulRaw(1e18))).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		convertMsg := vestingtypes.NewMsgConvertIntoVestingAccount(
-			granterAcc, helperAcc, startTime, lockupPeriods, vestingPeriods, false, false, emptyValAddr,
-		)
-		cosmosGasLimit := uint64(400_000)
-		resVest, err := s.factory.CommitCosmosTx(granterPriv, commonfactory.CosmosTxArgs{
-			Msgs: []sdk.Msg{convertMsg}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resVest.IsOK()).To(BeTrue(), resVest.Log)
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		resLiq, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
-			Msgs: []sdk.Msg{liquidvestingtypes.NewMsgLiquidate(helperAcc, helperAcc, coinVesting)}, GasPrice: &gasPrice, Gas: &cosmosGasLimit,
-		})
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resLiq.IsOK()).To(BeTrue(), resLiq.Log)
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		liquidDenom := liquidvestingtypes.DenomBaseNameFromID(0)
+		helperAcc, _, liquidDenom, _ := prepareHelperWithLiquidVesting()
 		liquidTransferToSafe := sdk.NewCoins(
 			sdk.NewCoin(liquidDenom, sdkmath.NewInt(safeUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)),
 		)
