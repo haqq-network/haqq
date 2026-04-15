@@ -3,6 +3,7 @@ package ethiq
 import (
 	"fmt"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,6 +30,25 @@ var MintHaqqMsgURL = sdk.MsgTypeURL(&ethiqtypes.MsgMintHaqq{})
 
 // MsgMintHaqqByApplicationMsgURL defines the authorization type for MsgMintHaqqByApplication
 var MsgMintHaqqByApplicationMsgURL = sdk.MsgTypeURL(&ethiqtypes.MsgMintHaqqByApplication{})
+
+// mirrorBankBaseDeltaIntoStateDB syncs the debited account's aISLM (EVM gas denom) bank delta into the EVM journal when
+// the precompile is invoked from another contract (caller != origin). baseBefore must be read immediately before the
+// keeper/msg work. Delta matches bank movements from redeem-liquid-then-burn (not necessarily the nominal msg amount).
+func (p *Precompile) mirrorBankBaseDeltaIntoStateDB(ctx sdk.Context, isCallerOrigin bool, debitAccAddr sdk.AccAddress, baseBefore sdkmath.Int) {
+	if isCallerOrigin {
+		return
+	}
+	netBaseDelta := baseBefore.Sub(p.ethiqKeeper.BaseDenomBankBalance(ctx, debitAccAddr))
+	if netBaseDelta.IsZero() {
+		return
+	}
+	debitHexAddr := common.BytesToAddress(debitAccAddr.Bytes())
+	if netBaseDelta.IsNegative() {
+		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(debitHexAddr, netBaseDelta.Neg().BigInt(), cmn.Add))
+		return
+	}
+	p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(debitHexAddr, netBaseDelta.BigInt(), cmn.Sub))
+}
 
 func (p *Precompile) MintHaqq(
 	ctx sdk.Context,
@@ -73,6 +93,9 @@ func (p *Precompile) MintHaqq(
 		return nil, err
 	}
 
+	fromAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
+	baseBefore := p.ethiqKeeper.BaseDenomBankBalance(ctx, fromAccAddr)
+
 	// Execute the transaction using the message server
 	msgSrv := ethiqkeeper.NewMsgServerImpl(p.ethiqKeeper)
 	res, err := msgSrv.MintHaqq(ctx, msg)
@@ -80,17 +103,7 @@ func (p *Precompile) MintHaqq(
 		return nil, err
 	}
 
-	if !isCallerOrigin {
-		// get the from address from the message (funds debited in bank on this account)
-		fromAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
-		fromHexAddr := common.BytesToAddress(fromAccAddr)
-
-		// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB
-		// when calling the precompile from a smart contract
-		// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
-		// Use *Precompile receiver so journalEntries are stored on the same instance Run uses for AddJournalEntries (see staking.Delegate).
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(fromHexAddr, msg.IslmAmount.BigInt(), cmn.Sub))
-	}
+	p.mirrorBankBaseDeltaIntoStateDB(ctx, isCallerOrigin, fromAccAddr, baseBefore)
 
 	if err = EmitMintHaqqEventWithAmount(
 		ctx,
@@ -150,6 +163,18 @@ func (p *Precompile) MintHaqqByApplication(
 		return nil, err
 	}
 
+	application, err := ethiqtypes.GetApplicationByID(msg.ApplicationId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Same debit account as BurnIslmForHaqqByApplicationID (owner bank vs UCDAO escrow).
+	debitAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
+	if application.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO {
+		debitAccAddr = ethiqkeeper.GetUCDAOEscrowAddress(debitAccAddr)
+	}
+	baseBefore := p.ethiqKeeper.BaseDenomBankBalance(ctx, debitAccAddr)
+
 	// Execute the transaction using the message server
 	msgSrv := ethiqkeeper.NewMsgServerImpl(p.ethiqKeeper)
 	res, err := msgSrv.MintHaqqByApplication(ctx, msg)
@@ -159,21 +184,7 @@ func (p *Precompile) MintHaqqByApplication(
 
 	receiver := common.BytesToAddress(sdk.MustAccAddressFromBech32(res.ToAddress).Bytes())
 
-	if !isCallerOrigin {
-		application, _ := ethiqtypes.GetApplicationByID(msg.ApplicationId)
-
-		// get the source address from the message
-		originAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
-		if application.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO {
-			originAccAddr = ethiqkeeper.GetUCDAOEscrowAddress(originAccAddr)
-		}
-		originHexAddr := common.BytesToAddress(originAccAddr)
-		// at this point we've already checked on error during execution
-		// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB
-		// when calling the precompile from a smart contract
-		// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(originHexAddr, application.BurnAmount.Amount.BigInt(), cmn.Sub))
-	}
+	p.mirrorBankBaseDeltaIntoStateDB(ctx, isCallerOrigin, debitAccAddr, baseBefore)
 
 	if err = EmitMintHaqqEventWithApplicationID(
 		ctx,
