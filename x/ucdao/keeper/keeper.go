@@ -182,11 +182,14 @@ func (k BaseKeeper) ConvertToHaqq(ctx sdk.Context, sender, receiver sdk.AccAddre
 	senderEscrowAddr := types.GetEscrowAddress(sender)
 
 	// redeem all aLIQUID balances from liquid vesting module
+	redeemedLiquidAmount := sdkmath.ZeroInt()
 	for _, balance := range liquidBalances {
 		// redeem balance from liquid vesting module
 		if err := k.lvk.Redeem(ctx, senderEscrowAddr, senderEscrowAddr, balance); err != nil {
 			return sdk.Coin{}, errorsmod.Wrap(err, "failed to redeem liquid coins")
 		}
+
+		redeemedLiquidAmount = redeemedLiquidAmount.Add(balance.Amount)
 
 		// track internal module total balances
 		// add redeemed aISLM
@@ -218,6 +221,7 @@ func (k BaseKeeper) ConvertToHaqq(ctx sdk.Context, sender, receiver sdk.AccAddre
 			sdk.NewAttribute(types.AttributeKeyReceiver, receiver.String()),
 			sdk.NewAttribute(types.AttributeKeyIslmSpent, islmAmount.String()),
 			sdk.NewAttribute(types.AttributeKeyEthiqAmount, mintedHaqqAmt.String()),
+			sdk.NewAttribute(types.AttributeKeyRedeemedAmount, redeemedLiquidAmount.String()),
 		),
 	)
 

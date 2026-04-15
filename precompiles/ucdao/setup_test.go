@@ -50,6 +50,7 @@ func (s *PrecompileTestSuite) SetupTest() {
 
 	s.precompile, err = ucdao.NewPrecompile(
 		s.network.App.DaoKeeper,
+		s.network.App.AuthzKeeper,
 	)
 	if err != nil {
 		panic(err)

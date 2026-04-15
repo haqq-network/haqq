@@ -3,6 +3,7 @@ package ethiq
 import (
 	"fmt"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,7 +32,26 @@ var MintHaqqMsgURL = sdk.MsgTypeURL(&ethiqtypes.MsgMintHaqq{})
 // MsgMintHaqqByApplicationMsgURL defines the authorization type for MsgMintHaqqByApplication
 var MsgMintHaqqByApplicationMsgURL = sdk.MsgTypeURL(&ethiqtypes.MsgMintHaqqByApplication{})
 
-func (p Precompile) MintHaqq(
+// mirrorBankBaseDeltaIntoStateDB syncs the debited account's aISLM (EVM gas denom) bank delta into the EVM journal when
+// the precompile is invoked from another contract (caller != origin). baseBefore must be read immediately before the
+// keeper/msg work. Delta matches bank movements from redeem-liquid-then-burn (not necessarily the nominal msg amount).
+func (p *Precompile) mirrorBankBaseDeltaIntoStateDB(ctx sdk.Context, isCallerOrigin bool, debitAccAddr sdk.AccAddress, baseBefore sdkmath.Int) {
+	if isCallerOrigin {
+		return
+	}
+	netBaseDelta := baseBefore.Sub(p.ethiqKeeper.BaseDenomBankBalance(ctx, debitAccAddr))
+	if netBaseDelta.IsZero() {
+		return
+	}
+	debitHexAddr := common.BytesToAddress(debitAccAddr.Bytes())
+	if netBaseDelta.IsNegative() {
+		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(debitHexAddr, netBaseDelta.Neg().BigInt(), cmn.Add))
+		return
+	}
+	p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(debitHexAddr, netBaseDelta.BigInt(), cmn.Sub))
+}
+
+func (p *Precompile) MintHaqq(
 	ctx sdk.Context,
 	origin common.Address,
 	contract *vm.Contract,
@@ -46,11 +66,15 @@ func (p Precompile) MintHaqq(
 
 	p.Logger(ctx).Debug(
 		"tx called",
-		"sender", sender,
+		"origin", origin.String(),
+		"caller", contract.CallerAddress.String(),
 		"method", method.Name,
-		"from_address", msg.FromAddress,
-		"to_address", msg.ToAddress,
-		"islm_amount", msg.IslmAmount.String(),
+		"args", fmt.Sprintf(
+			"{ from_address: %s, to_address: %s, islm_amount: %s }",
+			msg.FromAddress,
+			msg.ToAddress,
+			msg.IslmAmount.String(),
+		),
 	)
 
 	// isCallerSender is true when the contract caller is the same as the sender
@@ -70,6 +94,9 @@ func (p Precompile) MintHaqq(
 		return nil, err
 	}
 
+	fromAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
+	baseBefore := p.ethiqKeeper.BaseDenomBankBalance(ctx, fromAccAddr)
+
 	// Execute the transaction using the message server
 	msgSrv := ethiqkeeper.NewMsgServerImpl(p.ethiqKeeper)
 	res, err := msgSrv.MintHaqq(ctx, msg)
@@ -77,15 +104,7 @@ func (p Precompile) MintHaqq(
 		return nil, err
 	}
 
-	if !isCallerOrigin {
-		// get the delegator address from the message
-		originAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
-		originHexAddr := common.BytesToAddress(originAccAddr)
-		// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB
-		// when calling the precompile from a smart contract
-		// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(originHexAddr, msg.IslmAmount.BigInt(), cmn.Sub))
-	}
+	p.mirrorBankBaseDeltaIntoStateDB(ctx, isCallerOrigin, fromAccAddr, baseBefore)
 
 	if err = EmitMintHaqqEventWithAmount(
 		ctx,
@@ -103,7 +122,7 @@ func (p Precompile) MintHaqq(
 	return method.Outputs.Pack(res.HaqqAmount.BigInt())
 }
 
-func (p Precompile) MintHaqqByApplication(
+func (p *Precompile) MintHaqqByApplication(
 	ctx sdk.Context,
 	origin common.Address,
 	contract *vm.Contract,
@@ -118,10 +137,14 @@ func (p Precompile) MintHaqqByApplication(
 
 	p.Logger(ctx).Debug(
 		"tx called",
-		"sender", sender,
+		"origin", origin.String(),
+		"caller", contract.CallerAddress.String(),
 		"method", method.Name,
-		"from_address", msg.FromAddress,
-		"application_id", msg.ApplicationId,
+		"args", fmt.Sprintf(
+			"{ from_address: %s, application_id: %d }",
+			msg.FromAddress,
+			msg.ApplicationId,
+		),
 	)
 
 	// isCallerSender is true when the contract caller is the same as the sender
@@ -141,6 +164,18 @@ func (p Precompile) MintHaqqByApplication(
 		return nil, err
 	}
 
+	application, err := ethiqtypes.GetApplicationByID(msg.ApplicationId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Same debit account as BurnIslmForHaqqByApplicationID (owner bank vs UCDAO escrow).
+	debitAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
+	if application.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO {
+		debitAccAddr = ethiqkeeper.GetUCDAOEscrowAddress(debitAccAddr)
+	}
+	baseBefore := p.ethiqKeeper.BaseDenomBankBalance(ctx, debitAccAddr)
+
 	// Execute the transaction using the message server
 	msgSrv := ethiqkeeper.NewMsgServerImpl(p.ethiqKeeper)
 	res, err := msgSrv.MintHaqqByApplication(ctx, msg)
@@ -149,25 +184,7 @@ func (p Precompile) MintHaqqByApplication(
 	}
 
 	receiver := common.BytesToAddress(sdk.MustAccAddressFromBech32(res.ToAddress).Bytes())
-
-	if !isCallerOrigin {
-		application, err := ethiqtypes.GetApplicationByID(msg.ApplicationId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get application by ID %d: %w", msg.ApplicationId, err)
-		}
-
-		// get the source address from the message
-		originAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
-		if application.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO {
-			originAccAddr = ucdaotypes.GetEscrowAddress(originAccAddr)
-		}
-		originHexAddr := common.BytesToAddress(originAccAddr)
-		// at this point we've already checked on error during execution
-		// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB
-		// when calling the precompile from a smart contract
-		// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(originHexAddr, application.BurnAmount.Amount.BigInt(), cmn.Sub))
-	}
+	p.mirrorBankBaseDeltaIntoStateDB(ctx, isCallerOrigin, debitAccAddr, baseBefore)
 
 	if err = EmitMintHaqqEventWithApplicationID(
 		ctx,

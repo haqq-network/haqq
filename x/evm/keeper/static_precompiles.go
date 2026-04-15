@@ -109,7 +109,7 @@ func NewAvailableStaticPrecompiles(
 	}
 
 	// UCDAO module precompile
-	ucdaoPrecompile, err := ucdaoprecompile.NewPrecompile(daoKeeper)
+	ucdaoPrecompile, err := ucdaoprecompile.NewPrecompile(daoKeeper, authzKeeper)
 	if err != nil {
 		panic(fmt.Errorf("failed to instantiate ucdao precompile: %w", err))
 	}

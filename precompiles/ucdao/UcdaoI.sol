@@ -1,17 +1,37 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity >=0.8.18;
 
-/// @dev The IUCDAO contract's address.
-address constant IUCDAO_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000000901;
+import "../authorization/AuthorizationI.sol";
 
-/// @dev The IUCDAO contract's instance.
-IUCDAO constant IUCDAO_CONTRACT = IUCDAO(IUCDAO_PRECOMPILE_ADDRESS);
+/// @dev The UCDAO contract's address.
+address constant UCDAO_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000000901;
 
-/**
- * @title UCDAO Interface
- * @dev Interface for interacting with the ucdao module via precompile.
- */
-interface IUCDAO {
+/// @dev The UCDAO contract's instance.
+UcdaoI constant UCDAO_CONTRACT = UcdaoI(UCDAO_PRECOMPILE_ADDRESS);
+
+/// @dev Define all the available methods.
+string constant MSG_CONVERT_TO_HAQQ = "/haqq.ucdao.v1.MsgConvertToHaqq";
+string constant MSG_TRANSFER_OWNERSHIP = "/haqq.ucdao.v1.MsgTransferOwnershipWithAmount";
+
+/// @author Haqq Team
+/// @title UCDAO Precompile Contract
+/// @dev The interface through which solidity contracts will interact with the ucdao module
+/// @custom:address 0x0000000000000000000000000000000000000901
+interface UcdaoI is AuthorizationI {
+  /// @dev MintHaqq defines an Event emitted when HAQQ coins are minted
+  /// @param sender The address that sent the aISLM coins
+  /// @param receiver The address that received the minted aHAQQ coins
+  /// @param islmAmount The amount of aISLM coins burned
+  /// @param haqqAmount The amount of aHAQQ coins minted
+  event MintHaqq(
+    address indexed sender,
+    address indexed receiver,
+    uint256 islmAmount,
+    uint256 haqqAmount
+  );
+
+  /// TRANSACTIONS
+
   /// @dev ConvertToHaqq allows a holder to convert aISLM tokens to aHAQQ tokens.
   /// @param sender the hex address of the sender (ucdao holder)
   /// @param receiver the bech32-mapped recipient address as hex
