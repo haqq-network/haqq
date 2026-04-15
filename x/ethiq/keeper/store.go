@@ -74,25 +74,21 @@ func (k Keeper) AddToTotalBurnedFromApplicationsAmount(ctx sdk.Context, amount s
 }
 
 func (k Keeper) IsApplicationExecuted(ctx sdk.Context, appID uint64) bool {
-	id := sdkmath.NewIntFromUint64(appID)
+	key := sdkmath.NewIntFromUint64(appID).BigInt().Bytes()
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
-	return store.Has(id.BigInt().Bytes())
+	return store.Has(key)
 }
 
 func (k Keeper) SetApplicationAsExecuted(ctx sdk.Context, appID uint64) {
-	id := sdkmath.NewIntFromUint64(appID)
+	key := sdkmath.NewIntFromUint64(appID).BigInt().Bytes()
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
-	if !store.Has(id.BigInt().Bytes()) {
-		store.Set(id.BigInt().Bytes(), []byte{0})
-	}
+	store.Set(key, []byte{0})
 }
 
 func (k Keeper) ResetApplicationByID(ctx sdk.Context, appID uint64) {
-	id := sdkmath.NewIntFromUint64(appID)
+	key := sdkmath.NewIntFromUint64(appID).BigInt().Bytes()
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
-	if store.Has(id.BigInt().Bytes()) {
-		store.Delete(id.BigInt().Bytes())
-	}
+	store.Delete(key)
 }
 
 func (k Keeper) GetAllExecutedApplicationsIDs(ctx sdk.Context) []uint64 {

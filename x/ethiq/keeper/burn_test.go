@@ -91,7 +91,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 			},
 			amt:         sdkmath.OneInt().MulRaw(1e18).MulRaw(1e9).MulRaw(30),
 			expErr:      true,
-			errContains: "haqq_amount is greater than max_mint_per_tx",
+			errContains: "burn amount exceeds pricing curve capacity",
 		},
 		{
 			name: "fail - max supply exceeded",

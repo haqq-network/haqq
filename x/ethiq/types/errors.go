@@ -18,4 +18,5 @@ var (
 	ErrBurnCoins            = sdkerrors.Register(ModuleName, 11, "failed to burn coins")
 	ErrMintCoins            = sdkerrors.Register(ModuleName, 12, "failed to mint coins")
 	ErrExceedsMaxSupply     = sdkerrors.Register(ModuleName, 13, "total aHAQQ supply exceeds allowed maximum")
+	ErrExceedsPricingCurve  = sdkerrors.Register(ModuleName, 14, "burn amount exceeds pricing curve capacity")
 )

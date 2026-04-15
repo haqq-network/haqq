@@ -276,8 +276,8 @@ func (msg MsgConvertToHaqq) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Receiver); err != nil {
 		return sdkerrors.ErrInvalidAddress.Wrapf("invalid receiver address: %s", err)
 	}
-	if msg.IslmAmount.IsZero() {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, "islmAmount must be non-zero")
+	if !msg.IslmAmount.IsPositive() {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, "islmAmount must be positive")
 	}
 
 	return nil

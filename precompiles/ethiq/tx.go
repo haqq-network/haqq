@@ -10,6 +10,7 @@ import (
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	ethiqkeeper "github.com/haqq-network/haqq/x/ethiq/keeper"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
@@ -171,7 +172,7 @@ func (p *Precompile) MintHaqqByApplication(
 	// Same debit account as BurnIslmForHaqqByApplicationID (owner bank vs UCDAO escrow).
 	debitAccAddr := sdk.MustAccAddressFromBech32(msg.FromAddress)
 	if application.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO {
-		debitAccAddr = ethiqkeeper.GetUCDAOEscrowAddress(debitAccAddr)
+		debitAccAddr = ucdaotypes.GetEscrowAddress(debitAccAddr)
 	}
 	baseBefore := p.ethiqKeeper.BaseDenomBankBalance(ctx, debitAccAddr)
 

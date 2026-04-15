@@ -27,38 +27,7 @@ func EmitMintHaqqEventWithAmount(
 	islmAmount sdkmath.Int,
 	haqqAmount sdkmath.Int,
 ) error {
-	// Prepare the event topics
-	topics := make([]common.Hash, 3)
-
-	// The first topic is always the signature of the event.
-	topics[0] = event.ID
-
-	var err error
-	// sender and receiver are indexed
-	topics[1], err = cmn.MakeTopic(sender)
-	if err != nil {
-		return err
-	}
-	topics[2], err = cmn.MakeTopic(receiver)
-	if err != nil {
-		return err
-	}
-
-	// Pack the arguments to be used as the Data field
-	arguments := abi.Arguments{event.Inputs[2], event.Inputs[3]}
-	packed, err := arguments.Pack(islmAmount.BigInt(), haqqAmount.BigInt())
-	if err != nil {
-		return err
-	}
-
-	stateDB.AddLog(&ethtypes.Log{
-		Address:     precompileAddr,
-		Topics:      topics,
-		Data:        packed,
-		BlockNumber: uint64(ctx.BlockHeight()), //nolint: gosec // G115 blockHeight is positive int64 and can't overflow uint64
-	})
-
-	return nil
+	return emitMintHaqqEvent(ctx, stateDB, event, precompileAddr, sender, receiver, islmAmount.BigInt(), haqqAmount.BigInt())
 }
 
 // EmitMintHaqqEventWithApplicationID creates a new mint haqq event with the actual haqq amount and application ID.
@@ -70,14 +39,21 @@ func EmitMintHaqqEventWithApplicationID(
 	applicationID uint64,
 	haqqAmount sdkmath.Int,
 ) error {
-	// Prepare the event topics
-	topics := make([]common.Hash, 3)
+	return emitMintHaqqEvent(ctx, stateDB, event, precompileAddr, sender, receiver, sdkmath.NewIntFromUint64(applicationID).BigInt(), haqqAmount.BigInt())
+}
 
-	// The first topic is always the signature of the event.
+// emitMintHaqqEvent emits an EVM log with indexed sender/receiver topics and two non-indexed data arguments.
+func emitMintHaqqEvent(
+	ctx sdk.Context,
+	stateDB vm.StateDB,
+	event abi.Event,
+	precompileAddr, sender, receiver common.Address,
+	dataArg0, dataArg1 interface{},
+) error {
+	topics := make([]common.Hash, 3)
 	topics[0] = event.ID
 
 	var err error
-	// sender and receiver are indexed
 	topics[1], err = cmn.MakeTopic(sender)
 	if err != nil {
 		return err
@@ -87,9 +63,8 @@ func EmitMintHaqqEventWithApplicationID(
 		return err
 	}
 
-	// Pack the arguments to be used as the Data field
 	arguments := abi.Arguments{event.Inputs[2], event.Inputs[3]}
-	packed, err := arguments.Pack(sdkmath.NewIntFromUint64(applicationID).BigInt(), haqqAmount.BigInt())
+	packed, err := arguments.Pack(dataArg0, dataArg1)
 	if err != nil {
 		return err
 	}
