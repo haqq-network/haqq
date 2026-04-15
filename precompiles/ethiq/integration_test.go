@@ -16,6 +16,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -2483,6 +2484,12 @@ var _ = Describe("EOA waitlist application flow (UCDAO funds, liquid vesting)", 
 
 		totalUcdaoIslmEquivBefore := eoaUcdaoFunded.Balances.AmountOf(utils.BaseDenom).Add(
 			eoaUcdaoFunded.Balances.AmountOf(liquidDenom))
+		liquidVestingModuleAddr := authtypes.NewModuleAddress(liquidvestingtypes.ModuleName)
+		liquidVestingModuleIslmBefore := s.network.App.BankKeeper.GetBalance(
+			s.network.GetContext(),
+			liquidVestingModuleAddr,
+			utils.BaseDenom,
+		).Amount
 		eoaBankBeforeMint, err := s.grpcHandler.GetBalance(eoaAccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -2504,6 +2511,15 @@ var _ = Describe("EOA waitlist application flow (UCDAO funds, liquid vesting)", 
 			eoaUcdaoAfterMint.Balances.AmountOf(liquidDenom))
 		Expect(totalUcdaoIslmEquivBefore.Sub(totalUcdaoIslmEquivAfter)).To(Equal(waitlistAppIslm),
 			"ucDAO should lose ISLM-equivalent value equal to the application (ISLM + liquid, 1:1)")
+		liquidVestingModuleIslmAfter := s.network.App.BankKeeper.GetBalance(
+			s.network.GetContext(),
+			liquidVestingModuleAddr,
+			utils.BaseDenom,
+		).Amount
+		ucdaoLiquidRedeemed := eoaUcdaoFunded.Balances.AmountOf(liquidDenom).Sub(eoaUcdaoAfterMint.Balances.AmountOf(liquidDenom))
+		liquidVestingModuleIslmSpent := liquidVestingModuleIslmBefore.Sub(liquidVestingModuleIslmAfter)
+		Expect(liquidVestingModuleIslmSpent).To(Equal(ucdaoLiquidRedeemed),
+			"liquid vesting module ISLM decrease should match ucDAO liquid redeemed during mint (1:1)")
 
 		eoaBankAfterMint, err := s.grpcHandler.GetBalance(eoaAccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
@@ -3192,6 +3208,12 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(safeUcdaoFunded.Balances.AmountOf(liquidDenom)).To(Equal(sdkmath.NewInt(safeUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)))
 
 		totalUcdaoIslmEquivBefore := safeUcdaoFunded.Balances.AmountOf(utils.BaseDenom).Add(safeUcdaoFunded.Balances.AmountOf(liquidDenom))
+		liquidVestingModuleAddr := authtypes.NewModuleAddress(liquidvestingtypes.ModuleName)
+		liquidVestingModuleIslmBefore := s.network.App.BankKeeper.GetBalance(
+			s.network.GetContext(),
+			liquidVestingModuleAddr,
+			utils.BaseDenom,
+		).Amount
 		ownerOneBankBeforeSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -3222,6 +3244,15 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		totalUcdaoIslmEquivAfter := safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom).Add(safeUcdaoAfter.Balances.AmountOf(liquidDenom))
 		Expect(totalUcdaoIslmEquivBefore.Sub(totalUcdaoIslmEquivAfter)).To(Equal(waitlistAppIslm),
 			"ucDAO should lose ISLM-equivalent value equal to the application (ISLM + liquid, 1:1)")
+		liquidVestingModuleIslmAfter := s.network.App.BankKeeper.GetBalance(
+			s.network.GetContext(),
+			liquidVestingModuleAddr,
+			utils.BaseDenom,
+		).Amount
+		ucdaoLiquidRedeemed := safeUcdaoFunded.Balances.AmountOf(liquidDenom).Sub(safeUcdaoAfter.Balances.AmountOf(liquidDenom))
+		liquidVestingModuleIslmSpent := liquidVestingModuleIslmBefore.Sub(liquidVestingModuleIslmAfter)
+		Expect(liquidVestingModuleIslmSpent).To(Equal(ucdaoLiquidRedeemed),
+			"liquid vesting module ISLM decrease should match Safe ucDAO liquid redeemed during mint (1:1)")
 
 		ownerOneBankAfterSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
@@ -3399,6 +3430,12 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(safeUcdaoFunded.Balances.AmountOf(liquidDenom)).To(Equal(sdkmath.NewInt(safeUcdaoLiqFundUcdaoLiquidIslm).MulRaw(1e18)))
 
 		totalUcdaoIslmEquivBefore := safeUcdaoFunded.Balances.AmountOf(utils.BaseDenom).Add(safeUcdaoFunded.Balances.AmountOf(liquidDenom))
+		liquidVestingModuleAddr := authtypes.NewModuleAddress(liquidvestingtypes.ModuleName)
+		liquidVestingModuleIslmBefore := s.network.App.BankKeeper.GetBalance(
+			s.network.GetContext(),
+			liquidVestingModuleAddr,
+			utils.BaseDenom,
+		).Amount
 		ownerOneBankBeforeSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -3460,6 +3497,15 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		expectedBurnTotal := waitlistAppIslm.Add(secondWaitlistAppIslm)
 		Expect(totalUcdaoIslmEquivBefore.Sub(totalUcdaoIslmEquivAfter)).To(Equal(expectedBurnTotal),
 			"ucDAO should lose ISLM-equivalent value equal to both application burns in the batch")
+		liquidVestingModuleIslmAfter := s.network.App.BankKeeper.GetBalance(
+			s.network.GetContext(),
+			liquidVestingModuleAddr,
+			utils.BaseDenom,
+		).Amount
+		ucdaoLiquidRedeemed := safeUcdaoFunded.Balances.AmountOf(liquidDenom).Sub(safeUcdaoAfter.Balances.AmountOf(liquidDenom))
+		liquidVestingModuleIslmSpent := liquidVestingModuleIslmBefore.Sub(liquidVestingModuleIslmAfter)
+		Expect(liquidVestingModuleIslmSpent).To(Equal(ucdaoLiquidRedeemed),
+			"liquid vesting module ISLM decrease should match Safe ucDAO liquid redeemed during batched mint (1:1)")
 
 		ownerOneBankAfterSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
