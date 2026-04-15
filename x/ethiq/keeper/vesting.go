@@ -12,7 +12,7 @@ import (
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
 )
 
-func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, isUcdao bool) (*sdkmath.Int, error) {
+func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, isUcdao bool) (sdkmath.Int, error) {
 	balances := k.bankKeeper.GetAllBalances(ctx, fromAddress)
 
 	// redeem all aLIQUID balances from liquid vesting module
@@ -24,7 +24,7 @@ func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.Acc
 
 		// redeem balance from liquid vesting module
 		if err := k.liquidVestingKeeper.Redeem(ctx, fromAddress, fromAddress, balance); err != nil {
-			return nil, errorsmod.Wrap(err, types.ErrRedeemLiquidCoins.Error())
+			return sdkmath.ZeroInt(), errorsmod.Wrap(err, types.ErrRedeemLiquidCoins.Error())
 		}
 
 		redeemedAmount = redeemedAmount.Add(balance.Amount)
@@ -37,7 +37,7 @@ func (k Keeper) redeemAllLiquidVestingCoins(ctx sdk.Context, fromAddress sdk.Acc
 		}
 	}
 
-	return &redeemedAmount, nil
+	return redeemedAmount, nil
 }
 
 func (k Keeper) unlockVestingCoins(ctx sdk.Context, fromAddress sdk.AccAddress, amt sdk.Coin) (sdk.Coin, error) {
