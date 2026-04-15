@@ -220,6 +220,12 @@ func (p *Precompile) SetBalanceChangeEntries(entries ...balanceChangeEntry) {
 	p.journalEntries = entries
 }
 
+// AddBalanceChangeEntries appends the balanceChange entries
+// to the journalEntries field of the precompile.
+func (p *Precompile) AddBalanceChangeEntries(entries ...balanceChangeEntry) {
+	p.journalEntries = append(p.journalEntries, entries...)
+}
+
 func (p Precompile) Address() common.Address {
 	return p.address
 }
