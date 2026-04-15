@@ -2547,7 +2547,7 @@ func safeExecMintHaqqByApplication(
 	precompileAddr common.Address,
 	mintByAppCallData []byte,
 	safeNonce *big.Int,
-) (execSuccess bool, ret []byte, err error) {
+) (bool, []byte, error) { //nolint: unparam // these integration tests are subject to refactoring
 	getTxHashArgs := factory.CallArgs{
 		ContractABI: gnosisSafe.ABI,
 		MethodName:  "getTransactionHash",
@@ -2628,7 +2628,7 @@ func safeExecMintHaqqByApplication(
 	return execOk, execRes.Ret, nil
 }
 
-func packMultiSendTx(operation uint8, to common.Address, value *big.Int, data []byte) []byte {
+func packMultiSendTx(operation uint8, to common.Address, value *big.Int, data []byte) []byte { //nolint: unparam // these integration tests are subject to refactoring
 	txValue := big.NewInt(0)
 	if value != nil {
 		txValue = value
@@ -2653,7 +2653,7 @@ func safeExecMultiSendBatch(
 	multiSendAddr common.Address,
 	batchTxs []byte,
 	safeNonce *big.Int,
-) (execSuccess bool, ret []byte, err error) {
+) (bool, []byte, error) { //nolint: unparam // these integration tests are subject to refactoring
 	multiSendCallData, err := multiSend.ABI.Pack("multiSend", batchTxs)
 	if err != nil {
 		return false, nil, err

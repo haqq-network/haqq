@@ -7,11 +7,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	ethiqkeeper "github.com/haqq-network/haqq/x/ethiq/keeper"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
-	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 const (
