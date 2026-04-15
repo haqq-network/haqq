@@ -79,6 +79,16 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		liquidDenom       string
 	}
 
+	type safeBatchSnapshot struct {
+		ucdaoBase      sdkmath.Int
+		ucdaoLiquid    sdkmath.Int
+		bankBase       sdkmath.Int
+		bankLiquid     sdkmath.Int
+		haqqBalance    sdkmath.Int
+		ownerOneBank   sdkmath.Int
+		moduleISLMBank sdkmath.Int
+	}
+
 	BeforeAll(func() {
 		kr = keyring.New(1)
 		s = new(ucdaoSafeSuite)
@@ -512,6 +522,33 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		return res.Balances.AmountOf(liquidDenom)
 	}
 
+	captureSafeBatchSnapshot := func(state preparedSafeState) safeBatchSnapshot {
+		ucdaoClient := s.network.GetUCDAOClient()
+		safeUcdaoBalances, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
+			Address: state.safeWalletAccAddr.String(),
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		safeBankBase, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, utils.BaseDenom)
+		Expect(err).NotTo(HaveOccurred())
+		safeBankLiquid, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, state.liquidDenom)
+		Expect(err).NotTo(HaveOccurred())
+		safeHaqq, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, ethiqtypes.BaseDenom)
+		Expect(err).NotTo(HaveOccurred())
+		ownerOneBank, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+		Expect(err).NotTo(HaveOccurred())
+
+		return safeBatchSnapshot{
+			ucdaoBase:      safeUcdaoBalances.Balances.AmountOf(utils.BaseDenom),
+			ucdaoLiquid:    safeUcdaoBalances.Balances.AmountOf(state.liquidDenom),
+			bankBase:       safeBankBase.Balance.Amount,
+			bankLiquid:     safeBankLiquid.Balance.Amount,
+			haqqBalance:    safeHaqq.Balance.Amount,
+			ownerOneBank:   ownerOneBank.Balance.Amount,
+			moduleISLMBank: getLiquidVestingModuleISLMBalance(),
+		}
+	}
+
 	assertLiquidRedeemMatchesModuleISLM := func(
 		safeAcc sdk.AccAddress,
 		liquidDenom string,
@@ -648,6 +685,20 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		execSuccess, ok := execOutputs[0].(bool)
 		Expect(ok).To(BeTrue())
 		return execSuccess, execRes
+	}
+
+	buildSafeConvertBatchTxData := func(state preparedSafeState, firstConvertAmount, secondConvertAmount sdkmath.Int) []byte {
+		ucdaoPc, err := ucdao.NewPrecompile(s.network.App.DaoKeeper, s.network.App.AuthzKeeper)
+		Expect(err).NotTo(HaveOccurred())
+		precompileAddr := common.HexToAddress(evmtypes.UcdaoPrecompileAddress)
+		firstCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.safeWalletAddr, state.safeWalletAddr, firstConvertAmount.BigInt())
+		Expect(err).NotTo(HaveOccurred())
+		secondCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.safeWalletAddr, state.safeWalletAddr, secondConvertAmount.BigInt())
+		Expect(err).NotTo(HaveOccurred())
+		return append(
+			packMultiSendTx(0, precompileAddr, big.NewInt(0), firstCallData),
+			packMultiSendTx(0, precompileAddr, big.NewInt(0), secondCallData)...,
+		)
 	}
 
 	prepareSafeWithBatchMintBalances := func() preparedSafeState {
@@ -967,27 +1018,12 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		approveForSafeConvert(state.safeWalletAddr, sdkmath.NewInt(600).MulRaw(1e18))
 		Expect(s.network.NextBlock()).To(Succeed())
 
-		ucdaoClient := s.network.GetUCDAOClient()
-		safeUcdaoBefore, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
-			Address: state.safeWalletAccAddr.String(),
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(safeUcdaoBefore.Balances.AmountOf(utils.BaseDenom)).To(Equal(sdkmath.NewInt(300).MulRaw(1e18)))
-		Expect(safeUcdaoBefore.Balances.AmountOf(state.liquidDenom)).To(Equal(sdkmath.NewInt(300).MulRaw(1e18)))
-		totalUcdaoIslmEquivBefore := safeUcdaoBefore.Balances.AmountOf(utils.BaseDenom).Add(safeUcdaoBefore.Balances.AmountOf(state.liquidDenom))
-
-		safeBankIslmBefore, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, utils.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		safeBankLiquidBefore, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, state.liquidDenom)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(safeBankIslmBefore.Balance.Amount).To(Equal(sdkmath.NewInt(500).MulRaw(1e18)))
-		Expect(safeBankLiquidBefore.Balance.Amount).To(Equal(sdkmath.NewInt(500).MulRaw(1e18)))
-
-		safeHaqqBefore, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, ethiqtypes.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		modBefore := getLiquidVestingModuleISLMBalance()
-		ownerOneBankBefore, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
+		before := captureSafeBatchSnapshot(state)
+		Expect(before.ucdaoBase).To(Equal(sdkmath.NewInt(300).MulRaw(1e18)))
+		Expect(before.ucdaoLiquid).To(Equal(sdkmath.NewInt(300).MulRaw(1e18)))
+		Expect(before.bankBase).To(Equal(sdkmath.NewInt(500).MulRaw(1e18)))
+		Expect(before.bankLiquid).To(Equal(sdkmath.NewInt(500).MulRaw(1e18)))
+		totalUcdaoIslmEquivBefore := before.ucdaoBase.Add(before.ucdaoLiquid)
 
 		firstConvertAmount := sdkmath.NewInt(500).MulRaw(1e18)
 		secondConvertAmount := sdkmath.NewInt(100).MulRaw(1e18)
@@ -997,17 +1033,7 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		secondMint, err := s.network.App.EthiqKeeper.CalculateHaqqCoinsToMint(ctxEthiq, secondConvertAmount)
 		Expect(err).NotTo(HaveOccurred())
 
-		ucdaoPc, err := ucdao.NewPrecompile(s.network.App.DaoKeeper, s.network.App.AuthzKeeper)
-		Expect(err).NotTo(HaveOccurred())
-		precompileAddr := common.HexToAddress(evmtypes.UcdaoPrecompileAddress)
-		firstCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.safeWalletAddr, state.safeWalletAddr, firstConvertAmount.BigInt())
-		Expect(err).NotTo(HaveOccurred())
-		secondCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.safeWalletAddr, state.safeWalletAddr, secondConvertAmount.BigInt())
-		Expect(err).NotTo(HaveOccurred())
-		batchTxData := append(
-			packMultiSendTx(0, precompileAddr, big.NewInt(0), firstCallData),
-			packMultiSendTx(0, precompileAddr, big.NewInt(0), secondCallData)...,
-		)
+		batchTxData := buildSafeConvertBatchTxData(state, firstConvertAmount, secondConvertAmount)
 
 		nonceBefore := readSafeNonce(state.safeWalletAddr)
 		execOk, execRes := safeExecMultiSendBatch(state.safeWalletAddr, batchTxData, nonceBefore)
@@ -1017,37 +1043,24 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		nonceAfter := readSafeNonce(state.safeWalletAddr)
 		Expect(nonceAfter).To(Equal(new(big.Int).Add(nonceBefore, big.NewInt(1))))
 
-		safeUcdaoAfter, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
-			Address: state.safeWalletAccAddr.String(),
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom)).To(Equal(sdkmath.ZeroInt()))
-		Expect(safeUcdaoAfter.Balances.AmountOf(state.liquidDenom)).To(Equal(sdkmath.ZeroInt()))
-		totalUcdaoIslmEquivAfter := safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom).Add(safeUcdaoAfter.Balances.AmountOf(state.liquidDenom))
+		after := captureSafeBatchSnapshot(state)
+		Expect(after.ucdaoBase).To(Equal(sdkmath.ZeroInt()))
+		Expect(after.ucdaoLiquid).To(Equal(sdkmath.ZeroInt()))
+		totalUcdaoIslmEquivAfter := after.ucdaoBase.Add(after.ucdaoLiquid)
 		Expect(totalUcdaoIslmEquivBefore.Sub(totalUcdaoIslmEquivAfter)).To(Equal(firstConvertAmount.Add(secondConvertAmount)),
 			"ucDAO should lose ISLM-equivalent value equal to both batched free mints")
 
-		modAfter := getLiquidVestingModuleISLMBalance()
-		ucdaoLiquidRedeemed := safeUcdaoBefore.Balances.AmountOf(state.liquidDenom).Sub(safeUcdaoAfter.Balances.AmountOf(state.liquidDenom))
-		Expect(modBefore.Sub(modAfter)).To(Equal(ucdaoLiquidRedeemed),
+		ucdaoLiquidRedeemed := before.ucdaoLiquid.Sub(after.ucdaoLiquid)
+		Expect(before.moduleISLMBank.Sub(after.moduleISLMBank)).To(Equal(ucdaoLiquidRedeemed),
 			"liquid vesting module ISLM decrease should match Safe ucDAO liquid redeemed during batched free mint (1:1)")
 
-		safeBankIslmAfter, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, utils.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		safeBankLiquidAfter, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, state.liquidDenom)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(safeBankIslmAfter.Balance.Amount).To(Equal(safeBankIslmBefore.Balance.Amount),
+		Expect(after.bankBase).To(Equal(before.bankBase),
 			"Safe bank ISLM should remain unchanged during ucDAO-only batched free mints")
-		Expect(safeBankLiquidAfter.Balance.Amount).To(Equal(safeBankLiquidBefore.Balance.Amount),
+		Expect(after.bankLiquid).To(Equal(before.bankLiquid),
 			"Safe bank liquid balance should remain unchanged during ucDAO-only batched free mints")
 
-		safeHaqqAfter, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, ethiqtypes.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(safeHaqqAfter.Balance.Amount.Sub(safeHaqqBefore.Balance.Amount)).To(Equal(firstMint.Add(secondMint)))
-
-		ownerOneBankAfter, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		ownerOneSpent := ownerOneBankBefore.Balance.Amount.Sub(ownerOneBankAfter.Balance.Amount)
+		Expect(after.haqqBalance.Sub(before.haqqBalance)).To(Equal(firstMint.Add(secondMint)))
+		ownerOneSpent := before.ownerOneBank.Sub(after.ownerOneBank)
 		Expect(ownerOneSpent.IsNegative()).To(BeFalse())
 		Expect(ownerOneSpent.LT(sdkmath.NewInt(2).MulRaw(1e18))).To(BeTrue(),
 			"Safe owner bank ISLM spent on batched exec should be under 2 ISLM (gas only)")
@@ -1058,34 +1071,11 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		approveForSafeConvert(state.safeWalletAddr, sdkmath.NewInt(500).MulRaw(1e18))
 		Expect(s.network.NextBlock()).To(Succeed())
 
-		ucdaoClient := s.network.GetUCDAOClient()
-		safeUcdaoBefore, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
-			Address: state.safeWalletAccAddr.String(),
-		})
-		Expect(err).NotTo(HaveOccurred())
-		safeBankIslmBefore, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, utils.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		safeBankLiquidBefore, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, state.liquidDenom)
-		Expect(err).NotTo(HaveOccurred())
-		safeHaqqBefore, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, ethiqtypes.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		modBefore := getLiquidVestingModuleISLMBalance()
-		ownerOneBankBefore, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
+		before := captureSafeBatchSnapshot(state)
 
 		firstConvertAmount := sdkmath.NewInt(500).MulRaw(1e18)
 		secondConvertAmount := sdkmath.NewInt(100).MulRaw(1e18)
-		ucdaoPc, err := ucdao.NewPrecompile(s.network.App.DaoKeeper, s.network.App.AuthzKeeper)
-		Expect(err).NotTo(HaveOccurred())
-		precompileAddr := common.HexToAddress(evmtypes.UcdaoPrecompileAddress)
-		firstCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.safeWalletAddr, state.safeWalletAddr, firstConvertAmount.BigInt())
-		Expect(err).NotTo(HaveOccurred())
-		secondCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.safeWalletAddr, state.safeWalletAddr, secondConvertAmount.BigInt())
-		Expect(err).NotTo(HaveOccurred())
-		batchTxData := append(
-			packMultiSendTx(0, precompileAddr, big.NewInt(0), firstCallData),
-			packMultiSendTx(0, precompileAddr, big.NewInt(0), secondCallData)...,
-		)
+		batchTxData := buildSafeConvertBatchTxData(state, firstConvertAmount, secondConvertAmount)
 
 		nonceBefore := readSafeNonce(state.safeWalletAddr)
 		execOk, execRes := safeExecMultiSendBatch(state.safeWalletAddr, batchTxData, nonceBefore)
@@ -1093,34 +1083,21 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		assertSafeExecEvent(execRes, "ExecutionFailure", state.safeWalletAddr)
 		Expect(s.network.NextBlock()).To(Succeed())
 
-		safeUcdaoAfter, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
-			Address: state.safeWalletAccAddr.String(),
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom)).To(Equal(safeUcdaoBefore.Balances.AmountOf(utils.BaseDenom)))
-		Expect(safeUcdaoAfter.Balances.AmountOf(state.liquidDenom)).To(Equal(safeUcdaoBefore.Balances.AmountOf(state.liquidDenom)))
-
-		safeBankIslmAfter, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, utils.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		safeBankLiquidAfter, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, state.liquidDenom)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(safeBankIslmAfter.Balance.Amount).To(Equal(safeBankIslmBefore.Balance.Amount),
+		after := captureSafeBatchSnapshot(state)
+		Expect(after.ucdaoBase).To(Equal(before.ucdaoBase))
+		Expect(after.ucdaoLiquid).To(Equal(before.ucdaoLiquid))
+		Expect(after.bankBase).To(Equal(before.bankBase),
 			"Safe bank ISLM should remain unchanged on failed batch")
-		Expect(safeBankLiquidAfter.Balance.Amount).To(Equal(safeBankLiquidBefore.Balance.Amount),
+		Expect(after.bankLiquid).To(Equal(before.bankLiquid),
 			"Safe bank liquid should remain unchanged on failed batch")
 
-		safeHaqqAfter, err := s.grpcHandler.GetBalance(state.safeWalletAccAddr, ethiqtypes.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(safeHaqqAfter.Balance.Amount).To(Equal(safeHaqqBefore.Balance.Amount),
+		Expect(after.haqqBalance).To(Equal(before.haqqBalance),
 			"Safe HAQQ balance should remain unchanged on failed batch")
 
-		modAfter := getLiquidVestingModuleISLMBalance()
-		Expect(modAfter).To(Equal(modBefore),
+		Expect(after.moduleISLMBank).To(Equal(before.moduleISLMBank),
 			"liquid vesting module ISLM should remain unchanged when batch fails atomically")
 
-		ownerOneBankAfter, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
-		Expect(err).NotTo(HaveOccurred())
-		ownerOneSpent := ownerOneBankBefore.Balance.Amount.Sub(ownerOneBankAfter.Balance.Amount)
+		ownerOneSpent := before.ownerOneBank.Sub(after.ownerOneBank)
 		Expect(ownerOneSpent.IsNegative()).To(BeFalse())
 		Expect(ownerOneSpent.LT(sdkmath.NewInt(2).MulRaw(1e18))).To(BeTrue(),
 			"Safe owner bank ISLM spent on failed batched exec should be under 2 ISLM (gas only)")
