@@ -55,8 +55,6 @@ func (p *Precompile) ConvertToHaqq(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == sender
-	// isCallerOrigin is true when the contract caller is the same as the origin
-	isCallerOrigin := contract.CallerAddress == origin
 
 	// If the contract caller is not the same as the sender, the sender must be the origin
 	if isCallerSender {
@@ -74,10 +72,6 @@ func (p *Precompile) ConvertToHaqq(
 	res, err := msgSrv.ConvertToHaqq(ctx, msg)
 	if err != nil {
 		return nil, err
-	}
-
-	if !isCallerOrigin {
-		// TODO BALANCE Changes
 	}
 
 	if err = EmitMintHaqqEventWithAmount(
@@ -125,8 +119,6 @@ func (p *Precompile) TransferOwnership(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == owner
-	// isCallerOrigin is true when the contract caller is the same as the origin
-	isCallerOrigin := contract.CallerAddress == origin
 
 	// If the contract caller is not the same as the sender, the sender must be the origin
 	if isCallerSender {
@@ -149,10 +141,6 @@ func (p *Precompile) TransferOwnership(
 	_, err = msgSrv.TransferOwnership(ctx, msg)
 	if err != nil {
 		return nil, err
-	}
-
-	if !isCallerOrigin {
-		// TODO BALANCE Changes
 	}
 
 	return []byte{}, nil
@@ -186,8 +174,6 @@ func (p *Precompile) TransferOwnershipWithAmount(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == owner
-	// isCallerOrigin is true when the contract caller is the same as the origin
-	isCallerOrigin := contract.CallerAddress == origin
 
 	// If the contract caller is not the same as the sender, the sender must be the origin
 	if isCallerSender {
@@ -210,10 +196,6 @@ func (p *Precompile) TransferOwnershipWithAmount(
 	_, err = msgSrv.TransferOwnershipWithAmount(ctx, msg)
 	if err != nil {
 		return nil, err
-	}
-
-	if !isCallerOrigin {
-		// TODO BALANCE Changes
 	}
 
 	return []byte{}, nil
