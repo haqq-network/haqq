@@ -2901,7 +2901,7 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds)", Ordered, func()
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 
 		fundCoins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(safeUcdaoWaitlistMsgFundIslm).MulRaw(1e18)))
-		cosmosGasLimit := uint64(400_000)
+		cosmosGasLimit := uint64(1_000_000)
 		resFund, err := s.factory.CommitCosmosTx(helperPriv, commonfactory.CosmosTxArgs{
 			Msgs:     []sdk.Msg{ucdaotypes.NewMsgFund(fundCoins, helperAcc)},
 			GasPrice: &gasPrice,
@@ -2986,7 +2986,7 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		safeUcdaoLiqFundUcdaoBaseIslm     int64 = 300
 		safeUcdaoLiqFundUcdaoLiquidIslm   int64 = 300
 		safeUcdaoLiqBurnIslm              int64 = 500
-		safeUcdaoLiqFreeMintIslm          int64 = 100
+		safeUcdaoLiqSecondAppIslm         int64 = 100
 		safeUcdaoLiqExpectedUcdaoBaseIslm int64 = 100
 	)
 
@@ -3241,7 +3241,7 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeTrue())
 	})
 
-	It("should execute waitlist mint and direct mint in one Safe batch transaction", func() {
+	It("should execute two waitlist mints in one Safe batch transaction", func() {
 		safeSetupData, err := gnosisSafe.ABI.Pack(
 			"setup",
 			[]common.Address{safeOwnerOne.Addr, safeOwnerTwo.Addr},
@@ -3291,7 +3291,7 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		expectedSafeBank := sdkmath.NewInt(safeUcdaoLiqSafeBankIslm).MulRaw(1e18)
 
 		waitlistAppIslm := sdkmath.NewInt(safeUcdaoLiqBurnIslm).MulRaw(1e18)
-		freeMintIslm := sdkmath.NewInt(safeUcdaoLiqFreeMintIslm).MulRaw(1e18)
+		secondWaitlistAppIslm := sdkmath.NewInt(safeUcdaoLiqSecondAppIslm).MulRaw(1e18)
 		safeBech32 := safeWalletAccAddr.String()
 		waitlistItem := ethiqtypes.ApplicationListItem{
 			FromAddress:                safeBech32,
@@ -3304,6 +3304,17 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(err).ToNot(HaveOccurred())
 		waitlistAppID, restoreWaitlist := ethiqtypes.PushRegisteredApplicationForIntegrationTest(waitlistItem)
 		defer restoreWaitlist()
+		secondWaitlistItem := ethiqtypes.ApplicationListItem{
+			FromAddress:                safeBech32,
+			ToAddress:                  safeBech32,
+			FundSource:                 ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO,
+			IslmAmount:                 secondWaitlistAppIslm.String(),
+			IslmAccumulatedBurntAmount: "0",
+		}
+		_, err = secondWaitlistItem.AsBurnApplication()
+		Expect(err).ToNot(HaveOccurred())
+		secondWaitlistAppID, restoreSecondWaitlist := ethiqtypes.PushRegisteredApplicationForIntegrationTest(secondWaitlistItem)
+		defer restoreSecondWaitlist()
 
 		precompileAddr := s.precompile.Address()
 		approveByAppArgs := factory.CallArgs{
@@ -3315,15 +3326,17 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
 			},
 		}
+		approveBySecondAppArgs := factory.CallArgs{
+			ContractABI: s.precompile.ABI,
+			MethodName:  ethiq.ApproveApplicationIDMethod,
+			Args: []interface{}{
+				safeWalletAddr,
+				new(big.Int).SetUint64(secondWaitlistAppID),
+				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
+			},
+		}
 		approveTxArgs := evmtypes.EvmTxArgs{To: &precompileAddr}
-		_, _, err = s.factory.CallContractAndCheckLogs(
-			safeOwnerOne.Priv,
-			approveTxArgs,
-			approveByAppArgs,
-			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval}, ExpPass: true},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
+		approveTxArgs.GasLimit = 500_000
 
 		helperAddr, helperPriv := testutiltx.NewAddrKey()
 		helperAcc := sdk.AccAddress(helperAddr.Bytes())
@@ -3398,19 +3411,10 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(err).ToNot(HaveOccurred())
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 
-		approveMintArgs := factory.CallArgs{
-			ContractABI: s.precompile.ABI,
-			MethodName:  authorization.ApproveMethod,
-			Args: []interface{}{
-				safeWalletAddr,
-				freeMintIslm.BigInt(),
-				[]string{ethiq.MintHaqqMsgURL},
-			},
-		}
 		_, _, err = s.factory.CallContractAndCheckLogs(
 			safeOwnerOne.Priv,
 			approveTxArgs,
-			approveMintArgs,
+			approveBySecondAppArgs,
 			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval}, ExpPass: true},
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -3418,12 +3422,12 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 
 		mintByAppCallData, err := s.precompile.ABI.Pack(ethiq.MintHaqqByApplication, safeWalletAddr, new(big.Int).SetUint64(waitlistAppID))
 		Expect(err).ToNot(HaveOccurred())
-		mintCallData, err := s.precompile.ABI.Pack(ethiq.MintHaqq, safeWalletAddr, safeWalletAddr, freeMintIslm.BigInt())
+		secondMintByAppCallData, err := s.precompile.ABI.Pack(ethiq.MintHaqqByApplication, safeWalletAddr, new(big.Int).SetUint64(secondWaitlistAppID))
 		Expect(err).ToNot(HaveOccurred())
 
 		batchTxData := append(
 			packMultiSendTx(0, precompileAddr, big.NewInt(0), mintByAppCallData),
-			packMultiSendTx(0, precompileAddr, big.NewInt(0), mintCallData)...,
+			packMultiSendTx(0, precompileAddr, big.NewInt(0), secondMintByAppCallData)...,
 		)
 
 		safeNonce, err := readSafeNonce(s, gnosisSafe, safeWalletAddr, safeOwnerOne.Priv)
@@ -3443,18 +3447,19 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(execOk).To(BeTrue())
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 
+		// In the batch, both mints are application-based and should spend from UCDAO escrow.
 		expectedBaseRemaining := sdkmath.ZeroInt()
 		safeUcdaoAfter, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{Address: safeWalletAccAddr.String()})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom)).To(Equal(expectedBaseRemaining),
-			"after 500 by app + 100 direct mint in one batch, ucDAO base ISLM should be fully spent")
+			"after 500 by app + 100 by app in one batch, ucDAO base ISLM should be fully spent")
 		Expect(safeUcdaoAfter.Balances.AmountOf(liquidDenom).IsZero()).To(BeTrue(),
 			"liquid vesting in ucDAO should be fully redeemed during batched mint")
 
 		totalUcdaoIslmEquivAfter := safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom).Add(safeUcdaoAfter.Balances.AmountOf(liquidDenom))
-		expectedBurnTotal := waitlistAppIslm.Add(freeMintIslm)
+		expectedBurnTotal := waitlistAppIslm.Add(secondWaitlistAppIslm)
 		Expect(totalUcdaoIslmEquivBefore.Sub(totalUcdaoIslmEquivAfter)).To(Equal(expectedBurnTotal),
-			"ucDAO should lose ISLM-equivalent value equal to both batched burns (application + direct)")
+			"ucDAO should lose ISLM-equivalent value equal to both application burns in the batch")
 
 		ownerOneBankAfterSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
@@ -3465,12 +3470,14 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 
 		safeBankAfterMint, err := s.grpcHandler.GetBalance(safeWalletAccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(safeBankAfterMint.Balance.Amount).To(Equal(expectedSafeBank))
+		Expect(safeBankAfterMint.Balance.Amount).To(Equal(expectedSafeBank),
+			"Safe bank ISLM should remain unchanged when both batched mints use UCDAO")
 
 		safeHaqq, err := s.grpcHandler.GetBalance(safeWalletAccAddr, ethiqtypes.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(safeHaqq.Balance.Amount.IsPositive()).To(BeTrue())
 
 		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), waitlistAppID)).To(BeTrue())
+		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), secondWaitlistAppID)).To(BeTrue())
 	})
 })
