@@ -11,7 +11,6 @@ import (
 	ethiqkeeper "github.com/haqq-network/haqq/x/ethiq/keeper"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
-	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 const (
@@ -184,6 +183,7 @@ func (p *Precompile) MintHaqqByApplication(
 	}
 
 	receiver := common.BytesToAddress(sdk.MustAccAddressFromBech32(res.ToAddress).Bytes())
+
 	p.mirrorBankBaseDeltaIntoStateDB(ctx, isCallerOrigin, debitAccAddr, baseBefore)
 
 	if err = EmitMintHaqqEventWithApplicationID(
