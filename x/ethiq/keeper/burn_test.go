@@ -158,10 +158,10 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 				from = s.keyring.GetAccAddr(0)
 				to = s.keyring.GetAccAddr(1)
 			},
-			amt:    sdkmath.NewIntFromUint64(975), // at this moment, price per token is 9.75
-			expRes: sdkmath.NewIntFromUint64(100),
+			amt:        sdkmath.NewIntFromUint64(975), // at this moment, price per token is 9.75
+			expRes:     sdkmath.NewIntFromUint64(100),
 			calcExpRes: true,
-			expErr: false,
+			expErr:     false,
 		},
 		{
 			name: "success - burn/mint coins, vesting account, no liquid vesting coins",
@@ -172,10 +172,10 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 
 				suite.Require().NoError(s.setupClawbackVestingAccount(ctx, from, funder, testutil.TestVestingSchedule.TotalVestingCoins, false))
 			},
-			amt:    sdkmath.NewIntFromUint64(975000000000), // at this moment, price per token is 9.75
-			expRes: sdkmath.NewIntFromUint64(100000000000),
+			amt:        sdkmath.NewIntFromUint64(975000000000), // at this moment, price per token is 9.75
+			expRes:     sdkmath.NewIntFromUint64(100000000000),
 			calcExpRes: true,
-			expErr: false,
+			expErr:     false,
 		},
 		{
 			name: "success - burn/mint coins, eth account, with liquid vesting coins",
@@ -194,10 +194,10 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 				_, _, err := s.network.App.LiquidVestingKeeper.Liquidate(ctx, vesting, from, testutil.TestVestingSchedule.TotalVestingCoins.QuoInt(sdkmath.NewIntFromUint64(2))[0])
 				suite.Require().NoError(err)
 			},
-			amt:    testutil.TestVestingSchedule.TotalVestingCoins.QuoInt(sdkmath.NewIntFromUint64(2))[0].Amount, // at this moment, price per token is 9.75
-			expRes: sdkmath.NewIntFromUint64(246153846153846153),
+			amt:        testutil.TestVestingSchedule.TotalVestingCoins.QuoInt(sdkmath.NewIntFromUint64(2))[0].Amount, // at this moment, price per token is 9.75
+			expRes:     sdkmath.NewIntFromUint64(246153846153846153),
 			calcExpRes: true,
-			expErr: false,
+			expErr:     false,
 		},
 	}
 
@@ -366,11 +366,11 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 				)
 				suite.Require().NoError(err)
 			},
-			from:          sdk.MustAccAddressFromBech32("haqq1jt70r5w5q56fers0a4z2x95l92v360pwtey60k"),
-			appID:         29,
-			calcExpected:  true,
-			expErr:        false,
-			errContains:   "",
+			from:         sdk.MustAccAddressFromBech32("haqq1jt70r5w5q56fers0a4z2x95l92v360pwtey60k"),
+			appID:        29,
+			calcExpected: true,
+			expErr:       false,
+			errContains:  "",
 		},
 		{
 			name: "success - bank as source of funds, with liquid vesting coins",
@@ -397,8 +397,8 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 			from:         sdk.MustAccAddressFromBech32("haqq1jt70r5w5q56fers0a4z2x95l92v360pwtey60k"),
 			appID:        29,
 			calcExpected: true,
-			expErr:        false,
-			errContains:   "",
+			expErr:       false,
+			errContains:  "",
 		},
 		{
 			name: "success - UCDAO as source of funds, no liquid vesting coins",
@@ -413,8 +413,8 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 			from:         sdk.MustAccAddressFromBech32(ucdaoAppFrom),
 			appID:        ucdaoAppID,
 			calcExpected: true,
-			expErr:        false,
-			errContains:   "",
+			expErr:       false,
+			errContains:  "",
 		},
 		{
 			name: "success - UCDAO as source of funds, with liquid vesting coins",
@@ -442,8 +442,8 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 			from:         sdk.MustAccAddressFromBech32(ucdaoAppFrom),
 			appID:        ucdaoAppID,
 			calcExpected: true,
-			expErr:        false,
-			errContains:   "",
+			expErr:       false,
+			errContains:  "",
 		},
 	}
 

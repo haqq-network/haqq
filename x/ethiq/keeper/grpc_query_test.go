@@ -140,7 +140,7 @@ func (suite *KeeperTestSuite) TestCalculateGRPC() {
 				EstimatedHaqqAmount: sdkmath.NewIntFromUint64(102564102564102564),
 			},
 			calcExpRes: true,
-			expErr: false,
+			expErr:     false,
 		},
 	}
 
@@ -201,7 +201,7 @@ func (suite *KeeperTestSuite) TestCalculateForApplicationsGRPC() {
 				EstimatedHaqqAmount: sdkmath.NewIntFromUint64(333333333333333333),
 			},
 			calcExpRes: true,
-			expErr: false,
+			expErr:     false,
 		},
 	}
 
@@ -234,7 +234,7 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 	testCases := []struct {
 		name        string
 		req         *ethiqtypes.QueryGetApplicationsRequest
-		expLen      int
+		expLen      uint64
 		expTotal    uint64
 		expErr      bool
 		errContains string
@@ -248,7 +248,7 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 		{
 			name:     "success - with nil pagination",
 			req:      &ethiqtypes.QueryGetApplicationsRequest{},
-			expLen:   int(query.DefaultLimit), //nolint: gosec // G115
+			expLen:   query.DefaultLimit,
 			expTotal: 0,
 			expErr:   false,
 		},
@@ -282,7 +282,7 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 			req: &ethiqtypes.QueryGetApplicationsRequest{
 				Pagination: &query.PageRequest{},
 			},
-			expLen:   int(query.DefaultLimit), //nolint: gosec // G115
+			expLen:   query.DefaultLimit,
 			expTotal: 0,
 			expErr:   false,
 		},
@@ -313,7 +313,7 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 				suite.Require().NoError(err)
 				suite.Require().NotNil(res)
 				suite.Require().NotNil(res.Pagination)
-				suite.Require().Equal(tc.expLen, len(res.Applications))
+				suite.Require().Equal(tc.expLen, uint64(len(res.Applications)))
 				suite.Require().Equal(tc.expTotal, res.Pagination.Total)
 			}
 		})
@@ -327,7 +327,7 @@ func (suite *KeeperTestSuite) TestGetSendersApplicationsGRPC() {
 	testCases := []struct {
 		name        string
 		req         *ethiqtypes.QueryGetSendersApplicationsRequest
-		expLen      int
+		expLen      uint64
 		expTotal    uint64
 		expErr      bool
 		errContains string
@@ -343,7 +343,7 @@ func (suite *KeeperTestSuite) TestGetSendersApplicationsGRPC() {
 			req: &ethiqtypes.QueryGetSendersApplicationsRequest{
 				SenderAddress: knownSender,
 			},
-			expLen:   int(ethiqtypes.TotalNumberOfApplicationsBySender(knownSender)), //nolint: gosec // G115
+			expLen:   ethiqtypes.TotalNumberOfApplicationsBySender(knownSender),
 			expTotal: 0,
 			expErr:   false,
 		},
@@ -380,7 +380,7 @@ func (suite *KeeperTestSuite) TestGetSendersApplicationsGRPC() {
 				SenderAddress: knownSender,
 				Pagination:    &query.PageRequest{},
 			},
-			expLen:   int(ethiqtypes.TotalNumberOfApplicationsBySender(knownSender)), //nolint: gosec // G115
+			expLen:   ethiqtypes.TotalNumberOfApplicationsBySender(knownSender),
 			expTotal: 0,
 			expErr:   false,
 		},
@@ -413,7 +413,7 @@ func (suite *KeeperTestSuite) TestGetSendersApplicationsGRPC() {
 				suite.Require().NoError(err)
 				suite.Require().NotNil(res)
 				suite.Require().NotNil(res.Pagination)
-				suite.Require().Equal(tc.expLen, len(res.Applications))
+				suite.Require().Equal(tc.expLen, uint64(len(res.Applications)))
 				suite.Require().Equal(tc.expTotal, res.Pagination.Total)
 			}
 		})

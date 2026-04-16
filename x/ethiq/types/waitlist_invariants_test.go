@@ -24,8 +24,8 @@ func TestRegisteredApplicationsInvariants(t *testing.T) {
 
 	seenIDs := make(map[uint64]struct{}, len(registeredApplications))
 
+	var expectedID uint64
 	for i, app := range registeredApplications {
-		expectedID := uint64(i)
 		if app.ID != expectedID {
 			t.Fatalf("application id mismatch at index %d: expected %d, got %d", i, expectedID, app.ID)
 		}
@@ -50,6 +50,7 @@ func TestRegisteredApplicationsInvariants(t *testing.T) {
 		if _, err := app.AsBurnApplication(); err != nil {
 			t.Fatalf("invalid registered application id %d: %v", app.ID, err)
 		}
+		expectedID++
 	}
 
 	if IsApplicationExists(uint64(len(registeredApplications))) {
