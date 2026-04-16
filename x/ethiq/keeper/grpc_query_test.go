@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/haqq-network/haqq/utils"
+	ethiqkeeper "github.com/haqq-network/haqq/x/ethiq/keeper"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 )
 
@@ -88,6 +89,7 @@ func (suite *KeeperTestSuite) TestCalculateGRPC() {
 		req         *ethiqtypes.QueryCalculateRequest
 		malleate    func(ctx sdk.Context)
 		expRes      *ethiqtypes.QueryCalculateResponse
+		calcExpRes  bool
 		expErr      bool
 		errContains string
 	}{
@@ -137,6 +139,7 @@ func (suite *KeeperTestSuite) TestCalculateGRPC() {
 			expRes: &ethiqtypes.QueryCalculateResponse{
 				EstimatedHaqqAmount: sdkmath.NewIntFromUint64(102564102564102564),
 			},
+			calcExpRes: true,
 			expErr: false,
 		},
 	}
@@ -146,6 +149,13 @@ func (suite *KeeperTestSuite) TestCalculateGRPC() {
 			suite.SetupTest()
 			ctx := s.network.GetContext()
 			tc.malleate(ctx)
+			if tc.calcExpRes && tc.req != nil {
+				islmAmount, ok := sdkmath.NewIntFromString(tc.req.IslmAmount)
+				suite.Require().True(ok)
+				expAmt, expErr := s.network.App.EthiqKeeper.CalculateHaqqCoinsToMint(ctx, islmAmount)
+				suite.Require().NoError(expErr)
+				tc.expRes = &ethiqtypes.QueryCalculateResponse{EstimatedHaqqAmount: expAmt}
+			}
 
 			res, err := s.network.App.EthiqKeeper.Calculate(ctx, tc.req)
 			if tc.expErr {
@@ -165,6 +175,7 @@ func (suite *KeeperTestSuite) TestCalculateForApplicationsGRPC() {
 		name        string
 		req         *ethiqtypes.QueryCalculateForApplicationRequest
 		expRes      *ethiqtypes.QueryCalculateForApplicationResponse
+		calcExpRes  bool
 		expErr      bool
 		errContains string
 	}{
@@ -189,6 +200,7 @@ func (suite *KeeperTestSuite) TestCalculateForApplicationsGRPC() {
 			expRes: &ethiqtypes.QueryCalculateForApplicationResponse{
 				EstimatedHaqqAmount: sdkmath.NewIntFromUint64(333333333333333333),
 			},
+			calcExpRes: true,
 			expErr: false,
 		},
 	}
@@ -197,6 +209,13 @@ func (suite *KeeperTestSuite) TestCalculateForApplicationsGRPC() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 			ctx := s.network.GetContext()
+			if tc.calcExpRes && tc.req != nil {
+				app, appErr := ethiqtypes.GetApplicationByID(tc.req.ApplicationId)
+				suite.Require().NoError(appErr)
+				expAmt, expErr := ethiqkeeper.CalculateHaqqAmount(app.BurnedBeforeAmount.Amount, app.BurnAmount.Amount)
+				suite.Require().NoError(expErr)
+				tc.expRes = &ethiqtypes.QueryCalculateForApplicationResponse{EstimatedHaqqAmount: expAmt}
+			}
 
 			res, err := s.network.App.EthiqKeeper.CalculateForApplication(ctx, tc.req)
 			if tc.expErr {
@@ -229,7 +248,7 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 		{
 			name:     "success - with nil pagination",
 			req:      &ethiqtypes.QueryGetApplicationsRequest{},
-			expLen:   int(ethiqtypes.TotalNumberOfApplications()), //nolint: gosec // G115
+			expLen:   int(query.DefaultLimit), //nolint: gosec // G115
 			expTotal: 0,
 			expErr:   false,
 		},
@@ -263,7 +282,7 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 			req: &ethiqtypes.QueryGetApplicationsRequest{
 				Pagination: &query.PageRequest{},
 			},
-			expLen:   int(ethiqtypes.TotalNumberOfApplications()), //nolint: gosec // G115
+			expLen:   int(query.DefaultLimit), //nolint: gosec // G115
 			expTotal: 0,
 			expErr:   false,
 		},
@@ -303,7 +322,7 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 
 func (suite *KeeperTestSuite) TestGetSendersApplicationsGRPC() {
 	// Use a known sender from the waitlist
-	knownSender := "haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"
+	knownSender := "haqq13x3h3t9fqc69er64jmf3za5wuz9fkd2zpgl737"
 
 	testCases := []struct {
 		name        string

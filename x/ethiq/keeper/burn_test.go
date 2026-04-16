@@ -18,6 +18,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 		malleate    func(ctx sdk.Context)
 		amt         sdkmath.Int
 		expRes      sdkmath.Int
+		calcExpRes  bool
 		expErr      bool
 		errContains string
 	}{
@@ -159,6 +160,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 			},
 			amt:    sdkmath.NewIntFromUint64(975), // at this moment, price per token is 9.75
 			expRes: sdkmath.NewIntFromUint64(100),
+			calcExpRes: true,
 			expErr: false,
 		},
 		{
@@ -172,6 +174,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 			},
 			amt:    sdkmath.NewIntFromUint64(975000000000), // at this moment, price per token is 9.75
 			expRes: sdkmath.NewIntFromUint64(100000000000),
+			calcExpRes: true,
 			expErr: false,
 		},
 		{
@@ -193,6 +196,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 			},
 			amt:    testutil.TestVestingSchedule.TotalVestingCoins.QuoInt(sdkmath.NewIntFromUint64(2))[0].Amount, // at this moment, price per token is 9.75
 			expRes: sdkmath.NewIntFromUint64(246153846153846153),
+			calcExpRes: true,
 			expErr: false,
 		},
 	}
@@ -203,6 +207,11 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 			ctx := s.network.GetContext()
 
 			tc.malleate(ctx)
+			if tc.calcExpRes {
+				expRes, expErr := s.network.App.EthiqKeeper.CalculateHaqqCoinsToMint(ctx, tc.amt)
+				suite.Require().NoError(expErr)
+				tc.expRes = expRes
+			}
 
 			res, err := s.network.App.EthiqKeeper.BurnIslmForHaqq(ctx, tc.amt, from, to)
 			if tc.expErr {
@@ -218,6 +227,29 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 }
 
 func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
+	var canceledAppID uint64
+	var canceledAppFrom string
+	var ucdaoAppID uint64
+	var ucdaoAppFrom string
+
+	totalApps := ethiqtypes.TotalNumberOfApplications()
+	for i := uint64(0); i < totalApps; i++ {
+		app, err := ethiqtypes.GetApplicationByID(i)
+		suite.Require().NoError(err)
+
+		if app.IsCanceled && canceledAppFrom == "" {
+			canceledAppID = i
+			canceledAppFrom = app.FromAddress
+		}
+		if app.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO && !app.IsCanceled && ucdaoAppFrom == "" {
+			ucdaoAppID = i
+			ucdaoAppFrom = app.FromAddress
+		}
+	}
+
+	suite.Require().NotEmpty(canceledAppFrom, "canceled application not found in waitlist")
+	suite.Require().NotEmpty(ucdaoAppFrom, "UCDAO application not found in waitlist")
+
 	testCases := []struct {
 		name          string
 		malleate      func(ctx sdk.Context)
@@ -225,6 +257,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 		appID         uint64
 		expMintAmt    string
 		expMintToAddr sdk.AccAddress
+		calcExpected  bool
 		expErr        bool
 		errContains   string
 	}{
@@ -257,9 +290,10 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 		{
 			name:        "fail - application is canceled",
 			malleate:    func(_ sdk.Context) {},
-			appID:       7,
+			from:        sdk.MustAccAddressFromBech32(canceledAppFrom),
+			appID:       canceledAppID,
 			expErr:      true,
-			errContains: "application ID 7 is canceled",
+			errContains: "is canceled",
 		},
 		{
 			name:        "fail - wrong sender address",
@@ -277,7 +311,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 				))
 				suite.Require().NoError(err)
 			},
-			from:        sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
+			from:        sdk.MustAccAddressFromBech32("haqq13tznakuqvyr4q8kflalrkmf7uqnsg0psqhawlv"),
 			appID:       8,
 			expErr:      true,
 			errContains: "total aHAQQ supply exceeds allowed maximum",
@@ -285,21 +319,21 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 		{
 			name:        "fail - account does not exist",
 			malleate:    func(_ sdk.Context) {},
-			from:        sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
+			from:        sdk.MustAccAddressFromBech32("haqq13tznakuqvyr4q8kflalrkmf7uqnsg0psqhawlv"),
 			appID:       8,
 			expErr:      true,
-			errContains: "account haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq does not exist",
+			errContains: "account haqq13tznakuqvyr4q8kflalrkmf7uqnsg0psqhawlv does not exist",
 		},
 		{
 			name: "fail - redeem liquid vesting coins",
 			malleate: func(_ sdk.Context) {
 				err := s.network.FundAccount(
-					sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
+					sdk.MustAccAddressFromBech32("haqq13tznakuqvyr4q8kflalrkmf7uqnsg0psqhawlv"),
 					sdk.NewCoins(sdk.NewCoin("aLIQUID99", sdkmath.OneInt().MulRaw(1e18))),
 				)
 				suite.Require().NoError(err)
 			},
-			from:        sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
+			from:        sdk.MustAccAddressFromBech32("haqq13tznakuqvyr4q8kflalrkmf7uqnsg0psqhawlv"),
 			appID:       8,
 			expErr:      true,
 			errContains: "failed to redeem aLIQUID coins",
@@ -308,15 +342,13 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 			name: "fail - insufficient funds",
 			malleate: func(_ sdk.Context) {
 				// Create and fund account, but not enough coins
-				fundAmt, ok := sdkmath.NewIntFromString("100000000000000000000")
-				suite.Require().True(ok)
 				err := s.network.FundAccount(
-					sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
-					sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, fundAmt)),
+					sdk.MustAccAddressFromBech32("haqq13tznakuqvyr4q8kflalrkmf7uqnsg0psqhawlv"),
+					sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.OneInt())),
 				)
 				suite.Require().NoError(err)
 			},
-			from:        sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
+			from:        sdk.MustAccAddressFromBech32("haqq13tznakuqvyr4q8kflalrkmf7uqnsg0psqhawlv"),
 			appID:       8,
 			expErr:      true,
 			errContains: "insufficient funds",
@@ -324,19 +356,19 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 		{
 			name: "success - bank as source of funds, no liquid vesting coins",
 			malleate: func(_ sdk.Context) {
+				application, err := ethiqtypes.GetApplicationByID(29)
+				suite.Require().NoError(err)
+
 				// Create and fund account
-				fundAmt, ok := sdkmath.NewIntFromString("1000000000000000000")
-				suite.Require().True(ok)
-				err := s.network.FundAccount(
-					sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
-					sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, fundAmt)),
+				err = s.network.FundAccount(
+					sdk.MustAccAddressFromBech32("haqq1jt70r5w5q56fers0a4z2x95l92v360pwtey60k"),
+					sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, application.BurnAmount.Amount.MulRaw(2))),
 				)
 				suite.Require().NoError(err)
 			},
-			from:          sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
+			from:          sdk.MustAccAddressFromBech32("haqq1jt70r5w5q56fers0a4z2x95l92v360pwtey60k"),
 			appID:         29,
-			expMintAmt:    "117647058823529411",
-			expMintToAddr: sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
+			calcExpected:  true,
 			expErr:        false,
 			errContains:   "",
 		},
@@ -344,10 +376,10 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 			name: "success - bank as source of funds, with liquid vesting coins",
 			malleate: func(ctx sdk.Context) {
 				// Create and fund account
-				fromAddr := sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq")
-				fundAmt, ok := sdkmath.NewIntFromString("999999999999999999") // at least 1 coin have to be liquid
-				suite.Require().True(ok)
-				suite.Require().NoError(s.network.FundAccount(fromAddr, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, fundAmt))))
+				fromAddr := sdk.MustAccAddressFromBech32("haqq1jt70r5w5q56fers0a4z2x95l92v360pwtey60k")
+				application, err := ethiqtypes.GetApplicationByID(29)
+				suite.Require().NoError(err)
+				suite.Require().NoError(s.network.FundAccount(fromAddr, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, application.BurnAmount.Amount.MulRaw(2)))))
 
 				funder := s.keyring.GetAccAddr(2)
 				vesting := s.keyring.GetAccAddr(3)
@@ -358,30 +390,29 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 				suite.Require().NoError(s.network.App.LiquidVestingKeeper.SetParams(ctx, lvParams))
 
 				suite.Require().NoError(s.setupClawbackVestingAccount(ctx, vesting, funder, testutil.TestVestingSchedule.TotalVestingCoins, false))
-				_, _, err := s.network.App.LiquidVestingKeeper.Liquidate(ctx, vesting, fromAddr, testutil.TestVestingSchedule.TotalVestingCoins.QuoInt(sdkmath.NewIntFromUint64(2))[0])
+				_, _, err = s.network.App.LiquidVestingKeeper.Liquidate(ctx, vesting, fromAddr, testutil.TestVestingSchedule.TotalVestingCoins.QuoInt(sdkmath.NewIntFromUint64(2))[0])
 				suite.Require().NoError(err)
 				suite.Require().NoError(s.network.NextBlockAfter(5 * time.Second))
 			},
-			from:          sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
-			appID:         29,
-			expMintAmt:    "117647058823529411",
-			expMintToAddr: sdk.MustAccAddressFromBech32("haqq1f3u5gz9fj2v3sxf7j9szsl2c7mfmcae2m6lslq"),
+			from:         sdk.MustAccAddressFromBech32("haqq1jt70r5w5q56fers0a4z2x95l92v360pwtey60k"),
+			appID:        29,
+			calcExpected: true,
 			expErr:        false,
 			errContains:   "",
 		},
 		{
 			name: "success - UCDAO as source of funds, no liquid vesting coins",
 			malleate: func(ctx sdk.Context) {
-				fromAddr := sdk.MustAccAddressFromBech32("haqq1gcwaegn8j68t02qersxdk95y53dey5xfq9alp0")
-				fundAmt, ok := sdkmath.NewIntFromString("1000000000000000000000000")
-				suite.Require().True(ok)
+				application, err := ethiqtypes.GetApplicationByID(ucdaoAppID)
+				suite.Require().NoError(err)
+				fromAddr := sdk.MustAccAddressFromBech32(application.FromAddress)
+				fundAmt := application.BurnAmount.Amount.MulRaw(2)
 				suite.Require().NoError(s.network.FundAccount(fromAddr, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, fundAmt))))
 				suite.Require().NoError(s.network.App.DaoKeeper.Fund(ctx, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, fundAmt)), fromAddr))
 			},
-			from:          sdk.MustAccAddressFromBech32("haqq1gcwaegn8j68t02qersxdk95y53dey5xfq9alp0"),
-			appID:         12,
-			expMintAmt:    "333333333333333333333333",
-			expMintToAddr: sdk.MustAccAddressFromBech32("haqq1gcwaegn8j68t02qersxdk95y53dey5xfq9alp0"),
+			from:         sdk.MustAccAddressFromBech32(ucdaoAppFrom),
+			appID:        ucdaoAppID,
+			calcExpected: true,
 			expErr:        false,
 			errContains:   "",
 		},
@@ -389,9 +420,10 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 			name: "success - UCDAO as source of funds, with liquid vesting coins",
 			malleate: func(ctx sdk.Context) {
 				// fund funder account
-				fromAddr := sdk.MustAccAddressFromBech32("haqq1gcwaegn8j68t02qersxdk95y53dey5xfq9alp0")
-				fundAmt, ok := sdkmath.NewIntFromString("999999999999999999999999") // at least one coin have to be liquid
-				suite.Require().True(ok)
+				application, err := ethiqtypes.GetApplicationByID(ucdaoAppID)
+				suite.Require().NoError(err)
+				fromAddr := sdk.MustAccAddressFromBech32(application.FromAddress)
+				fundAmt := application.BurnAmount.Amount.MulRaw(2)
 				suite.Require().NoError(s.network.FundAccount(fromAddr, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, fundAmt))))
 				// custom liquid vesting params
 				lvParams := s.network.App.LiquidVestingKeeper.GetParams(ctx)
@@ -407,10 +439,9 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 
 				suite.Require().NoError(s.network.App.DaoKeeper.Fund(ctx, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, fundAmt), liquidCoin), fromAddr))
 			},
-			from:          sdk.MustAccAddressFromBech32("haqq1gcwaegn8j68t02qersxdk95y53dey5xfq9alp0"),
-			appID:         12,
-			expMintAmt:    "333333333333333333333333",
-			expMintToAddr: sdk.MustAccAddressFromBech32("haqq1gcwaegn8j68t02qersxdk95y53dey5xfq9alp0"),
+			from:         sdk.MustAccAddressFromBech32(ucdaoAppFrom),
+			appID:        ucdaoAppID,
+			calcExpected: true,
 			expErr:        false,
 			errContains:   "",
 		},
@@ -433,10 +464,21 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 				suite.Require().NoError(err)
 				suite.Require().NotNil(resAmt)
 				suite.Require().NotNil(toAddr)
-				expMintAmt, ok := sdkmath.NewIntFromString(tc.expMintAmt)
-				suite.Require().True(ok)
-				suite.Require().Equal(expMintAmt.String(), resAmt.String())
-				suite.Require().Equal(tc.expMintToAddr, toAddr)
+				if tc.calcExpected {
+					app, appErr := ethiqtypes.GetApplicationByID(tc.appID)
+					suite.Require().NoError(appErr)
+					calcRes, calcErr := s.network.App.EthiqKeeper.CalculateForApplication(ctx, &ethiqtypes.QueryCalculateForApplicationRequest{
+						ApplicationId: tc.appID,
+					})
+					suite.Require().NoError(calcErr)
+					suite.Require().Equal(calcRes.EstimatedHaqqAmount.String(), resAmt.String())
+					suite.Require().Equal(sdk.MustAccAddressFromBech32(app.ToAddress), toAddr)
+				} else {
+					expMintAmt, ok := sdkmath.NewIntFromString(tc.expMintAmt)
+					suite.Require().True(ok)
+					suite.Require().Equal(expMintAmt.String(), resAmt.String())
+					suite.Require().Equal(tc.expMintToAddr, toAddr)
+				}
 			}
 		})
 	}

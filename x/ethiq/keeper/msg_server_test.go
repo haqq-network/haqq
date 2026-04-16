@@ -164,13 +164,16 @@ func (suite *KeeperTestSuite) TestMsgMintHaqqByApplication() {
 		{
 			name: "fail - insufficient funds",
 			malleate: func(_ sdk.Context) *ethiqtypes.MsgMintHaqqByApplication {
+				application, err := ethiqtypes.GetApplicationByID(6)
+				suite.Require().NoError(err)
+				fromAddress := sdk.MustAccAddressFromBech32(application.FromAddress)
 				suite.Require().NoError(s.network.FundAccount(
-					sdk.MustAccAddressFromBech32("haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z"),
+					fromAddress,
 					sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.OneInt())),
 				))
 
 				return &ethiqtypes.MsgMintHaqqByApplication{
-					FromAddress:   "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z",
+					FromAddress:   application.FromAddress,
 					ApplicationId: 6,
 				}
 			},
@@ -180,13 +183,16 @@ func (suite *KeeperTestSuite) TestMsgMintHaqqByApplication() {
 		{
 			name: "success - application executed",
 			malleate: func(_ sdk.Context) *ethiqtypes.MsgMintHaqqByApplication {
+				application, err := ethiqtypes.GetApplicationByID(6)
+				suite.Require().NoError(err)
+				fromAddress := sdk.MustAccAddressFromBech32(application.FromAddress)
 				suite.Require().NoError(s.network.FundAccount(
-					sdk.MustAccAddressFromBech32("haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z"),
-					sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.OneInt().MulRaw(1e18).MulRaw(100))),
+					fromAddress,
+					sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, application.BurnAmount.Amount.MulRaw(2))),
 				))
 
 				return &ethiqtypes.MsgMintHaqqByApplication{
-					FromAddress:   "haqq1hexv24j6g035fzwj7qhdj6qtgdh9jcurkug09z",
+					FromAddress:   application.FromAddress,
 					ApplicationId: 6,
 				}
 			},
