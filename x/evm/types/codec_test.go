@@ -37,8 +37,7 @@ func TestPackTxData(t *testing.T) {
 		},
 	}
 
-	testCasesAny := []caseAny{}
-
+	testCasesAny := make([]caseAny, 0, len(testCases))
 	for _, tc := range testCases {
 		txDataAny, err := PackTxData(tc.txData)
 		if tc.expPass {

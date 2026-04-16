@@ -55,3 +55,58 @@ func (suite *DenomTestSuite) TestDenomDisplayNameFromID() {
 		})
 	}
 }
+
+func (suite *DenomTestSuite) TestDenomIDFromBaseName() {
+	testCases := []struct {
+		name        string
+		baseName    string
+		expectedID  uint64
+		expectError bool
+	}{
+		{
+			name:        "ID zero",
+			baseName:    "aLIQUID0",
+			expectedID:  0,
+			expectError: false,
+		},
+		{
+			name:        "ID one",
+			baseName:    "aLIQUID1",
+			expectedID:  1,
+			expectError: false,
+		},
+		{
+			name:        "ID 999",
+			baseName:    "aLIQUID999",
+			expectedID:  999,
+			expectError: false,
+		},
+		{
+			name:        "wrong prefix LIQUID0",
+			baseName:    "LIQUID0",
+			expectError: true,
+		},
+		{
+			name:        "prefix only with no number",
+			baseName:    "aLIQUID",
+			expectError: true,
+		},
+		{
+			name:        "completely invalid string",
+			baseName:    "invalid",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			result, err := DenomIDFromBaseName(tc.baseName)
+			if tc.expectError {
+				suite.Require().Error(err)
+			} else {
+				suite.Require().NoError(err)
+				suite.Require().Equal(tc.expectedID, result)
+			}
+		})
+	}
+}

@@ -39,6 +39,24 @@ func (suite *ParamsTestSuite) TestParamsValidate() {
 			true,
 		},
 		{
+			"invalid: negative base fee",
+			Params{
+				NoBaseFee:                false,
+				BaseFeeChangeDenominator: 8,
+				ElasticityMultiplier:     2,
+				BaseFee:                  sdkmath.NewInt(-1),
+				EnableHeight:             0,
+				MinGasPrice:              DefaultMinGasPrice,
+				MinGasMultiplier:         DefaultMinGasMultiplier,
+			},
+			true,
+		},
+		{
+			"invalid: negative enable height",
+			NewParams(false, 8, 2, 1000000000, int64(-1), DefaultMinGasPrice, DefaultMinGasMultiplier),
+			true,
+		},
+		{
 			"invalid: min gas price negative",
 			NewParams(true, 7, 3, 2000000000, int64(544435345345435345), sdkmath.LegacyNewDecFromInt(sdkmath.NewInt(-1)), DefaultMinGasMultiplier),
 			true,
@@ -92,10 +110,57 @@ func (suite *ParamsTestSuite) TestParamsValidatePriv() {
 	suite.Require().Error(validateMinGasMultiplier(""))
 }
 
+func (suite *ParamsTestSuite) TestParamKeyTable() {
+	suite.Require().NotPanics(func() {
+		_ = ParamKeyTable()
+	})
+}
+
+func (suite *ParamsTestSuite) TestParamSetPairs() {
+	p := DefaultParams()
+	pairs := p.ParamSetPairs()
+	suite.Require().Len(pairs, 7)
+}
+
+func (suite *ParamsTestSuite) TestIsBaseFeeEnabled() {
+	testCases := []struct {
+		name       string
+		params     Params
+		height     int64
+		expEnabled bool
+	}{
+		{
+			"enabled: NoBaseFee=false, height >= EnableHeight",
+			NewParams(false, 8, 2, 1000000000, 0, DefaultMinGasPrice, DefaultMinGasMultiplier),
+			10,
+			true,
+		},
+		{
+			"disabled: NoBaseFee=true",
+			NewParams(true, 8, 2, 1000000000, 0, DefaultMinGasPrice, DefaultMinGasMultiplier),
+			10,
+			false,
+		},
+		{
+			"disabled: height < EnableHeight",
+			NewParams(false, 8, 2, 1000000000, 100, DefaultMinGasPrice, DefaultMinGasMultiplier),
+			5,
+			false,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			result := tc.params.IsBaseFeeEnabled(tc.height)
+			suite.Require().Equal(tc.expEnabled, result)
+		})
+	}
+}
+
 func (suite *ParamsTestSuite) TestParamsValidateMinGasPrice() {
 	testCases := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expError bool
 	}{
 		{"default", DefaultParams().MinGasPrice, false},

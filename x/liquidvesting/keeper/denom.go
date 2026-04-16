@@ -13,7 +13,7 @@ import (
 )
 
 // CreateDenom creates new liquid denom and stores it
-func (k Keeper) CreateDenom(
+func (k BaseKeeper) CreateDenom(
 	ctx sdk.Context,
 	originalDenom string,
 	startTime int64,
@@ -41,7 +41,7 @@ func (k Keeper) CreateDenom(
 }
 
 // UpdateDenomPeriods updates schedule periods bound to liquid denom
-func (k Keeper) UpdateDenomPeriods(ctx sdk.Context, baseDenom string, newPeriods sdkvesting.Periods) error {
+func (k BaseKeeper) UpdateDenomPeriods(ctx sdk.Context, baseDenom string, newPeriods sdkvesting.Periods) error {
 	d, found := k.GetDenom(ctx, baseDenom)
 	if !found {
 		return types.ErrDenomNotFound
@@ -52,13 +52,13 @@ func (k Keeper) UpdateDenomPeriods(ctx sdk.Context, baseDenom string, newPeriods
 }
 
 // DeleteDenom deletes denom from the storage
-func (k Keeper) DeleteDenom(ctx sdk.Context, baseDenom string) {
+func (k BaseKeeper) DeleteDenom(ctx sdk.Context, baseDenom string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DenomKeyPrefix)
 	store.Delete([]byte(baseDenom))
 }
 
 // GetDenom queries denom from the store
-func (k Keeper) GetDenom(ctx sdk.Context, baseDenom string) (val types.Denom, found bool) {
+func (k BaseKeeper) GetDenom(ctx sdk.Context, baseDenom string) (val types.Denom, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DenomKeyPrefix)
 
 	b := store.Get([]byte(baseDenom))
@@ -71,14 +71,14 @@ func (k Keeper) GetDenom(ctx sdk.Context, baseDenom string) (val types.Denom, fo
 }
 
 // SetDenom sets denom in the store
-func (k Keeper) SetDenom(ctx sdk.Context, denom types.Denom) {
+func (k BaseKeeper) SetDenom(ctx sdk.Context, denom types.Denom) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.DenomKeyPrefix)
 	b := k.cdc.MustMarshal(&denom)
 	store.Set([]byte(denom.GetBaseDenom()), b)
 }
 
 // GetAllGenesisAccount returns all genesisAccount
-func (k Keeper) GetAllDenoms(ctx sdk.Context) (list []types.Denom) {
+func (k BaseKeeper) GetAllDenoms(ctx sdk.Context) (list []types.Denom) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.DenomKeyPrefix)
 
@@ -94,7 +94,7 @@ func (k Keeper) GetAllDenoms(ctx sdk.Context) (list []types.Denom) {
 }
 
 // GetDenomCounter get the counter for denoms
-func (k Keeper) GetDenomCounter(ctx sdk.Context) uint64 {
+func (k BaseKeeper) GetDenomCounter(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
 	byteKey := types.DenomCounterKey
 	bz := store.Get(byteKey)
@@ -109,7 +109,7 @@ func (k Keeper) GetDenomCounter(ctx sdk.Context) uint64 {
 }
 
 // SetDenomCounter set the counter for denoms
-func (k Keeper) SetDenomCounter(ctx sdk.Context, counter uint64) {
+func (k BaseKeeper) SetDenomCounter(ctx sdk.Context, counter uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
 	byteKey := types.DenomCounterKey
 	bz := make([]byte, 8)
@@ -119,7 +119,7 @@ func (k Keeper) SetDenomCounter(ctx sdk.Context, counter uint64) {
 
 // IterateDenoms iterates over all the stored denoms and performs a callback function.
 // Stops iteration when callback returns true.
-func (k Keeper) IterateDenoms(ctx sdk.Context, cb func(account types.Denom) (stop bool)) {
+func (k BaseKeeper) IterateDenoms(ctx sdk.Context, cb func(account types.Denom) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.DenomKeyPrefix)
 

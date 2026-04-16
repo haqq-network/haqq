@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package haqq.ethiq.v1;
+
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/ethiq/types";
+
+// MintHaqqAuthorization allows the grantee to spend up to spend_limit coins from
+// the granter's account for minting haqq.
+message MintHaqqAuthorization {
+  option (cosmos_proto.implements_interface) = "cosmos.authz.v1beta1.Authorization";
+  option (amino.name)                        = "haqq/ethiq/MintHaqqAuthorization";
+
+  // spend_limit specifies the maximum amount of tokens can be spent to mint haqq tokens. If it is
+  // empty, there is no spend limit and any amount of coins can be spent.
+  cosmos.base.v1beta1.Coin spend_limit = 1 [(gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coin"];
+}
+
+// MintHaqqByApplicationIDAuthorization allows the grantee to execute application sent by
+// the granter's account earlier.
+// NOTE: Spent limit is a whole amount of application.
+message MintHaqqByApplicationIDAuthorization {
+  option (cosmos_proto.implements_interface) = "cosmos.authz.v1beta1.Authorization";
+  option (amino.name)                        = "haqq/ethiq/MintHaqqByApplicationIDAuthorization";
+
+  // applications list of allowed ids, an empty list permits any application id
+  repeated uint64 applications_list = 1;
+}

@@ -1,6 +1,7 @@
 package erc20_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -29,7 +30,10 @@ type GenesisTestSuite struct {
 	genesis types.GenesisState
 }
 
-const osmoERC20ContractAddr = "0x5dCA2483280D9727c80b5518faC4556617fb19ZZ"
+const (
+	osmoERC20ContractAddr     = "0x5dCA2483280D9727c80b5518faC4556617fb19ZZ"
+	haqqDynamicPrecompileAddr = "0x3af1695e3354Ec35F892b3d0880D4f7E12F4A172"
+)
 
 var osmoDenomTrace = transfertypes.DenomTrace{
 	BaseDenom: "uosmo",
@@ -76,20 +80,20 @@ func (suite *GenesisTestSuite) SetupTest() {
 
 func (suite *GenesisTestSuite) TestERC20InitGenesis() {
 	testCases := []struct {
-		name         string
-		genesisState types.GenesisState
+		name     string
+		customGS types.GenesisState
 	}{
 		{
-			name:         "empty genesis",
-			genesisState: types.GenesisState{},
+			name:     "empty genesis",
+			customGS: types.GenesisState{},
 		},
 		{
-			name:         "default genesis",
-			genesisState: *types.DefaultGenesisState(),
+			name:     "default genesis",
+			customGS: *types.DefaultGenesisState(),
 		},
 		{
 			name: "custom genesis",
-			genesisState: types.NewGenesisState(
+			customGS: types.NewGenesisState(
 				types.DefaultParams(),
 				[]types.TokenPair{
 					{
@@ -104,22 +108,25 @@ func (suite *GenesisTestSuite) TestERC20InitGenesis() {
 	}
 
 	for _, tc := range testCases {
-		gen := network.CustomGenesisState{
-			types.ModuleName: &tc.genesisState, // #nosec G601
-		}
-		nw := network.NewUnitTestNetwork(
-			network.WithCustomGenesis(gen),
-		)
+		suite.Run(fmt.Sprintf("Case %s", tc.name), func() {
+			gen := network.CustomGenesisState{
+				types.ModuleName: &tc.customGS, // #nosec G601
+			}
+			nw := network.NewUnitTestNetwork(
+				network.WithCustomGenesis(gen),
+			)
 
-		params := nw.App.Erc20Keeper.GetParams(nw.GetContext())
+			params := nw.App.Erc20Keeper.GetParams(nw.GetContext())
+			expGS := addRegisteredHaqqPrecompile(tc.customGS)
 
-		tokenPairs := nw.App.Erc20Keeper.GetTokenPairs(nw.GetContext())
-		suite.Require().Equal(tc.genesisState.Params, params)
-		if len(tokenPairs) > 0 {
-			suite.Require().Equal(tc.genesisState.TokenPairs, tokenPairs, tc.name)
-		} else {
-			suite.Require().Len(tc.genesisState.TokenPairs, 0, tc.name)
-		}
+			tokenPairs := nw.App.Erc20Keeper.GetTokenPairs(nw.GetContext())
+			suite.Require().Equal(expGS.Params, params)
+			if len(tokenPairs) > 0 {
+				suite.Require().Equal(expGS.TokenPairs, tokenPairs, tc.name)
+			} else {
+				suite.Require().Len(expGS.TokenPairs, 0, tc.name)
+			}
+		})
 	}
 }
 
@@ -167,4 +174,17 @@ func (suite *GenesisTestSuite) TestErc20ExportGenesis() {
 			}
 		})
 	}
+}
+
+func addRegisteredHaqqPrecompile(genState types.GenesisState) types.GenesisState {
+	haqqTokenPair := types.TokenPair{
+		Erc20Address:  haqqDynamicPrecompileAddr,
+		Denom:         "aHAQQ",
+		Enabled:       true,
+		ContractOwner: types.OWNER_MODULE,
+	}
+	genState.Params.DynamicPrecompiles = append(genState.Params.DynamicPrecompiles, haqqDynamicPrecompileAddr)
+	genState.TokenPairs = append([]types.TokenPair{haqqTokenPair}, genState.TokenPairs...)
+
+	return genState
 }

@@ -155,6 +155,9 @@ import (
 	"github.com/haqq-network/haqq/x/coinomics"
 	coinomicskeeper "github.com/haqq-network/haqq/x/coinomics/keeper"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	"github.com/haqq-network/haqq/x/ethiq"
+	ethiqkeeper "github.com/haqq-network/haqq/x/ethiq/keeper"
+	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	"github.com/haqq-network/haqq/x/liquidvesting"
 	liquidvestingkeeper "github.com/haqq-network/haqq/x/liquidvesting/keeper"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
@@ -164,6 +167,8 @@ import (
 
 	v190 "github.com/haqq-network/haqq/app/upgrades/v1.9.0"
 	v191 "github.com/haqq-network/haqq/app/upgrades/v1.9.1"
+	v192 "github.com/haqq-network/haqq/app/upgrades/v1.9.2"
+	v193 "github.com/haqq-network/haqq/app/upgrades/v1.9.3"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -218,6 +223,7 @@ var (
 		vestingtypes.ModuleName:        nil, // Add vesting module account
 		liquidvestingtypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
 		ucdaotypes.ModuleName:          nil,
+		ethiqtypes.ModuleName:          {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -283,6 +289,7 @@ type Haqq struct {
 	// Haqq keepers
 	CoinomicsKeeper coinomicskeeper.Keeper
 	DaoKeeper       ucdaokeeper.Keeper
+	EthiqKeeper     ethiqkeeper.Keeper
 
 	// the module manager
 	mm                 *module.Manager
@@ -527,7 +534,24 @@ func NewHaqq(
 	)
 
 	app.DaoKeeper = ucdaokeeper.NewBaseKeeper(
-		appCodec, keys[ucdaotypes.StoreKey], app.AccountKeeper, app.BankKeeper, authAddr,
+		appCodec, keys[ucdaotypes.StoreKey],
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.LiquidVestingKeeper,
+		// FIX: Temporary solution to solve keeper interdependency
+		&app.EthiqKeeper,
+		authAddr,
+	)
+
+	app.EthiqKeeper = ethiqkeeper.NewKeeper(
+		keys[ethiqtypes.StoreKey],
+		appCodec,
+		app.GetSubspace(ethiqtypes.ModuleName),
+		app.AccountKeeper,
+		app.BankKeeper,
+		&app.Erc20Keeper,
+		app.LiquidVestingKeeper,
+		app.DaoKeeper,
 	)
 
 	// Initialize the packet forward middleware Keeper
@@ -571,6 +595,9 @@ func NewHaqq(
 			app.AuthzKeeper,
 			app.TransferKeeper,
 			app.IBCKeeper.ChannelKeeper,
+			app.EthiqKeeper,
+			app.DaoKeeper,
+			app.LiquidVestingKeeper,
 		),
 	)
 
@@ -686,6 +713,7 @@ func NewHaqq(
 		vesting.NewAppModule(app.VestingKeeper, app.AccountKeeper, app.BankKeeper, *app.StakingKeeper.Keeper),
 		liquidvesting.NewAppModule(appCodec, app.LiquidVestingKeeper, app.AccountKeeper, app.BankKeeper, &app.Erc20Keeper),
 		ucdao.NewAppModule(appCodec, app.DaoKeeper, app.GetSubspace(ucdaotypes.ModuleName)),
+		ethiq.NewAppModule(app.EthiqKeeper, app.AccountKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager which is in charge of setting up basic,
@@ -780,6 +808,7 @@ func NewHaqq(
 		erc20types.ModuleName,
 		epochstypes.ModuleName,
 		ucdaotypes.ModuleName,
+		ethiqtypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 		consensusparamtypes.ModuleName,
@@ -1241,6 +1270,7 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(coinomicstypes.ModuleName)
 	paramsKeeper.Subspace(liquidvestingtypes.ModuleName)
 	paramsKeeper.Subspace(ucdaotypes.ModuleName)
+	paramsKeeper.Subspace(ethiqtypes.ModuleName).WithKeyTable(ethiqtypes.ParamKeyTable())
 
 	return paramsKeeper
 }
@@ -1258,6 +1288,18 @@ func (app *Haqq) setupUpgradeHandlers() {
 		v191.CreateUpgradeHandler(app.mm, app.configurator, app.GovKeeper, app.Erc20Keeper),
 	)
 
+	// v1.9.2 Upgrade UCDAO module
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v192.UpgradeName,
+		v192.CreateUpgradeHandler(app.mm, app.configurator),
+	)
+
+	// v1.9.3 Add Ethiq module
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v193.UpgradeName,
+		v193.CreateUpgradeHandler(app.mm, app.configurator, app.EvmKeeper),
+	)
+
 	// When a planned update height is reached, the old binary will panic
 	// writing on disk the height and name of the update that triggered it
 	// This will read that value, and execute the preparations for the upgrade.
@@ -1271,17 +1313,14 @@ func (app *Haqq) setupUpgradeHandlers() {
 	}
 
 	var storeUpgrades *storetypes.StoreUpgrades
-	//nolint: revive // Example for further upgrades
+	//nolint: gocritic // intended use of switch
 	switch upgradeInfo.Name {
-	// case v177.UpgradeName:
-	//	storeUpgrades = &storetypes.StoreUpgrades{
-	//		Renamed: []storetypes.StoreRename{
-	//			{
-	//				OldKey: ucdaotypes.ModuleOldName,
-	//				NewKey: ucdaotypes.ModuleName,
-	//			},
-	//		},
-	//	}
+	case v193.UpgradeName:
+		storeUpgrades = &storetypes.StoreUpgrades{
+			Added: []string{
+				ethiqtypes.ModuleName,
+			},
+		}
 	}
 
 	if storeUpgrades != nil {

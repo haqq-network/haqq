@@ -13,6 +13,7 @@ const (
 	TypeMsgTransferOwnership           = "transfer_ownership"
 	TypeMsgTransferOwnershipWithRatio  = "transfer_ownership_with_ratio"
 	TypeMsgTransferOwnershipWithAmount = "transfer_ownership_with_amount"
+	TypeMsgConvertToHaqq               = "convert_to_haqq"
 )
 
 // Verify interface at compile time
@@ -21,6 +22,7 @@ var (
 	_ sdk.Msg = (*MsgTransferOwnership)(nil)
 	_ sdk.Msg = (*MsgTransferOwnershipWithRatio)(nil)
 	_ sdk.Msg = (*MsgTransferOwnershipWithAmount)(nil)
+	_ sdk.Msg = (*MsgConvertToHaqq)(nil)
 )
 
 // NewMsgFund returns a new MsgFund with a sender and
@@ -234,5 +236,49 @@ func (msg MsgTransferOwnershipWithAmount) ValidateBasic() error {
 	if !msg.Amount.IsValid() {
 		return sdkerrors.ErrInvalidCoins.Wrapf("invalid amount: %s", msg.Amount)
 	}
+	return nil
+}
+
+// NewMsgConvertToHaqq returns a new MsgConvertToHaqq with sender, receiver and islmAmount.
+func NewMsgConvertToHaqq(sender, receiver sdk.AccAddress, islmAmount math.Int) *MsgConvertToHaqq {
+	return &MsgConvertToHaqq{
+		Sender:     sender.String(),
+		Receiver:   receiver.String(),
+		IslmAmount: islmAmount,
+	}
+}
+
+// Route returns the MsgConvertToHaqq message route.
+func (msg MsgConvertToHaqq) Route() string { return ModuleName }
+
+// Type returns the MsgConvertToHaqq message type.
+func (msg MsgConvertToHaqq) Type() string { return TypeMsgConvertToHaqq }
+
+// GetSigners returns the signer addresses that are expected to sign the result
+// of GetSignBytes.
+func (msg MsgConvertToHaqq) GetSigners() []sdk.AccAddress {
+	sender, _ := sdk.AccAddressFromBech32(msg.Sender)
+	return []sdk.AccAddress{sender}
+}
+
+// GetSignBytes returns the raw bytes for a MsgConvertToHaqq message that
+// the expected signer needs to sign.
+func (msg MsgConvertToHaqq) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic performs basic MsgConvertToHaqq message validation.
+func (msg MsgConvertToHaqq) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Sender); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid sender address: %s", err)
+	}
+	if _, err := sdk.AccAddressFromBech32(msg.Receiver); err != nil {
+		return sdkerrors.ErrInvalidAddress.Wrapf("invalid receiver address: %s", err)
+	}
+	if !msg.IslmAmount.IsPositive() {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, "islmAmount must be positive")
+	}
+
 	return nil
 }

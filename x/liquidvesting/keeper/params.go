@@ -9,13 +9,13 @@ import (
 // var isTrue = []byte("0x01")
 
 // GetParams returns the total set of liquidvesting parameters.
-func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
+func (k BaseKeeper) GetParams(ctx sdk.Context) (params types.Params) {
 	k.paramstore.GetParamSet(ctx, &params)
 	return params
 }
 
 // SetParams sets the liquidvesting parameters to the param space.
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
+func (k BaseKeeper) SetParams(ctx sdk.Context, params types.Params) error {
 	if err := params.Validate(); err != nil {
 		return err
 	}
@@ -25,12 +25,12 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
 	return nil
 }
 
-func (k Keeper) IsLiquidVestingEnabled(ctx sdk.Context) bool {
+func (k BaseKeeper) IsLiquidVestingEnabled(ctx sdk.Context) bool {
 	params := k.GetParams(ctx)
 	return params.EnableLiquidVesting
 }
 
-func (k Keeper) SetLiquidVestingEnabled(ctx sdk.Context, enable bool) {
+func (k BaseKeeper) SetLiquidVestingEnabled(ctx sdk.Context, enable bool) {
 	params := k.GetParams(ctx)
 	params.EnableLiquidVesting = enable
 	err := k.SetParams(ctx, params)
@@ -39,7 +39,7 @@ func (k Keeper) SetLiquidVestingEnabled(ctx sdk.Context, enable bool) {
 	}
 }
 
-func (k Keeper) ResetParamsToDefault(ctx sdk.Context) {
+func (k BaseKeeper) ResetParamsToDefault(ctx sdk.Context) {
 	params := types.DefaultParams()
 	err := k.SetParams(ctx, params)
 	if err != nil {

@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package haqq.ethiq.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/haqq-network/haqq/x/ethiq/types";
+
+// Msg defines the ethiq Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
+  rpc MintHaqq(MsgMintHaqq) returns (MsgMintHaqqResponse);
+
+  // MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+  // trough whitelisted application submitted earlier via smart-contract
+  rpc MintHaqqByApplication(MsgMintHaqqByApplication) returns (MsgMintHaqqByApplicationResponse);
+}
+
+// MsgMintHaqq allows an account to mint aHAQQ coins in exchange for aISLM coins
+message MsgMintHaqq {
+  option (cosmos.msg.v1.signer) = "from_address";
+  option (amino.name) = "haqq/ethiq/MsgMintHaqq";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // from_address is the address that will send the aISLM coins
+  string from_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // to_address is the address that will receive the minted aHAQQ coins
+  string to_address = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // islm_amount is the amount of aISLM to burn in exchange for aHAQQ
+  string islm_amount = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// MsgMintHaqqResponse defines the Msg/MintHaqq response type.
+message MsgMintHaqqResponse {
+  // haqq_amount is the amount of minted aHAQQ coins
+  string haqq_amount = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
+// trough whitelisted application submitted earlier via smart-contract
+message MsgMintHaqqByApplication {
+  option (cosmos.msg.v1.signer) = "from_address";
+  option (amino.name) = "haqq/ethiq/MsgMintHaqqByApplication";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // from_address is the address that will send the aISLM coins
+  string from_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+
+  // application_id is the id of application submitted earlier
+  uint64 application_id = 3;
+}
+
+// MsgMintHaqqResponse defines the Msg/MintHaqqByApplication response type.
+message MsgMintHaqqByApplicationResponse {
+  // haqq_amount is the amount of minted aHAQQ coins
+  string haqq_amount = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+
+  // to_address is a receiver's address
+  string to_address = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+}

@@ -1,6 +1,6 @@
 version: v1.25.0
 language-settings: 
-    go: "1.23.10"
+    go: "1.24.10"
 exclude:
     global:
         - client/export.go

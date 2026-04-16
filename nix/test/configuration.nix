@@ -1,6 +1,6 @@
 { pkgs, config, lib, ... }:
 {
-  system.stateVersion = "24.05";
+  system.stateVersion = "25.05";
 
   /*
     sops.age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];

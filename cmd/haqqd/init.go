@@ -53,7 +53,7 @@ func displayInfo(info printInfo) error {
 		return err
 	}
 
-	if _, err := fmt.Fprintf(os.Stderr, "%s\n", string(sdk.MustSortJSON(out))); err != nil {
+	if _, err := fmt.Fprintf(os.Stderr, "%s\n", string(sdk.MustSortJSON(out))); err != nil { // #nosec G705 -- JSON to stderr, not HTML
 		return err
 	}
 

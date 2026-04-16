@@ -173,7 +173,7 @@ func (suite *EIP712TestSuite) createRandomString() string {
 	bz := make([]byte, bzLen)
 
 	for i := 0; i < bzLen; i++ {
-		bz[i] = byte(suite.createRandomIntInRange(asciiRangeStart, asciiRangeEnd))
+		bz[i] = byte(suite.createRandomIntInRange(asciiRangeStart, asciiRangeEnd)) // #nosec G115 -- fuzzer ascii range fits in byte
 	}
 
 	str := string(bz)

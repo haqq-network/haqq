@@ -47,9 +47,9 @@ func (m *Manager) CreateSubmitProposalExec(targetVersion, chainID string, upgrad
 }
 
 func getProposalCmd(legacy ProposalVersion, targetVersion string, upgradeHeight uint, chainID string) []string {
-	var cmd []string
+	cmd := make([]string, 0, 9)
 	if legacy == UpgradeProposalV50 {
-		cmd = []string{
+		cmd = append(cmd,
 			"evmosd",
 			"tx",
 			"upgrade",
@@ -57,7 +57,7 @@ func getProposalCmd(legacy ProposalVersion, targetVersion string, upgradeHeight 
 			targetVersion,
 			"--summary=\"Test upgrade proposal\"",
 			"--no-validate",
-		}
+		)
 	} else {
 		var upgradeInfo, proposalType string
 
@@ -72,7 +72,7 @@ func getProposalCmd(legacy ProposalVersion, targetVersion string, upgradeHeight 
 			panic(fmt.Sprintf("invalid legacy proposal version: %v", legacy))
 		}
 
-		cmd = []string{
+		cmd = append(cmd,
 			"evmosd",
 			"tx",
 			"gov",
@@ -80,7 +80,7 @@ func getProposalCmd(legacy ProposalVersion, targetVersion string, upgradeHeight 
 			"software-upgrade",
 			targetVersion,
 			upgradeInfo,
-		}
+		)
 	}
 
 	cmd = append(cmd,
@@ -121,7 +121,8 @@ func (m *Manager) CreateDepositProposalExec(chainID string, id int) (string, err
 
 // CreateVoteProposalExec creates gov tx to vote 'yes' on the proposal with the given id
 func (m *Manager) CreateVoteProposalExec(chainID string, id int, flags ...string) (string, error) {
-	cmd := []string{
+	cmd := make([]string, 0, 11+len(flags))
+	cmd = append(cmd,
 		"haqqd",
 		"tx",
 		"gov",
@@ -133,7 +134,7 @@ func (m *Manager) CreateVoteProposalExec(chainID string, id int, flags ...string
 		"--yes",
 		"--keyring-backend=test",
 		"--output=text",
-	}
+	)
 	cmd = append(cmd, flags...)
 	return m.CreateExec(cmd, m.ContainerID())
 }

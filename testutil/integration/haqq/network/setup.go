@@ -32,6 +32,7 @@ import (
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 	epochstypes "github.com/haqq-network/haqq/x/epochs/types"
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	feemarkettypes "github.com/haqq-network/haqq/x/feemarket/types"
 	liquidvestingtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
@@ -56,6 +57,7 @@ type defaultGenesisParams struct {
 var genesisSetupFunctions = map[string]genSetupFn{
 	evmtypes.ModuleName:           genStateSetter[*evmtypes.GenesisState](evmtypes.ModuleName),
 	erc20types.ModuleName:         genStateSetter[*erc20types.GenesisState](erc20types.ModuleName),
+	ethiqtypes.ModuleName:         genStateSetter[*ethiqtypes.GenesisState](ethiqtypes.ModuleName),
 	govtypes.ModuleName:           genStateSetter[*govtypesv1.GenesisState](govtypes.ModuleName),
 	coinomicstypes.ModuleName:     genStateSetter[*coinomicstypes.GenesisState](coinomicstypes.ModuleName),
 	feemarkettypes.ModuleName:     genStateSetter[*feemarkettypes.GenesisState](feemarkettypes.ModuleName),
@@ -469,6 +471,13 @@ func setDefaultErc20GenesisState(haqqApp *app.Haqq, genesisState haqqtypes.Genes
 	return genesisState
 }
 
+// setDefaultEthiqGenesisState sets the ethiq genesis state
+func setDefaultEthiqGenesisState(haqqApp *app.Haqq, genesisState haqqtypes.GenesisState) haqqtypes.GenesisState {
+	ethiqGen := ethiqtypes.DefaultGenesisState()
+	genesisState[ethiqtypes.ModuleName] = haqqApp.AppCodec().MustMarshalJSON(ethiqGen)
+	return genesisState
+}
+
 // defaultAuthGenesisState sets the default genesis state
 // for the testing setup
 func newDefaultGenesisState(haqqApp *app.Haqq, params defaultGenesisParams) haqqtypes.GenesisState {
@@ -481,6 +490,7 @@ func newDefaultGenesisState(haqqApp *app.Haqq, params defaultGenesisParams) haqq
 	genesisState = setDefaultGovGenesisState(haqqApp, genesisState, params.gov)
 	genesisState = setDefaultSlashingGenesisState(haqqApp, genesisState, params.slashing)
 	genesisState = setDefaultErc20GenesisState(haqqApp, genesisState)
+	genesisState = setDefaultEthiqGenesisState(haqqApp, genesisState)
 
 	return genesisState
 }

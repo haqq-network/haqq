@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/haqq-network/haqq/x/erc20/types"
@@ -204,6 +205,70 @@ func TestEqualMetadata(t *testing.T) {
 		} else {
 			require.NoError(t, err)
 		}
+	}
+}
+
+func TestIsModuleAccount(t *testing.T) {
+	// module account
+	moduleAcc := authtypes.NewEmptyModuleAccount("test")
+	require.True(t, types.IsModuleAccount(moduleAcc))
+
+	// base account
+	baseAcc := authtypes.NewBaseAccount(sdk.AccAddress([]byte("test")), nil, 0, 0)
+	require.False(t, types.IsModuleAccount(baseAcc))
+}
+
+func TestGetDisabledAndEnabledPrecompiles(t *testing.T) {
+	testCases := []struct {
+		name           string
+		oldPrecompiles []string
+		newPrecompiles []string
+		expDisabled    []string
+		expEnabled     []string
+	}{
+		{
+			name:           "both empty",
+			oldPrecompiles: []string{},
+			newPrecompiles: []string{},
+			expDisabled:    nil,
+			expEnabled:     nil,
+		},
+		{
+			name:           "add one precompile",
+			oldPrecompiles: []string{},
+			newPrecompiles: []string{"0xaddr1"},
+			expDisabled:    nil,
+			expEnabled:     []string{"0xaddr1"},
+		},
+		{
+			name:           "remove one precompile",
+			oldPrecompiles: []string{"0xaddr1"},
+			newPrecompiles: []string{},
+			expDisabled:    []string{"0xaddr1"},
+			expEnabled:     nil,
+		},
+		{
+			name:           "swap precompiles",
+			oldPrecompiles: []string{"0xaddr1"},
+			newPrecompiles: []string{"0xaddr2"},
+			expDisabled:    []string{"0xaddr1"},
+			expEnabled:     []string{"0xaddr2"},
+		},
+		{
+			name:           "keep same",
+			oldPrecompiles: []string{"0xaddr1"},
+			newPrecompiles: []string{"0xaddr1"},
+			expDisabled:    nil,
+			expEnabled:     nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			disabled, enabled := types.GetDisabledAndEnabledPrecompiles(tc.oldPrecompiles, tc.newPrecompiles)
+			require.Equal(t, tc.expDisabled, disabled)
+			require.Equal(t, tc.expEnabled, enabled)
+		})
 	}
 }
 

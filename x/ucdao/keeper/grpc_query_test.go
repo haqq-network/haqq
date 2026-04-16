@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/types/query"
+
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/utils"
@@ -302,7 +303,7 @@ func TestHolders(t *testing.T) {
 		{
 			name: "valid - 5 holders, paginated by 2, page 2",
 			malleate: func() {
-				holders := make([]types.Balance, 2)
+				var holders []types.Balance
 				var nextKey []byte
 				for i := 0; i < testAccountsCount; i++ {
 					coins := balances.MulInt(sdkmath.NewInt(int64(i + 1)))
@@ -312,11 +313,12 @@ func TestHolders(t *testing.T) {
 					_, err := msgSrv.Fund(ctx, msg)
 					require.NoError(t, err, "error while funding the UC DAO account")
 
-					if i > 1 && i < 4 {
-						holders[i-2] = types.Balance{
+					// Page 2 contains accounts at indices 2 and 3 (offset 2, limit 2)
+					if i >= 2 && i < 4 {
+						holders = append(holders, types.Balance{
 							Address: testAccounts[i].String(),
 							Coins:   coins,
-						}
+						})
 					}
 					if i == 4 {
 						nextKey = address.MustLengthPrefix(testAccounts[i])
@@ -419,6 +421,133 @@ func TestHolders(t *testing.T) {
 			require.NoError(t, nw.NextBlock())
 
 			res, err := qc.Holders(ctx, req)
+			if tc.expPass {
+				require.NoError(t, err)
+				require.Equal(t, expRes, res)
+			} else {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tc.errContains)
+			}
+		})
+	}
+}
+
+func TestEscrowAddress(t *testing.T) {
+	var (
+		ctx    sdk.Context
+		nw     *network.UnitTestNetwork
+		kr     keyring.Keyring
+		qc     types.QueryClient
+		req    *types.QueryEscrowAddressRequest
+		expRes *types.QueryEscrowAddressResponse
+	)
+
+	testCases := []struct {
+		name        string
+		malleate    func()
+		expPass     bool
+		errContains string
+	}{
+		{
+			name: "nil req",
+			malleate: func() {
+				req = nil
+			},
+			expPass:     false,
+			errContains: "invalid address",
+		},
+		{
+			name: "invalid bech32 address",
+			malleate: func() {
+				req = &types.QueryEscrowAddressRequest{
+					Address: "haqq11",
+				}
+			},
+			expPass:     false,
+			errContains: "decoding bech32 failed: invalid bech32 string length 6",
+		},
+		{
+			name: "invalid hex address",
+			malleate: func() {
+				req = &types.QueryEscrowAddressRequest{
+					Address: "0xinvalid",
+				}
+			},
+			expPass:     false,
+			errContains: "invalid address",
+		},
+		{
+			name: "valid bech32 address",
+			malleate: func() {
+				accAddr := kr.GetAccAddr(0)
+				escrowAddr := types.GetEscrowAddress(accAddr)
+				req = &types.QueryEscrowAddressRequest{
+					Address: accAddr.String(),
+				}
+				expRes = &types.QueryEscrowAddressResponse{
+					EscrowAddress: escrowAddr.String(),
+				}
+			},
+			expPass: true,
+		},
+		{
+			name: "valid hex address",
+			malleate: func() {
+				accAddr := kr.GetAccAddr(0)
+				escrowAddr := types.GetEscrowAddress(accAddr)
+				req = &types.QueryEscrowAddressRequest{
+					Address: kr.GetAddr(0).String(),
+				}
+				expRes = &types.QueryEscrowAddressResponse{
+					EscrowAddress: escrowAddr.String(),
+				}
+			},
+			expPass: true,
+		},
+		{
+			name: "valid bech32 address - different account",
+			malleate: func() {
+				accAddr := kr.GetAccAddr(1)
+				escrowAddr := types.GetEscrowAddress(accAddr)
+				req = &types.QueryEscrowAddressRequest{
+					Address: accAddr.String(),
+				}
+				expRes = &types.QueryEscrowAddressResponse{
+					EscrowAddress: escrowAddr.String(),
+				}
+			},
+			expPass: true,
+		},
+		{
+			name: "valid hex address - different account",
+			malleate: func() {
+				accAddr := kr.GetAccAddr(1)
+				escrowAddr := types.GetEscrowAddress(accAddr)
+				req = &types.QueryEscrowAddressRequest{
+					Address: kr.GetAddr(1).String(),
+				}
+				expRes = &types.QueryEscrowAddressResponse{
+					EscrowAddress: escrowAddr.String(),
+				}
+			},
+			expPass: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("Case %s", tc.name), func(t *testing.T) {
+			kr = keyring.New(2)
+			nw = network.NewUnitTestNetwork(
+				network.WithPreFundedAccounts(kr.GetAllAccAddrs()...),
+			)
+			ctx = nw.GetContext()
+			qc = nw.GetUCDAOClient()
+
+			tc.malleate()
+
+			require.NoError(t, nw.NextBlock())
+
+			res, err := qc.EscrowAddress(ctx, req)
 			if tc.expPass {
 				require.NoError(t, err)
 				require.Equal(t, expRes, res)

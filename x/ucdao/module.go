@@ -30,7 +30,7 @@ import (
 )
 
 // ConsensusVersion defines the current x/dao module consensus version.
-const ConsensusVersion = 1
+const ConsensusVersion = 2
 
 var (
 	_ module.AppModule           = AppModule{}
@@ -110,6 +110,11 @@ func (am AppModule) IsAppModule() {}
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	m := keeper.NewMigrator(am.keeper.(keeper.BaseKeeper))
+	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+		panic(err)
+	}
 }
 
 // NewAppModule creates a new AppModule object
@@ -155,7 +160,7 @@ func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 // GenerateGenesisState creates a randomized GenState of the dao module.
 func (AppModule) GenerateGenesisState(_ *module.SimulationState) {}
 
-// RegisterStoreDecoder registers a decoder for evm module's types
+// RegisterStoreDecoder registers a decoder for ucdao module's types
 func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {
 }
 
@@ -179,9 +184,10 @@ type DaoInputs struct {
 	Cdc    codec.Codec
 	Key    *store.KVStoreKey
 
-	AccountKeeper types.AccountKeeper
-	BankKeeper    types.BankKeeper
-
+	AccountKeeper       types.AccountKeeper
+	BankKeeper          types.BankKeeper
+	LiquidVestingKeeper types.LiquidVestingKeeper
+	EthiqKeeper         types.EthiqKeeper
 	// LegacySubspace is used solely for migration of x/params managed parameters
 	LegacySubspace exported.Subspace `optional:"true"`
 }
@@ -205,6 +211,8 @@ func ProvideModule(in DaoInputs) DaoOutputs {
 		in.Key,
 		in.AccountKeeper,
 		in.BankKeeper,
+		in.LiquidVestingKeeper,
+		in.EthiqKeeper,
 		authority.String(),
 	)
 	m := NewAppModule(in.Cdc, daoKeeper, in.LegacySubspace)

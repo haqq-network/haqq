@@ -42,6 +42,18 @@ func TestKeeperTestSuite(t *testing.T) {
 	RunSpecs(t, "Keeper Suite")
 }
 
+func (suite *KeeperTestSuite) TestLogger() {
+	ctx := suite.network.GetContext()
+	logger := suite.network.App.CoinomicsKeeper.Logger(ctx)
+	suite.Require().NotNil(logger)
+}
+
+func (suite *KeeperTestSuite) TestTokenSupply() {
+	ctx := suite.network.GetContext()
+	supply := suite.network.App.CoinomicsKeeper.TokenSupply(ctx, denomMint)
+	suite.Require().True(supply.IsPositive())
+}
+
 func (suite *KeeperTestSuite) SetupTest() {
 	keyring := testkeyring.New(2)
 	nw := network.NewUnitTestNetwork(

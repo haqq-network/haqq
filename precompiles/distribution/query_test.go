@@ -57,7 +57,8 @@ func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
 	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.ValidatorDistributionInfoMethod]
 
-	testCases := []distrTestCases{
+	testCases := make([]distrTestCases, 0, 3+len(baseTestCases))
+	testCases = append(testCases, []distrTestCases{
 		{
 			"fail - nonexistent validator address",
 			func() []interface{} {
@@ -120,7 +121,7 @@ func (s *PrecompileTestSuite) TestValidatorDistributionInfo() {
 			false,
 			"",
 		},
-	}
+	}...)
 	testCases = append(testCases, baseTestCases...)
 
 	for _, tc := range testCases {
@@ -147,7 +148,8 @@ func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() {
 	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.ValidatorOutstandingRewardsMethod]
 
-	testCases := []distrTestCases{
+	testCases := make([]distrTestCases, 0, 3+len(baseTestCases))
+	testCases = append(testCases, []distrTestCases{
 		{
 			"fail - nonexistent validator address",
 			func() []interface{} {
@@ -213,7 +215,7 @@ func (s *PrecompileTestSuite) TestValidatorOutstandingRewards() {
 			false,
 			"",
 		},
-	}
+	}...)
 	testCases = append(testCases, baseTestCases...)
 
 	for _, tc := range testCases {
@@ -240,7 +242,8 @@ func (s *PrecompileTestSuite) TestValidatorCommission() {
 	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.ValidatorCommissionMethod]
 
-	testCases := []distrTestCases{
+	testCases := make([]distrTestCases, 0, 3+len(baseTestCases))
+	testCases = append(testCases, []distrTestCases{
 		{
 			"fail - nonexistent validator address",
 			func() []interface{} {
@@ -311,7 +314,7 @@ func (s *PrecompileTestSuite) TestValidatorCommission() {
 			false,
 			"",
 		},
-	}
+	}...)
 	testCases = append(testCases, baseTestCases...)
 
 	for _, tc := range testCases {
@@ -338,7 +341,8 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.ValidatorSlashesMethod]
 
-	testCases := []distrTestCases{
+	testCases := make([]distrTestCases, 0, 8)
+	testCases = append(testCases, []distrTestCases{
 		{
 			"fail - invalid validator address",
 			func() []interface{} {
@@ -480,7 +484,7 @@ func (s *PrecompileTestSuite) TestValidatorSlashes() {
 			false,
 			"",
 		},
-	}
+	}...)
 	testCases = append(testCases, baseTestCases[0])
 
 	for _, tc := range testCases {
@@ -510,7 +514,8 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 	)
 	method := s.precompile.Methods[distribution.DelegationRewardsMethod]
 
-	testCases := []distrTestCases{
+	testCases := make([]distrTestCases, 0, 6)
+	testCases = append(testCases, []distrTestCases{
 		{
 			"fail - invalid validator address",
 			func() []interface{} {
@@ -595,7 +600,7 @@ func (s *PrecompileTestSuite) TestDelegationRewards() {
 			false,
 			"",
 		},
-	}
+	}...)
 	testCases = append(testCases, baseTestCases[0])
 
 	for _, tc := range testCases {
@@ -626,7 +631,8 @@ func (s *PrecompileTestSuite) TestDelegationTotalRewards() {
 	)
 	method := s.precompile.Methods[distribution.DelegationTotalRewardsMethod]
 
-	testCases := []distrTestCases{
+	testCases := make([]distrTestCases, 0, 5)
+	testCases = append(testCases, []distrTestCases{
 		{
 			"fail - invalid delegator address",
 			func() []interface{} {
@@ -728,7 +734,7 @@ func (s *PrecompileTestSuite) TestDelegationTotalRewards() {
 			false,
 			"",
 		},
-	}
+	}...)
 	testCases = append(testCases, baseTestCases[0])
 
 	for _, tc := range testCases {
@@ -757,7 +763,8 @@ func (s *PrecompileTestSuite) TestDelegatorValidators() {
 	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.DelegatorValidatorsMethod]
 
-	testCases := []distrTestCases{
+	testCases := make([]distrTestCases, 0, 4)
+	testCases = append(testCases, []distrTestCases{
 		{
 			"fail - invalid delegator address",
 			func() []interface{} {
@@ -813,7 +820,7 @@ func (s *PrecompileTestSuite) TestDelegatorValidators() {
 			false,
 			"",
 		},
-	}
+	}...)
 	testCases = append(testCases, baseTestCases[0])
 
 	for _, tc := range testCases {
@@ -840,7 +847,8 @@ func (s *PrecompileTestSuite) TestDelegatorWithdrawAddress() {
 	var ctx sdk.Context
 	method := s.precompile.Methods[distribution.DelegatorWithdrawAddressMethod]
 
-	testCases := []distrTestCases{
+	testCases := make([]distrTestCases, 0, 3)
+	testCases = append(testCases, []distrTestCases{
 		{
 			"fail - invalid delegator address",
 			func() []interface{} {
@@ -870,7 +878,7 @@ func (s *PrecompileTestSuite) TestDelegatorWithdrawAddress() {
 			false,
 			"",
 		},
-	}
+	}...)
 	testCases = append(testCases, baseTestCases[0])
 
 	for _, tc := range testCases {

@@ -9,6 +9,38 @@ import (
 	"github.com/haqq-network/haqq/x/epochs/types"
 )
 
+func TestDeleteEpochInfo(t *testing.T) {
+	suite := SetupTest([]types.EpochInfo{})
+	ctx := suite.network.GetContext()
+
+	// Verify day epoch exists
+	_, found := suite.network.App.EpochsKeeper.GetEpochInfo(ctx, types.DayEpochID)
+	require.True(t, found)
+
+	// Delete it and verify it's gone
+	suite.network.App.EpochsKeeper.DeleteEpochInfo(ctx, types.DayEpochID)
+	_, found = suite.network.App.EpochsKeeper.GetEpochInfo(ctx, types.DayEpochID)
+	require.False(t, found)
+
+	// Other epochs are unaffected
+	_, found = suite.network.App.EpochsKeeper.GetEpochInfo(ctx, types.WeekEpochID)
+	require.True(t, found)
+}
+
+func TestIterateEpochInfoEarlyStop(t *testing.T) {
+	suite := SetupTest([]types.EpochInfo{})
+	ctx := suite.network.GetContext()
+
+	// Iterate but stop after the first epoch
+	var visited []string
+	suite.network.App.EpochsKeeper.IterateEpochInfo(ctx, func(_ int64, epochInfo types.EpochInfo) bool {
+		visited = append(visited, epochInfo.Identifier)
+		return true // stop immediately
+	})
+
+	require.Len(t, visited, 1)
+}
+
 func TestEpochLifeCycle(t *testing.T) {
 	// The default genesis includes day and week epochs.
 	suite := SetupTest([]types.EpochInfo{})

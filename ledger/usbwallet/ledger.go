@@ -228,7 +228,7 @@ func (w *ledgerDriver) ledgerVersion() ([3]byte, error) {
 func (w *ledgerDriver) ledgerDerive(derivationPath gethaccounts.DerivationPath) (common.Address, *ecdsa.PublicKey, error) {
 	// Flatten the derivation path into the Ledger request
 	path := make([]byte, 1+4*len(derivationPath))
-	path[0] = byte(len(derivationPath))
+	path[0] = byte(len(derivationPath)) // #nosec G115 -- BIP32 path depth is at most 10
 	for i, component := range derivationPath {
 		binary.BigEndian.PutUint32(path[1+4*i:], component)
 	}
@@ -314,12 +314,12 @@ func (w *ledgerDriver) ledgerDerive(derivationPath gethaccounts.DerivationPath) 
 func (w *ledgerDriver) ledgerSignTypedMessage(derivationPath gethaccounts.DerivationPath, domainHash, messageHash []byte) ([]byte, error) {
 	// Flatten the derivation path into the Ledger request
 	path := make([]byte, 1+4*len(derivationPath))
-	path[0] = byte(len(derivationPath))
+	path[0] = byte(len(derivationPath)) // #nosec G115 -- BIP32 path depth is at most 10
 	for i, component := range derivationPath {
 		binary.BigEndian.PutUint32(path[1+4*i:], component)
 	}
 	// Create the 712 message
-	var payload []byte
+	payload := make([]byte, 0, len(path)+len(domainHash)+len(messageHash))
 	payload = append(payload, path...)
 	payload = append(payload, domainHash...)
 	payload = append(payload, messageHash...)
@@ -342,7 +342,7 @@ func (w *ledgerDriver) ledgerSignTypedMessage(derivationPath gethaccounts.Deriva
 		return nil, errors.New("reply lacks signature")
 	}
 
-	var signature []byte
+	signature := make([]byte, 0, len(reply))
 	signature = append(signature, reply[1:]...)
 	signature = append(signature, reply[0])
 
@@ -388,7 +388,7 @@ func (w *ledgerDriver) ledgerExchange(opcode ledgerOpcode, p1 ledgerParam1, p2 l
 
 	//nolint: gosec // gosec G115 will raise a warning on this integer conversion for potential overflow
 	binary.BigEndian.PutUint16(apdu, uint16(5+len(data)))
-	apdu = append(apdu, []byte{0xe0, byte(opcode), byte(p1), byte(p2), byte(len(data))}...)
+	apdu = append(apdu, []byte{0xe0, byte(opcode), byte(p1), byte(p2), byte(len(data))}...) // #nosec G115 -- APDU data length is bounded
 	apdu = append(apdu, data...)
 
 	// Stream all the chunks to the device

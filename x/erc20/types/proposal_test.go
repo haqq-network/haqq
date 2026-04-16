@@ -20,6 +20,16 @@ func TestProposalTestSuite(t *testing.T) {
 	suite.Run(t, new(ProposalTestSuite))
 }
 
+func (suite *ProposalTestSuite) TestRegisterCoinProposal() {
+	proposal := &types.RegisterCoinProposal{}
+	suite.Require().Equal("erc20", proposal.ProposalRoute())
+	suite.Require().Equal("RegisterCoin", proposal.ProposalType())
+
+	err := proposal.ValidateBasic()
+	suite.Require().Error(err)
+	suite.Require().Contains(err.Error(), "deprecated")
+}
+
 func (suite *ProposalTestSuite) TestKeysTypes() {
 	suite.Require().Equal("erc20", (&types.RegisterERC20Proposal{}).ProposalRoute())
 	suite.Require().Equal("RegisterERC20", (&types.RegisterERC20Proposal{}).ProposalType())
@@ -158,7 +168,7 @@ func (suite *ProposalTestSuite) TestToggleTokenConversionProposal() {
 		expectPass  bool
 	}{
 		{msg: "Enable token conversion proposal - valid denom", title: "test", description: "test desc", token: "test", expectPass: true},
-		{msg: "Enable token conversion proposal - valid address", title: "test", description: "test desc", token: "0x5dCA2483280D9727c80b5518faC4556617fb194F", expectPass: true}, //gitleaks:allow
+		{msg: "Enable token conversion proposal - valid address", title: "test", description: "test desc", token: "0x5dCA2483280D9727c80b5518faC4556617fb194F", expectPass: true}, // #nosec G101 -- test data, not credentials; gitleaks:allow
 		{msg: "Enable token conversion proposal - invalid address", title: "test", description: "test desc", token: "0x123", expectPass: false},
 
 		// Invalid missing params

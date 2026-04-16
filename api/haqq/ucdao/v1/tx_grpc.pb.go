@@ -23,6 +23,7 @@ const (
 	Msg_TransferOwnership_FullMethodName           = "/haqq.ucdao.v1.Msg/TransferOwnership"
 	Msg_TransferOwnershipWithRatio_FullMethodName  = "/haqq.ucdao.v1.Msg/TransferOwnershipWithRatio"
 	Msg_TransferOwnershipWithAmount_FullMethodName = "/haqq.ucdao.v1.Msg/TransferOwnershipWithAmount"
+	Msg_ConvertToHaqq_FullMethodName               = "/haqq.ucdao.v1.Msg/ConvertToHaqq"
 )
 
 // MsgClient is the client API for Msg service.
@@ -41,6 +42,8 @@ type MsgClient interface {
 	// transfer the ownership of shares to another account with certain amount of
 	// coins.
 	TransferOwnershipWithAmount(ctx context.Context, in *MsgTransferOwnershipWithAmount, opts ...grpc.CallOption) (*MsgTransferOwnershipWithAmountResponse, error)
+	// ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to aHAQQ tokens.
+	ConvertToHaqq(ctx context.Context, in *MsgConvertToHaqq, opts ...grpc.CallOption) (*MsgConvertToHaqqResponse, error)
 }
 
 type msgClient struct {
@@ -87,6 +90,15 @@ func (c *msgClient) TransferOwnershipWithAmount(ctx context.Context, in *MsgTran
 	return out, nil
 }
 
+func (c *msgClient) ConvertToHaqq(ctx context.Context, in *MsgConvertToHaqq, opts ...grpc.CallOption) (*MsgConvertToHaqqResponse, error) {
+	out := new(MsgConvertToHaqqResponse)
+	err := c.cc.Invoke(ctx, Msg_ConvertToHaqq_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
@@ -103,6 +115,8 @@ type MsgServer interface {
 	// transfer the ownership of shares to another account with certain amount of
 	// coins.
 	TransferOwnershipWithAmount(context.Context, *MsgTransferOwnershipWithAmount) (*MsgTransferOwnershipWithAmountResponse, error)
+	// ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to aHAQQ tokens.
+	ConvertToHaqq(context.Context, *MsgConvertToHaqq) (*MsgConvertToHaqqResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -121,6 +135,9 @@ func (UnimplementedMsgServer) TransferOwnershipWithRatio(context.Context, *MsgTr
 }
 func (UnimplementedMsgServer) TransferOwnershipWithAmount(context.Context, *MsgTransferOwnershipWithAmount) (*MsgTransferOwnershipWithAmountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TransferOwnershipWithAmount not implemented")
+}
+func (UnimplementedMsgServer) ConvertToHaqq(context.Context, *MsgConvertToHaqq) (*MsgConvertToHaqqResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConvertToHaqq not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -207,6 +224,24 @@ func _Msg_TransferOwnershipWithAmount_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_ConvertToHaqq_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgConvertToHaqq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).ConvertToHaqq(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_ConvertToHaqq_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).ConvertToHaqq(ctx, req.(*MsgConvertToHaqq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Msg_ServiceDesc is the grpc.ServiceDesc for Msg service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -229,6 +264,10 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TransferOwnershipWithAmount",
 			Handler:    _Msg_TransferOwnershipWithAmount_Handler,
+		},
+		{
+			MethodName: "ConvertToHaqq",
+			Handler:    _Msg_ConvertToHaqq_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

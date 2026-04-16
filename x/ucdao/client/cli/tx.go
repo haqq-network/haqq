@@ -12,6 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/haqq-network/haqq/x/ucdao/types"
 )
 
@@ -28,6 +29,7 @@ func NewTxCmd() *cobra.Command {
 	distTxCmd.AddCommand(
 		NewFundDAOCmd(),
 		NewTransferOwnershipCmd(),
+		NewConvertToEthiqCmd(),
 	)
 
 	return distTxCmd
@@ -101,6 +103,53 @@ $ %s tx %s transfer-ownership haqq1tjdjfavsy956d25hvhs3p0nw9a7pfghqm0up92 haqq1h
 			}
 
 			msg := types.NewMsgTransferOwnership(owner, newOwner)
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// NewConvertToEthiqCmd returns a CLI command handler for creating a MsgConvertToEthiq transaction.
+func NewConvertToEthiqCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "convert-to-haqq [from_address] [to_address] [islm_amount]",
+		Args:  cobra.ExactArgs(3),
+		Short: "Convert aISLM tokens to aHAQQ tokens",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Convert aISLM tokens to aHAQQ tokens. The sender must be a holder in the ucdao module.
+
+Example:
+$ %s tx %s convert-to-haqq haqq1hdr0lhv75vesvtndlh78ck4cez6esz8u2lk0hq 1000 --from mykey
+`,
+				version.AppName, types.ModuleName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			fromAddress, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			toAddr, err := sdk.AccAddressFromBech32(args[1])
+			if err != nil {
+				return err
+			}
+
+			islmAmount, ok := sdkmath.NewIntFromString(args[2])
+			if !ok {
+				return fmt.Errorf("invalid ethiq amount: %s", args[2])
+			}
+
+			msg := types.NewMsgConvertToHaqq(fromAddress, toAddr, islmAmount)
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},

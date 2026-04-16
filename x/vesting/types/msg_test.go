@@ -418,3 +418,127 @@ func (suite *MsgsTestSuite) TestMsgConvertVestingAccount() {
 		}
 	}
 }
+
+func (suite *MsgsTestSuite) TestMsgConvertIntoVestingAccountGetters() {
+	funder := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	addr := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	msg := types.NewMsgConvertIntoVestingAccount(
+		funder,
+		addr,
+		time.Now(),
+		sdkvesting.Periods{{Length: 100, Amount: sdk.Coins{sdk.NewInt64Coin("aISLM", 1000)}}},
+		sdkvesting.Periods{{Length: 100, Amount: sdk.Coins{sdk.NewInt64Coin("aISLM", 1000)}}},
+		false,
+		false,
+		sdk.ValAddress{},
+	)
+	suite.Require().Equal(types.RouterKey, msg.Route())
+	suite.Require().Equal(types.TypeMsgConvertIntoVestingAccount, msg.Type())
+	suite.Require().NotNil(msg.GetSignBytes())
+}
+
+func (suite *MsgsTestSuite) TestMsgConvertIntoVestingAccount() {
+	funder := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	addr := sdk.AccAddress(utiltx.GenerateAddress().Bytes())
+	validPeriods := sdkvesting.Periods{{Length: 100, Amount: sdk.Coins{sdk.NewInt64Coin("aISLM", 1000)}}}
+
+	testCases := []struct {
+		name        string
+		msg         types.MsgConvertIntoVestingAccount
+		expectError bool
+	}{
+		{
+			name: "valid message with lockup only",
+			msg: types.MsgConvertIntoVestingAccount{
+				FromAddress:   funder.String(),
+				ToAddress:     addr.String(),
+				LockupPeriods: validPeriods,
+			},
+			expectError: false,
+		},
+		{
+			name: "valid message with vesting only",
+			msg: types.MsgConvertIntoVestingAccount{
+				FromAddress:    funder.String(),
+				ToAddress:      addr.String(),
+				VestingPeriods: validPeriods,
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid vesting period length (zero)",
+			msg: types.MsgConvertIntoVestingAccount{
+				FromAddress:    funder.String(),
+				ToAddress:      addr.String(),
+				VestingPeriods: sdkvesting.Periods{{Length: 0, Amount: sdk.Coins{sdk.NewInt64Coin("aISLM", 1000)}}},
+			},
+			expectError: true,
+		},
+		{
+			name: "valid message with both schedules matching",
+			msg: types.MsgConvertIntoVestingAccount{
+				FromAddress:    funder.String(),
+				ToAddress:      addr.String(),
+				LockupPeriods:  validPeriods,
+				VestingPeriods: validPeriods,
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid funder address",
+			msg: types.MsgConvertIntoVestingAccount{
+				FromAddress:   "invalid",
+				ToAddress:     addr.String(),
+				LockupPeriods: validPeriods,
+			},
+			expectError: true,
+		},
+		{
+			name: "zero vesting address",
+			msg: types.MsgConvertIntoVestingAccount{
+				FromAddress:   funder.String(),
+				ToAddress:     common.Address{}.Hex(),
+				LockupPeriods: validPeriods,
+			},
+			expectError: true,
+		},
+		{
+			name: "no schedules",
+			msg: types.MsgConvertIntoVestingAccount{
+				FromAddress: funder.String(),
+				ToAddress:   addr.String(),
+			},
+			expectError: true,
+		},
+		{
+			name: "mismatched schedule totals",
+			msg: types.MsgConvertIntoVestingAccount{
+				FromAddress:    funder.String(),
+				ToAddress:      addr.String(),
+				LockupPeriods:  validPeriods,
+				VestingPeriods: sdkvesting.Periods{{Length: 100, Amount: sdk.Coins{sdk.NewInt64Coin("aISLM", 2000)}}},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid period length (zero)",
+			msg: types.MsgConvertIntoVestingAccount{
+				FromAddress:   funder.String(),
+				ToAddress:     addr.String(),
+				LockupPeriods: sdkvesting.Periods{{Length: 0, Amount: sdk.Coins{sdk.NewInt64Coin("aISLM", 1000)}}},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			err := tc.msg.ValidateBasic()
+			if tc.expectError {
+				suite.Require().Error(err)
+			} else {
+				suite.Require().NoError(err)
+			}
+		})
+	}
+}
