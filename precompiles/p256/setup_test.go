@@ -7,6 +7,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"errors"
+	"math/big"
 	"testing"
 
 	//nolint:revive // dot imports are fine for Ginkgo
@@ -66,12 +67,36 @@ func signMsg(msg []byte, priv *ecdsa.PrivateKey) []byte {
 func parseSignature(sig []byte) (r, s []byte, err error) {
 	var inner cryptobyte.String
 	input := cryptobyte.String(sig)
+	var rRaw []byte
+	var sRaw []byte
 	if !input.ReadASN1(&inner, asn1.SEQUENCE) ||
 		!input.Empty() ||
-		!inner.ReadASN1Integer(&r) ||
-		!inner.ReadASN1Integer(&s) ||
+		!inner.ReadASN1Integer(&rRaw) ||
+		!inner.ReadASN1Integer(&sRaw) ||
 		!inner.Empty() {
 		return nil, nil, errors.New("invalid ASN.1")
 	}
+
+	r, err = normalizeScalar32(rRaw)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	s, err = normalizeScalar32(sRaw)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return r, s, nil
+}
+
+func normalizeScalar32(raw []byte) ([]byte, error) {
+	scalar := new(big.Int).SetBytes(raw).Bytes()
+	if len(scalar) > 32 {
+		return nil, errors.New("invalid scalar length")
+	}
+
+	out := make([]byte, 32)
+	copy(out[32-len(scalar):], scalar)
+	return out, nil
 }
