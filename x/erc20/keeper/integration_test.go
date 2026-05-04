@@ -107,6 +107,7 @@ var _ = Describe("ERC20:", Ordered, func() {
 
 					tokenPairs := res.TokenPairs
 					Expect(tokenPairs).To(HaveLen(2))
+					// FIXME non-deterministic test
 					Expect(tokenPairs[0].ContractOwner).To(Equal(types.OWNER_EXTERNAL))
 				})
 			})

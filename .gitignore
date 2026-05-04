@@ -80,6 +80,7 @@ tmp-swagger-gen
 .secrets
 .env
 .dccache
+.local
 
 result
 .pre-commit-config.yaml

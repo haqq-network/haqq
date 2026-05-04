@@ -3728,7 +3728,6 @@
     "/cosmos/group/v1/groups": {
       "get": {
         "summary": "Groups queries all groups in state.",
-        "description": "Since: cosmos-sdk 0.47.1",
         "operationId": "Groups",
         "responses": {
           "200": {
@@ -6493,7 +6492,7 @@
     },
     "/evmos/evm/v1/base_fee": {
       "get": {
-        "summary": "BaseFee queries the base fee of the parent block of the current block,\nit's similar to feemarket module's method, but also checks london hardfork status.",
+        "summary": "BaseFee queries the base fee of the parent block of the current block,\nit's similar to feemarket module's method, but also checks london hardfork\nstatus.",
         "operationId": "BaseFee",
         "responses": {
           "200": {
@@ -6756,7 +6755,7 @@
     },
     "/evmos/evm/v1/trace_block": {
       "get": {
-        "summary": "TraceBlock implements the `debug_traceBlockByNumber` and `debug_traceBlockByHash` rpc api",
+        "summary": "TraceBlock implements the `debug_traceBlockByNumber` and\n`debug_traceBlockByHash` rpc api",
         "operationId": "TraceBlock",
         "responses": {
           "200": {
@@ -6782,7 +6781,7 @@
           },
           {
             "name": "traceConfig.timeout",
-            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based tracing\ncalls",
+            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based\ntracing calls",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6840,7 +6839,7 @@
           },
           {
             "name": "traceConfig.overrides.daoForkSupport",
-            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork",
+            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO\nhard-fork",
             "in": "query",
             "required": false,
             "type": "boolean"
@@ -6854,7 +6853,7 @@
           },
           {
             "name": "traceConfig.overrides.eip150Hash",
-            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)",
+            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas\npricing changed)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6875,14 +6874,14 @@
           },
           {
             "name": "traceConfig.overrides.byzantiumBlock",
-            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)",
+            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on\nbyzantium)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.constantinopleBlock",
-            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)",
+            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already\nactivated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6896,14 +6895,14 @@
           },
           {
             "name": "traceConfig.overrides.istanbulBlock",
-            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)",
+            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on\nistanbul)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.muirGlacierBlock",
-            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)",
+            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -6924,21 +6923,21 @@
           },
           {
             "name": "traceConfig.overrides.arrowGlacierBlock",
-            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)",
+            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.grayGlacierBlock",
-            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)",
+            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.mergeNetsplitBlock",
-            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network splitter",
+            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network\nsplitter",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7082,7 +7081,7 @@
           },
           {
             "name": "msg.from",
-            "description": "from is the ethereum signer address in hex format. This address value is checked\nagainst the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve",
+            "description": "from is the ethereum signer address in hex format. This address value is\nchecked against the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7096,7 +7095,7 @@
           },
           {
             "name": "traceConfig.timeout",
-            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based tracing\ncalls",
+            "description": "timeout overrides the default timeout of 5 seconds for JavaScript-based\ntracing calls",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7154,7 +7153,7 @@
           },
           {
             "name": "traceConfig.overrides.daoForkSupport",
-            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork",
+            "description": "dao_fork_support defines whether the nodes supports or opposes the DAO\nhard-fork",
             "in": "query",
             "required": false,
             "type": "boolean"
@@ -7168,7 +7167,7 @@
           },
           {
             "name": "traceConfig.overrides.eip150Hash",
-            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)",
+            "description": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas\npricing changed)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7189,14 +7188,14 @@
           },
           {
             "name": "traceConfig.overrides.byzantiumBlock",
-            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)",
+            "description": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on\nbyzantium)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.constantinopleBlock",
-            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)",
+            "description": "constantinople_block: Constantinople switch block (nil no fork, 0 = already\nactivated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7210,14 +7209,14 @@
           },
           {
             "name": "traceConfig.overrides.istanbulBlock",
-            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)",
+            "description": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on\nistanbul)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.muirGlacierBlock",
-            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)",
+            "description": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
@@ -7238,21 +7237,21 @@
           },
           {
             "name": "traceConfig.overrides.arrowGlacierBlock",
-            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)",
+            "description": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.grayGlacierBlock",
-            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)",
+            "description": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
             "name": "traceConfig.overrides.mergeNetsplitBlock",
-            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network splitter",
+            "description": "merge_netsplit_block: Virtual fork after The Merge to use as a network\nsplitter",
             "in": "query",
             "required": false,
             "type": "string"
@@ -8202,544 +8201,6 @@
         ]
       }
     },
-    "/ibc/apps/fee/v1/channels/{channelId}/ports/{portId}/fee_enabled": {
-      "get": {
-        "summary": "FeeEnabledChannel returns true if the provided port and channel identifiers belong to a fee enabled channel",
-        "operationId": "FeeEnabledChannel",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryFeeEnabledChannelResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "channelId",
-            "description": "unique channel identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "portId",
-            "description": "unique port identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/fee/v1/channels/{channelId}/ports/{portId}/incentivized_packets": {
-      "get": {
-        "summary": "Gets all incentivized packets for a specific channel",
-        "operationId": "IncentivizedPacketsForChannel",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryIncentivizedPacketsForChannelResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "channelId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "portId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "pagination.key",
-            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "pagination.offset",
-            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "pagination.limit",
-            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "pagination.countTotal",
-            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "pagination.reverse",
-            "description": "reverse is set to true if results are to be returned in the descending order.",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "queryHeight",
-            "description": "Height to query at",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/fee/v1/channels/{channelId}/relayers/{relayer}/counterparty_payee": {
-      "get": {
-        "summary": "CounterpartyPayee returns the registered counterparty payee for forward relaying",
-        "operationId": "CounterpartyPayee",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryCounterpartyPayeeResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "channelId",
-            "description": "unique channel identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "relayer",
-            "description": "the relayer address to which the counterparty is registered",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/fee/v1/channels/{channelId}/relayers/{relayer}/payee": {
-      "get": {
-        "summary": "Payee returns the registered payee address for a specific channel given the relayer address",
-        "operationId": "Payee",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryPayeeResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "channelId",
-            "description": "unique channel identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "relayer",
-            "description": "the relayer address to which the distribution address is registered",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/fee/v1/channels/{packetId.channelId}/ports/{packetId.portId}/sequences/{packetId.sequence}/incentivized_packet": {
-      "get": {
-        "summary": "IncentivizedPacket returns all packet fees for a packet given its identifier",
-        "operationId": "IncentivizedPacket",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryIncentivizedPacketResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "packetId.channelId",
-            "description": "channel unique identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "packetId.portId",
-            "description": "channel port identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "packetId.sequence",
-            "description": "packet sequence",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "queryHeight",
-            "description": "block height at which to query",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/fee/v1/channels/{packetId.channelId}/ports/{packetId.portId}/sequences/{packetId.sequence}/total_ack_fees": {
-      "get": {
-        "summary": "TotalAckFees returns the total acknowledgement fees for a packet given its identifier",
-        "operationId": "TotalAckFees",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryTotalAckFeesResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "packetId.channelId",
-            "description": "channel unique identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "packetId.portId",
-            "description": "channel port identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "packetId.sequence",
-            "description": "packet sequence",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "uint64"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/fee/v1/channels/{packetId.channelId}/ports/{packetId.portId}/sequences/{packetId.sequence}/total_recv_fees": {
-      "get": {
-        "summary": "TotalRecvFees returns the total receive fees for a packet given its identifier",
-        "operationId": "TotalRecvFees",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryTotalRecvFeesResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "packetId.channelId",
-            "description": "channel unique identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "packetId.portId",
-            "description": "channel port identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "packetId.sequence",
-            "description": "packet sequence",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "uint64"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/fee/v1/channels/{packetId.channelId}/ports/{packetId.portId}/sequences/{packetId.sequence}/total_timeout_fees": {
-      "get": {
-        "summary": "TotalTimeoutFees returns the total timeout fees for a packet given its identifier",
-        "operationId": "TotalTimeoutFees",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryTotalTimeoutFeesResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "packetId.channelId",
-            "description": "channel unique identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "packetId.portId",
-            "description": "channel port identifier",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "packetId.sequence",
-            "description": "packet sequence",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "format": "uint64"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/fee/v1/fee_enabled": {
-      "get": {
-        "summary": "FeeEnabledChannels returns a list of all fee enabled channels",
-        "operationId": "FeeEnabledChannels",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryFeeEnabledChannelsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "pagination.key",
-            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "pagination.offset",
-            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "pagination.limit",
-            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "pagination.countTotal",
-            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "pagination.reverse",
-            "description": "reverse is set to true if results are to be returned in the descending order.",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "queryHeight",
-            "description": "block height at which to query",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/fee/v1/incentivized_packets": {
-      "get": {
-        "summary": "IncentivizedPackets returns all incentivized packets and their associated fees",
-        "operationId": "IncentivizedPackets",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.fee.v1.QueryIncentivizedPacketsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "pagination.key",
-            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "byte"
-          },
-          {
-            "name": "pagination.offset",
-            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "pagination.limit",
-            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          },
-          {
-            "name": "pagination.countTotal",
-            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "pagination.reverse",
-            "description": "reverse is set to true if results are to be returned in the descending order.",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "queryHeight",
-            "description": "block height at which to query",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "uint64"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
     "/ibc/apps/interchain_accounts/controller/v1/owners/{owner}/connections/{connectionId}": {
       "get": {
         "summary": "InterchainAccount returns the interchain account address for a given owner address on a given connection",
@@ -8895,15 +8356,15 @@
         ]
       }
     },
-    "/ibc/apps/transfer/v1/denom_traces": {
+    "/ibc/apps/transfer/v1/denoms": {
       "get": {
-        "summary": "DenomTraces queries all denomination traces.",
-        "operationId": "DenomTraces",
+        "summary": "Denoms queries all denominations",
+        "operationId": "Denoms",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryDenomTracesResponse"
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryDenomsResponse"
             }
           },
           "default": {
@@ -8958,15 +8419,15 @@
         ]
       }
     },
-    "/ibc/apps/transfer/v1/denom_traces/{hash}": {
+    "/ibc/apps/transfer/v1/denoms/{hash}": {
       "get": {
-        "summary": "DenomTrace queries a denomination trace information.",
-        "operationId": "DenomTrace",
+        "summary": "Denom queries a denomination",
+        "operationId": "Denom",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryDenomTraceResponse"
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryDenomResponse"
             }
           },
           "default": {
@@ -8979,39 +8440,7 @@
         "parameters": [
           {
             "name": "hash",
-            "description": "hash (in hex format) or denom (full denom with ibc prefix) of the denomination trace information.",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "pattern": ".+"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/apps/transfer/v1/denoms/{denom}/total_escrow": {
-      "get": {
-        "summary": "TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.",
-        "operationId": "TotalEscrowForDenom",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "denom",
+            "description": "hash (in hex format) or denom (full denom with ibc prefix) of the on chain denomination.",
             "in": "path",
             "required": true,
             "type": "string",
@@ -9041,6 +8470,38 @@
             }
           }
         },
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/apps/transfer/v1/total_escrow/{denom}": {
+      "get": {
+        "summary": "TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.",
+        "operationId": "TotalEscrowForDenom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "denom",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": ".+"
+          }
+        ],
         "tags": [
           "Query"
         ]
@@ -9731,80 +9192,6 @@
         ]
       }
     },
-    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/upgrade": {
-      "get": {
-        "summary": "Upgrade returns the upgrade for a given port and channel id.",
-        "operationId": "Upgrade",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.core.channel.v1.QueryUpgradeResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "channelId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "portId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
-    "/ibc/core/channel/v1/channels/{channelId}/ports/{portId}/upgrade_error": {
-      "get": {
-        "summary": "UpgradeError returns the error receipt if the upgrade handshake failed.",
-        "operationId": "UpgradeError",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ibc.core.channel.v1.QueryUpgradeErrorResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/google.rpc.Status"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "channelId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "portId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Query"
-        ]
-      }
-    },
     "/ibc/core/channel/v1/connections/{connection}/channels": {
       "get": {
         "summary": "ConnectionChannels queries all the channels associated with a connection\nend.",
@@ -9875,15 +9262,15 @@
         ]
       }
     },
-    "/ibc/core/channel/v1/params": {
+    "/ibc/core/channel/v2/clients/{clientId}/next_sequence_send": {
       "get": {
-        "summary": "ChannelParams queries all parameters of the ibc channel submodule.",
-        "operationId": "ChannelParams",
+        "summary": "NextSequenceSend returns the next send sequence for a given channel.",
+        "operationId": "NextSequenceSend",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ibc.core.channel.v1.QueryChannelParamsResponse"
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryNextSequenceSendResponse"
             }
           },
           "default": {
@@ -9893,6 +9280,409 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_acknowledgements": {
+      "get": {
+        "summary": "PacketAcknowledgements returns all packet acknowledgements associated with a channel.",
+        "operationId": "PacketAcknowledgements",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketAcknowledgementsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "packetCommitmentSequences",
+            "description": "list of packet sequences",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uint64"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_acks/{sequence}": {
+      "get": {
+        "summary": "PacketAcknowledgement queries a stored acknowledgement commitment hash.",
+        "operationId": "PacketAcknowledgement",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketAcknowledgementResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequence",
+            "description": "packet sequence",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_commitments": {
+      "get": {
+        "summary": "PacketCommitments queries a stored packet commitment hash.",
+        "operationId": "PacketCommitments",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketCommitmentsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pagination.key",
+            "description": "key is a value returned in PageResponse.next_key to begin\nquerying the next page most efficiently. Only one of offset or key\nshould be set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "pagination.offset",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\nIt is less efficient than using key. Only one of offset or key should\nbe set.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "limit is the total number of results to be returned in the result page.\nIf left empty it will default to a value to be set by each app.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "pagination.countTotal",
+            "description": "count_total is set to true  to indicate that the result set should include\na count of the total number of items available for pagination in UIs.\ncount_total is only respected when offset is used. It is ignored when key\nis set.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pagination.reverse",
+            "description": "reverse is set to true if results are to be returned in the descending order.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_commitments/{packetAckSequences}/unreceived_acks": {
+      "get": {
+        "summary": "UnreceivedAcks returns all the unreceived IBC acknowledgements associated with a channel and sequences.",
+        "operationId": "UnreceivedAcks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryUnreceivedAcksResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "packetAckSequences",
+            "description": "list of acknowledgement sequences",
+            "in": "path",
+            "required": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uint64"
+            },
+            "collectionFormat": "csv",
+            "minItems": 1
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_commitments/{sequences}/unreceived_packets": {
+      "get": {
+        "summary": "UnreceivedPackets returns all the unreceived IBC packets associated with a channel and sequences.",
+        "operationId": "UnreceivedPackets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryUnreceivedPacketsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequences",
+            "description": "list of packet sequences",
+            "in": "path",
+            "required": true,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uint64"
+            },
+            "collectionFormat": "csv",
+            "minItems": 1
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_commitments/{sequence}": {
+      "get": {
+        "summary": "PacketCommitment queries a stored packet commitment hash.",
+        "operationId": "PacketCommitment",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketCommitmentResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequence",
+            "description": "packet sequence",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/channel/v2/clients/{clientId}/packet_receipts/{sequence}": {
+      "get": {
+        "summary": "PacketReceipt queries a stored packet receipt.",
+        "operationId": "PacketReceipt",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.channel.v2.QueryPacketReceiptResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "sequence",
+            "description": "packet sequence",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v1/client_creator/{clientId}": {
+      "get": {
+        "summary": "ClientCreator queries the creator of a given client.",
+        "operationId": "ClientCreator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v1.QueryClientCreatorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
         "tags": [
           "Query"
         ]
@@ -10209,7 +9999,7 @@
           },
           {
             "name": "latestHeight",
-            "description": "latest_height overrrides the height field and queries the latest stored\nConsensusState",
+            "description": "latest_height overrides the height field and queries the latest stored\nConsensusState",
             "in": "query",
             "required": false,
             "type": "boolean"
@@ -10315,6 +10105,70 @@
             "schema": {
               "$ref": "#/definitions/ibc.core.client.v1.QueryVerifyMembershipRequest"
             }
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v2/config/{clientId}": {
+      "get": {
+        "summary": "Config queries the IBC client v2 configuration for a given client.",
+        "operationId": "Config",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v2.QueryConfigResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client state unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/ibc/core/client/v2/counterparty_info/{clientId}": {
+      "get": {
+        "summary": "CounterpartyInfo queries an IBC light counter party info.",
+        "operationId": "CounterpartyInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ibc.core.client.v2.QueryCounterpartyInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/google.rpc.Status"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "clientId",
+            "description": "client state unique identifier",
+            "in": "path",
+            "required": true,
+            "type": "string"
           }
         ],
         "tags": [
@@ -13639,12 +13493,10 @@
         },
         "title": {
           "type": "string",
-          "description": "Since: cosmos-sdk 0.47",
           "title": "title is the title of the proposal"
         },
         "summary": {
           "type": "string",
-          "description": "Since: cosmos-sdk 0.47",
           "title": "summary is a short summary of the proposal"
         }
       },
@@ -13800,7 +13652,7 @@
           "description": "pagination defines the pagination in the response."
         }
       },
-      "description": "QueryGroupsResponse is the Query/Groups response type.\n\nSince: cosmos-sdk 0.47.1"
+      "description": "QueryGroupsResponse is the Query/Groups response type."
     },
     "cosmos.group.v1.QueryProposalResponse": {
       "type": "object",
@@ -14162,112 +14014,6 @@
         }
       },
       "title": "QuerySupplyResponse is the response type for the Query/Supply RPC method"
-    },
-    "cosmos.orm.query.v1alpha1.GetResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/google.protobuf.Any",
-          "description": "result is the result of the get query. If no value is found, the gRPC\nstatus code NOT_FOUND will be returned."
-        }
-      },
-      "description": "GetResponse is the Query/Get response type."
-    },
-    "cosmos.orm.query.v1alpha1.IndexValue": {
-      "type": "object",
-      "properties": {
-        "uint": {
-          "type": "string",
-          "format": "uint64",
-          "description": "uint specifies a value for an uint32, fixed32, uint64, or fixed64\nindex field."
-        },
-        "int": {
-          "type": "string",
-          "format": "int64",
-          "description": "int64 specifies a value for an int32, sfixed32, int64, or sfixed64\nindex field."
-        },
-        "str": {
-          "type": "string",
-          "description": "str specifies a value for a string index field."
-        },
-        "bytes": {
-          "type": "string",
-          "format": "byte",
-          "description": "bytes specifies a value for a bytes index field."
-        },
-        "enum": {
-          "type": "string",
-          "description": "enum specifies a value for an enum index field."
-        },
-        "bool": {
-          "type": "boolean",
-          "description": "bool specifies a value for a bool index field."
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time",
-          "description": "timestamp specifies a value for a timestamp index field."
-        },
-        "duration": {
-          "type": "string",
-          "description": "duration specifies a value for a duration index field."
-        }
-      },
-      "description": "IndexValue represents the value of a field in an ORM index expression."
-    },
-    "cosmos.orm.query.v1alpha1.ListRequest.Prefix": {
-      "type": "object",
-      "properties": {
-        "values": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/cosmos.orm.query.v1alpha1.IndexValue"
-          },
-          "description": "values specifies the index values for the prefix query.\nIt is valid to special a partial prefix with fewer values than\nthe number of fields in the index."
-        }
-      },
-      "description": "Prefix specifies the arguments to a prefix query."
-    },
-    "cosmos.orm.query.v1alpha1.ListRequest.Range": {
-      "type": "object",
-      "properties": {
-        "start": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/cosmos.orm.query.v1alpha1.IndexValue"
-          },
-          "description": "start specifies the starting index values for the range query.\nIt is valid to provide fewer values than the number of fields in the\nindex."
-        },
-        "end": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/cosmos.orm.query.v1alpha1.IndexValue"
-          },
-          "description": "end specifies the inclusive ending index values for the range query.\nIt is valid to provide fewer values than the number of fields in the\nindex."
-        }
-      },
-      "description": "Range specifies the arguments to a range query."
-    },
-    "cosmos.orm.query.v1alpha1.ListResponse": {
-      "type": "object",
-      "properties": {
-        "results": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/google.protobuf.Any"
-          },
-          "description": "results are the results of the query."
-        },
-        "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
-          "description": "pagination is the pagination response."
-        }
-      },
-      "description": "ListResponse is the Query/List response type."
     },
     "cosmos.params.v1beta1.ParamChange": {
       "type": "object",
@@ -15638,7 +15384,7 @@
           "items": {
             "type": "string"
           },
-          "title": "access_control_list defines defines different things depending on the AccessType:\n- ACCESS_TYPE_PERMISSIONLESS: list of addresses that are blocked from performing the operation\n- ACCESS_TYPE_RESTRICTED: ignored\n- ACCESS_TYPE_PERMISSIONED: list of addresses that are allowed to perform the operation"
+          "title": "access_control_list defines defines different things depending on the\nAccessType:\n- ACCESS_TYPE_PERMISSIONLESS: list of addresses that are blocked from\nperforming the operation\n- ACCESS_TYPE_RESTRICTED: ignored\n- ACCESS_TYPE_PERMISSIONED: list of addresses that are allowed to perform\nthe operation"
         }
       },
       "title": "AccessControlType defines the permission type for policies"
@@ -15667,7 +15413,7 @@
         },
         "daoForkSupport": {
           "type": "boolean",
-          "title": "dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork"
+          "title": "dao_fork_support defines whether the nodes supports or opposes the DAO\nhard-fork"
         },
         "eip150Block": {
           "type": "string",
@@ -15675,7 +15421,7 @@
         },
         "eip150Hash": {
           "type": "string",
-          "title": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)"
+          "title": "eip150_hash: EIP150 HF hash (needed for header only clients as only gas\npricing changed)"
         },
         "eip155Block": {
           "type": "string",
@@ -15687,11 +15433,11 @@
         },
         "byzantiumBlock": {
           "type": "string",
-          "title": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)"
+          "title": "byzantium_block: Byzantium switch block (nil no fork, 0 = already on\nbyzantium)"
         },
         "constantinopleBlock": {
           "type": "string",
-          "title": "constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)"
+          "title": "constantinople_block: Constantinople switch block (nil no fork, 0 = already\nactivated)"
         },
         "petersburgBlock": {
           "type": "string",
@@ -15699,11 +15445,11 @@
         },
         "istanbulBlock": {
           "type": "string",
-          "title": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)"
+          "title": "istanbul_block: Istanbul switch block (nil no fork, 0 = already on\nistanbul)"
         },
         "muirGlacierBlock": {
           "type": "string",
-          "title": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)"
+          "title": "muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =\nalready activated)"
         },
         "berlinBlock": {
           "type": "string",
@@ -15715,15 +15461,15 @@
         },
         "arrowGlacierBlock": {
           "type": "string",
-          "title": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)"
+          "title": "arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)"
         },
         "grayGlacierBlock": {
           "type": "string",
-          "title": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)"
+          "title": "gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =\nalready activated)"
         },
         "mergeNetsplitBlock": {
           "type": "string",
-          "title": "merge_netsplit_block: Virtual fork after The Merge to use as a network splitter"
+          "title": "merge_netsplit_block: Virtual fork after The Merge to use as a network\nsplitter"
         },
         "shanghaiBlock": {
           "type": "string",
@@ -15747,7 +15493,7 @@
         "ret": {
           "type": "string",
           "format": "byte",
-          "title": "ret is the returned data from evm function (result or data supplied with revert\nopcode)"
+          "title": "ret is the returned data from evm function (result or data supplied with\nrevert opcode)"
         },
         "vmError": {
           "type": "string",
@@ -15823,7 +15569,7 @@
         },
         "from": {
           "type": "string",
-          "title": "from is the ethereum signer address in hex format. This address value is checked\nagainst the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve"
+          "title": "from is the ethereum signer address in hex format. This address value is\nchecked against the address derived from the signature (V, R, S) using the\nsecp256k1 elliptic curve"
         }
       },
       "description": "MsgEthereumTx encapsulates an Ethereum transaction as an SDK message."
@@ -15846,7 +15592,7 @@
         "ret": {
           "type": "string",
           "format": "byte",
-          "title": "ret is the returned data from evm function (result or data supplied with revert\nopcode)"
+          "title": "ret is the returned data from evm function (result or data supplied with\nrevert opcode)"
         },
         "vmError": {
           "type": "string",
@@ -15898,7 +15644,7 @@
           "items": {
             "type": "string"
           },
-          "title": "active_static_precompiles defines the slice of hex addresses of the precompiled\ncontracts that are active"
+          "title": "active_static_precompiles defines the slice of hex addresses of the\nprecompiled contracts that are active"
         }
       },
       "title": "Params defines the EVM module parameters"
@@ -16044,7 +15790,7 @@
         },
         "timeout": {
           "type": "string",
-          "title": "timeout overrides the default timeout of 5 seconds for JavaScript-based tracing\ncalls"
+          "title": "timeout overrides the default timeout of 5 seconds for JavaScript-based\ntracing calls"
         },
         "reexec": {
           "type": "string",
@@ -16107,7 +15853,7 @@
         "enableHeight": {
           "type": "string",
           "format": "int64",
-          "description": "enable_height defines at which block height the base fee calculation is enabled."
+          "description": "enable_height defines at which block height the base fee calculation is\nenabled."
         },
         "baseFee": {
           "type": "string",
@@ -16115,7 +15861,7 @@
         },
         "minGasPrice": {
           "type": "string",
-          "title": "min_gas_price defines the minimum gas price value for cosmos and eth transactions"
+          "title": "min_gas_price defines the minimum gas price value for cosmos and eth\ntransactions"
         },
         "minGasMultiplier": {
           "type": "string",
@@ -16191,7 +15937,7 @@
           "title": "current_epoch_start_height of the epoch"
         }
       },
-      "description": "EpochInfo defines the message interface containing the relevant informations about\nan epoch."
+      "description": "EpochInfo defines the message interface containing the relevant informations\nabout an epoch."
     },
     "evmos.epochs.v1.QueryCurrentEpochResponse": {
       "type": "object",
@@ -16237,14 +15983,14 @@
       "properties": {
         "enableErc20": {
           "type": "boolean",
-          "description": "enable_erc20 is the parameter to enable the conversion of Cosmos coins <--> ERC20 tokens."
+          "description": "enable_erc20 is the parameter to enable the conversion of Cosmos coins <-->\nERC20 tokens."
         },
         "nativePrecompiles": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "title": "native_precompiles defines the slice of hex addresses of the\nactive precompiles that are used to interact with native staking coins as ERC20s"
+          "title": "native_precompiles defines the slice of hex addresses of the\nactive precompiles that are used to interact with native staking coins as\nERC20s"
         },
         "dynamicPrecompiles": {
           "type": "array",
@@ -16271,7 +16017,7 @@
       "properties": {
         "tokenPair": {
           "$ref": "#/definitions/evmos.erc20.v1.TokenPair",
-          "title": "token_pairs returns the info about a registered token pair for the erc20 module"
+          "title": "token_pairs returns the info about a registered token pair for the erc20\nmodule"
         }
       },
       "description": "QueryTokenPairResponse is the response type for the Query/TokenPair RPC\nmethod."
@@ -16311,7 +16057,7 @@
         },
         "contractOwner": {
           "$ref": "#/definitions/evmos.erc20.v1.Owner",
-          "title": "contract_owner is the an ENUM specifying the type of ERC20 owner (0 invalid, 1 ModuleAccount, 2 external address)"
+          "title": "contract_owner is the an ENUM specifying the type of ERC20 owner (0\ninvalid, 1 ModuleAccount, 2 external address)"
         }
       },
       "description": "TokenPair defines an instance that records a pairing consisting of a native\nCosmos Coin and an ERC20 token address."
@@ -16832,225 +16578,6 @@
       },
       "description": "QueryTotalLockedResponse is the response type for the Query/TotalLocked RPC\nmethod."
     },
-    "ibc.applications.fee.v1.Fee": {
-      "type": "object",
-      "properties": {
-        "recvFee": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          },
-          "title": "the packet receive fee"
-        },
-        "ackFee": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          },
-          "title": "the packet acknowledgement fee"
-        },
-        "timeoutFee": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          },
-          "title": "the packet timeout fee"
-        }
-      },
-      "title": "Fee defines the ICS29 receive, acknowledgement and timeout fees"
-    },
-    "ibc.applications.fee.v1.FeeEnabledChannel": {
-      "type": "object",
-      "properties": {
-        "portId": {
-          "type": "string",
-          "title": "unique port identifier"
-        },
-        "channelId": {
-          "type": "string",
-          "title": "unique channel identifier"
-        }
-      },
-      "title": "FeeEnabledChannel contains the PortID & ChannelID for a fee enabled channel"
-    },
-    "ibc.applications.fee.v1.IdentifiedPacketFees": {
-      "type": "object",
-      "properties": {
-        "packetId": {
-          "$ref": "#/definitions/ibc.core.channel.v1.PacketId",
-          "title": "unique packet identifier comprised of the channel ID, port ID and sequence"
-        },
-        "packetFees": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/ibc.applications.fee.v1.PacketFee"
-          },
-          "title": "list of packet fees"
-        }
-      },
-      "title": "IdentifiedPacketFees contains a list of type PacketFee and associated PacketId"
-    },
-    "ibc.applications.fee.v1.PacketFee": {
-      "type": "object",
-      "properties": {
-        "fee": {
-          "$ref": "#/definitions/ibc.applications.fee.v1.Fee",
-          "title": "fee encapsulates the recv, ack and timeout fees associated with an IBC packet"
-        },
-        "refundAddress": {
-          "type": "string",
-          "title": "the refund address for unspent fees"
-        },
-        "relayers": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "optional list of relayers permitted to receive fees"
-        }
-      },
-      "title": "PacketFee contains ICS29 relayer fees, refund address and optional list of permitted relayers"
-    },
-    "ibc.applications.fee.v1.QueryCounterpartyPayeeResponse": {
-      "type": "object",
-      "properties": {
-        "counterpartyPayee": {
-          "type": "string",
-          "title": "the counterparty payee address used to compensate forward relaying"
-        }
-      },
-      "title": "QueryCounterpartyPayeeResponse defines the response type for the CounterpartyPayee rpc"
-    },
-    "ibc.applications.fee.v1.QueryFeeEnabledChannelResponse": {
-      "type": "object",
-      "properties": {
-        "feeEnabled": {
-          "type": "boolean",
-          "title": "boolean flag representing the fee enabled channel status"
-        }
-      },
-      "title": "QueryFeeEnabledChannelResponse defines the response type for the FeeEnabledChannel rpc"
-    },
-    "ibc.applications.fee.v1.QueryFeeEnabledChannelsResponse": {
-      "type": "object",
-      "properties": {
-        "feeEnabledChannels": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/ibc.applications.fee.v1.FeeEnabledChannel"
-          },
-          "title": "list of fee enabled channels"
-        },
-        "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
-          "description": "pagination defines the pagination in the response."
-        }
-      },
-      "title": "QueryFeeEnabledChannelsResponse defines the response type for the FeeEnabledChannels rpc"
-    },
-    "ibc.applications.fee.v1.QueryIncentivizedPacketResponse": {
-      "type": "object",
-      "properties": {
-        "incentivizedPacket": {
-          "$ref": "#/definitions/ibc.applications.fee.v1.IdentifiedPacketFees",
-          "title": "the identified fees for the incentivized packet"
-        }
-      },
-      "title": "QueryIncentivizedPacketsResponse defines the response type for the IncentivizedPacket rpc"
-    },
-    "ibc.applications.fee.v1.QueryIncentivizedPacketsForChannelResponse": {
-      "type": "object",
-      "properties": {
-        "incentivizedPackets": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/ibc.applications.fee.v1.IdentifiedPacketFees"
-          },
-          "title": "Map of all incentivized_packets"
-        },
-        "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
-          "description": "pagination defines the pagination in the response."
-        }
-      },
-      "title": "QueryIncentivizedPacketsResponse defines the response type for the incentivized packets RPC"
-    },
-    "ibc.applications.fee.v1.QueryIncentivizedPacketsResponse": {
-      "type": "object",
-      "properties": {
-        "incentivizedPackets": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/ibc.applications.fee.v1.IdentifiedPacketFees"
-          },
-          "title": "list of identified fees for incentivized packets"
-        },
-        "pagination": {
-          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
-          "description": "pagination defines the pagination in the response."
-        }
-      },
-      "title": "QueryIncentivizedPacketsResponse defines the response type for the IncentivizedPackets rpc"
-    },
-    "ibc.applications.fee.v1.QueryPayeeResponse": {
-      "type": "object",
-      "properties": {
-        "payeeAddress": {
-          "type": "string",
-          "title": "the payee address to which packet fees are paid out"
-        }
-      },
-      "title": "QueryPayeeResponse defines the response type for the Payee rpc"
-    },
-    "ibc.applications.fee.v1.QueryTotalAckFeesResponse": {
-      "type": "object",
-      "properties": {
-        "ackFees": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          },
-          "title": "the total packet acknowledgement fees"
-        }
-      },
-      "title": "QueryTotalAckFeesResponse defines the response type for the TotalAckFees rpc"
-    },
-    "ibc.applications.fee.v1.QueryTotalRecvFeesResponse": {
-      "type": "object",
-      "properties": {
-        "recvFees": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          },
-          "title": "the total packet receive fees"
-        }
-      },
-      "title": "QueryTotalRecvFeesResponse defines the response type for the TotalRecvFees rpc"
-    },
-    "ibc.applications.fee.v1.QueryTotalTimeoutFeesResponse": {
-      "type": "object",
-      "properties": {
-        "timeoutFees": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/cosmos.base.v1beta1.Coin"
-          },
-          "title": "the total packet timeout fees"
-        }
-      },
-      "title": "QueryTotalTimeoutFeesResponse defines the response type for the TotalTimeoutFees rpc"
-    },
     "ibc.applications.interchain_accounts.controller.v1.Params": {
       "type": "object",
       "properties": {
@@ -17107,19 +16634,35 @@
       },
       "description": "QueryParamsResponse is the response type for the Query/Params RPC method."
     },
-    "ibc.applications.transfer.v1.DenomTrace": {
+    "ibc.applications.transfer.v1.Denom": {
       "type": "object",
       "properties": {
-        "path": {
+        "base": {
           "type": "string",
-          "description": "path defines the chain of port/channel identifiers used for tracing the\nsource of the fungible token."
+          "title": "the base token denomination"
         },
-        "baseDenom": {
-          "type": "string",
-          "description": "base denomination of the relayed fungible token."
+        "trace": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.applications.transfer.v1.Hop"
+          },
+          "title": "the trace of the token"
         }
       },
-      "description": "DenomTrace contains the base denomination for ICS20 fungible tokens and the\nsource tracing information path."
+      "description": "Denom holds the base denom of a Token and a trace of the chains it was sent through."
+    },
+    "ibc.applications.transfer.v1.Hop": {
+      "type": "object",
+      "properties": {
+        "portId": {
+          "type": "string"
+        },
+        "channelId": {
+          "type": "string"
+        }
+      },
+      "title": "Hop defines a port ID, channel ID pair specifying a unique \"hop\" in a trace"
     },
     "ibc.applications.transfer.v1.Params": {
       "type": "object",
@@ -17145,33 +16688,33 @@
       },
       "description": "QueryDenomHashResponse is the response type for the Query/DenomHash RPC\nmethod."
     },
-    "ibc.applications.transfer.v1.QueryDenomTraceResponse": {
+    "ibc.applications.transfer.v1.QueryDenomResponse": {
       "type": "object",
       "properties": {
-        "denomTrace": {
-          "$ref": "#/definitions/ibc.applications.transfer.v1.DenomTrace",
-          "description": "denom_trace returns the requested denomination trace information."
+        "denom": {
+          "$ref": "#/definitions/ibc.applications.transfer.v1.Denom",
+          "description": "denom returns the requested denomination."
         }
       },
-      "description": "QueryDenomTraceResponse is the response type for the Query/DenomTrace RPC\nmethod."
+      "description": "QueryDenomResponse is the response type for the Query/Denom RPC\nmethod."
     },
-    "ibc.applications.transfer.v1.QueryDenomTracesResponse": {
+    "ibc.applications.transfer.v1.QueryDenomsResponse": {
       "type": "object",
       "properties": {
-        "denomTraces": {
+        "denoms": {
           "type": "array",
           "items": {
             "type": "object",
-            "$ref": "#/definitions/ibc.applications.transfer.v1.DenomTrace"
+            "$ref": "#/definitions/ibc.applications.transfer.v1.Denom"
           },
-          "description": "denom_traces returns all denominations trace information."
+          "description": "denoms returns all denominations."
         },
         "pagination": {
           "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
           "description": "pagination defines the pagination in the response."
         }
       },
-      "description": "QueryConnectionsResponse is the response type for the Query/DenomTraces RPC\nmethod."
+      "description": "QueryDenomsResponse is the response type for the Query/Denoms RPC\nmethod."
     },
     "ibc.applications.transfer.v1.QueryEscrowAddressResponse": {
       "type": "object",
@@ -17227,11 +16770,6 @@
         "version": {
           "type": "string",
           "title": "opaque channel version, which is agreed upon during the handshake"
-        },
-        "upgradeSequence": {
-          "type": "string",
-          "format": "uint64",
-          "title": "upgrade sequence indicates the latest upgrade attempt performed by this channel\nthe value of 0 indicates the channel has never been upgraded"
         }
       },
       "description": "Channel defines pipeline for exactly-once packet delivery between specific\nmodules on separate blockchains, which has at least one end capable of\nsending packets and one end capable of receiving packets."
@@ -17249,21 +16787,6 @@
         }
       },
       "title": "Counterparty defines a channel end counterparty"
-    },
-    "ibc.core.channel.v1.ErrorReceipt": {
-      "type": "object",
-      "properties": {
-        "sequence": {
-          "type": "string",
-          "format": "uint64",
-          "title": "the channel upgrade sequence"
-        },
-        "message": {
-          "type": "string",
-          "title": "the error message detailing the cause of failure"
-        }
-      },
-      "description": "ErrorReceipt defines a type which encapsulates the upgrade sequence and error associated with the\nupgrade handshake failure. When a channel upgrade handshake is aborted both chains are expected to increment to the\nnext sequence."
     },
     "ibc.core.channel.v1.IdentifiedChannel": {
       "type": "object",
@@ -17298,11 +16821,6 @@
         "channelId": {
           "type": "string",
           "title": "channel identifier"
-        },
-        "upgradeSequence": {
-          "type": "string",
-          "format": "uint64",
-          "title": "upgrade sequence indicates the latest upgrade attempt performed by this channel\nthe value of 0 indicates the channel has never been upgraded"
         }
       },
       "description": "IdentifiedChannel defines a channel with additional port and channel\nidentifier fields."
@@ -17317,25 +16835,6 @@
       "default": "ORDER_NONE_UNSPECIFIED",
       "description": "- ORDER_NONE_UNSPECIFIED: zero-value for channel ordering\n - ORDER_UNORDERED: packets can be delivered in any order, which may differ from the order in\nwhich they were sent.\n - ORDER_ORDERED: packets are delivered exactly in the order which they were sent",
       "title": "Order defines if a channel is ORDERED or UNORDERED"
-    },
-    "ibc.core.channel.v1.PacketId": {
-      "type": "object",
-      "properties": {
-        "portId": {
-          "type": "string",
-          "title": "channel port identifier"
-        },
-        "channelId": {
-          "type": "string",
-          "title": "channel unique identifier"
-        },
-        "sequence": {
-          "type": "string",
-          "format": "uint64",
-          "title": "packet sequence"
-        }
-      },
-      "title": "PacketId is an identifer for a unique Packet\nSource chains refer to packets by source port/channel\nDestination chains refer to packets by destination port/channel"
     },
     "ibc.core.channel.v1.PacketState": {
       "type": "object",
@@ -17360,16 +16859,6 @@
         }
       },
       "description": "PacketState defines the generic type necessary to retrieve and store\npacket commitments, acknowledgements, and receipts.\nCaller is responsible for knowing the context necessary to interpret this\nstate as a commitment, acknowledgement, or a receipt."
-    },
-    "ibc.core.channel.v1.Params": {
-      "type": "object",
-      "properties": {
-        "upgradeTimeout": {
-          "$ref": "#/definitions/ibc.core.channel.v1.Timeout",
-          "description": "the relative timeout after which channel upgrades will time out."
-        }
-      },
-      "description": "Params defines the set of IBC channel parameters."
     },
     "ibc.core.channel.v1.QueryChannelClientStateResponse": {
       "type": "object",
@@ -17412,16 +16901,6 @@
         }
       },
       "title": "QueryChannelClientStateResponse is the Response type for the\nQuery/QueryChannelClientState RPC method"
-    },
-    "ibc.core.channel.v1.QueryChannelParamsResponse": {
-      "type": "object",
-      "properties": {
-        "params": {
-          "$ref": "#/definitions/ibc.core.channel.v1.Params",
-          "description": "params defines the parameters of the module."
-        }
-      },
-      "description": "QueryChannelParamsResponse is the response type for the Query/ChannelParams RPC method."
     },
     "ibc.core.channel.v1.QueryChannelResponse": {
       "type": "object",
@@ -17663,42 +17142,6 @@
       },
       "title": "QueryUnreceivedPacketsResponse is the response type for the\nQuery/UnreceivedPacketCommitments RPC method"
     },
-    "ibc.core.channel.v1.QueryUpgradeErrorResponse": {
-      "type": "object",
-      "properties": {
-        "errorReceipt": {
-          "$ref": "#/definitions/ibc.core.channel.v1.ErrorReceipt"
-        },
-        "proof": {
-          "type": "string",
-          "format": "byte",
-          "title": "merkle proof of existence"
-        },
-        "proofHeight": {
-          "$ref": "#/definitions/ibc.core.client.v1.Height",
-          "title": "height at which the proof was retrieved"
-        }
-      },
-      "title": "QueryUpgradeErrorResponse is the response type for the Query/QueryUpgradeError RPC method"
-    },
-    "ibc.core.channel.v1.QueryUpgradeResponse": {
-      "type": "object",
-      "properties": {
-        "upgrade": {
-          "$ref": "#/definitions/ibc.core.channel.v1.Upgrade"
-        },
-        "proof": {
-          "type": "string",
-          "format": "byte",
-          "title": "merkle proof of existence"
-        },
-        "proofHeight": {
-          "$ref": "#/definitions/ibc.core.client.v1.Height",
-          "title": "height at which the proof was retrieved"
-        }
-      },
-      "title": "QueryUpgradeResponse is the response type for the QueryUpgradeResponse RPC method"
-    },
     "ibc.core.channel.v1.State": {
       "type": "string",
       "enum": [
@@ -17706,61 +17149,188 @@
         "STATE_INIT",
         "STATE_TRYOPEN",
         "STATE_OPEN",
-        "STATE_CLOSED",
-        "STATE_FLUSHING",
-        "STATE_FLUSHCOMPLETE"
+        "STATE_CLOSED"
       ],
       "default": "STATE_UNINITIALIZED_UNSPECIFIED",
-      "description": "State defines if a channel is in one of the following states:\nCLOSED, INIT, TRYOPEN, OPEN, FLUSHING, FLUSHCOMPLETE or UNINITIALIZED.\n\n - STATE_UNINITIALIZED_UNSPECIFIED: Default State\n - STATE_INIT: A channel has just started the opening handshake.\n - STATE_TRYOPEN: A channel has acknowledged the handshake step on the counterparty chain.\n - STATE_OPEN: A channel has completed the handshake. Open channels are\nready to send and receive packets.\n - STATE_CLOSED: A channel has been closed and can no longer be used to send or receive\npackets.\n - STATE_FLUSHING: A channel has just accepted the upgrade handshake attempt and is flushing in-flight packets.\n - STATE_FLUSHCOMPLETE: A channel has just completed flushing any in-flight packets."
+      "description": "State defines if a channel is in one of the following states:\nCLOSED, INIT, TRYOPEN, OPEN, or UNINITIALIZED.\n\n - STATE_UNINITIALIZED_UNSPECIFIED: Default State\n - STATE_INIT: A channel has just started the opening handshake.\n - STATE_TRYOPEN: A channel has acknowledged the handshake step on the counterparty chain.\n - STATE_OPEN: A channel has completed the handshake. Open channels are\nready to send and receive packets.\n - STATE_CLOSED: A channel has been closed and can no longer be used to send or receive\npackets."
     },
-    "ibc.core.channel.v1.Timeout": {
+    "ibc.core.channel.v2.PacketState": {
       "type": "object",
       "properties": {
-        "height": {
-          "$ref": "#/definitions/ibc.core.client.v1.Height",
-          "title": "block height after which the packet or upgrade times out"
+        "clientId": {
+          "type": "string",
+          "description": "client unique identifier."
         },
-        "timestamp": {
+        "sequence": {
           "type": "string",
           "format": "uint64",
-          "title": "block timestamp (in nanoseconds) after which the packet or upgrade times out"
+          "description": "packet sequence."
+        },
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "description": "embedded data that represents packet state."
         }
       },
-      "description": "Timeout defines an execution deadline structure for 04-channel handlers.\nThis includes packet lifecycle handlers as well as the upgrade handshake handlers.\nA valid Timeout contains either one or both of a timestamp and block height (sequence)."
+      "description": "PacketState defines the generic type necessary to retrieve and store\npacket commitments, acknowledgements, and receipts.\nCaller is responsible for knowing the context necessary to interpret this\nstate as a commitment, acknowledgement, or a receipt."
     },
-    "ibc.core.channel.v1.Upgrade": {
+    "ibc.core.channel.v2.QueryNextSequenceSendResponse": {
       "type": "object",
       "properties": {
-        "fields": {
-          "$ref": "#/definitions/ibc.core.channel.v1.UpgradeFields"
-        },
-        "timeout": {
-          "$ref": "#/definitions/ibc.core.channel.v1.Timeout"
-        },
         "nextSequenceSend": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "title": "next sequence send number"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
         }
       },
-      "description": "Upgrade is a verifiable type which contains the relevant information\nfor an attempted upgrade. It provides the proposed changes to the channel\nend, the timeout for this upgrade attempt and the next packet sequence\nwhich allows the counterparty to efficiently know the highest sequence it has received.\nThe next sequence send is used for pruning and upgrading from unordered to ordered channels."
+      "title": "QueryNextSequenceSendResponse is the response type for the Query/QueryNextSequenceSend RPC method"
     },
-    "ibc.core.channel.v1.UpgradeFields": {
+    "ibc.core.channel.v2.QueryPacketAcknowledgementResponse": {
       "type": "object",
       "properties": {
-        "ordering": {
-          "$ref": "#/definitions/ibc.core.channel.v1.Order"
+        "acknowledgement": {
+          "type": "string",
+          "format": "byte",
+          "title": "acknowledgement associated with the request fields"
         },
-        "connectionHops": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
         },
-        "version": {
-          "type": "string"
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
         }
       },
-      "description": "UpgradeFields are the fields in a channel end which may be changed\nduring a channel upgrade."
+      "description": "QueryPacketAcknowledgementResponse is the response type for the Query/PacketAcknowledgement RPC method."
+    },
+    "ibc.core.channel.v2.QueryPacketAcknowledgementsResponse": {
+      "type": "object",
+      "properties": {
+        "acknowledgements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.channel.v2.PacketState"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "title": "pagination response"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryPacketAcknowledgemetsResponse is the request type for the\nQuery/QueryPacketAcknowledgements RPC method"
+    },
+    "ibc.core.channel.v2.QueryPacketCommitmentResponse": {
+      "type": "object",
+      "properties": {
+        "commitment": {
+          "type": "string",
+          "format": "byte",
+          "title": "packet associated with the request fields"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "description": "QueryPacketCommitmentResponse is the response type for the Query/PacketCommitment RPC method."
+    },
+    "ibc.core.channel.v2.QueryPacketCommitmentsResponse": {
+      "type": "object",
+      "properties": {
+        "commitments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ibc.core.channel.v2.PacketState"
+          },
+          "description": "collection of packet commitments for the requested channel identifier."
+        },
+        "pagination": {
+          "$ref": "#/definitions/cosmos.base.query.v1beta1.PageResponse",
+          "description": "pagination response."
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "description": "query block height."
+        }
+      },
+      "description": "QueryPacketCommitmentResponse is the response type for the Query/PacketCommitment RPC method."
+    },
+    "ibc.core.channel.v2.QueryPacketReceiptResponse": {
+      "type": "object",
+      "properties": {
+        "received": {
+          "type": "boolean",
+          "title": "success flag for if receipt exists"
+        },
+        "proof": {
+          "type": "string",
+          "format": "byte",
+          "title": "merkle proof of existence or absence"
+        },
+        "proofHeight": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "height at which the proof was retrieved"
+        }
+      },
+      "description": "QueryPacketReceiptResponse is the response type for the Query/PacketReceipt RPC method."
+    },
+    "ibc.core.channel.v2.QueryUnreceivedAcksResponse": {
+      "type": "object",
+      "properties": {
+        "sequences": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "list of unreceived acknowledgement sequences"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryUnreceivedAcksResponse is the response type for the\nQuery/UnreceivedAcks RPC method"
+    },
+    "ibc.core.channel.v2.QueryUnreceivedPacketsResponse": {
+      "type": "object",
+      "properties": {
+        "sequences": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          },
+          "title": "list of unreceived packet sequences"
+        },
+        "height": {
+          "$ref": "#/definitions/ibc.core.client.v1.Height",
+          "title": "query block height"
+        }
+      },
+      "title": "QueryUnreceivedPacketsResponse is the response type for the Query/UnreceivedPacketCommitments RPC method"
     },
     "ibc.core.client.v1.ConsensusStateWithHeight": {
       "type": "object",
@@ -17790,7 +17360,7 @@
           "title": "the height within the given revision"
         }
       },
-      "description": "Normally the RevisionHeight is incremented at each height while keeping\nRevisionNumber the same. However some consensus algorithms may choose to\nreset the height in certain conditions e.g. hard forks, state-machine\nbreaking changes In these cases, the RevisionNumber is incremented so that\nheight continues to be monitonically increasing even as the RevisionHeight\ngets reset",
+      "description": "Normally the RevisionHeight is incremented at each height while keeping\nRevisionNumber the same. However some consensus algorithms may choose to\nreset the height in certain conditions e.g. hard forks, state-machine\nbreaking changes In these cases, the RevisionNumber is incremented so that\nheight continues to be monitonically increasing even as the RevisionHeight\ngets reset\n\nPlease note that json tags for generated Go code are overridden to explicitly exclude the omitempty jsontag.\nThis enforces the Go json marshaller to always emit zero values for both revision_number and revision_height.",
       "title": "Height is a monotonically increasing data type\nthat can be compared against another Height for the purposes of updating and\nfreezing clients"
     },
     "ibc.core.client.v1.IdentifiedClientState": {
@@ -17819,6 +17389,16 @@
         }
       },
       "description": "Params defines the set of IBC light client parameters."
+    },
+    "ibc.core.client.v1.QueryClientCreatorResponse": {
+      "type": "object",
+      "properties": {
+        "creator": {
+          "type": "string",
+          "title": "creator of the client"
+        }
+      },
+      "description": "QueryClientCreatorResponse is the response type for the Query/ClientCreator RPC\nmethod."
     },
     "ibc.core.client.v1.QueryClientParamsResponse": {
       "type": "object",
@@ -17967,10 +17547,6 @@
           "$ref": "#/definitions/ibc.core.client.v1.Height",
           "description": "the height of the commitment root at which the proof is verified."
         },
-        "merklePath": {
-          "$ref": "#/definitions/ibc.core.commitment.v1.MerklePath",
-          "description": "the commitment key path."
-        },
         "value": {
           "type": "string",
           "format": "byte",
@@ -17985,6 +17561,10 @@
           "type": "string",
           "format": "uint64",
           "title": "optional block delay"
+        },
+        "merklePath": {
+          "$ref": "#/definitions/ibc.core.commitment.v2.MerklePath",
+          "description": "the commitment key path."
         }
       },
       "title": "QueryVerifyMembershipRequest is the request type for the Query/VerifyMembership RPC method"
@@ -17999,17 +17579,54 @@
       },
       "title": "QueryVerifyMembershipResponse is the response type for the Query/VerifyMembership RPC method"
     },
-    "ibc.core.commitment.v1.MerklePath": {
+    "ibc.core.client.v2.Config": {
       "type": "object",
       "properties": {
-        "keyPath": {
+        "allowedRelayers": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "title": "allowed_relayers defines the set of allowed relayers for IBC V2 protocol for the given client"
         }
       },
-      "title": "MerklePath is the path used to verify commitment proofs, which can be an\narbitrary structured object (defined by a commitment type).\nMerklePath is represented from root-to-leaf"
+      "title": "Config is a **per-client** configuration struct that sets which relayers are allowed to relay v2 IBC messages\nfor a given client.\nIf it is set, then only relayers in the allow list can send v2 messages\nIf it is not set, then the client allows permissionless relaying of v2 messages"
+    },
+    "ibc.core.client.v2.CounterpartyInfo": {
+      "type": "object",
+      "properties": {
+        "merklePrefix": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          },
+          "title": "merkle prefix key is the prefix that ics provable keys are stored under"
+        },
+        "clientId": {
+          "type": "string",
+          "title": "client identifier is the identifier used to send packet messages to our client"
+        }
+      },
+      "title": "CounterpartyInfo defines the key that the counterparty will use to message our client"
+    },
+    "ibc.core.client.v2.QueryConfigResponse": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/ibc.core.client.v2.Config"
+        }
+      },
+      "title": "QueryConfigResponse is the response type for the Query/Config RPC method"
+    },
+    "ibc.core.client.v2.QueryCounterpartyInfoResponse": {
+      "type": "object",
+      "properties": {
+        "counterpartyInfo": {
+          "$ref": "#/definitions/ibc.core.client.v2.CounterpartyInfo"
+        }
+      },
+      "description": "QueryCounterpartyInfoResponse is the response type for the\nQuery/CounterpartyInfo RPC method."
     },
     "ibc.core.commitment.v1.MerklePrefix": {
       "type": "object",
@@ -18020,6 +17637,19 @@
         }
       },
       "title": "MerklePrefix is merkle path prefixed to the key.\nThe constructed key from the Path and the key will be append(Path.KeyPath,\nappend(Path.KeyPrefix, key...))"
+    },
+    "ibc.core.commitment.v2.MerklePath": {
+      "type": "object",
+      "properties": {
+        "keyPath": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "description": "MerklePath is the path used to verify commitment proofs, which can be an\narbitrary structured object (defined by a commitment type).\nICS-23 verification supports membership proofs for nested merkle trees.\nThe ICS-24 standard provable keys MUST be stored in the lowest level tree with an optional prefix.\nThe IC24 provable tree may then be stored in a higher level tree(s) that hash up to the root hash\nstored in the consensus state of the client.\nEach element of the path represents the key of a merkle tree from the root to the leaf.\nThe elements of the path before the final element must be the path to the tree that contains\nthe ICS24 provable store. Thus, it should remain constant for all ICS24 proofs.\nThe final element of the path is the key of the leaf in the ICS24 provable store,\nThus IBC core will append the ICS24 path to the final element of the MerklePath\nstored in the counterparty to create the full path to the leaf for proof verification.\nExamples:\nCosmos SDK:\nThe Cosmos SDK commits to a multi-tree where each store is an IAVL tree and all store hashes\nare hashed in a simple merkle tree to get the final root hash. Thus, the MerklePath in the counterparty\nMerklePrefix has the following structure: [\"ibc\", \"\"]\nThe core IBC handler will append the ICS24 path to the final element of the MerklePath\nlike so: [\"ibc\", \"{packetCommitmentPath}\"] which will then be used for final verification.\nEthereum:\nThe Ethereum client commits to a single Patricia merkle trie. The ICS24 provable store is managed\nby the smart contract state. Each smart contract has a specific prefix reserved within the global trie.\nThus the MerklePath in the counterparty is the prefix to the smart contract state in the global trie.\nSince there is only one tree in the commitment structure of ethereum the MerklePath in the counterparty\nMerklePrefix has the following structure: [\"IBCCoreContractAddressStoragePrefix\"]\nThe core IBC handler will append the ICS24 path to the final element of the MerklePath\nlike so: [\"IBCCoreContractAddressStoragePrefix{packetCommitmentPath}\"] which will then be used for final\nverification. Thus the MerklePath in the counterparty MerklePrefix is the nested key path from the root hash of the\nconsensus state down to the ICS24 provable store. The IBC handler retrieves the counterparty key path to the ICS24\nprovable store from the MerklePath and appends the ICS24 path to get the final key path to the value being verified\nby the client against the root hash in the client's consensus state."
     },
     "ibc.core.connection.v1.ConnectionEnd": {
       "type": "object",
@@ -18257,7 +17887,7 @@
           "title": "list of features compatible with the specified identifier"
         }
       },
-      "description": "Version defines the versioning scheme used to negotiate the IBC verison in\nthe connection handshake."
+      "description": "Version defines the versioning scheme used to negotiate the IBC version in\nthe connection handshake."
     },
     "ibc.lightclients.wasm.v1.QueryChecksumsResponse": {
       "type": "object",
