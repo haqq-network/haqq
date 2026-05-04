@@ -11,6 +11,16 @@ import (
 	"github.com/haqq-network/haqq/x/ethiq/types"
 )
 
+// executedApplicationStoreKey returns a non-empty KV store key for an application ID.
+// sdkmath.Uint64.BigInt().Bytes() is empty for appID 0, which panics in store.Set (AssertValidKey).
+func executedApplicationStoreKey(appID uint64) []byte {
+	key := sdkmath.NewIntFromUint64(appID).BigInt().Bytes()
+	if len(key) == 0 {
+		return []byte{0}
+	}
+	return key
+}
+
 // GetTotalBurnedAmount returns the total amount of burned coins
 func (k Keeper) GetTotalBurnedAmount(ctx sdk.Context) sdk.Coin {
 	store := ctx.KVStore(k.storeKey)
@@ -74,19 +84,19 @@ func (k Keeper) AddToTotalBurnedFromApplicationsAmount(ctx sdk.Context, amount s
 }
 
 func (k Keeper) IsApplicationExecuted(ctx sdk.Context, appID uint64) bool {
-	key := sdkmath.NewIntFromUint64(appID).BigInt().Bytes()
+	key := executedApplicationStoreKey(appID)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
 	return store.Has(key)
 }
 
 func (k Keeper) SetApplicationAsExecuted(ctx sdk.Context, appID uint64) {
-	key := sdkmath.NewIntFromUint64(appID).BigInt().Bytes()
+	key := executedApplicationStoreKey(appID)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
 	store.Set(key, []byte{0})
 }
 
 func (k Keeper) ResetApplicationByID(ctx sdk.Context, appID uint64) {
-	key := sdkmath.NewIntFromUint64(appID).BigInt().Bytes()
+	key := executedApplicationStoreKey(appID)
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ExecutedApplicationsPrefix)
 	store.Delete(key)
 }

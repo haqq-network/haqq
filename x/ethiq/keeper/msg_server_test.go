@@ -222,12 +222,52 @@ func (suite *KeeperTestSuite) TestMsgMintHaqqByApplication() {
 	}
 }
 
+func (suite *KeeperTestSuite) TestMsgMintHaqqByApplicationSuccessApplicationIDZero() {
+	suite.SetupTest()
+	ctx := s.network.GetContext()
+
+	app6, err := ethiqtypes.GetApplicationByID(6)
+	suite.Require().NoError(err)
+
+	item := ethiqtypes.ApplicationListItem{
+		ID:                         0,
+		FromAddress:                app6.FromAddress,
+		ToAddress:                  app6.ToAddress,
+		FundSource:                 app6.Source,
+		IslmAmount:                 app6.BurnAmount.Amount.String(),
+		IslmAccumulatedBurntAmount: app6.BurnedBeforeAmount.Amount.String(),
+	}
+	cleanup := ethiqtypes.ReplaceWaitlistForIntegrationTest([]ethiqtypes.ApplicationListItem{item})
+	defer cleanup()
+
+	fromAddr := sdk.MustAccAddressFromBech32(app6.FromAddress)
+	suite.Require().NoError(s.network.FundAccount(
+		fromAddr,
+		sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, app6.BurnAmount.Amount.MulRaw(2))),
+	))
+
+	msgSrv := ethiqkeeper.NewMsgServerImpl(s.network.App.EthiqKeeper)
+	msg := &ethiqtypes.MsgMintHaqqByApplication{
+		FromAddress:   app6.FromAddress,
+		ApplicationId: 0,
+	}
+
+	res, err := msgSrv.MintHaqqByApplication(ctx, msg)
+	suite.Require().NoError(err)
+	suite.Require().NotNil(res)
+
+	suite.Require().True(s.network.App.EthiqKeeper.IsApplicationExecuted(ctx, 0))
+
+	_, err = msgSrv.MintHaqqByApplication(ctx, msg)
+	suite.Require().Error(err)
+	suite.Require().ErrorContains(err, "already executed")
+}
+
 func (suite *KeeperTestSuite) TestMsgMintHaqqByApplicationAlreadyExecuted() {
 	suite.SetupTest()
 	ctx := s.network.GetContext()
 
 	// Application 1: fromAddress = "haqq19pxv2r4key79twjfv0gdc5yhc4xmw9vqxkj2nl", burnAmount = 10e18
-	// Use application ID 1 to avoid the zero-ID key issue in the KV store
 	appID := uint64(1)
 	application, err := ethiqtypes.GetApplicationByID(appID)
 	suite.Require().NoError(err)
