@@ -2,7 +2,7 @@
   description = "A very basic flake";
 
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2505.*.tar.gz";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2511.*.tar.gz";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     flake-utils.url = "github:numtide/flake-utils";
@@ -36,7 +36,7 @@
         gomod = builtins.readFile ./go.mod;
         goVersion = builtins.match ".*[\n]go ([[:digit:]]*)\.([[:digit:]]*)[\.]*([[:digit:]]*)[\n].*" gomod;
 
-        go = pkgsUnstable."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
+        go = pkgs."go_${builtins.head goVersion}_${builtins.elemAt goVersion 1}";
       in
       {
         packages = rec {
