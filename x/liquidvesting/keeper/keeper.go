@@ -4,6 +4,7 @@ import (
 	"context"
 
 	errorsmod "cosmossdk.io/errors"
+	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -24,6 +25,10 @@ var _ Keeper = (*BaseKeeper)(nil)
 type Keeper interface {
 	Liquidate(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) (sdk.Coin, string, error)
 	Redeem(ctx sdk.Context, fromAddress, toAddress sdk.AccAddress, amount sdk.Coin) error
+
+	// Bank balance helpers used by the precompile to mirror SDK bank deltas into
+	// the EVM StateDB journal when the precompile is invoked from a contract.
+	BaseDenomBankBalance(ctx sdk.Context, addr sdk.AccAddress) sdkmath.Int
 
 	// Params methods
 	GetParams(ctx sdk.Context) types.Params
@@ -83,6 +88,15 @@ func NewKeeper(
 		erc20Keeper:   erc20,
 		vestingKeeper: vk,
 	}
+}
+
+// BaseDenomBankBalance returns the bank balance of aISLM for addr (utils.BaseDenom).
+// On Haqq, EvmDenom defaults to utils.BaseDenom; this is the balance the EVM keeper
+// reconciles for native EVM accounts on tx commit, so the liquid precompile uses it
+// to compute the bank delta produced by Liquidate/Redeem keeper calls and mirror
+// that delta into the EVM StateDB journal when the caller is a contract.
+func (k BaseKeeper) BaseDenomBankBalance(ctx sdk.Context, addr sdk.AccAddress) sdkmath.Int {
+	return k.bankKeeper.GetBalance(ctx, addr, utils.BaseDenom).Amount
 }
 
 // Liquidate liquidates specified amount of token locked in vesting into liquid token
