@@ -20,8 +20,16 @@ const (
 	RedeemMethod = "redeem"
 )
 
-// mirrorBankBaseDeltaIntoStateDB syncs the bank delta of the EVM gas denom (aISLM)
-// produced by a keeper call into the EVM StateDB journal when the precompile is
+// bankBaseSnapshot pairs an account with its sampled base-denom (aISLM) bank
+// balance, captured immediately before a keeper call. It is the input unit
+// for mirrorBankBaseDeltasIntoStateDB.
+type bankBaseSnapshot struct {
+	addr       sdk.AccAddress
+	baseBefore sdkmath.Int
+}
+
+// mirrorBankBaseDeltasIntoStateDB mirrors per-account bank deltas of the EVM
+// gas denom (aISLM) into the EVM StateDB journal when the precompile is
 // invoked from another contract (caller != origin).
 //
 // Why this is needed:
@@ -35,31 +43,48 @@ const (
 //   - When caller == origin (EOA), x/evm intentionally skips reconciling the origin's
 //     balance for these direct keeper movements, so no journal entry is required.
 //
-// baseBefore must be sampled immediately before the keeper/msg work; the resulting
-// delta matches the actual bank movement (which may differ from the nominal msg amount,
-// e.g. for Redeem the credit on `to` equals the unlocked principal that round-trips
-// through the module account).
-func (p *Precompile) mirrorBankBaseDeltaIntoStateDB(
+// Each snapshot.baseBefore must be sampled immediately before the keeper/msg work;
+// the resulting delta matches the actual bank movement (which may differ from the
+// nominal msg amount, e.g. for Redeem the credit on `to` equals the unlocked
+// principal that round-trips through the module account).
+//
+// IMPORTANT - duplicate accounts must be mirrored exactly once. A given account
+// can appear in multiple roles in the same call (typical case: redeemFrom ==
+// redeemTo when an account redeems back into itself). The function
+// deduplicates snapshots by address bech32, so a single account contributes a
+// single Sub/Add journal entry whose magnitude is its net post-keeper bank
+// delta. Without this, x/evm would over-credit/-debit the account at commit
+// (each repeated journal entry triggers another reconciliation pass), which is
+// exactly the phantom-coin failure mode this helper exists to prevent.
+func (p *Precompile) mirrorBankBaseDeltasIntoStateDB(
 	ctx sdk.Context,
 	isCallerOrigin bool,
-	addr sdk.AccAddress,
-	baseBefore sdkmath.Int,
+	snapshots ...bankBaseSnapshot,
 ) {
 	if isCallerOrigin {
 		return
 	}
-	netBaseDelta := baseBefore.Sub(p.keeper.BaseDenomBankBalance(ctx, addr))
-	if netBaseDelta.IsZero() {
-		return
+	seen := make(map[string]struct{}, len(snapshots))
+	for _, s := range snapshots {
+		key := s.addr.String()
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+
+		netBaseDelta := s.baseBefore.Sub(p.keeper.BaseDenomBankBalance(ctx, s.addr))
+		if netBaseDelta.IsZero() {
+			continue
+		}
+		hexAddr := common.BytesToAddress(s.addr.Bytes())
+		if netBaseDelta.IsNegative() {
+			// Bank balance grew: account was credited - mirror as Add.
+			p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(hexAddr, netBaseDelta.Neg().BigInt(), cmn.Add))
+			continue
+		}
+		// Bank balance shrank: account was debited - mirror as Sub.
+		p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(hexAddr, netBaseDelta.BigInt(), cmn.Sub))
 	}
-	hexAddr := common.BytesToAddress(addr.Bytes())
-	if netBaseDelta.IsNegative() {
-		// Bank balance grew: account was credited - mirror as Add.
-		p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(hexAddr, netBaseDelta.Neg().BigInt(), cmn.Add))
-		return
-	}
-	// Bank balance shrank: account was debited - mirror as Sub.
-	p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(hexAddr, netBaseDelta.BigInt(), cmn.Sub))
 }
 
 // Liquidate executes the liquidvesting Liquidate message.
@@ -132,11 +157,13 @@ func (p *Precompile) Liquidate(
 		}
 	}
 
-	// Snapshot the bank balance of the debited account (liquidateFrom) BEFORE the
-	// keeper call so the EVM-side mirror can replay the exact aISLM movement that
-	// SendCoinsFromAccountToModule performs inside Liquidate.
+	// Snapshot the bank balance of the debited account (liquidateFrom) BEFORE
+	// the keeper call so the EVM-side mirror can replay the exact aISLM movement
+	// that SendCoinsFromAccountToModule performs inside Liquidate. liquidateTo
+	// only receives aLIQUID*, which is not the EVM gas denom, so there is no
+	// base-denom delta to mirror on it.
 	liquidateFromAccAddr := sdk.MustAccAddressFromBech32(msg.LiquidateFrom)
-	baseBefore := p.keeper.BaseDenomBankBalance(ctx, liquidateFromAccAddr)
+	liquidateFromBaseBefore := p.keeper.BaseDenomBankBalance(ctx, liquidateFromAccAddr)
 
 	// Execute the message using the message server.
 	msgSrv := liquidkeeper.NewMsgServerImpl(p.keeper)
@@ -145,9 +172,12 @@ func (p *Precompile) Liquidate(
 		return nil, err
 	}
 
-	// Mirror the bank delta on liquidateFrom into the EVM StateDB journal so that
-	// the EVM commit sees the contract caller's aISLM balance as actually debited.
-	p.mirrorBankBaseDeltaIntoStateDB(ctx, isCallerOrigin, liquidateFromAccAddr, baseBefore)
+	// Mirror the bank delta on liquidateFrom into the EVM StateDB journal so
+	// that the EVM commit sees the contract caller's aISLM balance as actually
+	// debited.
+	p.mirrorBankBaseDeltasIntoStateDB(ctx, isCallerOrigin,
+		bankBaseSnapshot{addr: liquidateFromAccAddr, baseBefore: liquidateFromBaseBefore},
+	)
 
 	minted := res.Minted.Amount.BigInt()
 	erc20Addr := common.HexToAddress(res.ContractAddr)
@@ -232,19 +262,26 @@ func (p *Precompile) Redeem(
 		}
 	}
 
-	// Snapshot the bank balances of both bank-touching counterparties BEFORE the
-	// keeper call so the EVM-side mirror can replay the exact aISLM movement that
-	// Redeem performs internally:
-	//   - redeemFrom is debited the liquid (aLIQUID*) denom, which is NOT the EVM
-	//     gas denom, so its base-denom balance is unchanged - sampling it lets the
-	//     mirror no-op for that side without special-casing.
+	// Snapshot the bank balances of both bank-touching counterparties BEFORE
+	// the keeper call so the EVM-side mirror can replay the exact aISLM
+	// movement that Redeem performs internally:
+	//   - redeemFrom is debited the liquid (aLIQUID*) denom, which is NOT the
+	//     EVM gas denom, so its base-denom balance is unchanged in the
+	//     redeemFrom != redeemTo case - sampling it lets the mirror no-op for
+	//     that side without special-casing.
 	//   - redeemTo is credited the unlocked principal in aISLM coming from the
-	//     liquidvesting module account; this is the credit we must propagate to
-	//     the EVM journal when the call originates from a contract.
+	//     liquidvesting module account; this is the credit we must propagate
+	//     to the EVM journal when the call originates from a contract.
+	//
+	// When redeemFrom == redeemTo (typical "self-redeem"), both snapshots
+	// resolve to the same account; the dedup logic in
+	// mirrorBankBaseDeltasIntoStateDB ensures the net delta is mirrored
+	// exactly once. Without that dedup, x/evm's commit-time reconciliation
+	// would replay the credit twice and double the bank balance growth.
 	redeemFromAccAddr := sdk.MustAccAddressFromBech32(msg.RedeemFrom)
 	redeemToAccAddr := sdk.MustAccAddressFromBech32(msg.RedeemTo)
-	fromBaseBefore := p.keeper.BaseDenomBankBalance(ctx, redeemFromAccAddr)
-	toBaseBefore := p.keeper.BaseDenomBankBalance(ctx, redeemToAccAddr)
+	redeemFromBaseBefore := p.keeper.BaseDenomBankBalance(ctx, redeemFromAccAddr)
+	redeemToBaseBefore := p.keeper.BaseDenomBankBalance(ctx, redeemToAccAddr)
 
 	// Execute the message using the message server.
 	msgSrv := liquidkeeper.NewMsgServerImpl(p.keeper)
@@ -252,13 +289,10 @@ func (p *Precompile) Redeem(
 		return nil, err
 	}
 
-	// Mirror the bank deltas into the EVM StateDB journal so that the EVM commit
-	// sees the contract caller's aISLM balance as actually credited/debited.
-	// AddBalanceChangeEntries (rather than SetBalanceChangeEntries) is used so the
-	// two entries coexist when redeemFrom == redeemTo or when both sides happen
-	// to move base denom (e.g. through a future hook on the from side).
-	p.mirrorBankBaseDeltaIntoStateDB(ctx, isCallerOrigin, redeemFromAccAddr, fromBaseBefore)
-	p.mirrorBankBaseDeltaIntoStateDB(ctx, isCallerOrigin, redeemToAccAddr, toBaseBefore)
+	p.mirrorBankBaseDeltasIntoStateDB(ctx, isCallerOrigin,
+		bankBaseSnapshot{addr: redeemFromAccAddr, baseBefore: redeemFromBaseBefore},
+		bankBaseSnapshot{addr: redeemToAccAddr, baseBefore: redeemToBaseBefore},
+	)
 
 	if err := p.EmitRedeemEvent(ctx, stateDB, sender, common.HexToAddress(msg.RedeemTo), msg.Amount.Denom, msg.Amount.Amount.BigInt()); err != nil {
 		return nil, err
