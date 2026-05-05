@@ -10,12 +10,14 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	sdkauthz "github.com/cosmos/cosmos-sdk/x/authz"
+	"github.com/ethereum/go-ethereum/common"
 
 	cmn "github.com/haqq-network/haqq/precompiles/common"
 	"github.com/haqq-network/haqq/precompiles/liquid"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	haqqtestutil "github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 	liquidtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -45,6 +47,79 @@ func (s *PrecompileTestSuite) createClawbackVestingAccount(ctx sdk.Context, addr
 	)
 	err := haqqtestutil.FundAccount(ctx, s.network.App.BankKeeper, addr, vestingAmount)
 	s.Require().NoError(err)
+	s.network.App.AccountKeeper.SetAccount(ctx, clawbackAccount)
+}
+
+// smartContractVestingTotal is the total amount used by the smart-contract
+// vesting test factory: 3000 ISLM = 3000 * 1e18 aISLM.
+var smartContractVestingTotal = sdk.NewCoins(
+	sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(3000).MulRaw(1e18)),
+)
+
+// createClawbackVestingAccountForSmartContract converts an existing on-chain
+// account at addr (typically a deployed smart-contract wallet such as a Gnosis
+// Safe proxy) into a ClawbackVestingAccount with the schedule used by Safe
+// integration tests: 3 lockup periods of 1000 ISLM each (3000 ISLM total) and
+// a single instant vesting period for 3000 ISLM. The lockup starts 10 seconds
+// in the past, so all 3000 ISLM are still locked at block time.
+//
+// IMPORTANT - test-only helper.
+//
+// In production this conversion is impossible: x/vesting MsgConvertIntoVestingAccount
+// rejects contract accounts (see the IsContractAccount guard in
+// x/vesting/keeper/msg_server.go). The helper deliberately bypasses that
+// guard by mutating the auth account directly. It MUST NOT be treated as a
+// model for any on-chain flow - it only exists to build a test fixture
+// where a smart-contract wallet behaves as if it were under a vesting
+// schedule, so the liquid vesting precompile can be exercised end-to-end
+// against a Safe-shaped sender.
+//
+// Side effects:
+//   - mints 3000 ISLM into addr via testutil.FundAccount (on top of any
+//     pre-existing balance);
+//   - replaces the auth account at addr with a ClawbackVestingAccount that
+//     preserves the original BaseAccount metadata (AccountNumber, Sequence,
+//     PubKey) and the original CodeHash if addr was an EthAccount, so the
+//     contract code at that address remains callable through the EVM.
+func (s *PrecompileTestSuite) createClawbackVestingAccountForSmartContract(
+	ctx sdk.Context, addr sdk.AccAddress,
+) {
+	funder := sdk.AccAddress(liquidtypes.ModuleName)
+	periodCoin := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1000).MulRaw(1e18)))
+	lockupPeriods := sdkvesting.Periods{
+		{Length: 100000, Amount: periodCoin},
+		{Length: 100000, Amount: periodCoin},
+		{Length: 100000, Amount: periodCoin},
+	}
+	vestingPeriods := sdkvesting.Periods{
+		{Length: 0, Amount: smartContractVestingTotal},
+	}
+
+	existing := s.network.App.AccountKeeper.GetAccount(ctx, addr)
+	s.Require().NotNil(existing, "smart-contract account must exist before being wrapped into a vesting account")
+
+	baseAccount := authtypes.NewBaseAccount(
+		existing.GetAddress(),
+		existing.GetPubKey(),
+		existing.GetAccountNumber(),
+		existing.GetSequence(),
+	)
+
+	// Preserve the EVM code reference. ClawbackVestingAccount stores its own
+	// CodeHash field, so we must carry it over from the EthAccount to keep
+	// the contract callable via the EVM.
+	var codeHashPtr *common.Hash
+	if ethAcc, ok := existing.(*haqqtypes.EthAccount); ok {
+		h := ethAcc.GetCodeHash()
+		codeHashPtr = &h
+	}
+
+	startTime := ctx.BlockTime().Add(-10 * time.Second)
+	clawbackAccount := vestingtypes.NewClawbackVestingAccount(
+		baseAccount, funder, smartContractVestingTotal, startTime, lockupPeriods, vestingPeriods, codeHashPtr,
+	)
+
+	s.Require().NoError(haqqtestutil.FundAccount(ctx, s.network.App.BankKeeper, addr, smartContractVestingTotal))
 	s.network.App.AccountKeeper.SetAccount(ctx, clawbackAccount)
 }
 
