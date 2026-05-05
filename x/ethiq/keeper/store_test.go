@@ -173,7 +173,7 @@ func (suite *KeeperTestSuite) TestExecutedApplicationsAllRegisteredIDs() {
 		k.SetApplicationAsExecuted(ctx, id)
 	}
 	got := k.GetAllExecutedApplicationsIDs(ctx)
-	suite.Require().Len(got, int(n))
+	suite.Require().Len(got, int(n)) //nolint: gosec
 	wantSet := make(map[uint64]struct{}, n)
 	for id := uint64(0); id < n; id++ {
 		wantSet[id] = struct{}{}
@@ -187,7 +187,7 @@ func (suite *KeeperTestSuite) TestExecutedApplicationsAllRegisteredIDs() {
 
 	wantSorted := make([]uint64, n)
 	for i := range wantSorted {
-		wantSorted[i] = uint64(i)
+		wantSorted[i] = uint64(i) //nolint: gosec
 	}
 	slices.Sort(got)
 	suite.Require().Equal(wantSorted, got)

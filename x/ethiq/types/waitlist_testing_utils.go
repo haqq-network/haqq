@@ -39,7 +39,7 @@ func PushRegisteredApplicationForIntegrationTest(item ApplicationListItem) (appI
 func rebuildRegisteredApplicationsBySender(apps []ApplicationListItem) {
 	registeredApplicationsBySender = make(map[string][]uint64, len(apps))
 	for i, app := range apps {
-		id := uint64(i)
+		id := uint64(i) //nolint: gosec
 		registeredApplicationsBySender[app.FromAddress] = append(registeredApplicationsBySender[app.FromAddress], id)
 	}
 }
@@ -54,7 +54,7 @@ func ReplaceWaitlistForIntegrationTest(apps []ApplicationListItem) (cleanup func
 	newApps := make([]ApplicationListItem, len(apps))
 	copy(newApps, apps)
 	for i := range newApps {
-		newApps[i].ID = uint64(i)
+		newApps[i].ID = uint64(i) //nolint: gosec
 		if _, err := newApps[i].AsBurnApplication(); err != nil {
 			panic(fmt.Sprintf("types.ReplaceWaitlistForIntegrationTest: invalid item at index %d: %v", i, err))
 		}
