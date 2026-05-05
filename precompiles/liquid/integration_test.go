@@ -140,14 +140,24 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 	// Common balance constants used across the suite. All amounts are in
 	// aISLM (1 ISLM = 1e18 aISLM) to match the on-chain unit.
 	var (
-		islmInitialOwnerFunding = sdkmath.NewInt(1500).MulRaw(1e18)
-		islmTransferToSafe      = sdkmath.NewInt(500).MulRaw(1e18)
-		islmExpectedSafeFree    = sdkmath.NewInt(1000).MulRaw(1e18)
-		islmOwnerTwoBaseline    = sdkmath.NewInt(1000).MulRaw(1e18)
-		islmOwnerOneFloor       = sdkmath.NewInt(999).MulRaw(1e18)
-		islmOwnerOneCeil        = sdkmath.NewInt(1000).MulRaw(1e18)
-		islmVestingTotal        = sdkmath.NewInt(3000).MulRaw(1e18)
-		islmLiquidationAmount   = sdkmath.NewInt(500).MulRaw(1e18)
+		islmInitialOwnerFunding   = sdkmath.NewInt(1500).MulRaw(1e18)
+		islmTransferToSafe        = sdkmath.NewInt(500).MulRaw(1e18)
+		islmExpectedSafeFree      = sdkmath.NewInt(1000).MulRaw(1e18)
+		islmOwnerTwoBaseline      = sdkmath.NewInt(1000).MulRaw(1e18)
+		islmOwnerOneFloor         = sdkmath.NewInt(999).MulRaw(1e18)
+		islmOwnerOneCeil          = sdkmath.NewInt(1000).MulRaw(1e18)
+		islmVestingTotal          = sdkmath.NewInt(3000).MulRaw(1e18)
+		islmFirstLiquidateAmount  = sdkmath.NewInt(500).MulRaw(1e18)
+		islmSecondLiquidateAmount = sdkmath.NewInt(2000).MulRaw(1e18)
+		islmThirdLiquidateAmount  = sdkmath.NewInt(500).MulRaw(1e18)
+		islmFourthLiquidateAmount = sdkmath.NewInt(100).MulRaw(1e18)
+		islmFirstRedeemAmount     = sdkmath.NewInt(250).MulRaw(1e18)
+		islmSecondRedeemAmount    = sdkmath.NewInt(2000).MulRaw(1e18)
+		islmThirdRedeemAmount     = sdkmath.NewInt(100).MulRaw(1e18)
+		// 1 ISLM gas budget per Safe execTransaction (covers proxy + signature
+		// verification + precompile call). Two execTransactions in this suite,
+		// so owner1 must spend at most 2 ISLM in total across both.
+		islmGasPerExecTransaction = sdkmath.NewInt(1).MulRaw(1e18)
 	)
 
 	BeforeEach(func() {
@@ -372,197 +382,580 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 			Expect(ownerTwoFinal.Balance.Amount).To(Equal(islmOwnerTwoBaseline),
 				"owner2 balance must be unchanged by the native vesting wrap")
 
-			// 7) Execute Safe -> LiquidVesting precompile liquidate(500 ISLM).
+			// 7) Authorize Safe to call MsgLiquidate and MsgRedeem on behalf of
+			//    owner1.
 			//
 			// The precompile requires authz whenever the EVM caller (Safe)
 			// differs from tx origin (owner1). Grant it natively here so the
 			// tested action remains the Safe EVM execution path, while setup
 			// stays minimal for this step.
-			liquidateGrant := sdkauthz.NewGenericAuthorization(sdk.MsgTypeURL(&liquidtypes.MsgLiquidate{}))
+			grantExpiry := ptrTime(s.network.GetContext().BlockTime().Add(time.Hour))
 			Expect(s.network.App.AuthzKeeper.SaveGrant(
 				s.network.GetContext(),
 				safeWalletAccAddr,
 				safeOwnerOne.AccAddr,
-				liquidateGrant,
-				ptrTime(s.network.GetContext().BlockTime().Add(time.Hour)),
+				sdkauthz.NewGenericAuthorization(sdk.MsgTypeURL(&liquidtypes.MsgLiquidate{})),
+				grantExpiry,
 			)).To(Succeed(), "failed to grant Safe authz to liquidate via precompile")
+			Expect(s.network.App.AuthzKeeper.SaveGrant(
+				s.network.GetContext(),
+				safeWalletAccAddr,
+				safeOwnerOne.AccAddr,
+				sdkauthz.NewGenericAuthorization(sdk.MsgTypeURL(&liquidtypes.MsgRedeem{})),
+				grantExpiry,
+			)).To(Succeed(), "failed to grant Safe authz to redeem via precompile")
 
 			liquidVestingModuleAddr := authtypes.NewModuleAddress(liquidtypes.ModuleName)
-			moduleBaseBefore := s.network.App.BankKeeper.GetBalance(
-				s.network.GetContext(), liquidVestingModuleAddr, utils.BaseDenom,
-			).Amount
-			safeBaseBeforeLiquidate := s.network.App.BankKeeper.GetBalance(
-				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
-			).Amount
-			safeSpendableBeforeLiquidate := s.network.App.BankKeeper.SpendableCoin(
-				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
-			).Amount
-			ownerOneBeforeLiquidate, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
-			Expect(err).NotTo(HaveOccurred())
 
-			liquidateCallData, err := s.precompile.ABI.Pack(
-				liquid.LiquidateMethod,
-				safeWalletAddr,
-				safeWalletAddr,
-				islmLiquidationAmount.BigInt(),
-			)
-			Expect(err).NotTo(HaveOccurred(), "failed to pack liquidate call data")
+			// execViaSafe drives the full Gnosis Safe execTransaction flow:
+			//   read nonce -> compute tx hash -> approved-hash signature for
+			//   owner1 -> execTransaction -> verify ExecutionSuccess.
+			// It returns the EVM tx response so callers can introspect logs.
+			//
+			// Threshold = 1 lets us use the "approved hash" signature scheme
+			// ({r=owner1, s=0, v=1}) instead of an off-chain ECDSA signature,
+			// keeping the test free of low-level signing details.
+			execViaSafe := func(targetAddr common.Address, callData []byte, opLabel string) *evmtypes.MsgEthereumTxResponse {
+				GinkgoHelper()
 
-			_, nonceRes, err := s.factory.CallContractAndCheckLogs(
-				safeOwnerOne.Priv,
-				evmtypes.EvmTxArgs{To: &safeWalletAddr},
-				factory.CallArgs{ContractABI: gnosisSafe.ABI, MethodName: "nonce"},
-				testutil.LogCheckArgs{ExpPass: true},
-			)
-			Expect(err).NotTo(HaveOccurred(), "failed to read Safe nonce before liquidate")
-			nonceOut, err := gnosisSafe.ABI.Methods["nonce"].Outputs.Unpack(nonceRes.Ret)
-			Expect(err).NotTo(HaveOccurred(), "failed to decode Safe nonce")
-			nonce, ok := nonceOut[0].(*big.Int)
-			Expect(ok).To(BeTrue(), "Safe nonce output must be *big.Int")
+				_, nonceRes, err := s.factory.CallContractAndCheckLogs(
+					safeOwnerOne.Priv,
+					evmtypes.EvmTxArgs{To: &safeWalletAddr},
+					factory.CallArgs{ContractABI: gnosisSafe.ABI, MethodName: "nonce"},
+					testutil.LogCheckArgs{ExpPass: true},
+				)
+				Expect(err).NotTo(HaveOccurred(), "failed to read Safe nonce before "+opLabel)
+				nonceOut, err := gnosisSafe.ABI.Methods["nonce"].Outputs.Unpack(nonceRes.Ret)
+				Expect(err).NotTo(HaveOccurred(), "failed to decode Safe nonce")
+				nonce, ok := nonceOut[0].(*big.Int)
+				Expect(ok).To(BeTrue(), "Safe nonce output must be *big.Int")
 
-			safeTxGas := big.NewInt(500_000)
-			getTxHashArgs := factory.CallArgs{
-				ContractABI: gnosisSafe.ABI,
-				MethodName:  "getTransactionHash",
-				Args: []interface{}{
-					s.precompile.Address(),
-					big.NewInt(0),
-					liquidateCallData,
-					uint8(0), // CALL
-					safeTxGas,
-					big.NewInt(0),
-					big.NewInt(0),
-					common.Address{},
-					common.Address{},
-					nonce,
-				},
-			}
-			_, txHashRes, err := s.factory.CallContractAndCheckLogs(
-				safeOwnerOne.Priv,
-				evmtypes.EvmTxArgs{To: &safeWalletAddr},
-				getTxHashArgs,
-				testutil.LogCheckArgs{ExpPass: true},
-			)
-			Expect(err).NotTo(HaveOccurred(), "failed to calculate Safe tx hash")
-			txHashOut, err := gnosisSafe.ABI.Methods["getTransactionHash"].Outputs.Unpack(txHashRes.Ret)
-			Expect(err).NotTo(HaveOccurred(), "failed to decode Safe tx hash")
-			Expect(txHashOut).To(HaveLen(1))
-			txHash, ok := txHashOut[0].([32]byte)
-			Expect(ok).To(BeTrue(), "Safe tx hash output must be [32]byte")
-			Expect(txHash).NotTo(Equal([32]byte{}), "Safe tx hash must be non-zero")
-
-			// Safe signature format is {r}{s}{v}. For threshold=1 we use the
-			// approved-hash signature form: v=1 and r=owner1 address.
-			signature := make([]byte, 65)
-			copy(signature[12:32], safeOwnerOne.Addr.Bytes())
-			signature[64] = 1
-
-			execTxRes, err := s.factory.ExecuteContractCall(
-				safeOwnerOne.Priv,
-				evmtypes.EvmTxArgs{To: &safeWalletAddr},
-				factory.CallArgs{
-					ContractABI: gnosisSafe.ABI,
-					MethodName:  "execTransaction",
-					Args: []interface{}{
-						s.precompile.Address(),
-						big.NewInt(0),
-						liquidateCallData,
-						uint8(0), // CALL
-						safeTxGas,
-						big.NewInt(0),
-						big.NewInt(0),
-						common.Address{},
-						common.Address{},
-						signature,
+				safeTxGas := big.NewInt(500_000)
+				_, txHashRes, err := s.factory.CallContractAndCheckLogs(
+					safeOwnerOne.Priv,
+					evmtypes.EvmTxArgs{To: &safeWalletAddr},
+					factory.CallArgs{
+						ContractABI: gnosisSafe.ABI,
+						MethodName:  "getTransactionHash",
+						Args: []interface{}{
+							targetAddr,
+							big.NewInt(0),
+							callData,
+							uint8(0), // CALL
+							safeTxGas,
+							big.NewInt(0),
+							big.NewInt(0),
+							common.Address{},
+							common.Address{},
+							nonce,
+						},
 					},
-				},
-			)
-			Expect(err).NotTo(HaveOccurred(), "failed to execute Safe liquidate transaction")
-			execRes, err := s.factory.GetEvmTransactionResponseFromTxResult(execTxRes)
-			Expect(err).NotTo(HaveOccurred(), "failed to decode Safe liquidate tx response")
-			execOut, err := gnosisSafe.ABI.Methods["execTransaction"].Outputs.Unpack(execRes.Ret)
-			Expect(err).NotTo(HaveOccurred(), "failed to decode Safe execTransaction output")
-			Expect(execOut).To(HaveLen(1))
-			execSuccess, ok := execOut[0].(bool)
-			Expect(ok).To(BeTrue(), "execTransaction output must be bool")
-			Expect(execSuccess).To(BeTrue(), "Safe liquidate execTransaction must succeed")
+					testutil.LogCheckArgs{ExpPass: true},
+				)
+				Expect(err).NotTo(HaveOccurred(), "failed to calculate Safe tx hash for "+opLabel)
+				txHashOut, err := gnosisSafe.ABI.Methods["getTransactionHash"].Outputs.Unpack(txHashRes.Ret)
+				Expect(err).NotTo(HaveOccurred(), "failed to decode Safe tx hash")
+				Expect(txHashOut).To(HaveLen(1))
+				txHash, ok := txHashOut[0].([32]byte)
+				Expect(ok).To(BeTrue(), "Safe tx hash output must be [32]byte")
+				Expect(txHash).NotTo(Equal([32]byte{}), "Safe tx hash must be non-zero")
 
-			executionSuccessEvent := gnosisSafe.ABI.Events["ExecutionSuccess"]
-			executionSuccessFound := false
-			for i := range execRes.Logs {
-				l := execRes.Logs[i]
-				if len(l.Topics) == 0 || l.Topics[0] != executionSuccessEvent.ID.String() {
-					continue
-				}
-				if common.HexToAddress(l.Address) != safeWalletAddr {
-					continue
-				}
-				executionSuccessFound = true
-				break
-			}
-			Expect(executionSuccessFound).To(BeTrue(), "Safe must emit ExecutionSuccess for liquidate")
-			Expect(s.network.NextBlock()).To(Succeed(), "failed to advance block after Safe liquidate")
+				// Safe signature format is {r}{s}{v}. For threshold=1 we use the
+				// approved-hash signature form: v=1 and r=owner1 address.
+				signature := make([]byte, 65)
+				copy(signature[12:32], safeOwnerOne.Addr.Bytes())
+				signature[64] = 1
 
-			// 8) Post-liquidation invariants.
-			ownerOneAfterLiquidate, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
-			Expect(err).NotTo(HaveOccurred())
-			ownerOneLiquidateSpend := ownerOneBeforeLiquidate.Balance.Amount.Sub(ownerOneAfterLiquidate.Balance.Amount)
-			Expect(ownerOneLiquidateSpend.IsNegative()).To(BeFalse(), "owner1 balance must not increase after Safe liquidate")
-			Expect(ownerOneLiquidateSpend.LTE(sdkmath.NewInt(1).MulRaw(1e18))).To(BeTrue(),
-				"owner1 must spend no more than 1 ISLM on Safe liquidate gas")
+				execTxRes, err := s.factory.ExecuteContractCall(
+					safeOwnerOne.Priv,
+					evmtypes.EvmTxArgs{To: &safeWalletAddr},
+					factory.CallArgs{
+						ContractABI: gnosisSafe.ABI,
+						MethodName:  "execTransaction",
+						Args: []interface{}{
+							targetAddr,
+							big.NewInt(0),
+							callData,
+							uint8(0), // CALL
+							safeTxGas,
+							big.NewInt(0),
+							big.NewInt(0),
+							common.Address{},
+							common.Address{},
+							signature,
+						},
+					},
+				)
+				Expect(err).NotTo(HaveOccurred(), "failed to execute Safe "+opLabel+" transaction")
+				execRes, err := s.factory.GetEvmTransactionResponseFromTxResult(execTxRes)
+				Expect(err).NotTo(HaveOccurred(), "failed to decode Safe "+opLabel+" tx response")
+				execOut, err := gnosisSafe.ABI.Methods["execTransaction"].Outputs.Unpack(execRes.Ret)
+				Expect(err).NotTo(HaveOccurred(), "failed to decode Safe execTransaction output")
+				Expect(execOut).To(HaveLen(1))
+				execSuccess, ok := execOut[0].(bool)
+				Expect(ok).To(BeTrue(), "execTransaction output must be bool")
+				Expect(execSuccess).To(BeTrue(), "Safe "+opLabel+" execTransaction must succeed")
 
-			safeBaseAfterLiquidate := s.network.App.BankKeeper.GetBalance(
-				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
-			).Amount
-			safeSpendableAfterLiquidate := s.network.App.BankKeeper.SpendableCoin(
-				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
-			).Amount
-			safeLockedAfterLiquidate := safeBaseAfterLiquidate.Sub(safeSpendableAfterLiquidate)
-			moduleBaseAfter := s.network.App.BankKeeper.GetBalance(
-				s.network.GetContext(), liquidVestingModuleAddr, utils.BaseDenom,
-			).Amount
-
-			liquidDenom := ""
-			liquidAmount := sdkmath.ZeroInt()
-			for _, coin := range s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), safeWalletAccAddr) {
-				if strings.HasPrefix(coin.Denom, "aLIQUID") {
-					liquidDenom = coin.Denom
-					liquidAmount = coin.Amount
+				executionSuccessEvent := gnosisSafe.ABI.Events["ExecutionSuccess"]
+				executionSuccessFound := false
+				for i := range execRes.Logs {
+					l := execRes.Logs[i]
+					if len(l.Topics) == 0 || l.Topics[0] != executionSuccessEvent.ID.String() {
+						continue
+					}
+					if common.HexToAddress(l.Address) != safeWalletAddr {
+						continue
+					}
+					executionSuccessFound = true
 					break
 				}
+				Expect(executionSuccessFound).To(BeTrue(), "Safe must emit ExecutionSuccess for "+opLabel)
+				Expect(s.network.NextBlock()).To(Succeed(), "failed to advance block after Safe "+opLabel)
+				return execRes
 			}
 
-			GinkgoWriter.Printf(
-				"liquidate balances: safeBaseBefore=%s safeBaseAfter=%s spendableBefore=%s spendableAfter=%s lockedAfter=%s moduleBefore=%s moduleAfter=%s liquidDenom=%s liquidAmount=%s\n",
-				safeBaseBeforeLiquidate.String(),
-				safeBaseAfterLiquidate.String(),
-				safeSpendableBeforeLiquidate.String(),
-				safeSpendableAfterLiquidate.String(),
-				safeLockedAfterLiquidate.String(),
-				moduleBaseBefore.String(),
-				moduleBaseAfter.String(),
-				liquidDenom,
-				liquidAmount.String(),
-			)
+			// liquidateViaSafe and redeemViaSafe pack the precompile call data
+			// and dispatch through the shared Safe execTransaction helper. Both
+			// take an explicit `to` so we can exercise the from == to (self)
+			// path AND the from != to (cross-account) path against the same
+			// Safe-as-vesting-account fixture.
+			liquidateViaSafe := func(amount sdkmath.Int, to common.Address) *evmtypes.MsgEthereumTxResponse {
+				GinkgoHelper()
+				callData, err := s.precompile.ABI.Pack(
+					liquid.LiquidateMethod,
+					safeWalletAddr,
+					to,
+					amount.BigInt(),
+				)
+				Expect(err).NotTo(HaveOccurred(), "failed to pack liquidate call data")
+				return execViaSafe(s.precompile.Address(), callData, "liquidate")
+			}
+			redeemViaSafe := func(denom string, amount sdkmath.Int, to common.Address) *evmtypes.MsgEthereumTxResponse {
+				GinkgoHelper()
+				callData, err := s.precompile.ABI.Pack(
+					liquid.RedeemMethod,
+					safeWalletAddr,
+					to,
+					denom,
+					amount.BigInt(),
+				)
+				Expect(err).NotTo(HaveOccurred(), "failed to pack redeem call data")
+				return execViaSafe(s.precompile.Address(), callData, "redeem")
+			}
 
-			Expect(safeSpendableAfterLiquidate).To(Equal(islmExpectedSafeFree),
+			// allLiquidBalances returns the bank balance of the Safe filtered to
+			// liquid-vesting denoms ("aLIQUID*"), keyed by denom for easy
+			// per-denom assertions.
+			allLiquidBalances := func() map[string]sdkmath.Int {
+				out := map[string]sdkmath.Int{}
+				for _, coin := range s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), safeWalletAccAddr) {
+					if strings.HasPrefix(coin.Denom, "aLIQUID") {
+						out[coin.Denom] = coin.Amount
+					}
+				}
+				return out
+			}
+
+			// safeAndModuleSnapshot captures the bank baselines we assert on
+			// across each precompile call: Safe's base denom, Safe's spendable
+			// base denom, the module's base denom, and the Safe's balance of
+			// the given liquid denom (use empty string to skip).
+			type bankSnapshot struct {
+				safeBase      sdkmath.Int
+				safeSpendable sdkmath.Int
+				moduleBase    sdkmath.Int
+				safeLiquid    sdkmath.Int
+			}
+			safeAndModuleSnapshot := func(liquidDenom string) bankSnapshot {
+				ctx := s.network.GetContext()
+				snap := bankSnapshot{
+					safeBase:      s.network.App.BankKeeper.GetBalance(ctx, safeWalletAccAddr, utils.BaseDenom).Amount,
+					safeSpendable: s.network.App.BankKeeper.SpendableCoin(ctx, safeWalletAccAddr, utils.BaseDenom).Amount,
+					moduleBase:    s.network.App.BankKeeper.GetBalance(ctx, liquidVestingModuleAddr, utils.BaseDenom).Amount,
+				}
+				if liquidDenom != "" {
+					snap.safeLiquid = s.network.App.BankKeeper.GetBalance(ctx, safeWalletAccAddr, liquidDenom).Amount
+				}
+				return snap
+			}
+
+			// 8) FIRST liquidation: 500 ISLM -> 500 aLIQUID0.
+			moduleBaseBeforeFirst := s.network.App.BankKeeper.GetBalance(
+				s.network.GetContext(), liquidVestingModuleAddr, utils.BaseDenom,
+			).Amount
+			safeBaseBeforeFirst := s.network.App.BankKeeper.GetBalance(
+				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
+			).Amount
+			safeSpendableBeforeFirst := s.network.App.BankKeeper.SpendableCoin(
+				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
+			).Amount
+			ownerOneBeforeFirst, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+
+			liquidateViaSafe(islmFirstLiquidateAmount, safeWalletAddr)
+
+			// 8a) Post-first-liquidation invariants.
+			//
+			// Expected state changes:
+			//   - Safe locked vesting: 3000 -> 2500
+			//   - Safe spendable: 1000 (unchanged)
+			//   - Safe bank: 4000 -> 3500 (debited 500)
+			//   - Module bank: 0 -> 500 (credited 500)
+			//   - Safe receives 500 of a brand-new aLIQUID0 denom
+			ownerOneAfterFirst, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			ownerOneFirstSpend := ownerOneBeforeFirst.Balance.Amount.Sub(ownerOneAfterFirst.Balance.Amount)
+			Expect(ownerOneFirstSpend.IsNegative()).To(BeFalse(),
+				"owner1 balance must not increase after the first Safe liquidate")
+			Expect(ownerOneFirstSpend.LTE(islmGasPerExecTransaction)).To(BeTrue(),
+				"owner1 must spend no more than 1 ISLM on the first Safe liquidate gas")
+
+			safeBaseAfterFirst := s.network.App.BankKeeper.GetBalance(
+				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
+			).Amount
+			safeSpendableAfterFirst := s.network.App.BankKeeper.SpendableCoin(
+				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
+			).Amount
+			safeLockedAfterFirst := safeBaseAfterFirst.Sub(safeSpendableAfterFirst)
+			moduleBaseAfterFirst := s.network.App.BankKeeper.GetBalance(
+				s.network.GetContext(), liquidVestingModuleAddr, utils.BaseDenom,
+			).Amount
+
+			Expect(safeSpendableAfterFirst).To(Equal(islmExpectedSafeFree),
 				"Safe spendable ISLM must remain exactly 1000 after liquidating locked vesting")
-			Expect(safeLockedAfterLiquidate).To(Equal(islmVestingTotal.Sub(islmLiquidationAmount)),
-				"Safe locked vesting ISLM must be 2500 after liquidating 500")
-			Expect(safeBaseBeforeLiquidate.Sub(safeBaseAfterLiquidate)).To(Equal(islmLiquidationAmount),
-				"Safe base ISLM bank balance must decrease exactly by the liquidated amount")
-			Expect(moduleBaseAfter.Sub(moduleBaseBefore)).To(Equal(islmLiquidationAmount),
-				"liquid vesting module ISLM balance must increase exactly by the liquidated amount")
-			Expect(safeBaseBeforeLiquidate.Add(moduleBaseBefore)).To(Equal(safeBaseAfterLiquidate.Add(moduleBaseAfter)),
-				"Safe ISLM decrease must be fully accounted for by the liquid vesting module increase")
-			Expect(liquidDenom).NotTo(BeEmpty(), "Safe must receive a liquid vesting denom")
-			Expect(liquidAmount).To(Equal(islmLiquidationAmount),
-				"Safe must receive exactly 500 ISLM-equivalent liquid tokens")
-			Expect(s.network.App.BankKeeper.GetSupply(s.network.GetContext(), liquidDenom).Amount).To(Equal(islmLiquidationAmount),
-				"liquid token supply must equal the minted amount; no extra liquid tokens may appear")
-
-			Expect(safeSpendableBeforeLiquidate).To(Equal(safeSpendableAfterLiquidate),
+			Expect(safeSpendableBeforeFirst).To(Equal(safeSpendableAfterFirst),
 				"liquidating locked vesting must not change Safe spendable ISLM")
+			Expect(safeLockedAfterFirst).To(Equal(islmVestingTotal.Sub(islmFirstLiquidateAmount)),
+				"Safe locked vesting ISLM must be 2500 after liquidating 500")
+			Expect(safeBaseBeforeFirst.Sub(safeBaseAfterFirst)).To(Equal(islmFirstLiquidateAmount),
+				"Safe base ISLM bank balance must decrease exactly by the first liquidated amount")
+			Expect(moduleBaseAfterFirst.Sub(moduleBaseBeforeFirst)).To(Equal(islmFirstLiquidateAmount),
+				"liquid vesting module ISLM balance must increase exactly by the first liquidated amount")
+			Expect(safeBaseBeforeFirst.Add(moduleBaseBeforeFirst)).To(Equal(safeBaseAfterFirst.Add(moduleBaseAfterFirst)),
+				"Safe ISLM decrease must be fully accounted for by the liquid vesting module increase (first call)")
+
+			liquidAfterFirst := allLiquidBalances()
+			Expect(liquidAfterFirst).To(HaveLen(1),
+				"Safe must hold exactly one liquid denom after the first liquidation")
+			Expect(liquidAfterFirst).To(HaveKeyWithValue("aLIQUID0", islmFirstLiquidateAmount),
+				"first liquidation must mint exactly 500 of aLIQUID0 into Safe")
+			Expect(s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID0").Amount).
+				To(Equal(islmFirstLiquidateAmount),
+					"aLIQUID0 supply must equal the first mint; no extra liquid tokens may appear")
+
+			// 9) SECOND liquidation: 2000 ISLM -> 2000 aLIQUID1.
+			//
+			// Each Liquidate call increments the keeper's denom counter and
+			// produces a NEW liquid denom; aLIQUID0 from the previous step
+			// stays untouched in Safe's balance.
+			moduleBaseBeforeSecond := moduleBaseAfterFirst
+			safeBaseBeforeSecond := safeBaseAfterFirst
+			safeSpendableBeforeSecond := safeSpendableAfterFirst
+			ownerOneBeforeSecond, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+
+			liquidateViaSafe(islmSecondLiquidateAmount, safeWalletAddr)
+
+			// 9a) Post-second-liquidation invariants.
+			//
+			// Expected state changes (cumulative):
+			//   - Safe locked vesting: 2500 -> 500
+			//   - Safe spendable: 1000 (unchanged)
+			//   - Safe bank: 3500 -> 1500 (debited 2000 more)
+			//   - Module bank: 500 -> 2500 (credited 2000 more)
+			//   - Safe gains a SECOND liquid denom aLIQUID1 with 2000 minted
+			//   - aLIQUID0 stays at exactly 500 (untouched by the second call)
+			ownerOneAfterSecond, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			ownerOneSecondSpend := ownerOneBeforeSecond.Balance.Amount.Sub(ownerOneAfterSecond.Balance.Amount)
+			Expect(ownerOneSecondSpend.IsNegative()).To(BeFalse(),
+				"owner1 balance must not increase after the second Safe liquidate")
+			Expect(ownerOneSecondSpend.LTE(islmGasPerExecTransaction)).To(BeTrue(),
+				"owner1 must spend no more than 1 ISLM on the second Safe liquidate gas")
+
+			safeBaseAfterSecond := s.network.App.BankKeeper.GetBalance(
+				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
+			).Amount
+			safeSpendableAfterSecond := s.network.App.BankKeeper.SpendableCoin(
+				s.network.GetContext(), safeWalletAccAddr, utils.BaseDenom,
+			).Amount
+			safeLockedAfterSecond := safeBaseAfterSecond.Sub(safeSpendableAfterSecond)
+			moduleBaseAfterSecond := s.network.App.BankKeeper.GetBalance(
+				s.network.GetContext(), liquidVestingModuleAddr, utils.BaseDenom,
+			).Amount
+
+			expectedFinalLocked := islmVestingTotal.Sub(islmFirstLiquidateAmount).Sub(islmSecondLiquidateAmount)
+			expectedFinalModule := islmFirstLiquidateAmount.Add(islmSecondLiquidateAmount)
+
+			Expect(safeSpendableAfterSecond).To(Equal(islmExpectedSafeFree),
+				"Safe spendable ISLM must still be exactly 1000 after the second liquidation")
+			Expect(safeSpendableBeforeSecond).To(Equal(safeSpendableAfterSecond),
+				"second liquidation must not change Safe spendable ISLM")
+			Expect(safeLockedAfterSecond).To(Equal(expectedFinalLocked),
+				"Safe locked vesting ISLM must be 500 after liquidating 500 + 2000 of 3000")
+			Expect(safeBaseBeforeSecond.Sub(safeBaseAfterSecond)).To(Equal(islmSecondLiquidateAmount),
+				"Safe base ISLM bank balance must decrease exactly by the second liquidated amount")
+			Expect(moduleBaseAfterSecond.Sub(moduleBaseBeforeSecond)).To(Equal(islmSecondLiquidateAmount),
+				"module ISLM balance must increase exactly by the second liquidated amount")
+			Expect(moduleBaseAfterSecond).To(Equal(expectedFinalModule),
+				"module ISLM balance must equal the sum of all liquidations (500 + 2000 = 2500)")
+			Expect(safeBaseBeforeSecond.Add(moduleBaseBeforeSecond)).To(Equal(safeBaseAfterSecond.Add(moduleBaseAfterSecond)),
+				"Safe ISLM decrease must be fully accounted for by the module increase (second call)")
+
+			// 9b) Liquid token bookkeeping after both liquidations.
+			liquidAfterSecond := allLiquidBalances()
+			Expect(liquidAfterSecond).To(HaveLen(2),
+				"Safe must hold exactly two distinct liquid denoms after two liquidations")
+			Expect(liquidAfterSecond).To(HaveKeyWithValue("aLIQUID0", islmFirstLiquidateAmount),
+				"aLIQUID0 amount in Safe must remain 500 (untouched by the second liquidation)")
+			Expect(liquidAfterSecond).To(HaveKeyWithValue("aLIQUID1", islmSecondLiquidateAmount),
+				"second liquidation must mint exactly 2000 of aLIQUID1 into Safe")
+			Expect(s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID0").Amount).
+				To(Equal(islmFirstLiquidateAmount),
+					"aLIQUID0 total supply must remain 500 after the second liquidation")
+			Expect(s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID1").Amount).
+				To(Equal(islmSecondLiquidateAmount),
+					"aLIQUID1 total supply must equal the second mint; no extra liquid tokens may appear")
+
+			// 10) FIRST redeem: 250 of aLIQUID0 back into base ISLM.
+			//
+			// Redeem flow inside the keeper:
+			//   - Safe (redeemFrom) -> module: 250 aLIQUID0
+			//   - module burns      :         250 aLIQUID0   (supply -= 250)
+			//   - module -> Safe (redeemTo):  250 aISLM
+			//
+			// Because aLIQUID0's lockup window has not elapsed yet (test runs
+			// in milliseconds, the first lockup period is ~100000s long), the
+			// keeper applies the corresponding diffPeriods as a NEW vesting
+			// schedule on the Safe (redeemTo). That means the 250 aISLM that
+			// just landed in the Safe are immediately re-locked under that
+			// schedule, so Safe's spendable ISLM must NOT change.
+			snapBeforeRedeem1 := safeAndModuleSnapshot("aLIQUID0")
+			ownerOneBeforeRedeem1, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			supplyLiquid0BeforeRedeem1 := s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID0").Amount
+
+			redeemViaSafe("aLIQUID0", islmFirstRedeemAmount, safeWalletAddr)
+
+			snapAfterRedeem1 := safeAndModuleSnapshot("aLIQUID0")
+			ownerOneAfterRedeem1, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			ownerOneRedeem1Spend := ownerOneBeforeRedeem1.Balance.Amount.Sub(ownerOneAfterRedeem1.Balance.Amount)
+			Expect(ownerOneRedeem1Spend.IsNegative()).To(BeFalse(),
+				"owner1 balance must not increase after the first Safe redeem")
+			Expect(ownerOneRedeem1Spend.LTE(islmGasPerExecTransaction)).To(BeTrue(),
+				"owner1 must spend no more than 1 ISLM on the first Safe redeem gas")
+
+			Expect(snapAfterRedeem1.safeBase.Sub(snapBeforeRedeem1.safeBase)).To(Equal(islmFirstRedeemAmount),
+				"Safe base ISLM bank balance must increase exactly by the first redeemed amount (250)")
+			Expect(snapBeforeRedeem1.safeLiquid.Sub(snapAfterRedeem1.safeLiquid)).To(Equal(islmFirstRedeemAmount),
+				"Safe aLIQUID0 balance must decrease exactly by the first redeemed amount (250)")
+			Expect(snapBeforeRedeem1.moduleBase.Sub(snapAfterRedeem1.moduleBase)).To(Equal(islmFirstRedeemAmount),
+				"module ISLM balance must decrease exactly by the first redeemed amount (250)")
+			Expect(snapBeforeRedeem1.safeBase.Add(snapBeforeRedeem1.moduleBase)).
+				To(Equal(snapAfterRedeem1.safeBase.Add(snapAfterRedeem1.moduleBase)),
+					"module ISLM decrease must be fully accounted for by the Safe ISLM increase (first redeem)")
+			Expect(supplyLiquid0BeforeRedeem1.Sub(s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID0").Amount)).
+				To(Equal(islmFirstRedeemAmount),
+					"aLIQUID0 supply must decrease by exactly the first redeemed amount via burn")
+			Expect(snapAfterRedeem1.safeLiquid).To(Equal(islmFirstLiquidateAmount.Sub(islmFirstRedeemAmount)),
+				"Safe must keep exactly 500 - 250 = 250 of aLIQUID0 after the first redeem")
+			Expect(snapAfterRedeem1.safeSpendable).To(Equal(snapBeforeRedeem1.safeSpendable),
+				"first redeem must not change Safe spendable ISLM (the redeemed amount lands re-locked)")
+
+			// 11) SECOND redeem: 2000 of aLIQUID1 (full supply) back into base ISLM.
+			//
+			// This fully redeems aLIQUID1: decreasedPeriods.TotalAmount() == 0,
+			// so the keeper deletes the aLIQUID1 denom from x/liquidvesting and
+			// disables the corresponding ERC20 conversion. After this step the
+			// Safe must hold zero aLIQUID1.
+			snapBeforeRedeem2 := safeAndModuleSnapshot("aLIQUID1")
+			ownerOneBeforeRedeem2, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			supplyLiquid1BeforeRedeem2 := s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID1").Amount
+			Expect(supplyLiquid1BeforeRedeem2).To(Equal(islmSecondRedeemAmount),
+				"sanity: aLIQUID1 total supply must equal the amount we are about to redeem")
+
+			redeemViaSafe("aLIQUID1", islmSecondRedeemAmount, safeWalletAddr)
+
+			snapAfterRedeem2 := safeAndModuleSnapshot("aLIQUID1")
+			ownerOneAfterRedeem2, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			ownerOneRedeem2Spend := ownerOneBeforeRedeem2.Balance.Amount.Sub(ownerOneAfterRedeem2.Balance.Amount)
+			Expect(ownerOneRedeem2Spend.IsNegative()).To(BeFalse(),
+				"owner1 balance must not increase after the second Safe redeem")
+			Expect(ownerOneRedeem2Spend.LTE(islmGasPerExecTransaction)).To(BeTrue(),
+				"owner1 must spend no more than 1 ISLM on the second Safe redeem gas")
+
+			Expect(snapAfterRedeem2.safeBase.Sub(snapBeforeRedeem2.safeBase)).To(Equal(islmSecondRedeemAmount),
+				"Safe base ISLM bank balance must increase exactly by the second redeemed amount (2000)")
+			Expect(snapBeforeRedeem2.safeLiquid.Sub(snapAfterRedeem2.safeLiquid)).To(Equal(islmSecondRedeemAmount),
+				"Safe aLIQUID1 balance must decrease exactly by the second redeemed amount (2000)")
+			Expect(snapBeforeRedeem2.moduleBase.Sub(snapAfterRedeem2.moduleBase)).To(Equal(islmSecondRedeemAmount),
+				"module ISLM balance must decrease exactly by the second redeemed amount (2000)")
+			Expect(snapBeforeRedeem2.safeBase.Add(snapBeforeRedeem2.moduleBase)).
+				To(Equal(snapAfterRedeem2.safeBase.Add(snapAfterRedeem2.moduleBase)),
+					"module ISLM decrease must be fully accounted for by the Safe ISLM increase (second redeem)")
+			Expect(snapAfterRedeem2.safeLiquid.IsZero()).To(BeTrue(),
+				"Safe must hold zero aLIQUID1 after redeeming the entire supply")
+			Expect(s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID1").Amount.IsZero()).
+				To(BeTrue(), "aLIQUID1 total supply must be zero after a full redeem")
+			Expect(snapAfterRedeem2.safeSpendable).To(Equal(snapBeforeRedeem2.safeSpendable),
+				"second redeem must not change Safe spendable ISLM (the redeemed amount lands re-locked)")
+
+			// 11a) Cumulative liquid-token bookkeeping after both redeems.
+			//   - aLIQUID0: 500 minted - 250 redeemed = 250 remaining in Safe
+			//   - aLIQUID1: 2000 minted - 2000 redeemed = 0 (denom deleted)
+			liquidAfterRedeems := allLiquidBalances()
+			Expect(liquidAfterRedeems).To(HaveKeyWithValue("aLIQUID0", islmFirstLiquidateAmount.Sub(islmFirstRedeemAmount)),
+				"aLIQUID0 in Safe must equal the unredeemed remainder after the first partial redeem")
+			Expect(liquidAfterRedeems).NotTo(HaveKey("aLIQUID1"),
+				"aLIQUID1 must be fully drained from Safe after the second (full) redeem")
+
+			// 12) THIRD liquidation: another 500 ISLM -> brand-new aLIQUID2.
+			//
+			// The keeper's denom counter is monotonic; even though aLIQUID1 was
+			// just deleted, the counter is at 2 by now and the new denom is
+			// aLIQUID2 (not a recycled aLIQUID1).
+			snapBeforeLiquidate3 := safeAndModuleSnapshot("")
+			ownerOneBeforeLiquidate3, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+
+			liquidateViaSafe(islmThirdLiquidateAmount, safeWalletAddr)
+
+			snapAfterLiquidate3 := safeAndModuleSnapshot("")
+			ownerOneAfterLiquidate3, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			ownerOneLiquidate3Spend := ownerOneBeforeLiquidate3.Balance.Amount.Sub(ownerOneAfterLiquidate3.Balance.Amount)
+			Expect(ownerOneLiquidate3Spend.IsNegative()).To(BeFalse(),
+				"owner1 balance must not increase after the third Safe liquidate")
+			Expect(ownerOneLiquidate3Spend.LTE(islmGasPerExecTransaction)).To(BeTrue(),
+				"owner1 must spend no more than 1 ISLM on the third Safe liquidate gas")
+
+			Expect(snapBeforeLiquidate3.safeBase.Sub(snapAfterLiquidate3.safeBase)).To(Equal(islmThirdLiquidateAmount),
+				"Safe base ISLM bank balance must decrease exactly by the third liquidated amount (500)")
+			Expect(snapAfterLiquidate3.moduleBase.Sub(snapBeforeLiquidate3.moduleBase)).To(Equal(islmThirdLiquidateAmount),
+				"module ISLM balance must increase exactly by the third liquidated amount (500)")
+			Expect(snapBeforeLiquidate3.safeBase.Add(snapBeforeLiquidate3.moduleBase)).
+				To(Equal(snapAfterLiquidate3.safeBase.Add(snapAfterLiquidate3.moduleBase)),
+					"Safe ISLM decrease must be fully accounted for by the module increase (third liquidation)")
+			Expect(snapAfterLiquidate3.safeSpendable).To(Equal(snapBeforeLiquidate3.safeSpendable),
+				"third liquidation must not change Safe spendable ISLM")
+
+			liquidAfterLiquidate3 := allLiquidBalances()
+			Expect(liquidAfterLiquidate3).To(HaveKeyWithValue("aLIQUID2", islmThirdLiquidateAmount),
+				"third liquidation must mint exactly 500 of aLIQUID2 into Safe")
+			Expect(liquidAfterLiquidate3).To(HaveKeyWithValue("aLIQUID0", islmFirstLiquidateAmount.Sub(islmFirstRedeemAmount)),
+				"aLIQUID0 in Safe must remain at 250 (untouched by the third liquidation)")
+			Expect(liquidAfterLiquidate3).NotTo(HaveKey("aLIQUID1"),
+				"aLIQUID1 must remain absent (counter is monotonic; new denom is aLIQUID2)")
+			Expect(s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID2").Amount).
+				To(Equal(islmThirdLiquidateAmount),
+					"aLIQUID2 total supply must equal the third mint; no extra liquid tokens may appear")
+
+			// 13) THIRD redeem with redeemFrom != redeemTo: 100 aLIQUID0
+			//     redeemed from Safe, principal credited to owner2.
+			//
+			// This explicitly exercises the cross-account redeem branch of
+			// the precompile mirror (where redeemFrom and redeemTo are two
+			// distinct addresses, both passed to mirrorBankBaseDeltasIntoStateDB):
+			//   - Safe (redeemFrom): only aLIQUID0 moves; base aISLM is unchanged,
+			//     so the mirror snapshot resolves to a zero delta and is a no-op.
+			//   - owner2 (redeemTo): receives 100 aISLM from the module account,
+			//     so the mirror must emit a single Add(owner2, 100) entry.
+			//
+			// This is the regression case for the dedup logic: previous
+			// versions of the mirror called twice on the same address would
+			// double-credit when from == to; here we additionally pin down the
+			// "two distinct addresses, distinct mirror entries" path so that a
+			// future regression in either direction is caught.
+			snapBeforeRedeem3 := safeAndModuleSnapshot("aLIQUID0")
+			ownerTwoBeforeRedeem3, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			ownerOneBeforeRedeem3, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			supplyLiquid0BeforeRedeem3 := s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID0").Amount
+
+			redeemViaSafe("aLIQUID0", islmThirdRedeemAmount, safeOwnerTwo.Addr)
+
+			snapAfterRedeem3 := safeAndModuleSnapshot("aLIQUID0")
+			ownerTwoAfterRedeem3, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			ownerOneAfterRedeem3, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+
+			ownerOneRedeem3Spend := ownerOneBeforeRedeem3.Balance.Amount.Sub(ownerOneAfterRedeem3.Balance.Amount)
+			Expect(ownerOneRedeem3Spend.IsNegative()).To(BeFalse(),
+				"owner1 balance must not increase after the cross-account Safe redeem")
+			Expect(ownerOneRedeem3Spend.LTE(islmGasPerExecTransaction)).To(BeTrue(),
+				"owner1 must spend no more than 1 ISLM on the cross-account Safe redeem gas")
+
+			Expect(snapAfterRedeem3.safeBase).To(Equal(snapBeforeRedeem3.safeBase),
+				"Safe base ISLM must NOT change on cross-account redeem (Safe is redeemFrom only)")
+			Expect(snapBeforeRedeem3.safeLiquid.Sub(snapAfterRedeem3.safeLiquid)).To(Equal(islmThirdRedeemAmount),
+				"Safe aLIQUID0 balance must decrease exactly by the cross-account redeemed amount (100)")
+			Expect(snapBeforeRedeem3.moduleBase.Sub(snapAfterRedeem3.moduleBase)).To(Equal(islmThirdRedeemAmount),
+				"module ISLM balance must decrease exactly by the cross-account redeemed amount (100)")
+			Expect(ownerTwoAfterRedeem3.Balance.Amount.Sub(ownerTwoBeforeRedeem3.Balance.Amount)).
+				To(Equal(islmThirdRedeemAmount),
+					"owner2 base ISLM must increase exactly by the cross-account redeemed amount (100)")
+			Expect(supplyLiquid0BeforeRedeem3.Sub(s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID0").Amount)).
+				To(Equal(islmThirdRedeemAmount),
+					"aLIQUID0 supply must decrease by exactly the cross-account redeemed amount via burn")
+			Expect(snapBeforeRedeem3.moduleBase.Add(ownerTwoBeforeRedeem3.Balance.Amount)).
+				To(Equal(snapAfterRedeem3.moduleBase.Add(ownerTwoAfterRedeem3.Balance.Amount)),
+					"module ISLM decrease must be fully accounted for by owner2 ISLM increase (cross-account redeem)")
+
+			// 14) FOURTH liquidate with liquidateFrom != liquidateTo: 100 aISLM
+			//     of Safe's locked vesting -> owner2 receives the freshly minted
+			//     liquid denom (aLIQUID3).
+			//
+			// Mirror invariant: the only base-denom mover here is liquidateFrom
+			// (Safe), debited 100 aISLM via SendCoinsFromAccountToModule. The
+			// liquidateTo side (owner2) receives ONLY aLIQUID3, which is NOT
+			// the EVM gas denom, so even though we sample its base balance the
+			// mirror must produce a zero delta for owner2.
+			snapBeforeLiquidate4 := safeAndModuleSnapshot("")
+			ownerTwoBeforeLiquidate4, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			ownerOneBeforeLiquidate4, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+
+			liquidateViaSafe(islmFourthLiquidateAmount, safeOwnerTwo.Addr)
+
+			snapAfterLiquidate4 := safeAndModuleSnapshot("")
+			ownerTwoAfterLiquidate4, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+			ownerOneAfterLiquidate4, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
+			Expect(err).NotTo(HaveOccurred())
+
+			ownerOneLiquidate4Spend := ownerOneBeforeLiquidate4.Balance.Amount.Sub(ownerOneAfterLiquidate4.Balance.Amount)
+			Expect(ownerOneLiquidate4Spend.IsNegative()).To(BeFalse(),
+				"owner1 balance must not increase after the cross-account Safe liquidate")
+			Expect(ownerOneLiquidate4Spend.LTE(islmGasPerExecTransaction)).To(BeTrue(),
+				"owner1 must spend no more than 1 ISLM on the cross-account Safe liquidate gas")
+
+			Expect(snapBeforeLiquidate4.safeBase.Sub(snapAfterLiquidate4.safeBase)).
+				To(Equal(islmFourthLiquidateAmount),
+					"Safe base ISLM must decrease exactly by the cross-account liquidated amount (100)")
+			Expect(snapAfterLiquidate4.moduleBase.Sub(snapBeforeLiquidate4.moduleBase)).
+				To(Equal(islmFourthLiquidateAmount),
+					"module ISLM must increase exactly by the cross-account liquidated amount (100)")
+			Expect(snapBeforeLiquidate4.safeBase.Add(snapBeforeLiquidate4.moduleBase)).
+				To(Equal(snapAfterLiquidate4.safeBase.Add(snapAfterLiquidate4.moduleBase)),
+					"Safe ISLM decrease must be fully accounted for by the module increase (cross-account liquidate)")
+			Expect(ownerTwoAfterLiquidate4.Balance.Amount).To(Equal(ownerTwoBeforeLiquidate4.Balance.Amount),
+				"owner2 base ISLM must NOT change on cross-account liquidate (owner2 only receives aLIQUID3)")
+
+			ownerTwoAccBalances := s.network.App.BankKeeper.GetAllBalances(s.network.GetContext(), safeOwnerTwo.AccAddr)
+			Expect(ownerTwoAccBalances.AmountOf("aLIQUID3")).To(Equal(islmFourthLiquidateAmount),
+				"owner2 must receive exactly 100 of the freshly minted aLIQUID3 (counter is monotonic; previously deleted aLIQUID1 is NOT recycled)")
+			Expect(s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID3").Amount).
+				To(Equal(islmFourthLiquidateAmount),
+					"aLIQUID3 total supply must equal the fourth mint; no extra liquid tokens may appear")
+			liquidAfterLiquidate4 := allLiquidBalances()
+			Expect(liquidAfterLiquidate4).NotTo(HaveKey("aLIQUID3"),
+				"Safe must NOT receive aLIQUID3 - it was minted to owner2 (cross-account liquidate)")
 		})
 	})
 })
