@@ -13,6 +13,22 @@ import (
 	liquidtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 )
 
+// EventLiquidate defines the event data for the Liquidate event.
+type EventLiquidate struct {
+	Sender        common.Address
+	Receiver      common.Address
+	Amount        *big.Int
+	Erc20Contract common.Address
+}
+
+// EventRedeem defines the event data for the Redeem event.
+type EventRedeem struct {
+	Sender   common.Address
+	Receiver common.Address
+	Denom    string
+	Amount   *big.Int
+}
+
 // NewLiquidateMsg builds a MsgLiquidate from ABI arguments.
 // Expected args: [from common.Address, to common.Address, amount *big.Int].
 func NewLiquidateMsg(args []interface{}) (*liquidtypes.MsgLiquidate, common.Address, common.Address, error) {
