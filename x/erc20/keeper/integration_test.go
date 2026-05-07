@@ -108,7 +108,19 @@ var _ = Describe("ERC20:", Ordered, func() {
 
 					tokenPairs := res.TokenPairs
 					Expect(tokenPairs).To(HaveLen(2))
-					Expect(tokenPairs[0].ContractOwner).To(Equal(types.OWNER_EXTERNAL))
+
+					// Pre-check: contract2 is deployed, but not registered in this scenario.
+					missingPair, err := qc.TokenPair(s.network.GetContext(), &types.QueryTokenPairRequest{
+						Token: contract2.Hex(),
+					})
+					Expect(err).ToNot(BeNil())
+					Expect(missingPair).To(BeNil())
+
+					specificPair, err := qc.TokenPair(s.network.GetContext(), &types.QueryTokenPairRequest{
+						Token: contract.Hex(),
+					})
+					Expect(err).To(BeNil())
+					Expect(specificPair.TokenPair.ContractOwner).To(Equal(types.OWNER_EXTERNAL))
 				})
 			})
 			Describe("for multiple ERC20 tokens", func() {

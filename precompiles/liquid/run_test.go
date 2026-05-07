@@ -107,6 +107,26 @@ func (s *PrecompileTestSuite) TestRun() {
 			expPass:  false,
 		},
 		{
+			// Symmetric kill-switch for the Redeem dispatcher: a static call
+			// (readOnly = true) must be rejected upfront by RunSetup before
+			// any keeper or mirror logic is reached. Without this row, only
+			// Liquidate's read-only protection is exercised.
+			name: "fail - redeem read-only",
+			malleate: func(_ sdk.Context) []byte {
+				input, err := s.precompile.Pack(
+					liquid.RedeemMethod,
+					s.keyring.GetAddr(0),
+					s.keyring.GetAddr(0),
+					liquidtypes.DenomBaseNameFromID(0),
+					big.NewInt(1_000_000),
+				)
+				s.Require().NoError(err)
+				return input
+			},
+			readOnly: true,
+			expPass:  false,
+		},
+		{
 			name: "fail - liquidate with wrong origin",
 			malleate: func(_ sdk.Context) []byte {
 				// Use a different address from the keyring sender (index 0) as the "from"
@@ -154,6 +174,34 @@ func (s *PrecompileTestSuite) TestRun() {
 					big.NewInt(1_000_000),
 				)
 				s.Require().NoError(err)
+				return input
+			},
+			readOnly: false,
+			expPass:  false,
+		},
+		{
+			// Tier 3 defense: input shorter than the 4-byte ABI selector
+			// must be rejected by the dispatcher without invoking any
+			// method. This is the smallest "garbage input" attack surface.
+			name: "fail - input shorter than 4-byte selector",
+			malleate: func(_ sdk.Context) []byte {
+				return []byte{0x12, 0x34, 0x56}
+			},
+			readOnly: false,
+			expPass:  false,
+		},
+		{
+			// Tier 3 defense: a valid Liquidate selector followed by a
+			// truncated args payload must be rejected by ABI unpack
+			// inside Run, not bubble through to the keeper. The selector
+			// is computed below from the method ID so the test cannot
+			// drift if the ABI changes.
+			name: "fail - liquidate selector with truncated args",
+			malleate: func(_ sdk.Context) []byte {
+				selector := s.precompile.Methods[liquid.LiquidateMethod].ID
+				input := make([]byte, 0, len(selector)+8)
+				input = append(input, selector...)
+				input = append(input, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08)
 				return input
 			},
 			readOnly: false,
