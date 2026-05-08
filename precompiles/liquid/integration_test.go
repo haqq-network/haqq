@@ -592,7 +592,9 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 			ownerOneBeforeFirst, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 			Expect(err).NotTo(HaveOccurred())
 
-			liquidateViaSafe(islmFirstLiquidateAmount, safeWalletAddr)
+			resLiquidate := liquidateViaSafe(islmFirstLiquidateAmount, safeWalletAddr)
+			Expect(resLiquidate).ToNot(BeNil())
+			Expect(resLiquidate.Failed()).To(BeFalse(), "should not have failed")
 
 			// 8a) Post-first-liquidation invariants.
 			//
@@ -654,8 +656,9 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 			ownerOneBeforeSecond, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 			Expect(err).NotTo(HaveOccurred())
 
-			liquidateViaSafe(islmSecondLiquidateAmount, safeWalletAddr)
-
+			resLiquidate = liquidateViaSafe(islmSecondLiquidateAmount, safeWalletAddr)
+			Expect(resLiquidate).ToNot(BeNil())
+			Expect(resLiquidate.Failed()).To(BeFalse(), "should not have failed")
 			// 9a) Post-second-liquidation invariants.
 			//
 			// Expected state changes (cumulative):
@@ -735,7 +738,9 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 			Expect(err).NotTo(HaveOccurred())
 			supplyLiquid0BeforeRedeem1 := s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID0").Amount
 
-			redeemViaSafe("aLIQUID0", islmFirstRedeemAmount, safeWalletAddr)
+			resRedeem := redeemViaSafe("aLIQUID0", islmFirstRedeemAmount, safeWalletAddr)
+			Expect(resRedeem).ToNot(BeNil())
+			Expect(resRedeem.Failed()).To(BeFalse(), "should not have failed")
 
 			snapAfterRedeem1 := safeAndModuleSnapshot("aLIQUID0")
 			ownerOneAfterRedeem1, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
@@ -776,7 +781,9 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 			Expect(supplyLiquid1BeforeRedeem2).To(Equal(islmSecondRedeemAmount),
 				"sanity: aLIQUID1 total supply must equal the amount we are about to redeem")
 
-			redeemViaSafe("aLIQUID1", islmSecondRedeemAmount, safeWalletAddr)
+			resRedeem = redeemViaSafe("aLIQUID1", islmSecondRedeemAmount, safeWalletAddr)
+			Expect(resRedeem).ToNot(BeNil())
+			Expect(resRedeem.Failed()).To(BeFalse(), "should not have failed")
 
 			snapAfterRedeem2 := safeAndModuleSnapshot("aLIQUID1")
 			ownerOneAfterRedeem2, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
@@ -821,7 +828,9 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 			ownerOneBeforeLiquidate3, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 			Expect(err).NotTo(HaveOccurred())
 
-			liquidateViaSafe(islmThirdLiquidateAmount, safeWalletAddr)
+			resLiquidate = liquidateViaSafe(islmThirdLiquidateAmount, safeWalletAddr)
+			Expect(resLiquidate).ToNot(BeNil())
+			Expect(resLiquidate.Failed()).To(BeFalse(), "should not have failed")
 
 			snapAfterLiquidate3 := safeAndModuleSnapshot("")
 			ownerOneAfterLiquidate3, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
@@ -876,7 +885,9 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 			Expect(err).NotTo(HaveOccurred())
 			supplyLiquid0BeforeRedeem3 := s.network.App.BankKeeper.GetSupply(s.network.GetContext(), "aLIQUID0").Amount
 
-			redeemViaSafe("aLIQUID0", islmThirdRedeemAmount, safeOwnerTwo.Addr)
+			resRedeem = redeemViaSafe("aLIQUID0", islmThirdRedeemAmount, safeOwnerTwo.Addr)
+			Expect(resRedeem).ToNot(BeNil())
+			Expect(resRedeem.Failed()).To(BeFalse(), "should not have failed")
 
 			snapAfterRedeem3 := safeAndModuleSnapshot("aLIQUID0")
 			ownerTwoAfterRedeem3, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
@@ -921,7 +932,9 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 			ownerOneBeforeLiquidate4, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 			Expect(err).NotTo(HaveOccurred())
 
-			liquidateViaSafe(islmFourthLiquidateAmount, safeOwnerTwo.Addr)
+			resLiquidate = liquidateViaSafe(islmFourthLiquidateAmount, safeOwnerTwo.Addr)
+			Expect(resLiquidate).ToNot(BeNil())
+			Expect(resLiquidate.Failed()).To(BeFalse(), "should not have failed")
 
 			snapAfterLiquidate4 := safeAndModuleSnapshot("")
 			ownerTwoAfterLiquidate4, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)

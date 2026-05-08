@@ -17,7 +17,6 @@ import (
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	haqqtestutil "github.com/haqq-network/haqq/testutil"
 	utiltx "github.com/haqq-network/haqq/testutil/tx"
-	haqqtypes "github.com/haqq-network/haqq/types"
 	"github.com/haqq-network/haqq/utils"
 	liquidtypes "github.com/haqq-network/haqq/x/liquidvesting/types"
 	vestingtypes "github.com/haqq-network/haqq/x/vesting/types"
@@ -47,79 +46,6 @@ func (s *PrecompileTestSuite) createClawbackVestingAccount(ctx sdk.Context, addr
 	)
 	err := haqqtestutil.FundAccount(ctx, s.network.App.BankKeeper, addr, vestingAmount)
 	s.Require().NoError(err)
-	s.network.App.AccountKeeper.SetAccount(ctx, clawbackAccount)
-}
-
-// smartContractVestingTotal is the total amount used by the smart-contract
-// vesting test factory: 3000 ISLM = 3000 * 1e18 aISLM.
-var smartContractVestingTotal = sdk.NewCoins(
-	sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(3000).MulRaw(1e18)),
-)
-
-// createClawbackVestingAccountForSmartContract converts an existing on-chain
-// account at addr (typically a deployed smart-contract wallet such as a Gnosis
-// Safe proxy) into a ClawbackVestingAccount with the schedule used by Safe
-// integration tests: 3 lockup periods of 1000 ISLM each (3000 ISLM total) and
-// a single instant vesting period for 3000 ISLM. The lockup starts 10 seconds
-// in the past, so all 3000 ISLM are still locked at block time.
-//
-// IMPORTANT - test-only helper.
-//
-// In production this conversion is impossible: x/vesting MsgConvertIntoVestingAccount
-// rejects contract accounts (see the IsContractAccount guard in
-// x/vesting/keeper/msg_server.go). The helper deliberately bypasses that
-// guard by mutating the auth account directly. It MUST NOT be treated as a
-// model for any on-chain flow - it only exists to build a test fixture
-// where a smart-contract wallet behaves as if it were under a vesting
-// schedule, so the liquid vesting precompile can be exercised end-to-end
-// against a Safe-shaped sender.
-//
-// Side effects:
-//   - mints 3000 ISLM into addr via testutil.FundAccount (on top of any
-//     pre-existing balance);
-//   - replaces the auth account at addr with a ClawbackVestingAccount that
-//     preserves the original BaseAccount metadata (AccountNumber, Sequence,
-//     PubKey) and the original CodeHash if addr was an EthAccount, so the
-//     contract code at that address remains callable through the EVM.
-func (s *PrecompileTestSuite) createClawbackVestingAccountForSmartContract(
-	ctx sdk.Context, addr sdk.AccAddress,
-) {
-	funder := sdk.AccAddress(liquidtypes.ModuleName)
-	periodCoin := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1000).MulRaw(1e18)))
-	lockupPeriods := sdkvesting.Periods{
-		{Length: 100000, Amount: periodCoin},
-		{Length: 100000, Amount: periodCoin},
-		{Length: 100000, Amount: periodCoin},
-	}
-	vestingPeriods := sdkvesting.Periods{
-		{Length: 0, Amount: smartContractVestingTotal},
-	}
-
-	existing := s.network.App.AccountKeeper.GetAccount(ctx, addr)
-	s.Require().NotNil(existing, "smart-contract account must exist before being wrapped into a vesting account")
-
-	baseAccount := authtypes.NewBaseAccount(
-		existing.GetAddress(),
-		existing.GetPubKey(),
-		existing.GetAccountNumber(),
-		existing.GetSequence(),
-	)
-
-	// Preserve the EVM code reference. ClawbackVestingAccount stores its own
-	// CodeHash field, so we must carry it over from the EthAccount to keep
-	// the contract callable via the EVM.
-	var codeHashPtr *common.Hash
-	if ethAcc, ok := existing.(*haqqtypes.EthAccount); ok {
-		h := ethAcc.GetCodeHash()
-		codeHashPtr = &h
-	}
-
-	startTime := ctx.BlockTime().Add(-10 * time.Second)
-	clawbackAccount := vestingtypes.NewClawbackVestingAccount(
-		baseAccount, funder, smartContractVestingTotal, startTime, lockupPeriods, vestingPeriods, codeHashPtr,
-	)
-
-	s.Require().NoError(haqqtestutil.FundAccount(ctx, s.network.App.BankKeeper, addr, smartContractVestingTotal))
 	s.network.App.AccountKeeper.SetAccount(ctx, clawbackAccount)
 }
 
@@ -1691,8 +1617,8 @@ func (s *PrecompileTestSuite) TestLiquidateAtExactMinimumAmount() {
 
 	// Sanity: the configured param must equal the amount we are about to
 	// liquidate; otherwise the boundary assertion below loses meaning.
-	min := s.network.App.LiquidVestingKeeper.GetParams(ctx).MinimumLiquidationAmount
-	s.Require().Equal(sdkmath.NewInt(1_000_000), min,
+	minAmount := s.network.App.LiquidVestingKeeper.GetParams(ctx).MinimumLiquidationAmount
+	s.Require().Equal(sdkmath.NewInt(1_000_000), minAmount,
 		"test setup must pin MinimumLiquidationAmount to 1_000_000")
 
 	moduleAddr := authtypes.NewModuleAddress(liquidtypes.ModuleName)
@@ -1702,15 +1628,15 @@ func (s *PrecompileTestSuite) TestLiquidateAtExactMinimumAmount() {
 	method := s.precompile.Methods[liquid.LiquidateMethod]
 	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, from, s.precompile, 500000)
 	_, err := s.precompile.Liquidate(ctx, from, contract, s.network.GetStateDB(), &method, []any{
-		from, to, min.BigInt(),
+		from, to, minAmount.BigInt(),
 	})
 	s.Require().NoError(err, "amount equal to MinimumLiquidationAmount must be accepted (boundary inclusive)")
 
 	fromBaseAfter := s.network.App.BankKeeper.GetBalance(ctx, fromAccAddr, utils.BaseDenom).Amount
 	moduleBaseAfter := s.network.App.BankKeeper.GetBalance(ctx, moduleAddr, utils.BaseDenom).Amount
-	s.Require().Equal(min, fromBaseBefore.Sub(fromBaseAfter),
+	s.Require().Equal(minAmount, fromBaseBefore.Sub(fromBaseAfter),
 		"from must be debited exactly the minimum amount")
-	s.Require().Equal(min, moduleBaseAfter.Sub(moduleBaseBefore),
+	s.Require().Equal(minAmount, moduleBaseAfter.Sub(moduleBaseBefore),
 		"module must be credited exactly the minimum amount")
 }
 
@@ -1722,7 +1648,7 @@ func (s *PrecompileTestSuite) TestLiquidateAtExactMinimumAmount() {
 // NOTE: origin must match sender (the ABI from-field), so origin is also
 // set to 0x0 here. This is impossible in production (no signed EVM tx can
 // have origin == 0x0) but the precompile entry-point itself does not - and
-// should not - enforce that, so the keeper guard is the actual defence.
+// should not - enforce that, so the keeper guard is the actual defense.
 func (s *PrecompileTestSuite) TestLiquidateFromZeroAddress() {
 	s.SetupTest()
 	ctx := s.network.GetContext()
@@ -1758,7 +1684,7 @@ func (s *PrecompileTestSuite) TestLiquidateFromZeroAddress() {
 		"failed Liquidate must not credit the module")
 }
 
-// TestRedeemFromZeroAddress is the symmetric defence for Redeem: a non-
+// TestRedeemFromZeroAddress is the symmetric defense for Redeem: a non-
 // existent from-account is rejected by the keeper before any bank movement.
 func (s *PrecompileTestSuite) TestRedeemFromZeroAddress() {
 	s.SetupTest()
@@ -1834,7 +1760,7 @@ func (s *PrecompileTestSuite) TestLiquidateAuthzWrongMsgType() {
 		"rejected wrong-type-grant Liquidate must not credit the module")
 }
 
-// TestRedeemAuthzWrongMsgType is the symmetric authz-scope defence for
+// TestRedeemAuthzWrongMsgType is the symmetric authz-scope defense for
 // Redeem: a grant for MsgLiquidate cannot authorize a Redeem call from the
 // same caller. Setup needs an actual liquid denom in flight, so we first do
 // a self-Liquidate via the EOA path (no authz needed) to mint aLIQUID0,
@@ -1891,12 +1817,12 @@ func (s *PrecompileTestSuite) TestRedeemAuthzWrongMsgType() {
 }
 
 // TestLiquidateToZeroAddress is a PIN test: it documents the current
-// behaviour of Liquidate when the receiver of the freshly-minted aLIQUID*
+// behavior of Liquidate when the receiver of the freshly-minted aLIQUID*
 // is the zero address (0x0). The precompile itself does not validate the
 // receiver address, so the actual fate is decided by the bank module's
 // SendCoinsFromModuleToAccount call inside the keeper.
 //
-// Expected current behaviour: the call SUCCEEDS - 0x0 is a normal,
+// Expected current behavior: the call SUCCEEDS - 0x0 is a normal,
 // non-blocked bank holder, the aLIQUID0 supply is created on it, and from
 // is correctly debited the base amount. The minted tokens are functionally
 // unrecoverable (no key controls 0x0), but that is a caller-side concern

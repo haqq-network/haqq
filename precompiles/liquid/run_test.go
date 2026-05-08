@@ -180,7 +180,7 @@ func (s *PrecompileTestSuite) TestRun() {
 			expPass:  false,
 		},
 		{
-			// Tier 3 defence: input shorter than the 4-byte ABI selector
+			// Tier 3 defense: input shorter than the 4-byte ABI selector
 			// must be rejected by the dispatcher without invoking any
 			// method. This is the smallest "garbage input" attack surface.
 			name: "fail - input shorter than 4-byte selector",
@@ -191,7 +191,7 @@ func (s *PrecompileTestSuite) TestRun() {
 			expPass:  false,
 		},
 		{
-			// Tier 3 defence: a valid Liquidate selector followed by a
+			// Tier 3 defense: a valid Liquidate selector followed by a
 			// truncated args payload must be rejected by ABI unpack
 			// inside Run, not bubble through to the keeper. The selector
 			// is computed below from the method ID so the test cannot
