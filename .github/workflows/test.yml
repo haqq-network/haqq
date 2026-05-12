@@ -50,7 +50,7 @@ jobs:
           key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
       - name: Pull LFS files
         run: git lfs pull
-      - uses: technote-space/get-diff-action@v5
+      - uses: technote-space/get-diff-action@v6
         with:
           PATTERNS: |
             **/**.sol
