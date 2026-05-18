@@ -9,12 +9,12 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
-
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
@@ -22,7 +22,6 @@ import (
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
 	haqqcontracts "github.com/haqq-network/haqq/contracts"
 	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/authorization"

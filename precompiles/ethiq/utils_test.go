@@ -6,22 +6,21 @@ import (
 	"slices"
 	"time"
 
+	. "github.com/onsi/gomega"
+
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/haqq-network/haqq/precompiles/authorization"
 	"github.com/haqq-network/haqq/precompiles/ethiq"
+	"github.com/haqq-network/haqq/precompiles/testutil"
+	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/grpc"
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
-
-	//nolint:revive // dot imports are fine for Ginkgo
-	. "github.com/onsi/gomega"
-
-	"github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/haqq-network/haqq/precompiles/authorization"
-	"github.com/haqq-network/haqq/precompiles/testutil"
-	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 

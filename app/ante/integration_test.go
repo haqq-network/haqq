@@ -2,7 +2,6 @@ package ante_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-
 	. "github.com/onsi/gomega"
 
 	sdkmath "cosmossdk.io/math"

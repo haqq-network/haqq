@@ -7,9 +7,11 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
+	haqqapp "github.com/haqq-network/haqq/app"
 	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/ics20"
 	cmnnetwork "github.com/haqq-network/haqq/testutil/integration/common/network"
@@ -18,9 +20,6 @@ import (
 	testkeyring "github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/testutil/integration/ibc/coordinator"
-
-	sdkmath "cosmossdk.io/math"
-	haqqapp "github.com/haqq-network/haqq/app"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
 )
 

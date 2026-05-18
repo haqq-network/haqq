@@ -101,8 +101,6 @@ func SetupClients(coord *ibctesting.Coordinator, path *Path) {
 // CONTRACT: BeginBlock must be called before this function.
 // Is a customization of IBC-go function that allows to modify the fee denom and amount
 // IBC-go implementation: https://github.com/cosmos/ibc-go/blob/d34cef7e075dda1a24a0a3e9b6d3eff406cc606c/testing/simapp/test_helpers.go#L332-L364
-//
-
 func SignAndDeliver(
 	tb testing.TB, ctx context.Context, txCfg client.TxConfig, app *baseapp.BaseApp, msgs []sdk.Msg,
 	fee sdk.Coins,

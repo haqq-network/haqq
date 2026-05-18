@@ -3,9 +3,9 @@ package ics20_test
 import (
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
 	haqqibctesting "github.com/haqq-network/haqq/ibc/testing"
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
