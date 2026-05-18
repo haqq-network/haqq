@@ -12,7 +12,7 @@ import (
 	tmversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/version"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 
 	"github.com/haqq-network/haqq/app"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
@@ -35,10 +35,7 @@ const (
 	haqqDynamicPrecompileAddr = "0x3af1695e3354Ec35F892b3d0880D4f7E12F4A172"
 )
 
-var osmoDenomTrace = transfertypes.DenomTrace{
-	BaseDenom: "uosmo",
-	Path:      "transfer/channel-0",
-}
+var osmoDenom = transfertypes.ExtractDenomFromPath("transfer/channel-0/uosmo")
 
 func TestGenesisTestSuite(t *testing.T) {
 	suite.Run(t, new(GenesisTestSuite))
@@ -98,7 +95,7 @@ func (suite *GenesisTestSuite) TestERC20InitGenesis() {
 				[]types.TokenPair{
 					{
 						Erc20Address:  osmoERC20ContractAddr,
-						Denom:         osmoDenomTrace.IBCDenom(),
+						Denom:         osmoDenom.IBCDenom(),
 						Enabled:       true,
 						ContractOwner: types.OWNER_MODULE,
 					},
@@ -150,7 +147,7 @@ func (suite *GenesisTestSuite) TestErc20ExportGenesis() {
 				[]types.TokenPair{
 					{
 						Erc20Address:  osmoERC20ContractAddr,
-						Denom:         osmoDenomTrace.IBCDenom(),
+						Denom:         osmoDenom.IBCDenom(),
 						Enabled:       true,
 						ContractOwner: types.OWNER_MODULE,
 					},

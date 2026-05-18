@@ -9,7 +9,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibcgotesting "github.com/cosmos/ibc-go/v8/testing"
+	ibcgotesting "github.com/cosmos/ibc-go/v10/testing"
 
 	"github.com/haqq-network/haqq/app"
 )
@@ -22,12 +22,18 @@ func init() {
 }
 
 func CommitBlock(chain *ibcgotesting.TestChain, res *abci.ResponseFinalizeBlock) {
+	// In ibc-go v10, commitBlock logic is internal, so we duplicate it here
 	_, err := chain.App.Commit()
 	require.NoError(chain.TB, err)
 
 	// set the last header to the current header
 	// use nil trusted fields
-	chain.LastHeader = chain.CurrentTMClientHeader()
+	chain.LatestCommittedHeader = chain.CurrentTMClientHeader()
+	// set the trusted validator set to the next validator set
+	//nolint:gosec // Height is always positive in this context
+	if chain.ProposedHeader.Height > 0 {
+		chain.TrustedValidators[uint64(chain.ProposedHeader.Height)] = chain.NextVals
+	}
 
 	// val set changes returned from previous block get applied to the next validators
 	// of this block. See tendermint spec for details.
@@ -38,13 +44,13 @@ func CommitBlock(chain *ibcgotesting.TestChain, res *abci.ResponseFinalizeBlock)
 	chain.Vals.IncrementProposerPriority(1)
 
 	// increment the current header
-	chain.CurrentHeader = cmtproto.Header{
+	chain.ProposedHeader = cmtproto.Header{
 		ChainID: chain.ChainID,
 		Height:  chain.App.LastBlockHeight() + 1,
 		AppHash: chain.App.LastCommitID().Hash,
 		// NOTE: the time is increased by the coordinator to maintain time synchrony amongst
 		// chains.
-		Time:               chain.CurrentHeader.Time,
+		Time:               chain.ProposedHeader.Time,
 		ValidatorsHash:     chain.Vals.Hash(),
 		NextValidatorsHash: chain.NextVals.Hash(),
 		ProposerAddress:    chain.Vals.Proposer.Address,
@@ -96,7 +102,7 @@ func SendMsgs(chain *ibcgotesting.TestChain, feeAmt int64, msgs ...sdk.Msg) (*ab
 		[]uint64{chain.SenderAccount.GetAccountNumber()},
 		[]uint64{chain.SenderAccount.GetSequence()},
 		true,
-		chain.CurrentHeader.GetTime(),
+		chain.ProposedHeader.GetTime(),
 		chain.NextVals.Hash(),
 		chain.SenderPrivKey,
 	)

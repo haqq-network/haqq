@@ -5788,8 +5788,8 @@ type MsgEthereumTx struct {
 	Size float64 `protobuf:"fixed64,2,opt,name=size,proto3" json:"size,omitempty"`
 	// hash of the transaction in hex format
 	Hash string `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
-	// from is the ethereum signer address in hex format. This address value is checked
-	// against the address derived from the signature (V, R, S) using the
+	// from is the ethereum signer address in hex format. This address value is
+	// checked against the address derived from the signature (V, R, S) using the
 	// secp256k1 elliptic curve
 	From string `protobuf:"bytes,4,opt,name=from,proto3" json:"from,omitempty"`
 }
@@ -6256,8 +6256,8 @@ type MsgEthereumTxResponse struct {
 	// logs contains the transaction hash and the proto-compatible ethereum
 	// logs.
 	Logs []*Log `protobuf:"bytes,2,rep,name=logs,proto3" json:"logs,omitempty"`
-	// ret is the returned data from evm function (result or data supplied with revert
-	// opcode)
+	// ret is the returned data from evm function (result or data supplied with
+	// revert opcode)
 	Ret []byte `protobuf:"bytes,3,opt,name=ret,proto3" json:"ret,omitempty"`
 	// vm_error is the error returned by vm execution
 	VmError string `protobuf:"bytes,4,opt,name=vm_error,json=vmError,proto3" json:"vm_error,omitempty"`

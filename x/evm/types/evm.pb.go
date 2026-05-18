@@ -73,8 +73,8 @@ type Params struct {
 	EVMChannels []string `protobuf:"bytes,8,rep,name=evm_channels,json=evmChannels,proto3" json:"evm_channels,omitempty"`
 	// access_control defines the permission policy of the EVM
 	AccessControl AccessControl `protobuf:"bytes,9,opt,name=access_control,json=accessControl,proto3" json:"access_control"`
-	// active_static_precompiles defines the slice of hex addresses of the precompiled
-	// contracts that are active
+	// active_static_precompiles defines the slice of hex addresses of the
+	// precompiled contracts that are active
 	ActiveStaticPrecompiles []string `protobuf:"bytes,10,rep,name=active_static_precompiles,json=activeStaticPrecompiles,proto3" json:"active_static_precompiles,omitempty"`
 }
 
@@ -220,10 +220,13 @@ func (m *AccessControl) GetCall() AccessControlType {
 type AccessControlType struct {
 	// access_type defines which type of permission is required for the operation
 	AccessType AccessType `protobuf:"varint,1,opt,name=access_type,json=accessType,proto3,enum=ethermint.evm.v1.AccessType" json:"access_type,omitempty" yaml:"access_type"`
-	// access_control_list defines defines different things depending on the AccessType:
-	// - ACCESS_TYPE_PERMISSIONLESS: list of addresses that are blocked from performing the operation
+	// access_control_list defines defines different things depending on the
+	// AccessType:
+	// - ACCESS_TYPE_PERMISSIONLESS: list of addresses that are blocked from
+	// performing the operation
 	// - ACCESS_TYPE_RESTRICTED: ignored
-	// - ACCESS_TYPE_PERMISSIONED: list of addresses that are allowed to perform the operation
+	// - ACCESS_TYPE_PERMISSIONED: list of addresses that are allowed to perform
+	// the operation
 	AccessControlList []string `protobuf:"bytes,2,rep,name=access_control_list,json=accessControlList,proto3" json:"access_control_list,omitempty" yaml:"access_control_list"`
 }
 
@@ -281,36 +284,45 @@ type ChainConfig struct {
 	HomesteadBlock *cosmossdk_io_math.Int `protobuf:"bytes,1,opt,name=homestead_block,json=homesteadBlock,proto3,customtype=cosmossdk.io/math.Int" json:"homestead_block,omitempty" yaml:"homestead_block"`
 	// dao_fork_block corresponds to TheDAO hard-fork switch block (nil no fork)
 	DAOForkBlock *cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=dao_fork_block,json=daoForkBlock,proto3,customtype=cosmossdk.io/math.Int" json:"dao_fork_block,omitempty" yaml:"dao_fork_block"`
-	// dao_fork_support defines whether the nodes supports or opposes the DAO hard-fork
+	// dao_fork_support defines whether the nodes supports or opposes the DAO
+	// hard-fork
 	DAOForkSupport bool `protobuf:"varint,3,opt,name=dao_fork_support,json=daoForkSupport,proto3" json:"dao_fork_support,omitempty" yaml:"dao_fork_support"`
 	// eip150_block: EIP150 implements the Gas price changes
 	// (https://github.com/ethereum/EIPs/issues/150) EIP150 HF block (nil no fork)
 	EIP150Block *cosmossdk_io_math.Int `protobuf:"bytes,4,opt,name=eip150_block,json=eip150Block,proto3,customtype=cosmossdk.io/math.Int" json:"eip150_block,omitempty" yaml:"eip150_block"`
-	// eip150_hash: EIP150 HF hash (needed for header only clients as only gas pricing changed)
+	// eip150_hash: EIP150 HF hash (needed for header only clients as only gas
+	// pricing changed)
 	EIP150Hash string `protobuf:"bytes,5,opt,name=eip150_hash,json=eip150Hash,proto3" json:"eip150_hash,omitempty" yaml:"byzantium_block"`
 	// eip155_block: EIP155Block HF block
 	EIP155Block *cosmossdk_io_math.Int `protobuf:"bytes,6,opt,name=eip155_block,json=eip155Block,proto3,customtype=cosmossdk.io/math.Int" json:"eip155_block,omitempty" yaml:"eip155_block"`
 	// eip158_block: EIP158 HF block
 	EIP158Block *cosmossdk_io_math.Int `protobuf:"bytes,7,opt,name=eip158_block,json=eip158Block,proto3,customtype=cosmossdk.io/math.Int" json:"eip158_block,omitempty" yaml:"eip158_block"`
-	// byzantium_block: Byzantium switch block (nil no fork, 0 = already on byzantium)
+	// byzantium_block: Byzantium switch block (nil no fork, 0 = already on
+	// byzantium)
 	ByzantiumBlock *cosmossdk_io_math.Int `protobuf:"bytes,8,opt,name=byzantium_block,json=byzantiumBlock,proto3,customtype=cosmossdk.io/math.Int" json:"byzantium_block,omitempty" yaml:"byzantium_block"`
-	// constantinople_block: Constantinople switch block (nil no fork, 0 = already activated)
+	// constantinople_block: Constantinople switch block (nil no fork, 0 = already
+	// activated)
 	ConstantinopleBlock *cosmossdk_io_math.Int `protobuf:"bytes,9,opt,name=constantinople_block,json=constantinopleBlock,proto3,customtype=cosmossdk.io/math.Int" json:"constantinople_block,omitempty" yaml:"constantinople_block"`
 	// petersburg_block: Petersburg switch block (nil same as Constantinople)
 	PetersburgBlock *cosmossdk_io_math.Int `protobuf:"bytes,10,opt,name=petersburg_block,json=petersburgBlock,proto3,customtype=cosmossdk.io/math.Int" json:"petersburg_block,omitempty" yaml:"petersburg_block"`
-	// istanbul_block: Istanbul switch block (nil no fork, 0 = already on istanbul)
+	// istanbul_block: Istanbul switch block (nil no fork, 0 = already on
+	// istanbul)
 	IstanbulBlock *cosmossdk_io_math.Int `protobuf:"bytes,11,opt,name=istanbul_block,json=istanbulBlock,proto3,customtype=cosmossdk.io/math.Int" json:"istanbul_block,omitempty" yaml:"istanbul_block"`
-	// muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 = already activated)
+	// muir_glacier_block: Eip-2384 (bomb delay) switch block (nil no fork, 0 =
+	// already activated)
 	MuirGlacierBlock *cosmossdk_io_math.Int `protobuf:"bytes,12,opt,name=muir_glacier_block,json=muirGlacierBlock,proto3,customtype=cosmossdk.io/math.Int" json:"muir_glacier_block,omitempty" yaml:"muir_glacier_block"`
 	// berlin_block: Berlin switch block (nil = no fork, 0 = already on berlin)
 	BerlinBlock *cosmossdk_io_math.Int `protobuf:"bytes,13,opt,name=berlin_block,json=berlinBlock,proto3,customtype=cosmossdk.io/math.Int" json:"berlin_block,omitempty" yaml:"berlin_block"`
 	// london_block: London switch block (nil = no fork, 0 = already on london)
 	LondonBlock *cosmossdk_io_math.Int `protobuf:"bytes,17,opt,name=london_block,json=londonBlock,proto3,customtype=cosmossdk.io/math.Int" json:"london_block,omitempty" yaml:"london_block"`
-	// arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)
+	// arrow_glacier_block: Eip-4345 (bomb delay) switch block (nil = no fork, 0 =
+	// already activated)
 	ArrowGlacierBlock *cosmossdk_io_math.Int `protobuf:"bytes,18,opt,name=arrow_glacier_block,json=arrowGlacierBlock,proto3,customtype=cosmossdk.io/math.Int" json:"arrow_glacier_block,omitempty" yaml:"arrow_glacier_block"`
-	// gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)
+	// gray_glacier_block: EIP-5133 (bomb delay) switch block (nil = no fork, 0 =
+	// already activated)
 	GrayGlacierBlock *cosmossdk_io_math.Int `protobuf:"bytes,20,opt,name=gray_glacier_block,json=grayGlacierBlock,proto3,customtype=cosmossdk.io/math.Int" json:"gray_glacier_block,omitempty" yaml:"gray_glacier_block"`
-	// merge_netsplit_block: Virtual fork after The Merge to use as a network splitter
+	// merge_netsplit_block: Virtual fork after The Merge to use as a network
+	// splitter
 	MergeNetsplitBlock *cosmossdk_io_math.Int `protobuf:"bytes,21,opt,name=merge_netsplit_block,json=mergeNetsplitBlock,proto3,customtype=cosmossdk.io/math.Int" json:"merge_netsplit_block,omitempty" yaml:"merge_netsplit_block"`
 	// shanghai_block switch block (nil = no fork, 0 = already on shanghai)
 	ShanghaiBlock *cosmossdk_io_math.Int `protobuf:"bytes,22,opt,name=shanghai_block,json=shanghaiBlock,proto3,customtype=cosmossdk.io/math.Int" json:"shanghai_block,omitempty" yaml:"shanghai_block"`
@@ -699,8 +711,8 @@ var xxx_messageInfo_AccessTuple proto.InternalMessageInfo
 type TraceConfig struct {
 	// tracer is a custom javascript tracer
 	Tracer string `protobuf:"bytes,1,opt,name=tracer,proto3" json:"tracer,omitempty"`
-	// timeout overrides the default timeout of 5 seconds for JavaScript-based tracing
-	// calls
+	// timeout overrides the default timeout of 5 seconds for JavaScript-based
+	// tracing calls
 	Timeout string `protobuf:"bytes,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// reexec defines the number of blocks the tracer is willing to go back
 	Reexec uint64 `protobuf:"varint,3,opt,name=reexec,proto3" json:"reexec,omitempty"`

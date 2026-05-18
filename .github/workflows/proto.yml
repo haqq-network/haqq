@@ -21,11 +21,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: haqq-network/nix-action@master
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/cachix-action@v12
         with:
+          name: haqq
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-      - run: |
-          nix develop --impure #ci --command ci-proto
+      - name: Check that proto builds and committed
+        env:
+          NIX_CONFIG: "experimental-features = nix-command flakes"
+        run: |
+          nix develop --impure .#ci --command ci-proto
 
   lint:
     name: Proto lint

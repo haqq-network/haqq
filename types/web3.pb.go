@@ -23,8 +23,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ExtensionOptionsWeb3Tx is an extension option that specifies the typed chain id,
-// the fee payer as well as its signature data.
+// ExtensionOptionsWeb3Tx is an extension option that specifies the typed chain
+// id, the fee payer as well as its signature data.
 type ExtensionOptionsWeb3Tx struct {
 	// typed_data_chain_id is used only in EIP712 Domain and should match
 	// Ethereum network ID in a Web3 provider (e.g. Metamask).

@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 
-DEPS_COSMOS_SDK_VERSION=$(cat go.sum | grep -E 'github.com/haqq-network/cosmos-sdk\s' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $2 }')
+DEPS_COSMOS_SDK_VERSION=$(cat go.sum | grep -E 'github.com/cosmos/cosmos-sdk\s' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $2 }')
 DEPS_IBC_GO_VERSION=$(cat go.sum | grep 'github.com/cosmos/ibc-go' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $2 }')
 DEPS_COSMOS_PROTO=$(cat go.sum | grep 'github.com/cosmos/cosmos-proto' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $2 }')
 DEPS_COSMOS_GOGOPROTO=$(cat go.sum | grep 'github.com/cosmos/gogoproto' | grep -v -e 'go.mod' | tail -n 1 | awk '{ print $2 }')
@@ -11,7 +11,7 @@ DEPS_COSMOS_ICS23=go/$(cat go.sum | grep 'github.com/cosmos/ics23/go' | grep -v 
 mkdir -p "$THIRD_PARTY_DIR/cosmos_tmp" && \
 	cd "$THIRD_PARTY_DIR/cosmos_tmp" && \
 	git init && \
-	git remote add origin "https://github.com/haqq-network/cosmos-sdk.git" && \
+	git remote add origin "https://github.com/cosmos/cosmos-sdk.git" && \
 	git config core.sparseCheckout true && \
 	printf "proto\nthird_party\n" > .git/info/sparse-checkout && \
 	git pull origin "$DEPS_COSMOS_SDK_VERSION" && \
@@ -53,5 +53,17 @@ mkdir -p "$THIRD_PARTY_DIR/cosmos/ics23/v1" && \
 
 cd ${THIRD_PARTY_DIR}/../..
 
-cat proto/buf.yaml | yq '.deps | map( "buf export " + . + " -o '${THIRD_PARTY_DIR}'") | join(" && ")' | xargs bash -c
+# Export buf dependencies without requiring yq
+# Read deps from buf.yaml and export each one
+if ! command -v yq &> /dev/null; then
+	# Fallback: manually extract deps from buf.yaml and export them
+	# This works for the current buf.yaml structure
+	buf export buf.build/cosmos/cosmos-sdk -o ${THIRD_PARTY_DIR}
+	buf export buf.build/cosmos/cosmos-proto -o ${THIRD_PARTY_DIR}
+	buf export buf.build/cosmos/gogo-proto -o ${THIRD_PARTY_DIR}
+	buf export buf.build/googleapis/googleapis -o ${THIRD_PARTY_DIR}
+else
+	# Use yq if available (preferred method)
+	cat proto/buf.yaml | yq '.deps | map( "buf export " + . + " -o '${THIRD_PARTY_DIR}'") | join(" && ")' | xargs bash -c
+fi
 

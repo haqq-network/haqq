@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
 )
 

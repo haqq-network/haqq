@@ -9,7 +9,7 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
-	channelkeeper "github.com/cosmos/ibc-go/v8/modules/core/04-channel/keeper"
+	channelkeeper "github.com/cosmos/ibc-go/v10/modules/core/04-channel/keeper"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
@@ -114,10 +114,10 @@ func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 			case TransferMethod:
 				bz, err = p.Transfer(ctx, evm.Origin, contract, stateDB, method, args)
 			// ICS20 queries
-			case DenomTraceMethod:
-				bz, err = p.DenomTrace(ctx, contract, method, args)
-			case DenomTracesMethod:
-				bz, err = p.DenomTraces(ctx, contract, method, args)
+			case DenomMethod:
+				bz, err = p.Denom(ctx, contract, method, args)
+			case DenomsMethod:
+				bz, err = p.Denoms(ctx, contract, method, args)
 			case DenomHashMethod:
 				bz, err = p.DenomHash(ctx, contract, method, args)
 			case authorization.AllowanceMethod:

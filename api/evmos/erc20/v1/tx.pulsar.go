@@ -5435,7 +5435,8 @@ type MsgConvertERC20 struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// contract_address of an ERC20 token contract, that is registered in a token pair
+	// contract_address of an ERC20 token contract, that is registered in a token
+	// pair
 	ContractAddress string `protobuf:"bytes,1,opt,name=contract_address,json=contractAddress,proto3" json:"contract_address,omitempty"`
 	// amount of ERC20 tokens to convert
 	Amount string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
@@ -5526,12 +5527,13 @@ type MsgConvertCoin struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// coin is a Cosmos coin whose denomination is registered in a token pair. The coin
-	// amount defines the amount of coins to convert.
+	// coin is a Cosmos coin whose denomination is registered in a token pair. The
+	// coin amount defines the amount of coins to convert.
 	Coin *v1beta1.Coin `protobuf:"bytes,1,opt,name=coin,proto3" json:"coin,omitempty"`
 	// receiver is the hex address to receive ERC20 token
 	Receiver string `protobuf:"bytes,2,opt,name=receiver,proto3" json:"receiver,omitempty"`
-	// sender is the cosmos bech32 address from the owner of the given Cosmos coins
+	// sender is the cosmos bech32 address from the owner of the given Cosmos
+	// coins
 	Sender string `protobuf:"bytes,3,opt,name=sender,proto3" json:"sender,omitempty"`
 }
 
@@ -5831,7 +5833,8 @@ func (*MsgToggleConversionResponse) Descriptor() ([]byte, []int) {
 	return file_evmos_erc20_v1_tx_proto_rawDescGZIP(), []int{9}
 }
 
-// MsgUpdateCoinMetadata is the Msg/MsgUpdateCoinMetadata request type for updating registered coins metadata
+// MsgUpdateCoinMetadata is the Msg/MsgUpdateCoinMetadata request type for
+// updating registered coins metadata
 type MsgUpdateCoinMetadata struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

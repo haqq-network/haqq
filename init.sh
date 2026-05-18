@@ -109,4 +109,5 @@ $BINARY start \
 --minimum-gas-prices=0.0001aISLM \
 --json-rpc.api eth,txpool,personal,net,debug,web3 \
 --json-rpc.enable true \
---keyring-backend $KEYRING
+--keyring-backend $KEYRING \
+--chain-id $CHAINID

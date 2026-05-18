@@ -14,13 +14,13 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdkmock "github.com/cosmos/cosmos-sdk/testutil/mock"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	"github.com/cosmos/ibc-go/v8/testing/mock"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
 	"github.com/haqq-network/haqq/cmd/config"
 	"github.com/haqq-network/haqq/types"
@@ -65,7 +65,7 @@ func Setup(
 	feemarketGenesis *feemarkettypes.GenesisState,
 	chainID string,
 ) (*Haqq, []byte) {
-	privVal := mock.NewPV()
+	privVal := sdkmock.NewPV()
 	pubKey, _ := privVal.GetPubKey()
 
 	// create validator set with single validator

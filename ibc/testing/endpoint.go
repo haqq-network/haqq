@@ -10,16 +10,14 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	govtypesv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibcgotesting "github.com/cosmos/ibc-go/v8/testing"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	connectiontypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
+	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
+	"github.com/cosmos/ibc-go/v10/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibcgotesting "github.com/cosmos/ibc-go/v10/testing"
 
 	"github.com/haqq-network/haqq/app"
 )
@@ -71,8 +69,12 @@ func (endpoint *Endpoint) QueryProof(key []byte) ([]byte, clienttypes.Height) {
 	// obtain the counterparty client representing the chain associated with the endpoint
 	clientState := endpoint.Counterparty.Chain.GetClientState(endpoint.Counterparty.ClientID)
 
+	// For Tendermint client state, access LatestHeight field directly
+	tmClientState, ok := clientState.(*ibctm.ClientState)
+	require.True(endpoint.Chain.TB, ok, "client state must be tendermint client state")
+
 	// query proof on the counterparty using the latest height of the IBC client
-	return endpoint.QueryProofAtHeight(key, clientState.GetLatestHeight().GetRevisionHeight())
+	return endpoint.QueryProofAtHeight(key, tmClientState.LatestHeight.RevisionHeight)
 }
 
 // QueryProofAtHeight queries proof associated with this endpoint using the proof height
@@ -99,12 +101,14 @@ func (endpoint *Endpoint) CreateClient() (err error) {
 		tmConfig, ok := endpoint.ClientConfig.(*ibcgotesting.TendermintConfig)
 		require.True(endpoint.Chain.TB, ok)
 
-		height := endpoint.Counterparty.Chain.LastHeader.GetHeight().(clienttypes.Height)
+		header := endpoint.Counterparty.Chain.LatestCommittedHeader
+		require.NotNil(endpoint.Chain.TB, header, "latest committed header must be set")
+		height := header.GetHeight().(clienttypes.Height)
 		clientState = ibctm.NewClientState(
 			endpoint.Counterparty.Chain.ChainID, tmConfig.TrustLevel, tmConfig.TrustingPeriod, tmConfig.UnbondingPeriod, tmConfig.MaxClockDrift,
 			height, commitmenttypes.GetSDKSpecs(), ibcgotesting.UpgradePath,
 		)
-		consensusState = endpoint.Counterparty.Chain.LastHeader.ConsensusState()
+		consensusState = header.ConsensusState()
 	case exported.Solomachine:
 		// TODO implement
 		//		solo := NewSolomachine(endpoint.Chain.TB, endpoint.Chain.Codec, clientID, "", 1)
@@ -156,7 +160,9 @@ func (endpoint *Endpoint) UpdateClient() (err error) {
 
 	switch endpoint.ClientConfig.GetClientType() {
 	case exported.Tendermint:
-		header, err = endpoint.Chain.ConstructUpdateTMClientHeader(endpoint.Counterparty.Chain, endpoint.ClientID)
+		trustedHeight, ok := endpoint.Chain.GetClientLatestHeight(endpoint.ClientID).(clienttypes.Height)
+		require.True(endpoint.Chain.TB, ok)
+		header, err = endpoint.Counterparty.Chain.IBCClientHeader(endpoint.Counterparty.Chain.LatestCommittedHeader, trustedHeight)
 
 	default:
 		err = fmt.Errorf("client type %s is not supported", endpoint.ClientConfig.GetClientType())
@@ -209,20 +215,22 @@ func (endpoint *Endpoint) UpgradeChain() error {
 		baseapp.SetChainID(newChainID)(endpoint.Chain.GetSimApp().GetBaseApp())
 	}
 	endpoint.Chain.ChainID = newChainID
-	endpoint.Chain.CurrentHeader.ChainID = newChainID
+	endpoint.Chain.ProposedHeader.ChainID = newChainID
 	endpoint.Chain.NextBlock() // commit changes
 
 	// update counterparty client manually
 	clientState.ChainId = newChainID
-	clientState.LatestHeight = clienttypes.NewHeight(revisionNumber+1, clientState.LatestHeight.GetRevisionHeight()+1)
+	clientState.LatestHeight = clienttypes.NewHeight(revisionNumber+1, clientState.LatestHeight.RevisionHeight+1)
 	endpoint.Counterparty.SetClientState(clientState)
 
+	header := endpoint.Chain.LatestCommittedHeader
+	require.NotNil(endpoint.Chain.TB, header, "latest committed header must be set")
 	consensusState := &ibctm.ConsensusState{
-		Timestamp:          endpoint.Chain.LastHeader.GetTime(),
-		Root:               commitmenttypes.NewMerkleRoot(endpoint.Chain.LastHeader.Header.GetAppHash()),
-		NextValidatorsHash: endpoint.Chain.LastHeader.Header.NextValidatorsHash,
+		Timestamp:          header.Header.Time,
+		Root:               commitmenttypes.NewMerkleRoot(header.Header.GetAppHash()),
+		NextValidatorsHash: header.Header.NextValidatorsHash,
 	}
-	endpoint.Counterparty.SetConsensusState(consensusState, clientState.GetLatestHeight())
+	endpoint.Counterparty.SetConsensusState(consensusState, clientState.LatestHeight)
 
 	// ensure the next update isn't identical to the one set in state
 	endpoint.Chain.Coordinator.IncrementTime()
@@ -255,13 +263,13 @@ func (endpoint *Endpoint) ConnOpenTry() error {
 	err := endpoint.UpdateClient()
 	require.NoError(endpoint.Chain.TB, err)
 
-	counterpartyClient, clientProof, consensusProof, consensusHeight, initProof, proofHeight := endpoint.QueryConnectionHandshakeProof()
+	initProof, proofHeight := endpoint.QueryConnectionHandshakeProof()
 
 	msg := connectiontypes.NewMsgConnectionOpenTry(
 		endpoint.ClientID, endpoint.Counterparty.ConnectionID, endpoint.Counterparty.ClientID,
-		counterpartyClient, endpoint.Counterparty.Chain.GetPrefix(), []*connectiontypes.Version{ibcgotesting.ConnectionVersion}, endpoint.ConnectionConfig.DelayPeriod,
-		initProof, clientProof, consensusProof,
-		proofHeight, consensusHeight,
+		endpoint.Counterparty.Chain.GetPrefix(), []*connectiontypes.Version{ibcgotesting.ConnectionVersion},
+		endpoint.ConnectionConfig.DelayPeriod,
+		initProof, proofHeight,
 		endpoint.Chain.SenderAccount.GetAddress().String(),
 	)
 	res, err := SendMsgs(endpoint.Chain, DefaultFeeAmt, msg)
@@ -282,12 +290,11 @@ func (endpoint *Endpoint) ConnOpenAck() error {
 	err := endpoint.UpdateClient()
 	require.NoError(endpoint.Chain.TB, err)
 
-	counterpartyClient, clientProof, consensusProof, consensusHeight, tryProof, proofHeight := endpoint.QueryConnectionHandshakeProof()
+	tryProof, proofHeight := endpoint.QueryConnectionHandshakeProof()
 
 	msg := connectiontypes.NewMsgConnectionOpenAck(
-		endpoint.ConnectionID, endpoint.Counterparty.ConnectionID, counterpartyClient, // testing doesn't use flexible selection
-		tryProof, clientProof, consensusProof,
-		proofHeight, consensusHeight,
+		endpoint.ConnectionID, endpoint.Counterparty.ConnectionID,
+		tryProof, proofHeight,
 		ibcgotesting.ConnectionVersion,
 		endpoint.Chain.SenderAccount.GetAddress().String(),
 	)
@@ -313,32 +320,15 @@ func (endpoint *Endpoint) ConnOpenConfirm() error {
 }
 
 // QueryConnectionHandshakeProof returns all the proofs necessary to execute OpenTry or Open Ack of
-// the connection handshakes. It returns the counterparty client state, proof of the counterparty
-// client state, proof of the counterparty consensus state, the consensus state height, proof of
-// the counterparty connection, and the proof height for all the proofs returned.
+// the connection handshakes. In ibc-go v10, this simplified to just return connection proof and height.
 func (endpoint *Endpoint) QueryConnectionHandshakeProof() (
-	clientState exported.ClientState, clientProof,
-	consensusProof []byte, consensusHeight clienttypes.Height,
 	connectionProof []byte, proofHeight clienttypes.Height,
 ) {
-	// obtain the client state on the counterparty chain
-	clientState = endpoint.Counterparty.Chain.GetClientState(endpoint.Counterparty.ClientID)
-
-	// query proof for the client state on the counterparty
-	clientKey := host.FullClientStateKey(endpoint.Counterparty.ClientID)
-	clientProof, proofHeight = endpoint.Counterparty.QueryProof(clientKey)
-
-	consensusHeight = clientState.GetLatestHeight().(clienttypes.Height)
-
-	// query proof for the consensus state on the counterparty
-	consensusKey := host.FullConsensusStateKey(endpoint.Counterparty.ClientID, consensusHeight)
-	consensusProof, _ = endpoint.Counterparty.QueryProofAtHeight(consensusKey, proofHeight.GetRevisionHeight())
-
 	// query proof for the connection on the counterparty
 	connectionKey := host.ConnectionKey(endpoint.Counterparty.ConnectionID)
-	connectionProof, _ = endpoint.Counterparty.QueryProofAtHeight(connectionKey, proofHeight.GetRevisionHeight())
+	connectionProof, proofHeight = endpoint.Counterparty.QueryProof(connectionKey)
 
-	return clientState, clientProof, consensusProof, consensusHeight, connectionProof, proofHeight
+	return connectionProof, proofHeight
 }
 
 // ChanOpenInit will construct and execute a MsgChannelOpenInit on the associated endpoint.
@@ -460,10 +450,9 @@ func (endpoint *Endpoint) SendPacket(
 	timeoutTimestamp uint64,
 	data []byte,
 ) (uint64, error) {
-	channelCap := endpoint.Chain.GetChannelCapability(endpoint.ChannelConfig.PortID, endpoint.ChannelID)
-
+	// In ibc-go v10, SendPacket no longer requires capability parameter
 	// no need to send message, acting as a module
-	sequence, err := endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(endpoint.Chain.GetContext(), channelCap, endpoint.ChannelConfig.PortID, endpoint.ChannelID, timeoutHeight, timeoutTimestamp, data)
+	sequence, err := endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SendPacket(endpoint.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID, timeoutHeight, timeoutTimestamp, data)
 	if err != nil {
 		return 0, err
 	}
@@ -515,10 +504,9 @@ func (endpoint *Endpoint) RecvPacketWithResult(packet channeltypes.Packet) (*abc
 // WriteAcknowledgement writes an acknowledgement on the channel associated with the endpoint.
 // The counterparty client is updated.
 func (endpoint *Endpoint) WriteAcknowledgement(ack exported.Acknowledgement, packet exported.PacketI) error {
-	channelCap := endpoint.Chain.GetChannelCapability(packet.GetDestPort(), packet.GetDestChannel())
-
+	// In ibc-go v10, WriteAcknowledgement no longer requires capability parameter
 	// no need to send message, acting as a handler
-	err := endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.WriteAcknowledgement(endpoint.Chain.GetContext(), channelCap, packet, ack)
+	err := endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.WriteAcknowledgement(endpoint.Chain.GetContext(), packet, ack)
 	if err != nil {
 		return err
 	}
@@ -591,219 +579,61 @@ func (endpoint *Endpoint) TimeoutOnClose(packet channeltypes.Packet) error {
 	nextSeqRecv, found := endpoint.Counterparty.Chain.App.GetIBCKeeper().ChannelKeeper.GetNextSequenceRecv(endpoint.Counterparty.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID)
 	require.True(endpoint.Chain.TB, found)
 
-	timeoutOnCloseMsg := channeltypes.NewMsgTimeoutOnCloseWithCounterpartyUpgradeSequence(
+	// In ibc-go v10, channel upgrade sequence is no longer part of timeout on close
+	timeoutOnCloseMsg := channeltypes.NewMsgTimeoutOnClose(
 		packet, nextSeqRecv,
 		proof, closedProof, proofHeight, endpoint.Chain.SenderAccount.GetAddress().String(),
-		endpoint.Counterparty.GetChannel().UpgradeSequence,
 	)
 
 	_, err := SendMsgs(endpoint.Chain, DefaultFeeAmt, timeoutOnCloseMsg)
 	return err
 }
 
-// QueryChannelUpgradeProof returns all the proofs necessary to execute UpgradeTry/UpgradeAck/UpgradeOpen.
-// It returns the proof for the channel on the endpoint's chain, the proof for the upgrade attempt on the
-// endpoint's chain, and the height at which the proof was queried.
-func (endpoint *Endpoint) QueryChannelUpgradeProof() ([]byte, []byte, clienttypes.Height) {
-	channelKey := host.ChannelKey(endpoint.ChannelConfig.PortID, endpoint.ChannelID)
-	channelProof, height := endpoint.QueryProof(channelKey)
-
-	upgradeKey := host.ChannelUpgradeKey(endpoint.ChannelConfig.PortID, endpoint.ChannelID)
-	upgradeProof, _ := endpoint.QueryProof(upgradeKey)
-
-	return channelProof, upgradeProof, height
+// QueryChannelUpgradeProof, ChanUpgradeInit, ChanUpgradeTry are deprecated in ibc-go v10
+// as channel upgrade functionality has been moved/removed.
+// These methods are kept for backwards compatibility but will panic if called.
+func (endpoint *Endpoint) QueryChannelUpgradeProof() {
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
 }
 
-// ChanUpgradeInit sends a MsgChannelUpgradeInit on the associated endpoint.
-// A default upgrade proposal is used with overrides from the ProposedUpgrade
-// in the channel config, and submitted via governance proposal
 func (endpoint *Endpoint) ChanUpgradeInit() error {
-	upgrade := endpoint.GetProposedUpgrade()
-
-	// create upgrade init message via gov proposal and submit the proposal
-	var authority string
-	haqqApp, isHaqq := endpoint.Chain.App.(*app.Haqq)
-	if isHaqq {
-		authority = haqqApp.IBCKeeper.GetAuthority()
-	} else {
-		authority = endpoint.Chain.GetSimApp().IBCKeeper.GetAuthority()
-	}
-
-	msg := channeltypes.NewMsgChannelUpgradeInit(
-		endpoint.ChannelConfig.PortID,
-		endpoint.ChannelID,
-		upgrade.Fields,
-		authority,
-	)
-
-	proposal, err := govtypesv1.NewMsgSubmitProposal(
-		[]sdk.Msg{msg},
-		sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, govtypesv1.DefaultMinDepositTokens)),
-		endpoint.Chain.SenderAccount.GetAddress().String(),
-		endpoint.ChannelID,
-		"upgrade-init",
-		fmt.Sprintf("gov proposal for initializing channel upgrade: %s", endpoint.ChannelID),
-		false,
-	)
-	require.NoError(endpoint.Chain.TB, err)
-
-	var proposalID uint64
-	res, err := SendMsgs(endpoint.Chain, DefaultFeeAmt, proposal)
-	if err != nil {
-		return err
-	}
-
-	proposalID, err = ibcgotesting.ParseProposalIDFromEvents(res.GetEvents())
-	require.NoError(endpoint.Chain.TB, err)
-
-	return VoteAndCheckProposalStatus(endpoint, proposalID)
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
+	return nil
 }
 
-// ChanUpgradeTry sends a MsgChannelUpgradeTry on the associated endpoint.
 func (endpoint *Endpoint) ChanUpgradeTry() error {
-	err := endpoint.UpdateClient()
-	require.NoError(endpoint.Chain.TB, err)
-
-	upgrade := endpoint.GetProposedUpgrade()
-	channelProof, upgradeProof, height := endpoint.Counterparty.QueryChannelUpgradeProof()
-
-	counterpartyUpgrade, found := endpoint.Counterparty.Chain.App.GetIBCKeeper().ChannelKeeper.GetUpgrade(endpoint.Counterparty.Chain.GetContext(), endpoint.Counterparty.ChannelConfig.PortID, endpoint.Counterparty.ChannelID)
-	require.True(endpoint.Chain.TB, found)
-
-	if !found {
-		return fmt.Errorf("could not find upgrade for channel %s", endpoint.ChannelID)
-	}
-
-	msg := channeltypes.NewMsgChannelUpgradeTry(
-		endpoint.ChannelConfig.PortID,
-		endpoint.ChannelID,
-		upgrade.Fields.ConnectionHops,
-		counterpartyUpgrade.Fields,
-		endpoint.Counterparty.GetChannel().UpgradeSequence,
-		channelProof,
-		upgradeProof,
-		height,
-		endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-
-	_, err = SendMsgs(endpoint.Chain, DefaultFeeAmt, msg)
-	return err
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
+	return nil
 }
 
-// ChanUpgradeAck sends a MsgChannelUpgradeAck to the associated endpoint.
+// ChanUpgradeAck, ChanUpgradeConfirm are deprecated in ibc-go v10
+// as channel upgrade functionality has been moved/removed.
 func (endpoint *Endpoint) ChanUpgradeAck() error {
-	err := endpoint.UpdateClient()
-	require.NoError(endpoint.Chain.TB, err)
-
-	channelProof, upgradeProof, height := endpoint.Counterparty.QueryChannelUpgradeProof()
-
-	counterpartyUpgrade, found := endpoint.Counterparty.Chain.App.GetIBCKeeper().ChannelKeeper.GetUpgrade(endpoint.Counterparty.Chain.GetContext(), endpoint.Counterparty.ChannelConfig.PortID, endpoint.Counterparty.ChannelID)
-	require.True(endpoint.Chain.TB, found)
-
-	msg := channeltypes.NewMsgChannelUpgradeAck(
-		endpoint.ChannelConfig.PortID,
-		endpoint.ChannelID,
-		counterpartyUpgrade,
-		channelProof,
-		upgradeProof,
-		height,
-		endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-
-	_, err = SendMsgs(endpoint.Chain, DefaultFeeAmt, msg)
-	return err
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
+	return nil
 }
 
-// ChanUpgradeConfirm sends a MsgChannelUpgradeConfirm to the associated endpoint.
 func (endpoint *Endpoint) ChanUpgradeConfirm() error {
-	err := endpoint.UpdateClient()
-	require.NoError(endpoint.Chain.TB, err)
-
-	channelProof, upgradeProof, height := endpoint.Counterparty.QueryChannelUpgradeProof()
-
-	counterpartyUpgrade, found := endpoint.Counterparty.Chain.App.GetIBCKeeper().ChannelKeeper.GetUpgrade(endpoint.Counterparty.Chain.GetContext(), endpoint.Counterparty.ChannelConfig.PortID, endpoint.Counterparty.ChannelID)
-	require.True(endpoint.Chain.TB, found)
-
-	msg := channeltypes.NewMsgChannelUpgradeConfirm(
-		endpoint.ChannelConfig.PortID,
-		endpoint.ChannelID,
-		endpoint.Counterparty.GetChannel().State,
-		counterpartyUpgrade,
-		channelProof,
-		upgradeProof,
-		height,
-		endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-
-	_, err = SendMsgs(endpoint.Chain, DefaultFeeAmt, msg)
-	return err
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
+	return nil
 }
 
-// ChanUpgradeOpen sends a MsgChannelUpgradeOpen to the associated endpoint.
+// ChanUpgradeOpen, ChanUpgradeTimeout, ChanUpgradeCancel are deprecated in ibc-go v10
+// as channel upgrade functionality has been moved/removed.
+// These methods are kept for backwards compatibility but will panic if called.
 func (endpoint *Endpoint) ChanUpgradeOpen() error {
-	err := endpoint.UpdateClient()
-	require.NoError(endpoint.Chain.TB, err)
-
-	channelKey := host.ChannelKey(endpoint.Counterparty.ChannelConfig.PortID, endpoint.Counterparty.ChannelID)
-	channelProof, height := endpoint.Counterparty.QueryProof(channelKey)
-
-	msg := channeltypes.NewMsgChannelUpgradeOpen(
-		endpoint.ChannelConfig.PortID,
-		endpoint.ChannelID,
-		endpoint.Counterparty.GetChannel().State,
-		endpoint.Counterparty.GetChannel().UpgradeSequence,
-		channelProof,
-		height,
-		endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-
-	_, err = SendMsgs(endpoint.Chain, DefaultFeeAmt, msg)
-	return err
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
+	return nil
 }
 
-// ChanUpgradeTimeout sends a MsgChannelUpgradeTimeout to the associated endpoint.
 func (endpoint *Endpoint) ChanUpgradeTimeout() error {
-	err := endpoint.UpdateClient()
-	require.NoError(endpoint.Chain.TB, err)
-
-	channelKey := host.ChannelKey(endpoint.Counterparty.ChannelConfig.PortID, endpoint.Counterparty.ChannelID)
-	channelProof, height := endpoint.Counterparty.Chain.QueryProof(channelKey)
-
-	msg := channeltypes.NewMsgChannelUpgradeTimeout(
-		endpoint.ChannelConfig.PortID,
-		endpoint.ChannelID,
-		endpoint.Counterparty.GetChannel(),
-		channelProof,
-		height,
-		endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-
-	_, err = SendMsgs(endpoint.Chain, DefaultFeeAmt, msg)
-	return err
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
+	return nil
 }
 
-// ChanUpgradeCancel sends a MsgChannelUpgradeCancel to the associated endpoint.
 func (endpoint *Endpoint) ChanUpgradeCancel() error {
-	err := endpoint.UpdateClient()
-	require.NoError(endpoint.Chain.TB, err)
-
-	errorReceiptKey := host.ChannelUpgradeErrorKey(endpoint.Counterparty.ChannelConfig.PortID, endpoint.Counterparty.ChannelID)
-	proofErrorReceipt, height := endpoint.Counterparty.Chain.QueryProof(errorReceiptKey)
-
-	errorReceipt, found := endpoint.Counterparty.Chain.App.GetIBCKeeper().ChannelKeeper.GetUpgradeErrorReceipt(endpoint.Counterparty.Chain.GetContext(), endpoint.Counterparty.ChannelConfig.PortID, endpoint.Counterparty.ChannelID)
-	require.True(endpoint.Chain.TB, found)
-
-	msg := channeltypes.NewMsgChannelUpgradeCancel(
-		endpoint.ChannelConfig.PortID,
-		endpoint.ChannelID,
-		errorReceipt,
-		proofErrorReceipt,
-		height,
-		endpoint.Chain.SenderAccount.GetAddress().String(),
-	)
-
-	_, err = SendMsgs(endpoint.Chain, DefaultFeeAmt, msg)
-	return err
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
+	return nil
 }
 
 // SetChannelState sets a channel state
@@ -871,23 +701,19 @@ func (endpoint *Endpoint) SetChannel(channel channeltypes.Channel) {
 	endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SetChannel(endpoint.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID, channel)
 }
 
-// GetChannelUpgrade retrieves an IBC Channel Upgrade for the endpoint. The upgrade
-// is expected to exist otherwise testing will fail.
-func (endpoint *Endpoint) GetChannelUpgrade() channeltypes.Upgrade {
-	upgrade, found := endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.GetUpgrade(endpoint.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID)
-	require.True(endpoint.Chain.TB, found)
-
-	return upgrade
+// GetChannelUpgrade, SetChannelUpgrade, and SetChannelCounterpartyUpgrade are deprecated
+// in ibc-go v10 as channel upgrade functionality has been moved/removed.
+// These methods are kept for backwards compatibility but will panic if called.
+func (endpoint *Endpoint) GetChannelUpgrade() {
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
 }
 
-// SetChannelUpgrade sets the channel upgrade for this endpoint.
-func (endpoint *Endpoint) SetChannelUpgrade(upgrade channeltypes.Upgrade) {
-	endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SetUpgrade(endpoint.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID, upgrade)
+func (endpoint *Endpoint) SetChannelUpgrade(_ interface{}) {
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
 }
 
-// SetChannelCounterpartyUpgrade sets the channel counterparty upgrade for this endpoint.
-func (endpoint *Endpoint) SetChannelCounterpartyUpgrade(upgrade channeltypes.Upgrade) {
-	endpoint.Chain.App.GetIBCKeeper().ChannelKeeper.SetCounterpartyUpgrade(endpoint.Chain.GetContext(), endpoint.ChannelConfig.PortID, endpoint.ChannelID, upgrade)
+func (endpoint *Endpoint) SetChannelCounterpartyUpgrade(_ interface{}) {
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
 }
 
 // QueryClientStateProof performs and abci query for a client stat associated
@@ -902,39 +728,8 @@ func (endpoint *Endpoint) QueryClientStateProof() (exported.ClientState, []byte)
 	return clientState, clientProof
 }
 
-// GetProposedUpgrade returns a valid upgrade which can be used for UpgradeInit and UpgradeTry.
-// By default, the endpoint's existing channel fields will be used for the upgrade fields and
-// a sane default timeout will be used by querying the counterparty's latest height.
-// If any non-empty values are specified in the ChannelConfig's ProposedUpgrade,
-// those values will be used in the returned upgrade.
-func (endpoint *Endpoint) GetProposedUpgrade() channeltypes.Upgrade {
-	// create a default upgrade
-	upgrade := channeltypes.Upgrade{
-		Fields: channeltypes.UpgradeFields{
-			Ordering:       endpoint.ChannelConfig.Order,
-			ConnectionHops: []string{endpoint.ConnectionID},
-			Version:        endpoint.ChannelConfig.Version,
-		},
-		Timeout:          channeltypes.NewTimeout(endpoint.Counterparty.Chain.GetTimeoutHeight(), 0),
-		NextSequenceSend: 0,
-	}
-
-	override := endpoint.ChannelConfig.ProposedUpgrade
-	if override.Timeout.IsValid() {
-		upgrade.Timeout = override.Timeout
-	}
-
-	if override.Fields.Ordering != channeltypes.NONE {
-		upgrade.Fields.Ordering = override.Fields.Ordering
-	}
-
-	if override.Fields.Version != "" {
-		upgrade.Fields.Version = override.Fields.Version
-	}
-
-	if len(override.Fields.ConnectionHops) != 0 {
-		upgrade.Fields.ConnectionHops = override.Fields.ConnectionHops
-	}
-
-	return upgrade
+// GetProposedUpgrade is deprecated in ibc-go v10 as channel upgrade functionality has been moved/removed.
+// This method is kept for backwards compatibility but will panic if called.
+func (endpoint *Endpoint) GetProposedUpgrade() {
+	endpoint.Chain.TB.Fatal("channel upgrade functionality is not available in ibc-go v10")
 }

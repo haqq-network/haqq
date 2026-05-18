@@ -19,11 +19,17 @@ message Denom {
   // original_denom which liquid denom derived from
   string original_denom = 3;
   // start date
-  google.protobuf.Timestamp start_time = 4
-      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  google.protobuf.Timestamp start_time = 4 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
   // end_date
-  google.protobuf.Timestamp end_time = 5
-      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  google.protobuf.Timestamp end_time = 5 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
   // lockup periods
   repeated cosmos.vesting.v1beta1.Period lockup_periods = 6 [
     (gogoproto.nullable) = false,

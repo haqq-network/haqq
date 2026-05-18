@@ -3,15 +3,13 @@ package chain
 import (
 	"time"
 
-	cmttypes "github.com/cometbft/cometbft/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	commitmenttypes "github.com/cosmos/ibc-go/v8/modules/core/23-commitment/types"
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
-	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	"github.com/cosmos/ibc-go/v8/testing/simapp"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
+	"github.com/cosmos/ibc-go/v10/modules/core/exported"
+	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	"github.com/cosmos/ibc-go/v10/testing/simapp"
 )
 
 // Chain defines the required methods needed for a testing IBC chain that complies
@@ -50,28 +48,25 @@ type Chain interface {
 	// GetConsensusState retrieves the consensus state for the provided clientID and height.
 	// It will return a success boolean depending on if consensus state exists or not.
 	GetConsensusState(clientID string, height exported.Height) (exported.ConsensusState, bool)
-	// GetValsAtHeight will return the trusted validator set of the chain for the given trusted height. It will return
-	// a success boolean depending on if the validator set exists or not at that height.
-	GetValsAtHeight(trustedHeight int64) (*cmttypes.ValidatorSet, bool)
+	// GetClientLatestHeight returns the latest height for the client state with the given client identifier.
+	GetClientLatestHeight(clientID string) exported.Height
 	// GetAcknowledgement retrieves an acknowledgement for the provided packet. If the
 	// acknowledgement does not exist then testing will fail.
-	GetAcknowledgement(packet exported.PacketI) []byte
+	GetAcknowledgement(packet channeltypes.Packet) []byte
 	// GetPrefix returns the prefix for used by a chain in connection creation
 	GetPrefix() commitmenttypes.MerklePrefix
-	// ConstructUpdateTMClientHeader will construct a valid 07-tendermint Header to update the
-	// light client on the source chain.
-	ConstructUpdateTMClientHeader(counterparty *ibctesting.TestChain, clientID string) (*ibctm.Header, error)
-	// ConstructUpdateTMClientHeaderWithTrustedHeight will construct a valid 07-tendermint Header to update the
-	ConstructUpdateTMClientHeaderWithTrustedHeight(counterparty *ibctesting.TestChain, clientID string, trustedHeight clienttypes.Height) (*ibctm.Header, error) // light client on the source chain.
+	// IBCClientHeader will construct a valid 07-tendermint Header to update the light client
+	// on the counterparty chain. The header and trustedHeight must be provided.
+	IBCClientHeader(header *ibctm.Header, trustedHeight clienttypes.Height) (*ibctm.Header, error)
 	// ExpireClient fast forwards the chain's block time by the provided amount of time which will
 	// expire any clients with a trusting period less than or equal to this amount of time.
 	ExpireClient(amount time.Duration)
 	// CurrentTMClientHeader creates a TM header using the current header parameters
 	// on the chain. The trusted fields in the header are set to nil.
 	CurrentTMClientHeader() *ibctm.Header
-	// GetChannelCapability returns the channel capability for the given portID and channelID.
-	// The capability must exist, otherwise testing will fail.
-	GetChannelCapability(portID, channelID string) *capabilitytypes.Capability
+	// GetChannelCapability is deprecated in ibc-go v10 as capabilities are no longer used in this way.
+	// This method is kept for backwards compatibility but should not be called.
+	// GetChannelCapability(portID, channelID string) *capabilitytypes.Capability
 	// GetTimeoutHeight is a convenience function which returns a IBC packet timeout height
 	// to be used for testing. It returns the current IBC height + 100 blocks
 	GetTimeoutHeight() clienttypes.Height

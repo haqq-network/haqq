@@ -10,10 +10,8 @@ option go_package = "github.com/haqq-network/haqq/x/coinomics/types";
 // GenesisState defines the coinomics module's genesis state.
 message GenesisState {
   // params defines all the parameters of the module.
-  Params params = 1 [
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
   // prev block block ts
   string prev_block_ts = 2 [

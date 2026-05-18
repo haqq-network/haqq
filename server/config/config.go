@@ -17,7 +17,6 @@ import (
 	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/rosetta"
 	"github.com/crypto-org-chain/cronos/memiavl"
-	memiavlcfg "github.com/crypto-org-chain/cronos/store/config"
 
 	// Add this import to set up the proper app.toml migration logic for sdk v0.50
 	_ "github.com/haqq-network/haqq/server/config/migration"
@@ -236,7 +235,12 @@ type RosettaConfig struct {
 
 // MemIAVLConfig defines the configuration for memIAVL.
 type MemIAVLConfig struct {
-	memiavlcfg.MemIAVLConfig
+	Enable             bool `mapstructure:"enable"`
+	ZeroCopy           bool `mapstructure:"zero-copy"`
+	AsyncCommitBuffer  int  `mapstructure:"async-commit-buffer"`
+	SnapshotKeepRecent int  `mapstructure:"snapshot-keep-recent"`
+	SnapshotInterval   int  `mapstructure:"snapshot-interval"`
+	CacheSize          int  `mapstructure:"cache-size"`
 }
 
 // VersionDBConfig defines the configuration for versionDB.
@@ -272,7 +276,7 @@ func AppConfig(denom string) (string, interface{}) {
 		DefaultEVMConfigTemplate +
 		DefaultRosettaConfigTemplate +
 		DefaultVersionDBTemplate +
-		memiavlcfg.DefaultConfigTemplate
+		""
 
 	return customAppTemplate, *customAppConfig
 }
@@ -453,14 +457,14 @@ func DefaultVersionDBConfig() *VersionDBConfig {
 
 // DefaultMemIAVLConfig returns the default MemIAVL configuration
 func DefaultMemIAVLConfig() *MemIAVLConfig {
-	return &MemIAVLConfig{memiavlcfg.MemIAVLConfig{
+	return &MemIAVLConfig{
 		Enable:             DefaultMemIAVLEnable,
 		ZeroCopy:           DefaultZeroCopy,
 		AsyncCommitBuffer:  DefaultAsyncCommitBuffer,
 		SnapshotKeepRecent: DefaultSnapshotKeepRecent,
 		SnapshotInterval:   memiavl.DefaultSnapshotInterval,
-		CacheSize:          memiavlcfg.DefaultCacheSize,
-	}}
+		CacheSize:          0,
+	}
 }
 
 // Validate returns an error if the MemIAVL configuration fields are invalid.

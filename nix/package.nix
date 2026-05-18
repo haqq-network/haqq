@@ -3,6 +3,7 @@
 , buildGoApplication
 , go
 , lib
+, stdenv
 }:
 let
   name = "haqq";
@@ -43,5 +44,24 @@ buildGoApplication rec {
   # tests require writeable $HOME
   preCheck = ''
     export HOME=$(mktemp -d)
+  '';
+
+  # Prevent RPATH from being set to /build/ during CGO linking
+  # Use linker flags appropriate for each platform to prevent RPATH issues
+  CGO_LDFLAGS = 
+    if stdenv.isLinux then "-Wl,--disable-new-dtags"
+    else if stdenv.isDarwin then "-headerpad_max_install_names"
+    else "";
+
+  # Fix RPATH in preFixup (runs before fixupPhase which checks for forbidden references)
+  # Cross-platform: gracefully handle RPATH removal on platforms that support it
+  preFixup = ''
+    for binary in $out/bin/*; do
+      [ -f "$binary" ] || continue
+      # Remove RPATH if patchelf is available (Linux/ELF platforms)
+      if command -v patchelf >/dev/null 2>&1; then
+        patchelf --remove-rpath "$binary" 2>/dev/null || patchelf --set-rpath "" "$binary" 2>/dev/null || true
+      fi
+    done
   '';
 }

@@ -506,7 +506,7 @@ type UnbondingDelegationEntry struct {
 	CompletionTime          int64
 	InitialBalance          *big.Int
 	Balance                 *big.Int
-	UnbondingId             uint64 //nolint
+	UnbondingId             uint64
 	UnbondingOnHoldRefCount int64
 }
 

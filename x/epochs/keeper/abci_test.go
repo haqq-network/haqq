@@ -27,6 +27,7 @@ func TestEpochInfoChangesBeginBlockerAndInitGenesis(t *testing.T) {
 		expInitialEpochStartTime   time.Time
 		malleate                   func()
 	}{
+		// FIXME non-deterministic test
 		{
 			name:                       "pass - initial epoch not started",
 			expCountingStarted:         false,
@@ -40,6 +41,7 @@ func TestEpochInfoChangesBeginBlockerAndInitGenesis(t *testing.T) {
 				require.True(t, found)
 			},
 		},
+		// FIXME non-deterministic test
 		{
 			// We are assuming a block time of 1 second here. The first block is created during
 			// suite initialization so here we are at the second block.
