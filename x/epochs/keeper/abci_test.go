@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/haqq-network/haqq/testutil/integration/haqq/network"
 	"github.com/haqq-network/haqq/x/epochs/types"
 )
 
@@ -27,7 +28,6 @@ func TestEpochInfoChangesBeginBlockerAndInitGenesis(t *testing.T) {
 		expInitialEpochStartTime   time.Time
 		malleate                   func()
 	}{
-		// FIXME non-deterministic test
 		{
 			name:                       "pass - initial epoch not started",
 			expCountingStarted:         false,
@@ -41,7 +41,6 @@ func TestEpochInfoChangesBeginBlockerAndInitGenesis(t *testing.T) {
 				require.True(t, found)
 			},
 		},
-		// FIXME non-deterministic test
 		{
 			// We are assuming a block time of 1 second here. The first block is created during
 			// suite initialization so here we are at the second block.
@@ -161,7 +160,7 @@ func TestEpochInfoChangesBeginBlockerAndInitGenesis(t *testing.T) {
 					EpochCountingStarted:    false,
 				},
 			}
-			suite = SetupTest(epochsInfo)
+			suite = SetupTest(epochsInfo, network.WithStartTime(now))
 
 			// Check that custom genesis worked.
 			epochInfo, found = suite.network.App.EpochsKeeper.GetEpochInfo(suite.network.GetContext(), monthIdentifier)

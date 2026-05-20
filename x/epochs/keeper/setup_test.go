@@ -25,8 +25,9 @@ type KeeperTestSuite struct {
 }
 
 // SetupTest is the setup function for epoch module tests. If epochsInfo is provided empty
-// the default genesis for the epoch module is used.
-func SetupTest(epochsInfo []types.EpochInfo) *KeeperTestSuite {
+// the default genesis for the epoch module is used. Extra network options can be passed
+// to customize the underlying UnitTestNetwork (e.g. network.WithStartTime).
+func SetupTest(epochsInfo []types.EpochInfo, opts ...network.ConfigOption) *KeeperTestSuite {
 	keys := keyring.New(1)
 
 	customGenesis := network.CustomGenesisState{}
@@ -38,10 +39,11 @@ func SetupTest(epochsInfo []types.EpochInfo) *KeeperTestSuite {
 
 	customGenesis[types.ModuleName] = epochsGenesis
 
-	nw := network.NewUnitTestNetwork(
+	nwOpts := append([]network.ConfigOption{
 		network.WithPreFundedAccounts(keys.GetAllAccAddrs()...),
 		network.WithCustomGenesis(customGenesis),
-	)
+	}, opts...)
+	nw := network.NewUnitTestNetwork(nwOpts...)
 
 	gh := grpc.NewIntegrationHandler(nw)
 
