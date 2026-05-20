@@ -114,8 +114,9 @@ func (m *MsgMintHaqqResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgMintHaqqResponse proto.InternalMessageInfo
 
-// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
-// trough whitelisted application submitted earlier via smart-contract
+// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for
+// aISLM coins trough whitelisted application submitted earlier via
+// smart-contract
 type MsgMintHaqqByApplication struct {
 	// from_address is the address that will send the aISLM coins
 	FromAddress string `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
@@ -262,8 +263,9 @@ const _ = grpc.SupportPackageIsVersion4
 type MsgClient interface {
 	// MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
 	MintHaqq(ctx context.Context, in *MsgMintHaqq, opts ...grpc.CallOption) (*MsgMintHaqqResponse, error)
-	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
-	// trough whitelisted application submitted earlier via smart-contract
+	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for
+	// aISLM coins trough whitelisted application submitted earlier via
+	// smart-contract
 	MintHaqqByApplication(ctx context.Context, in *MsgMintHaqqByApplication, opts ...grpc.CallOption) (*MsgMintHaqqByApplicationResponse, error)
 }
 
@@ -297,8 +299,9 @@ func (c *msgClient) MintHaqqByApplication(ctx context.Context, in *MsgMintHaqqBy
 type MsgServer interface {
 	// MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
 	MintHaqq(context.Context, *MsgMintHaqq) (*MsgMintHaqqResponse, error)
-	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
-	// trough whitelisted application submitted earlier via smart-contract
+	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for
+	// aISLM coins trough whitelisted application submitted earlier via
+	// smart-contract
 	MintHaqqByApplication(context.Context, *MsgMintHaqqByApplication) (*MsgMintHaqqByApplicationResponse, error)
 }
 

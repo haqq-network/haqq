@@ -14,7 +14,8 @@ enum SourceOfFunds {
   // SOURCE_OF_FUNDS_BANK defines a bank balance as a source of funds option
   SOURCE_OF_FUNDS_BANK = 0;
 
-  // SOURCE_OF_FUNDS_UCDAO defines a UC DAO module balance as a source of funds option
+  // SOURCE_OF_FUNDS_UCDAO defines a UC DAO module balance as a source of funds
+  // option
   SOURCE_OF_FUNDS_UCDAO = 1;
 }
 
@@ -32,16 +33,13 @@ message BurnApplication {
   SourceOfFunds source = 4;
 
   // burn_amount is an amount to be burned by this BurnApplication
-  cosmos.base.v1beta1.Coin burn_amount = 5 [
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
+  cosmos.base.v1beta1.Coin burn_amount = 5
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
-  // burned_before_amount is a sum of burn_amount's of all previous BurnApplication's
-  cosmos.base.v1beta1.Coin burned_before_amount = 6 [
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
+  // burned_before_amount is a sum of burn_amount's of all previous
+  // BurnApplication's
+  cosmos.base.v1beta1.Coin burned_before_amount = 6
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
   // is_executed is a flag of application execution status
   bool is_executed = 7;
@@ -59,14 +57,16 @@ message Params {
   // enabled defines whether the module is enabled
   bool enabled = 1;
 
-  // min_mint_per_tx defines the minimum amount that can be minted per transaction
+  // min_mint_per_tx defines the minimum amount that can be minted per
+  // transaction
   string min_mint_per_tx = 2 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
 
-  // max_mint_per_tx defines the maximum amount that can be minted per transaction
+  // max_mint_per_tx defines the maximum amount that can be minted per
+  // transaction
   string max_mint_per_tx = 3 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,

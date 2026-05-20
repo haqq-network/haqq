@@ -1000,15 +1000,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MintHaqqAuthorization allows the grantee to spend up to spend_limit coins from
-// the granter's account for minting haqq.
+// MintHaqqAuthorization allows the grantee to spend up to spend_limit coins
+// from the granter's account for minting haqq.
 type MintHaqqAuthorization struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// spend_limit specifies the maximum amount of tokens can be spent to mint haqq tokens. If it is
-	// empty, there is no spend limit and any amount of coins can be spent.
+	// spend_limit specifies the maximum amount of tokens can be spent to mint
+	// haqq tokens. If it is empty, there is no spend limit and any amount of
+	// coins can be spent.
 	SpendLimit *v1beta1.Coin `protobuf:"bytes,1,opt,name=spend_limit,json=spendLimit,proto3" json:"spend_limit,omitempty"`
 }
 
@@ -1039,9 +1040,9 @@ func (x *MintHaqqAuthorization) GetSpendLimit() *v1beta1.Coin {
 	return nil
 }
 
-// MintHaqqByApplicationIDAuthorization allows the grantee to execute application sent by
-// the granter's account earlier.
-// NOTE: Spent limit is a whole amount of application.
+// MintHaqqByApplicationIDAuthorization allows the grantee to execute
+// application sent by the granter's account earlier. NOTE: Spent limit is a
+// whole amount of application.
 type MintHaqqByApplicationIDAuthorization struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

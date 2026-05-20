@@ -5885,7 +5885,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// QueryTotalBurnedRequest is the request type for the Query/TotalBurned RPC method.
+// QueryTotalBurnedRequest is the request type for the Query/TotalBurned RPC
+// method.
 type QueryTotalBurnedRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5912,7 +5913,8 @@ func (*QueryTotalBurnedRequest) Descriptor() ([]byte, []int) {
 	return file_haqq_ethiq_v1_query_proto_rawDescGZIP(), []int{0}
 }
 
-// QueryTotalBurnedResponse is the response type for the Query/TotalBurned RPC method.
+// QueryTotalBurnedResponse is the response type for the Query/TotalBurned RPC
+// method.
 type QueryTotalBurnedResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5920,7 +5922,8 @@ type QueryTotalBurnedResponse struct {
 
 	// total_burned is the total amount of burned coins
 	TotalBurned *v1beta1.Coin `protobuf:"bytes,1,opt,name=total_burned,json=totalBurned,proto3" json:"total_burned,omitempty"`
-	// git reset --soft HEAD~1 is the total amount of coins burned from applications
+	// git reset --soft HEAD~1 is the total amount of coins burned from
+	// applications
 	TotalBurnedFromApplications *v1beta1.Coin `protobuf:"bytes,2,opt,name=total_burned_from_applications,json=totalBurnedFromApplications,proto3" json:"total_burned_from_applications,omitempty"`
 }
 
@@ -5965,7 +5968,8 @@ type QueryCalculateRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// islm_amount is the amount of aISLM coins to burn in exchange for aHAQQ
-	// using string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)
+	// using string as grpc-gateway doesn't support custom types (eg.
+	// cosmossdk.io/math.Int)
 	IslmAmount string `protobuf:"bytes,1,opt,name=islm_amount,json=islmAmount,proto3" json:"islm_amount,omitempty"`
 }
 
@@ -5996,7 +6000,8 @@ func (x *QueryCalculateRequest) GetIslmAmount() string {
 	return ""
 }
 
-// QueryCalculateResponse is the response type for the Query/Calculate RPC method.
+// QueryCalculateResponse is the response type for the Query/Calculate RPC
+// method.
 type QueryCalculateResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6060,14 +6065,16 @@ func (x *QueryCalculateResponse) GetAveragePrice() string {
 	return ""
 }
 
-// QueryCalculateForApplicationRequest is the request type for the Query/CalculateForApplication RPC method.
+// QueryCalculateForApplicationRequest is the request type for the
+// Query/CalculateForApplication RPC method.
 type QueryCalculateForApplicationRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// application_id is the unique ID of BurnApplication containing the amount of aISLM coins to burn in exchange for aHAQQ.
-	// using string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)
+	// application_id is the unique ID of BurnApplication containing the amount of
+	// aISLM coins to burn in exchange for aHAQQ. using string as grpc-gateway
+	// doesn't support custom types (eg. cosmossdk.io/math.Int)
 	ApplicationId uint64 `protobuf:"varint,1,opt,name=application_id,json=applicationId,proto3" json:"application_id,omitempty"`
 }
 
@@ -6098,7 +6105,8 @@ func (x *QueryCalculateForApplicationRequest) GetApplicationId() uint64 {
 	return 0
 }
 
-// QueryCalculateForApplicationResponse is the response type for the Query/CalculateForApplication RPC method.
+// QueryCalculateForApplicationResponse is the response type for the
+// Query/CalculateForApplication RPC method.
 type QueryCalculateForApplicationResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6207,7 +6215,8 @@ func (x *QueryGetApplicationsRequest) GetPagination() *v1beta11.PageRequest {
 	return nil
 }
 
-// QueryGetApplicationsResponse is the response type for the Query/GetApplications RPC method.
+// QueryGetApplicationsResponse is the response type for the
+// Query/GetApplications RPC method.
 type QueryGetApplicationsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6298,7 +6307,8 @@ func (x *QueryGetSendersApplicationsRequest) GetPagination() *v1beta11.PageReque
 	return nil
 }
 
-// QueryGetSendersApplicationsResponse is the response type for the Query/GetSendersApplications RPC method.
+// QueryGetSendersApplicationsResponse is the response type for the
+// Query/GetSendersApplications RPC method.
 type QueryGetSendersApplicationsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6371,7 +6381,8 @@ func (*QueryParamsRequest) Descriptor() ([]byte, []int) {
 	return file_haqq_ethiq_v1_query_proto_rawDescGZIP(), []int{10}
 }
 
-// QueryParamsResponse defines the response type for querying x/ethiq parameters.
+// QueryParamsResponse defines the response type for querying x/ethiq
+// parameters.
 type QueryParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

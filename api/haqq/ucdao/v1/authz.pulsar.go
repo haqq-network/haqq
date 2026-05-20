@@ -899,15 +899,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ConvertToHaqqAuthorization allows the grantee to spend up to spend_limit coins from
-// the granter's account for minting haqq.
+// ConvertToHaqqAuthorization allows the grantee to spend up to spend_limit
+// coins from the granter's account for minting haqq.
 type ConvertToHaqqAuthorization struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// spend_limit specifies the maximum amount of tokens can be spent to mint haqq tokens. If it is
-	// empty, there is no spend limit and any amount of coins can be spent.
+	// spend_limit specifies the maximum amount of tokens can be spent to mint
+	// haqq tokens. If it is empty, there is no spend limit and any amount of
+	// coins can be spent.
 	SpendLimit *v1beta1.Coin `protobuf:"bytes,1,opt,name=spend_limit,json=spendLimit,proto3" json:"spend_limit,omitempty"`
 }
 
@@ -938,15 +939,17 @@ func (x *ConvertToHaqqAuthorization) GetSpendLimit() *v1beta1.Coin {
 	return nil
 }
 
-// TransferOwnershipAuthorization allows the grantee to transfer up to spend_limit coins from
-// the granter's escrow account to grantee's escrow account within ucdao internal balances.
+// TransferOwnershipAuthorization allows the grantee to transfer up to
+// spend_limit coins from the granter's escrow account to grantee's escrow
+// account within ucdao internal balances.
 type TransferOwnershipAuthorization struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// spend_limit specifies the maximum amount of tokens can be spent to mint haqq tokens. If it is
-	// empty, there is no spend limit and any amount of coins can be spent.
+	// spend_limit specifies the maximum amount of tokens can be spent to mint
+	// haqq tokens. If it is empty, there is no spend limit and any amount of
+	// coins can be spent.
 	SpendLimit *v1beta1.Coin `protobuf:"bytes,1,opt,name=spend_limit,json=spendLimit,proto3" json:"spend_limit,omitempty"`
 }
 

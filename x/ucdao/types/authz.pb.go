@@ -26,11 +26,12 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ConvertToHaqqAuthorization allows the grantee to spend up to spend_limit coins from
-// the granter's account for minting haqq.
+// ConvertToHaqqAuthorization allows the grantee to spend up to spend_limit
+// coins from the granter's account for minting haqq.
 type ConvertToHaqqAuthorization struct {
-	// spend_limit specifies the maximum amount of tokens can be spent to mint haqq tokens. If it is
-	// empty, there is no spend limit and any amount of coins can be spent.
+	// spend_limit specifies the maximum amount of tokens can be spent to mint
+	// haqq tokens. If it is empty, there is no spend limit and any amount of
+	// coins can be spent.
 	SpendLimit *types.Coin `protobuf:"bytes,1,opt,name=spend_limit,json=spendLimit,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coin" json:"spend_limit,omitempty"`
 }
 
@@ -74,11 +75,13 @@ func (m *ConvertToHaqqAuthorization) GetSpendLimit() *types.Coin {
 	return nil
 }
 
-// TransferOwnershipAuthorization allows the grantee to transfer up to spend_limit coins from
-// the granter's escrow account to grantee's escrow account within ucdao internal balances.
+// TransferOwnershipAuthorization allows the grantee to transfer up to
+// spend_limit coins from the granter's escrow account to grantee's escrow
+// account within ucdao internal balances.
 type TransferOwnershipAuthorization struct {
-	// spend_limit specifies the maximum amount of tokens can be spent to mint haqq tokens. If it is
-	// empty, there is no spend limit and any amount of coins can be spent.
+	// spend_limit specifies the maximum amount of tokens can be spent to mint
+	// haqq tokens. If it is empty, there is no spend limit and any amount of
+	// coins can be spent.
 	SpendLimit *types.Coin `protobuf:"bytes,1,opt,name=spend_limit,json=spendLimit,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coin" json:"spend_limit,omitempty"`
 }
 

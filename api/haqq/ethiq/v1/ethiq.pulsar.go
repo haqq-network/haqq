@@ -1483,7 +1483,8 @@ type SourceOfFunds int32
 const (
 	// SOURCE_OF_FUNDS_BANK defines a bank balance as a source of funds option
 	SourceOfFunds_SOURCE_OF_FUNDS_BANK SourceOfFunds = 0
-	// SOURCE_OF_FUNDS_UCDAO defines a UC DAO module balance as a source of funds option
+	// SOURCE_OF_FUNDS_UCDAO defines a UC DAO module balance as a source of funds
+	// option
 	SourceOfFunds_SOURCE_OF_FUNDS_UCDAO SourceOfFunds = 1
 )
 
@@ -1541,7 +1542,8 @@ type BurnApplication struct {
 	Source SourceOfFunds `protobuf:"varint,4,opt,name=source,proto3,enum=haqq.ethiq.v1.SourceOfFunds" json:"source,omitempty"`
 	// burn_amount is an amount to be burned by this BurnApplication
 	BurnAmount *v1beta1.Coin `protobuf:"bytes,5,opt,name=burn_amount,json=burnAmount,proto3" json:"burn_amount,omitempty"`
-	// burned_before_amount is a sum of burn_amount's of all previous BurnApplication's
+	// burned_before_amount is a sum of burn_amount's of all previous
+	// BurnApplication's
 	BurnedBeforeAmount *v1beta1.Coin `protobuf:"bytes,6,opt,name=burned_before_amount,json=burnedBeforeAmount,proto3" json:"burned_before_amount,omitempty"`
 	// is_executed is a flag of application execution status
 	IsExecuted bool `protobuf:"varint,7,opt,name=is_executed,json=isExecuted,proto3" json:"is_executed,omitempty"`
@@ -1633,9 +1635,11 @@ type Params struct {
 
 	// enabled defines whether the module is enabled
 	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	// min_mint_per_tx defines the minimum amount that can be minted per transaction
+	// min_mint_per_tx defines the minimum amount that can be minted per
+	// transaction
 	MinMintPerTx string `protobuf:"bytes,2,opt,name=min_mint_per_tx,json=minMintPerTx,proto3" json:"min_mint_per_tx,omitempty"`
-	// max_mint_per_tx defines the maximum amount that can be minted per transaction
+	// max_mint_per_tx defines the maximum amount that can be minted per
+	// transaction
 	MaxMintPerTx string `protobuf:"bytes,3,opt,name=max_mint_per_tx,json=maxMintPerTx,proto3" json:"max_mint_per_tx,omitempty"`
 	// max_supply defines the maximum amount that can be minted in total
 	MaxSupply string `protobuf:"bytes,4,opt,name=max_supply,json=maxSupply,proto3" json:"max_supply,omitempty"`

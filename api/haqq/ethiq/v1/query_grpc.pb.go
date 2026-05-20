@@ -33,13 +33,16 @@ const (
 type QueryClient interface {
 	// TotalBurned returns the total amount of burned coins
 	TotalBurned(ctx context.Context, in *QueryTotalBurnedRequest, opts ...grpc.CallOption) (*QueryTotalBurnedResponse, error)
-	// Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount
+	// Calculate returns the estimated amount of aHAQQ coins to be minted for
+	// given aISLM amount
 	Calculate(ctx context.Context, in *QueryCalculateRequest, opts ...grpc.CallOption) (*QueryCalculateResponse, error)
-	// CalculateForApplication returns the estimated amount of aHAQQ coins to be minted for given BurnApplication ID.
+	// CalculateForApplication returns the estimated amount of aHAQQ coins to be
+	// minted for given BurnApplication ID.
 	CalculateForApplication(ctx context.Context, in *QueryCalculateForApplicationRequest, opts ...grpc.CallOption) (*QueryCalculateForApplicationResponse, error)
 	// GetApplications returns the paginated list of all registered applications.
 	GetApplications(ctx context.Context, in *QueryGetApplicationsRequest, opts ...grpc.CallOption) (*QueryGetApplicationsResponse, error)
-	// GetSendersApplications returns the paginated list of all applications registered for a given sender_address.
+	// GetSendersApplications returns the paginated list of all applications
+	// registered for a given sender_address.
 	GetSendersApplications(ctx context.Context, in *QueryGetSendersApplicationsRequest, opts ...grpc.CallOption) (*QueryGetSendersApplicationsResponse, error)
 	// Params queries the parameters of x/ethiq module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
@@ -113,13 +116,16 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 type QueryServer interface {
 	// TotalBurned returns the total amount of burned coins
 	TotalBurned(context.Context, *QueryTotalBurnedRequest) (*QueryTotalBurnedResponse, error)
-	// Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount
+	// Calculate returns the estimated amount of aHAQQ coins to be minted for
+	// given aISLM amount
 	Calculate(context.Context, *QueryCalculateRequest) (*QueryCalculateResponse, error)
-	// CalculateForApplication returns the estimated amount of aHAQQ coins to be minted for given BurnApplication ID.
+	// CalculateForApplication returns the estimated amount of aHAQQ coins to be
+	// minted for given BurnApplication ID.
 	CalculateForApplication(context.Context, *QueryCalculateForApplicationRequest) (*QueryCalculateForApplicationResponse, error)
 	// GetApplications returns the paginated list of all registered applications.
 	GetApplications(context.Context, *QueryGetApplicationsRequest) (*QueryGetApplicationsResponse, error)
-	// GetSendersApplications returns the paginated list of all applications registered for a given sender_address.
+	// GetSendersApplications returns the paginated list of all applications
+	// registered for a given sender_address.
 	GetSendersApplications(context.Context, *QueryGetSendersApplicationsRequest) (*QueryGetSendersApplicationsResponse, error)
 	// Params queries the parameters of x/ethiq module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)

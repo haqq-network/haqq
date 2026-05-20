@@ -29,8 +29,9 @@ const (
 type MsgClient interface {
 	// MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
 	MintHaqq(ctx context.Context, in *MsgMintHaqq, opts ...grpc.CallOption) (*MsgMintHaqqResponse, error)
-	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
-	// trough whitelisted application submitted earlier via smart-contract
+	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for
+	// aISLM coins trough whitelisted application submitted earlier via
+	// smart-contract
 	MintHaqqByApplication(ctx context.Context, in *MsgMintHaqqByApplication, opts ...grpc.CallOption) (*MsgMintHaqqByApplicationResponse, error)
 }
 
@@ -66,8 +67,9 @@ func (c *msgClient) MintHaqqByApplication(ctx context.Context, in *MsgMintHaqqBy
 type MsgServer interface {
 	// MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
 	MintHaqq(context.Context, *MsgMintHaqq) (*MsgMintHaqqResponse, error)
-	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
-	// trough whitelisted application submitted earlier via smart-contract
+	// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for
+	// aISLM coins trough whitelisted application submitted earlier via
+	// smart-contract
 	MintHaqqByApplication(context.Context, *MsgMintHaqqByApplication) (*MsgMintHaqqByApplicationResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }

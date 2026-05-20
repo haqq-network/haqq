@@ -33,9 +33,9 @@ service Msg {
   rpc TransferOwnershipWithAmount(MsgTransferOwnershipWithAmount)
       returns (MsgTransferOwnershipWithAmountResponse);
 
-  // ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to aHAQQ tokens.
-  rpc ConvertToHaqq(MsgConvertToHaqq)
-      returns (MsgConvertToHaqqResponse);
+  // ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to
+  // aHAQQ tokens.
+  rpc ConvertToHaqq(MsgConvertToHaqq) returns (MsgConvertToHaqqResponse);
 }
 
 // MsgFund allows an account to directly fund the ucdao.
@@ -144,7 +144,8 @@ message MsgTransferOwnershipWithAmount {
   ];
 }
 
-// MsgTransferOwnershipWithAmountResponse defines the Msg/TransferOwnershipWithAmount response type.
+// MsgTransferOwnershipWithAmountResponse defines the
+// Msg/TransferOwnershipWithAmount response type.
 message MsgTransferOwnershipWithAmountResponse {}
 
 // MsgConvertToHaqq allows a holder to convert aISLM tokens to aHAQQ tokens.

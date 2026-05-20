@@ -26,11 +26,12 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MintHaqqAuthorization allows the grantee to spend up to spend_limit coins from
-// the granter's account for minting haqq.
+// MintHaqqAuthorization allows the grantee to spend up to spend_limit coins
+// from the granter's account for minting haqq.
 type MintHaqqAuthorization struct {
-	// spend_limit specifies the maximum amount of tokens can be spent to mint haqq tokens. If it is
-	// empty, there is no spend limit and any amount of coins can be spent.
+	// spend_limit specifies the maximum amount of tokens can be spent to mint
+	// haqq tokens. If it is empty, there is no spend limit and any amount of
+	// coins can be spent.
 	SpendLimit *types.Coin `protobuf:"bytes,1,opt,name=spend_limit,json=spendLimit,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coin" json:"spend_limit,omitempty"`
 }
 
@@ -74,9 +75,9 @@ func (m *MintHaqqAuthorization) GetSpendLimit() *types.Coin {
 	return nil
 }
 
-// MintHaqqByApplicationIDAuthorization allows the grantee to execute application sent by
-// the granter's account earlier.
-// NOTE: Spent limit is a whole amount of application.
+// MintHaqqByApplicationIDAuthorization allows the grantee to execute
+// application sent by the granter's account earlier. NOTE: Spent limit is a
+// whole amount of application.
 type MintHaqqByApplicationIDAuthorization struct {
 	// applications list of allowed ids, an empty list permits any application id
 	ApplicationsList []uint64 `protobuf:"varint,1,rep,packed,name=applications_list,json=applicationsList,proto3" json:"applications_list,omitempty"`

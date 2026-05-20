@@ -51,7 +51,8 @@ type QueryClient interface {
 	Holders(ctx context.Context, in *QueryHoldersRequest, opts ...grpc.CallOption) (*QueryHoldersResponse, error)
 	// Params queries the parameters of x/ucdao module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// EscrowAddress queries the escrow address for a given standard wallet address.
+	// EscrowAddress queries the escrow address for a given standard wallet
+	// address.
 	EscrowAddress(ctx context.Context, in *QueryEscrowAddressRequest, opts ...grpc.CallOption) (*QueryEscrowAddressResponse, error)
 }
 
@@ -141,7 +142,8 @@ type QueryServer interface {
 	Holders(context.Context, *QueryHoldersRequest) (*QueryHoldersResponse, error)
 	// Params queries the parameters of x/ucdao module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// EscrowAddress queries the escrow address for a given standard wallet address.
+	// EscrowAddress queries the escrow address for a given standard wallet
+	// address.
 	EscrowAddress(context.Context, *QueryEscrowAddressRequest) (*QueryEscrowAddressResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

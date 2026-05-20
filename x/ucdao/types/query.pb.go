@@ -499,7 +499,8 @@ func (m *QueryHoldersResponse) GetPagination() *query.PageResponse {
 	return nil
 }
 
-// QueryEscrowAddressRequest is the request type for the Query/EscrowAddress RPC method.
+// QueryEscrowAddressRequest is the request type for the Query/EscrowAddress RPC
+// method.
 type QueryEscrowAddressRequest struct {
 	// address is the standard wallet address to query escrow address for.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
@@ -538,7 +539,8 @@ func (m *QueryEscrowAddressRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryEscrowAddressRequest proto.InternalMessageInfo
 
-// QueryEscrowAddressResponse is the response type for the Query/EscrowAddress RPC method.
+// QueryEscrowAddressResponse is the response type for the Query/EscrowAddress
+// RPC method.
 type QueryEscrowAddressResponse struct {
 	// escrow_address is the escrow address for the given standard wallet address.
 	EscrowAddress string `protobuf:"bytes,1,opt,name=escrow_address,json=escrowAddress,proto3" json:"escrow_address,omitempty"`
@@ -690,7 +692,8 @@ type QueryClient interface {
 	Holders(ctx context.Context, in *QueryHoldersRequest, opts ...grpc.CallOption) (*QueryHoldersResponse, error)
 	// Params queries the parameters of x/ucdao module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// EscrowAddress queries the escrow address for a given standard wallet address.
+	// EscrowAddress queries the escrow address for a given standard wallet
+	// address.
 	EscrowAddress(ctx context.Context, in *QueryEscrowAddressRequest, opts ...grpc.CallOption) (*QueryEscrowAddressResponse, error)
 }
 
@@ -778,7 +781,8 @@ type QueryServer interface {
 	Holders(context.Context, *QueryHoldersRequest) (*QueryHoldersResponse, error)
 	// Params queries the parameters of x/ucdao module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// EscrowAddress queries the escrow address for a given standard wallet address.
+	// EscrowAddress queries the escrow address for a given standard wallet
+	// address.
 	EscrowAddress(context.Context, *QueryEscrowAddressRequest) (*QueryEscrowAddressResponse, error)
 }
 

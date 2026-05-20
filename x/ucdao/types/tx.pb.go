@@ -361,7 +361,8 @@ func (m *MsgTransferOwnershipWithAmount) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgTransferOwnershipWithAmount proto.InternalMessageInfo
 
-// MsgTransferOwnershipWithAmountResponse defines the Msg/TransferOwnershipWithAmount response type.
+// MsgTransferOwnershipWithAmountResponse defines the
+// Msg/TransferOwnershipWithAmount response type.
 type MsgTransferOwnershipWithAmountResponse struct {
 }
 
@@ -584,7 +585,8 @@ type MsgClient interface {
 	// transfer the ownership of shares to another account with certain amount of
 	// coins.
 	TransferOwnershipWithAmount(ctx context.Context, in *MsgTransferOwnershipWithAmount, opts ...grpc.CallOption) (*MsgTransferOwnershipWithAmountResponse, error)
-	// ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to aHAQQ tokens.
+	// ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to
+	// aHAQQ tokens.
 	ConvertToHaqq(ctx context.Context, in *MsgConvertToHaqq, opts ...grpc.CallOption) (*MsgConvertToHaqqResponse, error)
 }
 
@@ -655,7 +657,8 @@ type MsgServer interface {
 	// transfer the ownership of shares to another account with certain amount of
 	// coins.
 	TransferOwnershipWithAmount(context.Context, *MsgTransferOwnershipWithAmount) (*MsgTransferOwnershipWithAmountResponse, error)
-	// ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to aHAQQ tokens.
+	// ConvertToHaqq defines a method to allow a holder to convert aISLM tokens to
+	// aHAQQ tokens.
 	ConvertToHaqq(context.Context, *MsgConvertToHaqq) (*MsgConvertToHaqqResponse, error)
 }
 

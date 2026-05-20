@@ -5682,7 +5682,8 @@ func (x *MsgTransferOwnershipWithAmount) GetAmount() []*v1beta1.Coin {
 	return nil
 }
 
-// MsgTransferOwnershipWithAmountResponse defines the Msg/TransferOwnershipWithAmount response type.
+// MsgTransferOwnershipWithAmountResponse defines the
+// Msg/TransferOwnershipWithAmount response type.
 type MsgTransferOwnershipWithAmountResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

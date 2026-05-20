@@ -2041,8 +2041,9 @@ func (x *MsgMintHaqqResponse) GetHaqqAmount() string {
 	return ""
 }
 
-// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
-// trough whitelisted application submitted earlier via smart-contract
+// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for
+// aISLM coins trough whitelisted application submitted earlier via
+// smart-contract
 type MsgMintHaqqByApplication struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

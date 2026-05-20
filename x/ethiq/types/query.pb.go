@@ -34,7 +34,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// QueryTotalBurnedRequest is the request type for the Query/TotalBurned RPC method.
+// QueryTotalBurnedRequest is the request type for the Query/TotalBurned RPC
+// method.
 type QueryTotalBurnedRequest struct {
 }
 
@@ -71,11 +72,13 @@ func (m *QueryTotalBurnedRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryTotalBurnedRequest proto.InternalMessageInfo
 
-// QueryTotalBurnedResponse is the response type for the Query/TotalBurned RPC method.
+// QueryTotalBurnedResponse is the response type for the Query/TotalBurned RPC
+// method.
 type QueryTotalBurnedResponse struct {
 	// total_burned is the total amount of burned coins
 	TotalBurned types.Coin `protobuf:"bytes,1,opt,name=total_burned,json=totalBurned,proto3" json:"total_burned"`
-	// git reset --soft HEAD~1 is the total amount of coins burned from applications
+	// git reset --soft HEAD~1 is the total amount of coins burned from
+	// applications
 	TotalBurnedFromApplications types.Coin `protobuf:"bytes,2,opt,name=total_burned_from_applications,json=totalBurnedFromApplications,proto3" json:"total_burned_from_applications"`
 }
 
@@ -129,7 +132,8 @@ func (m *QueryTotalBurnedResponse) GetTotalBurnedFromApplications() types.Coin {
 // QueryCalculateRequest is the request type for the Query/Calculate RPC method.
 type QueryCalculateRequest struct {
 	// islm_amount is the amount of aISLM coins to burn in exchange for aHAQQ
-	// using string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)
+	// using string as grpc-gateway doesn't support custom types (eg.
+	// cosmossdk.io/math.Int)
 	IslmAmount string `protobuf:"bytes,1,opt,name=islm_amount,json=islmAmount,proto3" json:"islm_amount,omitempty"`
 }
 
@@ -166,7 +170,8 @@ func (m *QueryCalculateRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCalculateRequest proto.InternalMessageInfo
 
-// QueryCalculateResponse is the response type for the Query/Calculate RPC method.
+// QueryCalculateResponse is the response type for the Query/Calculate RPC
+// method.
 type QueryCalculateResponse struct {
 	// estimated_haqq_amount is the amount of aHAQQ coins to be minted
 	EstimatedHaqqAmount cosmossdk_io_math.Int `protobuf:"bytes,1,opt,name=estimated_haqq_amount,json=estimatedHaqqAmount,proto3,customtype=cosmossdk.io/math.Int" json:"estimated_haqq_amount"`
@@ -211,10 +216,12 @@ func (m *QueryCalculateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCalculateResponse proto.InternalMessageInfo
 
-// QueryCalculateForApplicationRequest is the request type for the Query/CalculateForApplication RPC method.
+// QueryCalculateForApplicationRequest is the request type for the
+// Query/CalculateForApplication RPC method.
 type QueryCalculateForApplicationRequest struct {
-	// application_id is the unique ID of BurnApplication containing the amount of aISLM coins to burn in exchange for aHAQQ.
-	// using string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)
+	// application_id is the unique ID of BurnApplication containing the amount of
+	// aISLM coins to burn in exchange for aHAQQ. using string as grpc-gateway
+	// doesn't support custom types (eg. cosmossdk.io/math.Int)
 	ApplicationId uint64 `protobuf:"varint,1,opt,name=application_id,json=applicationId,proto3" json:"application_id,omitempty"`
 }
 
@@ -251,7 +258,8 @@ func (m *QueryCalculateForApplicationRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCalculateForApplicationRequest proto.InternalMessageInfo
 
-// QueryCalculateForApplicationResponse is the response type for the Query/CalculateForApplication RPC method.
+// QueryCalculateForApplicationResponse is the response type for the
+// Query/CalculateForApplication RPC method.
 type QueryCalculateForApplicationResponse struct {
 	// estimated_haqq_amount is the amount of aHAQQ coins to be minted
 	EstimatedHaqqAmount cosmossdk_io_math.Int `protobuf:"bytes,1,opt,name=estimated_haqq_amount,json=estimatedHaqqAmount,proto3,customtype=cosmossdk.io/math.Int" json:"estimated_haqq_amount"`
@@ -343,7 +351,8 @@ func (m *QueryGetApplicationsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryGetApplicationsRequest proto.InternalMessageInfo
 
-// QueryGetApplicationsResponse is the response type for the Query/GetApplications RPC method.
+// QueryGetApplicationsResponse is the response type for the
+// Query/GetApplications RPC method.
 type QueryGetApplicationsResponse struct {
 	// applications is the list of all registered applications.
 	Applications []BurnApplication `protobuf:"bytes,1,rep,name=applications,proto3" json:"applications"`
@@ -438,7 +447,8 @@ func (m *QueryGetSendersApplicationsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryGetSendersApplicationsRequest proto.InternalMessageInfo
 
-// QueryGetSendersApplicationsResponse is the response type for the Query/GetSendersApplications RPC method.
+// QueryGetSendersApplicationsResponse is the response type for the
+// Query/GetSendersApplications RPC method.
 type QueryGetSendersApplicationsResponse struct {
 	// applications is the list of all applications registered for sender.
 	Applications []BurnApplication `protobuf:"bytes,1,rep,name=applications,proto3" json:"applications"`
@@ -530,7 +540,8 @@ func (m *QueryParamsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryParamsRequest proto.InternalMessageInfo
 
-// QueryParamsResponse defines the response type for querying x/ethiq parameters.
+// QueryParamsResponse defines the response type for querying x/ethiq
+// parameters.
 type QueryParamsResponse struct {
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 }
@@ -676,13 +687,16 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// TotalBurned returns the total amount of burned coins
 	TotalBurned(ctx context.Context, in *QueryTotalBurnedRequest, opts ...grpc.CallOption) (*QueryTotalBurnedResponse, error)
-	// Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount
+	// Calculate returns the estimated amount of aHAQQ coins to be minted for
+	// given aISLM amount
 	Calculate(ctx context.Context, in *QueryCalculateRequest, opts ...grpc.CallOption) (*QueryCalculateResponse, error)
-	// CalculateForApplication returns the estimated amount of aHAQQ coins to be minted for given BurnApplication ID.
+	// CalculateForApplication returns the estimated amount of aHAQQ coins to be
+	// minted for given BurnApplication ID.
 	CalculateForApplication(ctx context.Context, in *QueryCalculateForApplicationRequest, opts ...grpc.CallOption) (*QueryCalculateForApplicationResponse, error)
 	// GetApplications returns the paginated list of all registered applications.
 	GetApplications(ctx context.Context, in *QueryGetApplicationsRequest, opts ...grpc.CallOption) (*QueryGetApplicationsResponse, error)
-	// GetSendersApplications returns the paginated list of all applications registered for a given sender_address.
+	// GetSendersApplications returns the paginated list of all applications
+	// registered for a given sender_address.
 	GetSendersApplications(ctx context.Context, in *QueryGetSendersApplicationsRequest, opts ...grpc.CallOption) (*QueryGetSendersApplicationsResponse, error)
 	// Params queries the parameters of x/ethiq module.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
@@ -754,13 +768,16 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 type QueryServer interface {
 	// TotalBurned returns the total amount of burned coins
 	TotalBurned(context.Context, *QueryTotalBurnedRequest) (*QueryTotalBurnedResponse, error)
-	// Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount
+	// Calculate returns the estimated amount of aHAQQ coins to be minted for
+	// given aISLM amount
 	Calculate(context.Context, *QueryCalculateRequest) (*QueryCalculateResponse, error)
-	// CalculateForApplication returns the estimated amount of aHAQQ coins to be minted for given BurnApplication ID.
+	// CalculateForApplication returns the estimated amount of aHAQQ coins to be
+	// minted for given BurnApplication ID.
 	CalculateForApplication(context.Context, *QueryCalculateForApplicationRequest) (*QueryCalculateForApplicationResponse, error)
 	// GetApplications returns the paginated list of all registered applications.
 	GetApplications(context.Context, *QueryGetApplicationsRequest) (*QueryGetApplicationsResponse, error)
-	// GetSendersApplications returns the paginated list of all applications registered for a given sender_address.
+	// GetSendersApplications returns the paginated list of all applications
+	// registered for a given sender_address.
 	GetSendersApplications(context.Context, *QueryGetSendersApplicationsRequest) (*QueryGetSendersApplicationsResponse, error)
 	// Params queries the parameters of x/ethiq module.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)

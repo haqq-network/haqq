@@ -6086,7 +6086,8 @@ func (x *QueryHoldersResponse) GetPagination() *v1beta11.PageResponse {
 	return nil
 }
 
-// QueryEscrowAddressRequest is the request type for the Query/EscrowAddress RPC method.
+// QueryEscrowAddressRequest is the request type for the Query/EscrowAddress RPC
+// method.
 type QueryEscrowAddressRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6123,7 +6124,8 @@ func (x *QueryEscrowAddressRequest) GetAddress() string {
 	return ""
 }
 
-// QueryEscrowAddressResponse is the response type for the Query/EscrowAddress RPC method.
+// QueryEscrowAddressResponse is the response type for the Query/EscrowAddress
+// RPC method.
 type QueryEscrowAddressResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

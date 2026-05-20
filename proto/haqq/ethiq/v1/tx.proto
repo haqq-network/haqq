@@ -16,9 +16,11 @@ service Msg {
   // MintHaqq defines a method to mint aHAQQ coins in exchange for aISLM coins
   rpc MintHaqq(MsgMintHaqq) returns (MsgMintHaqqResponse);
 
-  // MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
-  // trough whitelisted application submitted earlier via smart-contract
-  rpc MintHaqqByApplication(MsgMintHaqqByApplication) returns (MsgMintHaqqByApplicationResponse);
+  // MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for
+  // aISLM coins trough whitelisted application submitted earlier via
+  // smart-contract
+  rpc MintHaqqByApplication(MsgMintHaqqByApplication)
+      returns (MsgMintHaqqByApplicationResponse);
 }
 
 // MsgMintHaqq allows an account to mint aHAQQ coins in exchange for aISLM coins
@@ -37,7 +39,7 @@ message MsgMintHaqq {
 
   // islm_amount is the amount of aISLM to burn in exchange for aHAQQ
   string islm_amount = 3 [
-    (cosmos_proto.scalar)  = "cosmos.Int",
+    (cosmos_proto.scalar) = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
@@ -47,14 +49,15 @@ message MsgMintHaqq {
 message MsgMintHaqqResponse {
   // haqq_amount is the amount of minted aHAQQ coins
   string haqq_amount = 1 [
-    (cosmos_proto.scalar)  = "cosmos.Int",
+    (cosmos_proto.scalar) = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
 }
 
-// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for aISLM coins
-// trough whitelisted application submitted earlier via smart-contract
+// MintHaqqByApplication defines a method to mint aHAQQ coins in exchange for
+// aISLM coins trough whitelisted application submitted earlier via
+// smart-contract
 message MsgMintHaqqByApplication {
   option (cosmos.msg.v1.signer) = "from_address";
   option (amino.name) = "haqq/ethiq/MsgMintHaqqByApplication";
@@ -73,7 +76,7 @@ message MsgMintHaqqByApplication {
 message MsgMintHaqqByApplicationResponse {
   // haqq_amount is the amount of minted aHAQQ coins
   string haqq_amount = 1 [
-    (cosmos_proto.scalar)  = "cosmos.Int",
+    (cosmos_proto.scalar) = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false
   ];
