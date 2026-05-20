@@ -6258,7 +6258,7 @@
     },
     "/haqq/ethiq/v1/calculate-for-application/{applicationId}": {
       "get": {
-        "summary": "CalculateForApplication returns the estimated amount of aHAQQ coins to be minted for given BurnApplication ID.",
+        "summary": "CalculateForApplication returns the estimated amount of aHAQQ coins to be\nminted for given BurnApplication ID.",
         "operationId": "CalculateForApplication",
         "responses": {
           "200": {
@@ -6277,7 +6277,7 @@
         "parameters": [
           {
             "name": "applicationId",
-            "description": "application_id is the unique ID of BurnApplication containing the amount of aISLM coins to burn in exchange for aHAQQ.\nusing string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)",
+            "description": "application_id is the unique ID of BurnApplication containing the amount of\naISLM coins to burn in exchange for aHAQQ. using string as grpc-gateway\ndoesn't support custom types (eg. cosmossdk.io/math.Int)",
             "in": "path",
             "required": true,
             "type": "string",
@@ -6291,7 +6291,7 @@
     },
     "/haqq/ethiq/v1/calculate/{islmAmount}": {
       "get": {
-        "summary": "Calculate returns the estimated amount of aHAQQ coins to be minted for given aISLM amount",
+        "summary": "Calculate returns the estimated amount of aHAQQ coins to be minted for\ngiven aISLM amount",
         "operationId": "Calculate",
         "responses": {
           "200": {
@@ -6310,7 +6310,7 @@
         "parameters": [
           {
             "name": "islmAmount",
-            "description": "islm_amount is the amount of aISLM coins to burn in exchange for aHAQQ\nusing string as grpc-gateway doesn't support custom types (eg. cosmossdk.io/math.Int)",
+            "description": "islm_amount is the amount of aISLM coins to burn in exchange for aHAQQ\nusing string as grpc-gateway doesn't support custom types (eg.\ncosmossdk.io/math.Int)",
             "in": "path",
             "required": true,
             "type": "string"
@@ -6386,7 +6386,7 @@
     },
     "/haqq/ethiq/v1/get-senders-applications/{senderAddress}": {
       "get": {
-        "summary": "GetSendersApplications returns the paginated list of all applications registered for a given sender_address.",
+        "summary": "GetSendersApplications returns the paginated list of all applications\nregistered for a given sender_address.",
         "operationId": "GetSendersApplications",
         "responses": {
           "200": {
@@ -6707,7 +6707,7 @@
     },
     "/haqq/ucdao/v1/escrow_address/{address}": {
       "get": {
-        "summary": "EscrowAddress queries the escrow address for a given standard wallet address.",
+        "summary": "EscrowAddress queries the escrow address for a given standard wallet\naddress.",
         "operationId": "EscrowAddress",
         "responses": {
           "200": {
@@ -14221,7 +14221,7 @@
         },
         "burnedBeforeAmount": {
           "$ref": "#/definitions/cosmos.base.v1beta1.Coin",
-          "title": "burned_before_amount is a sum of burn_amount's of all previous BurnApplication's"
+          "title": "burned_before_amount is a sum of burn_amount's of all previous\nBurnApplication's"
         },
         "isExecuted": {
           "type": "boolean",
@@ -14242,11 +14242,11 @@
         },
         "minMintPerTx": {
           "type": "string",
-          "title": "min_mint_per_tx defines the minimum amount that can be minted per transaction"
+          "title": "min_mint_per_tx defines the minimum amount that can be minted per\ntransaction"
         },
         "maxMintPerTx": {
           "type": "string",
-          "title": "max_mint_per_tx defines the maximum amount that can be minted per transaction"
+          "title": "max_mint_per_tx defines the maximum amount that can be minted per\ntransaction"
         },
         "maxSupply": {
           "type": "string",
@@ -14279,7 +14279,7 @@
           "title": "to_address is a receiver's address"
         }
       },
-      "description": "QueryCalculateForApplicationResponse is the response type for the Query/CalculateForApplication RPC method."
+      "description": "QueryCalculateForApplicationResponse is the response type for the\nQuery/CalculateForApplication RPC method."
     },
     "haqq.ethiq.v1.QueryCalculateResponse": {
       "type": "object",
@@ -14301,7 +14301,7 @@
           "title": "average_price is the average price per aHAQQ coin"
         }
       },
-      "description": "QueryCalculateResponse is the response type for the Query/Calculate RPC method."
+      "description": "QueryCalculateResponse is the response type for the Query/Calculate RPC\nmethod."
     },
     "haqq.ethiq.v1.QueryGetApplicationsResponse": {
       "type": "object",
@@ -14319,7 +14319,7 @@
           "description": "pagination defines the pagination in the response."
         }
       },
-      "description": "QueryGetApplicationsResponse is the response type for the Query/GetApplications RPC method."
+      "description": "QueryGetApplicationsResponse is the response type for the\nQuery/GetApplications RPC method."
     },
     "haqq.ethiq.v1.QueryGetSendersApplicationsResponse": {
       "type": "object",
@@ -14337,7 +14337,7 @@
           "description": "pagination defines the pagination in the response."
         }
       },
-      "description": "QueryGetSendersApplicationsResponse is the response type for the Query/GetSendersApplications RPC method."
+      "description": "QueryGetSendersApplicationsResponse is the response type for the\nQuery/GetSendersApplications RPC method."
     },
     "haqq.ethiq.v1.QueryParamsResponse": {
       "type": "object",
@@ -14346,7 +14346,7 @@
           "$ref": "#/definitions/haqq.ethiq.v1.Params"
         }
       },
-      "description": "QueryParamsResponse defines the response type for querying x/ethiq parameters."
+      "description": "QueryParamsResponse defines the response type for querying x/ethiq\nparameters."
     },
     "haqq.ethiq.v1.QueryTotalBurnedResponse": {
       "type": "object",
@@ -14357,10 +14357,10 @@
         },
         "totalBurnedFromApplications": {
           "$ref": "#/definitions/cosmos.base.v1beta1.Coin",
-          "title": "git reset --soft HEAD~1 is the total amount of coins burned from applications"
+          "title": "git reset --soft HEAD~1 is the total amount of coins burned from\napplications"
         }
       },
-      "description": "QueryTotalBurnedResponse is the response type for the Query/TotalBurned RPC method."
+      "description": "QueryTotalBurnedResponse is the response type for the Query/TotalBurned RPC\nmethod."
     },
     "haqq.ethiq.v1.SourceOfFunds": {
       "type": "string",
@@ -14369,7 +14369,7 @@
         "SOURCE_OF_FUNDS_UCDAO"
       ],
       "default": "SOURCE_OF_FUNDS_BANK",
-      "description": "SourceOfFunds enumerates the valid options for a source of funds.\n\n - SOURCE_OF_FUNDS_BANK: SOURCE_OF_FUNDS_BANK defines a bank balance as a source of funds option\n - SOURCE_OF_FUNDS_UCDAO: SOURCE_OF_FUNDS_UCDAO defines a UC DAO module balance as a source of funds option"
+      "description": "SourceOfFunds enumerates the valid options for a source of funds.\n\n - SOURCE_OF_FUNDS_BANK: SOURCE_OF_FUNDS_BANK defines a bank balance as a source of funds option\n - SOURCE_OF_FUNDS_UCDAO: SOURCE_OF_FUNDS_UCDAO defines a UC DAO module balance as a source of funds\noption"
     },
     "haqq.liquidvesting.v1.Denom": {
       "type": "object",
@@ -14530,7 +14530,7 @@
           "description": "escrow_address is the escrow address for the given standard wallet address."
         }
       },
-      "description": "QueryEscrowAddressResponse is the response type for the Query/EscrowAddress RPC method."
+      "description": "QueryEscrowAddressResponse is the response type for the Query/EscrowAddress\nRPC method."
     },
     "haqq.ucdao.v1.QueryHoldersResponse": {
       "type": "object",
