@@ -6,6 +6,8 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10/types"
+	ibcclientkeeper "github.com/cosmos/ibc-go/v10/modules/core/02-client/keeper"
 )
 
 // CreateUpgradeHandler creates an SDK upgrade handler for v1.10.0
@@ -20,6 +22,7 @@ import (
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
+	clientKeeper *ibcclientkeeper.Keeper,
 ) upgradetypes.UpgradeHandler {
 	return func(c context.Context, _ upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
 		ctx := sdk.UnwrapSDKContext(c)
@@ -35,6 +38,11 @@ func CreateUpgradeHandler(
 			logger.Error("Migration failed", "error", err)
 			return vm, err
 		}
+
+		// explicitly update the IBC 02-client params, adding the wasm client type
+		params := clientKeeper.GetParams(ctx)
+		params.AllowedClients = append(params.AllowedClients, ibcwasmtypes.Wasm)
+		clientKeeper.SetParams(ctx, params)
 
 		logger.Info("Successfully completed v1.10.0 upgrade: Cosmos SDK v0.50.9 -> v0.53.4, IBC v8 -> v10")
 		return vm, nil

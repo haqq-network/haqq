@@ -1437,7 +1437,7 @@ func (app *Haqq) setupUpgradeHandlers() {
 	// Note: PreBlockers order already includes authtypes.ModuleName as required by v0.53.x
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v1100.UpgradeName,
-		v1100.CreateUpgradeHandler(app.mm, app.configurator),
+		v1100.CreateUpgradeHandler(app.mm, app.configurator, app.IBCKeeper.ClientKeeper),
 	)
 
 	// When a planned update height is reached, the old binary will panic
