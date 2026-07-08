@@ -587,19 +587,21 @@ func NewHaqq(
 
 	// We call this after setting the hooks to ensure that the hooks are set on the keeper
 	evmKeeper.WithStaticPrecompiles(
-		evmkeeper.NewAvailableStaticPrecompiles(
-			*stakingKeeper,
-			app.DistrKeeper,
-			app.BankKeeper,
-			app.Erc20Keeper,
-			app.VestingKeeper,
-			app.AuthzKeeper,
-			app.TransferKeeper,
-			app.IBCKeeper.ChannelKeeper,
-			app.EthiqKeeper,
-			app.DaoKeeper,
-			app.LiquidVestingKeeper,
-		),
+		vm.PrecompiledContractsBerlin,
+		// FIXME: temporary disable custom static precompiles
+		// evmkeeper.NewAvailableStaticPrecompiles(
+		//	*stakingKeeper,
+		//	app.DistrKeeper,
+		//	app.BankKeeper,
+		//	app.Erc20Keeper,
+		//	app.VestingKeeper,
+		//	app.AuthzKeeper,
+		//	app.TransferKeeper,
+		//	app.IBCKeeper.ChannelKeeper,
+		//	app.EthiqKeeper,
+		//	app.DaoKeeper,
+		//	app.LiquidVestingKeeper,
+		// ),
 	)
 
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
@@ -948,6 +950,7 @@ func (app *Haqq) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
 		SigGasConsumer:         ante.SigVerificationGasConsumer,
 		MaxTxGasWanted:         maxGasWanted,
 		TxFeeChecker:           ethante.NewDynamicFeeChecker(app.EvmKeeper),
+		BlockedAccounts:        blockedAccounts,
 	}
 
 	if err := options.Validate(); err != nil {
