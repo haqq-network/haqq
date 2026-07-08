@@ -50,7 +50,7 @@ func (d EthRejectBlockedSendersDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx,
 		if d.blacklist[sender] {
 			return ctx, errorsmod.Wrapf(
 				errortypes.ErrUnauthorized,
-				"account %s is blocked from sending transactions", sender,
+				"account %s is blocked from sending transactions", ethMsg.From,
 			)
 		}
 	}
