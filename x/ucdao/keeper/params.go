@@ -31,8 +31,7 @@ func (k BaseKeeper) SetParams(ctx sdk.Context, params types.Params) error {
 	return nil
 }
 
-func (k BaseKeeper) IsModuleEnabled(ctx sdk.Context) bool {
-	params := k.GetParams(ctx)
-
-	return params.EnableDao
+func (k BaseKeeper) IsModuleEnabled(_ sdk.Context) bool {
+	// Explicitly turn off the module
+	return false
 }

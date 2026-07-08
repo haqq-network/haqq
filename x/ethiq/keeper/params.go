@@ -8,9 +8,9 @@ import (
 )
 
 // IsModuleEnabled checks if module enabled in params
-func (k Keeper) IsModuleEnabled(ctx sdk.Context) bool {
-	params := k.GetParams(ctx)
-	return params.Enabled
+func (k Keeper) IsModuleEnabled(_ sdk.Context) bool {
+	// Explicitly turn off the module
+	return false
 }
 
 // GetParams returns the total set of ethiq parameters.

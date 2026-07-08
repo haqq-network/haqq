@@ -32,6 +32,10 @@ type HandlerOptions struct {
 	SigGasConsumer         func(meter storetypes.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
 	MaxTxGasWanted         uint64
 	TxFeeChecker           ante.TxFeeChecker
+	// BlockedAccounts is the set of frozen accounts, keyed by their bech32
+	// (haqq1...) address. Enforced across every ante pipeline: the EVM decorator
+	// derives the bech32 form from the recovered sender's address bytes.
+	BlockedAccounts map[string]bool
 }
 
 // Validate checks if the keepers are defined

@@ -14,7 +14,8 @@ import (
 // newCosmosAnteHandler creates the default ante handler for Cosmos transactions
 func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
-		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
+		cosmosante.NewRejectBlockedSendersDecorator(options.BlockedAccounts), // reject txs signed by blocked accounts
+		cosmosante.RejectMessagesDecorator{},                                 // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
 			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
@@ -41,7 +42,8 @@ func newCosmosAnteHandler(options HandlerOptions) sdk.AnteHandler {
 // newLegacyCosmosAnteHandlerEip712 creates the ante handler for transactions signed with EIP712
 func newLegacyCosmosAnteHandlerEip712(options HandlerOptions) sdk.AnteHandler {
 	return sdk.ChainAnteDecorators(
-		cosmosante.RejectMessagesDecorator{}, // reject MsgEthereumTxs
+		cosmosante.NewRejectBlockedSendersDecorator(options.BlockedAccounts), // reject txs signed by blocked accounts
+		cosmosante.RejectMessagesDecorator{},                                 // reject MsgEthereumTxs
 		cosmosante.NewAuthzLimiterDecorator( // disable the Msg types that cannot be included on an authz.MsgExec msgs field
 			sdk.MsgTypeURL(&evmtypes.MsgEthereumTx{}),
 			sdk.MsgTypeURL(&sdkvesting.MsgCreateVestingAccount{}),
