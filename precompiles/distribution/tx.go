@@ -170,7 +170,7 @@ func (p *Precompile) WithdrawDelegatorRewards(
 		if err != nil {
 			return nil, err
 		}
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, res.Amount[0].Amount.BigInt(), cmn.Add))
+		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, res.Amount.AmountOf(utils.BaseDenom).BigInt(), cmn.Add))
 	}
 
 	if err = p.EmitWithdrawDelegatorRewardsEvent(ctx, stateDB, delegatorHexAddr, msg.ValidatorAddress, res.Amount); err != nil {
@@ -216,7 +216,7 @@ func (p *Precompile) WithdrawValidatorCommission(
 		if err != nil {
 			return nil, err
 		}
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, res.Amount[0].Amount.BigInt(), cmn.Add))
+		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, res.Amount.AmountOf(utils.BaseDenom).BigInt(), cmn.Add))
 	}
 
 	if err = p.EmitWithdrawValidatorCommissionEvent(ctx, stateDB, msg.ValidatorAddress, res.Amount); err != nil {
