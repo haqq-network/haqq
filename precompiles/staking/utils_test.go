@@ -11,12 +11,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -57,6 +59,34 @@ func (s *PrecompileTestSuite) ApproveAndCheckAuthz(method abi.Method, granter, g
 	s.Require().NotNil(auth)
 	s.Require().Equal(auth.AuthorizationType, staking.DelegateAuthz)
 	s.Require().Equal(auth.MaxTokens, &sdk.Coin{Denom: s.bondDenom, Amount: math.NewIntFromBigInt(amount)})
+}
+
+// withdrawnRewards sums the amounts of denom reported by the distribution
+// `withdraw_rewards` events of a tx result.
+//
+// Staking messages auto-claim outstanding rewards onto the delegator's withdraw
+// address before touching shares, so balance assertions around a precompile call
+// need the amount actually paid out in that very tx. Querying pending rewards
+// beforehand only yields a lower bound, which would let a phantom credit minted
+// at Commit pass unnoticed.
+func withdrawnRewards(events []abcitypes.Event, denom string) math.Int {
+	total := math.ZeroInt()
+	for _, ev := range events {
+		if ev.Type != distrtypes.EventTypeWithdrawRewards {
+			continue
+		}
+		for _, attr := range ev.Attributes {
+			if attr.Key != sdk.AttributeKeyAmount {
+				continue
+			}
+			coins, err := sdk.ParseCoinsNormalized(attr.Value)
+			if err != nil {
+				continue
+			}
+			total = total.Add(coins.AmountOf(denom))
+		}
+	}
+	return total
 }
 
 // CheckAuthorizationWithContext is a helper function to check if the authorization is set and if it is the correct type.

@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"reflect"
 
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -26,12 +27,17 @@ func (suite *KeeperTestSuite) TestParams() {
 			true,
 		},
 		{
-			"success - EvmDenom param is set to \"inj\" and can be retrieved correctly",
+			// The EVM denom is what commit-time balance reconciliation mints and
+			// burns, while the precompiles mirror bank movements in terms of the
+			// base denom, so the parameter is pinned to it and a foreign denom
+			// must be rejected rather than silently splitting the two apart.
+			"success - EvmDenom param cannot be moved away from the base denom",
 			func() interface{} {
-				params.EvmDenom = "inj"
-				err := suite.network.App.EvmKeeper.SetParams(suite.network.GetContext(), params)
-				suite.Require().NoError(err)
-				return params.EvmDenom
+				foreign := params
+				foreign.EvmDenom = "inj"
+				err := suite.network.App.EvmKeeper.SetParams(suite.network.GetContext(), foreign)
+				suite.Require().Error(err, "expected a foreign EVM denom to be rejected")
+				return utils.BaseDenom
 			},
 			func() interface{} {
 				evmParams := suite.network.App.EvmKeeper.GetParams(suite.network.GetContext())

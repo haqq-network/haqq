@@ -87,11 +87,13 @@ func (p *Precompile) ClaimRewards(
 	// this happens when the precompile is called from a smart contract
 	if contract.CallerAddress != origin {
 		// rewards go to the withdrawer address
-		withdrawerHexAddr, err := p.getWithdrawerHexAddr(ctx, delegatorAddr)
+		withdrawerHexAddr, ok, err := p.getWithdrawerHexAddr(ctx, delegatorAddr)
 		if err != nil {
 			return nil, err
 		}
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, totalCoins.AmountOf(utils.BaseDenom).BigInt(), cmn.Add))
+		if ok {
+			p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, totalCoins.AmountOf(utils.BaseDenom).BigInt(), cmn.Add))
+		}
 	}
 
 	if err := p.EmitClaimRewardsEvent(ctx, stateDB, delegatorAddr, totalCoins); err != nil {
@@ -166,11 +168,13 @@ func (p *Precompile) WithdrawDelegatorRewards(
 	// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
 	if contract.CallerAddress != origin {
 		// rewards go to the withdrawer address
-		withdrawerHexAddr, err := p.getWithdrawerHexAddr(ctx, delegatorHexAddr)
+		withdrawerHexAddr, ok, err := p.getWithdrawerHexAddr(ctx, delegatorHexAddr)
 		if err != nil {
 			return nil, err
 		}
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, res.Amount.AmountOf(utils.BaseDenom).BigInt(), cmn.Add))
+		if ok {
+			p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, res.Amount.AmountOf(utils.BaseDenom).BigInt(), cmn.Add))
+		}
 	}
 
 	if err = p.EmitWithdrawDelegatorRewardsEvent(ctx, stateDB, delegatorHexAddr, msg.ValidatorAddress, res.Amount); err != nil {
@@ -212,11 +216,13 @@ func (p *Precompile) WithdrawValidatorCommission(
 	// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
 	if contract.CallerAddress != origin {
 		// commissions go to the withdrawer address
-		withdrawerHexAddr, err := p.getWithdrawerHexAddr(ctx, validatorHexAddr)
+		withdrawerHexAddr, ok, err := p.getWithdrawerHexAddr(ctx, validatorHexAddr)
 		if err != nil {
 			return nil, err
 		}
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, res.Amount.AmountOf(utils.BaseDenom).BigInt(), cmn.Add))
+		if ok {
+			p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(withdrawerHexAddr, res.Amount.AmountOf(utils.BaseDenom).BigInt(), cmn.Add))
+		}
 	}
 
 	if err = p.EmitWithdrawValidatorCommissionEvent(ctx, stateDB, msg.ValidatorAddress, res.Amount); err != nil {
@@ -268,11 +274,18 @@ func (p *Precompile) FundCommunityPool(
 }
 
 // getWithdrawerHexAddr is a helper function to get the hex address
-// of the withdrawer for the specified account address
-func (p Precompile) getWithdrawerHexAddr(ctx sdk.Context, delegatorAddr common.Address) (common.Address, error) {
+// of the withdrawer for the specified account address.
+//
+// The withdraw address is delegator-controlled and need not be an EVM account:
+// Cosmos accepts addresses longer than 20 bytes. The second return value
+// reports whether the withdrawer has an EVM representation at all; when it is
+// false the caller must not journal a balance change for it, since truncating
+// the address would credit an unrelated EVM account and mint at Commit.
+func (p Precompile) getWithdrawerHexAddr(ctx sdk.Context, delegatorAddr common.Address) (common.Address, bool, error) {
 	withdrawerAccAddr, err := p.distributionKeeper.GetDelegatorWithdrawAddr(ctx, delegatorAddr.Bytes())
 	if err != nil {
-		return common.Address{}, err
+		return common.Address{}, false, err
 	}
-	return common.BytesToAddress(withdrawerAccAddr), nil
+	withdrawerHexAddr, ok := cmn.JournalableEVMAddress(withdrawerAccAddr)
+	return withdrawerHexAddr, ok, nil
 }

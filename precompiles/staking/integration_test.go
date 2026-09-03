@@ -2901,7 +2901,14 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 					balRes, err = s.grpcHandler.GetBalance(s.keyring.GetAccAddr(0), s.bondDenom)
 					Expect(err).To(BeNil())
 					delegatorFinalBal := balRes.Balance
-					Expect(delegatorFinalBal.Amount).To(Equal(delegatorInitialBal.Amount.Sub(fees).Sub(delAmt).Add(transferToDelAmt)))
+					// Delegate auto-claims outstanding rewards onto the withdrawer (the
+					// delegator here), so the balance must move by exactly the delegated
+					// amount net of those rewards. Equality both ways matters: a lower
+					// bound alone would hide a phantom credit minted at Commit.
+					claimedRewards := withdrawnRewards(res.Events, s.bondDenom)
+					Expect(delegatorFinalBal.Amount).To(Equal(
+						delegatorInitialBal.Amount.Sub(fees).Sub(delAmt).Add(transferToDelAmt).Add(claimedRewards),
+					), "delegator balance must reflect exactly the delegated amount and the auto-claimed rewards")
 
 					// check the bondedTokenPool is updated with the delegated tokens
 					balRes, err = s.grpcHandler.GetBalance(bondedTokensPoolAccAddr, s.bondDenom)

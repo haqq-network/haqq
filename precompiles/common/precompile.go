@@ -48,6 +48,26 @@ func NewBalanceChangeEntry(acc common.Address, amt *big.Int, op Operation) balan
 	return balanceChangeEntry{acc, amt, op}
 }
 
+// JournalableEVMAddress maps a Cosmos account address onto the EVM address that
+// the StateDB reconciles against on Commit, reporting whether such a mapping
+// exists at all.
+//
+// Cosmos permits account addresses longer than 20 bytes (ADR-028 derived
+// accounts - interchain accounts among them - are 32 bytes) and a delegator may
+// point their distribution withdraw address at one. common.BytesToAddress would
+// silently keep only the trailing 20 bytes, so journaling such an account
+// credits a completely unrelated EVM account and Commit mints the difference.
+//
+// Accounts that are not exactly 20 bytes have no EVM representation: the StateDB
+// can never hold a state object for them, so their bank movements need no
+// mirroring. Callers must skip journaling when ok is false.
+func JournalableEVMAddress(addr sdk.AccAddress) (common.Address, bool) {
+	if len(addr) != common.AddressLength {
+		return common.Address{}, false
+	}
+	return common.BytesToAddress(addr), true
+}
+
 // snapshot contains all state and events previous to the precompile call
 // This is needed to allow us to revert the changes
 // during the EVM execution

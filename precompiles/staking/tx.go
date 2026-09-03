@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -48,6 +49,106 @@ const (
 	// CancelUnbondingDelegationAuthz defines the authorization type for the staking
 	CancelUnbondingDelegationAuthz = stakingtypes.AuthorizationType_AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION
 )
+
+// bankBaseSnapshot pairs an account with its sampled aISLM bank balance,
+// captured immediately before a keeper call.
+type bankBaseSnapshot struct {
+	addr       sdk.AccAddress
+	baseBefore sdkmath.Int
+}
+
+func (p *Precompile) snapshotBankBase(ctx sdk.Context, addr sdk.AccAddress) bankBaseSnapshot {
+	return bankBaseSnapshot{
+		addr:       addr,
+		baseBefore: p.stakingKeeper.BaseDenomBankBalance(ctx, addr),
+	}
+}
+
+// snapshotStakeAccounts samples aISLM of the delegator and of their distribution
+// withdrawer. Cosmos SDK withdraws outstanding rewards onto the withdrawer
+// (BeforeDelegationSharesModified) before Delegate / Undelegate / Redelegate /
+// CancelUnbondingDelegation mutate shares. Duplicate addresses are kept; the
+// mirror helper journals a single net delta per account.
+func (p *Precompile) snapshotStakeAccounts(ctx sdk.Context, delegator sdk.AccAddress) ([]bankBaseSnapshot, error) {
+	snaps := make([]bankBaseSnapshot, 0, 2)
+	snaps = append(snaps, p.snapshotBankBase(ctx, delegator))
+	withdrawer, err := p.distrKeeper.GetDelegatorWithdrawAddr(ctx, delegator)
+	if err != nil {
+		return nil, err
+	}
+	snaps = append(snaps, p.snapshotBankBase(ctx, withdrawer))
+	return snaps, nil
+}
+
+// mirrorBankBaseDeltasIntoStateDB mirrors per-account bank deltas of the EVM
+// gas denom (aISLM) into the EVM StateDB journal when the precompile is invoked
+// from another contract (caller != origin).
+//
+// Staking messages update bank via the SDK (bonded tokens, auto-claimed
+// rewards) without EVM journal entries. On Commit, SetBalance restores a stale
+// EVM balance for any dirty account and mints or burns the difference. Journal
+// the actual aISLM delta so commit stays conservative.
+func (p *Precompile) mirrorBankBaseDeltasIntoStateDB(
+	ctx sdk.Context,
+	isCallerOrigin bool,
+	snapshots ...bankBaseSnapshot,
+) {
+	if isCallerOrigin {
+		return
+	}
+	seen := make(map[string]struct{}, len(snapshots))
+	for _, s := range snapshots {
+		key := s.addr.String()
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+
+		netBaseDelta := s.baseBefore.Sub(p.stakingKeeper.BaseDenomBankBalance(ctx, s.addr))
+		if netBaseDelta.IsZero() {
+			continue
+		}
+		// A withdraw address may be a non-EVM Cosmos account (e.g. a 32-byte
+		// ADR-028 address). Those cannot be reconciled at Commit, so they must
+		// not be journaled - see cmn.JournalableEVMAddress.
+		hexAddr, ok := cmn.JournalableEVMAddress(s.addr)
+		if !ok {
+			continue
+		}
+		if netBaseDelta.IsNegative() {
+			p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(hexAddr, netBaseDelta.Neg().BigInt(), cmn.Add))
+			continue
+		}
+		p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(hexAddr, netBaseDelta.BigInt(), cmn.Sub))
+	}
+}
+
+func (p *Precompile) snapshotAndRun(
+	ctx sdk.Context,
+	isCallerOrigin bool,
+	delegatorBech32 string,
+	run func() error,
+) error {
+	var snaps []bankBaseSnapshot
+	if !isCallerOrigin {
+		// Deliberately not MustAccAddressFromBech32: HandleGasError only recovers
+		// out-of-gas panics and re-raises everything else, so a malformed address
+		// here would take the node down instead of failing the call.
+		delegator, err := sdk.AccAddressFromBech32(delegatorBech32)
+		if err != nil {
+			return err
+		}
+		snaps, err = p.snapshotStakeAccounts(ctx, delegator)
+		if err != nil {
+			return err
+		}
+	}
+	if err := run(); err != nil {
+		return err
+	}
+	p.mirrorBankBaseDeltasIntoStateDB(ctx, isCallerOrigin, snaps...)
+	return nil
+}
 
 // CreateValidator performs create validator.
 func (p Precompile) CreateValidator(
@@ -217,7 +318,10 @@ func (p *Precompile) Delegate(
 
 	// Execute the transaction using the message server
 	msgSrv := stakingkeeper.NewMsgServerImpl(&p.stakingKeeper)
-	if _, err = msgSrv.Delegate(ctx, msg); err != nil {
+	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, func() error {
+		_, err := msgSrv.Delegate(ctx, msg)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
@@ -233,22 +337,12 @@ func (p *Precompile) Delegate(
 		return nil, err
 	}
 
-	if !isCallerOrigin {
-		// get the delegator address from the message
-		delAccAddr := sdk.MustAccAddressFromBech32(msg.DelegatorAddress)
-		delHexAddr := common.BytesToAddress(delAccAddr)
-		// NOTE: This ensures that the changes in the bank keeper are correctly mirrored to the EVM stateDB
-		// when calling the precompile from a smart contract
-		// This prevents the stateDB from overwriting the changed balance in the bank keeper when committing the EVM state.
-		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(delHexAddr, msg.Amount.Amount.BigInt(), cmn.Sub))
-	}
-
 	return method.Outputs.Pack(true)
 }
 
 // Undelegate performs the undelegation of coins from a validator for a delegate.
 // The provided amount cannot be negative. This is validated in the msg.ValidateBasic() function.
-func (p Precompile) Undelegate(
+func (p *Precompile) Undelegate(
 	ctx sdk.Context,
 	origin common.Address,
 	contract *vm.Contract,
@@ -310,8 +404,12 @@ func (p Precompile) Undelegate(
 
 	// Execute the transaction using the message server
 	msgSrv := stakingkeeper.NewMsgServerImpl(&p.stakingKeeper)
-	res, err := msgSrv.Undelegate(ctx, msg)
-	if err != nil {
+	var res *stakingtypes.MsgUndelegateResponse
+	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, func() error {
+		var runErr error
+		res, runErr = msgSrv.Undelegate(ctx, msg)
+		return runErr
+	}); err != nil {
 		return nil, err
 	}
 
@@ -333,7 +431,7 @@ func (p Precompile) Undelegate(
 // Redelegate performs a redelegation of coins for a delegate from a source validator
 // to a destination validator.
 // The provided amount cannot be negative. This is validated in the msg.ValidateBasic() function.
-func (p Precompile) Redelegate(
+func (p *Precompile) Redelegate(
 	ctx sdk.Context,
 	origin common.Address,
 	contract *vm.Contract,
@@ -395,8 +493,12 @@ func (p Precompile) Redelegate(
 	}
 
 	msgSrv := stakingkeeper.NewMsgServerImpl(&p.stakingKeeper)
-	res, err := msgSrv.BeginRedelegate(ctx, msg)
-	if err != nil {
+	var res *stakingtypes.MsgBeginRedelegateResponse
+	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, func() error {
+		var runErr error
+		res, runErr = msgSrv.BeginRedelegate(ctx, msg)
+		return runErr
+	}); err != nil {
 		return nil, err
 	}
 
@@ -417,7 +519,7 @@ func (p Precompile) Redelegate(
 // CancelUnbondingDelegation will cancel the unbonding of a delegation and delegate
 // back to the validator being unbonded from.
 // The provided amount cannot be negative. This is validated in the msg.ValidateBasic() function.
-func (p Precompile) CancelUnbondingDelegation(
+func (p *Precompile) CancelUnbondingDelegation(
 	ctx sdk.Context,
 	origin common.Address,
 	contract *vm.Contract,
@@ -479,7 +581,10 @@ func (p Precompile) CancelUnbondingDelegation(
 	}
 
 	msgSrv := stakingkeeper.NewMsgServerImpl(&p.stakingKeeper)
-	if _, err = msgSrv.CancelUnbondingDelegation(ctx, msg); err != nil {
+	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, func() error {
+		_, err := msgSrv.CancelUnbondingDelegation(ctx, msg)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
