@@ -51,6 +51,68 @@
         },
         {
           "indexed": false,
+          "internalType": "uint256",
+          "name": "applicationId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256[]",
+          "name": "approvedApplicationIds",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "ApplicationIDApproval",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "grantee",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "granter",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "applicationId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256[]",
+          "name": "remainingApplicationIds",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "ApplicationIDRevocation",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "grantee",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "granter",
+          "type": "address"
+        },
+        {
+          "indexed": false,
           "internalType": "string[]",
           "name": "methods",
           "type": "string[]"

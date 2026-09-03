@@ -75,7 +75,7 @@ func (suite *KeeperTestSuite) TestConvertToHaqqEthiqCalculationError() {
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()
 	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000000000000000)
-	suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams)
+	suite.Require().NoError(suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams))
 
 	// Fund sender with ISLM only (aLIQUID cannot be minted via FundAccount; must be created via Liquidate)
 	islmCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1000000000000000000))
@@ -122,7 +122,7 @@ func (suite *KeeperTestSuite) TestConvertToHaqqEthiqMaxMintExceeded() {
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()
 	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000)
-	suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams)
+	suite.Require().NoError(suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams))
 
 	coin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(10000))
 	err = suite.network.FundAccount(sender, sdk.NewCoins(coin))
@@ -155,7 +155,7 @@ func (suite *KeeperTestSuite) TestConvertToHaqqInsufficientTotalBalance() {
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()
 	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000)
-	suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams)
+	suite.Require().NoError(suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams))
 
 	// Fund sender with ISLM only, less than islmAmount (aLIQUID cannot be minted via FundAccount)
 	islmCoin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(100))
@@ -188,7 +188,7 @@ func (suite *KeeperTestSuite) TestConvertToHaqqSuccessWithSufficientISLM() {
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()
 	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000)
-	suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams)
+	suite.Require().NoError(suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams))
 
 	coin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(100000))
 	err = suite.network.FundAccount(sender, sdk.NewCoins(coin))
@@ -233,7 +233,7 @@ func (suite *KeeperTestSuite) TestConvertToHaqqReceiverGetsMintedHaqq() {
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()
 	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000)
-	suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams)
+	suite.Require().NoError(suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams))
 
 	coin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(100000))
 	err = suite.network.FundAccount(sender, sdk.NewCoins(coin))
@@ -274,7 +274,7 @@ func (suite *KeeperTestSuite) TestConvertToHaqqSuccessWithRedeemFromLiquidVestin
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
 	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000) // Set reasonable max for testing
-	suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams)
+	suite.Require().NoError(suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams))
 
 	// Enable liquid vesting module
 	suite.network.App.LiquidVestingKeeper.SetLiquidVestingEnabled(ctx, true)
@@ -378,7 +378,7 @@ func (suite *KeeperTestSuite) TestConvertToHaqqEthiqModuleFails() {
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()        // Allow small amounts for testing
 	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000) // Set reasonable max for testing
-	suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams)
+	suite.Require().NoError(suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams))
 
 	// Fund sender with sufficient ISLM
 	coin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(100000))
@@ -413,7 +413,7 @@ func (suite *KeeperTestSuite) TestConvertToHaqqZeroAmount() {
 	ethiqParams.Enabled = true
 	ethiqParams.MinMintPerTx = sdkmath.OneInt()
 	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000)
-	suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams)
+	suite.Require().NoError(suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams))
 
 	coin := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(100000))
 	err = suite.network.FundAccount(sender, sdk.NewCoins(coin))

@@ -87,3 +87,83 @@ func (suite *KeeperTestSuite) TestTransferEscrowTokenSuccess() {
 	newOwnerBalance := suite.network.App.DaoKeeper.GetAccountBalances(ctx, newOwner)
 	suite.Require().True(newOwnerBalance.AmountOf(coin.Denom).Equal(coin.Amount))
 }
+
+// TestTrackSubBalanceSaturatesAtZero covers the case the counter cannot represent.
+//
+// The total balance counts only what entered through Fund, TransferOwnership or genesis, while
+// the escrow balances it mirrors live in bank and accept plain transfers from anyone. Removing
+// more than was ever counted used to reach sdk.Coin.Sub and panic; it has to clamp instead.
+func (suite *KeeperTestSuite) TestTrackSubBalanceSaturatesAtZero() {
+	testCases := []struct {
+		name      string
+		tracked   sdkmath.Int
+		remove    sdkmath.Int
+		expResult sdkmath.Int
+	}{
+		{"partial removal", sdkmath.NewInt(1000), sdkmath.NewInt(400), sdkmath.NewInt(600)},
+		{"exact removal", sdkmath.NewInt(1000), sdkmath.NewInt(1000), sdkmath.ZeroInt()},
+		{"removal above the tracked amount", sdkmath.NewInt(1000), sdkmath.NewInt(1001), sdkmath.ZeroInt()},
+		{"removal with nothing tracked", sdkmath.ZeroInt(), sdkmath.NewInt(1), sdkmath.ZeroInt()},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			ctx := suite.network.GetContext()
+			dao := suite.network.App.DaoKeeper
+
+			if tc.tracked.IsPositive() {
+				addr := suite.keyring.GetAccAddr(0)
+				funded := sdk.NewCoin(utils.BaseDenom, tc.tracked)
+				suite.Require().NoError(dao.Fund(ctx, sdk.NewCoins(funded), addr))
+			}
+
+			suite.Require().NotPanics(func() {
+				dao.TrackSubBalance(ctx, sdk.NewCoin(utils.BaseDenom, tc.remove))
+			})
+
+			suite.Require().Equal(
+				tc.expResult.String(),
+				dao.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount.String(),
+			)
+		})
+	}
+}
+
+// TestConvertToHaqqWithUntrackedEscrow pins the ConvertToHaqq side of the same problem: the
+// holder funded a little through the module and received the rest by a plain bank transfer to
+// the escrow, so the conversion removes more than the module ever counted.
+func (suite *KeeperTestSuite) TestConvertToHaqqWithUntrackedEscrow() {
+	suite.SetupTest()
+	ctx := suite.network.GetContext()
+	dao := suite.network.App.DaoKeeper
+
+	sender := suite.keyring.GetAccAddr(0)
+	receiver := suite.keyring.GetAccAddr(1)
+
+	ethiqParams := suite.network.App.EthiqKeeper.GetParams(ctx)
+	ethiqParams.Enabled = true
+	ethiqParams.MinMintPerTx = sdkmath.OneInt()
+	ethiqParams.MaxMintPerTx = sdkmath.NewInt(1000000)
+	suite.Require().NoError(suite.network.App.EthiqKeeper.SetParams(ctx, ethiqParams))
+
+	// 100 through the module, 900 straight into the escrow.
+	tracked := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(100))
+	untracked := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(900))
+	suite.Require().NoError(suite.network.FundAccount(sender, sdk.NewCoins(tracked)))
+	suite.Require().NoError(dao.Fund(ctx, sdk.NewCoins(tracked), sender))
+	suite.Require().NoError(suite.network.FundAccount(ucdaotypes.GetEscrowAddress(sender), sdk.NewCoins(untracked)))
+
+	suite.Require().Equal(tracked.Amount, dao.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount)
+
+	var err error
+	suite.Require().NotPanics(func() {
+		_, err = dao.ConvertToHaqq(ctx, sender, receiver, sdkmath.NewInt(1000))
+	})
+	suite.Require().NoError(err)
+
+	suite.Require().True(dao.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount.IsZero(),
+		"the counter must bottom out at zero, not go negative")
+	suite.Require().True(dao.GetAccountBalances(ctx, sender).IsZero(), "the escrow must be drained")
+	suite.Require().False(dao.IsHolder(ctx, sender), "an empty escrow must leave the holders index")
+}

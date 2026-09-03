@@ -2,6 +2,7 @@ package keeper
 
 import (
 	sdkerrors "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -15,8 +16,31 @@ func (k BaseKeeper) TrackAddBalance(ctx sdk.Context, coin sdk.Coin) {
 
 // TrackSubBalance update internal total balance value.
 // NOTE: This method intentionally has been exported as such feature required by ethiq module.
+//
+// The subtraction saturates at zero. The total balance counts only what entered through Fund,
+// TransferOwnership or genesis, while the escrow balances it is supposed to mirror live in bank
+// and accept plain transfers from anyone (see GetHolders). Burning such an escrow - through
+// ConvertToHaqq or an ethiq application - then asks to remove more than was ever counted, and
+// sdk.Coin.Sub panics on a negative result. A panic inside a consensus path is worse than an
+// understated counter, so clamp and record the discrepancy instead.
+//
+// This bounds the damage, it does not fix it: the counter is a second source of truth that
+// cannot be kept honest while escrows accept untracked transfers. See
+// docs/security/haqq-ucdao-total-balance-drift-2026-09.md.
 func (k BaseKeeper) TrackSubBalance(ctx sdk.Context, coin sdk.Coin) {
 	currentTotalEscrow := k.GetTotalBalanceOf(ctx, coin.Denom)
+
+	if currentTotalEscrow.IsLT(coin) {
+		k.Logger(ctx).Error(
+			"ucdao total balance is lower than the amount being removed; clamping to zero",
+			"denom", coin.Denom,
+			"requested", coin.Amount.String(),
+			"tracked", currentTotalEscrow.Amount.String(),
+		)
+		k.setTotalBalanceOfCoin(ctx, sdk.NewCoin(coin.Denom, math.ZeroInt()))
+		return
+	}
+
 	newTotalEscrow := currentTotalEscrow.Sub(coin)
 	k.setTotalBalanceOfCoin(ctx, newTotalEscrow)
 }

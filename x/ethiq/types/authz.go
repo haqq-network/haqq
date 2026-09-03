@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 
@@ -140,11 +141,43 @@ func (m *MintHaqqByApplicationIDAuthorization) Accept(_ context.Context, msg sdk
 }
 
 func (m *MintHaqqByApplicationIDAuthorization) ValidateBasic() error {
-	// Validate applications list
+	// This is the gate on the Cosmos MsgGrant path: authz msg_server.Grant calls
+	// Grant.ValidateBasic, which calls this. Without the bounds below, a single MsgGrant could
+	// write an arbitrarily long list with repeats into state, which every validator then stores
+	// and Accept walks on every use of the grant.
+	if len(m.ApplicationsList) == 0 {
+		return errorsmod.Wrap(ErrInvalidApplicationID, "applications list cannot be empty")
+	}
+
+	// Checked before the map is allocated: otherwise validating a list of a million entries
+	// would first allocate a map for a million entries and only then reject it.
+	//
+	// The bound is not arbitrary. Every ID must exist and duplicates are rejected below, so a
+	// well-formed list can never be longer than the waitlist itself.
+	if uint64(len(m.ApplicationsList)) > TotalNumberOfApplications() {
+		return errorsmod.Wrapf(
+			ErrInvalidApplicationID,
+			"applications list holds %d entries, more than the %d registered applications",
+			len(m.ApplicationsList), TotalNumberOfApplications(),
+		)
+	}
+
+	seen := make(map[uint64]struct{}, len(m.ApplicationsList))
 	for _, appID := range m.ApplicationsList {
 		if !IsApplicationExists(appID) {
-			return ErrInvalidApplicationID
+			return errorsmod.Wrapf(ErrInvalidApplicationID, "application ID %d does not exist", appID)
 		}
+
+		// A canceled application can never be executed, so a grant for one is dead on arrival.
+		// Rejecting it here fails at the grant instead of much later at the mint.
+		if IsApplicationCanceled(appID) {
+			return errorsmod.Wrapf(ErrInvalidApplicationID, "application ID %d is canceled", appID)
+		}
+
+		if _, duplicate := seen[appID]; duplicate {
+			return errorsmod.Wrapf(ErrInvalidApplicationID, "duplicate application ID %d", appID)
+		}
+		seen[appID] = struct{}{}
 	}
 
 	return nil

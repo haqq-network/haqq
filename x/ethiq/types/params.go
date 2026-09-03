@@ -14,13 +14,18 @@ const (
 	DisplayDenom = "HAQQ"
 )
 
-// Parameter store keys
-var (
-	ParamStoreKeyEnabled      = []byte("Enabled")
-	ParamStoreKeyMinMintPerTx = []byte("MinMintPerTx")
-	ParamStoreKeyMaxMintPerTx = []byte("MaxMintPerTx")
-	ParamStoreKeyMaxSupply    = []byte("MaxSupply")
-)
+// ParamStoreKeyParams is the single parameter store key holding the whole Params set.
+//
+// The x/params legacy subspace validates one key per ParameterChangeProposal change and
+// applies changes one at a time, so per-field keys would let governance set MaxMintPerTx
+// above MaxSupply (or MinMintPerTx above MaxMintPerTx) without the cross-field rules in
+// Params.Validate ever running. Storing the set under a single key makes every governance
+// update carry the complete Params and pass Validate atomically.
+//
+// NOTE for proposal authors: Subspace.Update loads the stored value before unmarshalling the
+// proposal JSON over it, and Enabled is `omitempty`. A proposal that means to disable the
+// module has to spell out "enabled":false; omitting the field keeps the current value.
+var ParamStoreKeyParams = []byte("Params")
 
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -38,11 +43,19 @@ func DefaultParams() Params {
 // ParamSetPairs Implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyEnabled, &p.Enabled, validateBool),
-		paramtypes.NewParamSetPair(ParamStoreKeyMinMintPerTx, &p.MinMintPerTx, validateInt),
-		paramtypes.NewParamSetPair(ParamStoreKeyMaxMintPerTx, &p.MaxMintPerTx, validateInt),
-		paramtypes.NewParamSetPair(ParamStoreKeyMaxSupply, &p.MaxSupply, validateInt),
+		paramtypes.NewParamSetPair(ParamStoreKeyParams, p, validateParams),
 	}
+}
+
+// validateParams runs the full Params validation, including the cross-field rules.
+// It is the validator the params subspace calls on every set and on every governance update.
+func validateParams(i interface{}) error {
+	params, ok := i.(Params)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	return params.Validate()
 }
 
 func validateBool(i interface{}) error {
@@ -54,9 +67,18 @@ func validateBool(i interface{}) error {
 }
 
 func validateInt(i interface{}) error {
-	_, ok := i.(sdkmath.Int)
+	val, ok := i.(sdkmath.Int)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	// The zero value of sdkmath.Int wraps a nil big.Int: IsPositive and String both
+	// dereference it. A genesis document that omits the field produces exactly that,
+	// so the nil case must be rejected before any other method is called on val.
+	if val.IsNil() {
+		return fmt.Errorf("parameter must be set, got: nil")
+	}
+	if !val.IsPositive() {
+		return fmt.Errorf("parameter must be positive, got: %s", val.String())
 	}
 	return nil
 }

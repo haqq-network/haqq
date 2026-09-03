@@ -17,6 +17,30 @@ import (
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
+// ParseApplicationID converts an ABI uint256 argument into an ethiq application ID.
+//
+// ApplicationId is uint64 while the ABI argument is 256 bits wide, and big.Int.Uint64 keeps
+// only the low 64 bits: 2^64+5 would silently address application 5. Every entry point that
+// takes an application ID from calldata must go through here.
+func ParseApplicationID(arg interface{}) (uint64, error) {
+	appID, ok := arg.(*big.Int)
+	if !ok || appID == nil {
+		return 0, errorsmod.Wrapf(ethiqtypes.ErrInvalidApplicationID, ErrInvalidApplicationID, arg)
+	}
+
+	// Sign is unreachable for a uint256 argument; it guards the helper against a future
+	// caller that hands it a signed value.
+	if appID.Sign() < 0 || appID.BitLen() > 64 {
+		return 0, errorsmod.Wrapf(
+			ethiqtypes.ErrInvalidApplicationID,
+			"application ID %s does not fit in uint64",
+			appID.String(),
+		)
+	}
+
+	return appID.Uint64(), nil
+}
+
 func NewMintHaqqMsg(args []interface{}) (*ethiqtypes.MsgMintHaqq, common.Address, common.Address, error) {
 	if len(args) != 3 {
 		return nil, common.Address{}, common.Address{}, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 3, len(args))
@@ -56,14 +80,14 @@ func NewMintHaqqByApplicationMsg(args []interface{}) (*ethiqtypes.MsgMintHaqqByA
 		return nil, common.Address{}, fmt.Errorf(ErrInvalidSender, args[0])
 	}
 
-	appID, ok := args[1].(*big.Int)
-	if !ok || appID == nil {
-		return nil, common.Address{}, errorsmod.Wrapf(ethiqtypes.ErrInvalidApplicationID, ErrInvalidApplicationID, args[1])
+	appID, err := ParseApplicationID(args[1])
+	if err != nil {
+		return nil, common.Address{}, err
 	}
 
 	msg := &ethiqtypes.MsgMintHaqqByApplication{
 		FromAddress:   sdk.AccAddress(sender.Bytes()).String(),
-		ApplicationId: appID.Uint64(),
+		ApplicationId: appID,
 	}
 
 	return msg, sender, nil
@@ -91,13 +115,13 @@ func NewCalculateForApplicationRequest(args []interface{}) (*ethiqtypes.QueryCal
 		return nil, fmt.Errorf("invalid input arguments. Expected 1, got %d", len(args))
 	}
 
-	appID, ok := args[0].(*big.Int)
-	if !ok || appID == nil {
-		return nil, errorsmod.Wrapf(ethiqtypes.ErrInvalidApplicationID, ErrInvalidApplicationID, args[0])
+	appID, err := ParseApplicationID(args[0])
+	if err != nil {
+		return nil, err
 	}
 
 	req := &ethiqtypes.QueryCalculateForApplicationRequest{
-		ApplicationId: appID.Uint64(),
+		ApplicationId: appID,
 	}
 
 	return req, nil

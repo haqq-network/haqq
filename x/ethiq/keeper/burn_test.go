@@ -8,6 +8,7 @@ import (
 	"github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/utils"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
+	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
 
 func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
@@ -27,7 +28,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 			malleate: func(ctx sdk.Context) {
 				p := s.network.App.EthiqKeeper.GetParams(ctx)
 				p.Enabled = false
-				s.network.App.EthiqKeeper.SetParams(ctx, p)
+				suite.Require().NoError(s.network.App.EthiqKeeper.SetParams(ctx, p))
 
 				from = s.keyring.GetAccAddr(0)
 				to = s.keyring.GetAccAddr(1)
@@ -81,7 +82,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqq() {
 			malleate: func(ctx sdk.Context) {
 				p := s.network.App.EthiqKeeper.GetParams(ctx)
 				p.MaxMintPerTx = sdkmath.OneInt().MulRaw(5)
-				s.network.App.EthiqKeeper.SetParams(ctx, p)
+				suite.Require().NoError(s.network.App.EthiqKeeper.SetParams(ctx, p))
 
 				from = s.keyring.GetAccAddr(0)
 				to = s.keyring.GetAccAddr(1)
@@ -266,7 +267,7 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 			malleate: func(ctx sdk.Context) {
 				p := s.network.App.EthiqKeeper.GetParams(ctx)
 				p.Enabled = false
-				s.network.App.EthiqKeeper.SetParams(ctx, p)
+				suite.Require().NoError(s.network.App.EthiqKeeper.SetParams(ctx, p))
 			},
 			expErr:      true,
 			errContains: "module is disabled",
@@ -417,6 +418,22 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 			errContains:  "",
 		},
 		{
+			name: "success - UCDAO application burn of entire escrow removes holder",
+			malleate: func(ctx sdk.Context) {
+				application, err := ethiqtypes.GetApplicationByID(ucdaoAppID)
+				suite.Require().NoError(err)
+				fromAddr := sdk.MustAccAddressFromBech32(application.FromAddress)
+				fundAmt := application.BurnAmount.Amount
+				suite.Require().NoError(s.network.FundAccount(fromAddr, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, fundAmt))))
+				suite.Require().NoError(s.network.App.DaoKeeper.Fund(ctx, sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, fundAmt)), fromAddr))
+			},
+			from:         sdk.MustAccAddressFromBech32(ucdaoAppFrom),
+			appID:        ucdaoAppID,
+			calcExpected: true,
+			expErr:       false,
+			errContains:  "",
+		},
+		{
 			name: "success - UCDAO as source of funds, with liquid vesting coins",
 			malleate: func(ctx sdk.Context) {
 				// fund funder account
@@ -473,6 +490,9 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 					suite.Require().NoError(calcErr)
 					suite.Require().Equal(calcRes.EstimatedHaqqAmount.String(), resAmt.String())
 					suite.Require().Equal(sdk.MustAccAddressFromBech32(app.ToAddress), toAddr)
+					if app.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO {
+						assertUCDAOAccountingMatchesEscrow(suite, ctx, tc.from)
+					}
 				} else {
 					expMintAmt, ok := sdkmath.NewIntFromString(tc.expMintAmt)
 					suite.Require().True(ok)
@@ -482,4 +502,157 @@ func (suite *KeeperTestSuite) TestBurnIslmForHaqqByApplicationID() {
 			}
 		})
 	}
+}
+
+// assertUCDAOAccountingMatchesEscrow checks that ucDAO TotalBalance equals the sum of
+// holder escrow bank balances and that empty escrows are dropped from the holders index.
+func assertUCDAOAccountingMatchesEscrow(suite *KeeperTestSuite, ctx sdk.Context, owner sdk.AccAddress) {
+	suite.T().Helper()
+
+	dao := suite.network.App.DaoKeeper
+	sum := sdk.NewCoins()
+	for _, holder := range dao.GetHolders(ctx) {
+		sum = sum.Add(dao.GetAccountBalances(ctx, holder)...)
+	}
+	suite.Require().True(
+		dao.GetTotalBalance(ctx).Equal(sum),
+		"ucDAO TotalBalance %s must equal sum of holder escrow balances %s after application burn",
+		dao.GetTotalBalance(ctx),
+		sum,
+	)
+
+	remaining := dao.GetAccountBalances(ctx, owner)
+	if remaining.IsZero() {
+		suite.Require().False(dao.IsHolder(ctx, owner), "empty escrow must be removed from holders index")
+		return
+	}
+	suite.Require().True(dao.IsHolder(ctx, owner), "non-empty escrow must stay in holders index")
+}
+
+// TestApplicationBurnEventIdentifiesOwner checks who the application-mint event names.
+//
+// For a ucDAO application the coins leave a derived escrow account. Reporting that address as
+// the sender forced indexers to recompute sha256 over the module name to get back to a user,
+// so the owner is the sender and the escrow is a separate attribute.
+func (suite *KeeperTestSuite) TestApplicationBurnEventIdentifiesOwner() {
+	var bankAppID, ucdaoAppID uint64
+	var bankAppFrom, ucdaoAppFrom string
+
+	totalApps := ethiqtypes.TotalNumberOfApplications()
+	for i := uint64(0); i < totalApps; i++ {
+		app, err := ethiqtypes.GetApplicationByID(i)
+		suite.Require().NoError(err)
+		if app.IsCanceled {
+			continue
+		}
+		if app.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_BANK && bankAppFrom == "" {
+			bankAppID, bankAppFrom = i, app.FromAddress
+		}
+		if app.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO && ucdaoAppFrom == "" {
+			ucdaoAppID, ucdaoAppFrom = i, app.FromAddress
+		}
+	}
+	suite.Require().NotEmpty(bankAppFrom, "bank application not found in waitlist")
+	suite.Require().NotEmpty(ucdaoAppFrom, "UCDAO application not found in waitlist")
+
+	// eventAttributes runs the application burn on a clean event manager and returns the
+	// attributes of the emitted mint event.
+	eventAttributes := func(ctx sdk.Context, owner sdk.AccAddress, appID uint64) map[string]string {
+		ctx = ctx.WithEventManager(sdk.NewEventManager())
+		_, _, err := s.network.App.EthiqKeeper.BurnIslmForHaqqByApplicationID(ctx, owner, appID)
+		suite.Require().NoError(err)
+
+		attrs := make(map[string]string)
+		for _, event := range ctx.EventManager().Events() {
+			if event.Type != ethiqtypes.EventTypeMintByApplicationIDExecuted {
+				continue
+			}
+			for _, attr := range event.Attributes {
+				attrs[attr.Key] = attr.Value
+			}
+		}
+		suite.Require().NotEmpty(attrs, "mint event was not emitted")
+		return attrs
+	}
+
+	suite.Run("bank source names the owner and reports no escrow", func() {
+		suite.SetupTest()
+		ctx := s.network.GetContext()
+
+		owner := sdk.MustAccAddressFromBech32(bankAppFrom)
+		app, err := ethiqtypes.GetApplicationByID(bankAppID)
+		suite.Require().NoError(err)
+		suite.Require().NoError(s.network.FundAccount(owner, sdk.NewCoins(app.BurnAmount)))
+
+		attrs := eventAttributes(ctx, owner, bankAppID)
+		suite.Require().Equal(bankAppFrom, attrs[ethiqtypes.AttributeKeySender])
+		suite.Require().Empty(attrs[ethiqtypes.AttributeKeyApplicationEscrow])
+	})
+
+	suite.Run("ucDAO source names the owner and reports the escrow", func() {
+		suite.SetupTest()
+		ctx := s.network.GetContext()
+
+		owner := sdk.MustAccAddressFromBech32(ucdaoAppFrom)
+		app, err := ethiqtypes.GetApplicationByID(ucdaoAppID)
+		suite.Require().NoError(err)
+		suite.Require().NoError(s.network.FundAccount(owner, sdk.NewCoins(app.BurnAmount)))
+		suite.Require().NoError(s.network.App.DaoKeeper.Fund(ctx, sdk.NewCoins(app.BurnAmount), owner))
+
+		attrs := eventAttributes(ctx, owner, ucdaoAppID)
+		suite.Require().Equal(ucdaoAppFrom, attrs[ethiqtypes.AttributeKeySender],
+			"sender must be the ucDAO holder, not the derived escrow")
+		suite.Require().Equal(
+			ucdaotypes.GetEscrowAddress(owner).String(),
+			attrs[ethiqtypes.AttributeKeyApplicationEscrow],
+			"the escrow the coins left must be reported separately",
+		)
+	})
+}
+
+// TestApplicationBurnFromUntrackedEscrow covers the escrow that ucDAO never counted.
+//
+// The applicant topped their escrow up with a plain bank transfer instead of MsgFund, so the
+// ucDAO total balance is behind the escrow's real balance. The application burn removes more
+// than was ever counted, which used to panic inside sdk.Coin.Sub and made the application
+// permanently unexecutable. It must go through and leave the counter at zero.
+func (suite *KeeperTestSuite) TestApplicationBurnFromUntrackedEscrow() {
+	suite.SetupTest()
+	ctx := s.network.GetContext()
+
+	var appID uint64
+	var from string
+	total := ethiqtypes.TotalNumberOfApplications()
+	for i := uint64(0); i < total; i++ {
+		app, err := ethiqtypes.GetApplicationByID(i)
+		suite.Require().NoError(err)
+		if app.Source == ethiqtypes.SourceOfFunds_SOURCE_OF_FUNDS_UCDAO && !app.IsCanceled {
+			appID, from = i, app.FromAddress
+			break
+		}
+	}
+	suite.Require().NotEmpty(from, "UCDAO application not found in waitlist")
+
+	app, err := ethiqtypes.GetApplicationByID(appID)
+	suite.Require().NoError(err)
+	owner := sdk.MustAccAddressFromBech32(from)
+	escrow := ucdaotypes.GetEscrowAddress(owner)
+	dao := s.network.App.DaoKeeper
+
+	// Fund the escrow directly through bank, bypassing DaoKeeper.Fund entirely.
+	suite.Require().NoError(s.network.FundAccount(escrow, sdk.NewCoins(app.BurnAmount)))
+	suite.Require().True(dao.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount.IsZero(),
+		"a direct transfer must not show up in the ucDAO counter")
+
+	var mintedAmt sdkmath.Int
+	suite.Require().NotPanics(func() {
+		mintedAmt, _, err = s.network.App.EthiqKeeper.BurnIslmForHaqqByApplicationID(ctx, owner, appID)
+	})
+	suite.Require().NoError(err)
+	suite.Require().True(mintedAmt.IsPositive())
+
+	suite.Require().True(dao.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount.IsZero(),
+		"the counter must bottom out at zero, not go negative")
+	suite.Require().True(dao.GetAccountBalances(ctx, owner).IsZero(), "the escrow must be drained")
+	suite.Require().True(s.network.App.EthiqKeeper.IsApplicationExecuted(ctx, appID))
 }

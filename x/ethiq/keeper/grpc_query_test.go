@@ -116,7 +116,7 @@ func (suite *KeeperTestSuite) TestCalculateGRPC() {
 			malleate: func(ctx sdk.Context) {
 				p := s.network.App.EthiqKeeper.GetParams(ctx)
 				p.Enabled = false
-				s.network.App.EthiqKeeper.SetParams(ctx, p)
+				suite.Require().NoError(s.network.App.EthiqKeeper.SetParams(ctx, p))
 			},
 			expErr:      true,
 			errContains: "module is disabled",
@@ -298,6 +298,39 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 			expTotal: 0,
 			expErr:   false,
 		},
+		{
+			name: "success - limit exactly at the maximum page size",
+			req: &ethiqtypes.QueryGetApplicationsRequest{
+				Pagination: &query.PageRequest{
+					Limit: ethiqkeeper.MaxPageLimit,
+				},
+			},
+			expLen:   ethiqkeeper.MaxPageLimit,
+			expTotal: 0,
+			expErr:   false,
+		},
+		{
+			// Silently trimming the page would be indistinguishable from the last page:
+			// these responses are offset-based and carry no NextKey.
+			name: "fail - limit above the maximum page size",
+			req: &ethiqtypes.QueryGetApplicationsRequest{
+				Pagination: &query.PageRequest{
+					Limit: ethiqkeeper.MaxPageLimit + 1,
+				},
+			},
+			expErr:      true,
+			errContains: "exceeds the maximum page size",
+		},
+		{
+			name: "fail - key-based pagination is not supported",
+			req: &ethiqtypes.QueryGetApplicationsRequest{
+				Pagination: &query.PageRequest{
+					Key: []byte("some-key"),
+				},
+			},
+			expErr:      true,
+			errContains: "key-based pagination is not supported",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -397,6 +430,28 @@ func (suite *KeeperTestSuite) TestGetSendersApplicationsGRPC() {
 			expLen:   0,
 			expTotal: 0,
 			expErr:   false,
+		},
+		{
+			name: "fail - limit above the maximum page size",
+			req: &ethiqtypes.QueryGetSendersApplicationsRequest{
+				SenderAddress: knownSender,
+				Pagination: &query.PageRequest{
+					Limit: ethiqkeeper.MaxPageLimit + 1,
+				},
+			},
+			expErr:      true,
+			errContains: "exceeds the maximum page size",
+		},
+		{
+			name: "fail - key-based pagination is not supported",
+			req: &ethiqtypes.QueryGetSendersApplicationsRequest{
+				SenderAddress: knownSender,
+				Pagination: &query.PageRequest{
+					Key: []byte("some-key"),
+				},
+			},
+			expErr:      true,
+			errContains: "key-based pagination is not supported",
 		},
 	}
 

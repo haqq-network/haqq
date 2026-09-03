@@ -23,7 +23,7 @@ func (suite *KeeperTestSuite) TestMsgMintHaqq() {
 				// Disable module
 				params := s.network.App.EthiqKeeper.GetParams(ctx)
 				params.Enabled = false
-				s.network.App.EthiqKeeper.SetParams(ctx, params)
+				suite.Require().NoError(s.network.App.EthiqKeeper.SetParams(ctx, params))
 
 				return &ethiqtypes.MsgMintHaqq{
 					FromAddress: s.keyring.GetAccAddr(0).String(),
@@ -129,7 +129,7 @@ func (suite *KeeperTestSuite) TestMsgMintHaqqByApplication() {
 			malleate: func(ctx sdk.Context) *ethiqtypes.MsgMintHaqqByApplication {
 				params := s.network.App.EthiqKeeper.GetParams(ctx)
 				params.Enabled = false
-				s.network.App.EthiqKeeper.SetParams(ctx, params)
+				suite.Require().NoError(s.network.App.EthiqKeeper.SetParams(ctx, params))
 
 				return &ethiqtypes.MsgMintHaqqByApplication{
 					FromAddress:   s.keyring.GetAccAddr(0).String(),

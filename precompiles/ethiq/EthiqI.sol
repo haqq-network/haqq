@@ -14,6 +14,14 @@ EthiqI constant ETHIQ_CONTRACT = EthiqI(ETHIQ_PRECOMPILE_ADDRESS);
 string constant MSG_MINT_HAQQ = "/haqq.ethiq.v1.MsgMintHaqq";
 string constant MSG_MINT_HAQQ_BY_APPLICATION = "/haqq.ethiq.v1.MsgMintHaqqByApplication";
 
+/// @dev Reading authorization state:
+/// allowance is defined for MSG_MINT_HAQQ only - it returns a spend limit in aISLM, and reverts
+/// for MSG_MINT_HAQQ_BY_APPLICATION, whose grant holds a list of application IDs rather than an
+/// amount. Read that list off chain through the standard authz query:
+///   cosmos.authz.v1beta1.Query/Grants with msg_type_url = MSG_MINT_HAQQ_BY_APPLICATION
+/// On chain, follow the ApplicationIDApproval and ApplicationIDRevocation events, which carry the
+/// resulting allow list, and Revocation, which means the grant is gone.
+
 /// @author Haqq Team
 /// @title Ethiq Precompile Contract
 /// @dev The interface through which solidity contracts will interact with the ethiq module
@@ -29,6 +37,31 @@ interface EthiqI is AuthorizationI {
         address indexed receiver,
         uint256 islmAmount,
         uint256 haqqAmount
+    );
+
+    /// @dev ApplicationIDApproval defines an Event emitted when an application ID is approved for a grantee.
+    /// @param grantee The address that received the authorization
+    /// @param granter The address that granted the authorization
+    /// @param applicationId The application ID that was added to the allow list
+    /// @param approvedApplicationIds The full allow list after the approval
+    event ApplicationIDApproval(
+        address indexed grantee,
+        address indexed granter,
+        uint256 applicationId,
+        uint256[] approvedApplicationIds
+    );
+
+    /// @dev ApplicationIDRevocation defines an Event emitted when a single application ID is revoked.
+    /// @dev An empty remainingApplicationIds means the whole authorization was deleted.
+    /// @param grantee The address that had the authorization
+    /// @param granter The address that granted the authorization
+    /// @param applicationId The application ID that was removed from the allow list
+    /// @param remainingApplicationIds The allow list left after the revocation
+    event ApplicationIDRevocation(
+        address indexed grantee,
+        address indexed granter,
+        uint256 applicationId,
+        uint256[] remainingApplicationIds
     );
 
     /// @dev MintHaqqByApplication defines an Event emitted when HAQQ coins are minted by application ID
@@ -76,7 +109,10 @@ interface EthiqI is AuthorizationI {
         string[] calldata methods
     ) external returns (bool approved);
 
-    /// @dev Revokes an application ID authorization
+    /// @dev Revokes a single application ID from an authorization.
+    /// @dev Reverts if the ID is not in the allow list. Note that a successful mintHaqqByApplication
+    /// consumes the ID, so an ID used by the grantee can no longer be revoked.
+    /// @dev To drop the whole authorization at once, call revoke with MSG_MINT_HAQQ_BY_APPLICATION.
     /// @param grantee The contract address which will have its authorization revoked
     /// @param applicationId The application ID to revoke
     /// @param methods The message type URLs of the methods to revoke

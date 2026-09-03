@@ -319,7 +319,7 @@ func (s *PrecompileTestSuite) TestRevokeApplicationID() {
 		name        string
 		malleate    func() []any
 		setup       func(granter, grantee sdk.AccAddress)
-		postCheck   func(bz []byte)
+		postCheck   func(ctx sdk.Context, granter, grantee sdk.AccAddress, bz []byte)
 		gas         uint64
 		expError    bool
 		errContains string
@@ -328,28 +328,44 @@ func (s *PrecompileTestSuite) TestRevokeApplicationID() {
 			"fail - empty args",
 			func() []any { return []any{} },
 			func(_, _ sdk.AccAddress) {},
-			func(_ []byte) {},
+			func(_ sdk.Context, _, _ sdk.AccAddress, _ []byte) {},
 			200000, true,
-			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 2, 0),
+			fmt.Sprintf(cmn.ErrInvalidNumberOfArgs, 3, 0),
 		},
 		{
 			"fail - invalid method URL",
 			func() []any {
 				return []any{
 					s.keyring.GetAddr(1),
+					big.NewInt(0),
 					[]string{"invalid/url"},
 				}
 			},
 			func(_, _ sdk.AccAddress) {},
-			func(_ []byte) {},
+			func(_ sdk.Context, _, _ sdk.AccAddress, _ []byte) {},
 			200000, true,
 			fmt.Sprintf(cmn.ErrInvalidMsgType, "ethiq", "invalid/url"),
 		},
 		{
-			"success - revoke existing application ID grant",
+			"fail - no existing grant",
 			func() []any {
 				return []any{
 					s.keyring.GetAddr(1),
+					big.NewInt(0),
+					[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
+				}
+			},
+			func(_, _ sdk.AccAddress) {},
+			func(_ sdk.Context, _, _ sdk.AccAddress, _ []byte) {},
+			200000, true,
+			"does not exist or is expired",
+		},
+		{
+			"fail - application ID not in allow list",
+			func() []any {
+				return []any{
+					s.keyring.GetAddr(1),
+					big.NewInt(1),
 					[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
 				}
 			},
@@ -361,8 +377,87 @@ func (s *PrecompileTestSuite) TestRevokeApplicationID() {
 				err := s.network.App.AuthzKeeper.SaveGrant(s.network.GetContext(), grantee, granter, authzGrant, &expiration)
 				s.Require().NoError(err)
 			},
-			func(bz []byte) {
+			func(_ sdk.Context, _, _ sdk.AccAddress, _ []byte) {},
+			200000, true,
+			"application ID 1 is not in allow list",
+		},
+		{
+			"success - revoke last application ID deletes grant",
+			func() []any {
+				return []any{
+					s.keyring.GetAddr(1),
+					big.NewInt(0),
+					[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
+				}
+			},
+			func(granter, grantee sdk.AccAddress) {
+				authzGrant := &ethiqtypes.MintHaqqByApplicationIDAuthorization{
+					ApplicationsList: []uint64{0},
+				}
+				expiration := time.Now().Add(time.Hour).UTC()
+				err := s.network.App.AuthzKeeper.SaveGrant(s.network.GetContext(), grantee, granter, authzGrant, &expiration)
+				s.Require().NoError(err)
+			},
+			func(ctx sdk.Context, granter, grantee sdk.AccAddress, bz []byte) {
 				s.Require().True(unpackBool(s, ethiq.RevokeApplicationIDMethod, bz))
+				authzGrant, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, grantee, granter, ethiq.MsgMintHaqqByApplicationMsgURL)
+				s.Require().Nil(authzGrant)
+			},
+			200000, false, "",
+		},
+		{
+			"success - revoke one of two application IDs keeps the other",
+			func() []any {
+				return []any{
+					s.keyring.GetAddr(1),
+					big.NewInt(0),
+					[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
+				}
+			},
+			func(granter, grantee sdk.AccAddress) {
+				authzGrant := &ethiqtypes.MintHaqqByApplicationIDAuthorization{
+					ApplicationsList: []uint64{0, 1},
+				}
+				expiration := time.Now().Add(time.Hour).UTC()
+				err := s.network.App.AuthzKeeper.SaveGrant(s.network.GetContext(), grantee, granter, authzGrant, &expiration)
+				s.Require().NoError(err)
+			},
+			func(ctx sdk.Context, granter, grantee sdk.AccAddress, bz []byte) {
+				s.Require().True(unpackBool(s, ethiq.RevokeApplicationIDMethod, bz))
+				authzGrant, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, grantee, granter, ethiq.MsgMintHaqqByApplicationMsgURL)
+				s.Require().NotNil(authzGrant)
+				appAuthz, ok := authzGrant.(*ethiqtypes.MintHaqqByApplicationIDAuthorization)
+				s.Require().True(ok)
+				s.Require().Equal([]uint64{1}, appAuthz.ApplicationsList)
+			},
+			200000, false, "",
+		},
+		{
+			"success - ABI pack/unpack round-trip",
+			func() []any {
+				packed, err := s.precompile.ABI.Pack(
+					ethiq.RevokeApplicationIDMethod,
+					s.keyring.GetAddr(1),
+					big.NewInt(0),
+					[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
+				)
+				s.Require().NoError(err)
+				args, err := method.Inputs.Unpack(packed[4:])
+				s.Require().NoError(err)
+				return args
+			},
+			func(granter, grantee sdk.AccAddress) {
+				authzGrant := &ethiqtypes.MintHaqqByApplicationIDAuthorization{
+					ApplicationsList: []uint64{0},
+				}
+				expiration := time.Now().Add(time.Hour).UTC()
+				err := s.network.App.AuthzKeeper.SaveGrant(s.network.GetContext(), grantee, granter, authzGrant, &expiration)
+				s.Require().NoError(err)
+			},
+			func(ctx sdk.Context, granter, grantee sdk.AccAddress, bz []byte) {
+				s.Require().True(unpackBool(s, ethiq.RevokeApplicationIDMethod, bz))
+				authzGrant, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, grantee, granter, ethiq.MsgMintHaqqByApplicationMsgURL)
+				s.Require().Nil(authzGrant)
 			},
 			200000, false, "",
 		},
@@ -386,7 +481,7 @@ func (s *PrecompileTestSuite) TestRevokeApplicationID() {
 				}
 			} else {
 				s.Require().NoError(err)
-				tc.postCheck(bz)
+				tc.postCheck(ctx, granter, grantee, bz)
 			}
 			_ = contract
 		})

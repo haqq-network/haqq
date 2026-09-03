@@ -103,16 +103,16 @@ $ %s tx %s mint-by-app 1 --from mykey
 				return err
 			}
 
-			appID, ok := sdkmath.NewIntFromString(args[0])
-			if !ok {
-				return fmt.Errorf("invalid app_id: %s", args[0])
+			appID, err := parseApplicationID(args[0])
+			if err != nil {
+				return err
 			}
 
 			fromAddress := clientCtx.GetFromAddress()
 
 			msg := &types.MsgMintHaqqByApplication{
 				FromAddress:   fromAddress.String(),
-				ApplicationId: appID.Uint64(),
+				ApplicationId: appID,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

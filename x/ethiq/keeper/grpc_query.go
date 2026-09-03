@@ -106,46 +106,65 @@ func (k Keeper) CalculateForApplication(ctx context.Context, req *types.QueryCal
 	}, nil
 }
 
+// MaxPageLimit caps how many applications a single GetApplications / GetSendersApplications
+// page may return. Requests above it are rejected instead of silently truncated: these
+// responses are offset-based and never carry a NextKey, so a truncated page would be
+// indistinguishable from the last one and a client would quietly lose the tail of the list.
+const MaxPageLimit = 100
+
+// resolvePageRange turns an offset-based PageRequest into the [offset, offset+count) window
+// over a list of the given total length. Key-based pagination is not supported by these
+// queries, so a request carrying a key is rejected rather than answered with page one.
+func resolvePageRange(pagination *query.PageRequest, total uint64) (offset, count uint64, err error) {
+	limit := uint64(query.DefaultLimit)
+
+	if pagination != nil {
+		if len(pagination.Key) > 0 {
+			return 0, 0, status.Error(codes.InvalidArgument, "key-based pagination is not supported; use offset and limit")
+		}
+		offset = pagination.Offset
+		if pagination.Limit != 0 {
+			limit = pagination.Limit
+		}
+	}
+
+	if limit > MaxPageLimit {
+		return 0, 0, status.Errorf(codes.InvalidArgument, "limit %d exceeds the maximum page size of %d", limit, MaxPageLimit)
+	}
+
+	if offset >= total {
+		return offset, 0, nil
+	}
+
+	// offset < total, so the remainder cannot underflow and offset+count cannot overflow.
+	count = limit
+	if remaining := total - offset; remaining < count {
+		count = remaining
+	}
+
+	return offset, count, nil
+}
+
 func (k Keeper) GetApplications(ctx context.Context, req *types.QueryGetApplicationsRequest) (*types.QueryGetApplicationsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	var offset, limit uint64
-	offset = 0
-	limit = query.DefaultLimit
-	countTotal := false
 	total := types.TotalNumberOfApplications()
 
-	if req.Pagination != nil {
-		offset = req.Pagination.Offset
-		limit = req.Pagination.Limit
-		countTotal = req.Pagination.CountTotal
-	}
-	if limit == 0 {
-		limit = uint64(query.DefaultLimit)
+	offset, count, err := resolvePageRange(req.Pagination, total)
+	if err != nil {
+		return nil, err
 	}
 
-	lastOnThisPage := offset + limit - 1
-	if lastOnThisPage >= total {
-		lastOnThisPage = total - 1
-	}
-
-	applications := make([]types.BurnApplication, 0, limit)
+	applications := make([]types.BurnApplication, 0, count)
 	paginationResponse := &query.PageResponse{}
-	if countTotal {
+	if req.Pagination != nil && req.Pagination.CountTotal {
 		paginationResponse.Total = total
 	}
 
-	if offset >= total {
-		return &types.QueryGetApplicationsResponse{
-			Applications: applications,
-			Pagination:   paginationResponse,
-		}, nil
-	}
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	for i := offset; i < total && i <= lastOnThisPage; i++ {
+	for i := offset; i < offset+count; i++ {
 		burnApplication, err := types.GetApplicationByID(i)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -166,41 +185,21 @@ func (k Keeper) GetSendersApplications(ctx context.Context, req *types.QueryGetS
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	var offset, limit uint64
-	offset = 0
-	limit = query.DefaultLimit
-	countTotal := false
 	total := types.TotalNumberOfApplicationsBySender(req.SenderAddress)
 
-	if req.Pagination != nil {
-		offset = req.Pagination.Offset
-		limit = req.Pagination.Limit
-		countTotal = req.Pagination.CountTotal
-	}
-	if limit == 0 {
-		limit = uint64(query.DefaultLimit)
+	offset, count, err := resolvePageRange(req.Pagination, total)
+	if err != nil {
+		return nil, err
 	}
 
-	lastOnThisPage := offset + limit - 1
-	if lastOnThisPage >= total {
-		lastOnThisPage = total - 1
-	}
-
-	applications := make([]types.BurnApplication, 0, limit)
+	applications := make([]types.BurnApplication, 0, count)
 	paginationResponse := &query.PageResponse{}
-	if countTotal {
+	if req.Pagination != nil && req.Pagination.CountTotal {
 		paginationResponse.Total = total
 	}
 
-	if offset >= total {
-		return &types.QueryGetSendersApplicationsResponse{
-			Applications: applications,
-			Pagination:   paginationResponse,
-		}, nil
-	}
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	for i := offset; i < total && i <= lastOnThisPage; i++ {
+	for i := offset; i < offset+count; i++ {
 		burnApplication, err := types.GetSendersApplicationIDByIndex(req.SenderAddress, i)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())

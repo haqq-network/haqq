@@ -12,7 +12,9 @@ import (
 // InitGenesis initializes the ethiq module's state from a provided genesis state
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	// Set params
-	k.SetParams(ctx, genState.Params)
+	if err := k.SetParams(ctx, genState.Params); err != nil {
+		panic(fmt.Errorf("failed to set ethiq params: %w", err))
+	}
 
 	// Set total burned amount
 	if !genState.TotalBurnedAmount.IsZero() {
