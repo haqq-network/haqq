@@ -3,10 +3,13 @@ package ucdao
 import (
 	"fmt"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
+	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
@@ -26,6 +29,61 @@ var ConvertToHaqqMsgURL = sdk.MsgTypeURL(&ucdaotypes.MsgConvertToHaqq{})
 
 // TransferOwnershipMsgURL defines the authorization type for MsgTransferOwnership
 var TransferOwnershipMsgURL = sdk.MsgTypeURL(&ucdaotypes.MsgTransferOwnership{})
+
+// escrowBaseSnapshot pairs a UC DAO holder with the aISLM bank balance of their
+// escrow, captured immediately before a keeper call.
+type escrowBaseSnapshot struct {
+	holder     sdk.AccAddress
+	baseBefore sdkmath.Int
+}
+
+func (p *Precompile) snapshotEscrowBase(ctx sdk.Context, holder sdk.AccAddress) escrowBaseSnapshot {
+	return escrowBaseSnapshot{
+		holder:     holder,
+		baseBefore: p.daoKeeper.GetBalance(ctx, holder, utils.BaseDenom).Amount,
+	}
+}
+
+// mirrorEscrowBaseDeltasIntoStateDB mirrors per-escrow bank deltas of the EVM
+// gas denom (aISLM) into the EVM StateDB journal when the precompile is invoked
+// from another contract (caller != origin).
+//
+// UC DAO funds live on derived escrow accounts. SendCoins/burn update those
+// escrows in cacheCtx but do not journal SubBalance/AddBalance. If an escrow was
+// already dirty in StateDB (e.g. a 1 wei touch), Commit SetBalance restores the
+// stale EVM balance and mints the transferred amount back.
+//
+// Snapshots must be taken immediately before the keeper/msg work. Journal
+// entries target the escrow EVM address (not the holder). Duplicate holders are
+// mirrored once so a single net delta is applied.
+func (p *Precompile) mirrorEscrowBaseDeltasIntoStateDB(
+	ctx sdk.Context,
+	isCallerOrigin bool,
+	snapshots ...escrowBaseSnapshot,
+) {
+	if isCallerOrigin {
+		return
+	}
+	seen := make(map[string]struct{}, len(snapshots))
+	for _, s := range snapshots {
+		key := s.holder.String()
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+
+		netBaseDelta := s.baseBefore.Sub(p.daoKeeper.GetBalance(ctx, s.holder, utils.BaseDenom).Amount)
+		if netBaseDelta.IsZero() {
+			continue
+		}
+		escrowHex := common.BytesToAddress(ucdaotypes.GetEscrowAddress(s.holder).Bytes())
+		if netBaseDelta.IsNegative() {
+			p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(escrowHex, netBaseDelta.Neg().BigInt(), cmn.Add))
+			continue
+		}
+		p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(escrowHex, netBaseDelta.BigInt(), cmn.Sub))
+	}
+}
 
 func (p *Precompile) ConvertToHaqq(
 	ctx sdk.Context,
@@ -55,6 +113,7 @@ func (p *Precompile) ConvertToHaqq(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == sender
+	isCallerOrigin := contract.CallerAddress == origin
 
 	// If the contract caller is not the same as the sender, the sender must be the origin
 	if isCallerSender {
@@ -68,11 +127,16 @@ func (p *Precompile) ConvertToHaqq(
 		return nil, err
 	}
 
+	senderAcc := sdk.MustAccAddressFromBech32(msg.Sender)
+	senderEscrowBefore := p.snapshotEscrowBase(ctx, senderAcc)
+
 	msgSrv := ucdaokeeper.NewMsgServerImpl(p.daoKeeper)
 	res, err := msgSrv.ConvertToHaqq(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
+
+	p.mirrorEscrowBaseDeltasIntoStateDB(ctx, isCallerOrigin, senderEscrowBefore)
 
 	if err = EmitMintHaqqEventWithAmount(
 		ctx,
@@ -119,6 +183,7 @@ func (p *Precompile) TransferOwnership(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == owner
+	isCallerOrigin := contract.CallerAddress == origin
 
 	// If the contract caller is not the same as the sender, the sender must be the origin
 	if isCallerSender {
@@ -137,11 +202,20 @@ func (p *Precompile) TransferOwnership(
 		return nil, fmt.Errorf("origin (%s) must be the owner (%s)", origin.String(), owner.String())
 	}
 
+	ownerAcc := sdk.MustAccAddressFromBech32(msg.Owner)
+	newOwnerAcc := sdk.MustAccAddressFromBech32(msg.NewOwner)
+	escrowBefore := []escrowBaseSnapshot{
+		p.snapshotEscrowBase(ctx, ownerAcc),
+		p.snapshotEscrowBase(ctx, newOwnerAcc),
+	}
+
 	msgSrv := ucdaokeeper.NewMsgServerImpl(p.daoKeeper)
 	_, err = msgSrv.TransferOwnership(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
+
+	p.mirrorEscrowBaseDeltasIntoStateDB(ctx, isCallerOrigin, escrowBefore...)
 
 	return []byte{}, nil
 }
@@ -174,6 +248,7 @@ func (p *Precompile) TransferOwnershipWithAmount(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == owner
+	isCallerOrigin := contract.CallerAddress == origin
 
 	// If the contract caller is not the same as the sender, the sender must be the origin
 	if isCallerSender {
@@ -192,11 +267,20 @@ func (p *Precompile) TransferOwnershipWithAmount(
 		return nil, fmt.Errorf("origin (%s) must be the owner (%s)", origin.String(), owner.String())
 	}
 
+	ownerAcc := sdk.MustAccAddressFromBech32(msg.Owner)
+	newOwnerAcc := sdk.MustAccAddressFromBech32(msg.NewOwner)
+	escrowBefore := []escrowBaseSnapshot{
+		p.snapshotEscrowBase(ctx, ownerAcc),
+		p.snapshotEscrowBase(ctx, newOwnerAcc),
+	}
+
 	msgSrv := ucdaokeeper.NewMsgServerImpl(p.daoKeeper)
 	_, err = msgSrv.TransferOwnershipWithAmount(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
+
+	p.mirrorEscrowBaseDeltasIntoStateDB(ctx, isCallerOrigin, escrowBefore...)
 
 	return []byte{}, nil
 }
