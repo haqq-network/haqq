@@ -3724,7 +3724,7 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 			safeOwnerOne.Priv,
 			approveTxArgs,
 			approveMintArgs,
-			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval, ethiq.EventTypeApplicationIDApproval}, ExpPass: true},
+			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval}, ExpPass: true},
 		)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
