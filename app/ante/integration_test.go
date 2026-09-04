@@ -1,6 +1,8 @@
 package ante_test
 
 import (
+	"testing"
+
 	//nolint:revive // dot imports are fine for Ginkgo
 	. "github.com/onsi/ginkgo/v2"
 	//nolint:revive // dot imports are fine for Ginkgo
@@ -21,6 +23,14 @@ import (
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 )
+
+// TestAnteIntegrationTestSuite is the entry point for the Ginkgo specs in this package.
+// Without it the table below registers specs that are never executed - `go test` reports the
+// package as passing while running none of them.
+func TestAnteIntegrationTestSuite(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Ante Handler Integration Suite")
+}
 
 type IntegrationTestSuite struct {
 	network     network.Network

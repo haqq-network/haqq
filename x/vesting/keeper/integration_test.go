@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"testing"
 	"time"
 
 	//nolint:revive // dot imports are fine for Ginkgo
@@ -35,6 +36,14 @@ import (
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"github.com/haqq-network/haqq/x/vesting/types"
 )
+
+// TestKeeperIntegrationTestSuite is the entry point for the Ginkgo specs in this package.
+// Without it the Describe blocks below register specs that are never executed - `go test`
+// reports the package as passing while running none of them.
+func TestKeeperIntegrationTestSuite(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Vesting Keeper Suite")
+}
 
 type KeeperTestSuite struct {
 	suite.Suite
@@ -122,7 +131,11 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			Expect(vested.IsZero()).To(BeTrue())
 		}
 
-		initialFreeCoins = sdk.NewCoins(sdk.NewCoin(stakeDenom, vestingAccInitialBalance.Sub(remainingAmtToPayFees)))
+		// The free (non-schedule) balance of a vesting account is exactly what it was
+		// prefunded with: setupClawbackVestingAccount signs the conversion with the funder's
+		// key, so the vesting account itself pays no fee during setup. Specs that do spend
+		// fees subtract accountGasCoverage from this baseline themselves.
+		initialFreeCoins = sdk.NewCoins(sdk.NewCoin(stakeDenom, vestingAccInitialBalance))
 	})
 	Context("before first vesting period", func() {
 		BeforeEach(func() {
@@ -221,7 +234,9 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 
 			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), Amount: txAmount})
 			Expect(err).NotTo(BeNil())
-			Expect(err.Error()).To(ContainSubstring("insufficient funds"))
+			// Rejected by the vesting ante decorator, which reports the locked balance rather
+			// than a plain bank "insufficient funds".
+			Expect(err.Error()).To(ContainSubstring("insufficient unlocked"))
 			Expect(res.IsOK()).To(BeFalse())
 		})
 	})
@@ -554,14 +569,23 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			msgs := make([]sdk.Msg, numTestMsgs)
 			// send all the account's spendable balance
 			// initial_balance + unlocked in several messages
-			totalSendAmt := initialFreeCoins.Add(freeCoins...)[0].Amount.Sub(remainingAmtToPayFees.MulRaw(2))
+			// Reserve one full fee per message: each of the numTestMsgs txs can burn up to
+			// gasLimit at gasPrice, which is exactly remainingAmtToPayFees.
+			totalSendAmt := initialFreeCoins.Add(freeCoins...)[0].Amount.Sub(remainingAmtToPayFees.MulRaw(int64(numTestMsgs)))
 			txAmount := totalSendAmt.QuoRaw(int64(numTestMsgs))
+
+			// Nonces must continue from the account's current sequence. This account is funded
+			// by the funder during setup and has sent nothing itself, so its sequence is 0 -
+			// hardcoding 1 as the first nonce makes the whole tx bounce with "invalid sequence".
+			accSeq, err := s.handler.GetAccount(account.AccAddr.String())
+			Expect(err).To(BeNil())
+			firstNonce := accSeq.GetSequence()
 
 			// update to the actual totalSendAmt to the sum of all sent txAmount
 			// to avoid errors due to rounding
 			totalSendAmt = math.ZeroInt()
 			for i := 0; i < numTestMsgs; i++ {
-				msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{Nonce: uint64(i + 1), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+				msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{Nonce: firstNonce + uint64(i), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 				Expect(err).To(BeNil())
 				msgs[i] = &msg
 				totalSendAmt = totalSendAmt.Add(txAmount)
@@ -576,7 +600,7 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 
 			res, err := s.network.BroadcastTxSync(txBytes)
 			Expect(err).To(BeNil())
-			Expect(res.IsOK()).To(BeTrue())
+			Expect(res.IsOK()).To(BeTrue(), "tx rejected: code=%d log=%s", res.Code, res.Log)
 			Expect(s.network.NextBlock()).To(BeNil())
 
 			// check final balance is as expected - transferred spendable tokens
@@ -636,10 +660,15 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			amtSentByAcc := spendableBalance.Amount.Sub(remainingAmtToPayFees.MulRaw(int64(numTestMsgs)))
 			txAmount := amtSentByAcc.QuoRaw(int64(numTestMsgs))
 
+			// Nonces continue from each signer's current sequence; these accounts are funded
+			// by the funder during setup and have sent nothing, so their sequence is 0.
 			msgs := []sdk.Msg{}
 			for _, grantee := range vestingAccs {
+				granteeAcc, err := s.handler.GetAccount(grantee.AccAddr.String())
+				Expect(err).To(BeNil())
+				firstNonce := granteeAcc.GetSequence()
 				for i := 0; i < numTestMsgs; i++ {
-					msg, err := s.factory.GenerateSignedMsgEthereumTx(grantee.Priv, evmtypes.EvmTxArgs{Nonce: uint64(i + 1), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+					msg, err := s.factory.GenerateSignedMsgEthereumTx(grantee.Priv, evmtypes.EvmTxArgs{Nonce: firstNonce + uint64(i), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 					Expect(err).To(BeNil())
 					msgs = append(msgs, &msg)
 				}
@@ -660,7 +689,9 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			balRes, err := s.handler.GetBalance(dest.Bytes(), stakeDenom)
 			Expect(err).To(BeNil())
 			destBalance := balRes.Balance
-			Expect(destBalance.Amount).To(Equal(amtSentByAcc.MulRaw(int64(len(vestingAccs)))))
+			// txAmount is amtSentByAcc/numTestMsgs truncated, so the sum of the messages is
+			// at most amtSentByAcc - assert what was actually sent, not the pre-rounding total.
+			Expect(destBalance.Amount).To(Equal(txAmount.MulRaw(int64(numTestMsgs)).MulRaw(int64(len(vestingAccs)))))
 		})
 
 		It("should not enable access to locked EVM tokens (single-account, single-msg)", func() {
@@ -690,9 +721,13 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			amt := vestingAccInitialBalance.Sub(remainingAmtToPayFees).Add(unlockedPerLockupAmt)
 			txAmount := amt.QuoRaw(int64(numTestMsgs))
 
+			signerAcc, err := s.handler.GetAccount(account.AccAddr.String())
+			Expect(err).To(BeNil())
+			firstNonce := signerAcc.GetSequence()
+
 			// Add additional message that exceeds unlocked balance
 			for i := 0; i < numTestMsgs+1; i++ {
-				msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{Nonce: uint64(i + 1), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+				msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{Nonce: firstNonce + uint64(i), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 				Expect(err).To(BeNil())
 				msgs[i] = &msg
 			}
@@ -744,8 +779,11 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			txAmount := amt.QuoRaw(int64(numTestMsgs))
 
 			for _, account := range vestingAccs {
+				signerAcc, err := s.handler.GetAccount(account.AccAddr.String())
+				Expect(err).To(BeNil())
+				firstNonce := signerAcc.GetSequence()
 				for i := 0; i < numTestMsgs; i++ {
-					msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{Nonce: uint64(i + 1), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
+					msg, err := s.factory.GenerateSignedMsgEthereumTx(account.Priv, evmtypes.EvmTxArgs{Nonce: firstNonce + uint64(i), To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 					Expect(err).To(BeNil())
 					msgs = append(msgs, &msg)
 				}
@@ -919,12 +957,25 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			Expect(err).To(BeNil())
 			balancePrev := balRes.Balance
 
-			// save some balance to pay fees
-			coins := initialFreeCoins.Add(vested...).Sub(accountGasCoverage...)
-			sendAmt := coins[0].Amount
+			// Drain everything the account can spend, keeping back exactly one fee.
+			//
+			// Ask the chain for the spendable balance instead of rebuilding it from constants:
+			// at this point it is initialFreeCoins plus the vested coins the first lockup
+			// released, and deriving it by hand leaves the send amount one fee away from the
+			// limit with nothing to absorb a change in the schedule constants.
+			//
+			// Gas is passed explicitly so no simulation is needed. Estimation runs against the
+			// last committed block, whose time predates the NextBlockAfter in this context's
+			// BeforeEach - there the lockup has not elapsed yet, the vested coins still count
+			// as locked, and the estimate fails on a balance the account demonstrably has.
+			spRes, err := s.handler.GetSpendableBalance(account.AccAddr, stakeDenom)
+			Expect(err).To(BeNil())
+			sendAmt := spRes.Balance.Amount.Sub(accountGasCoverage[0].Amount)
+			coins := sdk.NewCoins(sdk.NewCoin(stakeDenom, sendAmt))
 
 			msg := banktypes.NewMsgSend(account.AccAddr, dest.Bytes(), coins)
-			res, err := s.factory.ExecuteCosmosTx(account.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
+			txGas := gasLimit
+			res, err := s.factory.ExecuteCosmosTx(account.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, Gas: &txGas, GasPrice: &gasPrice})
 			Expect(err).To(BeNil())
 			Expect(res.IsOK()).To(BeTrue())
 			Expect(s.network.NextBlock()).To(BeNil())
@@ -1040,7 +1091,9 @@ var _ = Describe("Clawback Vesting Accounts", Ordered, func() {
 			txAmount := vestingAmtTotal.AmountOf(stakeDenom).Add(vestingAccInitialBalance).Mul(math.NewInt(2))
 			res, err := s.factory.ExecuteEthTx(account.Priv, evmtypes.EvmTxArgs{To: &dest, GasPrice: gasPrice.BigInt(), GasLimit: gasLimit, Amount: txAmount.BigInt()})
 			Expect(err).NotTo(BeNil())
-			Expect(err.Error()).To(ContainSubstring("sender balance < tx cost"))
+			// The EVM reports this through its block-context transfer function now; the stable
+			// part of the message is the reason, not the wording around it.
+			Expect(err.Error()).To(ContainSubstring("insufficient funds"))
 			Expect(res.IsErr()).To(BeTrue())
 		})
 		It("should short-circuit with zero balance", func() {
@@ -1550,12 +1603,16 @@ var _ = Describe("Clawback Vesting Account - Barberry bug", func() {
 
 	BeforeEach(func() {
 		s = new(KeeperTestSuite)
-		// create 2 prefunded accounts:
-		// index 0 will be the funder and
-		// index 1 will be vesting account
+		// index 0 is the funder, index 1 is the address the vesting account is created at.
+		//
+		// Only the funder is prefunded: MsgCreateClawbackVestingAccount without --merge
+		// rejects an address that already holds an account, and these cases assert that a
+		// rejected create leaves no account behind at all. Prefunding both keys created an
+		// EthAccount at the target up front, which turned the "pass" cases into
+		// "account already exists" and made the "fail" cases pass vacuously.
 		keys := keyring.New(2)
 		nw := network.NewUnitTestNetwork(
-			network.WithPreFundedAccounts(keys.GetAllAccAddrs()...),
+			network.WithPreFundedAccounts(keys.GetAccAddr(0)),
 		)
 		gh := grpc.NewIntegrationHandler(nw)
 		tf := haqqfactory.New(nw, gh)
@@ -1661,14 +1718,20 @@ var _ = Describe("Clawback Vesting Account - Barberry bug", func() {
 				res, err := s.factory.ExecuteCosmosTx(funder.Priv, factory.CosmosTxArgs{Msgs: []sdk.Msg{msg}, GasPrice: &gasPrice})
 				Expect(s.network.NextBlock()).To(BeNil())
 
-				// Get account at the new address
+				// Get account at the new address. A rejected create leaves the address with no
+				// account at all, and the query reports that as NotFound rather than a nil account.
 				acc, getAccErr := s.handler.GetAccount(vestingAcc.AccAddr.String())
-				Expect(getAccErr).To(BeNil())
 				if tc.expError {
 					Expect(err).To(HaveOccurred(), "expected funding the vesting account to have failed")
 					Expect(err.Error()).To(ContainSubstring(tc.errContains), "expected funding the vesting account to have failed")
-					Expect(acc).To(BeNil(), "expected clawback vesting account to not have been created")
+					if getAccErr == nil {
+						Expect(acc).To(BeNil(), "expected clawback vesting account to not have been created")
+					} else {
+						Expect(getAccErr.Error()).To(ContainSubstring("not found"),
+							"expected no account at the target address")
+					}
 				} else {
+					Expect(getAccErr).To(BeNil())
 					Expect(acc).NotTo(BeNil(), "expected clawback vesting account should have been created")
 					Expect(err).ToNot(HaveOccurred(), "failed to fund clawback vesting account")
 					Expect(res.IsOK()).To(BeTrue())
@@ -1699,6 +1762,9 @@ var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
 	initialFreeBalance := sdk.NewCoins(sdk.NewCoin(stakeDenom, math.NewInt(1e18).MulRaw(10)))
 
 	BeforeEach(func() {
+		// Every other Describe in this file allocates the suite here; this one did not,
+		// so `s` stayed nil and the first assignment below panicked.
+		s = new(KeeperTestSuite)
 		// create 4 test accounts:
 		numTestAccounts := 4
 		kr := keyring.New(numTestAccounts)
@@ -1728,7 +1794,8 @@ var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
 		for i := 0; i < numTestAccounts; i++ {
 			balRes, err := s.handler.GetBalance(s.keyring.GetAccAddr(i), stakeDenom)
 			Expect(err).To(BeNil())
-			Expect(balRes.Balance).To(Equal(initialFreeBalance[0]))
+			// GetBalance hands back a *Coin; comparing the pointer to a Coin value never matches.
+			Expect(*balRes.Balance).To(Equal(initialFreeBalance[0]))
 		}
 
 		// Add a commit to instantiate blocks
@@ -1736,8 +1803,11 @@ var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
 	})
 
 	It("Has delegation before conversion and free spendable coins", func() {
-		vaccAddr := s.keyring.GetAccAddr(0)
-		vaccPrivKey := s.keyring.GetPrivKey(0)
+		// Index 0 is the account the network seeds with a genesis delegation to every
+		// validator (see createDelegations). This spec is about an account that starts clean,
+		// so use another key and leave index 0 out of it.
+		vaccAddr := s.keyring.GetAccAddr(2)
+		vaccPrivKey := s.keyring.GetPrivKey(2)
 
 		// Add coins to be delegated
 		err := testutil.FundAccount(s.network.GetContext(), s.network.App.BankKeeper, vaccAddr, initialFreeBalance)
@@ -1748,7 +1818,8 @@ var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
 		balRes, err := s.handler.GetBalance(vaccAddr, stakeDenom)
 		Expect(err).To(BeNil())
 		vaccBal := balRes.Balance
-		Expect(vaccBal).To(Equal(initialFreeBalance[0].Add(initialFreeBalance[0])))
+		// GetBalance hands back a *Coin; comparing the pointer to a Coin value never matches.
+		Expect(*vaccBal).To(Equal(initialFreeBalance[0].Add(initialFreeBalance[0])))
 
 		// should be equal to account balance
 		spendableRes, err := s.handler.GetSpendableBalance(vaccAddr, stakeDenom)
@@ -1756,6 +1827,13 @@ var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
 		vaccSpendableCoins := spendableRes.Balance
 		Expect(vaccSpendableCoins).ToNot(BeNil())
 		Expect(vaccSpendableCoins).To(Equal(vaccBal))
+
+		// The network seeds genAccounts[0] - this account - with a genesis delegation to
+		// every validator, so measure the delta rather than the absolute delegated amount.
+		delegatedBefore := math.ZeroInt()
+		if preRes, preErr := s.handler.GetDelegation(vaccAddr.String(), s.network.GetValidators()[0].OperatorAddress); preErr == nil {
+			delegatedBefore = preRes.DelegationResponse.Balance.Amount
+		}
 
 		// delegate half of the balance
 		err = s.factory.Delegate(
@@ -1776,7 +1854,7 @@ var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
 		Expect(err).To(BeNil())
 		// there's no unbonding delegations, so skip them
 		delegatedAmt := bondedRes.DelegationResponse.Balance.Amount
-		Expect(delegatedAmt).To(Equal(initialFreeBalance[0].Amount))
+		Expect(delegatedAmt.Sub(delegatedBefore)).To(Equal(initialFreeBalance[0].Amount))
 
 		spendableResAfterDelegation, err := s.handler.GetSpendableBalance(vaccAddr, stakeDenom)
 		Expect(err).To(BeNil())
@@ -1822,17 +1900,19 @@ var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
 		Expect(err).To(BeNil(), "expected no error on creating clawback vesting account")
 		Expect(res.IsOK()).To(BeTrue(), "expected creating clawback vesting account to succeed")
 
-		feesPaid := gasPrice.Mul(math.NewInt(res.GasUsed))
+		// Cosmos deducts the fee the tx declares, which is gasPrice * gas limit - not
+		// gasPrice * gasUsed. Unused gas is not refunded.
+		feesPaid := gasPrice.Mul(math.NewIntFromUint64(gas))
 
 		funBalResAfterVesting, err := s.handler.GetBalance(funderAddr, stakeDenom)
 		Expect(err).To(BeNil())
 		funderAccBalAfterVesting := funBalResAfterVesting.Balance
-		Expect(funderAccBalAfterVesting).To(Equal(initialFreeBalance[0].Sub(vestingAmtTotal[0]).Sub(sdk.NewCoin(stakeDenom, feesPaid))))
+		Expect(*funderAccBalAfterVesting).To(Equal(initialFreeBalance[0].Sub(vestingAmtTotal[0]).Sub(sdk.NewCoin(stakeDenom, feesPaid))))
 
 		balResAfterVesting, err := s.handler.GetBalance(vaccAddr, stakeDenom)
 		Expect(err).To(BeNil())
 		vaccBalAfterVesting := balResAfterVesting.Balance
-		Expect(vaccBalAfterVesting).To(Equal(vaccBalBeforeVesting.Add(vestingAmtTotal[0])))
+		Expect(*vaccBalAfterVesting).To(Equal(vaccBalBeforeVesting.Add(vestingAmtTotal[0])))
 
 		spendableResAfterVesting, err := s.handler.GetSpendableBalance(vaccAddr, stakeDenom)
 		Expect(err).To(BeNil())
@@ -1846,7 +1926,9 @@ var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
 
 		Expect(clawbackAccount.DelegatedVesting).To(BeNil())
 		Expect(clawbackAccount.DelegatedFree).ToNot(BeNil())
-		Expect(clawbackAccount.DelegatedFree[0]).To(Equal(initialFreeBalance[0]))
+		// DelegatedFree is resynced from the staking keeper, so it covers the genesis
+		// delegation this account is seeded with as well as the one made above.
+		Expect(clawbackAccount.DelegatedFree[0].Amount).To(Equal(initialFreeBalance[0].Amount.Add(delegatedBefore)))
 
 		// test spendable coins after vesting cliff
 		Expect(s.network.NextBlockAfter(time.Duration(cliffLength)*time.Second + 1)).To(BeNil())
@@ -1859,6 +1941,7 @@ var _ = Describe("Clawback Vesting Accounts - Track delegations", func() {
 		spendableResAfterCliff, err := s.handler.GetSpendableBalance(vaccAddr, stakeDenom)
 		Expect(err).To(BeNil())
 		vaccSpendableCoinsAfterCliff := spendableResAfterCliff.Balance
-		Expect(vaccSpendableCoinsAfterCliff).To(Equal(vaccSpendableCoinsAfterVesting.Add(clawbackAccount.GetLockedUpVestedCoins(s.network.GetContext().BlockTime())[0])))
+		// Balance is a *Coin; Add returns a Coin value, so dereference before comparing.
+		Expect(*vaccSpendableCoinsAfterCliff).To(Equal(vaccSpendableCoinsAfterVesting.Add(clawbackAccount.GetLockedUpVestedCoins(s.network.GetContext().BlockTime())[0])))
 	})
 })

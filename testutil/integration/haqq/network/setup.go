@@ -131,7 +131,12 @@ func getAccAddrsFromBalances(balances []banktypes.Balance) []sdktypes.AccAddress
 	numberOfBalances := len(balances)
 	genAccounts := make([]sdktypes.AccAddress, 0, numberOfBalances)
 	for _, balance := range balances {
-		genAccounts = append(genAccounts, sdktypes.AccAddress(balance.Address))
+		// balance.Address is bech32; sdktypes.AccAddress(string) would reinterpret the
+		// bech32 characters as raw address bytes, so the genesis accounts would be created
+		// at addresses unrelated to the ones actually being funded. Accounts set up through
+		// WithBalances then hold a bank balance with no auth account behind it, and the
+		// first attempt to sign a tx from one fails with "account not found".
+		genAccounts = append(genAccounts, sdktypes.MustAccAddressFromBech32(balance.Address))
 	}
 	return genAccounts
 }

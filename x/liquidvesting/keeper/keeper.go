@@ -343,6 +343,27 @@ func (k BaseKeeper) Redeem(ctx sdk.Context, fromAddress sdk.AccAddress, toAddres
 			funder = sdk.MustAccAddressFromBech32(toVestingAcc.FunderAddress)
 		}
 
+		// Applying a schedule converts the recipient into a clawback vesting account, and for a
+		// contract that conversion is a one-way door: MsgConvertVestingAccount is signed by the
+		// account itself, which a contract cannot do, and the vesting precompile is not
+		// registered, so there is no EVM path to it either. ConvertIntoVestingAccount refuses
+		// contracts outright for that reason.
+		//
+		// Redeem cannot refuse them outright: x/ethiq redeems a Safe's own liquid balance back
+		// into it (redeemAllLiquidVestingCoins), and there redeemFrom == redeemTo, so the
+		// contract is acting on itself through an authorized call. What must not be possible is
+		// a third party pushing that state onto someone else's contract, which redeemTo being
+		// unconstrained would otherwise allow for the price of a dust redeem.
+		if !fromAddress.Equals(toAddress) && !isClawback {
+			if err := utils.IsContractAccount(toAccount); err == nil {
+				return errorsmod.Wrapf(
+					types.ErrRedeemFailed,
+					"account %s is a contract account and cannot be converted into a clawback vesting account by another account",
+					toAddress,
+				)
+			}
+		}
+
 		_, _, _, err = k.vestingKeeper.ApplyVestingSchedule(
 			ctx,
 			funder,
