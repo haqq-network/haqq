@@ -261,14 +261,20 @@ func (k BaseKeeper) Redeem(ctx sdk.Context, fromAddress sdk.AccAddress, toAddres
 		return errorsmod.Wrapf(errortypes.ErrNotFound, "liquidDenom %s does not exist", amount.Denom)
 	}
 
-	// get token pair
-	tokenPairID := k.erc20Keeper.GetTokenPairID(ctx, amount.Denom)
-	if len(tokenPairID) == 0 {
-		return errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", amount.Denom)
-	}
-	tokenPair, found := k.erc20Keeper.GetTokenPair(ctx, tokenPairID)
-	if !found || !tokenPair.Enabled {
-		return errorsmod.Wrapf(errortypes.ErrNotFound, "token pair for denom %s not found", amount.Denom)
+	// Look up the ERC20 pair, but do not gate the redemption on it.
+	//
+	// Redeeming is burning the liquid denom and paying out the principal the module holds;
+	// none of that needs x/erc20. The pair exists only to give the liquid denom an EVM
+	// representation. Gating on it meant governance disabling the pair - or the global
+	// EnableErc20 flag, see below - stranded the principal while the denom stayed
+	// transferable through the bank and the ERC20 precompile, which does not consult
+	// pair.Enabled either. The pair is used here for cleanup only.
+	var (
+		tokenPair      erc20types.TokenPair
+		tokenPairFound bool
+	)
+	if tokenPairID := k.erc20Keeper.GetTokenPairID(ctx, amount.Denom); len(tokenPairID) > 0 {
+		tokenPair, tokenPairFound = k.erc20Keeper.GetTokenPair(ctx, tokenPairID)
 	}
 
 	// check fromAccount has enough liquid token in balance
@@ -297,14 +303,15 @@ func (k BaseKeeper) Redeem(ctx sdk.Context, fromAddress sdk.AccAddress, toAddres
 	// save modified token schedule
 	if decreasedPeriods.TotalAmount().IsZero() {
 		k.DeleteDenom(ctx, liquidDenom.GetBaseDenom())
-		if tokenPair.Enabled {
-			_, err := k.erc20Keeper.ToggleConversion(ctx, &erc20types.MsgToggleConversion{
-				Authority: k.accountKeeper.GetModuleAddress("gov").String(),
-				Token:     amount.Denom,
-			})
-			if err != nil {
-				return errorsmod.Wrapf(types.ErrRedeemFailed, "failed to disable conversion: %s", err.Error())
-			}
+
+		// Disabling the pair is cleanup for a denom that no longer exists, so write it
+		// straight to the erc20 store. The msg server used before impersonated governance by
+		// passing the gov module address as Authority, and it refuses to run at all while
+		// EnableErc20 is off - which aborted the final redemption of every denom, the one
+		// that zeroes the schedule, and left the last holders unable to exit.
+		if tokenPairFound && tokenPair.Enabled {
+			tokenPair.Enabled = false
+			k.erc20Keeper.SetTokenPair(ctx, tokenPair)
 		}
 	} else {
 		err = k.UpdateDenomPeriods(ctx, liquidDenom.GetBaseDenom(), decreasedPeriods)

@@ -42,7 +42,6 @@ type BankKeeper interface {
 
 // ERC20Keeper defines the expected interface for the ERC20 module.
 type ERC20Keeper interface {
-	ToggleConversion(context.Context, *erc20types.MsgToggleConversion) (*erc20types.MsgToggleConversionResponse, error)
 	ConvertERC20(ctx context.Context, msg *erc20types.MsgConvertERC20) (*erc20types.MsgConvertERC20Response, error)
 
 	GetTokenPairID(ctx sdk.Context, token string) []byte
