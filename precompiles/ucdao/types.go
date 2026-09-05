@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
@@ -42,6 +44,12 @@ func NewConvertToHaqqMsg(args []interface{}) (*ucdaotypes.MsgConvertToHaqq, comm
 		sdkmath.NewIntFromBigInt(amount),
 	)
 
+	// The precompile calls the msg server directly, so baseapp's
+	// validateBasicTxMsgs never runs on this path. Validate here or not at all.
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, common.Address{}, common.Address{}, err
+	}
+
 	return msg, sender, receiver, nil
 }
 
@@ -65,6 +73,12 @@ func NewTransferOwnershipMsg(args []interface{}) (*ucdaotypes.MsgTransferOwnersh
 		sdk.AccAddress(owner.Bytes()),
 		sdk.AccAddress(newOwner.Bytes()),
 	)
+
+	// The precompile calls the msg server directly, so baseapp's
+	// validateBasicTxMsgs never runs on this path. Validate here or not at all.
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, common.Address{}, common.Address{}, err
+	}
 
 	return msg, owner, newOwner, nil
 }
@@ -99,12 +113,33 @@ func NewTransferOwnershipWithAmountMsg(args []interface{}) (*ucdaotypes.MsgTrans
 		return nil, common.Address{}, common.Address{}, fmt.Errorf("denoms and amounts length mismatch")
 	}
 
+	// Both the denom strings and the amounts come straight from calldata.
+	// sdk.NewCoin panics on a malformed denom or a negative amount, and
+	// cmn.HandleGasError only recovers ErrorOutOfGas - anything else is re-raised
+	// and unwinds out of the precompile instead of reverting the call. Build each
+	// coin by hand and validate it so bad input is an error, not a panic.
 	coins := sdk.Coins{}
+	seen := make(map[string]struct{}, len(denomsIface))
 	for i := range denomsIface {
 		if amountsIface[i] == nil {
 			return nil, common.Address{}, common.Address{}, fmt.Errorf("nil amount at index %d", i)
 		}
-		coin := sdk.NewCoin(denomsIface[i], sdkmath.NewIntFromBigInt(amountsIface[i]))
+		if amountsIface[i].BitLen() > sdkmath.MaxBitLen {
+			return nil, common.Address{}, common.Address{}, fmt.Errorf(
+				"amount at index %d does not fit in %d bits", i, sdkmath.MaxBitLen,
+			)
+		}
+		// Duplicate denoms would be summed by Coins.Add, and that sum can overflow
+		// sdkmath.Int and panic. The intent is ambiguous anyway, so reject them.
+		if _, dup := seen[denomsIface[i]]; dup {
+			return nil, common.Address{}, common.Address{}, fmt.Errorf("duplicate denom %q at index %d", denomsIface[i], i)
+		}
+		seen[denomsIface[i]] = struct{}{}
+
+		coin := sdk.Coin{Denom: denomsIface[i], Amount: sdkmath.NewIntFromBigInt(amountsIface[i])}
+		if err := coin.Validate(); err != nil {
+			return nil, common.Address{}, common.Address{}, errorsmod.Wrapf(err, "invalid coin at index %d", i)
+		}
 		coins = coins.Add(coin)
 	}
 
@@ -113,6 +148,12 @@ func NewTransferOwnershipWithAmountMsg(args []interface{}) (*ucdaotypes.MsgTrans
 		sdk.AccAddress(newOwner.Bytes()),
 		coins,
 	)
+
+	// The precompile calls the msg server directly, so baseapp's
+	// validateBasicTxMsgs never runs on this path. Validate here or not at all.
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, common.Address{}, common.Address{}, err
+	}
 
 	return msg, owner, newOwner, nil
 }

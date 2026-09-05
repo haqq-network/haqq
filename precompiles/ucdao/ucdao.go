@@ -133,12 +133,24 @@ func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 }
 
 // IsTransaction checks if the given method name corresponds to a transaction or query.
-// All exposed ucdao methods are transactions.
+//
+// The authorization methods belong here even though they carry no value: they write
+// Cosmos authz grants. RunSetup's `readOnly && isTransaction(name)` check is the only
+// write protection a precompile gets - the interpreter cannot enforce it, since a
+// precompile does not execute opcodes - and on HAQQ every opcode except CALL hands the
+// precompile readOnly = true (CALLCODE, DELEGATECALL and STATICCALL all do, see
+// x/evm/core/vm/evm.go). Leaving them out let a STATICCALL create, change and delete
+// grants, and priced them as reads. See
+// docs/security/haqq-precompile-ucdao-staticcall-authz-2026-09.md.
 func (Precompile) IsTransaction(method string) bool {
 	switch method {
 	case ConvertToHaqqMethod,
 		TransferOwnershipMethod,
-		TransferOwnershipWithAmountMethod:
+		TransferOwnershipWithAmountMethod,
+		authorization.ApproveMethod,
+		authorization.RevokeMethod,
+		authorization.IncreaseAllowanceMethod,
+		authorization.DecreaseAllowanceMethod:
 		return true
 	default:
 		return false

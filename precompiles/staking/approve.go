@@ -136,6 +136,14 @@ func (p Precompile) DecreaseAllowance(
 		return nil, err
 	}
 
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
+		return nil, err
+	}
+
 	for _, typeURL := range typeUrls {
 		switch typeURL {
 		case DelegateMsg, UndelegateMsg, RedelegateMsg, CancelUnbondingDelegationMsg:
@@ -180,6 +188,14 @@ func (p Precompile) IncreaseAllowance(
 	}
 	grantee, coin, typeUrls, err := authorization.CheckApprovalArgs(args, bondDenom)
 	if err != nil {
+		return nil, err
+	}
+
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
 		return nil, err
 	}
 
@@ -287,6 +303,12 @@ func (p Precompile) decreaseAllowance(
 	stakeAuthz *stakingtypes.StakeAuthorization,
 	expiration *time.Time,
 ) error {
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and every branch below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
+		return err
+	}
+
 	// If the authorization has no limit, no operation is performed
 	if stakeAuthz.MaxTokens == nil {
 		p.Logger(ctx).Debug("decreaseAllowance called with no limit (stakeAuthz.MaxTokens == nil): no-op")
@@ -313,6 +335,12 @@ func (p Precompile) increaseAllowance(
 	coin *sdk.Coin,
 	msgURL string,
 ) error {
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and the addition below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
+		return err
+	}
+
 	// Check if the authorization exists for the given spender
 	existingAuthz, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, msgURL)
 	if err != nil {
@@ -331,8 +359,13 @@ func (p Precompile) increaseAllowance(
 		return nil
 	}
 
-	// Add the amount to the limit
-	stakeAuthz.MaxTokens.Amount = stakeAuthz.MaxTokens.Amount.Add(coin.Amount)
+	// Add the amount to the limit, rejecting a sum that does not fit in sdkmath.Int
+	// instead of panicking inside Int.Add.
+	newLimit, err := authorization.AddAllowance(stakeAuthz.MaxTokens.Amount, coin.Amount)
+	if err != nil {
+		return err
+	}
+	stakeAuthz.MaxTokens.Amount = newLimit
 
 	return p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), stakeAuthz, expiration)
 }

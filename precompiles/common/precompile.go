@@ -48,24 +48,35 @@ func NewBalanceChangeEntry(acc common.Address, amt *big.Int, op Operation) balan
 	return balanceChangeEntry{acc, amt, op}
 }
 
-// JournalableEVMAddress maps a Cosmos account address onto the EVM address that
-// the StateDB reconciles against on Commit, reporting whether such a mapping
-// exists at all.
+// EVMAddressFromCosmos maps a Cosmos account address onto its EVM address,
+// reporting whether such a mapping exists at all.
 //
-// Cosmos permits account addresses longer than 20 bytes (ADR-028 derived
-// accounts - interchain accounts among them - are 32 bytes) and a delegator may
-// point their distribution withdraw address at one. common.BytesToAddress would
-// silently keep only the trailing 20 bytes, so journaling such an account
-// credits a completely unrelated EVM account and Commit mints the difference.
+// Cosmos permits account addresses longer than 20 bytes - ADR-028 derived
+// accounts, interchain accounts among them, are 32 bytes - and
+// common.BytesToAddress silently keeps only the trailing 20 bytes of a longer
+// input. That turns a user-chosen wide address into a user-chosen EVM address,
+// which is the shape behind the withdraw-address truncation bug (see
+// docs/security/haqq-precompile-withdraw-address-truncation-2026-09.md).
 //
-// Accounts that are not exactly 20 bytes have no EVM representation: the StateDB
-// can never hold a state object for them, so their bank movements need no
-// mirroring. Callers must skip journaling when ok is false.
-func JournalableEVMAddress(addr sdk.AccAddress) (common.Address, bool) {
+// An account that is not exactly 20 bytes has no EVM representation at all.
+// Every boundary that converts a Cosmos address into an EVM one must go through
+// this function and handle ok == false rather than truncate.
+func EVMAddressFromCosmos(addr sdk.AccAddress) (common.Address, bool) {
 	if len(addr) != common.AddressLength {
 		return common.Address{}, false
 	}
 	return common.BytesToAddress(addr), true
+}
+
+// JournalableEVMAddress is EVMAddressFromCosmos at the StateDB journal boundary.
+//
+// The StateDB can never hold a state object for an account without an EVM
+// representation, so it never enters the dirty set and SetBalance never runs for
+// it: its bank movements need no mirroring. Journaling a truncated address
+// instead credits an unrelated EVM account, and Commit mints the difference.
+// Callers must skip the journal entry when ok is false.
+func JournalableEVMAddress(addr sdk.AccAddress) (common.Address, bool) {
+	return EVMAddressFromCosmos(addr)
 }
 
 // snapshot contains all state and events previous to the precompile call

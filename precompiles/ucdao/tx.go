@@ -27,8 +27,22 @@ const (
 // ConvertToHaqqMsgURL defines the authorization type for MsgConvertToHaqq
 var ConvertToHaqqMsgURL = sdk.MsgTypeURL(&ucdaotypes.MsgConvertToHaqq{})
 
-// TransferOwnershipMsgURL defines the authorization type for MsgTransferOwnership
-var TransferOwnershipMsgURL = sdk.MsgTypeURL(&ucdaotypes.MsgTransferOwnership{})
+// TransferOwnershipWithAmountMsgURL is the authorization type URL for ucDAO ownership
+// grants.
+//
+// It names MsgTransferOwnershipWithAmount, not MsgTransferOwnership, and that is
+// deliberate. ucdaotypes.TransferOwnershipAuthorization reports
+// MsgTransferOwnershipWithAmount from MsgTypeURL() and its Accept casts the message to
+// *MsgTransferOwnershipWithAmount, so that is the key authzkeeper.SaveGrant writes under
+// and the key cosmos authz DispatchActions looks up. The precompile previously used
+// MsgTransferOwnership here, which meant approve() wrote a grant nothing else could
+// find: revoke, allowance and the allowance deltas all missed it, leaving a grant that
+// could not be revoked from the EVM at all.
+//
+// The full-balance transferOwnership message carries no amount, so a spend limit cannot
+// be expressed for it; it has no authorization type and cannot be authorized through the
+// precompile. See TransferOwnership below.
+var TransferOwnershipWithAmountMsgURL = sdk.MsgTypeURL(&ucdaotypes.MsgTransferOwnershipWithAmount{})
 
 // escrowBaseSnapshot pairs a UC DAO holder with the aISLM bank balance of their
 // escrow, captured immediately before a keeper call.
@@ -181,25 +195,21 @@ func (p *Precompile) TransferOwnership(
 		),
 	)
 
-	// isCallerSender is true when the contract caller is the same as the sender
-	isCallerSender := contract.CallerAddress == owner
 	isCallerOrigin := contract.CallerAddress == origin
 
-	// If the contract caller is not the same as the sender, the sender must be the origin
-	if isCallerSender {
-		owner = origin
-	} else if origin != owner {
-		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), owner.String())
+	// A contract caller can never be authorized for this message: SaveGrant keys a grant
+	// by authorization.MsgTypeURL(), TransferOwnershipAuthorization reports
+	// MsgTransferOwnershipWithAmount, and CheckAndAcceptAuthorizationIfNeeded rejects any
+	// authorization that is not one of the two ucDAO types - so a lookup under
+	// MsgTransferOwnership can never succeed. Reject it here with a message that says why,
+	// instead of a generic "grant does not exist" that suggests issuing one would help.
+	if !isCallerOrigin {
+		return nil, fmt.Errorf(ErrTransferOwnershipNotDelegatable, TransferOwnershipWithAmountMsgURL)
 	}
 
-	// Check and accept authorization if needed
-	if err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, owner, p.AuthzKeeper, msg); err != nil {
-		return nil, err
-	}
-
-	// Ensure origin is the owner
+	// The caller is the origin, so the owner must be the origin too.
 	if origin != owner {
-		return nil, fmt.Errorf("origin (%s) must be the owner (%s)", origin.String(), owner.String())
+		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), owner.String())
 	}
 
 	ownerAcc := sdk.MustAccAddressFromBech32(msg.Owner)

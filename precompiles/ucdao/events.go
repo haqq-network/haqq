@@ -87,17 +87,29 @@ func (p Precompile) EmitAllowanceChangeEvent(ctx sdk.Context, stateDB vm.StateDB
 	for i, msgURL := range typeUrls {
 		// Not including expiration and convert check because we have already checked it in the previous call
 		msgAuthz, _ := p.AuthzKeeper.GetAuthorization(ctx, grantee.Bytes(), granter.Bytes(), msgURL)
-		convAuthz, isConvertAuthz := msgAuthz.(*ucdaotypes.ConvertToHaqqAuthorization)
-		_, isTransferAuthz := msgAuthz.(*ucdaotypes.TransferOwnershipAuthorization)
-		if !isConvertAuthz && !isTransferAuthz {
-			// should never happen in normal flow
-			continue
-		}
 
-		if convAuthz.SpendLimit == nil {
-			newValues[i] = abi.MaxUint256
-		} else {
-			newValues[i] = convAuthz.SpendLimit.Amount.BigInt()
+		// A type switch, not two assertions: the previous shape kept the value of the
+		// first assertion and read SpendLimit off it after the second one had accepted
+		// the grant, so a TransferOwnershipAuthorization dereferenced a nil
+		// *ConvertToHaqqAuthorization. Same defect as the one fixed in query.go.
+		//
+		// newValues must also never stay nil - abi.Pack cannot encode a nil *big.Int -
+		// so an entry the switch does not recognise is reported as zero rather than
+		// skipped.
+		newValues[i] = big.NewInt(0)
+		switch grant := msgAuthz.(type) {
+		case *ucdaotypes.ConvertToHaqqAuthorization:
+			if grant.SpendLimit == nil {
+				newValues[i] = abi.MaxUint256
+			} else {
+				newValues[i] = grant.SpendLimit.Amount.BigInt()
+			}
+		case *ucdaotypes.TransferOwnershipAuthorization:
+			if grant.SpendLimit == nil {
+				newValues[i] = abi.MaxUint256
+			} else {
+				newValues[i] = grant.SpendLimit.Amount.BigInt()
+			}
 		}
 	}
 

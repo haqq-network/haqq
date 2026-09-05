@@ -67,6 +67,12 @@ func NewMintHaqqMsg(args []interface{}) (*ethiqtypes.MsgMintHaqq, common.Address
 		IslmAmount:  math.NewIntFromBigInt(amount),
 	}
 
+	// The precompile calls the msg server directly, so baseapp's
+	// validateBasicTxMsgs never runs on this path. Validate here or not at all.
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, common.Address{}, common.Address{}, err
+	}
+
 	return msg, sender, receiver, nil
 }
 
@@ -88,6 +94,12 @@ func NewMintHaqqByApplicationMsg(args []interface{}) (*ethiqtypes.MsgMintHaqqByA
 	msg := &ethiqtypes.MsgMintHaqqByApplication{
 		FromAddress:   sdk.AccAddress(sender.Bytes()).String(),
 		ApplicationId: appID,
+	}
+
+	// The precompile calls the msg server directly, so baseapp's
+	// validateBasicTxMsgs never runs on this path. Validate here or not at all.
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, common.Address{}, err
 	}
 
 	return msg, sender, nil

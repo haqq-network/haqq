@@ -17,6 +17,23 @@ import (
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
 
+// errUnsupportedMsgType reports a type URL the ucDAO precompile cannot authorize.
+//
+// MsgTransferOwnership gets a dedicated message: it is the URL callers are most likely
+// to pass, because it names the transferOwnership method and because the precompile
+// itself used to accept it - and did so incorrectly, writing the grant under
+// MsgTransferOwnershipWithAmount where nothing could find it again.
+func errUnsupportedMsgType(typeURL string) error {
+	if typeURL == sdk.MsgTypeURL(&ucdaotypes.MsgTransferOwnership{}) {
+		return fmt.Errorf(
+			"%s has no ucdao authorization type; ownership grants are issued for %s, "+
+				"which is the message transferOwnershipWithAmount sends",
+			typeURL, TransferOwnershipWithAmountMsgURL,
+		)
+	}
+	return fmt.Errorf(cmn.ErrInvalidMsgType, "ucdao", typeURL)
+}
+
 func (p Precompile) Approve(
 	ctx sdk.Context,
 	origin common.Address,
@@ -31,12 +48,12 @@ func (p Precompile) Approve(
 
 	for _, typeURL := range typeURLs {
 		switch typeURL {
-		case ConvertToHaqqMsgURL, TransferOwnershipMsgURL:
+		case ConvertToHaqqMsgURL, TransferOwnershipWithAmountMsgURL:
 			if err = p.grantOrDeleteAuthz(ctx, grantee, origin, coin, typeURL); err != nil {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf(cmn.ErrInvalidMsgType, "ucdao", typeURL)
+			return nil, errUnsupportedMsgType(typeURL)
 		}
 	}
 
@@ -60,12 +77,12 @@ func (p Precompile) Revoke(
 
 	for _, typeURL := range typeURLs {
 		switch typeURL {
-		case ConvertToHaqqMsgURL, TransferOwnershipMsgURL:
+		case ConvertToHaqqMsgURL, TransferOwnershipWithAmountMsgURL:
 			if err = p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), origin.Bytes(), typeURL); err != nil {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf(cmn.ErrInvalidMsgType, "ucdao", typeURL)
+			return nil, errUnsupportedMsgType(typeURL)
 		}
 	}
 
@@ -99,14 +116,22 @@ func (p Precompile) IncreaseAllowance(
 		return nil, err
 	}
 
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
+		return nil, err
+	}
+
 	for _, typeURL := range typeURLs {
 		switch typeURL {
-		case ConvertToHaqqMsgURL, TransferOwnershipMsgURL:
+		case ConvertToHaqqMsgURL, TransferOwnershipWithAmountMsgURL:
 			if err = p.increaseAllowance(ctx, grantee, origin, coin, typeURL); err != nil {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf(cmn.ErrInvalidMsgType, "ethiq", typeURL)
+			return nil, errUnsupportedMsgType(typeURL)
 		}
 	}
 
@@ -130,9 +155,17 @@ func (p Precompile) DecreaseAllowance(
 		return nil, err
 	}
 
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
+		return nil, err
+	}
+
 	for _, typeURL := range typeURLs {
 		switch typeURL {
-		case ConvertToHaqqMsgURL, TransferOwnershipMsgURL:
+		case ConvertToHaqqMsgURL, TransferOwnershipWithAmountMsgURL:
 			authzGrant, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, origin, typeURL)
 			if err != nil {
 				return nil, err
@@ -142,7 +175,7 @@ func (p Precompile) DecreaseAllowance(
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf(cmn.ErrInvalidMsgType, "ethiq", typeURL)
+			return nil, errUnsupportedMsgType(typeURL)
 		}
 	}
 
@@ -180,10 +213,10 @@ func (p Precompile) grantOrDeleteAuthz(
 		)
 
 		switch msgType {
-		case ConvertToHaqqMsgURL, TransferOwnershipMsgURL:
+		case ConvertToHaqqMsgURL, TransferOwnershipWithAmountMsgURL:
 			return p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), granter.Bytes(), msgType)
 		default:
-			return fmt.Errorf(cmn.ErrInvalidMsgType, "ucdao", msgType)
+			return errUnsupportedMsgType(msgType)
 		}
 	}
 
@@ -210,7 +243,7 @@ func (p Precompile) createAuthz(
 			return err
 		}
 		return p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), convAuthz, &expiration)
-	case TransferOwnershipMsgURL:
+	case TransferOwnershipWithAmountMsgURL:
 		transferAuthz, err := ucdaotypes.NewTransferOwnershipAuthorization(coin)
 		if err != nil {
 			return err
@@ -220,7 +253,7 @@ func (p Precompile) createAuthz(
 		}
 		return p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), transferAuthz, &expiration)
 	default:
-		return fmt.Errorf(cmn.ErrInvalidMsgType, "ucdao", msgType)
+		return errUnsupportedMsgType(msgType)
 	}
 }
 
@@ -231,6 +264,12 @@ func (p Precompile) increaseAllowance(
 	coin *sdk.Coin,
 	msgURL string,
 ) error {
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and every branch below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
+		return err
+	}
+
 	// Check if the authorization exists for the given spender
 	existingAuthz, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, msgURL)
 	if err != nil {
@@ -249,9 +288,13 @@ func (p Precompile) increaseAllowance(
 			return nil
 		}
 
-		convAuthz.SpendLimit.Amount = convAuthz.SpendLimit.Amount.Add(coin.Amount)
+		newLimit, err := authorization.AddAllowance(convAuthz.SpendLimit.Amount, coin.Amount)
+		if err != nil {
+			return err
+		}
+		convAuthz.SpendLimit.Amount = newLimit
 		return p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), convAuthz, expiration)
-	case TransferOwnershipMsgURL:
+	case TransferOwnershipWithAmountMsgURL:
 		transferAuthz, ok := existingAuthz.(*ucdaotypes.TransferOwnershipAuthorization)
 		if !ok {
 			return errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *ucdaotypes.TransferOwnershipAuthorization, received: %T", existingAuthz)
@@ -262,7 +305,11 @@ func (p Precompile) increaseAllowance(
 			return nil
 		}
 
-		transferAuthz.SpendLimit.Amount = transferAuthz.SpendLimit.Amount.Add(coin.Amount)
+		newLimit, err := authorization.AddAllowance(transferAuthz.SpendLimit.Amount, coin.Amount)
+		if err != nil {
+			return err
+		}
+		transferAuthz.SpendLimit.Amount = newLimit
 		return p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), transferAuthz, expiration)
 	default:
 		return errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *ucdaotypes.ConvertToHaqqAuthorization or *ucdaotypes.TransferOwnershipAuthorization, received: %T", existingAuthz)
@@ -277,6 +324,12 @@ func (p Precompile) decreaseAllowance(
 	existingAuthz authz.Authorization,
 	expiration *time.Time,
 ) error {
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and every branch below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
+		return err
+	}
+
 	switch existingAuthz.MsgTypeURL() {
 	case ConvertToHaqqMsgURL:
 		convAuthz, ok := existingAuthz.(*ucdaotypes.ConvertToHaqqAuthorization)
@@ -300,7 +353,7 @@ func (p Precompile) decreaseAllowance(
 		}
 
 		return p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), convAuthz, expiration)
-	case TransferOwnershipMsgURL:
+	case TransferOwnershipWithAmountMsgURL:
 		transferAuthz, ok := existingAuthz.(*ucdaotypes.TransferOwnershipAuthorization)
 		if !ok {
 			return errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *ucdaotypes.TransferOwnershipAuthorization, received: %T", existingAuthz)
