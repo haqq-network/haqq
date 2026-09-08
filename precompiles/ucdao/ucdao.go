@@ -140,8 +140,7 @@ func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 // precompile does not execute opcodes - and on HAQQ every opcode except CALL hands the
 // precompile readOnly = true (CALLCODE, DELEGATECALL and STATICCALL all do, see
 // x/evm/core/vm/evm.go). Leaving them out let a STATICCALL create, change and delete
-// grants, and priced them as reads. See
-// docs/security/haqq-precompile-ucdao-staticcall-authz-2026-09.md.
+// grants, and priced them as reads.
 func (Precompile) IsTransaction(method string) bool {
 	switch method {
 	case ConvertToHaqqMethod,

@@ -286,6 +286,11 @@ func (p Precompile) getWithdrawerHexAddr(ctx sdk.Context, delegatorAddr common.A
 	if err != nil {
 		return common.Address{}, false, err
 	}
-	withdrawerHexAddr, ok := cmn.JournalableEVMAddress(withdrawerAccAddr)
+	// ok == false is the StateDB journal boundary: the StateDB can never hold a state
+	// object for an account without an EVM representation, so it never enters the dirty
+	// set and SetBalance never runs for it - its bank movements need no mirroring.
+	// Journaling a truncated address instead credits an unrelated EVM account, and
+	// Commit mints the difference. Callers must skip the journal entry when ok is false.
+	withdrawerHexAddr, ok := cmn.EVMAddressFromCosmos(withdrawerAccAddr)
 	return withdrawerHexAddr, ok, nil
 }

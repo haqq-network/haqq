@@ -299,27 +299,30 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 			expErr:   false,
 		},
 		{
-			name: "success - limit exactly at the maximum page size",
+			// The limit is not capped, matching query.Paginate in every other module. An
+			// oversized limit is answered with the remainder of the list, never rejected,
+			// and can never allocate or return more than the waitlist holds.
+			name: "success - limit far above the list length returns the whole list",
 			req: &ethiqtypes.QueryGetApplicationsRequest{
 				Pagination: &query.PageRequest{
-					Limit: ethiqkeeper.MaxPageLimit,
+					Limit: ethiqtypes.TotalNumberOfApplications() * 1000,
 				},
 			},
-			expLen:   ethiqkeeper.MaxPageLimit,
+			expLen:   ethiqtypes.TotalNumberOfApplications(),
 			expTotal: 0,
 			expErr:   false,
 		},
 		{
-			// Silently trimming the page would be indistinguishable from the last page:
-			// these responses are offset-based and carry no NextKey.
-			name: "fail - limit above the maximum page size",
+			name: "success - oversized limit past an offset returns only the remainder",
 			req: &ethiqtypes.QueryGetApplicationsRequest{
 				Pagination: &query.PageRequest{
-					Limit: ethiqkeeper.MaxPageLimit + 1,
+					Limit:  1_000_000,
+					Offset: ethiqtypes.TotalNumberOfApplications() - 3,
 				},
 			},
-			expErr:      true,
-			errContains: "exceeds the maximum page size",
+			expLen:   3,
+			expTotal: 0,
+			expErr:   false,
 		},
 		{
 			name: "fail - key-based pagination is not supported",
@@ -432,15 +435,16 @@ func (suite *KeeperTestSuite) TestGetSendersApplicationsGRPC() {
 			expErr:   false,
 		},
 		{
-			name: "fail - limit above the maximum page size",
+			name: "success - limit far above the sender's list returns all of it",
 			req: &ethiqtypes.QueryGetSendersApplicationsRequest{
 				SenderAddress: knownSender,
 				Pagination: &query.PageRequest{
-					Limit: ethiqkeeper.MaxPageLimit + 1,
+					Limit: 1_000_000,
 				},
 			},
-			expErr:      true,
-			errContains: "exceeds the maximum page size",
+			expLen:   ethiqtypes.TotalNumberOfApplicationsBySender(knownSender),
+			expTotal: 0,
+			expErr:   false,
 		},
 		{
 			name: "fail - key-based pagination is not supported",

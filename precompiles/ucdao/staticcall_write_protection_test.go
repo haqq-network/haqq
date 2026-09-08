@@ -67,8 +67,6 @@ func (s *PrecompileTestSuite) runUCDAO(input []byte, readOnly bool) ([]byte, *st
 // CALLCODE and DELEGATECALL also hand the precompile readOnly = true
 // (x/evm/core/vm/evm.go, lines 298/343/397 vs 231 for CALL), so a mutating precompile
 // is meant to be reachable through CALL alone.
-//
-// Write-up: docs/security/haqq-precompile-ucdao-staticcall-authz-2026-09.md
 func (s *PrecompileTestSuite) TestAuthzMethodsAreWriteProtected() {
 	// NOTE: SetupTest() rebuilds the keyring, so the grantee must be read inside each
 	// subtest, after the reset - not captured from the enclosing scope.

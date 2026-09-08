@@ -55,8 +55,7 @@ func NewBalanceChangeEntry(acc common.Address, amt *big.Int, op Operation) balan
 // accounts, interchain accounts among them, are 32 bytes - and
 // common.BytesToAddress silently keeps only the trailing 20 bytes of a longer
 // input. That turns a user-chosen wide address into a user-chosen EVM address,
-// which is the shape behind the withdraw-address truncation bug (see
-// docs/security/haqq-precompile-withdraw-address-truncation-2026-09.md).
+// which is the shape behind the withdraw-address truncation bug.
 //
 // An account that is not exactly 20 bytes has no EVM representation at all.
 // Every boundary that converts a Cosmos address into an EVM one must go through
@@ -66,17 +65,6 @@ func EVMAddressFromCosmos(addr sdk.AccAddress) (common.Address, bool) {
 		return common.Address{}, false
 	}
 	return common.BytesToAddress(addr), true
-}
-
-// JournalableEVMAddress is EVMAddressFromCosmos at the StateDB journal boundary.
-//
-// The StateDB can never hold a state object for an account without an EVM
-// representation, so it never enters the dirty set and SetBalance never runs for
-// it: its bank movements need no mirroring. Journaling a truncated address
-// instead credits an unrelated EVM account, and Commit mints the difference.
-// Callers must skip the journal entry when ok is false.
-func JournalableEVMAddress(addr sdk.AccAddress) (common.Address, bool) {
-	return EVMAddressFromCosmos(addr)
 }
 
 // snapshot contains all state and events previous to the precompile call

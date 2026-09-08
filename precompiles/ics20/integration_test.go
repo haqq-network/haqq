@@ -1332,7 +1332,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 						// use half of the allowance when calling the fn
 						// because in total we'll try to send (2 * amt)
 						// with 4 IBC transfers (2 will succeed & 2 will revert)
-						amt := defaultCmnCoins[0].ToSDKType().Amount.QuoRaw(2)
+						amt := math.NewIntFromBigInt(defaultCmnCoins[0].Amount).QuoRaw(2)
 						args := contracts.CallArgs{
 							PrivKey:      s.keyring.GetPrivKey(0),
 							ContractAddr: senderCallerContractAddr,

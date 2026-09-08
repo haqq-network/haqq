@@ -5,16 +5,15 @@ import (
 	"math/big"
 
 	errorsmod "cosmossdk.io/errors"
-	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/haqq-network/haqq/utils"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/utils"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
@@ -259,6 +258,14 @@ func (p Precompile) IncreaseAllowance(
 		return nil, err
 	}
 
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
+		return nil, err
+	}
+
 	for _, typeURL := range typeURLs {
 		switch typeURL {
 		case MintHaqqMsgURL:
@@ -287,6 +294,14 @@ func (p Precompile) DecreaseAllowance(
 ) ([]byte, error) {
 	grantee, coin, typeURLs, err := authorization.CheckApprovalArgs(args, utils.BaseDenom)
 	if err != nil {
+		return nil, err
+	}
+
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
 		return nil, err
 	}
 
@@ -365,9 +380,10 @@ func (p Precompile) increaseMintHaqqAllowance(
 	coin *sdk.Coin,
 	msgURL string,
 ) error {
-	// Cannot increase with unlimited sentinel (coin=nil for MaxUint256)
-	if coin == nil {
-		return fmt.Errorf("increaseAllowance does not support unlimited amount (MaxUint256)")
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and the addition below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
+		return err
 	}
 
 	existingAuthz, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, msgURL)
@@ -386,20 +402,13 @@ func (p Precompile) increaseMintHaqqAllowance(
 		return nil
 	}
 
-	// Add the amount to the limit.
-	//
-	// Both operands come from uint256 ABI arguments, so the sum can need 257 bits, and
-	// sdkmath.Int panics above sdkmath.MaxBitLen. Compute the sum on big.Int and reject it
-	// before it reaches Int, so an out-of-range allowance is an error and not a panic
-	// unwinding through the EVM.
-	newLimit := new(big.Int).Add(mintAuthz.SpendLimit.Amount.BigInt(), coin.Amount.BigInt())
-	if newLimit.BitLen() > sdkmath.MaxBitLen {
-		return fmt.Errorf(
-			"increased allowance does not fit in %d bits: %s + %s",
-			sdkmath.MaxBitLen, mintAuthz.SpendLimit.Amount, coin.Amount,
-		)
+	// Add the amount to the limit, rejecting a sum that does not fit in sdkmath.Int
+	// instead of panicking inside Int.Add.
+	newLimit, err := authorization.AddAllowance(mintAuthz.SpendLimit.Amount, coin.Amount)
+	if err != nil {
+		return err
 	}
-	mintAuthz.SpendLimit.Amount = sdkmath.NewIntFromBigInt(newLimit)
+	mintAuthz.SpendLimit.Amount = newLimit
 
 	return p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), mintAuthz, expiration)
 }
@@ -411,9 +420,10 @@ func (p Precompile) decreaseMintHaqqAllowance(
 	coin *sdk.Coin,
 	msgURL string,
 ) error {
-	// Cannot decrease with unlimited sentinel (coin=nil for MaxUint256)
-	if coin == nil {
-		return fmt.Errorf("decreaseAllowance does not support unlimited amount (MaxUint256)")
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and every branch below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
+		return err
 	}
 
 	existingAuthz, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, msgURL)

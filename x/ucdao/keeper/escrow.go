@@ -25,8 +25,7 @@ func (k BaseKeeper) TrackAddBalance(ctx sdk.Context, coin sdk.Coin) {
 // understated counter, so clamp and record the discrepancy instead.
 //
 // This bounds the damage, it does not fix it: the counter is a second source of truth that
-// cannot be kept honest while escrows accept untracked transfers. See
-// docs/security/haqq-ucdao-total-balance-drift-2026-09.md.
+// cannot be kept honest while escrows accept untracked transfers.
 func (k BaseKeeper) TrackSubBalance(ctx sdk.Context, coin sdk.Coin) {
 	currentTotalEscrow := k.GetTotalBalanceOf(ctx, coin.Denom)
 

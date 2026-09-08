@@ -109,9 +109,12 @@ func (p *Precompile) mirrorBankBaseDeltasIntoStateDB(
 			continue
 		}
 		// A withdraw address may be a non-EVM Cosmos account (e.g. a 32-byte
-		// ADR-028 address). Those cannot be reconciled at Commit, so they must
-		// not be journaled - see cmn.JournalableEVMAddress.
-		hexAddr, ok := cmn.JournalableEVMAddress(s.addr)
+		// ADR-028 address). ok == false is the StateDB journal boundary: the
+		// StateDB can never hold a state object for such an account, so it never
+		// enters the dirty set and SetBalance never runs for it - its bank
+		// movements need no mirroring. Journaling a truncated address instead
+		// credits an unrelated EVM account, and Commit mints the difference.
+		hexAddr, ok := cmn.EVMAddressFromCosmos(s.addr)
 		if !ok {
 			continue
 		}

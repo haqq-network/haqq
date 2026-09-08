@@ -18,7 +18,7 @@ import (
 // user-supplied Cosmos address would pay the attacker.
 //
 // Same class as the withdraw-address truncation in the journal mirrors, at a different
-// boundary - see docs/security/haqq-precompile-withdraw-address-truncation-2026-09.md.
+// boundary.
 func (s *PrecompileTestSuite) TestBech32ToHexRejectsNonEVMAddresses() {
 	s.SetupTest()
 	method := s.precompile.Methods[bech32.Bech32ToHexMethod]

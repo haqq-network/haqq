@@ -59,3 +59,24 @@ func TestMigrate(t *testing.T) {
 	require.Equal(t, types.DefaultEVMChannels, params.EVMChannels)
 	require.Equal(t, types.DefaultAccessControl, params.AccessControl)
 }
+
+// TestMigrateEmptyStore pins the guard that replaced the params.Validate() call.
+//
+// cdc.MustUnmarshal accepts nil bytes and yields a zero-value V6Params, so without an
+// explicit check the migration would write an empty parameter set into the module store.
+// Validate() used to catch that incidentally, through `invalid denom: ""`.
+func TestMigrateEmptyStore(t *testing.T) {
+	encCfg := encoding.MakeConfig()
+	cdc := encCfg.Codec
+
+	storeKey := storetypes.NewKVStoreKey(types.ModuleName)
+	tKey := storetypes.NewTransientStoreKey("transient_test")
+	ctx := testutil.DefaultContext(storeKey, tKey)
+
+	err := v7.MigrateStore(ctx, storeKey, cdc)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "nothing to migrate")
+
+	require.Nil(t, ctx.KVStore(storeKey).Get(types.KeyPrefixParams),
+		"a refused migration must not write anything")
+}

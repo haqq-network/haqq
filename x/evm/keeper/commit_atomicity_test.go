@@ -30,9 +30,9 @@ func splitInitCode(credit, blocked common.Address) []byte {
 		// gas to the first CALL and starve the second.
 		code = append(code, 0x61, 0x75, 0x30, 0xf1, 0x50) // PUSH2 30000, CALL, POP
 	}
-	appendCall(blocked, []byte{0x60, 0x01})             // 1 wei
-	appendCall(credit, []byte{0x34, 0x60, 0x01, 0x03})  // CALLVALUE - 1
-	code = append(code, 0x60, 0x00, 0x60, 0x00, 0xf3)   // RETURN empty
+	appendCall(blocked, []byte{0x60, 0x01})            // 1 wei
+	appendCall(credit, []byte{0x34, 0x60, 0x01, 0x03}) // CALLVALUE - 1
+	code = append(code, 0x60, 0x00, 0x60, 0x00, 0xf3)  // RETURN empty
 	return code
 }
 
@@ -46,14 +46,16 @@ func (suite *KeeperTestSuite) TestCommitAtomicityMoneyPrint() {
 	suite.Require().True(bytes.Compare(credit.Bytes(), blocked.Bytes()) < 0, "credit must sort before blocked")
 	suite.Require().True(bytes.Compare(blocked.Bytes(), debit.Bytes()) < 0, "blocked must sort before debit")
 
-	ctx := suite.network.GetContext()
 	k := suite.network.App.EvmKeeper
 	bank := suite.network.App.BankKeeper
 	denom := suite.network.GetDenom()
 
 	fundAmt := sdkmath.NewInt(1_000_000)
 	suite.Require().NoError(suite.network.FundAccountWithBaseDenom(sdk.AccAddress(debit.Bytes()), fundAmt))
-	ctx = suite.network.GetContext()
+
+	// Take the context after funding: FundAccountWithBaseDenom commits a block, so a
+	// context read before it points at the previous state.
+	ctx := suite.network.GetContext()
 
 	mintToCredit := big.NewInt(1000)
 	mintToBlocked := big.NewInt(1)
@@ -91,13 +93,15 @@ func (suite *KeeperTestSuite) TestCommitAtomicityCacheContextDiscards() {
 	blocked := common.BytesToAddress(authtypes.NewModuleAddress(distrtypes.ModuleName).Bytes())
 	debit := common.HexToAddress("0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF")
 
-	parent := suite.network.GetContext()
 	k := suite.network.App.EvmKeeper
 	bank := suite.network.App.BankKeeper
 	denom := suite.network.GetDenom()
 
 	suite.Require().NoError(suite.network.FundAccountWithBaseDenom(sdk.AccAddress(debit.Bytes()), sdkmath.NewInt(1_000_000)))
-	parent = suite.network.GetContext()
+
+	// Take the context after funding: FundAccountWithBaseDenom commits a block, so a
+	// context read before it points at the previous state.
+	parent := suite.network.GetContext()
 
 	creditBefore := bank.GetBalance(parent, sdk.AccAddress(credit.Bytes()), denom)
 	debitBefore := bank.GetBalance(parent, sdk.AccAddress(debit.Bytes()), denom)

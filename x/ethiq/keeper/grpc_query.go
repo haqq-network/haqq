@@ -106,15 +106,18 @@ func (k Keeper) CalculateForApplication(ctx context.Context, req *types.QueryCal
 	}, nil
 }
 
-// MaxPageLimit caps how many applications a single GetApplications / GetSendersApplications
-// page may return. Requests above it are rejected instead of silently truncated: these
-// responses are offset-based and never carry a NextKey, so a truncated page would be
-// indistinguishable from the last one and a client would quietly lose the tail of the list.
-const MaxPageLimit = 100
-
 // resolvePageRange turns an offset-based PageRequest into the [offset, offset+count) window
-// over a list of the given total length. Key-based pagination is not supported by these
-// queries, so a request carrying a key is rejected rather than answered with page one.
+// over a list of the given total length.
+//
+// The limit is not capped, matching every other module here: they all go through
+// query.Paginate, which caps nothing (query.PaginationMaxLimit is MaxUint64) and only
+// substitutes query.DefaultLimit for a zero limit. A cap would buy nothing anyway - count is
+// clamped to the remainder of the list below, so an oversized limit can never allocate or
+// return more than the waitlist itself holds.
+//
+// Key-based pagination is a different matter: these queries index a list by offset and have no
+// cursor to resume from, so a request carrying a key is rejected rather than silently answered
+// with page one.
 func resolvePageRange(pagination *query.PageRequest, total uint64) (offset, count uint64, err error) {
 	limit := uint64(query.DefaultLimit)
 
@@ -126,10 +129,6 @@ func resolvePageRange(pagination *query.PageRequest, total uint64) (offset, coun
 		if pagination.Limit != 0 {
 			limit = pagination.Limit
 		}
-	}
-
-	if limit > MaxPageLimit {
-		return 0, 0, status.Errorf(codes.InvalidArgument, "limit %d exceeds the maximum page size of %d", limit, MaxPageLimit)
 	}
 
 	if offset >= total {

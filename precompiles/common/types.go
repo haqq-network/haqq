@@ -56,22 +56,6 @@ type Dec struct {
 	Precision uint8
 }
 
-// ToSDKType converts the Coin to the Cosmos SDK representation.
-//
-// Coin is decoded from ABI arguments, so both fields are attacker-controlled.
-// sdk.NewCoin panics on a malformed denom or a negative amount and
-// math.NewIntFromBigInt panics above math.MaxBitLen; a panic here would unwind
-// out of the precompile rather than reverting the call, because
-// HandleGasError only recovers ErrorOutOfGas. Build the coin by hand and leave
-// validation to the caller, which can turn it into an error.
-func (c Coin) ToSDKType() sdk.Coin {
-	amount := math.ZeroInt()
-	if c.Amount != nil && c.Amount.BitLen() <= math.MaxBitLen {
-		amount = math.NewIntFromBigInt(c.Amount)
-	}
-	return sdk.Coin{Denom: c.Denom, Amount: amount}
-}
-
 // NewCoinsResponse converts a response to an array of Coin.
 func NewCoinsResponse(amount sdk.Coins) []Coin {
 	// Create a new output for each coin and add it to the output array.

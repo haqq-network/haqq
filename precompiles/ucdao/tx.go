@@ -90,7 +90,14 @@ func (p *Precompile) mirrorEscrowBaseDeltasIntoStateDB(
 		if netBaseDelta.IsZero() {
 			continue
 		}
-		escrowHex := common.BytesToAddress(ucdaotypes.GetEscrowAddress(s.holder).Bytes())
+		// GetEscrowAddress returns sha256(...)[:20] today, so this conversion is exact.
+		// It still goes through the shared helper rather than common.BytesToAddress: that
+		// is the rule for every Cosmos-to-EVM boundary, and it keeps the mirror correct if
+		// the derivation ever widens.
+		escrowHex, ok := cmn.EVMAddressFromCosmos(ucdaotypes.GetEscrowAddress(s.holder))
+		if !ok {
+			continue
+		}
 		if netBaseDelta.IsNegative() {
 			p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(escrowHex, netBaseDelta.Neg().BigInt(), cmn.Add))
 			continue
@@ -212,6 +219,14 @@ func (p *Precompile) TransferOwnership(
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), owner.String())
 	}
 
+	// NOTE: these two snapshots and the mirror call below are a no-op as the method stands.
+	// The guard above returns unless isCallerOrigin, and the mirror returns immediately when
+	// it is - journaling is only ever needed for a contract caller. They are kept, and kept
+	// next to the keeper call, so that the pair does not have to be reconstructed if
+	// transferOwnership ever becomes delegatable: an authorization type for it would make
+	// contract callers reachable here, and a mirror added back later, away from the code that
+	// moves the coins, is exactly how the double-credit bug in TransferOwnershipWithAmount
+	// happened. The cost is two bank reads per call.
 	ownerAcc := sdk.MustAccAddressFromBech32(msg.Owner)
 	newOwnerAcc := sdk.MustAccAddressFromBech32(msg.NewOwner)
 	escrowBefore := []escrowBaseSnapshot{
