@@ -94,7 +94,7 @@ func (p Precompile) EmitAllowanceChangeEvent(ctx sdk.Context, stateDB vm.StateDB
 		// *ConvertToHaqqAuthorization. Same defect as the one fixed in query.go.
 		//
 		// newValues must also never stay nil - abi.Pack cannot encode a nil *big.Int -
-		// so an entry the switch does not recognise is reported as zero rather than
+		// so an entry the switch does not recognize is reported as zero rather than
 		// skipped.
 		newValues[i] = big.NewInt(0)
 		switch grant := msgAuthz.(type) {

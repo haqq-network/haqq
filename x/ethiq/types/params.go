@@ -14,18 +14,25 @@ const (
 	DisplayDenom = "HAQQ"
 )
 
-// ParamStoreKeyParams is the single parameter store key holding the whole Params set.
+// Parameter store keys.
 //
-// The x/params legacy subspace validates one key per ParameterChangeProposal change and
-// applies changes one at a time, so per-field keys would let governance set MaxMintPerTx
-// above MaxSupply (or MinMintPerTx above MaxMintPerTx) without the cross-field rules in
-// Params.Validate ever running. Storing the set under a single key makes every governance
-// update carry the complete Params and pass Validate atomically.
+// One key per field, and it has to stay that way: x/ethiq shipped in v1.9.3 and its params
+// are already written under these keys on every live chain. Collapsing them into a single
+// key is a state break - GetParamSet would read a missing key, legacy amino would fail to
+// unmarshal nil and Subspace.Get would panic - and it needs a module migration to be safe.
 //
-// NOTE for proposal authors: Subspace.Update loads the stored value before unmarshalling the
-// proposal JSON over it, and Enabled is `omitempty`. A proposal that means to disable the
-// module has to spell out "enabled":false; omitting the field keeps the current value.
-var ParamStoreKeyParams = []byte("Params")
+// The cross-field rules (MinMintPerTx < MaxMintPerTx <= MaxSupply) are enforced by
+// Params.Validate, which Keeper.SetParams runs on the whole set before writing. That is the
+// only write path in the module: there is no MsgUpdateParams, and the app registers no
+// legacy gov router, so x/params Subspace.Update - the one caller that would apply a single
+// field with only that field's validator - is unreachable here. Should either of those
+// appear, route it through SetParams rather than reshaping the store.
+var (
+	ParamStoreKeyEnabled      = []byte("Enabled")
+	ParamStoreKeyMinMintPerTx = []byte("MinMintPerTx")
+	ParamStoreKeyMaxMintPerTx = []byte("MaxMintPerTx")
+	ParamStoreKeyMaxSupply    = []byte("MaxSupply")
+)
 
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -43,19 +50,11 @@ func DefaultParams() Params {
 // ParamSetPairs Implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyParams, p, validateParams),
+		paramtypes.NewParamSetPair(ParamStoreKeyEnabled, &p.Enabled, validateBool),
+		paramtypes.NewParamSetPair(ParamStoreKeyMinMintPerTx, &p.MinMintPerTx, validateInt),
+		paramtypes.NewParamSetPair(ParamStoreKeyMaxMintPerTx, &p.MaxMintPerTx, validateInt),
+		paramtypes.NewParamSetPair(ParamStoreKeyMaxSupply, &p.MaxSupply, validateInt),
 	}
-}
-
-// validateParams runs the full Params validation, including the cross-field rules.
-// It is the validator the params subspace calls on every set and on every governance update.
-func validateParams(i interface{}) error {
-	params, ok := i.(Params)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
-	}
-
-	return params.Validate()
 }
 
 func validateBool(i interface{}) error {

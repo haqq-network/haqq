@@ -18,7 +18,7 @@ import (
 // increaseAllowance(grantee, type(uint256).max, ...) panicked out of the precompile:
 // cmn.HandleGasError recovers ErrorOutOfGas only and re-raises everything else.
 //
-// The expected behaviour is a plain error. The grant must survive untouched.
+// The expected behavior is a plain error. The grant must survive untouched.
 func (s *PrecompileTestSuite) TestAllowanceMaxUint256DoesNotPanic() {
 	maxUint256 := new(big.Int).Set(abi.MaxUint256)
 

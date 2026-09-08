@@ -65,19 +65,22 @@ func TestParamsValidateRejectsNilInt(t *testing.T) {
 	}
 }
 
-// TestValidateParamsChecksWholeSet covers the validator the params subspace runs on every
-// set and on every governance update: it must apply the cross-field rules, not just the
-// per-field ones.
-func TestValidateParamsChecksWholeSet(t *testing.T) {
+// TestValidateChecksWholeSet covers the cross-field rules.
+//
+// The params live under one key per field, so each per-field validator sees only its own
+// value and cannot know that MaxMintPerTx now exceeds MaxSupply. Keeper.SetParams is what
+// closes that gap: it runs Validate over the complete set before writing, and it is the
+// module's only write path.
+func TestValidateChecksWholeSet(t *testing.T) {
 	testCases := []struct {
 		name   string
-		value  interface{}
+		params Params
 		expErr bool
 	}{
 		{"default params", DefaultParams(), false},
 		{
 			name: "max_mint_per_tx above max_supply",
-			value: Params{
+			params: Params{
 				Enabled:      true,
 				MinMintPerTx: sdkmath.NewInt(1),
 				MaxMintPerTx: sdkmath.NewInt(1001),
@@ -85,12 +88,21 @@ func TestValidateParamsChecksWholeSet(t *testing.T) {
 			},
 			expErr: true,
 		},
-		{"wrong type", "not params", true},
+		{
+			name: "min_mint_per_tx not below max_mint_per_tx",
+			params: Params{
+				Enabled:      true,
+				MinMintPerTx: sdkmath.NewInt(100),
+				MaxMintPerTx: sdkmath.NewInt(100),
+				MaxSupply:    sdkmath.NewInt(1000),
+			},
+			expErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateParams(tc.value)
+			err := tc.params.Validate()
 			if tc.expErr && err == nil {
 				t.Fatal("expected an error")
 			}
@@ -98,5 +110,23 @@ func TestValidateParamsChecksWholeSet(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 		})
+	}
+}
+
+// TestPerFieldValidatorsRejectForeignTypes pins the type guards the params subspace relies
+// on: every ParamSetPair validator is handed an interface{} and has to reject anything that
+// is not the field's own type.
+func TestPerFieldValidatorsRejectForeignTypes(t *testing.T) {
+	if err := validateBool("not a bool"); err == nil {
+		t.Fatal("validateBool accepted a string")
+	}
+	if err := validateInt("not an Int"); err == nil {
+		t.Fatal("validateInt accepted a string")
+	}
+	if err := validateBool(true); err != nil {
+		t.Fatalf("validateBool rejected a bool: %v", err)
+	}
+	if err := validateInt(sdkmath.OneInt()); err != nil {
+		t.Fatalf("validateInt rejected a positive Int: %v", err)
 	}
 }

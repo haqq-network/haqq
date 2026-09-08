@@ -1,8 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
-
 	sdkmath "cosmossdk.io/math"
 
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
@@ -213,29 +211,19 @@ func (suite *KeeperTestSuite) TestSetParamsRejectsInvalidParams() {
 	}
 }
 
-// TestParamsSubspaceUpdateEnforcesCrossFieldRules covers the path a governance
-// ParameterChangeProposal actually takes.
+// TestParamsRejectPartialCrossFieldViolations pins the cross-field rules on the module's
+// only write path.
 //
-// x/params handleParameterChangeProposal calls Subspace.Update once per change, and Update runs
-// only the validator registered for that key. With one key per field the cross-field rules in
-// Params.Validate would never run for a governance update, so a proposal could set MaxMintPerTx
-// above MaxSupply. The whole set lives under a single key precisely so this cannot happen.
-func (suite *KeeperTestSuite) TestParamsSubspaceUpdateEnforcesCrossFieldRules() {
+// x/ethiq stores one param per key, so a caller that wrote a single field would run only that
+// field's validator and could leave the set inconsistent. Nothing in the app can do that -
+// there is no MsgUpdateParams and no legacy gov router, so x/params Subspace.Update is
+// unreachable - which makes Keeper.SetParams the single gate. It takes the whole set and runs
+// Params.Validate, and a rejected set must leave the stored params untouched.
+func (suite *KeeperTestSuite) TestParamsRejectPartialCrossFieldViolations() {
 	suite.SetupTest()
 	ctx := s.network.GetContext()
 
-	subspace := s.network.App.GetSubspace(ethiqtypes.ModuleName)
 	original := s.network.App.EthiqKeeper.GetParams(ctx)
-
-	// A proposal carries the value as JSON. Every field is spelled out, the way a proposal
-	// author has to write it: Enabled is omitempty, so leaving it out keeps the stored value.
-	update := func(params ethiqtypes.Params) error {
-		value := []byte(fmt.Sprintf(
-			`{"enabled":%t,"min_mint_per_tx":"%s","max_mint_per_tx":"%s","max_supply":"%s"}`,
-			params.Enabled, params.MinMintPerTx, params.MaxMintPerTx, params.MaxSupply,
-		))
-		return subspace.Update(ctx, ethiqtypes.ParamStoreKeyParams, value)
-	}
 
 	testCases := []struct {
 		name        string
@@ -290,12 +278,12 @@ func (suite *KeeperTestSuite) TestParamsSubspaceUpdateEnforcesCrossFieldRules() 
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			err := update(tc.params)
+			err := s.network.App.EthiqKeeper.SetParams(ctx, tc.params)
 			if tc.expErr {
-				suite.Require().Error(err, "subspace update should reject %s", tc.name)
+				suite.Require().Error(err, "SetParams should reject %s", tc.name)
 				suite.Require().ErrorContains(err, tc.errContains)
 				suite.Require().Equal(original, s.network.App.EthiqKeeper.GetParams(ctx),
-					"a rejected governance update must not change stored params")
+					"a rejected update must not change stored params")
 				return
 			}
 
@@ -303,4 +291,22 @@ func (suite *KeeperTestSuite) TestParamsSubspaceUpdateEnforcesCrossFieldRules() 
 			suite.Require().Equal(tc.params, s.network.App.EthiqKeeper.GetParams(ctx))
 		})
 	}
+}
+
+// TestParamSetPairsCoverEveryField guards the store layout itself.
+//
+// The params are already written under one key per field on every chain that ran v1.9.3, so
+// reshaping ParamSetPairs - collapsing the fields under a single key, renaming one - is a
+// state break that needs a module migration. Pin the keys so such a change cannot land
+// unnoticed.
+func (suite *KeeperTestSuite) TestParamSetPairsCoverEveryField() {
+	params := ethiqtypes.DefaultParams()
+
+	keys := make([]string, 0, 4)
+	for _, pair := range params.ParamSetPairs() {
+		keys = append(keys, string(pair.Key))
+	}
+
+	suite.Require().Equal([]string{"Enabled", "MinMintPerTx", "MaxMintPerTx", "MaxSupply"}, keys,
+		"changing these keys breaks state written by v1.9.3 and needs a module migration")
 }
