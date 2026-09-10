@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -42,7 +43,8 @@ const (
 	hackerVestingBech = "haqq1xe6ddj7wlutkvjh7lf090k0jp7ytkndlv5x6l3"
 	// no account at all, only a ucDAO escrow (three such accounts on mainnet)
 	hackerEscrowOnlyBech = "haqq1qfwsr7gz0nx7tr8fjwkn0eshndz8kgfvlgzmph"
-	// balance, ucDAO escrow, delegation, unbonding, grants
+	// balance, ucDAO escrow (vesting + staked by a third party), delegation,
+	// unbonding, redelegation, grants
 	hackerPlainBech = "haqq10kewh3awzg4k9cg689h92nykfpzwyuszl5q6mw"
 )
 
@@ -179,6 +181,37 @@ func setupScenario(t *testing.T) scenario {
 	_, _, err = sk.Undelegate(ctx, s.hackerPlain, s.valOther, shares)
 	require.NoError(t, err)
 
+	// A redelegation in progress: it holds no funds, but the record must go too.
+	_, err = sk.BeginRedelegation(ctx, s.hackerPlain, s.valOther, s.valHacker, shares)
+	require.NoError(t, err)
+
+	// The same third-party trick on the ucDAO escrow: part of the grant staked
+	// from the escrow, part left locked on it. Without handling the escrow like
+	// the account itself, the locked part fails the burn and halts the upgrade.
+	escrow := ucdaotypes.GetEscrowAddress(s.hackerPlain)
+	_, err = a.VestingKeeper.ConvertIntoVestingAccount(ctx, &vestingtypes.MsgConvertIntoVestingAccount{
+		FromAddress:      s.funder.String(),
+		ToAddress:        escrow.String(),
+		StartTime:        start,
+		LockupPeriods:    sdkvesting.Periods{{Length: year, Amount: sdk.NewCoins(islm(10))}},
+		VestingPeriods:   sdkvesting.Periods{{Length: 1, Amount: sdk.NewCoins(islm(10))}},
+		Merge:            true,
+		Stake:            true,
+		ValidatorAddress: s.valOther.String(),
+	})
+	require.NoError(t, err)
+	_, err = a.VestingKeeper.ConvertIntoVestingAccount(ctx, &vestingtypes.MsgConvertIntoVestingAccount{
+		FromAddress:    s.funder.String(),
+		ToAddress:      escrow.String(),
+		StartTime:      start,
+		LockupPeriods:  sdkvesting.Periods{{Length: year, Amount: sdk.NewCoins(islm(10))}},
+		VestingPeriods: sdkvesting.Periods{{Length: 1, Amount: sdk.NewCoins(islm(10))}},
+		Merge:          true,
+	})
+	require.NoError(t, err)
+	_, isVesting = a.AccountKeeper.GetAccount(ctx, escrow).(*vestingtypes.ClawbackVestingAccount)
+	require.True(t, isVesting)
+
 	// Grants in both directions, plus unrelated ones that must survive.
 	expiration := ctx.BlockTime().Add(time.Hour)
 	ak := a.AuthzKeeper
@@ -206,28 +239,37 @@ func (s scenario) requireCleared(t *testing.T, ctx sdk.Context, innocentBefore s
 	a := s.nw.App
 
 	for _, addr := range s.hackers() {
-		for _, denom := range v196.BurnDenoms {
-			require.True(t, a.BankKeeper.GetBalance(ctx, addr, denom).IsZero(), "%s %s", addr, denom)
-			require.True(t, a.BankKeeper.GetBalance(ctx, ucdaotypes.GetEscrowAddress(addr), denom).IsZero(), "%s escrow %s", addr, denom)
-		}
-		dels, err := a.StakingKeeper.GetAllDelegatorDelegations(ctx, addr)
-		require.NoError(t, err)
-		require.Empty(t, dels, addr)
-		ubds, err := a.StakingKeeper.GetAllUnbondingDelegations(ctx, addr)
-		require.NoError(t, err)
-		require.Empty(t, ubds, addr)
-		withdrawAddr, err := a.DistrKeeper.GetDelegatorWithdrawAddr(ctx, addr)
-		require.NoError(t, err)
-		require.Equal(t, addr, withdrawAddr)
 		require.False(t, a.DaoKeeper.IsHolder(ctx, addr), addr)
+
+		for _, holder := range []sdk.AccAddress{addr, ucdaotypes.GetEscrowAddress(addr)} {
+			for _, denom := range v196.BurnDenoms {
+				require.True(t, a.BankKeeper.GetBalance(ctx, holder, denom).IsZero(), "%s %s", holder, denom)
+			}
+			dels, err := a.StakingKeeper.GetAllDelegatorDelegations(ctx, holder)
+			require.NoError(t, err)
+			require.Empty(t, dels, holder)
+			ubds, err := a.StakingKeeper.GetAllUnbondingDelegations(ctx, holder)
+			require.NoError(t, err)
+			require.Empty(t, ubds, holder)
+			reds, err := a.StakingKeeper.GetRedelegations(ctx, holder, 100)
+			require.NoError(t, err)
+			require.Empty(t, reds, holder)
+			withdrawAddr, err := a.DistrKeeper.GetDelegatorWithdrawAddr(ctx, holder)
+			require.NoError(t, err)
+			require.Equal(t, holder, withdrawAddr)
+		}
 	}
 
-	// The vesting account is a plain EOA again, with number and sequence kept.
+	// The vesting account is a plain EOA again, with number and sequence kept;
+	// the vesting escrow too.
 	acc, ok := a.AccountKeeper.GetAccount(ctx, s.hackerVesting).(*ethtypes.EthAccount)
 	require.True(t, ok)
 	require.Equal(t, accNum, acc.GetAccountNumber())
 	require.Equal(t, seq, acc.GetSequence())
 	require.Equal(t, ethtypes.AccountTypeEOA, acc.Type())
+	escrowAcc, ok := a.AccountKeeper.GetAccount(ctx, ucdaotypes.GetEscrowAddress(s.hackerPlain)).(*ethtypes.EthAccount)
+	require.True(t, ok)
+	require.Equal(t, ethtypes.AccountTypeEOA, escrowAcc.Type())
 
 	// The innocent withdraw address received none of the hacker's rewards, and
 	// the innocent delegation on the hacker's validator is untouched.
@@ -287,37 +329,120 @@ func TestBurnHackerFunds(t *testing.T) {
 	require.NoError(t, err)
 	ethiqBurnedBefore := a.EthiqKeeper.GetTotalBurnedAmount(ctx)
 	require.Equal(t, islm(300).Amount, a.DaoKeeper.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount)
+	expected, withdrawals := expectedBurn(t, s)
 
 	ctx = ctx.WithEventManager(sdk.NewEventManager())
 	require.NoError(t, v196.BurnHackerFunds(ctx, keepersOf(a), v196.HackerAccounts))
 
 	s.requireCleared(t, ctx, innocentBefore, vestingAcc.GetAccountNumber(), vestingAcc.GetSequence())
 
-	// The counter tracked 300, the escrows held 307: the subtraction saturates.
+	// The counter tracked 300, the escrows held more: the subtraction saturates.
 	require.True(t, a.DaoKeeper.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount.IsZero())
 
-	// Burned, not moved: supply dropped by at least everything placed on the
-	// hacker accounts, and neither the community pool nor ethiq's burn counter
-	// moved. The handler itself checks the drop is exact.
+	// Burned, not moved: supply dropped by exactly what the accounts and their
+	// escrows held in any form, read from the state before the burn.
 	supplyAfter := sdk.NewCoins(a.BankKeeper.GetSupply(ctx, utils.BaseDenom), a.BankKeeper.GetSupply(ctx, ethiqtypes.BaseDenom))
 	burned := supplyBefore.Sub(supplyAfter...)
-	// 10 + 1000 + 1 + 100 + 40 + 7 ISLM put on the accounts
-	require.True(t, burned.AmountOf(utils.BaseDenom).GTE(islm(1158).Amount), burned.String())
-	// 50 + 3 HAQQ on balance and escrow, plus the operator's commission and rewards
-	require.True(t, burned.AmountOf(ethiqtypes.BaseDenom).GT(haqqCoin(53).Amount), burned.String())
+	for _, denom := range v196.BurnDenoms {
+		require.True(t, expected.AmountOf(denom).IsPositive(), denom)
+		require.Equal(t, expected.AmountOf(denom).String(), burned.AmountOf(denom).String(), denom)
+	}
 
+	// Paying out rewards leaves only the sub-unit remainder of each withdrawal to
+	// the community pool; ethiq's burn counter does not move.
 	feePoolAfter, err := a.DistrKeeper.FeePool.Get(ctx)
 	require.NoError(t, err)
-	require.Equal(t, feePoolBefore.CommunityPool, feePoolAfter.CommunityPool)
+	poolGain, negative := feePoolAfter.CommunityPool.SafeSub(feePoolBefore.CommunityPool)
+	require.False(t, negative)
+	for _, denom := range v196.BurnDenoms {
+		require.True(t, poolGain.AmountOf(denom).LT(sdkmath.LegacyNewDec(int64(withdrawals))), "%s community pool gain %s", denom, poolGain)
+	}
 	require.Equal(t, ethiqBurnedBefore, a.EthiqKeeper.GetTotalBurnedAmount(ctx))
 
-	var events int
+	// One event per account that actually had something to burn.
+	burnedEvents := map[string][2]string{}
 	for _, ev := range ctx.EventManager().Events() {
-		if ev.Type == v196.EventTypeHackerFundsBurned {
-			events++
+		if ev.Type != v196.EventTypeHackerFundsBurned {
+			continue
 		}
+		attrs := map[string]string{}
+		for _, attr := range ev.Attributes {
+			attrs[attr.Key] = attr.Value
+		}
+		burnedEvents[attrs[v196.AttributeKeyAccount]] = [2]string{attrs[v196.AttributeKeyBurnedFromAccount], attrs[v196.AttributeKeyBurnedFromEscrow]}
 	}
-	require.Equal(t, len(v196.HackerAccounts), events)
+	require.Len(t, burnedEvents, len(s.hackers()))
+	for _, addr := range s.hackers() {
+		require.Contains(t, burnedEvents, addr.String())
+	}
+	require.Equal(t, [2]string{"", islm(100).String()}, burnedEvents[s.hackerEscrowOnly.String()])
+}
+
+// expectedBurn sums, from the state before the burn, everything the scenario's
+// accounts and their escrows hold: balances, delegated and unbonding tokens,
+// withdrawable rewards and validator commission. It also returns the number of
+// reward withdrawals the burn will make.
+func expectedBurn(t *testing.T, s scenario) (sdk.Coins, int) {
+	t.Helper()
+
+	ctx := s.nw.GetContext()
+	a := s.nw.App
+	sk := a.StakingKeeper
+	querier := distrkeeper.NewQuerier(a.DistrKeeper)
+	bondDenom, err := sk.BondDenom(ctx)
+	require.NoError(t, err)
+
+	burnable := func(coins sdk.Coins) sdk.Coins {
+		out := sdk.NewCoins()
+		for _, denom := range v196.BurnDenoms {
+			out = out.Add(sdk.NewCoin(denom, coins.AmountOf(denom)))
+		}
+		return out
+	}
+
+	total := sdk.NewCoins()
+	withdrawals := 0
+	for _, addr := range s.hackers() {
+		for _, holder := range []sdk.AccAddress{addr, ucdaotypes.GetEscrowAddress(addr)} {
+			total = total.Add(burnable(a.BankKeeper.GetAllBalances(ctx, holder))...)
+
+			dels, err := sk.GetAllDelegatorDelegations(ctx, holder)
+			require.NoError(t, err)
+			for _, del := range dels {
+				valAddr, err := sdk.ValAddressFromBech32(del.ValidatorAddress)
+				require.NoError(t, err)
+				val, err := sk.GetValidator(ctx, valAddr)
+				require.NoError(t, err)
+				total = total.Add(sdk.NewCoin(bondDenom, val.TokensFromShares(del.Shares).TruncateInt()))
+
+				// The rewards query bumps the validator period; keep that off the state.
+				queryCtx, _ := ctx.CacheContext()
+				res, err := querier.DelegationRewards(queryCtx, &distrtypes.QueryDelegationRewardsRequest{
+					DelegatorAddress: holder.String(),
+					ValidatorAddress: del.ValidatorAddress,
+				})
+				require.NoError(t, err)
+				rewards, _ := res.Rewards.TruncateDecimal()
+				total = total.Add(burnable(rewards)...)
+				withdrawals++
+			}
+
+			ubds, err := sk.GetAllUnbondingDelegations(ctx, holder)
+			require.NoError(t, err)
+			for _, ubd := range ubds {
+				for _, entry := range ubd.Entries {
+					total = total.Add(sdk.NewCoin(bondDenom, entry.Balance))
+				}
+			}
+		}
+
+		commission, err := a.DistrKeeper.GetValidatorAccumulatedCommission(ctx, sdk.ValAddress(addr))
+		require.NoError(t, err)
+		truncated, _ := commission.Commission.TruncateDecimal()
+		total = total.Add(burnable(truncated)...)
+	}
+
+	return total, withdrawals
 }
 
 func TestUpgradeHandlerEndToEnd(t *testing.T) {
@@ -369,17 +494,38 @@ func TestBurnHackerFundsFailsOnLeftovers(t *testing.T) {
 	ctx := s.nw.GetContext()
 	a := s.nw.App
 
-	// A redelegation record cannot be removed by undelegating; the handler must
-	// refuse to finish rather than leave the account half-processed.
-	valOther, err := a.StakingKeeper.GetValidator(ctx, s.valOther)
+	// An unbonding entry on hold cannot be completed (haqq never puts one on
+	// hold; this stands in for anything the burn cannot clear). The handler must
+	// refuse to finish rather than report success.
+	ubd, err := a.StakingKeeper.GetUnbondingDelegation(ctx, s.hackerPlain, s.valOther)
 	require.NoError(t, err)
-	shares, err := valOther.SharesFromTokens(islm(5).Amount)
-	require.NoError(t, err)
-	_, err = a.StakingKeeper.BeginRedelegation(ctx, s.hackerPlain, s.valOther, s.valHacker, shares)
-	require.NoError(t, err)
+	ubd.Entries[0].UnbondingOnHoldRefCount = 1
+	require.NoError(t, a.StakingKeeper.SetUnbondingDelegation(ctx, ubd))
 
 	err = v196.BurnHackerFunds(ctx, keepersOf(a), v196.HackerAccounts)
-	require.ErrorContains(t, err, "redelegations left")
+	require.ErrorContains(t, err, "unbonding delegations left")
+}
+
+func TestBurnHackerFundsJailsOperator(t *testing.T) {
+	s := setupScenario(t)
+	ctx := s.nw.GetContext()
+	a := s.nw.App
+
+	// With a minimum self-delegation, removing the operator's own stake jails the
+	// validator; the innocent delegation stays on it.
+	validator, err := a.StakingKeeper.GetValidator(ctx, s.valHacker)
+	require.NoError(t, err)
+	validator.MinSelfDelegation = islm(1).Amount
+	require.NoError(t, a.StakingKeeper.SetValidator(ctx, validator))
+
+	vestingAcc := a.AccountKeeper.GetAccount(ctx, s.hackerVesting)
+	innocentBefore := a.BankKeeper.GetAllBalances(ctx, s.innocent)
+	require.NoError(t, v196.BurnHackerFunds(ctx, keepersOf(a), v196.HackerAccounts))
+
+	validator, err = a.StakingKeeper.GetValidator(ctx, s.valHacker)
+	require.NoError(t, err)
+	require.True(t, validator.Jailed)
+	s.requireCleared(t, ctx, innocentBefore, vestingAcc.GetAccountNumber(), vestingAcc.GetSequence())
 }
 
 func TestBurnHackerFundsInput(t *testing.T) {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math"
 	"slices"
 	"sort"
 	"strings"
@@ -46,9 +45,11 @@ const (
 )
 
 // BurnHackerFunds burns every aISLM and aHAQQ the given accounts control: bank
-// balances, delegations and unbondings (paid out immediately, without the
-// unbonding period), delegation rewards, validator commission and the ucDAO
-// escrow. It also revokes every authz grant and fee allowance the accounts are
+// balances, delegations, unbondings and redelegations (settled immediately,
+// without waiting for the unbonding period), delegation rewards, validator
+// commission and the ucDAO escrow. The escrow goes through the same steps as the
+// account itself, since a third party can put a vesting schedule and a delegation
+// on it. It also revokes every authz grant and fee allowance the accounts are
 // party to, then verifies nothing is left.
 //
 // Determinism: accounts are walked in sort.Strings order, every collection read
@@ -169,30 +170,17 @@ func parseAccounts(accounts []string) ([]sdk.AccAddress, error) {
 	return addrs, nil
 }
 
-// burnAccount moves everything the account controls onto its balance and burns
-// it together with its ucDAO escrow. The order matters: vesting is lifted first
-// so nothing stays locked, and the withdraw address is reset before commission
-// and rewards are paid out.
+// burnAccount releases everything the account and its ucDAO escrow hold in
+// staking and distribution onto their balances, then burns both balances.
 func burnAccount(ctx sdk.Context, k Keepers, addr sdk.AccAddress) (fromAccount, fromEscrow sdk.Coins, err error) {
-	if err := unlockVestingAccount(ctx, k.AccountKeeper, addr); err != nil {
-		return nil, nil, errorsmod.Wrap(err, "unlock vesting account")
-	}
-	if err := resetWithdrawAddress(ctx, k.DistrKeeper, addr); err != nil {
-		return nil, nil, errorsmod.Wrap(err, "reset withdraw address")
-	}
-	if err := withdrawCommission(ctx, k.DistrKeeper, addr); err != nil {
-		return nil, nil, errorsmod.Wrap(err, "withdraw validator commission")
-	}
-	if err := completeUnbondings(ctx, k.StakingKeeper, addr); err != nil {
-		return nil, nil, errorsmod.Wrap(err, "complete unbondings")
-	}
-	// Unbond triggers the distribution hook that pays pending rewards out to the
-	// (just reset) withdraw address.
-	if err := undelegateAll(ctx, k.StakingKeeper, k.BankKeeper, addr); err != nil {
-		return nil, nil, errorsmod.Wrap(err, "undelegate")
+	escrow := ucdaotypes.GetEscrowAddress(addr)
+	for _, holder := range []sdk.AccAddress{addr, escrow} {
+		if err := releaseFunds(ctx, k, holder); err != nil {
+			return nil, nil, errorsmod.Wrapf(err, "release funds of %s", holder)
+		}
 	}
 
-	fromEscrow, err = burnEscrow(ctx, k, addr)
+	fromEscrow, err = burnEscrow(ctx, k, addr, escrow)
 	if err != nil {
 		return nil, nil, errorsmod.Wrap(err, "burn ucdao escrow")
 	}
@@ -202,22 +190,54 @@ func burnAccount(ctx sdk.Context, k Keepers, addr sdk.AccAddress) (fromAccount, 
 		return nil, nil, errorsmod.Wrap(err, "burn balance")
 	}
 
-	ctx.EventManager().EmitEvent(
-		sdk.NewEvent(
-			EventTypeHackerFundsBurned,
-			sdk.NewAttribute(AttributeKeyAccount, addr.String()),
-			sdk.NewAttribute(AttributeKeyBurnedFromAccount, fromAccount.String()),
-			sdk.NewAttribute(AttributeKeyBurnedFromEscrow, fromEscrow.String()),
-		),
-	)
+	if !fromAccount.IsZero() || !fromEscrow.IsZero() {
+		ctx.EventManager().EmitEvent(
+			sdk.NewEvent(
+				EventTypeHackerFundsBurned,
+				sdk.NewAttribute(AttributeKeyAccount, addr.String()),
+				sdk.NewAttribute(AttributeKeyBurnedFromAccount, fromAccount.String()),
+				sdk.NewAttribute(AttributeKeyBurnedFromEscrow, fromEscrow.String()),
+			),
+		)
+	}
 
 	return fromAccount, fromEscrow, nil
 }
 
+// releaseFunds moves everything the holder has in staking and distribution onto
+// its balance and makes that balance spendable. The order matters: vesting is
+// lifted first so nothing stays locked, and the withdraw address is reset before
+// commission and rewards are paid out.
+func releaseFunds(ctx sdk.Context, k Keepers, holder sdk.AccAddress) error {
+	if err := unlockVestingAccount(ctx, k.AccountKeeper, holder); err != nil {
+		return errorsmod.Wrap(err, "unlock vesting account")
+	}
+	if err := resetWithdrawAddress(ctx, k.DistrKeeper, holder); err != nil {
+		return errorsmod.Wrap(err, "reset withdraw address")
+	}
+	if err := withdrawCommission(ctx, k.DistrKeeper, holder); err != nil {
+		return errorsmod.Wrap(err, "withdraw validator commission")
+	}
+	if err := completeUnbondings(ctx, k.StakingKeeper, holder); err != nil {
+		return errorsmod.Wrap(err, "complete unbondings")
+	}
+	if err := completeRedelegations(ctx, k.StakingKeeper, holder); err != nil {
+		return errorsmod.Wrap(err, "complete redelegations")
+	}
+	// Unbond triggers the distribution hook that pays pending rewards out to the
+	// (just reset) withdraw address.
+	if err := undelegateAll(ctx, k.StakingKeeper, k.BankKeeper, holder); err != nil {
+		return errorsmod.Wrap(err, "undelegate")
+	}
+
+	return nil
+}
+
 // unlockVestingAccount replaces a vesting account with a plain EthAccount so
-// every coin becomes spendable. Anyone can turn an address into a clawback
-// vesting account through MsgConvertIntoVestingAccount, so without this a third
-// party could lock coins on a frozen account and fail the upgrade.
+// every coin becomes spendable. Anyone can turn an address - a frozen account or
+// its ucDAO escrow - into a clawback vesting account through
+// MsgConvertIntoVestingAccount, so without this a third party could lock coins
+// there and fail the upgrade.
 //
 // The base account is copied, never recreated: account number, sequence and
 // pubkey must survive (v1.5.0 recreated accounts and v1.6.0/v1.6.1 had to
@@ -252,7 +272,7 @@ func unlockVestingAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, addr sdk
 	return nil
 }
 
-// resetWithdrawAddress points the account's rewards and commission back at
+// resetWithdrawAddress points the holder's rewards and commission back at
 // itself, so nothing is paid out to an address outside the burn.
 func resetWithdrawAddress(ctx sdk.Context, dk distrkeeper.Keeper, addr sdk.AccAddress) error {
 	withdrawAddr, err := dk.GetDelegatorWithdrawAddr(ctx, addr)
@@ -266,8 +286,8 @@ func resetWithdrawAddress(ctx sdk.Context, dk distrkeeper.Keeper, addr sdk.AccAd
 	return dk.SetDelegatorWithdrawAddr(ctx, addr, addr)
 }
 
-// withdrawCommission pays accumulated validator commission out to the account.
-// It runs for every account: one that does not operate a validator has no
+// withdrawCommission pays accumulated validator commission out to the holder.
+// It runs for every holder: one that does not operate a validator has no
 // commission and gets ErrNoValidatorCommission, which is expected.
 func withdrawCommission(ctx sdk.Context, dk distrkeeper.Keeper, addr sdk.AccAddress) error {
 	_, err := dk.WithdrawValidatorCommission(ctx, sdk.ValAddress(addr))
@@ -311,7 +331,65 @@ func completeUnbondings(ctx sdk.Context, sk stakingkeeper.Keeper, addr sdk.AccAd
 	return nil
 }
 
-// undelegateAll removes every delegation of the account, own validator
+// completeRedelegations matures every redelegation entry and completes it. A
+// redelegation holds no funds - the tokens already sit in the destination
+// delegation, which undelegateAll removes - but the record itself must go too:
+// otherwise the final check fails. As with unbondings, the redelegation queue
+// keeps stale entries and the staking EndBlocker skips triplets that no longer
+// exist.
+func completeRedelegations(ctx sdk.Context, sk stakingkeeper.Keeper, addr sdk.AccAddress) error {
+	reds, err := redelegationsOf(ctx, sk, addr)
+	if err != nil {
+		return err
+	}
+
+	for _, red := range reds {
+		for i := range red.Entries {
+			red.Entries[i].CompletionTime = ctx.BlockTime()
+		}
+		if err := sk.SetRedelegation(ctx, red); err != nil {
+			return err
+		}
+
+		valSrcAddr, err := sk.ValidatorAddressCodec().StringToBytes(red.ValidatorSrcAddress)
+		if err != nil {
+			return err
+		}
+		valDstAddr, err := sk.ValidatorAddressCodec().StringToBytes(red.ValidatorDstAddress)
+		if err != nil {
+			return err
+		}
+		if _, err := sk.CompleteRedelegation(ctx, addr, valSrcAddr, valDstAddr); err != nil {
+			return errorsmod.Wrapf(err, "redelegation %s -> %s", red.ValidatorSrcAddress, red.ValidatorDstAddress)
+		}
+	}
+
+	return nil
+}
+
+// redelegationsOf reads all redelegations of the delegator, sorted by source and
+// destination validator.
+func redelegationsOf(ctx sdk.Context, sk stakingkeeper.Keeper, addr sdk.AccAddress) ([]stakingtypes.Redelegation, error) {
+	var reds []stakingtypes.Redelegation
+	err := sk.IterateDelegatorRedelegations(ctx, addr, func(red stakingtypes.Redelegation) bool {
+		reds = append(reds, red)
+		return false
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	slices.SortFunc(reds, func(a, b stakingtypes.Redelegation) int {
+		if c := strings.Compare(a.ValidatorSrcAddress, b.ValidatorSrcAddress); c != 0 {
+			return c
+		}
+		return strings.Compare(a.ValidatorDstAddress, b.ValidatorDstAddress)
+	})
+
+	return reds, nil
+}
+
+// undelegateAll removes every delegation of the holder, own validator
 // included, and pays the tokens out immediately instead of starting an
 // unbonding period (the v1.7.6 approach).
 func undelegateAll(ctx sdk.Context, sk stakingkeeper.Keeper, bk bankkeeper.Keeper, addr sdk.AccAddress) error {
@@ -366,8 +444,7 @@ func undelegateAll(ctx sdk.Context, sk stakingkeeper.Keeper, bk bankkeeper.Keepe
 // line: the per-account balance is the escrow's bank balance, so only the global
 // aISLM counter and the holders index need updating. aHAQQ can only reach an
 // escrow by a plain transfer and is never counted, so it is not subtracted.
-func burnEscrow(ctx sdk.Context, k Keepers, addr sdk.AccAddress) (sdk.Coins, error) {
-	escrow := ucdaotypes.GetEscrowAddress(addr)
+func burnEscrow(ctx sdk.Context, k Keepers, owner, escrow sdk.AccAddress) (sdk.Coins, error) {
 	coins := balancesOf(ctx, k.BankKeeper, escrow)
 	if err := burnFrom(ctx, k.BankKeeper, escrow, coins); err != nil {
 		return nil, err
@@ -378,8 +455,8 @@ func burnEscrow(ctx sdk.Context, k Keepers, addr sdk.AccAddress) (sdk.Coins, err
 	}
 
 	// Drops the holder once the escrow is empty; never registers a new one.
-	if k.DaoKeeper.IsHolder(ctx, addr) {
-		k.DaoKeeper.SetHoldersIndex(ctx, addr)
+	if k.DaoKeeper.IsHolder(ctx, owner) {
+		k.DaoKeeper.SetHoldersIndex(ctx, owner)
 	}
 
 	return coins, nil
@@ -504,19 +581,28 @@ func collectFeeAllowances(ctx sdk.Context, fk feegrantkeeper.Keeper, targets map
 	return allowances, nil
 }
 
-// verifyAccountCleared fails unless the account holds nothing burnable anymore.
+// verifyAccountCleared fails unless neither the account nor its ucDAO escrow
+// holds anything burnable anymore.
 func verifyAccountCleared(ctx sdk.Context, k Keepers, addr sdk.AccAddress) error {
-	escrow := ucdaotypes.GetEscrowAddress(addr)
-	for _, denom := range BurnDenoms {
-		if bal := k.BankKeeper.GetBalance(ctx, addr, denom); !bal.IsZero() {
-			return fmt.Errorf("balance left: %s", bal)
-		}
-		if bal := k.BankKeeper.GetBalance(ctx, escrow, denom); !bal.IsZero() {
-			return fmt.Errorf("ucdao escrow %s balance left: %s", escrow, bal)
+	for _, holder := range []sdk.AccAddress{addr, ucdaotypes.GetEscrowAddress(addr)} {
+		if err := verifyHolderCleared(ctx, k, holder); err != nil {
+			return errorsmod.Wrapf(err, "holder %s", holder)
 		}
 	}
 
-	delegations, err := k.StakingKeeper.GetAllDelegatorDelegations(ctx, addr)
+	return nil
+}
+
+// verifyHolderCleared fails unless the holder has no BurnDenoms balance, no
+// staking positions, no commission and a withdraw address pointing at itself.
+func verifyHolderCleared(ctx sdk.Context, k Keepers, holder sdk.AccAddress) error {
+	for _, denom := range BurnDenoms {
+		if bal := k.BankKeeper.GetBalance(ctx, holder, denom); !bal.IsZero() {
+			return fmt.Errorf("balance left: %s", bal)
+		}
+	}
+
+	delegations, err := k.StakingKeeper.GetAllDelegatorDelegations(ctx, holder)
 	if err != nil {
 		return err
 	}
@@ -524,7 +610,7 @@ func verifyAccountCleared(ctx sdk.Context, k Keepers, addr sdk.AccAddress) error
 		return fmt.Errorf("%d delegations left", len(delegations))
 	}
 
-	ubds, err := k.StakingKeeper.GetAllUnbondingDelegations(ctx, addr)
+	ubds, err := k.StakingKeeper.GetAllUnbondingDelegations(ctx, holder)
 	if err != nil {
 		return err
 	}
@@ -532,23 +618,23 @@ func verifyAccountCleared(ctx sdk.Context, k Keepers, addr sdk.AccAddress) error
 		return fmt.Errorf("%d unbonding delegations left", len(ubds))
 	}
 
-	redelegations, err := k.StakingKeeper.GetRedelegations(ctx, addr, math.MaxUint16)
+	reds, err := redelegationsOf(ctx, k.StakingKeeper, holder)
 	if err != nil {
 		return err
 	}
-	if len(redelegations) > 0 {
-		return fmt.Errorf("%d redelegations left", len(redelegations))
+	if len(reds) > 0 {
+		return fmt.Errorf("%d redelegations left", len(reds))
 	}
 
-	withdrawAddr, err := k.DistrKeeper.GetDelegatorWithdrawAddr(ctx, addr)
+	withdrawAddr, err := k.DistrKeeper.GetDelegatorWithdrawAddr(ctx, holder)
 	if err != nil {
 		return err
 	}
-	if !withdrawAddr.Equals(addr) {
+	if !withdrawAddr.Equals(holder) {
 		return fmt.Errorf("withdraw address is %s", withdrawAddr)
 	}
 
-	commission, err := k.DistrKeeper.GetValidatorAccumulatedCommission(ctx, sdk.ValAddress(addr))
+	commission, err := k.DistrKeeper.GetValidatorAccumulatedCommission(ctx, sdk.ValAddress(holder))
 	if err != nil {
 		return err
 	}
