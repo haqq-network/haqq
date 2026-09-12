@@ -293,26 +293,28 @@ func (p *Precompile) Delegate(
 		// expiration is the expiration time of the authorization grant
 		expiration *time.Time
 
-		// isCallerOrigin is true when the contract caller is the same as the origin
+		// isCallerOrigin is true when the contract caller is the same as the origin.
+		// It no longer takes part in authorization: it only tells the mirror whether the
+		// bank movement has to be journaled into the EVM stateDB.
 		isCallerOrigin = contract.CallerAddress == origin
 		// isCallerDelegator is true when the contract caller is the same as the delegator
 		isCallerDelegator = contract.CallerAddress == delegatorHexAddr
 	)
 
-	// The provided delegator address should always be equal to the origin address.
-	// In case the contract caller address is the same as the delegator address provided,
-	// update the delegator address to be equal to the origin address.
-	// Otherwise, if the provided delegator address is different from the origin address,
-	// return an error because is a forbidden operation
-	if isCallerDelegator {
-		delegatorHexAddr = origin
-	} else if origin != delegatorHexAddr {
+	// The delegator is the account whose stake moves, and it stays as the message carries
+	// it. Rebinding it to the origin here changed only the local variable used by the authz
+	// lookup and the event: the message still debited the original argument, so a contract
+	// delegating its own funds was gated on -- and charged against -- an unrelated origin's
+	// grant. A caller acting on its own delegation is authorized by its own code; anyone
+	// else still needs the delegator to have signed the transaction.
+	if !isCallerDelegator && origin != delegatorHexAddr {
 		return nil, fmt.Errorf(ErrDifferentOriginFromDelegator, origin.String(), delegatorHexAddr.String())
 	}
 
-	// no need to have authorization when the contract caller is the same as origin (owner of funds)
-	if !isCallerOrigin {
-		// Check if the authorization grant exists for the caller and the origin
+	// No authorization is needed when the caller is the delegator: it owns the stake it is
+	// moving. The granter is the delegator, never the origin.
+	if !isCallerDelegator {
+		// Check if the authorization grant exists for the caller and the delegator
 		stakeAuthz, expiration, err = authorization.CheckAuthzAndAllowanceForGranter(ctx, p.AuthzKeeper, contract.CallerAddress, delegatorHexAddr, &msg.Amount, DelegateMsg)
 		if err != nil {
 			return nil, err
@@ -328,8 +330,9 @@ func (p *Precompile) Delegate(
 		return nil, err
 	}
 
-	// Only update the authorization if the contract caller is different from the origin
-	if !isCallerOrigin {
+	// Only update the authorization if one was actually consumed above. Keying this off
+	// isCallerOrigin debited the origin's allowance for a contract spending its own funds.
+	if !isCallerDelegator {
 		if err := p.UpdateStakingAuthorization(ctx, contract.CallerAddress, delegatorHexAddr, stakeAuthz, expiration, DelegateMsg, msg); err != nil {
 			return nil, err
 		}
@@ -379,26 +382,28 @@ func (p *Precompile) Undelegate(
 		// expiration is the expiration time of the authorization grant
 		expiration *time.Time
 
-		// isCallerOrigin is true when the contract caller is the same as the origin
+		// isCallerOrigin is true when the contract caller is the same as the origin.
+		// It no longer takes part in authorization: it only tells the mirror whether the
+		// bank movement has to be journaled into the EVM stateDB.
 		isCallerOrigin = contract.CallerAddress == origin
 		// isCallerDelegator is true when the contract caller is the same as the delegator
 		isCallerDelegator = contract.CallerAddress == delegatorHexAddr
 	)
 
-	// The provided delegator address should always be equal to the origin address.
-	// In case the contract caller address is the same as the delegator address provided,
-	// update the delegator address to be equal to the origin address.
-	// Otherwise, if the provided delegator address is different from the origin address,
-	// return an error because is a forbidden operation
-	if isCallerDelegator {
-		delegatorHexAddr = origin
-	} else if origin != delegatorHexAddr {
+	// The delegator is the account whose stake moves, and it stays as the message carries
+	// it. Rebinding it to the origin here changed only the local variable used by the authz
+	// lookup and the event: the message still debited the original argument, so a contract
+	// delegating its own funds was gated on -- and charged against -- an unrelated origin's
+	// grant. A caller acting on its own delegation is authorized by its own code; anyone
+	// else still needs the delegator to have signed the transaction.
+	if !isCallerDelegator && origin != delegatorHexAddr {
 		return nil, fmt.Errorf(ErrDifferentOriginFromDelegator, origin.String(), delegatorHexAddr.String())
 	}
 
-	// no need to have authorization when the contract caller is the same as origin (owner of funds)
-	if !isCallerOrigin {
-		// Check if the authorization grant exists for the caller and the origin
+	// No authorization is needed when the caller is the delegator: it owns the stake it is
+	// moving. The granter is the delegator, never the origin.
+	if !isCallerDelegator {
+		// Check if the authorization grant exists for the caller and the delegator
 		stakeAuthz, expiration, err = authorization.CheckAuthzAndAllowanceForGranter(ctx, p.AuthzKeeper, contract.CallerAddress, delegatorHexAddr, &msg.Amount, UndelegateMsg)
 		if err != nil {
 			return nil, err
@@ -416,8 +421,9 @@ func (p *Precompile) Undelegate(
 		return nil, err
 	}
 
-	// Only update the authorization if the contract caller is different from the origin
-	if !isCallerOrigin {
+	// Only update the authorization if one was actually consumed above. Keying this off
+	// isCallerOrigin debited the origin's allowance for a contract spending its own funds.
+	if !isCallerDelegator {
 		if err := p.UpdateStakingAuthorization(ctx, contract.CallerAddress, delegatorHexAddr, stakeAuthz, expiration, UndelegateMsg, msg); err != nil {
 			return nil, err
 		}
@@ -469,26 +475,28 @@ func (p *Precompile) Redelegate(
 		// expiration is the expiration time of the authorization grant
 		expiration *time.Time
 
-		// isCallerOrigin is true when the contract caller is the same as the origin
+		// isCallerOrigin is true when the contract caller is the same as the origin.
+		// It no longer takes part in authorization: it only tells the mirror whether the
+		// bank movement has to be journaled into the EVM stateDB.
 		isCallerOrigin = contract.CallerAddress == origin
 		// isCallerDelegator is true when the contract caller is the same as the delegator
 		isCallerDelegator = contract.CallerAddress == delegatorHexAddr
 	)
 
-	// The provided delegator address should always be equal to the origin address.
-	// In case the contract caller address is the same as the delegator address provided,
-	// update the delegator address to be equal to the origin address.
-	// Otherwise, if the provided delegator address is different from the origin address,
-	// return an error because is a forbidden operation
-	if isCallerDelegator {
-		delegatorHexAddr = origin
-	} else if origin != delegatorHexAddr {
+	// The delegator is the account whose stake moves, and it stays as the message carries
+	// it. Rebinding it to the origin here changed only the local variable used by the authz
+	// lookup and the event: the message still debited the original argument, so a contract
+	// delegating its own funds was gated on -- and charged against -- an unrelated origin's
+	// grant. A caller acting on its own delegation is authorized by its own code; anyone
+	// else still needs the delegator to have signed the transaction.
+	if !isCallerDelegator && origin != delegatorHexAddr {
 		return nil, fmt.Errorf(ErrDifferentOriginFromDelegator, origin.String(), delegatorHexAddr.String())
 	}
 
-	// no need to have authorization when the contract caller is the same as origin (owner of funds)
-	if !isCallerOrigin {
-		// Check if the authorization grant exists for the caller and the origin
+	// No authorization is needed when the caller is the delegator: it owns the stake it is
+	// moving. The granter is the delegator, never the origin.
+	if !isCallerDelegator {
+		// Check if the authorization grant exists for the caller and the delegator
 		stakeAuthz, expiration, err = authorization.CheckAuthzAndAllowanceForGranter(ctx, p.AuthzKeeper, contract.CallerAddress, delegatorHexAddr, &msg.Amount, RedelegateMsg)
 		if err != nil {
 			return nil, err
@@ -505,8 +513,9 @@ func (p *Precompile) Redelegate(
 		return nil, err
 	}
 
-	// Only update the authorization if the contract caller is different from the origin
-	if !isCallerOrigin {
+	// Only update the authorization if one was actually consumed above. Keying this off
+	// isCallerOrigin debited the origin's allowance for a contract spending its own funds.
+	if !isCallerDelegator {
 		if err := p.UpdateStakingAuthorization(ctx, contract.CallerAddress, delegatorHexAddr, stakeAuthz, expiration, RedelegateMsg, msg); err != nil {
 			return nil, err
 		}
@@ -557,26 +566,28 @@ func (p *Precompile) CancelUnbondingDelegation(
 		// expiration is the expiration time of the authorization grant
 		expiration *time.Time
 
-		// isCallerOrigin is true when the contract caller is the same as the origin
+		// isCallerOrigin is true when the contract caller is the same as the origin.
+		// It no longer takes part in authorization: it only tells the mirror whether the
+		// bank movement has to be journaled into the EVM stateDB.
 		isCallerOrigin = contract.CallerAddress == origin
 		// isCallerDelegator is true when the contract caller is the same as the delegator
 		isCallerDelegator = contract.CallerAddress == delegatorHexAddr
 	)
 
-	// The provided delegator address should always be equal to the origin address.
-	// In case the contract caller address is the same as the delegator address provided,
-	// update the delegator address to be equal to the origin address.
-	// Otherwise, if the provided delegator address is different from the origin address,
-	// return an error because is a forbidden operation
-	if isCallerDelegator {
-		delegatorHexAddr = origin
-	} else if origin != delegatorHexAddr {
+	// The delegator is the account whose stake moves, and it stays as the message carries
+	// it. Rebinding it to the origin here changed only the local variable used by the authz
+	// lookup and the event: the message still debited the original argument, so a contract
+	// delegating its own funds was gated on -- and charged against -- an unrelated origin's
+	// grant. A caller acting on its own delegation is authorized by its own code; anyone
+	// else still needs the delegator to have signed the transaction.
+	if !isCallerDelegator && origin != delegatorHexAddr {
 		return nil, fmt.Errorf(ErrDifferentOriginFromDelegator, origin.String(), delegatorHexAddr.String())
 	}
 
-	// no need to have authorization when the contract caller is the same as origin (owner of funds)
-	if !isCallerOrigin {
-		// Check if the authorization grant exists for the caller and the origin
+	// No authorization is needed when the caller is the delegator: it owns the stake it is
+	// moving. The granter is the delegator, never the origin.
+	if !isCallerDelegator {
+		// Check if the authorization grant exists for the caller and the delegator
 		stakeAuthz, expiration, err = authorization.CheckAuthzAndAllowanceForGranter(ctx, p.AuthzKeeper, contract.CallerAddress, delegatorHexAddr, &msg.Amount, CancelUnbondingDelegationMsg)
 		if err != nil {
 			return nil, err
@@ -591,8 +602,9 @@ func (p *Precompile) CancelUnbondingDelegation(
 		return nil, err
 	}
 
-	// Only update the authorization if the contract caller is different from the origin
-	if !isCallerOrigin {
+	// Only update the authorization if one was actually consumed above. Keying this off
+	// isCallerOrigin debited the origin's allowance for a contract spending its own funds.
+	if !isCallerDelegator {
 		if err := p.UpdateStakingAuthorization(ctx, contract.CallerAddress, delegatorHexAddr, stakeAuthz, expiration, CancelUnbondingDelegationMsg, msg); err != nil {
 			return nil, err
 		}

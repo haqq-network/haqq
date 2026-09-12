@@ -106,7 +106,9 @@ func (p *Precompile) ClaimRewards(
 // SetWithdrawAddress sets the withdrawal address for a delegator (or validator self-delegation).
 func (p Precompile) SetWithdrawAddress(
 	ctx sdk.Context,
-	origin common.Address,
+	// The origin is deliberately unused: this method is authorized by the immediate
+	// caller alone. Kept in the signature so every dispatcher branch stays uniform.
+	_ common.Address,
 	contract *vm.Contract,
 	stateDB vm.StateDB,
 	method *abi.Method,
@@ -117,11 +119,13 @@ func (p Precompile) SetWithdrawAddress(
 		return nil, err
 	}
 
-	// If the contract is the delegator, we don't need an origin check
-	// Otherwise check if the origin matches the delegator address
-	isContractDelegator := (contract.CallerAddress == delegatorHexAddr) && (origin != delegatorHexAddr)
-	if !isContractDelegator && origin != delegatorHexAddr {
-		return nil, fmt.Errorf(cmn.ErrDelegatorDifferentOrigin, origin.String(), delegatorHexAddr.String())
+	// Redirecting a reward stream is permanent, survives the transaction, and there is no
+	// authorization type in x/distribution that a delegator could grant for it -- so the only
+	// accepted authorization is the delegator itself making the call. Admitting
+	// `origin == delegator` here let any contract a user had ever interacted with point that
+	// user's staking rewards and validator commission at an attacker, for good.
+	if contract.CallerAddress != delegatorHexAddr {
+		return nil, fmt.Errorf(ErrCallerNotDelegator, contract.CallerAddress.String(), delegatorHexAddr.String())
 	}
 
 	msgSrv := distributionkeeper.NewMsgServerImpl(p.distributionKeeper)
@@ -246,11 +250,11 @@ func (p *Precompile) FundCommunityPool(
 		return nil, err
 	}
 
-	// If the contract is the depositor, we don't need an origin check
-	// Otherwise check if the origin matches the depositor address
-	isContractDepositor := contract.CallerAddress == depositorHexAddr && origin != depositorHexAddr
-	if !isContractDepositor && origin != depositorHexAddr {
-		return nil, fmt.Errorf(cmn.ErrSpenderDifferentOrigin, origin.String(), depositorHexAddr.String())
+	// Funding the community pool is irreversible and, like SetWithdrawAddress, has no
+	// authorization type behind it. Admitting `origin == depositor` let any contract drain a
+	// user's balance into the pool as pure griefing, so require a direct call.
+	if contract.CallerAddress != depositorHexAddr {
+		return nil, fmt.Errorf(ErrCallerNotDepositor, contract.CallerAddress.String(), depositorHexAddr.String())
 	}
 
 	msgSrv := distributionkeeper.NewMsgServerImpl(p.distributionKeeper)

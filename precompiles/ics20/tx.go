@@ -51,9 +51,10 @@ func (p *Precompile) Transfer(
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
-	// no need to have authorization when the contract caller is the same as origin (owner of funds)
-	// and the sender is the origin
-	resp, expiration, err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, origin, p.AuthzKeeper, msg)
+	// The granter is the sender carried by the message -- the account whose coins are
+	// escrowed -- not tx.origin. When the caller is the sender it is moving its own coins
+	// and needs no grant; the helper short-circuits on exactly that condition.
+	resp, expiration, err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, sender, p.AuthzKeeper, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func (p *Precompile) Transfer(
 		return nil, err
 	}
 
-	if err := UpdateGrantIfNeeded(ctx, contract, p.AuthzKeeper, origin, expiration, resp); err != nil {
+	if err := UpdateGrantIfNeeded(ctx, contract, p.AuthzKeeper, sender, expiration, resp); err != nil {
 		return nil, err
 	}
 

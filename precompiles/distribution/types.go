@@ -83,11 +83,26 @@ func NewMsgSetWithdrawAddress(args []interface{}) (*distributiontypes.MsgSetWith
 	withdrawerAddress, _ := args[1].(string)
 
 	// If the withdrawer address is a hex address, convert it to a bech32 address.
+	// Otherwise it is taken as bech32 and must decode to exactly 20 bytes: Cosmos accepts
+	// addresses up to 255 bytes, and a longer withdraw address set from the EVM would send
+	// rewards to an account with no EVM representation, where nothing on the EVM side can
+	// recover them. Longer addresses stay legitimate on the Cosmos path and are not
+	// restricted there.
 	if common.IsHexAddress(withdrawerAddress) {
 		var err error
 		withdrawerAddress, err = sdk.Bech32ifyAddressBytes(config.Bech32Prefix, common.HexToAddress(withdrawerAddress).Bytes())
 		if err != nil {
 			return nil, common.Address{}, err
+		}
+	} else if withdrawerAddress != "" {
+		// An empty string is left to the msg server, which already rejects it with a
+		// clearer message than a bech32 decode failure.
+		bz, err := sdk.GetFromBech32(withdrawerAddress, config.Bech32Prefix)
+		if err != nil {
+			return nil, common.Address{}, err
+		}
+		if len(bz) != common.AddressLength {
+			return nil, common.Address{}, fmt.Errorf(ErrWithdrawAddressLength, withdrawerAddress)
 		}
 	}
 

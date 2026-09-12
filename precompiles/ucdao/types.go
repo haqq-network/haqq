@@ -159,21 +159,21 @@ func NewTransferOwnershipWithAmountMsg(args []interface{}) (*ucdaotypes.MsgTrans
 }
 
 // CheckAndAcceptAuthorizationIfNeeded checks if authorization exists and accepts the grant.
-// In case the origin is the caller of the address, no authorization is required.
+// No authorization is required when the caller is the granter: it is acting on its own account.
 func CheckAndAcceptAuthorizationIfNeeded(
 	ctx sdk.Context,
 	contract *vm.Contract,
-	origin common.Address,
+	granter common.Address,
 	authzKeeper authzkeeper.Keeper,
 	msg sdk.Msg,
 ) error {
-	if contract.CallerAddress == origin {
+	if contract.CallerAddress == granter {
 		return nil
 	}
 
-	auth, expiration, err := authorization.CheckAuthzExists(ctx, authzKeeper, contract.CallerAddress, origin, sdk.MsgTypeURL(msg))
+	auth, expiration, err := authorization.CheckAuthzExists(ctx, authzKeeper, contract.CallerAddress, granter, sdk.MsgTypeURL(msg))
 	if err != nil {
-		return fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, contract.CallerAddress, origin)
+		return fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, contract.CallerAddress, granter)
 	}
 
 	// Accept the grant with the actual message
@@ -194,11 +194,11 @@ func CheckAndAcceptAuthorizationIfNeeded(
 
 	// Update grant if needed (application-based authz is always deleted after use)
 	if resp.Delete {
-		if err = authzKeeper.DeleteGrant(ctx, contract.CallerAddress.Bytes(), origin.Bytes(), sdk.MsgTypeURL(msg)); err != nil {
+		if err = authzKeeper.DeleteGrant(ctx, contract.CallerAddress.Bytes(), granter.Bytes(), sdk.MsgTypeURL(msg)); err != nil {
 			return err
 		}
 	} else if resp.Updated != nil {
-		if err = authzKeeper.SaveGrant(ctx, contract.CallerAddress.Bytes(), origin.Bytes(), resp.Updated, expiration); err != nil {
+		if err = authzKeeper.SaveGrant(ctx, contract.CallerAddress.Bytes(), granter.Bytes(), resp.Updated, expiration); err != nil {
 			return err
 		}
 	}

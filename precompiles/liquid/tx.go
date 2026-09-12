@@ -115,7 +115,7 @@ func (p *Precompile) Liquidate(
 		"amount", msg.Amount.String(),
 	)
 
-	originAddr := sdk.AccAddress(origin.Bytes())
+	senderAddr := sdk.AccAddress(sender.Bytes())
 	callerAddr := sdk.AccAddress(contract.CallerAddress.Bytes())
 
 	// isCallerSender is true when the contract caller is the same as the sender
@@ -128,10 +128,13 @@ func (p *Precompile) Liquidate(
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
-	// Check and accept authorization if needed
-	if !isCallerOrigin {
+	// Check and accept authorization if needed. The granter is the sender carried by the
+	// message -- the account whose vesting position moves -- not tx.origin: a contract
+	// acting on its own position is authorized by its own code, and a third party needs a
+	// grant from the position's owner rather than from whoever signed the transaction.
+	if !isCallerSender {
 		msgURL := sdk.MsgTypeURL(msg)
-		authzGrant, expiration := p.AuthzKeeper.GetAuthorization(ctx, callerAddr, originAddr, msgURL)
+		authzGrant, expiration := p.AuthzKeeper.GetAuthorization(ctx, callerAddr, senderAddr, msgURL)
 		if authzGrant == nil {
 			return nil, fmt.Errorf(ErrAuthzDoesNotExistOrExpired, msgURL, callerAddr.String())
 		}
@@ -147,11 +150,11 @@ func (p *Precompile) Liquidate(
 
 		// Update or delete the grant if required.
 		if resp.Delete {
-			if err := p.AuthzKeeper.DeleteGrant(ctx, callerAddr, originAddr, msgURL); err != nil {
+			if err := p.AuthzKeeper.DeleteGrant(ctx, callerAddr, senderAddr, msgURL); err != nil {
 				return nil, err
 			}
 		} else if resp.Updated != nil {
-			if err := p.AuthzKeeper.SaveGrant(ctx, callerAddr, originAddr, resp.Updated, expiration); err != nil {
+			if err := p.AuthzKeeper.SaveGrant(ctx, callerAddr, senderAddr, resp.Updated, expiration); err != nil {
 				return nil, err
 			}
 		}
@@ -218,7 +221,7 @@ func (p *Precompile) Redeem(
 		"amount", msg.Amount.String(),
 	)
 
-	originAddr := sdk.AccAddress(origin.Bytes())
+	senderAddr := sdk.AccAddress(sender.Bytes())
 	callerAddr := sdk.AccAddress(contract.CallerAddress.Bytes())
 
 	// isCallerSender is true when the contract caller is the same as the sender
@@ -231,12 +234,15 @@ func (p *Precompile) Redeem(
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
-	// Check and accept authorization if needed
-	if !isCallerOrigin {
+	// Check and accept authorization if needed. The granter is the sender carried by the
+	// message -- the account whose vesting position moves -- not tx.origin: a contract
+	// acting on its own position is authorized by its own code, and a third party needs a
+	// grant from the position's owner rather than from whoever signed the transaction.
+	if !isCallerSender {
 		msgURL := sdk.MsgTypeURL(msg)
 
 		// Require an authz grant from the origin (granter) to the contract caller (grantee).
-		authzGrant, expiration := p.AuthzKeeper.GetAuthorization(ctx, callerAddr, originAddr, msgURL)
+		authzGrant, expiration := p.AuthzKeeper.GetAuthorization(ctx, callerAddr, senderAddr, msgURL)
 		if authzGrant == nil {
 			return nil, fmt.Errorf(ErrAuthzDoesNotExistOrExpired, msgURL, callerAddr.String())
 		}
@@ -252,11 +258,11 @@ func (p *Precompile) Redeem(
 
 		// Update or delete the grant if required.
 		if resp.Delete {
-			if err := p.AuthzKeeper.DeleteGrant(ctx, callerAddr, originAddr, msgURL); err != nil {
+			if err := p.AuthzKeeper.DeleteGrant(ctx, callerAddr, senderAddr, msgURL); err != nil {
 				return nil, err
 			}
 		} else if resp.Updated != nil {
-			if err := p.AuthzKeeper.SaveGrant(ctx, callerAddr, originAddr, resp.Updated, expiration); err != nil {
+			if err := p.AuthzKeeper.SaveGrant(ctx, callerAddr, senderAddr, resp.Updated, expiration); err != nil {
 				return nil, err
 			}
 		}

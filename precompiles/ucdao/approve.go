@@ -36,7 +36,7 @@ func errUnsupportedMsgType(typeURL string) error {
 
 func (p Precompile) Approve(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -49,7 +49,7 @@ func (p Precompile) Approve(
 	for _, typeURL := range typeURLs {
 		switch typeURL {
 		case ConvertToHaqqMsgURL, TransferOwnershipWithAmountMsgURL:
-			if err = p.grantOrDeleteAuthz(ctx, grantee, origin, coin, typeURL); err != nil {
+			if err = p.grantOrDeleteAuthz(ctx, grantee, granter, coin, typeURL); err != nil {
 				return nil, err
 			}
 		default:
@@ -57,7 +57,7 @@ func (p Precompile) Approve(
 		}
 	}
 
-	if err := p.EmitApprovalEvent(ctx, stateDB, grantee, origin, coin, typeURLs); err != nil {
+	if err := p.EmitApprovalEvent(ctx, stateDB, grantee, granter, coin, typeURLs); err != nil {
 		return nil, err
 	}
 	return method.Outputs.Pack(true)
@@ -65,7 +65,7 @@ func (p Precompile) Approve(
 
 func (p Precompile) Revoke(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -78,7 +78,7 @@ func (p Precompile) Revoke(
 	for _, typeURL := range typeURLs {
 		switch typeURL {
 		case ConvertToHaqqMsgURL, TransferOwnershipWithAmountMsgURL:
-			if err = p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), origin.Bytes(), typeURL); err != nil {
+			if err = p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), granter.Bytes(), typeURL); err != nil {
 				return nil, err
 			}
 		default:
@@ -92,7 +92,7 @@ func (p Precompile) Revoke(
 		ContractAddr:   p.Address(),
 		ContractEvents: p.ABI.Events,
 		EventData: authorization.EventRevocation{
-			Granter:  origin,
+			Granter:  granter,
 			Grantee:  grantee,
 			TypeUrls: typeURLs,
 		},
@@ -106,7 +106,7 @@ func (p Precompile) Revoke(
 // IncreaseAllowance implements the ethiq increase allowance transactions.
 func (p Precompile) IncreaseAllowance(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -127,7 +127,7 @@ func (p Precompile) IncreaseAllowance(
 	for _, typeURL := range typeURLs {
 		switch typeURL {
 		case ConvertToHaqqMsgURL, TransferOwnershipWithAmountMsgURL:
-			if err = p.increaseAllowance(ctx, grantee, origin, coin, typeURL); err != nil {
+			if err = p.increaseAllowance(ctx, grantee, granter, coin, typeURL); err != nil {
 				return nil, err
 			}
 		default:
@@ -135,7 +135,7 @@ func (p Precompile) IncreaseAllowance(
 		}
 	}
 
-	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, origin, typeURLs); err != nil {
+	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, granter, typeURLs); err != nil {
 		return nil, err
 	}
 
@@ -145,7 +145,7 @@ func (p Precompile) IncreaseAllowance(
 // DecreaseAllowance implements the ethiq decrease allowance transactions.
 func (p Precompile) DecreaseAllowance(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -166,12 +166,12 @@ func (p Precompile) DecreaseAllowance(
 	for _, typeURL := range typeURLs {
 		switch typeURL {
 		case ConvertToHaqqMsgURL, TransferOwnershipWithAmountMsgURL:
-			authzGrant, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, origin, typeURL)
+			authzGrant, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, typeURL)
 			if err != nil {
 				return nil, err
 			}
 
-			if err = p.decreaseAllowance(ctx, grantee, origin, coin, authzGrant, expiration); err != nil {
+			if err = p.decreaseAllowance(ctx, grantee, granter, coin, authzGrant, expiration); err != nil {
 				return nil, err
 			}
 		default:
@@ -179,7 +179,7 @@ func (p Precompile) DecreaseAllowance(
 		}
 	}
 
-	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, origin, typeURLs); err != nil {
+	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, granter, typeURLs); err != nil {
 		return nil, err
 	}
 

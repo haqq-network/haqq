@@ -136,10 +136,10 @@ func (p *Precompile) ConvertToHaqq(
 	isCallerSender := contract.CallerAddress == sender
 	isCallerOrigin := contract.CallerAddress == origin
 
-	// If the contract caller is not the same as the sender, the sender must be the origin
-	if isCallerSender {
-		sender = origin
-	} else if origin != sender {
+	// The sender stays as the message carries it -- it is the account being debited, and
+	// therefore the authz granter. Rebinding it to the origin here left msg.Sender pointing
+	// at the caller while the grant was demanded from, and charged to, the origin.
+	if !isCallerSender && origin != sender {
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
@@ -275,21 +275,16 @@ func (p *Precompile) TransferOwnershipWithAmount(
 	isCallerSender := contract.CallerAddress == owner
 	isCallerOrigin := contract.CallerAddress == origin
 
-	// If the contract caller is not the same as the sender, the sender must be the origin
-	if isCallerSender {
-		owner = origin
-	} else if origin != owner {
+	// The owner stays as the message carries it -- it is the account whose escrow position
+	// moves, and therefore the authz granter. Rebinding it to the origin here left msg.Owner
+	// pointing at the caller while the grant was demanded from the origin.
+	if !isCallerSender && origin != owner {
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), owner.String())
 	}
 
 	// Check and accept authorization if needed
 	if err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, owner, p.AuthzKeeper, msg); err != nil {
 		return nil, err
-	}
-
-	// Ensure origin is the owner
-	if origin != owner {
-		return nil, fmt.Errorf("origin (%s) must be the owner (%s)", origin.String(), owner.String())
 	}
 
 	ownerAcc := sdk.MustAccAddressFromBech32(msg.Owner)

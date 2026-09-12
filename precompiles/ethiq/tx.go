@@ -83,10 +83,10 @@ func (p *Precompile) MintHaqq(
 	// isCallerOrigin is true when the contract caller is the same as the origin
 	isCallerOrigin := contract.CallerAddress == origin
 
-	// If the contract caller is not the same as the sender, the sender must be the origin
-	if isCallerSender {
-		sender = origin
-	} else if origin != sender {
+	// The sender stays as the message carries it -- it is the account being debited, and
+	// therefore the authz granter. Rebinding it to the origin here left msg.FromAddress
+	// pointing at the caller while the grant was demanded from, and charged to, the origin.
+	if !isCallerSender && origin != sender {
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
@@ -153,10 +153,10 @@ func (p *Precompile) MintHaqqByApplication(
 	// isCallerOrigin is true when the contract caller is the same as the origin
 	isCallerOrigin := contract.CallerAddress == origin
 
-	// If the contract caller is not the same as the sender, the sender must be the origin
-	if isCallerSender {
-		sender = origin
-	} else if origin != sender {
+	// The sender stays as the message carries it -- it is the account being debited, and
+	// therefore the authz granter. Rebinding it to the origin here left msg.FromAddress
+	// pointing at the caller while the grant was demanded from, and charged to, the origin.
+	if !isCallerSender && origin != sender {
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
