@@ -187,7 +187,7 @@ func (suite *KeeperTestSuite) TestExecutedApplicationsAllRegisteredIDs() {
 
 	wantSorted := make([]uint64, n)
 	for i := range wantSorted {
-		wantSorted[i] = uint64(i)
+		wantSorted[i] = uint64(i) //nolint: gosec // G115: loop index, non-negative
 	}
 	slices.Sort(got)
 	suite.Require().Equal(wantSorted, got)
