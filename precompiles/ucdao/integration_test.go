@@ -73,10 +73,31 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		proxyFactoryAddr common.Address
 	)
 
+	// ucdaoPositionHolder selects whose ucDAO position the specs convert, which decides
+	// whether the ConvertToHaqq allowance is involved at all.
+	type ucdaoPositionHolder int
+
+	const (
+		// holderSafe puts the position on the Safe itself. The Safe then converts its own
+		// position: its own threshold is the authorization and no grant is consulted.
+		holderSafe ucdaoPositionHolder = iota
+		// holderOwnerOne puts the position on owner one. The Safe acts on someone else's
+		// position, so the grant owner one issued to the Safe is what gates the call.
+		//
+		// NOTE: this configuration only works while owner one is the account that submits
+		// execTransaction, because the precompile still requires origin == sender. If the
+		// suite ever executes as owner two or through a relayer, these specs fail on that
+		// guard rather than on the allowance.
+		holderOwnerOne
+	)
+
 	type preparedSafeState struct {
 		safeWalletAddr    common.Address
 		safeWalletAccAddr sdk.AccAddress
-		liquidDenom       string
+		// positionAddr is the account whose ucDAO position the convert helpers move.
+		positionAddr    common.Address
+		positionAccAddr sdk.AccAddress
+		liquidDenom     string
 	}
 
 	type safeBatchSnapshot struct {
@@ -139,7 +160,7 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(s.network.NextBlock()).To(Succeed())
 	})
 
-	prepareSafeWithUcdaoPositions := func() preparedSafeState {
+	prepareSafeWithUcdaoPositions := func(holder ucdaoPositionHolder) preparedSafeState {
 		oneAddr, onePriv := testutiltx.NewAddrKey()
 		safeOwnerOne = keyring.Key{Addr: oneAddr, AccAddr: sdk.AccAddress(oneAddr.Bytes()), Priv: onePriv}
 		twoAddr, twoPriv := testutiltx.NewAddrKey()
@@ -333,16 +354,23 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(resFundLiq.IsOK()).To(BeTrue(), resFundLiq.Log)
 		Expect(s.network.NextBlock()).To(Succeed())
 
-		transferToSafeMsg := ucdaotypes.NewMsgTransferOwnershipWithAmount(
+		positionAddr := safeWalletAddr
+		positionAccAddr := safeWalletAccAddr
+		if holder == holderOwnerOne {
+			positionAddr = safeOwnerOne.Addr
+			positionAccAddr = safeOwnerOne.AccAddr
+		}
+
+		transferPositionMsg := ucdaotypes.NewMsgTransferOwnershipWithAmount(
 			funder.AccAddr,
-			safeWalletAccAddr,
+			positionAccAddr,
 			sdk.NewCoins(
 				sdk.NewCoin(utils.BaseDenom, fundAmount),
 				sdk.NewCoin(liquidDenom, thousandIslm),
 			),
 		)
 		resXfer, err := s.factory.CommitCosmosTx(funder.Priv, commonfactory.CosmosTxArgs{
-			Msgs:     []sdk.Msg{transferToSafeMsg},
+			Msgs:     []sdk.Msg{transferPositionMsg},
 			GasPrice: &gasPrice,
 			Gas:      &gasLimit,
 		})
@@ -350,21 +378,24 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(resXfer.IsOK()).To(BeTrue(), resXfer.Log)
 		Expect(s.network.NextBlock()).To(Succeed())
 
-		safeUcdaoAfter, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
-			Address: safeWalletAccAddr.String(),
+		positionUcdaoAfter, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
+			Address: positionAccAddr.String(),
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom)).To(Equal(fundAmount))
-		Expect(safeUcdaoAfter.Balances.AmountOf(liquidDenom)).To(Equal(thousandIslm))
+		Expect(positionUcdaoAfter.Balances.AmountOf(utils.BaseDenom)).To(Equal(fundAmount))
+		Expect(positionUcdaoAfter.Balances.AmountOf(liquidDenom)).To(Equal(thousandIslm))
 
 		return preparedSafeState{
 			safeWalletAddr:    safeWalletAddr,
 			safeWalletAccAddr: safeWalletAccAddr,
+			positionAddr:      positionAddr,
+			positionAccAddr:   positionAccAddr,
 			liquidDenom:       liquidDenom,
 		}
 	}
 
-	execSafeConvertToHaqq := func(safeWalletAddr common.Address, amount sdkmath.Int, expectedNonce int64) (bool, *evmtypes.MsgEthereumTxResponse) {
+	execSafeConvertToHaqq := func(state preparedSafeState, amount sdkmath.Int, expectedNonce int64) (bool, *evmtypes.MsgEthereumTxResponse) {
+		safeWalletAddr := state.safeWalletAddr
 		_, nonceRes, err := s.factory.CallContractAndCheckLogs(
 			safeOwnerOne.Priv,
 			evmtypes.EvmTxArgs{To: &safeWalletAddr},
@@ -380,7 +411,10 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 
 		ucdaoPc, err := ucdao.NewPrecompile(s.network.App.DaoKeeper, s.network.App.AuthzKeeper)
 		Expect(err).NotTo(HaveOccurred())
-		convertCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, safeWalletAddr, safeWalletAddr, amount.BigInt())
+		// The sender is the account whose ucDAO position moves. With holderSafe that is the
+		// Safe acting on itself, which needs no grant; with holderOwnerOne the Safe acts on
+		// the owner's position and the owner's grant to the Safe is the gate.
+		convertCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.positionAddr, state.positionAddr, amount.BigInt())
 		Expect(err).NotTo(HaveOccurred())
 
 		ucdaoPrecompileAddr := common.HexToAddress(evmtypes.UcdaoPrecompileAddress)
@@ -524,8 +558,10 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 
 	captureSafeBatchSnapshot := func(state preparedSafeState) safeBatchSnapshot {
 		ucdaoClient := s.network.GetUCDAOClient()
-		safeUcdaoBalances, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
-			Address: state.safeWalletAccAddr.String(),
+		// The ucDAO position is the account the batch converts from, which is the Safe under
+		// holderSafe and owner one under holderOwnerOne.
+		positionUcdaoBalances, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
+			Address: state.positionAccAddr.String(),
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -539,8 +575,8 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		return safeBatchSnapshot{
-			ucdaoBase:      safeUcdaoBalances.Balances.AmountOf(utils.BaseDenom),
-			ucdaoLiquid:    safeUcdaoBalances.Balances.AmountOf(state.liquidDenom),
+			ucdaoBase:      positionUcdaoBalances.Balances.AmountOf(utils.BaseDenom),
+			ucdaoLiquid:    positionUcdaoBalances.Balances.AmountOf(state.liquidDenom),
 			bankBase:       safeBankBase.Balance.Amount,
 			bankLiquid:     safeBankLiquid.Balance.Amount,
 			haqqBalance:    safeHaqq.Balance.Amount,
@@ -691,9 +727,9 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		ucdaoPc, err := ucdao.NewPrecompile(s.network.App.DaoKeeper, s.network.App.AuthzKeeper)
 		Expect(err).NotTo(HaveOccurred())
 		precompileAddr := common.HexToAddress(evmtypes.UcdaoPrecompileAddress)
-		firstCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.safeWalletAddr, state.safeWalletAddr, firstConvertAmount.BigInt())
+		firstCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.positionAddr, state.positionAddr, firstConvertAmount.BigInt())
 		Expect(err).NotTo(HaveOccurred())
-		secondCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.safeWalletAddr, state.safeWalletAddr, secondConvertAmount.BigInt())
+		secondCallData, err := ucdaoPc.ABI.Pack(ucdao.ConvertToHaqqMethod, state.positionAddr, state.positionAddr, secondConvertAmount.BigInt())
 		Expect(err).NotTo(HaveOccurred())
 		return append(
 			packMultiSendTx(0, precompileAddr, big.NewInt(0), firstCallData),
@@ -701,7 +737,7 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		)
 	}
 
-	prepareSafeWithBatchMintBalances := func() preparedSafeState {
+	prepareSafeWithBatchMintBalances := func(holder ucdaoPositionHolder) preparedSafeState {
 		oneAddr, onePriv := testutiltx.NewAddrKey()
 		safeOwnerOne = keyring.Key{Addr: oneAddr, AccAddr: sdk.AccAddress(oneAddr.Bytes()), Priv: onePriv}
 		twoAddr, twoPriv := testutiltx.NewAddrKey()
@@ -883,10 +919,17 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(resFund.IsOK()).To(BeTrue(), resFund.Log)
 		Expect(s.network.NextBlock()).To(Succeed())
 
+		positionAddr := safeWalletAddr
+		positionAccAddr := safeWalletAccAddr
+		if holder == holderOwnerOne {
+			positionAddr = safeOwnerOne.Addr
+			positionAccAddr = safeOwnerOne.AccAddr
+		}
+
 		resXfer, err := s.factory.CommitCosmosTx(funder.Priv, commonfactory.CosmosTxArgs{
 			Msgs: []sdk.Msg{ucdaotypes.NewMsgTransferOwnershipWithAmount(
 				funder.AccAddr,
-				safeWalletAccAddr,
+				positionAccAddr,
 				sdk.NewCoins(
 					sdk.NewCoin(utils.BaseDenom, safeUcdaoBaseFund),
 					sdk.NewCoin(liquidDenom, safeUcdaoLiquidFund),
@@ -900,23 +943,26 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(s.network.NextBlock()).To(Succeed())
 
 		ucdaoClient := s.network.GetUCDAOClient()
-		safeUcdaoAfter, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
-			Address: safeWalletAccAddr.String(),
+		positionUcdaoAfter, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
+			Address: positionAccAddr.String(),
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(safeUcdaoAfter.Balances.AmountOf(utils.BaseDenom)).To(Equal(safeUcdaoBaseFund))
-		Expect(safeUcdaoAfter.Balances.AmountOf(liquidDenom)).To(Equal(safeUcdaoLiquidFund))
+		Expect(positionUcdaoAfter.Balances.AmountOf(utils.BaseDenom)).To(Equal(safeUcdaoBaseFund))
+		Expect(positionUcdaoAfter.Balances.AmountOf(liquidDenom)).To(Equal(safeUcdaoLiquidFund))
 
 		return preparedSafeState{
 			safeWalletAddr:    safeWalletAddr,
 			safeWalletAccAddr: safeWalletAccAddr,
+			positionAddr:      positionAddr,
+			positionAccAddr:   positionAccAddr,
 			liquidDenom:       liquidDenom,
 		}
 	}
 
-	It("runs two Safe convertToHaqq txs with approve 2000 and spends all ucDAO", func() {
-		state := prepareSafeWithUcdaoPositions()
-		approveForSafeConvert(state.safeWalletAddr, sdkmath.NewInt(2000).MulRaw(1e18))
+	It("runs two Safe convertToHaqq txs on its own position and spends all ucDAO", func() {
+		// No approve: the Safe converts its own ucDAO position, so its own threshold is the
+		// authorization and no grant is consulted.
+		state := prepareSafeWithUcdaoPositions(holderSafe)
 
 		Expect(s.network.NextBlock()).To(Succeed())
 		liquidBefore := safeUcdaoLiquidBalance(state.safeWalletAccAddr, state.liquidDenom)
@@ -932,12 +978,12 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		secondMint, err := s.network.App.EthiqKeeper.CalculateHaqqCoinsToMint(ctxEthiq, secondAmount)
 		Expect(err).NotTo(HaveOccurred())
 
-		firstSuccess, firstRes := execSafeConvertToHaqq(state.safeWalletAddr, firstAmount, 0)
+		firstSuccess, firstRes := execSafeConvertToHaqq(state, firstAmount, 0)
 		Expect(firstSuccess).To(BeTrue())
 		assertSafeExecEvent(firstRes, "ExecutionSuccess", state.safeWalletAddr)
 		Expect(s.network.NextBlock()).To(Succeed())
 
-		secondSuccess, secondRes := execSafeConvertToHaqq(state.safeWalletAddr, secondAmount, 1)
+		secondSuccess, secondRes := execSafeConvertToHaqq(state, secondAmount, 1)
 		Expect(secondSuccess).To(BeTrue())
 		assertSafeExecEvent(secondRes, "ExecutionSuccess", state.safeWalletAddr)
 		Expect(s.network.NextBlock()).To(Succeed())
@@ -957,9 +1003,9 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 	})
 
 	It("converts 1500 in one tx from mixed 1000 ISLM + 1000 liquid ucDAO", func() {
-		state := prepareSafeWithUcdaoPositions()
+		// No approve: the Safe converts its own ucDAO position.
+		state := prepareSafeWithUcdaoPositions(holderSafe)
 		convertAmount := sdkmath.NewInt(1500).MulRaw(1e18)
-		approveForSafeConvert(state.safeWalletAddr, convertAmount)
 
 		Expect(s.network.NextBlock()).To(Succeed())
 		liquidBefore := safeUcdaoLiquidBalance(state.safeWalletAccAddr, state.liquidDenom)
@@ -970,7 +1016,7 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		expectedMint, err := s.network.App.EthiqKeeper.CalculateHaqqCoinsToMint(ctxEthiq, convertAmount)
 		Expect(err).NotTo(HaveOccurred())
 
-		execSuccess, execRes := execSafeConvertToHaqq(state.safeWalletAddr, convertAmount, 0)
+		execSuccess, execRes := execSafeConvertToHaqq(state, convertAmount, 0)
 		Expect(execSuccess).To(BeTrue())
 		assertSafeExecEvent(execRes, "ExecutionSuccess", state.safeWalletAddr)
 		Expect(s.network.NextBlock()).To(Succeed())
@@ -989,33 +1035,90 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 		Expect(safeHaqqAfter.Balance.Amount).To(Equal(expectedMint))
 	})
 
-	It("fails Safe execTransaction without approve when caller differs from origin", func() {
-		state := prepareSafeWithUcdaoPositions()
-		execSuccess, execRes := execSafeConvertToHaqq(state.safeWalletAddr, sdkmath.NewInt(500).MulRaw(1e18), 0)
+	It("converts its own position with no approve at all", func() {
+		// The counterpart of the spec below: grant creation and consumption are bound to the
+		// immediate EVM caller, so a Safe moving its own ucDAO position is authorized by its
+		// own threshold. Before the identity-model fix this reverted unless some unrelated
+		// EOA -- whoever happened to be tx.origin -- had granted the Safe.
+		state := prepareSafeWithUcdaoPositions(holderSafe)
+
+		execSuccess, execRes := execSafeConvertToHaqq(state, sdkmath.NewInt(500).MulRaw(1e18), 0)
+		Expect(execSuccess).To(BeTrue(), "a Safe acting on its own position must need no grant")
+		assertSafeExecEvent(execRes, "ExecutionSuccess", state.safeWalletAddr)
+		Expect(s.network.NextBlock()).To(Succeed())
+
+		// and nothing was granted to, or consumed from, the executing owner along the way
+		auth, _ := s.network.App.AuthzKeeper.GetAuthorization(
+			s.network.GetContext(),
+			state.safeWalletAccAddr,
+			safeOwnerOne.AccAddr,
+			ucdao.ConvertToHaqqMsgURL,
+		)
+		Expect(auth).To(BeNil(), "the executing owner must not become the granter")
+	})
+
+	It("converts the owner's position when the owner approved enough", func() {
+		// Positive control for the three specs below: without it they could pass for the
+		// wrong reason -- an empty position, or the origin == sender guard -- instead of on
+		// the allowance they mean to exercise.
+		state := prepareSafeWithUcdaoPositions(holderOwnerOne)
+		convertAmount := sdkmath.NewInt(1500).MulRaw(1e18)
+		approveForSafeConvert(state.safeWalletAddr, convertAmount)
+		Expect(s.network.NextBlock()).To(Succeed())
+
+		execSuccess, execRes := execSafeConvertToHaqq(state, convertAmount, 0)
+		Expect(execSuccess).To(BeTrue(), "the owner's grant must authorize the Safe")
+		assertSafeExecEvent(execRes, "ExecutionSuccess", state.safeWalletAddr)
+		Expect(s.network.NextBlock()).To(Succeed())
+
+		ucdaoClient := s.network.GetUCDAOClient()
+		positionFinal, err := ucdaoClient.AllBalances(context.Background(), &ucdaotypes.QueryAllBalancesRequest{
+			Address: state.positionAccAddr.String(),
+		})
+		Expect(err).NotTo(HaveOccurred())
+		// ucDAO spends the liquid position first, then the base one, so 1500 of 1000+1000
+		// leaves 500 base behind. Same split as the holderSafe spec above.
+		Expect(positionFinal.Balances.AmountOf(utils.BaseDenom)).To(Equal(sdkmath.NewInt(500).MulRaw(1e18)))
+		Expect(positionFinal.Balances.AmountOf(state.liquidDenom)).To(Equal(sdkmath.ZeroInt()))
+
+		// the allowance was spent in full, so the grant is gone
+		auth, _ := s.network.App.AuthzKeeper.GetAuthorization(
+			s.network.GetContext(),
+			state.safeWalletAccAddr,
+			safeOwnerOne.AccAddr,
+			ucdao.ConvertToHaqqMsgURL,
+		)
+		Expect(auth).To(BeNil(), "a fully spent ConvertToHaqq allowance must be deleted")
+	})
+
+	It("fails without approve when the Safe acts on the owner's position", func() {
+		state := prepareSafeWithUcdaoPositions(holderOwnerOne)
+		execSuccess, execRes := execSafeConvertToHaqq(state, sdkmath.NewInt(500).MulRaw(1e18), 0)
 		Expect(execSuccess).To(BeFalse())
 		assertSafeExecEvent(execRes, "ExecutionFailure", state.safeWalletAddr)
 	})
 
 	It("fails when approve allowance is smaller than convertToHaqq amount", func() {
-		state := prepareSafeWithUcdaoPositions()
+		// The allowance is the gate only when the Safe acts on someone else's position.
+		state := prepareSafeWithUcdaoPositions(holderOwnerOne)
 		approveForSafeConvert(state.safeWalletAddr, sdkmath.NewInt(1000).MulRaw(1e18))
-		execSuccess, execRes := execSafeConvertToHaqq(state.safeWalletAddr, sdkmath.NewInt(1500).MulRaw(1e18), 0)
+		execSuccess, execRes := execSafeConvertToHaqq(state, sdkmath.NewInt(1500).MulRaw(1e18), 0)
 		Expect(execSuccess).To(BeFalse())
 		assertSafeExecEvent(execRes, "ExecutionFailure", state.safeWalletAddr)
 	})
 
 	It("fails after revoke when trying to convert again", func() {
-		state := prepareSafeWithUcdaoPositions()
+		state := prepareSafeWithUcdaoPositions(holderOwnerOne)
 		approveForSafeConvert(state.safeWalletAddr, sdkmath.NewInt(500).MulRaw(1e18))
 		revokeForSafeConvert(state.safeWalletAddr)
-		execSuccess, execRes := execSafeConvertToHaqq(state.safeWalletAddr, sdkmath.NewInt(500).MulRaw(1e18), 0)
+		execSuccess, execRes := execSafeConvertToHaqq(state, sdkmath.NewInt(500).MulRaw(1e18), 0)
 		Expect(execSuccess).To(BeFalse())
 		assertSafeExecEvent(execRes, "ExecutionFailure", state.safeWalletAddr)
 	})
 
 	It("executes two free mints in one Safe batch from ucDAO with stable Safe balances", func() {
-		state := prepareSafeWithBatchMintBalances()
-		approveForSafeConvert(state.safeWalletAddr, sdkmath.NewInt(600).MulRaw(1e18))
+		// No approve: the Safe converts its own ucDAO position.
+		state := prepareSafeWithBatchMintBalances(holderSafe)
 		Expect(s.network.NextBlock()).To(Succeed())
 
 		before := captureSafeBatchSnapshot(state)
@@ -1066,8 +1169,31 @@ var _ = Describe("ucDAO with Gnosis Safe (phase 1)", Ordered, func() {
 			"Safe owner bank ISLM spent on batched exec should be under 2 ISLM (gas only)")
 	})
 
+	It("executes a Safe batch on the owner's position within the allowance", func() {
+		// Positive control for the batch spec below: it pins that the 500 + 100 batch does
+		// go through on the owner's position when the allowance covers all 600, so the
+		// revert below is attributable to the allowance and not to the configuration.
+		state := prepareSafeWithBatchMintBalances(holderOwnerOne)
+		approveForSafeConvert(state.safeWalletAddr, sdkmath.NewInt(600).MulRaw(1e18))
+		Expect(s.network.NextBlock()).To(Succeed())
+
+		before := captureSafeBatchSnapshot(state)
+		batchTxData := buildSafeConvertBatchTxData(state, sdkmath.NewInt(500).MulRaw(1e18), sdkmath.NewInt(100).MulRaw(1e18))
+
+		nonceBefore := readSafeNonce(state.safeWalletAddr)
+		execOk, execRes := safeExecMultiSendBatch(state.safeWalletAddr, batchTxData, nonceBefore)
+		Expect(execOk).To(BeTrue(), "a batch within the allowance must go through")
+		assertSafeExecEvent(execRes, "ExecutionSuccess", state.safeWalletAddr)
+		Expect(s.network.NextBlock()).To(Succeed())
+
+		after := captureSafeBatchSnapshot(state)
+		Expect(before.ucdaoBase.Add(before.ucdaoLiquid).Sub(after.ucdaoBase.Add(after.ucdaoLiquid))).
+			To(Equal(sdkmath.NewInt(600).MulRaw(1e18)), "the batch should spend exactly the approved 600")
+	})
+
 	It("reverts whole Safe batch when second convertToHaqq exceeds allowance", func() {
-		state := prepareSafeWithBatchMintBalances()
+		// The allowance is the gate only when the Safe acts on someone else's position.
+		state := prepareSafeWithBatchMintBalances(holderOwnerOne)
 		approveForSafeConvert(state.safeWalletAddr, sdkmath.NewInt(500).MulRaw(1e18))
 		Expect(s.network.NextBlock()).To(Succeed())
 

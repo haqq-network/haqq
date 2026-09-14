@@ -125,7 +125,9 @@ var _ = Describe("Calling distribution precompile from EOA", func() {
 				s.keyring.GetAddr(0).String(),
 			}
 
-			withdrawAddrSetCheck := defaultLogCheck.WithErrContains(cmn.ErrDelegatorDifferentOrigin, s.keyring.GetAddr(0).String(), differentAddr.String())
+			// The gate is now the immediate caller, not tx.origin: x/distribution has no
+			// authorization type, so only the delegator itself may set its withdraw address.
+			withdrawAddrSetCheck := defaultLogCheck.WithErrContains(distribution.ErrCallerNotDelegator, s.keyring.GetAddr(0).String(), differentAddr.String())
 
 			_, _, err := s.factory.CallContractAndCheckLogs(
 				s.keyring.GetPrivKey(0),
@@ -1021,42 +1023,6 @@ var _ = Describe("Calling distribution precompile from another contract", Ordere
 	// =====================================
 	// 				TRANSACTIONS
 	// =====================================
-	Context("setWithdrawAddress", func() {
-		// newWithdrawer is the address to set the withdraw address to
-		newWithdrawer := differentAddr
-
-		BeforeEach(func() {
-			// withdraw address should be same as address
-			res, err := s.grpcHandler.GetDelegatorWithdrawAddr(s.keyring.GetAccAddr(0).String())
-			Expect(err).To(BeNil(), "error while calling the precompile")
-			Expect(res.WithdrawAddress).To(Equal(s.keyring.GetAccAddr(0).String()))
-
-			// populate default arguments
-			callArgs.MethodName = "testSetWithdrawAddress"
-		})
-
-		It("should set withdraw address successfully", func() {
-			callArgs.Args = []interface{}{
-				s.keyring.GetAddr(0), newWithdrawer.String(),
-			}
-
-			setWithdrawCheck := passCheck.WithExpEvents(distribution.EventTypeSetWithdrawAddress)
-
-			_, _, err := s.factory.CallContractAndCheckLogs(
-				s.keyring.GetPrivKey(0),
-				txArgs,
-				callArgs,
-				setWithdrawCheck,
-			)
-			Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
-			Expect(s.network.NextBlock()).To(BeNil(), "error on NextBlock: %v", err)
-
-			queryRes, err := s.grpcHandler.GetDelegatorWithdrawAddr(s.keyring.GetAccAddr(0).String())
-			Expect(err).To(BeNil(), "error while calling the precompile")
-			Expect(queryRes.WithdrawAddress).To(Equal(sdk.AccAddress(newWithdrawer.Bytes()).String()))
-		})
-	})
-
 	Context("setWithdrawerAddress with contract as delegator", func() {
 		// newWithdrawer is the address to set the withdraw address to
 		newWithdrawer := differentAddr

@@ -1162,7 +1162,8 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 				s.chainA.NextBlock()
 
 				// check GetAuthorizations is returning the record
-				auths, err := s.network.App.AuthzKeeper.GetAuthorizations(s.chainA.GetContext(), contractAddr.Bytes(), s.keyring.GetAddr(0).Bytes())
+				// the contract created the grant, so the contract is the granter
+				auths, err := s.network.App.AuthzKeeper.GetAuthorizations(s.chainA.GetContext(), contractAddr.Bytes(), contractAddr.Bytes())
 				Expect(err).To(BeNil(), "error while getting authorizations")
 				Expect(auths).To(HaveLen(1), "expected one authorization")
 				Expect(auths[0].MsgTypeURL()).To(Equal(ics20.TransferMsgURL))
@@ -1192,7 +1193,8 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 			s.chainA.NextBlock()
 
 			// check authorization was removed
-			auths, err := s.network.App.AuthzKeeper.GetAuthorizations(s.chainA.GetContext(), contractAddr.Bytes(), s.keyring.GetAddr(0).Bytes())
+			// the revoke was issued by the contract, against the grant the contract owns
+			auths, err := s.network.App.AuthzKeeper.GetAuthorizations(s.chainA.GetContext(), contractAddr.Bytes(), contractAddr.Bytes())
 			Expect(err).To(BeNil(), "error while getting authorizations")
 			Expect(auths).To(BeNil())
 		})
@@ -1228,7 +1230,8 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 				s.chainA.NextBlock()
 
 				// check authorization spend limit increased
-				auths, err := s.network.App.AuthzKeeper.GetAuthorizations(s.chainA.GetContext(), contractAddr.Bytes(), s.keyring.GetAddr(0).Bytes())
+				// the contract created the grant, so the contract is the granter
+				auths, err := s.network.App.AuthzKeeper.GetAuthorizations(s.chainA.GetContext(), contractAddr.Bytes(), contractAddr.Bytes())
 				Expect(err).To(BeNil(), "error while getting authorizations")
 				Expect(auths).To(HaveLen(1), "expected one authorization")
 				Expect(auths[0].MsgTypeURL()).To(Equal(ics20.TransferMsgURL))
@@ -1252,7 +1255,8 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 				s.chainA.NextBlock()
 
 				// check authorization spend limit decreased
-				auths, err := s.network.App.AuthzKeeper.GetAuthorizations(s.chainA.GetContext(), contractAddr.Bytes(), s.keyring.GetAddr(0).Bytes())
+				// the contract created the grant, so the contract is the granter
+				auths, err := s.network.App.AuthzKeeper.GetAuthorizations(s.chainA.GetContext(), contractAddr.Bytes(), contractAddr.Bytes())
 				Expect(err).To(BeNil(), "error while getting authorizations")
 				Expect(auths).To(HaveLen(1), "expected one authorization")
 				Expect(auths[0].MsgTypeURL()).To(Equal(ics20.TransferMsgURL))
@@ -1274,7 +1278,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 			Context("with authorization", func() {
 				BeforeEach(func() {
 					// set approval to transfer 'aISLM'
-					s.setTransferApprovalForContract(defaultApproveArgs)
+					s.setTransferApprovalFromEOA(defaultApproveArgs)
 				})
 
 				It("should transfer funds", func() {
@@ -1319,7 +1323,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 						alloc := defaultSingleAlloc
 						alloc[0].AllowedPacketData = []string{""}
 						appArgs := defaultApproveArgs.WithArgs(alloc)
-						s.setTransferApprovalForContract(appArgs)
+						s.setTransferApprovalFromEOA(appArgs)
 						// Send some funds to the InterchainSender
 						// to perform internal transfers
 						initialContractBal := math.NewInt(1e18)
@@ -1462,7 +1466,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 							AllowedPacketData: []string{"memo"},
 						},
 					})
-					s.setTransferApprovalForContract(args)
+					s.setTransferApprovalFromEOA(args)
 				})
 
 				It("should transfer IBC coin", func() {
@@ -1572,7 +1576,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 								AllowList:     []string{},
 							},
 						})
-						s.setTransferApprovalForContract(args)
+						s.setTransferApprovalFromEOA(args)
 					})
 
 					It("should not transfer registered ERC-20 token", func() {
@@ -1593,7 +1597,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 							AllowedPacketData: []string{"memo"},
 						},
 					})
-					s.setTransferApprovalForContract(args)
+					s.setTransferApprovalFromEOA(args)
 				})
 
 				It("should transfer registered ERC-20 token", func() {
@@ -1663,53 +1667,40 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 				)
 			})
 
-			Context("without authorization", func() {
-				It("should not transfer funds", func() {
-					initialBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), contractAddr.Bytes(), s.bondDenom)
+			// There is no "without authorization" counterpart any more: the grant is keyed to
+			// the immediate EVM caller, and testTransferContractFunds passes address(this)
+			// as the sender, so the contract is moving its own coins and its own code is the
+			// authorization. The grant-gated path is covered by "transfer method" above,
+			// where the sender is the signer.
+			It("should transfer its own funds without any grant", func() {
+				initialSignerBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), s.keyring.GetAddr(0).Bytes(), s.bondDenom)
 
-					_, _, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.network.App, defaultTransferEvmosArgs, execRevertedCheck)
-					Expect(err).To(HaveOccurred(), "error while calling the smart contract: %v", err)
+				logCheckArgs := passCheck.WithExpEvents(ics20.EventTypeIBCTransfer)
 
-					// check sent tokens remained unchanged from sending account (contract)
-					finalBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), contractAddr.Bytes(), s.bondDenom)
-					Expect(finalBalance.Amount).To(Equal(initialBalance.Amount))
-				})
-			})
+				res, ethRes, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.network.App, defaultTransferEvmosArgs, logCheckArgs)
+				Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
 
-			Context("with authorization", func() {
-				BeforeEach(func() {
-					// set approval to transfer 'aISLM'
-					s.setTransferApprovalForContract(defaultApproveArgs)
-				})
+				out, err := s.precompile.Unpack(ics20.TransferMethod, ethRes.Ret)
+				Expect(err).To(BeNil(), "error while unpacking response: %v", err)
+				// check sequence in returned data
+				Expect(out[0]).To(Equal(uint64(1)))
 
-				It("should transfer funds", func() {
-					initialSignerBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), s.keyring.GetAddr(0).Bytes(), s.bondDenom)
+				s.chainA.NextBlock()
 
-					logCheckArgs := passCheck.WithExpEvents(ics20.EventTypeIBCTransfer)
+				// No grant exists for this path in either direction.
+				authz, _ := s.network.App.AuthzKeeper.GetAuthorization(s.chainA.GetContext(), contractAddr.Bytes(), contractAddr.Bytes(), ics20.TransferMsgURL)
+				Expect(authz).To(BeNil(), "moving its own funds must not require or create a grant")
+				fromSigner, _ := s.network.App.AuthzKeeper.GetAuthorization(s.chainA.GetContext(), contractAddr.Bytes(), s.keyring.GetAddr(0).Bytes(), ics20.TransferMsgURL)
+				Expect(fromSigner).To(BeNil(), "the signer must not have been made the granter")
 
-					res, ethRes, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.network.App, defaultTransferEvmosArgs, logCheckArgs)
-					Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
+				// check sent tokens were deducted from sending account
+				finalBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), contractAddr.Bytes(), s.bondDenom)
+				Expect(finalBalance.Amount).To(Equal(math.ZeroInt()))
 
-					out, err := s.precompile.Unpack(ics20.TransferMethod, ethRes.Ret)
-					Expect(err).To(BeNil(), "error while unpacking response: %v", err)
-					// check sequence in returned data
-					Expect(out[0]).To(Equal(uint64(1)))
-
-					s.chainA.NextBlock()
-
-					// The allowance is spent after the transfer thus the authorization is deleted
-					authz, _ := s.network.App.AuthzKeeper.GetAuthorization(s.chainA.GetContext(), contractAddr.Bytes(), s.keyring.GetAddr(0).Bytes(), ics20.TransferMsgURL)
-					Expect(authz).To(BeNil())
-
-					// check sent tokens were deducted from sending account
-					finalBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), contractAddr.Bytes(), s.bondDenom)
-					Expect(finalBalance.Amount).To(Equal(math.ZeroInt()))
-
-					// tx fees are paid by the tx signer
-					fees := math.NewIntFromBigInt(gasPrice).MulRaw(res.GasUsed)
-					finalSignerBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), s.keyring.GetAddr(0).Bytes(), s.bondDenom)
-					Expect(finalSignerBalance.Amount).To(Equal(initialSignerBalance.Amount.Sub(fees)))
-				})
+				// tx fees are paid by the tx signer
+				fees := math.NewIntFromBigInt(gasPrice).MulRaw(res.GasUsed)
+				finalSignerBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), s.keyring.GetAddr(0).Bytes(), s.bondDenom)
+				Expect(finalSignerBalance.Amount).To(Equal(initialSignerBalance.Amount.Sub(fees)))
 			})
 		})
 	})
@@ -1721,7 +1712,7 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 	Context("allowance query method", func() {
 		var defaultAllowanceArgs contracts.CallArgs
 		BeforeEach(func() {
-			s.setTransferApprovalForContract(defaultApproveArgs)
+			s.setTransferApprovalFromEOA(defaultApproveArgs)
 			defaultAllowanceArgs = defaultCallArgs.
 				WithMethodName("testAllowance").
 				WithArgs(contractAddr, s.keyring.GetAddr(0))

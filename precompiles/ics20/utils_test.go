@@ -222,7 +222,14 @@ func (s *PrecompileTestSuite) setTransferApproval(
 	}
 }
 
-// setTransferApprovalForContract sets the transfer approval for the given contract
+// setTransferApprovalForContract makes the calling contract create a transfer
+// authorization through the precompile.
+//
+// The resulting granter is the contract itself, not the account that signed the
+// transaction: grant creation is bound to the immediate EVM caller. So this grant
+// authorizes the grantee over the *contract's* funds. Use
+// setTransferApprovalFromEOA when a test needs a grant over the signer's funds --
+// a contract can no longer mint that one on the signer's behalf.
 func (s *PrecompileTestSuite) setTransferApprovalForContract(args contracts.CallArgs) {
 	logCheckArgs := testutil.LogCheckArgs{
 		ABIEvents: s.precompile.Events,
@@ -235,12 +242,74 @@ func (s *PrecompileTestSuite) setTransferApprovalForContract(args contracts.Call
 
 	s.chainA.NextBlock()
 
-	// check auth created successfully
-	authz, _ := s.network.App.AuthzKeeper.GetAuthorization(s.chainA.GetContext(), args.ContractAddr.Bytes(), args.PrivKey.PubKey().Address().Bytes(), ics20.TransferMsgURL)
-	Expect(authz).NotTo(BeNil())
+	// The grantee is whatever the contract passed to approve; InterchainSender passes
+	// address(this), so both sides of the grant are the contract.
+	grantee := s.transferApprovalGrantee(args)
+
+	// check auth created successfully, owned by the calling contract
+	authz, _ := s.network.App.AuthzKeeper.GetAuthorization(s.chainA.GetContext(), grantee.Bytes(), args.ContractAddr.Bytes(), ics20.TransferMsgURL)
+	Expect(authz).NotTo(BeNil(), "expected the calling contract to own the grant it created")
 	transferAuthz, ok := authz.(*transfertypes.TransferAuthorization)
 	Expect(ok).To(BeTrue())
 	Expect(len(transferAuthz.Allocations) > 0).To(BeTrue())
+
+	// and not attributed to the transaction signer
+	fromSigner, _ := s.network.App.AuthzKeeper.GetAuthorization(s.chainA.GetContext(), grantee.Bytes(), args.PrivKey.PubKey().Address().Bytes(), ics20.TransferMsgURL)
+	Expect(fromSigner).To(BeNil(), "a contract must not create a grant on behalf of tx.origin")
+}
+
+// setTransferApprovalFromEOA creates the same transfer authorization as
+// setTransferApprovalForContract, but with the transaction signer as the granter,
+// which is what a contract needs in order to move that signer's funds.
+//
+// The signer has to issue it directly -- here through the keeper, which is how the
+// unit tests do it too -- because the precompile now binds grant creation to the
+// immediate EVM caller.
+func (s *PrecompileTestSuite) setTransferApprovalFromEOA(args contracts.CallArgs) {
+	granter := common.BytesToAddress(args.PrivKey.PubKey().Address().Bytes())
+	grantee := s.transferApprovalGrantee(args)
+
+	allocs, ok := args.Args[0].([]cmn.ICS20Allocation)
+	Expect(ok).To(BeTrue(), "failed to read the allocations from the approval args")
+
+	err := s.NewTransferAuthorizationWithAllocations(
+		s.chainA.GetContext(), s.network.App, grantee, granter, allocationsFromICS20(allocs),
+	)
+	Expect(err).To(BeNil(), "error while creating the transfer authorization")
+
+	s.chainA.NextBlock()
+
+	authz, _ := s.network.App.AuthzKeeper.GetAuthorization(s.chainA.GetContext(), grantee.Bytes(), granter.Bytes(), ics20.TransferMsgURL)
+	Expect(authz).NotTo(BeNil(), "expected the signer to own the grant")
+}
+
+// transferApprovalGrantee returns the grantee the approval args grant to. The
+// InterchainSender helper contract always grants to itself, so this is the contract
+// address; it is resolved here rather than hardcoded so the helpers keep working if
+// a test ever approves a different grantee.
+func (s *PrecompileTestSuite) transferApprovalGrantee(args contracts.CallArgs) common.Address {
+	return args.ContractAddr
+}
+
+// allocationsFromICS20 converts the Solidity-facing allocation struct into the
+// ibc-go type the authz keeper stores. It mirrors what the precompile does when it
+// decodes approve calldata.
+func allocationsFromICS20(allocs []cmn.ICS20Allocation) []transfertypes.Allocation {
+	out := make([]transfertypes.Allocation, 0, len(allocs))
+	for _, alloc := range allocs {
+		spendLimit := make(sdk.Coins, 0, len(alloc.SpendLimit))
+		for _, coin := range alloc.SpendLimit {
+			spendLimit = spendLimit.Add(sdk.Coin{Denom: coin.Denom, Amount: sdkmath.NewIntFromBigInt(coin.Amount)})
+		}
+		out = append(out, transfertypes.Allocation{
+			SourcePort:        alloc.SourcePort,
+			SourceChannel:     alloc.SourceChannel,
+			SpendLimit:        spendLimit,
+			AllowList:         alloc.AllowList,
+			AllowedPacketData: alloc.AllowedPacketData,
+		})
+	}
+	return out
 }
 
 // setupAllocationsForTesting sets the allocations for testing

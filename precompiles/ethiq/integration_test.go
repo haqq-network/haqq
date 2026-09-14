@@ -744,7 +744,7 @@ var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
 				Expect(s.network.NextBlock()).To(BeNil())
 
 				// check approvals
-				authorization, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, ethiq.MintHaqqMsgURL, contractAddr, granter.Addr)
+				authorization, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, ethiq.MintHaqqMsgURL, contractAddr, contractAddr)
 				Expect(err).To(BeNil())
 				Expect(authorization).ToNot(BeNil(), "expected authorization to not be nil")
 				Expect(expirationTime).ToNot(BeNil(), "expected expiration time to not be nil")
@@ -764,7 +764,7 @@ var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
 				Expect(s.network.NextBlock()).To(BeNil())
 
 				// check approvals pre-removal
-				allAuthz, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), granter.AccAddr.String())
+				allAuthz, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), sdk.AccAddress(contractAddr.Bytes()).String())
 				Expect(err).To(BeNil(), "error while reading authorizations")
 				Expect(allAuthz).To(HaveLen(1), "expected no authorizations")
 
@@ -781,7 +781,7 @@ var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
 				Expect(s.network.NextBlock()).To(BeNil())
 
 				// check approvals after approving with amount 0
-				allAuthz, err = s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), granter.AccAddr.String())
+				allAuthz, err = s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), sdk.AccAddress(contractAddr.Bytes()).String())
 				Expect(err).To(BeNil(), "error while reading authorizations")
 				Expect(allAuthz).To(HaveLen(0), "expected no authorizations")
 			})
@@ -941,7 +941,7 @@ var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
 			s.ExpectAuthorization(
 				ethiq.MintHaqqMsgURL,
 				contractAddr,
-				granter.Addr,
+				contractAddr,
 				&sdk.Coin{Denom: utils.BaseDenom, Amount: sdkmath.NewInt(1e18)},
 				0,
 			)
@@ -980,7 +980,7 @@ var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
 				contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
 			}
 
-			s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+			s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 
 			// query allowance
 			callArgs.Args = []interface{}{
@@ -1073,7 +1073,7 @@ var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
 					contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
 				}
 
-				s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+				s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 				// add gas limit to avoid out of gas error
 				txArgs.GasLimit = 500_000
 				txArgs.GasPrice = big.NewInt(1e9)
@@ -1342,7 +1342,7 @@ var _ = Describe("Calling ethiq precompile via Solidity", Ordered, func() {
 				contractAddr, []string{ethiq.MintHaqqMsgURL}, big.NewInt(1e18),
 			}
 
-			s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+			s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 			Expect(s.network.NextBlock()).To(BeNil(), "failed to advance block")
 
 			// get the initial balances prior to the test
@@ -2364,11 +2364,13 @@ var _ = Describe("Full Safe (Smart Contract Wallet) flow", Ordered, func() {
 			return execOK
 		}
 
+		// The Safe is the immediate EVM caller of the precompile, so the Safe owns the
+		// grants it creates -- not the owner EOA that happens to be tx.origin.
 		getApplicationAuthorization := func() *ethiqtypes.MintHaqqByApplicationIDAuthorization {
 			authzGrant, _ := s.network.App.AuthzKeeper.GetAuthorization(
 				s.network.GetContext(),
 				grantee.AccAddr,
-				safeOwnerOne.AccAddr,
+				sdk.AccAddress(safeWalletAddr.Bytes()),
 				ethiq.MsgMintHaqqByApplicationMsgURL,
 			)
 			if authzGrant == nil {
@@ -2380,6 +2382,14 @@ var _ = Describe("Full Safe (Smart Contract Wallet) flow", Ordered, func() {
 			return appAuthz
 		}
 
+		// requireApplicationAuthorization fails with a readable message instead of a nil
+		// dereference when the grant is missing.
+		requireApplicationAuthorization := func() *ethiqtypes.MintHaqqByApplicationIDAuthorization {
+			appAuthz := getApplicationAuthorization()
+			Expect(appAuthz).ToNot(BeNil(), "expected the Safe to own an application authorization")
+			return appAuthz
+		}
+
 		It("should delete the grant when Safe revokes the last application ID", func() {
 			Expect(execPrecompile(
 				ethiq.ApproveApplicationIDMethod,
@@ -2387,7 +2397,7 @@ var _ = Describe("Full Safe (Smart Contract Wallet) flow", Ordered, func() {
 				big.NewInt(0),
 				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
 			)).To(BeTrue())
-			Expect(getApplicationAuthorization().ApplicationsList).To(Equal([]uint64{0}))
+			Expect(requireApplicationAuthorization().ApplicationsList).To(Equal([]uint64{0}))
 
 			Expect(execPrecompile(
 				ethiq.RevokeApplicationIDMethod,
@@ -2414,7 +2424,7 @@ var _ = Describe("Full Safe (Smart Contract Wallet) flow", Ordered, func() {
 				big.NewInt(0),
 				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
 			)).To(BeTrue())
-			Expect(getApplicationAuthorization().ApplicationsList).To(Equal([]uint64{1}))
+			Expect(requireApplicationAuthorization().ApplicationsList).To(Equal([]uint64{1}))
 		})
 
 		It("should fail inside Safe when no application grant exists", func() {
@@ -2441,7 +2451,7 @@ var _ = Describe("Full Safe (Smart Contract Wallet) flow", Ordered, func() {
 				big.NewInt(1),
 				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
 			)).To(BeFalse())
-			Expect(getApplicationAuthorization().ApplicationsList).To(Equal([]uint64{0}))
+			Expect(requireApplicationAuthorization().ApplicationsList).To(Equal([]uint64{0}))
 		})
 	})
 })
@@ -3322,6 +3332,9 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		safeUcdaoLiqBurnIslm              int64 = 500
 		safeUcdaoLiqSecondAppIslm         int64 = 100
 		safeUcdaoLiqExpectedUcdaoBaseIslm int64 = 100
+		// safeUcdaoLiqOverdraftIslm is more than the Safe has left after the waitlist burn,
+		// so a second mint of this size fails and takes the whole batch down with it.
+		safeUcdaoLiqOverdraftIslm int64 = 200
 	)
 
 	var (
@@ -3691,43 +3704,12 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		ownerTwoBankBeforeSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
 
+		// No approve: the Safe mints from its own balances, and grants are bound to the
+		// immediate EVM caller, so the Safe's own threshold is the authorization. The
+		// approvals that used to stand here were issued by the owner EOA and are no longer
+		// consulted on this path; the grant-gated path is covered by the non-Safe specs in
+		// "burning and minting > with approval set".
 		precompileAddr := s.precompile.Address()
-		approveByAppArgs := factory.CallArgs{
-			ContractABI: s.precompile.ABI,
-			MethodName:  ethiq.ApproveApplicationIDMethod,
-			Args: []interface{}{
-				safeWalletAddr,
-				new(big.Int).SetUint64(waitlistAppID),
-				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
-			},
-		}
-		approveMintArgs := factory.CallArgs{
-			ContractABI: s.precompile.ABI,
-			MethodName:  authorization.ApproveMethod,
-			Args: []interface{}{
-				safeWalletAddr,
-				freeMintFromBankIslm.BigInt(),
-				[]string{ethiq.MintHaqqMsgURL},
-			},
-		}
-		approveTxArgs := evmtypes.EvmTxArgs{To: &precompileAddr}
-		approveTxArgs.GasLimit = 500_000
-		_, _, err = s.factory.CallContractAndCheckLogs(
-			safeOwnerOne.Priv,
-			approveTxArgs,
-			approveByAppArgs,
-			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval, ethiq.EventTypeApplicationIDApproval}, ExpPass: true},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-		_, _, err = s.factory.CallContractAndCheckLogs(
-			safeOwnerOne.Priv,
-			approveTxArgs,
-			approveMintArgs,
-			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval}, ExpPass: true},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 
 		mintByAppCallData, err := s.precompile.ABI.Pack(ethiq.MintHaqqByApplication, safeWalletAddr, new(big.Int).SetUint64(waitlistAppID))
 		Expect(err).ToNot(HaveOccurred())
@@ -3827,27 +3809,11 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		secondWaitlistAppID, restoreSecondWaitlist := ethiqtypes.PushRegisteredApplicationForIntegrationTest(secondWaitlistItem)
 		defer restoreSecondWaitlist()
 
+		// No approve: the Safe mints from its own balances, and grants are bound to the
+		// immediate EVM caller, so the Safe's own threshold is the authorization. The
+		// approvals that used to stand here were issued by the owner EOA and are no longer
+		// consulted on this path.
 		precompileAddr := s.precompile.Address()
-		approveByAppArgs := factory.CallArgs{
-			ContractABI: s.precompile.ABI,
-			MethodName:  ethiq.ApproveApplicationIDMethod,
-			Args: []interface{}{
-				safeWalletAddr,
-				new(big.Int).SetUint64(waitlistAppID),
-				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
-			},
-		}
-		approveBySecondAppArgs := factory.CallArgs{
-			ContractABI: s.precompile.ABI,
-			MethodName:  ethiq.ApproveApplicationIDMethod,
-			Args: []interface{}{
-				safeWalletAddr,
-				new(big.Int).SetUint64(secondWaitlistAppID),
-				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
-			},
-		}
-		approveTxArgs := evmtypes.EvmTxArgs{To: &precompileAddr}
-		approveTxArgs.GasLimit = 500_000
 
 		helperAcc, helperPriv, liquidDenom, _ := prepareHelperWithLiquidVesting()
 		fundUcdaoCoins := sdk.NewCoins(
@@ -3884,24 +3850,6 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		).Amount
 		ownerOneBankBeforeSuccessMint, err := s.grpcHandler.GetBalance(safeOwnerOne.AccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
-
-		_, _, err = s.factory.CallContractAndCheckLogs(
-			safeOwnerOne.Priv,
-			approveTxArgs,
-			approveByAppArgs,
-			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval, ethiq.EventTypeApplicationIDApproval}, ExpPass: true},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
-
-		_, _, err = s.factory.CallContractAndCheckLogs(
-			safeOwnerOne.Priv,
-			approveTxArgs,
-			approveBySecondAppArgs,
-			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval, ethiq.EventTypeApplicationIDApproval}, ExpPass: true},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 
 		mintByAppCallData, err := s.precompile.ABI.Pack(ethiq.MintHaqqByApplication, safeWalletAddr, new(big.Int).SetUint64(waitlistAppID))
 		Expect(err).ToNot(HaveOccurred())
@@ -3973,7 +3921,7 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(s.network.App.EthiqKeeper.IsApplicationExecuted(s.network.GetContext(), secondWaitlistAppID)).To(BeTrue())
 	})
 
-	It("should revert whole Safe batch when second call is not approved", func() {
+	It("should revert whole Safe batch when the second call fails", func() {
 		var err error
 		safeWalletAddr, safeWalletAccAddr := createSafeWallet()
 		transferAmt := sdkmath.NewInt(safeUcdaoLiqFundUcdaoBaseIslm).MulRaw(1e18)
@@ -3983,7 +3931,11 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 
 		waitlistAppIslm := sdkmath.NewInt(safeUcdaoLiqBurnIslm).MulRaw(1e18)
-		freeMintFromBankIslm := sdkmath.NewInt(safeUcdaoLiqSecondAppIslm).MulRaw(1e18)
+		// The Safe mints from its own balances, so authorization is not what can make the
+		// second call fail here: the precompile binds grants to the immediate caller, and the
+		// Safe is both caller and sender. Overdraw instead -- the subject of this spec is that
+		// a failure anywhere in the batch reverts all of it, not which failure it is.
+		freeMintFromBankIslm := sdkmath.NewInt(safeUcdaoLiqOverdraftIslm).MulRaw(1e18)
 		safeBech32 := safeWalletAccAddr.String()
 		waitlistItem := ethiqtypes.ApplicationListItem{
 			FromAddress:                safeBech32,
@@ -4015,30 +3967,17 @@ var _ = Describe("Safe waitlist application flow (UCDAO funds, liquid vesting)",
 		ownerTwoBankBefore, err := s.grpcHandler.GetBalance(safeOwnerTwo.AccAddr, utils.BaseDenom)
 		Expect(err).ToNot(HaveOccurred())
 
+		// No approve: the Safe mints from its own balances, and grants are bound to the
+		// immediate EVM caller, so the Safe's own threshold is the authorization. The
+		// approvals that used to stand here were issued by the owner EOA and are no longer
+		// consulted on this path; the grant-gated path is covered by the non-Safe specs in
+		// "burning and minting > with approval set".
 		precompileAddr := s.precompile.Address()
-		approveByAppArgs := factory.CallArgs{
-			ContractABI: s.precompile.ABI,
-			MethodName:  ethiq.ApproveApplicationIDMethod,
-			Args: []interface{}{
-				safeWalletAddr,
-				new(big.Int).SetUint64(waitlistAppID),
-				[]string{ethiq.MsgMintHaqqByApplicationMsgURL},
-			},
-		}
-		approveTxArgs := evmtypes.EvmTxArgs{To: &precompileAddr}
-		approveTxArgs.GasLimit = 500_000
-		_, _, err = s.factory.CallContractAndCheckLogs(
-			safeOwnerOne.Priv,
-			approveTxArgs,
-			approveByAppArgs,
-			testutil.LogCheckArgs{ABIEvents: s.precompile.Events, ExpEvents: []string{authorization.EventTypeApproval, ethiq.EventTypeApplicationIDApproval}, ExpPass: true},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(s.network.NextBlock()).ToNot(HaveOccurred())
 
 		mintByAppCallData, err := s.precompile.ABI.Pack(ethiq.MintHaqqByApplication, safeWalletAddr, new(big.Int).SetUint64(waitlistAppID))
 		Expect(err).ToNot(HaveOccurred())
-		// Not approved by authorization on purpose, so second call fails inside batch.
+		// Exceeds what the Safe holds after the waitlist burn, so the second call fails
+		// inside the batch.
 		mintCallData, err := s.precompile.ABI.Pack(ethiq.MintHaqq, safeWalletAddr, safeWalletAddr, freeMintFromBankIslm.BigInt())
 		Expect(err).ToNot(HaveOccurred())
 		batchTxData := append(

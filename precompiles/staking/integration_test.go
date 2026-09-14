@@ -2202,7 +2202,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				Expect(s.network.NextBlock()).To(BeNil())
 
 				// check approvals
-				authorization, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.DelegateAuthz, contractAddr, granter.Addr)
+				authorization, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.DelegateAuthz, contractAddr, contractAddr)
 				Expect(err).To(BeNil())
 				Expect(authorization).ToNot(BeNil(), "expected authorization to not be nil")
 				Expect(expirationTime).ToNot(BeNil(), "expected expiration time to not be nil")
@@ -2220,7 +2220,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				Expect(s.network.NextBlock()).To(BeNil())
 
 				// check approvals pre-removal
-				allAuthz, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), granter.AccAddr.String())
+				allAuthz, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), sdk.AccAddress(contractAddr.Bytes()).String())
 				Expect(err).To(BeNil(), "error while reading authorizations")
 				Expect(allAuthz).To(HaveLen(1), "expected no authorizations")
 
@@ -2237,7 +2237,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				Expect(s.network.NextBlock()).To(BeNil())
 
 				// check approvals after approving with amount 0
-				allAuthz, err = s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), granter.AccAddr.String())
+				allAuthz, err = s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), sdk.AccAddress(contractAddr.Bytes()).String())
 				Expect(err).To(BeNil(), "error while reading authorizations")
 				Expect(allAuthz).To(HaveLen(0), "expected no authorizations")
 			})
@@ -2297,7 +2297,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				Expect(err).To(BeNil(), "error while calling the smart contract")
 
 				// check approvals
-				allAuthz, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), granter.AccAddr.String())
+				allAuthz, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), sdk.AccAddress(contractAddr.Bytes()).String())
 				Expect(err).To(BeNil(), "error while reading authorizations")
 				Expect(allAuthz).To(HaveLen(0), "expected no authorizations")
 			})
@@ -2332,9 +2332,9 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			Expect(s.network.NextBlock()).To(BeNil())
 
 			// check approvals
-			authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.DelegateAuthz, contractAddr, granter.Addr)
+			authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.DelegateAuthz, contractAddr, contractAddr)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("no authorizations found for grantee %s and granter %s", contractAddr.Hex(), granter.Addr.Hex())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("no authorizations found for grantee %s and granter %s", contractAddr.Hex(), contractAddr.Hex())))
 			Expect(authz).To(BeNil(), "expected authorization to be revoked")
 		})
 
@@ -2396,9 +2396,9 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			Expect(err).To(BeNil(), "error while calling the smart contract")
 
 			// check approvals
-			authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.DelegateAuthz, contractAddr, granter.Addr)
+			authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.DelegateAuthz, contractAddr, contractAddr)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("no authorizations found for grantee %s and granter %s", contractAddr.Hex(), granter.Addr.Hex())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("no authorizations found for grantee %s and granter %s", contractAddr.Hex(), contractAddr.Hex())))
 			Expect(authz).To(BeNil(), "expected no authorization to be found")
 		})
 
@@ -2427,7 +2427,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			s.ExpectAuthorization(
 				staking.DelegateAuthz,
 				contractAddr,
-				granter.Addr,
+				contractAddr,
 				&sdk.Coin{Denom: s.bondDenom, Amount: math.NewInt(1e18)},
 			)
 		})
@@ -2679,7 +2679,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 					contractAddr, []string{staking.DelegateMsg}, big.NewInt(1e18),
 				}
 
-				s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+				s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 				// add gas limit to avoid out of gas error
 				txArgs.GasLimit = 500_000
 			})
@@ -2835,7 +2835,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 						},
 					}
 
-					s.SetupApprovalWithContractCalls(
+					s.SetupApprovalFromEOA(
 						s.keyring.GetKey(0),
 						evmtypes.EvmTxArgs{
 							To: &contractTwoAddr,
@@ -3092,7 +3092,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				}
 
 				// create approval to allow spending all vesting coins
-				s.SetupApprovalWithContractCalls(vestAccKey, txArgs, approveCallArgs)
+				s.SetupApprovalFromEOA(vestAccKey, txArgs, approveCallArgs)
 			})
 
 			Context("before first vesting period - all tokens locked and unvested", func() {
@@ -3290,7 +3290,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 					contractAddr, []string{staking.UndelegateMsg}, big.NewInt(1e18),
 				}
 
-				s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+				s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 				// set gas limit to avoid out of gas error
 				txArgs.GasLimit = 500_000
 			})
@@ -3425,7 +3425,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 					contractAddr, []string{staking.RedelegateMsg}, big.NewInt(1e18),
 				}
 
-				s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+				s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 			})
 
 			It("should redelegate when not exceeding the allowance", func() {
@@ -3551,7 +3551,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				contractAddr, []string{staking.UndelegateMsg}, big.NewInt(1e18),
 			}
 
-			s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+			s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 
 			Expect(s.network.NextBlock()).To(BeNil(), "failed to advance block")
 
@@ -3616,7 +3616,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 					contractAddr, []string{staking.CancelUnbondingDelegationMsg}, big.NewInt(1e18),
 				}
 
-				s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+				s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 
 				Expect(s.network.NextBlock()).To(BeNil(), "failed to advance block")
 			})
@@ -3649,7 +3649,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				delegator := s.keyring.GetKey(0)
 
 				approveCallArgs.Args = []interface{}{contractAddr, []string{staking.CancelUnbondingDelegationMsg}, big.NewInt(1)}
-				s.SetupApprovalWithContractCalls(delegator, txArgs, approveCallArgs)
+				s.SetupApprovalFromEOA(delegator, txArgs, approveCallArgs)
 
 				callArgs.Args = []interface{}{
 					delegator.Addr, valAddr.String(), big.NewInt(1e18), big.NewInt(expCreationHeight),
@@ -3742,7 +3742,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				contractAddr, []string{staking.CancelUnbondingDelegationMsg}, big.NewInt(1e18),
 			}
 
-			s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+			s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 
 			// query allowance
 			callArgs.Args = []interface{}{
@@ -4024,7 +4024,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			approveCallArgs.Args = []interface{}{
 				contractAddr, []string{staking.RedelegateMsg}, big.NewInt(1e18),
 			}
-			s.SetupApprovalWithContractCalls(delegator, txArgs, approveCallArgs)
+			s.SetupApprovalFromEOA(delegator, txArgs, approveCallArgs)
 
 			Expect(s.network.NextBlock()).To(BeNil(), "failed to advance block")
 
@@ -4085,7 +4085,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			approveCallArgs.Args = []interface{}{
 				contractAddr, []string{staking.RedelegateMsg}, big.NewInt(1e18),
 			}
-			s.SetupApprovalWithContractCalls(delegator, txArgs, approveCallArgs)
+			s.SetupApprovalFromEOA(delegator, txArgs, approveCallArgs)
 			Expect(s.network.NextBlock()).To(BeNil(), "failed to advance block")
 
 			// set up redelegation
@@ -4147,7 +4147,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				contractAddr, []string{staking.UndelegateMsg}, big.NewInt(1e18),
 			}
 
-			s.SetupApprovalWithContractCalls(delegator, txArgs, approveCallArgs)
+			s.SetupApprovalFromEOA(delegator, txArgs, approveCallArgs)
 
 			Expect(s.network.NextBlock()).To(BeNil(), "failed to advance block")
 
@@ -4218,10 +4218,30 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 	})
 
 	Context("testing sequential function calls to the precompile", func() {
-		// NOTE: there's no additional setup necessary because the test suite is already set up with
-		// delegations to the validator
+		// testApproveAndThenUndelegate makes two precompile calls in one EVM transaction:
+		// approve, then undelegate tx.origin's stake. The approve is the contract's own --
+		// the granter is the immediate caller -- so it cannot authorize the undelegation.
+		// The signer grants that separately below, which leaves the contract's self-grant as
+		// a probe: written by the first call, it tells us afterwards whether that call was
+		// committed or rolled back with the second.
+		selfGrant := func() *stakingtypes.StakeAuthorization {
+			authz, _ := CheckAuthorizationWithContext(s.network.GetContext(), s.network.App.AuthzKeeper, staking.UndelegateAuthz, contractAddr, contractAddr)
+			return authz
+		}
+
+		grantUndelegateFromSigner := func(delegator keyring.Key, maxTokens int64) {
+			coin := sdk.Coin{Denom: s.bondDenom, Amount: math.NewInt(maxTokens)}
+			Expect(s.CreateAuthorization(
+				s.network.GetContext(), delegator.AccAddr, contractAddr.Bytes(), staking.UndelegateAuthz, &coin,
+			)).To(BeNil(), "error while granting undelegate authorization to the contract")
+			Expect(s.network.NextBlock()).To(BeNil())
+		}
+
 		It("should revert everything if any operation fails", func() {
 			delegator := s.keyring.GetKey(0)
+
+			// less than the undelegation below, so the second call fails on the allowance
+			grantUndelegateFromSigner(delegator, 250)
 
 			cArgs := factory.CallArgs{
 				ContractABI: stakingCallerContract.ABI,
@@ -4237,11 +4257,13 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			)
 			Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
 
-			// There should be no authorizations because everything should have been reverted
-			authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.UndelegateAuthz, contractAddr, delegator.Addr)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("no authorizations found for grantee %s and granter %s", contractAddr.Hex(), delegator.Addr.Hex())))
-			Expect(authz).To(BeNil(), "expected authorization to be nil")
+			// the first call's grant is gone, so it was rolled back with the second
+			Expect(selfGrant()).To(BeNil(), "the contract's own grant must be rolled back")
+
+			// the signer's grant was written in an earlier transaction and is untouched
+			signerAuthz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.UndelegateAuthz, contractAddr, delegator.Addr)
+			Expect(err).To(BeNil())
+			Expect(signerAuthz.MaxTokens.Amount).To(Equal(math.NewInt(250)), "a reverted transaction must not spend the signer's allowance")
 
 			res, err := s.grpcHandler.GetDelegatorUnbondingDelegations(delegator.AccAddr.String())
 			Expect(err).To(BeNil())
@@ -4250,6 +4272,8 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 
 		It("should write to state if all operations succeed", func() {
 			delegator := s.keyring.GetKey(0)
+
+			grantUndelegateFromSigner(delegator, 1000)
 
 			cArgs := factory.CallArgs{
 				ContractABI: stakingCallerContract.ABI,
@@ -4269,9 +4293,13 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 			Expect(err).To(BeNil(), "error while calling the smart contract: %v", err)
 			Expect(s.network.NextBlock()).To(BeNil())
 
-			authz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.UndelegateAuthz, contractAddr, delegator.Addr)
+			// the first call's grant is there, so it was committed with the second
+			Expect(selfGrant()).ToNot(BeNil(), "the contract's own grant must be committed")
+
+			// and the signer's allowance paid for the undelegation
+			signerAuthz, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, staking.UndelegateAuthz, contractAddr, delegator.Addr)
 			Expect(err).To(BeNil())
-			Expect(authz).ToNot(BeNil(), "expected authorization not to be nil")
+			Expect(signerAuthz.MaxTokens.Amount).To(Equal(math.NewInt(500)), "the signer's allowance must be reduced by the undelegated amount")
 
 			res, err := s.grpcHandler.GetDelegatorUnbondingDelegations(delegator.AccAddr.String())
 			Expect(err).To(BeNil())
@@ -4302,7 +4330,7 @@ var _ = Describe("Calling staking precompile via Solidity", Ordered, func() {
 				contractAddr, []string{staking.UndelegateMsg}, big.NewInt(1e18),
 			}
 
-			s.SetupApprovalWithContractCalls(granter, txArgs, approveCallArgs)
+			s.SetupApprovalFromEOA(granter, txArgs, approveCallArgs)
 
 			Expect(s.network.NextBlock()).To(BeNil(), "failed to advance block")
 		})
@@ -4646,6 +4674,18 @@ var _ = Describe("Batching cosmos and eth interactions", func() {
 		}
 		execRevertedCheck = defaultLogCheck.WithErrContains(vm.ErrExecutionReverted.Error())
 		passCheck = defaultLogCheck.WithExpPass(true)
+
+		// The signer grants the contract permission to delegate on its behalf, in a
+		// transaction of its own. callERC20AndDelegate also calls approve itself, but that
+		// grant is the contract's own (granter is the immediate caller) and cannot authorize
+		// a delegation of the signer's stake. What it is good for here is a probe: it is
+		// written by the first precompile call in the batch, so its presence or absence after
+		// the transaction tells us whether that call was committed or rolled back.
+		delegateCoin := sdk.Coin{Denom: s.bondDenom, Amount: math.NewIntFromBigInt(transferredAmount)}
+		Expect(s.CreateAuthorization(
+			s.network.GetContext(), delegator.AccAddr, contractAddr.Bytes(), staking.DelegateAuthz, &delegateCoin,
+		)).To(BeNil(), "error while granting delegate authorization to the contract")
+		Expect(s.network.NextBlock()).To(BeNil())
 	})
 
 	Describe("when batching multiple transactions", func() {
@@ -4691,12 +4731,18 @@ var _ = Describe("Batching cosmos and eth interactions", func() {
 			Expect(res.DelegationResponse).NotTo(BeNil())
 			delegationPost := res.DelegationResponse.Delegation
 
-			auths, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), delegator.AccAddr.String())
+			// The grant the contract writes for itself in the first precompile call must be
+			// gone, which is what proves that call was rolled back with the rest.
+			selfAuths, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), sdk.AccAddress(contractAddr.Bytes()).String())
 			Expect(err).To(BeNil(), "error while getting authorizations: %v", err)
 			sharesPost := delegationPost.GetShares()
 			erc20BalancePost := s.network.App.Erc20Keeper.BalanceOf(s.network.GetContext(), erc20Contract.ABI, erc20ContractAddr, delegator.Addr)
 
-			Expect(auths).To(BeEmpty(), "expected no authorizations when reverting state")
+			Expect(selfAuths).To(BeEmpty(), "the contract's own grant must be rolled back with the rest of the state")
+
+			// the signer's grant was written in an earlier transaction, so the revert leaves it alone
+			signerAuthz, _ := CheckAuthorizationWithContext(s.network.GetContext(), s.network.App.AuthzKeeper, staking.DelegateAuthz, contractAddr, delegator.Addr)
+			Expect(signerAuthz).NotTo(BeNil(), "the signer's grant predates this transaction and must survive its revert")
 			Expect(sharesPost).To(Equal(sharesPre), "expected shares to be equal when reverting state")
 			Expect(erc20BalancePost.Int64()).To(BeZero(), "expected erc20 balance of target address to be zero when reverting state")
 		})
@@ -4729,12 +4775,18 @@ var _ = Describe("Batching cosmos and eth interactions", func() {
 			Expect(res.DelegationResponse).NotTo(BeNil())
 			delegationPost := res.DelegationResponse.Delegation
 
-			auths, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), delegator.AccAddr.String())
+			// The grant the contract writes for itself in the first precompile call must be
+			// gone, which is what proves that call was rolled back with the rest.
+			selfAuths, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), sdk.AccAddress(contractAddr.Bytes()).String())
 			Expect(err).To(BeNil(), "error while getting authorizations: %v", err)
 			sharesPost := delegationPost.GetShares()
 			erc20BalancePost := s.network.App.Erc20Keeper.BalanceOf(s.network.GetContext(), erc20Contract.ABI, erc20ContractAddr, delegator.Addr)
 
-			Expect(auths).To(BeEmpty(), "expected no authorizations when reverting state")
+			Expect(selfAuths).To(BeEmpty(), "the contract's own grant must be rolled back with the rest of the state")
+
+			// the signer's grant was written in an earlier transaction, so the revert leaves it alone
+			signerAuthz, _ := CheckAuthorizationWithContext(s.network.GetContext(), s.network.App.AuthzKeeper, staking.DelegateAuthz, contractAddr, delegator.Addr)
+			Expect(signerAuthz).NotTo(BeNil(), "the signer's grant predates this transaction and must survive its revert")
 			Expect(sharesPost).To(Equal(sharesPre), "expected shares to be equal when reverting state")
 			Expect(erc20BalancePost.Int64()).To(BeZero(), "expected erc20 balance of target address to be zero when reverting state")
 		})
@@ -4792,6 +4844,13 @@ var _ = Describe("Batching cosmos and eth interactions", func() {
 			Expect(erc20BalancePost).To(Equal(transferredAmount), "expected different erc20 balance of target address")
 			// NOTE: there should be no authorizations because the full approved amount is delegated
 			Expect(auths).To(HaveLen(0), "expected no authorization to be found")
+
+			// The same probe the revert specs use, read the other way round: the grant the
+			// contract wrote for itself in the first precompile call is there, so that call
+			// was committed along with the rest.
+			selfAuths, err := s.grpcHandler.GetAuthorizations(sdk.AccAddress(contractAddr.Bytes()).String(), sdk.AccAddress(contractAddr.Bytes()).String())
+			Expect(err).To(BeNil(), "error while getting authorizations: %v", err)
+			Expect(selfAuths).To(HaveLen(1), "the contract's own grant must be committed with the rest of the state")
 		})
 	})
 })
