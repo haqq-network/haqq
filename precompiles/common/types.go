@@ -5,12 +5,10 @@ package common
 
 import (
 	"math/big"
-	"strings"
 	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/utils"
 )
@@ -83,21 +81,12 @@ func NewDecCoinsResponse(amount sdk.DecCoins) []DecCoin {
 	return outputs
 }
 
-// HexAddressFromBech32String converts a hex address to a bech32 encoded address.
-func HexAddressFromBech32String(addr string) (res common.Address, err error) {
-	if strings.Contains(addr, sdk.PrefixValidator) {
-		valAddr, err := sdk.ValAddressFromBech32(addr)
-		if err != nil {
-			return res, err
-		}
-		return common.BytesToAddress(valAddr.Bytes()), nil
-	}
-	accAddr, err := sdk.AccAddressFromBech32(addr)
-	if err != nil {
-		return res, err
-	}
-	return common.BytesToAddress(accAddr), nil
-}
+// NOTE: HexAddressFromBech32String used to live here. It decided between a validator
+// and an account address with strings.Contains(addr, sdk.PrefixValidator) - "val" is
+// spellable in the bech32 data part, so it misparsed a fraction of account addresses -
+// and then truncated whatever it decoded with common.BytesToAddress. Its only caller
+// fed the result to an authorization check. Callers now decode the address type they
+// actually expect and go through EVMAddressFromCosmos, which refuses to truncate.
 
 // SafeAdd adds two integers and returns a boolean if an overflow occurs to avoid panic.
 // TODO: Upstream this to the SDK math package.

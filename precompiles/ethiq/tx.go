@@ -44,7 +44,16 @@ func (p *Precompile) mirrorBankBaseDeltaIntoStateDB(ctx sdk.Context, isCallerOri
 	if netBaseDelta.IsZero() {
 		return
 	}
-	debitHexAddr := common.BytesToAddress(debitAccAddr.Bytes())
+	// ok == false is the StateDB journal boundary: an account that is not exactly 20 bytes
+	// has no EVM representation, so the StateDB never holds a state object for it, it never
+	// enters the dirty set, and its bank movements need no mirroring. Journaling a truncated
+	// address instead credits an unrelated EVM account and Commit mints the difference.
+	// Every address reaching here is 20 bytes today (an ABI address argument, or a ucDAO
+	// escrow derived as sha256(...)[:20]); the check keeps that from being load-bearing.
+	debitHexAddr, ok := cmn.EVMAddressFromCosmos(debitAccAddr)
+	if !ok {
+		return
+	}
 	if netBaseDelta.IsNegative() {
 		p.SetBalanceChangeEntries(cmn.NewBalanceChangeEntry(debitHexAddr, netBaseDelta.Neg().BigInt(), cmn.Add))
 		return

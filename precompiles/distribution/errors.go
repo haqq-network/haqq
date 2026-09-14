@@ -22,4 +22,9 @@ const (
 	// not 20 bytes long. Longer Cosmos addresses are legitimate on the Cosmos path, but they
 	// have no EVM representation, so rewards sent there are unrecoverable from the EVM side.
 	ErrWithdrawAddressLength = "withdraw address %s must be a 20-byte address"
+	// ErrValidatorAddressLength is raised when the validator operator address passed to the
+	// precompile does not decode to 20 bytes. The EVM address derived from it is what the
+	// authorization check compares the caller and the origin against, so it has to be the
+	// address the input actually encodes rather than its trailing 20 bytes.
+	ErrValidatorAddressLength = "validator address %s must decode to a 20-byte address"
 )

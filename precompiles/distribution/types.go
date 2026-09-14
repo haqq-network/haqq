@@ -147,9 +147,25 @@ func NewMsgWithdrawValidatorCommission(args []interface{}) (*distributiontypes.M
 		ValidatorAddress: validatorAddress,
 	}
 
-	validatorHexAddr, err := cmn.HexAddressFromBech32String(msg.ValidatorAddress)
+	// The operator address is decoded here only to derive the EVM address that
+	// WithdrawValidatorCommission compares the caller and the origin against, so it has to
+	// be exact. Cosmos accepts addresses up to 255 bytes, and keeping the trailing 20 bytes
+	// of a longer one would let the caller pick, byte for byte, which address the
+	// authorization check sees. Refuse instead: an operator address that is not 20 bytes
+	// has no EVM representation, and no validator on this chain has one.
+	//
+	// Parsing it as a validator address rather than sniffing the string for "val" also
+	// removes a second defect: the previous helper routed on
+	// strings.Contains(addr, sdk.PrefixValidator), and "val" is spellable in the bech32
+	// data part, so roughly one account address in a thousand was parsed as a validator.
+	valAddr, err := sdk.ValAddressFromBech32(validatorAddress)
 	if err != nil {
 		return nil, common.Address{}, err
+	}
+
+	validatorHexAddr, ok := cmn.EVMAddressFromCosmos(sdk.AccAddress(valAddr))
+	if !ok {
+		return nil, common.Address{}, fmt.Errorf(ErrValidatorAddressLength, validatorAddress)
 	}
 
 	return msg, validatorHexAddr, nil

@@ -114,6 +114,10 @@ func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account stated
 		acct = k.accountKeeper.NewAccountWithAddress(ctx, cosmosAddr)
 	}
 
+	if _, isModuleAccount := acct.(sdk.ModuleAccountI); isModuleAccount {
+		return k.checkModuleAccountUnchanged(ctx, addr, cosmosAddr, account.Balance)
+	}
+
 	if err := acct.SetSequence(account.Nonce); err != nil {
 		return err
 	}
@@ -140,6 +144,49 @@ func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account stated
 		"balance", account.Balance,
 	)
 	return nil
+}
+
+// checkModuleAccountUnchanged refuses a commit that would reconcile a Cosmos module
+// account's balance against the EVM's view of it, and is a no-op when the two already
+// agree.
+//
+// A module account's balance belongs to its module and moves through bank calls that
+// leave no EVM journal entry - which is what every stateful precompile does. The two
+// sides also read from different places: StateDB.getStateObject loads balances from
+// the transaction context, while a precompile writes through the StateDB's cache
+// context, so an account first loaded into the StateDB *after* a precompile moved it
+// carries the balance it had before the call.
+//
+// SetBalance would then treat that stale number as the truth and mint or burn the
+// difference. A contract can delegate X and send 1 wei to the bonded pool in the same
+// transaction: the pool loads at its pre-delegation balance B, the journal dirties it
+// at B+1, and commit burns X-1 out of the pool while the delegation shares survive -
+// leaving staking unable to pay out what it still owes.
+//
+// There is no correct amount to write here, so nothing is written. The EVM cannot
+// legitimately author a module account's balance: a module account has no key, so the
+// only EVM-side change is a transfer into it, and bank already refuses that because
+// module accounts are blocked recipients. This makes the other direction fail the same
+// way instead of silently destroying module funds. Nothing that works today reaches
+// this error: a module account only enters the dirty set when an EVM transfer targeted
+// it, and mirroring a precompile's bank movement into the journal (as the precompiles
+// do for the accounts they move) leaves the two sides equal and this check silent.
+func (k *Keeper) checkModuleAccountUnchanged(
+	ctx sdk.Context,
+	addr common.Address,
+	cosmosAddr sdk.AccAddress,
+	evmBalance *big.Int,
+) error {
+	bankBalance := k.GetBalance(ctx, addr)
+	if bankBalance.Cmp(evmBalance) == 0 {
+		return nil
+	}
+
+	return errorsmod.Wrapf(
+		types.ErrInvalidAccount,
+		"%s is a module account: the EVM may not change its balance (evm view %s, bank %s)",
+		cosmosAddr, evmBalance, bankBalance,
+	)
 }
 
 // SetState update contract storage, delete if value is empty.
