@@ -6,6 +6,10 @@ import "../common/Types.sol";
 /// @author Evmos Team
 /// @title Authorization Interface
 /// @dev The interface through which solidity contracts will interact with smart contract approvals.
+///
+/// The granter of every authorization below is the immediate caller, never tx.origin:
+/// an account only ever grants an allocation over its own funds. A direct EOA call
+/// grants from that EOA, a contract wallet grants from the wallet.
 interface IICS20Authorization {
     /// @dev Emitted when an ICS-20 transfer authorization is granted.
     /// @param grantee The address of the grantee.

@@ -204,29 +204,35 @@ func (p *Precompile) TransferOwnership(
 
 	isCallerOrigin := contract.CallerAddress == origin
 
-	// A contract caller can never be authorized for this message: SaveGrant keys a grant
-	// by authorization.MsgTypeURL(), TransferOwnershipAuthorization reports
-	// MsgTransferOwnershipWithAmount, and CheckAndAcceptAuthorizationIfNeeded rejects any
-	// authorization that is not one of the two ucDAO types - so a lookup under
-	// MsgTransferOwnership can never succeed. Reject it here with a message that says why,
-	// instead of a generic "grant does not exist" that suggests issuing one would help.
-	if !isCallerOrigin {
+	// This message cannot be delegated, and the single guard below is exactly that
+	// statement: nobody may call it for an account other than themselves.
+	//
+	// It carries no amount, so no spend limit can be expressed for it, and ucDAO
+	// registers no authorization type under MsgTransferOwnership -- SaveGrant keys a
+	// grant by authorization.MsgTypeURL(), TransferOwnershipAuthorization reports
+	// MsgTransferOwnershipWithAmount, and CheckAndAcceptAuthorizationIfNeeded rejects
+	// anything that is not one of the two ucDAO types. So a lookup here could never
+	// succeed, and saying why beats a generic "grant does not exist" that suggests
+	// issuing one would help.
+	//
+	// Gating on the caller rather than on the origin is what the rest of the identity
+	// model does. When the caller is the owner nothing is being delegated: the account
+	// is moving its own escrow and its own code -- a contract wallet's owner threshold
+	// -- is the authorization, exactly as in TransferOwnershipWithAmount, which skips
+	// the authz lookup on the same condition. Gating on `caller == origin` instead
+	// turned away a contract acting on itself, with an error saying it was acting "on
+	// behalf of another account", while the very same escrow could be moved through
+	// transferOwnershipWithAmount.
+	if contract.CallerAddress != owner {
 		return nil, fmt.Errorf(ErrTransferOwnershipNotDelegatable, TransferOwnershipWithAmountMsgURL)
 	}
 
-	// The caller is the origin, so the owner must be the origin too.
-	if origin != owner {
-		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), owner.String())
-	}
-
-	// NOTE: these two snapshots and the mirror call below are a no-op as the method stands.
-	// The guard above returns unless isCallerOrigin, and the mirror returns immediately when
-	// it is - journaling is only ever needed for a contract caller. They are kept, and kept
-	// next to the keeper call, so that the pair does not have to be reconstructed if
-	// transferOwnership ever becomes delegatable: an authorization type for it would make
-	// contract callers reachable here, and a mirror added back later, away from the code that
-	// moves the coins, is exactly how the double-credit bug in TransferOwnershipWithAmount
-	// happened. The cost is two bank reads per call.
+	// The snapshots and the mirror call below are live for a contract caller and a no-op
+	// for a direct EOA call, where the guard above already forces owner == caller ==
+	// origin and mirrorEscrowBaseDeltasIntoStateDB returns immediately. They are kept
+	// next to the keeper call deliberately: a mirror added back later, away from the code
+	// that moves the coins, is exactly how the double-credit bug in
+	// TransferOwnershipWithAmount happened. The cost on the EOA path is two bank reads.
 	ownerAcc := sdk.MustAccAddressFromBech32(msg.Owner)
 	newOwnerAcc := sdk.MustAccAddressFromBech32(msg.NewOwner)
 	escrowBefore := []escrowBaseSnapshot{

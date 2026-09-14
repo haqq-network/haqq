@@ -8,9 +8,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
+	"github.com/haqq-network/haqq/precompiles/testutil"
 	"github.com/haqq-network/haqq/precompiles/testutil/contracts"
 	"github.com/haqq-network/haqq/precompiles/ucdao"
+	haqqtestutil "github.com/haqq-network/haqq/testutil"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	utiltx "github.com/haqq-network/haqq/testutil/tx"
+	"github.com/haqq-network/haqq/utils"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -107,4 +111,72 @@ func (s *PrecompileTestSuite) TestDirectApproveFromEOAIsUnchanged() {
 func ucdaoGrant(ctx sdk.Context, ak authzkeeper.Keeper, grantee, granter sdk.AccAddress) authz.Authorization {
 	auth, _ := ak.GetAuthorization(ctx, grantee, granter, ucdao.ConvertToHaqqMsgURL)
 	return auth
+}
+
+// TestContractTransfersItsOwnOwnership covers the consumption side of the identity
+// model for the one ucDAO method that cannot be delegated.
+//
+// transferOwnership moves the whole escrow and carries no amount, so no spend limit
+// can be expressed for it and ucDAO registers no authorization type under
+// MsgTransferOwnership -- nobody can ever be authorized to call it for someone else.
+// That is a statement about the owner, not about tx.origin: when the caller *is* the
+// owner nothing is delegated, the account moves its own escrow, and a contract
+// wallet's own threshold is the authorization. Gating on `caller == origin` instead
+// turned away a Safe acting on itself, while the very same escrow could be moved
+// through transferOwnershipWithAmount.
+func (s *PrecompileTestSuite) TestContractTransfersItsOwnOwnership() {
+	s.SetupTest()
+	ctx := s.network.GetContext()
+
+	// The "contract" owns the ucDAO position it moves. An unrelated EOA signs the
+	// transaction, so origin is neither the caller nor the owner.
+	callerAddr := utiltx.GenerateAddress()
+	callerAccAddr := sdk.AccAddress(callerAddr.Bytes())
+	originAddr := utiltx.GenerateAddress()
+	newOwner := s.keyring.GetKey(1)
+
+	amount := math.NewInt(1e18)
+	coins := sdk.NewCoins(sdk.NewCoin(utils.BaseDenom, amount))
+	s.Require().NoError(haqqtestutil.FundAccount(ctx, s.network.App.BankKeeper, callerAccAddr, coins))
+	s.Require().NoError(s.network.App.DaoKeeper.Fund(ctx, coins, callerAccAddr))
+	s.Require().Equal(
+		amount, s.network.App.DaoKeeper.GetAccountBalances(ctx, callerAccAddr).AmountOf(utils.BaseDenom),
+		"fixture invariant: the caller must hold the position it is about to move",
+	)
+
+	method := s.precompile.Methods[ucdao.TransferOwnershipMethod]
+	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, callerAddr, s.precompile, 1e6)
+	_, err := s.precompile.TransferOwnership(ctx, originAddr, contract, s.network.GetStateDB(), &method,
+		[]interface{}{callerAddr, newOwner.Addr})
+	s.Require().NoError(err, "a contract must be able to move its own ucDAO position without being tx.origin")
+
+	s.Require().True(
+		s.network.App.DaoKeeper.GetAccountBalances(ctx, callerAccAddr).IsZero(),
+		"the caller's escrow must be emptied",
+	)
+	s.Require().Equal(
+		amount, s.network.App.DaoKeeper.GetAccountBalances(ctx, newOwner.AccAddr).AmountOf(utils.BaseDenom),
+		"the position must have landed on the new owner",
+	)
+}
+
+// TestTransferOwnershipForAnotherAccountRejected is the other half: the guard is
+// about the owner, so acting for an account that is not the caller stays rejected --
+// including for a direct EOA call, where it used to be a separate origin check.
+func (s *PrecompileTestSuite) TestTransferOwnershipForAnotherAccountRejected() {
+	s.SetupTest()
+	ctx := s.network.GetContext()
+
+	signer := s.keyring.GetKey(0)
+	victim := utiltx.GenerateAddress()
+	newOwner := s.keyring.GetKey(1)
+
+	method := s.precompile.Methods[ucdao.TransferOwnershipMethod]
+	// Direct EOA call: caller == origin == signer, but the owner argument is someone else.
+	contract, ctx := testutil.NewPrecompileContract(s.T(), ctx, signer.Addr, s.precompile, 1e6)
+	_, err := s.precompile.TransferOwnership(ctx, signer.Addr, contract, s.network.GetStateDB(), &method,
+		[]interface{}{victim, newOwner.Addr})
+	s.Require().Error(err)
+	s.Require().ErrorContains(err, "cannot be called on behalf of another account")
+	s.Require().ErrorContains(err, ucdao.TransferOwnershipWithAmountMsgURL)
 }

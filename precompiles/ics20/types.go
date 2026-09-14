@@ -379,16 +379,6 @@ func convertToAllocation(allocs []transfertypes.Allocation) []cmn.ICS20Allocatio
 	return allocations
 }
 
-// CheckOriginAndSender ensures the correct sender is being used.
-func CheckOriginAndSender(contract *vm.Contract, granter common.Address, sender common.Address) (common.Address, error) {
-	if contract.CallerAddress == sender {
-		return sender, nil
-	} else if granter != sender {
-		return common.Address{}, fmt.Errorf(ErrDifferentOriginFromSender, granter.String(), sender.String())
-	}
-	return sender, nil
-}
-
 // CheckAndAcceptAuthorizationIfNeeded checks if authorization exists and accepts the grant.
 // No authorization is required when the caller is the granter: it is acting on its own account.
 func CheckAndAcceptAuthorizationIfNeeded(

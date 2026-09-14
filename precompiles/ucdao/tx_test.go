@@ -126,7 +126,10 @@ func (s *PrecompileTestSuite) TestTransferOwnership() {
 			"invalid owner address",
 		},
 		{
-			"fail - different origin from owner",
+			// transferOwnership is not delegatable, so the guard is `caller == owner`
+			// rather than an origin check: naming somebody else's account is rejected
+			// whether the call comes from an EOA or from a contract.
+			"fail - caller is not the owner",
 			func() []any {
 				differentAddr := utiltx.GenerateAddress()
 				return []any{
@@ -136,7 +139,7 @@ func (s *PrecompileTestSuite) TestTransferOwnership() {
 			},
 			200000,
 			true,
-			"origin",
+			"cannot be called on behalf of another account",
 		},
 	}
 

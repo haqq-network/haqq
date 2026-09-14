@@ -87,6 +87,16 @@ interface DistributionI {
 
     /// @dev Change the address, that can withdraw the rewards of a delegator.
     /// Note that this address cannot be a module account.
+    ///
+    /// Callable only by the delegator itself: the caller must equal delegatorAddress.
+    /// x/distribution registers no authorization type, so there is nothing a delegator
+    /// could grant for this, and being the transaction signer is not enough - a contract
+    /// cannot redirect the signer's reward stream. The redirection is permanent and
+    /// creates no revocable approval, which is why the bar is a direct call.
+    ///
+    /// withdrawerAddress must decode to exactly 20 bytes. Longer Cosmos addresses stay
+    /// legitimate on the Cosmos path, but they have no EVM representation, so rewards
+    /// paid there cannot be reached from the EVM side.
     /// @param delegatorAddress The address of the delegator
     /// @param withdrawerAddress The address that will be capable of withdrawing rewards for
     /// the given delegator address
@@ -113,6 +123,10 @@ interface DistributionI {
 
     /// @dev fundCommunityPool defines a method to allow an account to directly
     /// fund the community pool.
+    ///
+    /// Callable only by the depositor itself: the caller must equal depositor. The
+    /// donation is irreversible and has no authorization type behind it, so a contract
+    /// cannot fund the pool out of the transaction signer's balance.
     /// @param depositor The address of the depositor
     /// @param amount The amount of coin sent to the community pool
     /// @return success Whether the transaction was successful or not
