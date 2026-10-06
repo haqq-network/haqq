@@ -69,14 +69,42 @@ func (p *Precompile) snapshotBankBase(ctx sdk.Context, addr sdk.AccAddress) bank
 // (BeforeDelegationSharesModified) before Delegate / Undelegate / Redelegate /
 // CancelUnbondingDelegation mutate shares. Duplicate addresses are kept; the
 // mirror helper journals a single net delta per account.
-func (p *Precompile) snapshotStakeAccounts(ctx sdk.Context, delegator sdk.AccAddress) ([]bankBaseSnapshot, error) {
-	snaps := make([]bankBaseSnapshot, 0, 2)
+//
+// sourceValidator, when set, is the validator the shares leave. Taking its last
+// shares from an unbonded validator removes it, and the distribution hook
+// AfterValidatorRemoved pays its accumulated commission to the operator's withdraw
+// address - an account that is neither the delegator nor their withdrawer. Left out
+// of the snapshot, that credit never reaches the journal, and Commit burns it as soon
+// as the operator's account is dirty in the same transaction.
+//
+// Undelegate reaches this today. Redelegate does not: BeginRedelegation looks the
+// source validator up again after Unbond and fails once it is gone (getBeginInfo in
+// x/staking v0.50). Its source validator is snapshotted all the same, so the mirror
+// does not depend on that SDK behavior.
+func (p *Precompile) snapshotStakeAccounts(
+	ctx sdk.Context,
+	delegator sdk.AccAddress,
+	sourceValidator string,
+) ([]bankBaseSnapshot, error) {
+	snaps := make([]bankBaseSnapshot, 0, 3)
 	snaps = append(snaps, p.snapshotBankBase(ctx, delegator))
 	withdrawer, err := p.distrKeeper.GetDelegatorWithdrawAddr(ctx, delegator)
 	if err != nil {
 		return nil, err
 	}
 	snaps = append(snaps, p.snapshotBankBase(ctx, withdrawer))
+
+	if sourceValidator != "" {
+		valAddr, err := sdk.ValAddressFromBech32(sourceValidator)
+		if err != nil {
+			return nil, err
+		}
+		operatorWithdrawer, err := p.distrKeeper.GetDelegatorWithdrawAddr(ctx, sdk.AccAddress(valAddr))
+		if err != nil {
+			return nil, err
+		}
+		snaps = append(snaps, p.snapshotBankBase(ctx, operatorWithdrawer))
+	}
 	return snaps, nil
 }
 
@@ -126,10 +154,14 @@ func (p *Precompile) mirrorBankBaseDeltasIntoStateDB(
 	}
 }
 
+// snapshotAndRun runs a staking message between the bank snapshots and the mirror.
+// sourceValidator is the validator the message takes shares from (see
+// snapshotStakeAccounts), or "" for a message that cannot remove a validator.
 func (p *Precompile) snapshotAndRun(
 	ctx sdk.Context,
 	isCallerOrigin bool,
 	delegatorBech32 string,
+	sourceValidator string,
 	run func() error,
 ) error {
 	var snaps []bankBaseSnapshot
@@ -141,7 +173,7 @@ func (p *Precompile) snapshotAndRun(
 		if err != nil {
 			return err
 		}
-		snaps, err = p.snapshotStakeAccounts(ctx, delegator)
+		snaps, err = p.snapshotStakeAccounts(ctx, delegator, sourceValidator)
 		if err != nil {
 			return err
 		}
@@ -323,7 +355,7 @@ func (p *Precompile) Delegate(
 
 	// Execute the transaction using the message server
 	msgSrv := stakingkeeper.NewMsgServerImpl(&p.stakingKeeper)
-	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, func() error {
+	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, "", func() error {
 		_, err := msgSrv.Delegate(ctx, msg)
 		return err
 	}); err != nil {
@@ -413,7 +445,7 @@ func (p *Precompile) Undelegate(
 	// Execute the transaction using the message server
 	msgSrv := stakingkeeper.NewMsgServerImpl(&p.stakingKeeper)
 	var res *stakingtypes.MsgUndelegateResponse
-	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, func() error {
+	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, msg.ValidatorAddress, func() error {
 		var runErr error
 		res, runErr = msgSrv.Undelegate(ctx, msg)
 		return runErr
@@ -505,7 +537,7 @@ func (p *Precompile) Redelegate(
 
 	msgSrv := stakingkeeper.NewMsgServerImpl(&p.stakingKeeper)
 	var res *stakingtypes.MsgBeginRedelegateResponse
-	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, func() error {
+	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, msg.ValidatorSrcAddress, func() error {
 		var runErr error
 		res, runErr = msgSrv.BeginRedelegate(ctx, msg)
 		return runErr
@@ -595,7 +627,8 @@ func (p *Precompile) CancelUnbondingDelegation(
 	}
 
 	msgSrv := stakingkeeper.NewMsgServerImpl(&p.stakingKeeper)
-	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, func() error {
+	// Canceling an unbonding adds shares back, so it cannot remove a validator.
+	if err = p.snapshotAndRun(ctx, isCallerOrigin, msg.DelegatorAddress, "", func() error {
 		_, err := msgSrv.CancelUnbondingDelegation(ctx, msg)
 		return err
 	}); err != nil {
