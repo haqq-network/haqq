@@ -62,10 +62,14 @@ func InitGenesis(
 				s, account.Address, codeHash, ethAcct.GetCodeHash(), account.Code))
 		}
 
-		k.SetCode(ctx, codeHash.Bytes(), code)
+		if err := k.SetCode(ctx, codeHash.Bytes(), code); err != nil {
+			panic(fmt.Errorf("failed to set code for %s: %w", account.Address, err))
+		}
 
 		for _, storage := range account.Storage {
-			k.SetState(ctx, address, common.HexToHash(storage.Key), common.HexToHash(storage.Value).Bytes())
+			if err := k.SetState(ctx, address, common.HexToHash(storage.Key), common.HexToHash(storage.Value).Bytes()); err != nil {
+				panic(fmt.Errorf("failed to set state for %s: %w", account.Address, err))
+			}
 		}
 	}
 

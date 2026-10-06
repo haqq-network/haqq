@@ -15,6 +15,7 @@ import (
 
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 func newTestCtx() sdk.Context {
@@ -594,4 +595,17 @@ func CollectContractStorage(db vm.StateDB) statedb.Storage {
 
 func TestStateDBTestSuite(t *testing.T) {
 	suite.Run(t, &StateDBTestSuite{})
+}
+
+func (suite *StateDBTestSuite) TestReservePrecompileCall() {
+	db := statedb.New(sdk.Context{}, NewMockKeeper(), emptyTxConfig)
+
+	for i := 0; i < int(evmtypes.MaxPrecompileCalls); i++ {
+		suite.Require().NoError(db.ReservePrecompileCall(), "call %d is within the budget", i+1)
+	}
+	// Refusals must not keep counting: a uint8 bumped on every attempt wrapped
+	// back to zero after 256 of them and reopened the budget.
+	for i := 0; i < 300; i++ {
+		suite.Require().ErrorContains(db.ReservePrecompileCall(), "max calls to precompiles", "attempt %d past the budget", i+1)
+	}
 }

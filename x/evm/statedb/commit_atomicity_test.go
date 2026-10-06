@@ -62,8 +62,11 @@ func (k *atomicTestKeeper) GetState(sdk.Context, common.Address, common.Hash) co
 func (k *atomicTestKeeper) GetCode(sdk.Context, common.Hash) []byte { return nil }
 func (k *atomicTestKeeper) ForEachStorage(sdk.Context, common.Address, func(common.Hash, common.Hash) bool) {
 }
-func (k *atomicTestKeeper) SetState(sdk.Context, common.Address, common.Hash, []byte) {}
-func (k *atomicTestKeeper) SetCode(sdk.Context, []byte, []byte)                       {}
+
+func (k *atomicTestKeeper) SetState(sdk.Context, common.Address, common.Hash, []byte) error {
+	return nil
+}
+func (k *atomicTestKeeper) SetCode(sdk.Context, []byte, []byte) error { return nil }
 
 // TestCommitAtomicity commits a dirty set sorted [credit, blocked, debit]. A
 // late failure on blocked must discard the whole commit, including credit,

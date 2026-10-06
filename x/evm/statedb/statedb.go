@@ -352,10 +352,23 @@ func (s *StateDB) AddPrecompileFn(addr common.Address, cms storetypes.CacheMulti
 		return fmt.Errorf("could not add precompile call to address %s. State object not found", addr)
 	}
 	stateObject.AddPrecompileFn(cms, events)
-	s.precompileCallsCounter++
-	if s.precompileCallsCounter > types.MaxPrecompileCalls {
+	return nil
+}
+
+// ReservePrecompileCall counts a stateful precompile call against
+// MaxPrecompileCalls, refusing it once the budget is spent.
+//
+// It is called before the call snapshots and flushes the StateDB, because that
+// is where the cost is - a deep copy of the cache context plus a write of the
+// whole dirty set - and the cost is paid whether the call then succeeds or
+// fails. Counting only successful calls let a transaction repeat failing calls
+// without bound. The counter never decreases, and checking before incrementing
+// keeps it at or below MaxPrecompileCalls, so it cannot wrap around.
+func (s *StateDB) ReservePrecompileCall() error {
+	if s.precompileCallsCounter >= types.MaxPrecompileCalls {
 		return fmt.Errorf("max calls to precompiles (%d) reached", types.MaxPrecompileCalls)
 	}
+	s.precompileCallsCounter++
 	return nil
 }
 
@@ -520,13 +533,8 @@ func (s *StateDB) Commit() error {
 		return nil
 	}
 
-	// stage writes here so a late failure leaves s.ctx untouched.
-	cacheCtx, writeCache := s.ctx.CacheContext()
-	if err := s.commitWithCtx(cacheCtx); err != nil {
-		return err
-	}
-	writeCache()
-	return nil
+	// commitWithCtx stages its writes itself, so a failure leaves s.ctx untouched.
+	return s.commitWithCtx(s.ctx)
 }
 
 // CommitWithCacheCtx writes the dirty states to keeper using the cacheCtx.
@@ -536,28 +544,48 @@ func (s *StateDB) CommitWithCacheCtx() error {
 	return s.commitWithCtx(s.cacheCtx)
 }
 
-// commitWithCtx writes the dirty states to keeper
-// using the provided context
+// commitWithCtx writes the dirty states to keeper using the provided context.
+//
+// The whole dirty-set walk is staged in a branch of ctx and promoted only if
+// every account commits. Writing straight into ctx was not atomic on two
+// levels: a failure partway through the loop left the accounts already written
+// in the store, and a single SetAccount -> SetBalance is itself a mint followed
+// by a send, so a mint into the evm module could persist while the matching
+// send to a blocked recipient (a static precompile address, a module account)
+// failed. Either way the committed ctx - here the precompile cacheCtx, which a
+// later successful tx flushes to disk - kept a mint that nothing balanced, i.e.
+// a native-coin inflation. Staging and promoting as a unit makes a failed flush
+// leave ctx, and the bank state it points at, untouched.
 func (s *StateDB) commitWithCtx(ctx sdk.Context) error {
+	branch, write := ctx.CacheContext()
 	for _, addr := range s.journal.sortedDirties() {
 		obj := s.stateObjects[addr]
 		if obj.suicided {
-			if err := s.keeper.DeleteAccount(ctx, obj.Address()); err != nil {
+			if err := s.keeper.DeleteAccount(branch, obj.Address()); err != nil {
 				return errorsmod.Wrapf(err, "failed to delete account %s", obj.Address())
 			}
 		} else {
 			if obj.code != nil && obj.dirtyCode {
-				s.keeper.SetCode(ctx, obj.CodeHash(), obj.code)
+				if err := s.keeper.SetCode(branch, obj.CodeHash(), obj.code); err != nil {
+					return errorsmod.Wrap(err, "failed to set code")
+				}
 			}
-			if err := s.keeper.SetAccount(ctx, obj.Address(), obj.account); err != nil {
+			if err := s.keeper.SetAccount(branch, obj.Address(), obj.account); err != nil {
 				return errorsmod.Wrap(err, "failed to set account")
 			}
 			for _, key := range obj.dirtyStorage.SortedKeys() {
 				valueBytes := obj.dirtyStorage[key].Bytes()
-				s.keeper.SetState(ctx, obj.Address(), key, valueBytes)
+				if err := s.keeper.SetState(branch, obj.Address(), key, valueBytes); err != nil {
+					return errorsmod.Wrap(err, "failed to set state")
+				}
 			}
 		}
 	}
+	// Promote the staged writes together with the events they emitted (bank
+	// mint/burn/transfer): write() re-emits branch's events on ctx's
+	// EventManager before writing the store, so they must not be emitted here
+	// as well.
+	write()
 	return nil
 }
 

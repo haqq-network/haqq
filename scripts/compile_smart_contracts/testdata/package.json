@@ -2,9 +2,10 @@
   "name": "haqq-contracts",
   "version": "1.0.0",
   "description": "A collection of smart contracts used in the development of the Haqq Network.",
+  "type": "module",
   "devDependencies": {
     "@openzeppelin/contracts": "^4.9.6",
-    "hardhat": "^2.22.2"
+    "hardhat": "^3.4.5"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

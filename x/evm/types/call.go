@@ -11,7 +11,9 @@ const (
 	Internal
 )
 
-// MaxPrecompileCalls is the maximum number of precompile
+// MaxPrecompileCalls is the maximum number of stateful precompile
 // calls within a transaction. We want to limit this because
-// for each precompile tx we're creating a cached context
+// each call snapshots the cached context and flushes the dirty
+// StateDB into it, so every call that gets past calldata
+// validation counts, whether it then succeeds or fails.
 const MaxPrecompileCalls uint8 = 7

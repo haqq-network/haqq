@@ -646,7 +646,28 @@ var _ = Describe("IBCTransfer Precompile", func() {
 			})
 
 			Context("without authorization", func() {
+				It("should refuse to auto-convert ERC20s held only as tokens", func() {
+					// the conversion would be a nested EVM call committing behind the
+					// transaction's StateDB, so a transfer from the EVM needs the coins
+					logCheckArgs := defaultLogCheck.WithErrContains("convert the ERC20 tokens to coins before transferring from the EVM")
+
+					_, _, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.network.App, defaultErc20TransferArgs, logCheckArgs)
+					Expect(err).To(HaveOccurred(), "the transfer must fail without coins")
+					s.chainA.NextBlock()
+
+					balance := s.network.App.Erc20Keeper.BalanceOf(
+						s.chainA.GetContext(),
+						haqqcontracts.ERC20MinterBurnerDecimalsContract.ABI,
+						erc20Addr,
+						s.keyring.GetAddr(0),
+					)
+					Expect(balance).To(Equal(sentAmount), "no tokens may be converted or escrowed")
+					coins := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), s.keyring.GetAddr(0).Bytes(), tokenPairDenom)
+					Expect(coins.IsZero()).To(BeTrue(), "no coins may be minted")
+				})
+
 				It("should transfer registered ERC20s", func() {
+					s.convertERC20ToCoins(erc20Addr, s.keyring.GetAddr(0), sentAmount)
 					preBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), s.keyring.GetAddr(0).Bytes(), s.bondDenom)
 
 					logCheckArgs := passCheck.WithExpEvents(ics20.EventTypeIBCTransfer)
@@ -674,6 +695,19 @@ var _ = Describe("IBCTransfer Precompile", func() {
 						s.keyring.GetAddr(0),
 					)
 					Expect(balance.Int64()).To(BeZero(), "address does not have the expected amount of tokens")
+
+					// the conversion escrowed the tokens with the erc20 module and the
+					// transfer the resulting coins with the IBC channel, exactly once
+					moduleBalance := s.network.App.Erc20Keeper.BalanceOf(
+						s.chainA.GetContext(),
+						haqqcontracts.ERC20MinterBurnerDecimalsContract.ABI,
+						erc20Addr,
+						erc20types.ModuleAddress,
+					)
+					Expect(moduleBalance).To(Equal(sentAmount), "erc20 module escrows the converted tokens")
+					escrow := transfertypes.GetEscrowAddress(s.transferPath.EndpointA.ChannelConfig.PortID, s.transferPath.EndpointA.ChannelID)
+					escrowed := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), escrow, tokenPairDenom)
+					Expect(escrowed.Amount.BigInt()).To(Equal(sentAmount), "the converted coins are escrowed for the packet")
 				})
 
 				It("should not transfer other account's balance", func() {
@@ -729,6 +763,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 				})
 
 				It("should succeed in transfer transaction but should error on packet destination if the receiver address is wrong", func() {
+					s.convertERC20ToCoins(erc20Addr, s.keyring.GetAddr(0), sentAmount)
 					preBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), s.keyring.GetAddr(0).Bytes(), s.bondDenom)
 					invalidReceiverAddr := "invalid_address"
 					transferArgs := defaultTransferArgs.WithArgs(
@@ -806,6 +841,7 @@ var _ = Describe("IBCTransfer Precompile", func() {
 				})
 
 				It("should succeed in transfer transaction but should timeout", func() {
+					s.convertERC20ToCoins(erc20Addr, s.keyring.GetAddr(0), sentAmount)
 					preBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), s.keyring.GetAddr(0).Bytes(), s.bondDenom)
 
 					logCheckArgs := passCheck.WithExpEvents(ics20.EventTypeIBCTransfer)
@@ -1600,7 +1636,28 @@ var _ = Describe("Calling ICS20 precompile from another contract", func() {
 					s.setTransferApprovalFromEOA(args)
 				})
 
+				It("should refuse to auto-convert the ERC-20 token", func() {
+					// A contract caller is the case the conversion could be exploited
+					// from: code running after the precompile read the pre-conversion
+					// balance and could spend the escrowed tokens again.
+					_, _, err := contracts.CallContractAndCheckLogs(s.chainA.GetContext(), s.network.App, defaultTransferERC20Args, execRevertedCheck)
+					Expect(err).To(HaveOccurred(), "the transfer must revert without coins")
+					s.chainA.NextBlock()
+
+					balance := s.network.App.Erc20Keeper.BalanceOf(
+						s.chainA.GetContext(),
+						haqqcontracts.ERC20MinterBurnerDecimalsContract.ABI,
+						erc20Addr,
+						s.keyring.GetAddr(0),
+					)
+					Expect(balance).To(Equal(sentAmount), "no tokens may be converted or escrowed")
+
+					authz, _ := s.network.App.AuthzKeeper.GetAuthorization(s.chainA.GetContext(), contractAddr.Bytes(), s.keyring.GetAddr(0).Bytes(), ics20.TransferMsgURL)
+					Expect(authz).ToNot(BeNil(), "the reverted transfer must not spend the allowance")
+				})
+
 				It("should transfer registered ERC-20 token", func() {
+					s.convertERC20ToCoins(erc20Addr, s.keyring.GetAddr(0), sentAmount)
 					initialBalance := s.network.App.BankKeeper.GetBalance(s.chainA.GetContext(), s.keyring.GetAddr(0).Bytes(), s.bondDenom)
 
 					logCheckArgs := passCheck.WithExpEvents(ics20.EventTypeIBCTransfer)

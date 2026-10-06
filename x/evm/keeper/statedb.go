@@ -72,8 +72,32 @@ func (k *Keeper) ForEachStorage(ctx sdk.Context, addr common.Address, cb func(ke
 	}
 }
 
+// refuseWriteFromPrecompile keeps code reached from a stateful precompile from
+// writing EVM state behind the back of the calling transaction's StateDB, which
+// would keep serving and finally re-commit the values it already holds (see
+// types.WithPrecompileContext). Such code has to write through the StateDB
+// attached to its context instead.
+//
+// The calling transaction's StateDB is unaffected: it flushes and commits on its
+// own contexts, which are never marked. A StateDB created by code running inside
+// a precompile is not: its context derives from the marked one, so its flushes
+// and its commit are refused as well. A committing nested EVM call is refused
+// before it starts (ApplyMessageWithConfig); a read-only one runs, but if it
+// reaches a stateful precompile while its dirty set is non-empty, that
+// precompile's flush is refused and the call fails. No precompile path makes
+// such a nested call today.
+func refuseWriteFromPrecompile(ctx sdk.Context, write string) error {
+	if !types.IsPrecompileContext(ctx) {
+		return nil
+	}
+	return errorsmod.Wrap(types.ErrPrecompileStateWrite, write)
+}
+
 // SetBalance update account's balance, compare with current balance first, then decide to mint or burn.
 func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.Int) error {
+	if err := refuseWriteFromPrecompile(ctx, "set balance of "+addr.Hex()); err != nil {
+		return err
+	}
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 
 	params := k.GetParams(ctx)
@@ -107,6 +131,9 @@ func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.In
 
 // SetAccount updates nonce/balance/codeHash together.
 func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account statedb.Account) error {
+	if err := refuseWriteFromPrecompile(ctx, "set account "+addr.Hex()); err != nil {
+		return err
+	}
 	// update account
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
@@ -190,7 +217,10 @@ func (k *Keeper) checkModuleAccountUnchanged(
 }
 
 // SetState update contract storage, delete if value is empty.
-func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash, value []byte) {
+func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash, value []byte) error {
+	if err := refuseWriteFromPrecompile(ctx, "set state of "+addr.Hex()); err != nil {
+		return err
+	}
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AddressStoragePrefix(addr))
 	action := "updated"
 	if len(value) == 0 {
@@ -204,10 +234,14 @@ func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash,
 		"ethereum-address", addr.Hex(),
 		"key", key.Hex(),
 	)
+	return nil
 }
 
 // SetCode set contract code, delete if code is empty.
-func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) {
+func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) error {
+	if err := refuseWriteFromPrecompile(ctx, "set code "+common.BytesToHash(codeHash).Hex()); err != nil {
+		return err
+	}
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixCode)
 
 	// store or delete code
@@ -222,6 +256,7 @@ func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) {
 		fmt.Sprintf("code %s", action),
 		"code-hash", common.BytesToHash(codeHash).Hex(),
 	)
+	return nil
 }
 
 // DeleteAccount handles contract's suicide call:
@@ -230,6 +265,9 @@ func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) {
 // - remove states
 // - remove auth account
 func (k *Keeper) DeleteAccount(ctx sdk.Context, addr common.Address) error {
+	if err := refuseWriteFromPrecompile(ctx, "delete account "+addr.Hex()); err != nil {
+		return err
+	}
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
@@ -248,10 +286,14 @@ func (k *Keeper) DeleteAccount(ctx sdk.Context, addr common.Address) error {
 	}
 
 	// clear storage
+	var err error
 	k.ForEachStorage(ctx, addr, func(key, _ common.Hash) bool {
-		k.SetState(ctx, addr, key, nil)
-		return true
+		err = k.SetState(ctx, addr, key, nil)
+		return err == nil
 	})
+	if err != nil {
+		return err
+	}
 
 	// remove auth account
 	k.accountKeeper.RemoveAccount(ctx, acct)

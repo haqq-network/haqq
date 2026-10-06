@@ -270,12 +270,13 @@ func (suite *KeeperTestSuite) TestQueryStorage() {
 				newIndex := suite.keyring.AddKey()
 				addr := suite.keyring.GetAddr(newIndex)
 
-				suite.network.App.EvmKeeper.SetState(
+				err := suite.network.App.EvmKeeper.SetState(
 					suite.network.GetContext(),
 					addr,
 					key,
 					value,
 				)
+				suite.Require().NoError(err)
 
 				req := &types.QueryStorageRequest{
 					Address: addr.String(),

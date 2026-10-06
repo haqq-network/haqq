@@ -28,6 +28,10 @@ SOLIDITY_SOURCE = "solidity"
 RELATIVE_TARGET = Path(HARDHAT_PROJECT_DIR) / SOLIDITY_SOURCE
 CONTRACTS_TARGET = REPO_PATH / RELATIVE_TARGET
 
+# The config files that mark a Hardhat project: Hardhat 3, which the contracts
+# directory uses, is configured in TypeScript; Hardhat 2 used JavaScript.
+HARDHAT_CONFIG_FILES: List[str] = ["hardhat.config.ts", "hardhat.config.js"]
+
 
 # This list contains all files that should be ignored when scanning the
 # repository for Solidity files.
@@ -201,7 +205,7 @@ def compile_contracts_in_dir(target_dir: Path):
 
     # Change to the root directory of the hardhat setup to compile.
     os.chdir(target_dir.parent)
-    if not os.path.exists("hardhat.config.js"):
+    if not any(os.path.exists(config) for config in HARDHAT_CONFIG_FILES):
         raise ValueError("compilation can only work in a HardHat setup")
 
     install_failed = os.system("npm install")

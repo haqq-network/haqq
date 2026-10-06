@@ -34,6 +34,7 @@ import (
 	testutiltx "github.com/haqq-network/haqq/testutil/tx"
 	"github.com/haqq-network/haqq/utils"
 	coinomicstypes "github.com/haqq-network/haqq/x/coinomics/types"
+	erc20types "github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
@@ -434,6 +435,18 @@ func (s *PrecompileTestSuite) setupERC20ContractTests(amount *big.Int) common.Ad
 	Expect(balance).To(Equal(amount), "address does not have the expected amount of tokens")
 
 	return erc20Addr
+}
+
+// convertERC20ToCoins converts `amount` of the native ERC20 tokens `owner` holds
+// into bank coins through MsgConvertERC20, outside of any EVM transaction. A
+// transfer made from inside the EVM no longer converts on the fly, so EVM callers
+// have to hold the coins already.
+func (s *PrecompileTestSuite) convertERC20ToCoins(erc20Addr, owner common.Address, amount *big.Int) {
+	_, err := s.network.App.Erc20Keeper.ConvertERC20(s.chainA.GetContext(), erc20types.NewMsgConvertERC20(
+		sdkmath.NewIntFromBigInt(amount), sdk.AccAddress(owner.Bytes()), erc20Addr, owner,
+	))
+	Expect(err).To(BeNil(), "error while converting ERC20 to coins: %v", err)
+	s.chainA.NextBlock()
 }
 
 // makePacket is a helper function to build the sent IBC packet
