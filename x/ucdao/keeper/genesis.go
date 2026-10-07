@@ -43,15 +43,24 @@ func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 }
 
-// ExportGenesis returns the bank module's genesis state.
+// ExportGenesis returns the ucdao module's genesis state.
+//
+// TotalBalance is the sum of the exported Balances, not the stored counter.
+// Balances are the bank balances of the holders' escrow accounts, and anyone can
+// credit an escrow with a plain transfer the counter never sees (see
+// TrackSubBalance) - in aISLM or in any other denom. InitGenesis rejects a total
+// that does not match the balances, so exporting the counter produced a genesis
+// this module refused to import once a single coin had been sent to a holder's
+// escrow. InitGenesis rebuilds the counter from the balances in any case.
 func (k BaseKeeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
-	gs := types.NewGenesisState(
-		k.GetParams(ctx),
-		k.GetAccountsBalances(ctx),
-		k.GetTotalBalance(ctx),
-	)
+	balances := k.GetAccountsBalances(ctx)
 
-	return gs
+	total := sdk.NewCoins()
+	for _, balance := range balances {
+		total = total.Add(balance.Coins...)
+	}
+
+	return types.NewGenesisState(k.GetParams(ctx), balances, total)
 }
 
 // initBalances sets the balance (multiple coins) for an account by address.

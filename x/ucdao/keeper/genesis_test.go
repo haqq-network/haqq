@@ -1,10 +1,13 @@
 package keeper_test
 
 import (
+	"fmt"
+
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/haqq-network/haqq/utils"
+	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
 )
 
@@ -217,4 +220,148 @@ func (suite *KeeperTestSuite) TestExportGenesisWithEmptyState() {
 	suite.Require().NotNil(genState)
 	suite.Require().Len(genState.Balances, 0)
 	suite.Require().True(genState.TotalBalance.IsZero())
+}
+
+// TestExportGenesisRoundTripsWithUntrackedEscrowCredit is the regression guard for
+// an export the module refused to import. The exported Balances are the bank
+// balances of the holders' escrows, while TotalBalance used to be the internal
+// counter. A plain bank transfer to a holder's escrow - aISLM, or a denom the
+// counter never tracks - moved the first and not the second, and InitGenesis
+// panicked with "genesis total balance is incorrect". The total is now derived
+// from the exported balances, so export -> import -> export is stable.
+func (suite *KeeperTestSuite) TestExportGenesisRoundTripsWithUntrackedEscrowCredit() {
+	suite.SetupTest()
+	ctx := suite.network.GetContext()
+	dao := suite.network.App.DaoKeeper
+	bank := suite.network.App.BankKeeper
+
+	holder := suite.keyring.GetAccAddr(0)
+	outsider := suite.keyring.GetAccAddr(1)
+
+	funded := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(1000))
+	islmDonation := sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(250))
+	haqqDonation := sdk.NewCoin(ethiqtypes.BaseDenom, sdkmath.NewInt(7))
+
+	suite.Require().NoError(suite.network.FundAccount(outsider, sdk.NewCoins(haqqDonation)))
+	suite.Require().NoError(dao.Fund(ctx, sdk.NewCoins(funded), holder))
+
+	// Credit the holder's escrow behind the module's back.
+	escrow := ucdaotypes.GetEscrowAddress(holder)
+	suite.Require().NoError(bank.SendCoins(ctx, outsider, escrow, sdk.NewCoins(islmDonation, haqqDonation)))
+	suite.Require().True(dao.GetTotalBalance(ctx).Equal(sdk.NewCoins(funded)), "the counter does not see the transfer")
+
+	exported := dao.ExportGenesis(ctx)
+	escrowCoins := sdk.NewCoins(funded.Add(islmDonation), haqqDonation)
+	suite.Require().Len(exported.Balances, 1)
+	suite.Require().True(exported.Balances[0].Coins.Equal(escrowCoins), exported.Balances[0].Coins.String())
+	suite.Require().True(exported.TotalBalance.Equal(escrowCoins), exported.TotalBalance.String())
+
+	// Import into a fresh chain whose bank holds the same escrow balance, as the
+	// exported bank genesis would.
+	suite.SetupTest()
+	ctx = suite.network.GetContext()
+	dao = suite.network.App.DaoKeeper
+	suite.Require().NoError(suite.network.FundAccount(escrow, escrowCoins))
+
+	suite.Require().NotPanics(func() { dao.InitGenesis(ctx, exported) })
+	suite.Require().True(dao.GetTotalBalance(ctx).Equal(escrowCoins), dao.GetTotalBalance(ctx).String())
+	suite.Require().Equal([]sdk.AccAddress{holder}, dao.GetHolders(ctx))
+
+	reexported := dao.ExportGenesis(ctx)
+	suite.Require().Equal(exported.Balances, reexported.Balances)
+	suite.Require().True(reexported.TotalBalance.Equal(exported.TotalBalance), reexported.TotalBalance.String())
+}
+
+// initGenesisPanic runs InitGenesis and returns the recovered panic message ("" if none).
+func (suite *KeeperTestSuite) initGenesisPanic(ctx sdk.Context, gs *ucdaotypes.GenesisState) (msg string) {
+	defer func() {
+		if r := recover(); r != nil {
+			msg = fmt.Sprint(r)
+		}
+	}()
+	suite.network.App.DaoKeeper.InitGenesis(ctx, gs)
+	return ""
+}
+
+// TestExportGenesisRoundTripsAfterClampedBurn covers the export after the counter has drifted
+// the other way. A plain transfer to a holder's escrow is invisible to the counter; burning it
+// through ConvertToHaqq then subtracts more than was counted, TrackSubBalance clamps the aISLM
+// counter to zero, and the remaining holder's aISLM is no longer in the counter at all. The
+// holder's aLIQUID1 keeps the old counter-based total non-empty, so InitGenesis validated it and
+// rejected the export. TotalBalance is now taken from the exported escrow balances.
+func (suite *KeeperTestSuite) TestExportGenesisRoundTripsAfterClampedBurn() {
+	suite.SetupTest()
+	ctx := suite.network.GetContext()
+	app := suite.network.App
+	dao := suite.getBaseKeeper() // concrete keeper, captured before freshCtx() swaps suite.network
+
+	holder := suite.keyring.GetAccAddr(0)    // legitimate holder, never touches the attack
+	converter := suite.keyring.GetAccAddr(1) // second holder whose escrow receives the untracked credit
+	outsider := suite.keyring.GetAccAddr(2)  // plain bank sender
+	receiver := suite.keyring.GetAccAddr(3)
+
+	unit := sdkmath.NewInt(1e18)
+	daoParams := ucdaotypes.DefaultParams()
+	daoParams.EnableDao = true
+	suite.Require().NoError(suite.getBaseKeeper().SetParams(ctx, daoParams))
+	ethiqParams := ethiqtypes.DefaultParams()
+	ethiqParams.Enabled = true
+	suite.Require().NoError(app.EthiqKeeper.SetParams(ctx, ethiqParams))
+
+	holderIslm := sdk.NewCoin(utils.BaseDenom, unit)
+	holderLiquid := sdk.NewCoin("aLIQUID1", sdkmath.NewInt(500))
+	converterIslm := sdk.NewCoin(utils.BaseDenom, sdkmath.OneInt())
+	donation := sdk.NewCoin(utils.BaseDenom, unit.MulRaw(5))
+
+	suite.Require().NoError(suite.network.FundAccount(holder, sdk.NewCoins(holderIslm, holderLiquid)))
+	suite.Require().NoError(suite.network.FundAccount(converter, sdk.NewCoins(converterIslm)))
+	suite.Require().NoError(suite.network.FundAccount(outsider, sdk.NewCoins(donation)))
+
+	// legitimate, tracked funding
+	suite.Require().NoError(dao.Fund(ctx, sdk.NewCoins(holderIslm, holderLiquid), holder))
+	suite.Require().NoError(dao.Fund(ctx, sdk.NewCoins(converterIslm), converter))
+	suite.Require().True(dao.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount.Equal(holderIslm.Amount.Add(converterIslm.Amount)))
+
+	// baseline: a clean export round-trips
+	clean := dao.ExportGenesis(ctx)
+	suite.Require().True(clean.TotalBalance.Equal(sdk.NewCoins(holderIslm.Add(converterIslm), holderLiquid)), clean.TotalBalance.String())
+	suite.Require().Empty(suite.initGenesisPanic(suite.freshCtx(), clean), "control: untampered export imports cleanly")
+
+	// untracked credit: an ordinary bank send to the converter's escrow address
+	converterEscrow := ucdaotypes.GetEscrowAddress(converter)
+	suite.Require().False(app.BankKeeper.BlockedAddr(converterEscrow), "escrow addresses accept plain MsgSend")
+	suite.Require().NoError(app.BankKeeper.SendCoins(ctx, outsider, converterEscrow, sdk.NewCoins(donation)))
+	suite.Require().True(dao.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount.Equal(holderIslm.Amount.Add(converterIslm.Amount)),
+		"counter did not see the donation")
+
+	// the counter has already diverged from the escrows, but the export must still import
+	diverged := dao.ExportGenesis(ctx)
+	suite.Require().Empty(suite.initGenesisPanic(suite.freshCtx(), diverged), "export after an untracked credit imports cleanly")
+
+	// burn path: converter spends everything its escrow holds; the counter only knew 1e18+1,
+	// the burn removes 5e18+1, so TrackSubBalance clamps aISLM to zero instead of panicking
+	burnAmt := converterIslm.Amount.Add(donation.Amount)
+	_, err := dao.ConvertToHaqq(ctx, converter, receiver, burnAmt)
+	suite.Require().NoError(err, "the clamp lets the over-counted burn succeed")
+
+	suite.Require().True(dao.GetTotalBalanceOf(ctx, utils.BaseDenom).Amount.IsZero(), "aISLM counter clamped to zero")
+	suite.Require().True(app.BankKeeper.GetBalance(ctx, converterEscrow, utils.BaseDenom).Amount.IsZero(), "donation fully burned")
+	suite.Require().False(dao.IsHolder(ctx, converter))
+	holderBalance := dao.GetBalance(ctx, holder, utils.BaseDenom)
+	suite.Require().True(holderBalance.Equal(holderIslm),
+		"the untouched holder still owns 1e18 aISLM in escrow that the counter no longer reflects")
+
+	exported := dao.ExportGenesis(ctx)
+	suite.Require().True(exported.TotalBalance.Equal(sdk.NewCoins(holderIslm, holderLiquid)),
+		"exported total follows the escrows, not the clamped counter: %s", exported.TotalBalance)
+	suite.Require().Len(exported.Balances, 1)
+	suite.Require().True(exported.Balances[0].Coins.Equal(sdk.NewCoins(holderIslm, holderLiquid)), exported.Balances[0].Coins.String())
+
+	suite.Require().Empty(suite.initGenesisPanic(suite.freshCtx(), exported), "the module imports its own export")
+}
+
+// freshCtx rebuilds the network and returns a context of a new chain to import into.
+func (suite *KeeperTestSuite) freshCtx() sdk.Context {
+	suite.SetupTest()
+	return suite.network.GetContext()
 }
