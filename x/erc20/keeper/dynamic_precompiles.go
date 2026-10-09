@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"slices"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -14,6 +15,7 @@ import (
 	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/erc20/types"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // RegisterERC20Extension creates and adds an ERC20 precompile interface for an IBC Coin.
@@ -45,10 +47,17 @@ func (k Keeper) RegisterERC20CodeHash(ctx sdk.Context, address common.Address) e
 		bytecode = common.FromHex(types.Erc20Bytecode)
 		codeHash = crypto.Keccak256(bytecode)
 	)
+
+	if evmtypes.IsPrecompileContext(ctx) {
+		return setCodeThroughStateDB(ctx, address, bytecode)
+	}
+
 	// check if code was already stored
 	code := k.evmKeeper.GetCode(ctx, common.Hash(codeHash))
 	if len(code) == 0 {
-		k.evmKeeper.SetCode(ctx, codeHash, bytecode)
+		if err := k.evmKeeper.SetCode(ctx, codeHash, bytecode); err != nil {
+			return err
+		}
 	}
 
 	var (
@@ -73,6 +82,10 @@ func (k Keeper) UnRegisterERC20CodeHash(ctx sdk.Context, erc20Address string) er
 	emptyCodeHash := crypto.Keccak256(nil)
 	contractAddr := common.HexToAddress(erc20Address)
 
+	if evmtypes.IsPrecompileContext(ctx) {
+		return setCodeThroughStateDB(ctx, contractAddr, nil)
+	}
+
 	var (
 		nonce   uint64
 		balance = common.Big0
@@ -88,6 +101,29 @@ func (k Keeper) UnRegisterERC20CodeHash(ctx sdk.Context, erc20Address string) er
 		Nonce:    nonce,
 		Balance:  balance,
 	})
+}
+
+// setCodeThroughStateDB sets the code of an ERC20 precompile account when the
+// change is made from inside a stateful precompile - a liquidation through the
+// liquid precompile enables a new ERC20 precompile, for instance.
+//
+// The account is EVM state the calling transaction's StateDB may already hold
+// in memory. Written to the cache context through the x/evm keeper, the
+// StateDB would re-commit its own copy over it; the keeper refuses that write
+// for the same reason. Written through the StateDB, the change is part of the
+// transaction's EVM state: its commit stores the code and the account, and its
+// journal reverts the change together with the precompile call.
+func setCodeThroughStateDB(ctx sdk.Context, address common.Address, code []byte) error {
+	stateDB, ok := evmtypes.PrecompileStateDBFromContext(ctx)
+	if !ok {
+		return errorsmod.Wrapf(evmtypes.ErrPrecompileStateWrite, "no StateDB to set the code of %s through", address)
+	}
+	// an account that already has this code needs no write
+	if stateDB.GetCodeHash(address) == crypto.Keccak256Hash(code) {
+		return nil
+	}
+	stateDB.SetCode(address, code)
+	return nil
 }
 
 // EnableDynamicPrecompiles appends the addresses of the given Precompiles to the list

@@ -10,6 +10,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
+	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -31,6 +32,7 @@ var f embed.FS
 type Precompile struct {
 	cmn.Precompile
 	stakingKeeper stakingkeeper.Keeper
+	distrKeeper   distributionkeeper.Keeper
 }
 
 // LoadABI loads the staking ABI from the embedded abi.json file
@@ -43,6 +45,7 @@ func LoadABI() (abi.ABI, error) {
 // PrecompiledContract interface.
 func NewPrecompile(
 	stakingKeeper stakingkeeper.Keeper,
+	distributionKeeper distributionkeeper.Keeper,
 	authzKeeper authzkeeper.Keeper,
 ) (*Precompile, error) {
 	abi, err := LoadABI()
@@ -59,6 +62,7 @@ func NewPrecompile(
 			ApprovalExpiration:   cmn.DefaultExpirationDuration, // should be configurable in the future.
 		},
 		stakingKeeper: stakingKeeper,
+		distrKeeper:   distributionKeeper,
 	}
 	// SetAddress defines the address of the staking precompiled contract.
 	p.SetAddress(common.HexToAddress(evmtypes.StakingPrecompileAddress))
@@ -101,14 +105,19 @@ func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 		func() ([]byte, error) {
 			switch method.Name {
 			// Authorization transactions
+			// NOTE: the granter is the immediate EVM caller, never evm.Origin. Calling a
+			// contract is not consent to let that contract create Cosmos grants for the
+			// transaction signer; binding the granter to the caller is what keeps a nested
+			// contract from approving itself on the signer's behalf. A direct EOA call is
+			// unaffected, since there caller == origin.
 			case authorization.ApproveMethod:
-				bz, err = p.Approve(ctx, evm.Origin, stateDB, method, args)
+				bz, err = p.Approve(ctx, contract.CallerAddress, stateDB, method, args)
 			case authorization.RevokeMethod:
-				bz, err = p.Revoke(ctx, evm.Origin, stateDB, method, args)
+				bz, err = p.Revoke(ctx, contract.CallerAddress, stateDB, method, args)
 			case authorization.IncreaseAllowanceMethod:
-				bz, err = p.IncreaseAllowance(ctx, evm.Origin, stateDB, method, args)
+				bz, err = p.IncreaseAllowance(ctx, contract.CallerAddress, stateDB, method, args)
 			case authorization.DecreaseAllowanceMethod:
-				bz, err = p.DecreaseAllowance(ctx, evm.Origin, stateDB, method, args)
+				bz, err = p.DecreaseAllowance(ctx, contract.CallerAddress, stateDB, method, args)
 			// Staking transactions
 			case CreateValidatorMethod:
 				bz, err = p.CreateValidator(ctx, evm.Origin, contract, stateDB, method, args)

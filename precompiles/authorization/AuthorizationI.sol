@@ -4,9 +4,16 @@ pragma solidity >=0.8.17;
 /// @author Evmos Team
 /// @title Authorization Interface
 /// @dev The interface through which solidity contracts will interact with smart contract approvals.
+///
+/// The granter of every authorization below is the immediate caller (msg.sender from
+/// the precompile's point of view), never tx.origin. An account therefore only ever
+/// grants, revokes and re-prices allowances over its own funds: a direct EOA call
+/// grants from that EOA, and a contract - including a contract wallet - grants from
+/// the contract. Calling a contract is not consent to let it authorize anything on
+/// behalf of the transaction signer.
 interface AuthorizationI {
     /// @dev Approves a list of Cosmos or IBC transactions with a specific amount of tokens.
-    /// @param grantee The contract address which will have an authorization to spend the origin funds.
+    /// @param grantee The contract address which will have an authorization to spend the caller's funds.
     /// @param amount The amount of tokens to be spent.
     /// @param methods The message type URLs of the methods to approve.
     /// @return approved Boolean value to indicate if the approval was successful.
@@ -16,7 +23,8 @@ interface AuthorizationI {
         string[] calldata methods
     ) external returns (bool approved);
 
-    /// @dev Revokes a list of Cosmos transactions.
+    /// @dev Revokes a list of Cosmos transactions. Only the caller's own grants are
+    /// affected, so a contract cannot revoke on behalf of the transaction signer.
     /// @param grantee The contract address which will have its allowances revoked.
     /// @param methods The message type URLs of the methods to revoke.
     /// @return revoked Boolean value to indicate if the revocation was successful.

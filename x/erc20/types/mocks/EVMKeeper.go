@@ -282,8 +282,21 @@ func (_m *EVMKeeper) SetAccount(ctx types.Context, address common.Address, accou
 }
 
 // SetCode provides a mock function with given fields: ctx, hash, bytecode
-func (_m *EVMKeeper) SetCode(ctx types.Context, hash []byte, bytecode []byte) {
-	_m.Called(ctx, hash, bytecode)
+func (_m *EVMKeeper) SetCode(ctx types.Context, hash []byte, bytecode []byte) error {
+	ret := _m.Called(ctx, hash, bytecode)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetCode")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(types.Context, []byte, []byte) error); ok {
+		r0 = rf(ctx, hash, bytecode)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // NewEVMKeeper creates a new instance of EVMKeeper. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

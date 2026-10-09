@@ -113,6 +113,17 @@ func (p Params) Validate() error {
 		return err
 	}
 
+	// The EVM denom is the coin SetBalance mints or burns when it reconciles a
+	// dirty EVM account against the bank on Commit. Every stateful precompile
+	// mirrors bank movements into the StateDB journal in terms of
+	// utils.BaseDenom, so the two must name the same coin: were they to drift
+	// apart, the mirrors would measure one denom while commit settles another
+	// and the difference would be silently minted or burned. Pin them together
+	// here rather than leaving the coupling implicit across the precompiles.
+	if p.EvmDenom != utils.BaseDenom {
+		return fmt.Errorf("evm denom must be the chain base denom %q, got %q", utils.BaseDenom, p.EvmDenom)
+	}
+
 	if err := validateEIPs(p.ExtraEIPs); err != nil {
 		return err
 	}

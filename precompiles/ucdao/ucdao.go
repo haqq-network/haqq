@@ -91,14 +91,19 @@ func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 		func() ([]byte, error) {
 			switch method.Name {
 			// Authorization Methods:
+			// NOTE: the granter is the immediate EVM caller, never evm.Origin. Calling a
+			// contract is not consent to let that contract create Cosmos grants for the
+			// transaction signer; binding the granter to the caller is what keeps a nested
+			// contract from approving itself on the signer's behalf. A direct EOA call is
+			// unaffected, since there caller == origin.
 			case authorization.ApproveMethod:
-				bz, err = p.Approve(ctx, evm.Origin, stateDB, method, args)
+				bz, err = p.Approve(ctx, contract.CallerAddress, stateDB, method, args)
 			case authorization.RevokeMethod:
-				bz, err = p.Revoke(ctx, evm.Origin, stateDB, method, args)
+				bz, err = p.Revoke(ctx, contract.CallerAddress, stateDB, method, args)
 			case authorization.IncreaseAllowanceMethod:
-				bz, err = p.IncreaseAllowance(ctx, evm.Origin, stateDB, method, args)
+				bz, err = p.IncreaseAllowance(ctx, contract.CallerAddress, stateDB, method, args)
 			case authorization.DecreaseAllowanceMethod:
-				bz, err = p.DecreaseAllowance(ctx, evm.Origin, stateDB, method, args)
+				bz, err = p.DecreaseAllowance(ctx, contract.CallerAddress, stateDB, method, args)
 			// Txs
 			case ConvertToHaqqMethod:
 				bz, err = p.ConvertToHaqq(ctx, evm.Origin, contract, stateDB, method, args)
@@ -133,12 +138,23 @@ func (p Precompile) Run(evm *vm.EVM, contract *vm.Contract, readOnly bool) (bz [
 }
 
 // IsTransaction checks if the given method name corresponds to a transaction or query.
-// All exposed ucdao methods are transactions.
+//
+// The authorization methods belong here even though they carry no value: they write
+// Cosmos authz grants. RunSetup's `readOnly && isTransaction(name)` check is the only
+// write protection a precompile gets - the interpreter cannot enforce it, since a
+// precompile does not execute opcodes - and on HAQQ every opcode except CALL hands the
+// precompile readOnly = true (CALLCODE, DELEGATECALL and STATICCALL all do, see
+// x/evm/core/vm/evm.go). Leaving them out let a STATICCALL create, change and delete
+// grants, and priced them as reads.
 func (Precompile) IsTransaction(method string) bool {
 	switch method {
 	case ConvertToHaqqMethod,
 		TransferOwnershipMethod,
-		TransferOwnershipWithAmountMethod:
+		TransferOwnershipWithAmountMethod,
+		authorization.ApproveMethod,
+		authorization.RevokeMethod,
+		authorization.IncreaseAllowanceMethod,
+		authorization.DecreaseAllowanceMethod:
 		return true
 	default:
 		return false

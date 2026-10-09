@@ -8,9 +8,8 @@ import (
 )
 
 // IsModuleEnabled checks if module enabled in params
-func (k Keeper) IsModuleEnabled(_ sdk.Context) bool {
-	// Explicitly turn off the module
-	return false
+func (k Keeper) IsModuleEnabled(ctx sdk.Context) bool {
+	return k.GetParams(ctx).Enabled
 }
 
 // GetParams returns the total set of ethiq parameters.
@@ -21,8 +20,13 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 }
 
 // SetParams sets the ethiq parameters to the param space.
-func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
+func (k Keeper) SetParams(ctx sdk.Context, params types.Params) error {
+	if err := params.Validate(); err != nil {
+		return err
+	}
+
 	k.paramStore.SetParamSet(ctx, &params)
+	return nil
 }
 
 // GetMaxSupply returns the value of MaxSupply param

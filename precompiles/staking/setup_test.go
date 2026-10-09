@@ -51,6 +51,7 @@ func (s *PrecompileTestSuite) SetupTest() {
 
 	if s.precompile, err = staking.NewPrecompile(
 		s.network.App.StakingKeeper,
+		s.network.App.DistrKeeper,
 		s.network.App.AuthzKeeper,
 	); err != nil {
 		panic(err)

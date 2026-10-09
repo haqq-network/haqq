@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
-	cmn "github.com/haqq-network/haqq/precompiles/common"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
@@ -76,6 +75,12 @@ func (p Precompile) CalculateForApplication(
 }
 
 // Allowance returns the remaining allowance of a grantee to the contract.
+//
+// Only MintHaqqAuthorization has a scalar allowance. An application-based grant holds a list of
+// approved application IDs, which does not fit the uint256 this method returns and must not be
+// squeezed into it: the same return value would then carry an aISLM amount for one message type
+// and a count for another, with nothing to tell them apart. Such a query is answered off chain
+// through the standard authz Grants query, which decodes the authorization in full.
 func (p Precompile) Allowance(
 	ctx sdk.Context,
 	method *abi.Method,
@@ -101,5 +106,9 @@ func (p Precompile) Allowance(
 		return method.Outputs.Pack(mintAuthz.SpendLimit.Amount.BigInt())
 	}
 
-	return nil, fmt.Errorf(cmn.ErrInvalidType, "ethiq authorization", &ethiqtypes.MintHaqqAuthorization{}, msgAuthz)
+	return nil, fmt.Errorf(
+		"allowance is only defined for %s; %s holds a list of application IDs, "+
+			"query it with cosmos.authz.v1beta1.Query/Grants",
+		MintHaqqMsgURL, msgTypeURL,
+	)
 }

@@ -271,6 +271,16 @@ func (k *Keeper) ApplyMessageWithConfig(
 		vmErr error  // vm errors do not effect consensus and are therefore not assigned to err
 	)
 
+	// A committing EVM call made from inside a stateful precompile writes storage
+	// through this fresh StateDB into the precompile's cache context, behind the
+	// back of the outer transaction's StateDB. That one keeps serving the
+	// pre-call values for the rest of the transaction and writes them back on
+	// its own commit, so the nested writes can be spent twice. Read-only calls
+	// (commit == false) write nothing and stay allowed.
+	if commit && types.IsPrecompileContext(ctx) {
+		return nil, errorsmod.Wrapf(types.ErrNestedEVMCommit, "call from %s to %v", msg.From(), msg.To())
+	}
+
 	stateDB := statedb.New(ctx, k, txConfig)
 	evm := k.NewEVM(ctx, msg, cfg, tracer, stateDB)
 

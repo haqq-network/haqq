@@ -83,11 +83,26 @@ func NewMsgSetWithdrawAddress(args []interface{}) (*distributiontypes.MsgSetWith
 	withdrawerAddress, _ := args[1].(string)
 
 	// If the withdrawer address is a hex address, convert it to a bech32 address.
+	// Otherwise it is taken as bech32 and must decode to exactly 20 bytes: Cosmos accepts
+	// addresses up to 255 bytes, and a longer withdraw address set from the EVM would send
+	// rewards to an account with no EVM representation, where nothing on the EVM side can
+	// recover them. Longer addresses stay legitimate on the Cosmos path and are not
+	// restricted there.
 	if common.IsHexAddress(withdrawerAddress) {
 		var err error
 		withdrawerAddress, err = sdk.Bech32ifyAddressBytes(config.Bech32Prefix, common.HexToAddress(withdrawerAddress).Bytes())
 		if err != nil {
 			return nil, common.Address{}, err
+		}
+	} else if withdrawerAddress != "" {
+		// An empty string is left to the msg server, which already rejects it with a
+		// clearer message than a bech32 decode failure.
+		bz, err := sdk.GetFromBech32(withdrawerAddress, config.Bech32Prefix)
+		if err != nil {
+			return nil, common.Address{}, err
+		}
+		if len(bz) != common.AddressLength {
+			return nil, common.Address{}, fmt.Errorf(ErrWithdrawAddressLength, withdrawerAddress)
 		}
 	}
 
@@ -132,9 +147,25 @@ func NewMsgWithdrawValidatorCommission(args []interface{}) (*distributiontypes.M
 		ValidatorAddress: validatorAddress,
 	}
 
-	validatorHexAddr, err := cmn.HexAddressFromBech32String(msg.ValidatorAddress)
+	// The operator address is decoded here only to derive the EVM address that
+	// WithdrawValidatorCommission compares the caller and the origin against, so it has to
+	// be exact. Cosmos accepts addresses up to 255 bytes, and keeping the trailing 20 bytes
+	// of a longer one would let the caller pick, byte for byte, which address the
+	// authorization check sees. Refuse instead: an operator address that is not 20 bytes
+	// has no EVM representation, and no validator on this chain has one.
+	//
+	// Parsing it as a validator address rather than sniffing the string for "val" also
+	// removes a second defect: the previous helper routed on
+	// strings.Contains(addr, sdk.PrefixValidator), and "val" is spellable in the bech32
+	// data part, so roughly one account address in a thousand was parsed as a validator.
+	valAddr, err := sdk.ValAddressFromBech32(validatorAddress)
 	if err != nil {
 		return nil, common.Address{}, err
+	}
+
+	validatorHexAddr, ok := cmn.EVMAddressFromCosmos(sdk.AccAddress(valAddr))
+	if !ok {
+		return nil, common.Address{}, fmt.Errorf(ErrValidatorAddressLength, validatorAddress)
 	}
 
 	return msg, validatorHexAddr, nil

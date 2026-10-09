@@ -20,9 +20,13 @@ import (
 )
 
 var (
-	differentAddress       = testutiltx.GenerateAddress()
-	amt              int64 = 1000000000000000000
-	expBal                 = "99997650000000000000000" // initial balance is 100000 ISLM (minus transfer, minus fees, etc.)
+	differentAddress = testutiltx.GenerateAddress()
+	// thirdPartyAddress is neither the calling contract nor the transaction signer, so a
+	// transfer naming it as the sender exercises the guard that keeps a caller from acting
+	// for an account that did not sign the transaction.
+	thirdPartyAddress       = testutiltx.GenerateAddress()
+	amt               int64 = 1000000000000000000
+	expBal                  = "99997650000000000000000" // initial balance is 100000 ISLM (minus transfer, minus fees, etc.)
 )
 
 func (s *PrecompileTestSuite) TestTransfer() {
@@ -141,13 +145,20 @@ func (s *PrecompileTestSuite) TestTransfer() {
 			"requested amount is more than spend limit",
 		},
 		{
-			"fail - transfer 1 ISLM from chainA to chainB from somebody else's account",
-			func(sender, receiver sdk.AccAddress) []interface{} {
+			// The name used to be wrong: the sender argument was the calling contract itself,
+			// so the contract was moving its own coins. Here the sender really is a third
+			// party -- neither the caller nor the transaction signer -- and it has even
+			// granted the caller a transfer authorization. The call must still be rejected,
+			// because the precompile requires the sender to have signed the transaction.
+			// That guard is what keeps a grant from being spent in a transaction its granter
+			// never authorized.
+			"fail - transfer 1 ISLM from somebody else's account, even holding their grant",
+			func(_, receiver sdk.AccAddress) []interface{} {
 				path := s.coordinator.Setup(s.chainA.ChainID, s.chainB.ChainID)
-				err := s.NewTransferAuthorization(ctx, s.network.App, common.BytesToAddress(sender), common.BytesToAddress(sender), path, defaultCoins, nil, []string{"memo"})
+				err := s.NewTransferAuthorization(ctx, s.network.App, callingContractAddr, thirdPartyAddress, path, defaultCoins, nil, []string{"memo"})
 				s.Require().NoError(err)
-				// fund another user's account
-				err = evmosutil.FundAccountWithBaseDenom(ctx, s.network.App.BankKeeper, differentAddress.Bytes(), amt)
+				// fund the third party's account
+				err = evmosutil.FundAccountWithBaseDenom(ctx, s.network.App.BankKeeper, thirdPartyAddress.Bytes(), amt)
 				s.Require().NoError(err)
 
 				return []interface{}{
@@ -155,27 +166,29 @@ func (s *PrecompileTestSuite) TestTransfer() {
 					path.EndpointA.ChannelID,
 					utils.BaseDenom,
 					big.NewInt(amt),
-					common.BytesToAddress(differentAddress.Bytes()),
+					thirdPartyAddress,
 					receiver.String(),
 					s.chainB.GetTimeoutHeight(),
 					uint64(0),
 					"memo",
 				}
 			},
-			func(sender, _ sdk.AccAddress, _ []byte, _ []interface{}) {
-				// The allowance is spent after the transfer thus the authorization is deleted
-				authz, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, sender, sender, ics20.TransferMsgURL)
-				transferAuthz := authz.(*transfertypes.TransferAuthorization)
-				s.Require().Equal(transferAuthz.Allocations[0].SpendLimit, defaultCoins)
+			func(_, _ sdk.AccAddress, _ []byte, _ []interface{}) {
+				// the third party's grant is neither consumed nor deleted
+				auth, _ := s.network.App.AuthzKeeper.GetAuthorization(ctx, callingContractAddr.Bytes(), thirdPartyAddress.Bytes(), ics20.TransferMsgURL)
+				s.Require().NotNil(auth, "the third party's grant must survive a rejected call")
+				transferAuthz, ok := auth.(*transfertypes.TransferAuthorization)
+				s.Require().True(ok)
+				s.Require().Equal(defaultCoins, transferAuthz.Allocations[0].SpendLimit)
 
-				// the balance on other user's account should remain unchanged
-				balance := s.network.App.BankKeeper.GetBalance(ctx, differentAddress.Bytes(), utils.BaseDenom)
-				s.Require().Equal(balance.Amount, math.NewInt(amt))
-				s.Require().Equal(balance.Denom, utils.BaseDenom)
+				// and their balance is untouched
+				balance := s.network.App.BankKeeper.GetBalance(ctx, thirdPartyAddress.Bytes(), utils.BaseDenom)
+				s.Require().Equal(math.NewInt(amt), balance.Amount)
+				s.Require().Equal(utils.BaseDenom, balance.Denom)
 			},
 			200000,
 			true,
-			"does not exist",
+			"is not the same as sender address",
 		},
 		{
 			"fail - transfer with memo string, but authorization does not allows it",

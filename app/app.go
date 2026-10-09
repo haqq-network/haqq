@@ -170,6 +170,7 @@ import (
 	v192 "github.com/haqq-network/haqq/app/upgrades/v1.9.2"
 	v193 "github.com/haqq-network/haqq/app/upgrades/v1.9.3"
 	v194 "github.com/haqq-network/haqq/app/upgrades/v1.9.4"
+	v196 "github.com/haqq-network/haqq/app/upgrades/v1.9.6"
 
 	// NOTE: override ICS20 keeper to support IBC transfers of ERC20 tokens
 	"github.com/haqq-network/haqq/x/ibc/transfer"
@@ -587,21 +588,19 @@ func NewHaqq(
 
 	// We call this after setting the hooks to ensure that the hooks are set on the keeper
 	evmKeeper.WithStaticPrecompiles(
-		vm.PrecompiledContractsBerlin,
-		// FIXME: temporary disable custom static precompiles
-		// evmkeeper.NewAvailableStaticPrecompiles(
-		//	*stakingKeeper,
-		//	app.DistrKeeper,
-		//	app.BankKeeper,
-		//	app.Erc20Keeper,
-		//	app.VestingKeeper,
-		//	app.AuthzKeeper,
-		//	app.TransferKeeper,
-		//	app.IBCKeeper.ChannelKeeper,
-		//	app.EthiqKeeper,
-		//	app.DaoKeeper,
-		//	app.LiquidVestingKeeper,
-		// ),
+		evmkeeper.NewAvailableStaticPrecompiles(
+			*stakingKeeper,
+			app.DistrKeeper,
+			app.BankKeeper,
+			app.Erc20Keeper,
+			app.VestingKeeper,
+			app.AuthzKeeper,
+			app.TransferKeeper,
+			app.IBCKeeper.ChannelKeeper,
+			app.EthiqKeeper,
+			app.DaoKeeper,
+			app.LiquidVestingKeeper,
+		),
 	)
 
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
@@ -950,7 +949,6 @@ func (app *Haqq) setAnteHandler(txConfig client.TxConfig, maxGasWanted uint64) {
 		SigGasConsumer:         ante.SigVerificationGasConsumer,
 		MaxTxGasWanted:         maxGasWanted,
 		TxFeeChecker:           ethante.NewDynamicFeeChecker(app.EvmKeeper),
-		BlockedAccounts:        blockedAccounts,
 	}
 
 	if err := options.Validate(); err != nil {
@@ -1308,6 +1306,20 @@ func (app *Haqq) setupUpgradeHandlers() {
 	app.UpgradeKeeper.SetUpgradeHandler(
 		v194.UpgradeName,
 		v194.CreateUpgradeHandler(app.mm, app.configurator, app.EvmKeeper),
+	)
+
+	// v1.9.6 Re-enable precompiles, burn funds of frozen accounts and lift the freeze
+	app.UpgradeKeeper.SetUpgradeHandler(
+		v196.UpgradeName,
+		v196.CreateUpgradeHandler(app.mm, app.configurator, v196.Keepers{
+			AccountKeeper:  app.AccountKeeper,
+			BankKeeper:     app.BankKeeper,
+			StakingKeeper:  app.StakingKeeper,
+			DistrKeeper:    app.DistrKeeper,
+			AuthzKeeper:    app.AuthzKeeper,
+			FeeGrantKeeper: app.FeeGrantKeeper,
+			DaoKeeper:      app.DaoKeeper,
+		}),
 	)
 
 	// When a planned update height is reached, the old binary will panic

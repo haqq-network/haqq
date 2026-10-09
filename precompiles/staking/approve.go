@@ -34,7 +34,7 @@ var (
 // Returns a boolean value indicating whether the operation succeeded.
 func (p Precompile) Approve(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -55,7 +55,7 @@ func (p Precompile) Approve(
 			if err != nil {
 				return nil, errorsmod.Wrap(err, fmt.Sprintf(cmn.ErrInvalidMsgType, "staking", typeURL))
 			}
-			if err = p.grantOrDeleteStakingAuthz(ctx, grantee, origin, coin, authzType); err != nil {
+			if err = p.grantOrDeleteStakingAuthz(ctx, grantee, granter, coin, authzType); err != nil {
 				return nil, err
 			}
 		default:
@@ -67,18 +67,18 @@ func (p Precompile) Approve(
 
 	// TODO: do we want to emit one approval for all typeUrls, or one approval for each typeUrl?
 	// NOTE: This might have gas implications as we are emitting a slice of strings
-	if err := p.EmitApprovalEvent(ctx, stateDB, grantee, origin, coin, typeURLs); err != nil {
+	if err := p.EmitApprovalEvent(ctx, stateDB, grantee, granter, coin, typeURLs); err != nil {
 		return nil, err
 	}
 	return method.Outputs.Pack(true)
 }
 
 // Revoke removes the authorization grants given in the typeUrls for a given granter to a given grantee.
-// It only works if the origin matches the spender to avoid unauthorized revocations.
+// The granter is the immediate EVM caller, so an account can only revoke its own grants.
 // Works only for staking messages.
 func (p Precompile) Revoke(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -91,7 +91,7 @@ func (p Precompile) Revoke(
 	for _, typeURL := range typeURLs {
 		switch typeURL {
 		case DelegateMsg, UndelegateMsg, RedelegateMsg, CancelUnbondingDelegationMsg:
-			if err = p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), origin.Bytes(), typeURL); err != nil {
+			if err = p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), granter.Bytes(), typeURL); err != nil {
 				return nil, err
 			}
 		default:
@@ -108,7 +108,7 @@ func (p Precompile) Revoke(
 		ContractAddr:   p.Address(),
 		ContractEvents: p.ABI.Events,
 		EventData: authorization.EventRevocation{
-			Granter:  origin,
+			Granter:  granter,
 			Grantee:  grantee,
 			TypeUrls: typeURLs,
 		},
@@ -122,7 +122,7 @@ func (p Precompile) Revoke(
 // DecreaseAllowance decreases the allowance of grantee over the caller’s tokens by the amount.
 func (p Precompile) DecreaseAllowance(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -136,10 +136,18 @@ func (p Precompile) DecreaseAllowance(
 		return nil, err
 	}
 
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
+		return nil, err
+	}
+
 	for _, typeURL := range typeUrls {
 		switch typeURL {
 		case DelegateMsg, UndelegateMsg, RedelegateMsg, CancelUnbondingDelegationMsg:
-			authzGrant, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, origin, typeURL)
+			authzGrant, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, typeURL)
 			if err != nil {
 				return nil, err
 			}
@@ -149,7 +157,7 @@ func (p Precompile) DecreaseAllowance(
 				return nil, errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *types.StakeAuthorization, received: %T", authzGrant)
 			}
 
-			if err = p.decreaseAllowance(ctx, grantee, origin, coin, stakeAuthz, expiration); err != nil {
+			if err = p.decreaseAllowance(ctx, grantee, granter, coin, stakeAuthz, expiration); err != nil {
 				return nil, err
 			}
 		default:
@@ -159,7 +167,7 @@ func (p Precompile) DecreaseAllowance(
 		}
 	}
 
-	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, origin, typeUrls); err != nil {
+	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, granter, typeUrls); err != nil {
 		return nil, err
 	}
 
@@ -169,7 +177,7 @@ func (p Precompile) DecreaseAllowance(
 // IncreaseAllowance increases the allowance of grantee over the caller’s tokens by the amount.
 func (p Precompile) IncreaseAllowance(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -183,10 +191,18 @@ func (p Precompile) IncreaseAllowance(
 		return nil, err
 	}
 
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
+		return nil, err
+	}
+
 	for _, typeURL := range typeUrls {
 		switch typeURL {
 		case DelegateMsg, UndelegateMsg, RedelegateMsg:
-			if err = p.increaseAllowance(ctx, grantee, origin, coin, typeURL); err != nil {
+			if err = p.increaseAllowance(ctx, grantee, granter, coin, typeURL); err != nil {
 				return nil, err
 			}
 		default:
@@ -195,7 +211,7 @@ func (p Precompile) IncreaseAllowance(
 			return nil, fmt.Errorf(cmn.ErrInvalidMsgType, "staking", typeURL)
 		}
 	}
-	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, origin, typeUrls); err != nil {
+	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, granter, typeUrls); err != nil {
 		return nil, err
 	}
 
@@ -287,6 +303,12 @@ func (p Precompile) decreaseAllowance(
 	stakeAuthz *stakingtypes.StakeAuthorization,
 	expiration *time.Time,
 ) error {
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and every branch below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
+		return err
+	}
+
 	// If the authorization has no limit, no operation is performed
 	if stakeAuthz.MaxTokens == nil {
 		p.Logger(ctx).Debug("decreaseAllowance called with no limit (stakeAuthz.MaxTokens == nil): no-op")
@@ -313,6 +335,12 @@ func (p Precompile) increaseAllowance(
 	coin *sdk.Coin,
 	msgURL string,
 ) error {
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and the addition below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
+		return err
+	}
+
 	// Check if the authorization exists for the given spender
 	existingAuthz, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, msgURL)
 	if err != nil {
@@ -331,8 +359,13 @@ func (p Precompile) increaseAllowance(
 		return nil
 	}
 
-	// Add the amount to the limit
-	stakeAuthz.MaxTokens.Amount = stakeAuthz.MaxTokens.Amount.Add(coin.Amount)
+	// Add the amount to the limit, rejecting a sum that does not fit in sdkmath.Int
+	// instead of panicking inside Int.Add.
+	newLimit, err := authorization.AddAllowance(stakeAuthz.MaxTokens.Amount, coin.Amount)
+	if err != nil {
+		return err
+	}
+	stakeAuthz.MaxTokens.Amount = newLimit
 
 	return p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), stakeAuthz, expiration)
 }

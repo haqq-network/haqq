@@ -30,6 +30,14 @@ func MigrateStore(
 	store := ctx.KVStore(storeKey)
 
 	paramsV6Bz := store.Get(types.KeyPrefixParams)
+	// MustUnmarshal accepts nil bytes and yields a zero-value V6Params, which would be
+	// written back as an empty parameter set. Refuse instead: a chain reaching this
+	// migration necessarily had v6 params, so an empty key means the store is not what
+	// this migration was written for. Phrased against the input, this check is frozen -
+	// unlike Params.Validate below, it cannot change meaning in a later release.
+	if len(paramsV6Bz) == 0 {
+		return fmt.Errorf("no v6 evm params found under %X; nothing to migrate", types.KeyPrefixParams)
+	}
 	cdc.MustUnmarshal(paramsV6Bz, &paramsV6)
 
 	params.EvmDenom = paramsV6.EvmDenom
@@ -70,10 +78,26 @@ func MigrateStore(
 		params.ExtraEIPs = append(params.ExtraEIPs, eipName)
 	}
 
-	if err := params.Validate(); err != nil {
-		return err
-	}
-
+	// NOTE: deliberately no params.Validate() here.
+	//
+	// A migration is a frozen transcript of what the live chain executed at the upgrade
+	// height, and a node replaying the chain has to reach the same verdict the canonical
+	// run did. Params.Validate() cannot give that guarantee: its rule set belongs to the
+	// current binary and grows over time - it consults the live EIP activator table and
+	// the live fork-ordering rules, and this release added a check pinning EvmDenom to
+	// the chain base denom. Calling it here would let a later release turn a block that
+	// once succeeded into a halt during replay.
+	//
+	// Everything written below is copied from V6Params the chain already accepted, plus
+	// types.DefaultAccessControl and a mechanical rename of the ExtraEIPs. On every chain
+	// that has run this upgrade the validation provably passed, so re-running it can only
+	// ever change the answer, never improve it. Validation belongs where params are
+	// written by someone - Keeper.SetParams, which genesis, gov and the precompile
+	// toggles all go through.
+	//
+	// The one thing Validate() did catch here that the copy does not - an empty store,
+	// which used to surface as `invalid denom: ""` - is now checked against the input
+	// above, where it belongs.
 	bz := cdc.MustMarshal(&params)
 
 	store.Set(types.KeyPrefixParams, bz)

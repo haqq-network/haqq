@@ -122,7 +122,8 @@ func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, fromAddress sdk.
 		return sdkmath.ZeroInt(), sdk.AccAddress{}, errorsmod.Wrapf(types.ErrInvalidAddress, "application ID %d can be executed by %s; got %s", application.Id, applicationFromAddress.String(), fromAddress.String())
 	}
 
-	// use UCDAO escrow address if needed
+	// Owner address is the ucDAO holder; burn itself runs against the derived escrow.
+	ownerAddress := fromAddress
 	if isUcdao {
 		fromAddress = ucdaotypes.GetEscrowAddress(fromAddress)
 	}
@@ -163,13 +164,29 @@ func (k Keeper) BurnIslmForHaqqByApplicationID(ctx sdk.Context, fromAddress sdk.
 		return sdkmath.ZeroInt(), sdk.AccAddress{}, errorsmod.Wrapf(types.ErrMintCoins, "%v", err)
 	}
 
+	// ConvertToHaqq tracks the burned aISLM and refreshes the holders index; application
+	// burns from a UCDAO escrow must do the same or QueryTotalBalance / GetHolders drift.
+	if isUcdao {
+		k.ucdaoKeeper.TrackSubBalance(ctx, sdk.NewCoin(utils.BaseDenom, islmCoinsToBurn.Amount))
+		k.ucdaoKeeper.SetHoldersIndex(ctx, ownerAddress)
+	}
+
 	k.SetApplicationAsExecuted(ctx, appID)
 
-	// Emit event
+	// Emit event.
+	//
+	// sender is the application owner. For a UCDAO application the coins leave the derived
+	// escrow account, which is reported separately: indexers should not have to recompute
+	// sha256 over the module name to map the event back to a user.
+	escrowAttribute := ""
+	if isUcdao {
+		escrowAttribute = fromAddress.String()
+	}
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeMintByApplicationIDExecuted,
-			sdk.NewAttribute(types.AttributeKeySender, fromAddress.String()),
+			sdk.NewAttribute(types.AttributeKeySender, ownerAddress.String()),
+			sdk.NewAttribute(types.AttributeKeyApplicationEscrow, escrowAttribute),
 			sdk.NewAttribute(types.AttributeKeyReceiver, toAddress.String()),
 			sdk.NewAttribute(types.AttributeKeyHaqqMinted, haqqAmount.String()),
 			sdk.NewAttribute(types.AttributeKeyIslmSpent, islmCoinsToBurn.Amount.String()),

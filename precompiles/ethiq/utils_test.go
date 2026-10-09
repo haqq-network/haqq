@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
@@ -22,6 +23,7 @@ import (
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	"github.com/haqq-network/haqq/precompiles/testutil"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/factory"
+	"github.com/haqq-network/haqq/utils"
 	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
@@ -71,7 +73,13 @@ func (s *PrecompileTestSuite) SetupApproval(
 	)
 }
 
-// SetupApprovalWithContractCalls is a helper function used to setup the allowance for the given spender.
+// SetupApprovalWithContractCalls makes the calling contract create the allowance
+// through the precompile.
+//
+// The granter is the contract itself, not the account that signed the transaction:
+// grant creation is bound to the immediate EVM caller. Use SetupApprovalFromEOA
+// when a test goes on to burn/mint the signer's funds -- a contract can no longer
+// mint that grant on the signer's behalf.
 func (s *PrecompileTestSuite) SetupApprovalWithContractCalls(
 	granter testkeyring.Key,
 	txArgs evmtypes.EvmTxArgs,
@@ -103,7 +111,8 @@ func (s *PrecompileTestSuite) SetupApprovalWithContractCalls(
 		authzMintByApp *ethiqtypes.MintHaqqByApplicationIDAuthorization
 	)
 	for _, msgType := range msgTypes {
-		authz, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, msgType, *txArgs.To, granter.Addr)
+		// The contract created the grant, so the contract is the granter.
+		authz, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, msgType, *txArgs.To, *txArgs.To)
 		Expect(err).To(BeNil())
 		Expect(authz).ToNot(BeNil(), "expected authorization to be set")
 
@@ -178,4 +187,52 @@ func CheckAuthorization(gh grpc.Handler, ir cdctypes.InterfaceRegistry, msgTypeU
 	}
 
 	return auth, expGrant.Expiration, nil
+}
+
+// SetupApprovalFromEOA creates the same allowance as SetupApprovalWithContractCalls,
+// but with the transaction signer as the granter, which is what a contract needs in
+// order to burn and mint that signer's funds.
+//
+// The signer has to issue it directly -- here through the keeper, the way the unit
+// tests do it -- because the precompile binds grant creation to the immediate EVM
+// caller.
+func (s *PrecompileTestSuite) SetupApprovalFromEOA(
+	granter testkeyring.Key,
+	txArgs evmtypes.EvmTxArgs,
+	approvalArgs factory.CallArgs,
+) {
+	grantee := *txArgs.To
+
+	msgTypes, ok := approvalArgs.Args[1].([]string)
+	Expect(ok).To(BeTrue(), "failed to convert msgTypes to []string")
+	expAmount, ok := approvalArgs.Args[2].(*big.Int)
+	Expect(ok).To(BeTrue(), "failed to convert amount to big.Int")
+
+	spendLimit := &sdk.Coin{Denom: utils.BaseDenom, Amount: sdkmath.NewIntFromBigInt(expAmount)}
+	expiration := s.network.GetContext().BlockTime().Add(time.Hour).UTC()
+
+	for _, msgType := range msgTypes {
+		var grant authz.Authorization
+		switch msgType {
+		case ethiq.MintHaqqMsgURL:
+			grant = &ethiqtypes.MintHaqqAuthorization{SpendLimit: spendLimit}
+		case ethiq.MsgMintHaqqByApplicationMsgURL:
+			// This authorization carries an application-ID allowlist, not a spend limit;
+			// an empty list permits any application id.
+			grant = &ethiqtypes.MintHaqqByApplicationIDAuthorization{}
+		default:
+			Expect(fmt.Errorf("unknown ethiq message type: %s", msgType)).To(BeNil())
+		}
+
+		Expect(s.network.App.AuthzKeeper.SaveGrant(
+			s.network.GetContext(), grantee.Bytes(), granter.AccAddr, grant, &expiration,
+		)).To(BeNil(), "error while creating the authorization")
+	}
+	Expect(s.network.NextBlock()).To(BeNil())
+
+	for _, msgType := range msgTypes {
+		auth, _, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, msgType, grantee, granter.Addr)
+		Expect(err).To(BeNil())
+		Expect(auth).ToNot(BeNil(), "expected the signer to own the grant")
+	}
 }

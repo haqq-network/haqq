@@ -89,7 +89,19 @@ func NewRedeemMsg(args []interface{}) (*liquidtypes.MsgRedeem, common.Address, c
 		return nil, common.Address{}, common.Address{}, fmt.Errorf(ErrInvalidAmount, args[3])
 	}
 
-	coin := sdk.NewCoin(denom, math.NewIntFromBigInt(amount))
+	// The denom arrives straight from calldata, and sdk.NewCoin panics on anything the denom
+	// regex rejects. That panic is raised before ValidateBasic, before the origin/sender check
+	// and before the authz check, so any caller can reach it with no grant and no balance, and
+	// it escapes cmn.HandleGasError - which re-raises everything that is not ErrorOutOfGas -
+	// so RunAtomic never gets to revert. Validate first and fail the call the ordinary way.
+	if err := sdk.ValidateDenom(denom); err != nil {
+		return nil, common.Address{}, common.Address{}, fmt.Errorf(ErrInvalidDenom, denom)
+	}
+
+	coin := sdk.Coin{Denom: denom, Amount: math.NewIntFromBigInt(amount)}
+	if err := coin.Validate(); err != nil {
+		return nil, common.Address{}, common.Address{}, fmt.Errorf(ErrInvalidAmount, amount)
+	}
 
 	msg := &liquidtypes.MsgRedeem{
 		RedeemFrom: sdk.AccAddress(from.Bytes()).String(),

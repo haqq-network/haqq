@@ -25,9 +25,8 @@ func (k BaseKeeper) SetParams(ctx sdk.Context, params types.Params) error {
 	return nil
 }
 
-func (k BaseKeeper) IsLiquidVestingEnabled(_ sdk.Context) bool {
-	// Explicitly turn off the module
-	return false
+func (k BaseKeeper) IsLiquidVestingEnabled(ctx sdk.Context) bool {
+	return k.GetParams(ctx).EnableLiquidVesting
 }
 
 func (k BaseKeeper) SetLiquidVestingEnabled(ctx sdk.Context, enable bool) {

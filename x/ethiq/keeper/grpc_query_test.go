@@ -116,7 +116,7 @@ func (suite *KeeperTestSuite) TestCalculateGRPC() {
 			malleate: func(ctx sdk.Context) {
 				p := s.network.App.EthiqKeeper.GetParams(ctx)
 				p.Enabled = false
-				s.network.App.EthiqKeeper.SetParams(ctx, p)
+				suite.Require().NoError(s.network.App.EthiqKeeper.SetParams(ctx, p))
 			},
 			expErr:      true,
 			errContains: "module is disabled",
@@ -298,6 +298,42 @@ func (suite *KeeperTestSuite) TestGetApplicationsGRPC() {
 			expTotal: 0,
 			expErr:   false,
 		},
+		{
+			// The limit is not capped, matching query.Paginate in every other module. An
+			// oversized limit is answered with the remainder of the list, never rejected,
+			// and can never allocate or return more than the waitlist holds.
+			name: "success - limit far above the list length returns the whole list",
+			req: &ethiqtypes.QueryGetApplicationsRequest{
+				Pagination: &query.PageRequest{
+					Limit: ethiqtypes.TotalNumberOfApplications() * 1000,
+				},
+			},
+			expLen:   ethiqtypes.TotalNumberOfApplications(),
+			expTotal: 0,
+			expErr:   false,
+		},
+		{
+			name: "success - oversized limit past an offset returns only the remainder",
+			req: &ethiqtypes.QueryGetApplicationsRequest{
+				Pagination: &query.PageRequest{
+					Limit:  1_000_000,
+					Offset: ethiqtypes.TotalNumberOfApplications() - 3,
+				},
+			},
+			expLen:   3,
+			expTotal: 0,
+			expErr:   false,
+		},
+		{
+			name: "fail - key-based pagination is not supported",
+			req: &ethiqtypes.QueryGetApplicationsRequest{
+				Pagination: &query.PageRequest{
+					Key: []byte("some-key"),
+				},
+			},
+			expErr:      true,
+			errContains: "key-based pagination is not supported",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -397,6 +433,29 @@ func (suite *KeeperTestSuite) TestGetSendersApplicationsGRPC() {
 			expLen:   0,
 			expTotal: 0,
 			expErr:   false,
+		},
+		{
+			name: "success - limit far above the sender's list returns all of it",
+			req: &ethiqtypes.QueryGetSendersApplicationsRequest{
+				SenderAddress: knownSender,
+				Pagination: &query.PageRequest{
+					Limit: 1_000_000,
+				},
+			},
+			expLen:   ethiqtypes.TotalNumberOfApplicationsBySender(knownSender),
+			expTotal: 0,
+			expErr:   false,
+		},
+		{
+			name: "fail - key-based pagination is not supported",
+			req: &ethiqtypes.QueryGetSendersApplicationsRequest{
+				SenderAddress: knownSender,
+				Pagination: &query.PageRequest{
+					Key: []byte("some-key"),
+				},
+			},
+			expErr:      true,
+			errContains: "key-based pagination is not supported",
 		},
 	}
 

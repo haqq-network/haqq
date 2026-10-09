@@ -83,6 +83,7 @@ func (s *PrecompileTestSuite) fundAccountWithBaseDenom(ctx sdk.Context, addr sdk
 func (s *PrecompileTestSuite) getStakingPrecompile() (*staking.Precompile, error) {
 	return staking.NewPrecompile(
 		s.network.App.StakingKeeper,
+		s.network.App.DistrKeeper,
 		s.network.App.AuthzKeeper,
 	)
 }

@@ -345,7 +345,7 @@ func (suite *KeeperTestSuite) TestKeeperSetCode() {
 			baseAcc := suite.network.App.AccountKeeper.NewAccountWithAddress(suite.network.GetContext(), addr.Bytes())
 			suite.network.App.AccountKeeper.SetAccount(suite.network.GetContext(), baseAcc)
 			ctx := suite.network.GetContext()
-			suite.network.App.EvmKeeper.SetCode(ctx, tc.codeHash, tc.code)
+			suite.Require().NoError(suite.network.App.EvmKeeper.SetCode(ctx, tc.codeHash, tc.code))
 			key := suite.network.App.GetKey(types.StoreKey)
 			store := prefix.NewStore(ctx.KVStore(key), types.KeyPrefixCode)
 			code := store.Get(tc.codeHash)

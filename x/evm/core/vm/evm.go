@@ -340,7 +340,10 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 
 	// It is allowed to call precompiles, even via delegatecall
 	if p, isPrecompile := evm.Precompile(addr); isPrecompile {
-		ret, gas, err = evm.RunPrecompiledContract(p, caller, input, gas, nil, true)
+		// A delegatecall transfers no value. Pass zero, as StaticCall does, rather
+		// than nil: stateful precompiles read the value to route empty calldata, and
+		// a nil value panicked there and aborted the whole transaction.
+		ret, gas, err = evm.RunPrecompiledContract(p, caller, input, gas, new(big.Int), true)
 	} else {
 		addrCopy := addr
 		// Initialise a new contract and make initialise the delegate values

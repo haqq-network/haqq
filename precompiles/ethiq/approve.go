@@ -10,17 +10,17 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/haqq-network/haqq/utils"
 
 	"github.com/haqq-network/haqq/precompiles/authorization"
 	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/utils"
 	ethiqtypes "github.com/haqq-network/haqq/x/ethiq/types"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 )
 
 func (p Precompile) Approve(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -33,7 +33,7 @@ func (p Precompile) Approve(
 	for _, typeURL := range typeURLs {
 		switch typeURL {
 		case MintHaqqMsgURL:
-			if err = p.grantOrDeleteMintHaqqAuthz(ctx, grantee, origin, coin, typeURL); err != nil {
+			if err = p.grantOrDeleteMintHaqqAuthz(ctx, grantee, granter, coin, typeURL); err != nil {
 				return nil, err
 			}
 		default:
@@ -41,7 +41,7 @@ func (p Precompile) Approve(
 		}
 	}
 
-	if err := p.EmitApprovalEvent(ctx, stateDB, grantee, origin, coin, typeURLs); err != nil {
+	if err := p.EmitApprovalEvent(ctx, stateDB, grantee, granter, coin, typeURLs); err != nil {
 		return nil, err
 	}
 	return method.Outputs.Pack(true)
@@ -49,12 +49,12 @@ func (p Precompile) Approve(
 
 func (p Precompile) ApproveApplicationID(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
 ) ([]byte, error) {
-	grantee, applicationID, methods, err := checkApproveApplicationIDArgs(args)
+	grantee, appID, methods, err := checkApplicationIDArgs(args)
 	if err != nil {
 		return nil, err
 	}
@@ -65,11 +65,10 @@ func (p Precompile) ApproveApplicationID(
 		}
 	}
 
-	appID := applicationID.Uint64()
 	appIDs := []uint64{appID}
 	// Application-based authz is keyed by message type URL, so we merge with an existing grant
 	// instead of overwriting it when approveApplicationID is called multiple times.
-	if existingAuthz, _ := p.AuthzKeeper.GetAuthorization(ctx, grantee.Bytes(), origin.Bytes(), MsgMintHaqqByApplicationMsgURL); existingAuthz != nil {
+	if existingAuthz, _ := p.AuthzKeeper.GetAuthorization(ctx, grantee.Bytes(), granter.Bytes(), MsgMintHaqqByApplicationMsgURL); existingAuthz != nil {
 		existingMintByAppAuthz, ok := existingAuthz.(*ethiqtypes.MintHaqqByApplicationIDAuthorization)
 		if !ok {
 			return nil, errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *ethiqtypes.MintHaqqByApplicationIDAuthorization, received: %T", existingAuthz)
@@ -99,20 +98,35 @@ func (p Precompile) ApproveApplicationID(
 	}
 
 	expiration := ctx.BlockTime().Add(p.ApprovalExpiration).UTC()
-	if err = p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), origin.Bytes(), authz, &expiration); err != nil {
+	if err = p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), authz, &expiration); err != nil {
 		return nil, err
 	}
 
-	if err := p.EmitApprovalEvent(ctx, stateDB, grantee, origin, nil, methods); err != nil {
+	if err := p.EmitApprovalEvent(ctx, stateDB, grantee, granter, nil, methods); err != nil {
+		return nil, err
+	}
+
+	if err := p.EmitApplicationIDApprovalEvent(ctx, stateDB, grantee, granter, appID, appIDs); err != nil {
 		return nil, err
 	}
 
 	return method.Outputs.Pack(true)
 }
 
+// Revoke deletes whole grants by message type URL.
+//
+// It accepts MsgMintHaqqByApplication as well, even though the matching grant can only be
+// created through approveApplicationID: approving needs type-specific data (which application),
+// revoking does not. Without it there would be no single call that drops an application grant -
+// only revokeApplicationID one ID at a time, which is useless when a grantee has to be cut off
+// at once. The staking precompile treats all four of its message types the same way.
+//
+// DeleteGrant is not type-aware, so this is also the only way to clear a grant of a foreign
+// authorization type (a GenericAuthorization placed under the same URL by a Cosmos MsgGrant),
+// which approveApplicationID and revokeApplicationID both refuse to touch.
 func (p Precompile) Revoke(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -124,8 +138,10 @@ func (p Precompile) Revoke(
 
 	for _, typeURL := range typeURLs {
 		switch typeURL {
-		case MintHaqqMsgURL:
-			if err = p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), origin.Bytes(), typeURL); err != nil {
+		case MintHaqqMsgURL, MsgMintHaqqByApplicationMsgURL:
+			// DeleteGrant fails when there is no such grant, and the precompile call is atomic,
+			// so a list naming one missing type URL reverts the whole revocation.
+			if err = p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), granter.Bytes(), typeURL); err != nil {
 				return nil, err
 			}
 		default:
@@ -139,7 +155,7 @@ func (p Precompile) Revoke(
 		ContractAddr:   p.Address(),
 		ContractEvents: p.ABI.Events,
 		EventData: authorization.EventRevocation{
-			Granter:  origin,
+			Granter:  granter,
 			Grantee:  grantee,
 			TypeUrls: typeURLs,
 		},
@@ -152,12 +168,12 @@ func (p Precompile) Revoke(
 
 func (p Precompile) RevokeApplicationID(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
 ) ([]byte, error) {
-	grantee, methods, err := checkRevokeApplicationIDArgs(args)
+	grantee, appID, methods, err := checkApplicationIDArgs(args)
 	if err != nil {
 		return nil, err
 	}
@@ -166,22 +182,63 @@ func (p Precompile) RevokeApplicationID(
 		if methodURL != MsgMintHaqqByApplicationMsgURL {
 			return nil, fmt.Errorf(cmn.ErrInvalidMsgType, "ethiq", methodURL)
 		}
-		if err = p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), origin.Bytes(), methodURL); err != nil {
+	}
+
+	existingAuthz, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, MsgMintHaqqByApplicationMsgURL)
+	if err != nil {
+		return nil, err
+	}
+
+	existingMintByAppAuthz, ok := existingAuthz.(*ethiqtypes.MintHaqqByApplicationIDAuthorization)
+	if !ok {
+		return nil, errorsmod.Wrapf(authz.ErrUnknownAuthorizationType, "expected: *ethiqtypes.MintHaqqByApplicationIDAuthorization, received: %T", existingAuthz)
+	}
+
+	remaining := make([]uint64, 0, len(existingMintByAppAuthz.ApplicationsList))
+	found := false
+	for _, existingAppID := range existingMintByAppAuthz.ApplicationsList {
+		if existingAppID == appID {
+			found = true
+			continue
+		}
+		remaining = append(remaining, existingAppID)
+	}
+	if !found {
+		return nil, fmt.Errorf("application ID %d is not in allow list", appID)
+	}
+
+	if len(remaining) == 0 {
+		if err = p.AuthzKeeper.DeleteGrant(ctx, grantee.Bytes(), granter.Bytes(), MsgMintHaqqByApplicationMsgURL); err != nil {
+			return nil, err
+		}
+
+		// Revocation states that the grant is gone, so it is emitted only when it actually is.
+		// A partial revoke leaves the grant in place and is reported by ApplicationIDRevocation
+		// alone - see the event semantics note in events.go.
+		if err = authorization.EmitRevocationEvent(cmn.EmitEventArgs{
+			Ctx:            ctx,
+			StateDB:        stateDB,
+			ContractAddr:   p.Address(),
+			ContractEvents: p.ABI.Events,
+			EventData: authorization.EventRevocation{
+				Granter:  granter,
+				Grantee:  grantee,
+				TypeUrls: methods,
+			},
+		}); err != nil {
+			return nil, err
+		}
+	} else {
+		updated := &ethiqtypes.MintHaqqByApplicationIDAuthorization{ApplicationsList: remaining}
+		if err = updated.ValidateBasic(); err != nil {
+			return nil, err
+		}
+		if err = p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), updated, expiration); err != nil {
 			return nil, err
 		}
 	}
 
-	if err = authorization.EmitRevocationEvent(cmn.EmitEventArgs{
-		Ctx:            ctx,
-		StateDB:        stateDB,
-		ContractAddr:   p.Address(),
-		ContractEvents: p.ABI.Events,
-		EventData: authorization.EventRevocation{
-			Granter:  origin,
-			Grantee:  grantee,
-			TypeUrls: methods,
-		},
-	}); err != nil {
+	if err = p.EmitApplicationIDRevocationEvent(ctx, stateDB, grantee, granter, appID, remaining); err != nil {
 		return nil, err
 	}
 
@@ -191,7 +248,7 @@ func (p Precompile) RevokeApplicationID(
 // IncreaseAllowance implements the ethiq increase allowance transactions.
 func (p Precompile) IncreaseAllowance(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -201,10 +258,18 @@ func (p Precompile) IncreaseAllowance(
 		return nil, err
 	}
 
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
+		return nil, err
+	}
+
 	for _, typeURL := range typeURLs {
 		switch typeURL {
 		case MintHaqqMsgURL:
-			if err = p.increaseMintHaqqAllowance(ctx, grantee, origin, coin, typeURL); err != nil {
+			if err = p.increaseMintHaqqAllowance(ctx, grantee, granter, coin, typeURL); err != nil {
 				return nil, err
 			}
 		default:
@@ -212,7 +277,7 @@ func (p Precompile) IncreaseAllowance(
 		}
 	}
 
-	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, origin, typeURLs); err != nil {
+	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, granter, typeURLs); err != nil {
 		return nil, err
 	}
 
@@ -222,7 +287,7 @@ func (p Precompile) IncreaseAllowance(
 // DecreaseAllowance implements the ethiq decrease allowance transactions.
 func (p Precompile) DecreaseAllowance(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -232,10 +297,18 @@ func (p Precompile) DecreaseAllowance(
 		return nil, err
 	}
 
+	// Reject the unlimited sentinel up front: CheckApprovalArgs returns a nil coin
+	// for MaxUint256, and increasing or decreasing a finite limit by "unlimited"
+	// has no meaning. Doing it here makes the error independent of whether the
+	// grant exists.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
+		return nil, err
+	}
+
 	for _, typeURL := range typeURLs {
 		switch typeURL {
 		case MintHaqqMsgURL:
-			if err = p.decreaseMintHaqqAllowance(ctx, grantee, origin, coin, typeURL); err != nil {
+			if err = p.decreaseMintHaqqAllowance(ctx, grantee, granter, coin, typeURL); err != nil {
 				return nil, err
 			}
 		default:
@@ -243,7 +316,7 @@ func (p Precompile) DecreaseAllowance(
 		}
 	}
 
-	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, origin, typeURLs); err != nil {
+	if err := p.EmitAllowanceChangeEvent(ctx, stateDB, grantee, granter, typeURLs); err != nil {
 		return nil, err
 	}
 
@@ -307,6 +380,12 @@ func (p Precompile) increaseMintHaqqAllowance(
 	coin *sdk.Coin,
 	msgURL string,
 ) error {
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and the addition below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.IncreaseAllowanceMethod); err != nil {
+		return err
+	}
+
 	existingAuthz, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, msgURL)
 	if err != nil {
 		return err
@@ -323,8 +402,13 @@ func (p Precompile) increaseMintHaqqAllowance(
 		return nil
 	}
 
-	// Add the amount to the limit
-	mintAuthz.SpendLimit.Amount = mintAuthz.SpendLimit.Amount.Add(coin.Amount)
+	// Add the amount to the limit, rejecting a sum that does not fit in sdkmath.Int
+	// instead of panicking inside Int.Add.
+	newLimit, err := authorization.AddAllowance(mintAuthz.SpendLimit.Amount, coin.Amount)
+	if err != nil {
+		return err
+	}
+	mintAuthz.SpendLimit.Amount = newLimit
 
 	return p.AuthzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), mintAuthz, expiration)
 }
@@ -336,6 +420,12 @@ func (p Precompile) decreaseMintHaqqAllowance(
 	coin *sdk.Coin,
 	msgURL string,
 ) error {
+	// Reject the unlimited sentinel before touching coin: CheckApprovalArgs returns
+	// a nil coin for MaxUint256 and every branch below dereferences it.
+	if err := authorization.RequireLimitedAmount(coin, authorization.DecreaseAllowanceMethod); err != nil {
+		return err
+	}
+
 	existingAuthz, expiration, err := authorization.CheckAuthzExists(ctx, p.AuthzKeeper, grantee, granter, msgURL)
 	if err != nil {
 		return err
@@ -455,45 +545,31 @@ func (p Precompile) EmitAllowanceChangeEvent(ctx sdk.Context, stateDB vm.StateDB
 	return nil
 }
 
-// checkApproveApplicationIDArgs checks and parses arguments for approveApplicationID.
-func checkApproveApplicationIDArgs(args []interface{}) (common.Address, *big.Int, []string, error) {
+// checkApplicationIDArgs checks and parses the arguments of approveApplicationID and
+// revokeApplicationID, which share the (address grantee, uint256 applicationId, string[] methods)
+// signature declared in EthiqI.sol and abi.json.
+func checkApplicationIDArgs(args []interface{}) (common.Address, uint64, []string, error) {
 	if len(args) != 3 {
-		return common.Address{}, nil, nil, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 3, len(args))
+		return common.Address{}, 0, nil, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 3, len(args))
 	}
 
 	grantee, ok := args[0].(common.Address)
 	if !ok {
-		return common.Address{}, nil, nil, fmt.Errorf("invalid grantee address: %v", args[0])
+		return common.Address{}, 0, nil, fmt.Errorf("invalid grantee address: %v", args[0])
 	}
 
-	appID, ok := args[1].(*big.Int)
-	if !ok || appID == nil {
-		return common.Address{}, nil, nil, fmt.Errorf("invalid application ID: %v", args[1])
+	appID, err := ParseApplicationID(args[1])
+	if err != nil {
+		return common.Address{}, 0, nil, err
 	}
 
 	methods, ok := args[2].([]string)
 	if !ok {
-		return common.Address{}, nil, nil, fmt.Errorf("invalid methods: %v", args[2])
+		return common.Address{}, 0, nil, fmt.Errorf("invalid methods: %v", args[2])
+	}
+	if len(methods) == 0 {
+		return common.Address{}, 0, nil, fmt.Errorf("methods array cannot be empty")
 	}
 
 	return grantee, appID, methods, nil
-}
-
-// checkRevokeApplicationIDArgs checks and parses arguments for revokeApplicationID.
-func checkRevokeApplicationIDArgs(args []interface{}) (common.Address, []string, error) {
-	if len(args) != 2 {
-		return common.Address{}, nil, fmt.Errorf(cmn.ErrInvalidNumberOfArgs, 2, len(args))
-	}
-
-	grantee, ok := args[0].(common.Address)
-	if !ok {
-		return common.Address{}, nil, fmt.Errorf("invalid grantee address: %v", args[0])
-	}
-
-	methods, ok := args[1].([]string)
-	if !ok {
-		return common.Address{}, nil, fmt.Errorf("invalid methods: %v", args[1])
-	}
-
-	return grantee, methods, nil
 }

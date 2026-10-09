@@ -15,7 +15,7 @@ import (
 // Approve implements the ICS20 approve transactions.
 func (p Precompile) Approve(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -32,7 +32,7 @@ func (p Precompile) Approve(
 		p.channelKeeper,
 		p.Address(),
 		grantee,
-		origin,
+		granter,
 		p.ApprovalExpiration,
 		transferAuthz,
 		p.ABI.Events[authorization.EventTypeIBCTransferAuthorization],
@@ -47,7 +47,7 @@ func (p Precompile) Approve(
 // Revoke implements the ICS20 authorization revoke transactions.
 func (p Precompile) Revoke(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -63,7 +63,7 @@ func (p Precompile) Revoke(
 		p.AuthzKeeper,
 		p.Address(),
 		grantee,
-		origin,
+		granter,
 		p.ABI.Events[authorization.EventTypeIBCTransferAuthorization],
 		stateDB,
 	); err != nil {
@@ -76,7 +76,7 @@ func (p Precompile) Revoke(
 // IncreaseAllowance implements the ICS20 increase allowance transactions.
 func (p Precompile) IncreaseAllowance(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -92,7 +92,7 @@ func (p Precompile) IncreaseAllowance(
 		p.AuthzKeeper,
 		p.Address(),
 		grantee,
-		origin,
+		granter,
 		sourcePort,
 		sourceChannel,
 		denom,
@@ -109,7 +109,7 @@ func (p Precompile) IncreaseAllowance(
 // DecreaseAllowance implements the ICS20 decrease allowance transactions.
 func (p Precompile) DecreaseAllowance(
 	ctx sdk.Context,
-	origin common.Address,
+	granter common.Address,
 	stateDB vm.StateDB,
 	method *abi.Method,
 	args []interface{},
@@ -125,7 +125,7 @@ func (p Precompile) DecreaseAllowance(
 		p.AuthzKeeper,
 		p.Address(),
 		grantee,
-		origin,
+		granter,
 		sourcePort,
 		sourceChannel,
 		denom,

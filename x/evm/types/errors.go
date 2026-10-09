@@ -31,6 +31,8 @@ const (
 	codeErrInactivePrecompile
 	codeErrABIPack
 	codeErrABIUnpack
+	codeErrNestedEVMCommit
+	codeErrPrecompileStateWrite
 )
 
 var (
@@ -87,6 +89,14 @@ var (
 
 	// ErrABIUnpack returns an error if the contract ABI unpacking fails
 	ErrABIUnpack = errorsmod.Register(ModuleName, codeErrABIUnpack, "contract ABI unpack failed")
+
+	// ErrNestedEVMCommit returns an error if a stateful precompile tries to run and
+	// commit a nested EVM call
+	ErrNestedEVMCommit = errorsmod.Register(ModuleName, codeErrNestedEVMCommit, "nested EVM commit from a precompile is not allowed")
+
+	// ErrPrecompileStateWrite returns an error if code reached from a stateful
+	// precompile writes EVM state through the keeper instead of the StateDB
+	ErrPrecompileStateWrite = errorsmod.Register(ModuleName, codeErrPrecompileStateWrite, "EVM state write from a precompile must go through the StateDB")
 )
 
 // NewExecErrorWithReason unpacks the revert return bytes and returns a wrapped error

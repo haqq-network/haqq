@@ -4,14 +4,17 @@ import (
 	"context"
 	"strings"
 
+	errorsmod "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/hashicorp/go-metrics"
 
 	erc20types "github.com/haqq-network/haqq/x/erc20/types"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 var _ types.MsgServer = Keeper{}
@@ -83,6 +86,18 @@ func (k Keeper) Transfer(goCtx context.Context, msg *types.MsgTransfer) (*types.
 		}()
 
 		return k.Keeper.Transfer(ctx, msg)
+	}
+
+	// Converting runs the ERC20 transfer as a nested EVM call. From inside the ICS20
+	// precompile that call would commit storage the calling transaction's StateDB
+	// never sees, letting the same tokens be escrowed here and spent again by the
+	// caller. EVM callers must hold the Cosmos coins before transferring.
+	if evmtypes.IsPrecompileContext(ctx) {
+		return nil, errorsmod.Wrapf(
+			errortypes.ErrInsufficientFunds,
+			"%s balance %s is less than %s; convert the ERC20 tokens to coins before transferring from the EVM",
+			pair.Denom, balance.Amount, msg.Token.Amount,
+		)
 	}
 
 	// Only convert if the pair is a native ERC20

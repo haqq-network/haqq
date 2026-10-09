@@ -15,6 +15,7 @@ import (
 
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	"github.com/haqq-network/haqq/x/evm/statedb"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 )
 
 // Precompile is a common struct for all precompiles that holds the common data each
@@ -46,6 +47,25 @@ type balanceChangeEntry struct {
 
 func NewBalanceChangeEntry(acc common.Address, amt *big.Int, op Operation) balanceChangeEntry { //nolint:revive
 	return balanceChangeEntry{acc, amt, op}
+}
+
+// EVMAddressFromCosmos maps a Cosmos account address onto its EVM address,
+// reporting whether such a mapping exists at all.
+//
+// Cosmos permits account addresses longer than 20 bytes - ADR-028 derived
+// accounts, interchain accounts among them, are 32 bytes - and
+// common.BytesToAddress silently keeps only the trailing 20 bytes of a longer
+// input. That turns a user-chosen wide address into a user-chosen EVM address,
+// which is the shape behind the withdraw-address truncation bug.
+//
+// An account that is not exactly 20 bytes has no EVM representation at all.
+// Every boundary that converts a Cosmos address into an EVM one must go through
+// this function and handle ok == false rather than truncate.
+func EVMAddressFromCosmos(addr sdk.AccAddress) (common.Address, bool) {
+	if len(addr) != common.AddressLength {
+		return common.Address{}, false
+	}
+	return common.BytesToAddress(addr), true
 }
 
 // snapshot contains all state and events previous to the precompile call
@@ -94,6 +114,23 @@ func (p Precompile) RunSetup(
 		return sdk.Context{}, nil, s, nil, uint64(0), nil, errors.New(ErrNotRunInEvm)
 	}
 
+	// Reject a call that cannot run before touching any state. The snapshot and
+	// flush below are the expensive part of every precompile call - a deep copy
+	// of the cache context and a write of the whole dirty set - and an unknown
+	// selector costs no gas at all (RequiredGas returns 0), so doing them first
+	// let a contract buy that work for the price of a bare CALL. These checks
+	// read nothing but the calldata.
+	method, args, err = p.resolveCall(contract, readOnly, isTransaction)
+	if err != nil {
+		return sdk.Context{}, nil, s, nil, uint64(0), nil, err
+	}
+
+	// A call that gets this far pays for the snapshot and flush whether or not it
+	// then succeeds, so it counts against MaxPrecompileCalls either way.
+	if err := stateDB.ReservePrecompileCall(); err != nil {
+		return sdk.Context{}, nil, s, nil, uint64(0), nil, err
+	}
+
 	// get the stateDB cache ctx
 	ctx, err = stateDB.GetCacheContext()
 	if err != nil {
@@ -105,12 +142,43 @@ func (p Precompile) RunSetup(
 	s.MultiStore = stateDB.MultiStoreSnapshot()
 	s.Events = ctx.EventManager().Events()
 
-	// commit the current changes in the cache ctx
-	// to get the updated state for the precompile call
+	// commit the current changes in the cache ctx to get the updated state for
+	// the precompile call. The flush is atomic: on error it leaves the cache ctx
+	// as it was.
 	if err := stateDB.CommitWithCacheCtx(); err != nil {
 		return sdk.Context{}, nil, s, nil, uint64(0), nil, err
 	}
 
+	// From here on the cache ctx carries the flushed dirty set, and only the
+	// precompileCall journal entry (appended by AddJournalEntries on success),
+	// RunAtomic or HandleGasError can undo it. Nothing below may fail outside
+	// their reach: HandleGasError covers the gas meter set up here.
+	initialGas := ctx.GasMeter().GasConsumed()
+
+	defer HandleGasError(ctx, contract, initialGas, &err, stateDB, s)()
+
+	// set the default SDK gas configuration to track gas usage
+	// we are changing the gas meter type, so it panics gracefully when out of gas
+	ctx = ctx.WithGasMeter(storetypes.NewGasMeter(contract.Gas)).
+		WithKVGasConfig(p.KvGasConfig).
+		WithTransientKVGasConfig(p.TransientKVGasConfig)
+	// mark the context so code reached from the precompile writes EVM state
+	// through the calling StateDB rather than behind its back
+	ctx = evmtypes.WithPrecompileContext(ctx, stateDB)
+	// we need to consume the gas that was already used by the EVM
+	ctx.GasMeter().ConsumeGas(initialGas, "creating a new gas meter")
+
+	return ctx, stateDB, s, method, initialGas, args, nil
+}
+
+// resolveCall picks the ABI method the calldata addresses, rejects a state
+// change requested from a read-only frame and decodes the arguments. It only
+// reads the calldata.
+func (p Precompile) resolveCall(
+	contract *vm.Contract,
+	readOnly bool,
+	isTransaction func(name string) bool,
+) (method *abi.Method, args []interface{}, err error) {
 	// NOTE: This is a special case where the calling transaction does not specify a function name.
 	// In this case we default to a `fallback` or `receive` function on the contract.
 
@@ -134,36 +202,23 @@ func (p Precompile) RunSetup(
 	}
 
 	if err != nil {
-		return sdk.Context{}, nil, s, nil, uint64(0), nil, err
+		return nil, nil, err
 	}
 
 	// return error if trying to write to state during a read-only call
 	if readOnly && isTransaction(method.Name) {
-		return sdk.Context{}, nil, s, nil, uint64(0), nil, vm.ErrWriteProtection
+		return nil, nil, vm.ErrWriteProtection
 	}
 
 	// if the method type is `function` continue looking for arguments
 	if method.Type == abi.Function {
-		argsBz := contract.Input[4:]
-		args, err = method.Inputs.Unpack(argsBz)
+		args, err = method.Inputs.Unpack(contract.Input[4:])
 		if err != nil {
-			return sdk.Context{}, nil, s, nil, uint64(0), nil, err
+			return nil, nil, err
 		}
 	}
 
-	initialGas := ctx.GasMeter().GasConsumed()
-
-	defer HandleGasError(ctx, contract, initialGas, &err, stateDB, s)()
-
-	// set the default SDK gas configuration to track gas usage
-	// we are changing the gas meter type, so it panics gracefully when out of gas
-	ctx = ctx.WithGasMeter(storetypes.NewGasMeter(contract.Gas)).
-		WithKVGasConfig(p.KvGasConfig).
-		WithTransientKVGasConfig(p.TransientKVGasConfig)
-	// we need to consume the gas that was already used by the EVM
-	ctx.GasMeter().ConsumeGas(initialGas, "creating a new gas meter")
-
-	return ctx, stateDB, s, method, initialGas, args, nil
+	return method, args, nil
 }
 
 // HandleGasError handles the out of gas panic by resetting the gas meter and returning an error.

@@ -40,7 +40,10 @@ func (tf *stakingTxFactory) Delegate(delegatorPriv cryptotypes.PrivKey, validato
 	// set gas and gas prices to pay the same fees
 	// every time this function is called
 	feesToPay := math.NewInt(1e16)
-	gas := uint64(400_000)
+	// Headroom over the ~401k a delegation actually costs today. 500k also divides feesToPay
+	// evenly, so gasPrice does not truncate and the fee stays exactly feesToPay - callers
+	// asserting an exact fee deduction keep working.
+	gas := uint64(500_000)
 	gasPrice := feesToPay.QuoRaw(int64(gas)) //#nosec G115 -- gas will not exceed int64
 
 	res, err := tf.CommitCosmosTx(delegatorPriv, CosmosTxArgs{

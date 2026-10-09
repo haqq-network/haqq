@@ -92,5 +92,20 @@ func (p Precompile) Bech32ToHex(
 		return nil, err
 	}
 
-	return method.Outputs.Pack(common.BytesToAddress(addressBz))
+	// VerifyAddressFormat only rejects empty addresses and anything above
+	// address.MaxAddrLen (255), so it lets 32-byte ADR-028 / interchain accounts
+	// through. common.BytesToAddress would keep their trailing 20 bytes and return
+	// an address the input never encoded - and those trailing bytes are chosen by
+	// whoever supplied the string. A contract that uses this helper to derive a
+	// payout target from user input would pay the attacker. Refuse instead: an
+	// address that is not exactly 20 bytes has no EVM representation.
+	hexAddr, ok := cmn.EVMAddressFromCosmos(addressBz)
+	if !ok {
+		return nil, fmt.Errorf(
+			"bech32 address %s decodes to %d bytes and has no EVM representation; only %d-byte addresses can be converted",
+			address, len(addressBz), common.AddressLength,
+		)
+	}
+
+	return method.Outputs.Pack(hexAddr)
 }

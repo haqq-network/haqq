@@ -15,7 +15,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	sdkauthz "github.com/cosmos/cosmos-sdk/x/authz"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/haqq-network/haqq/precompiles/liquid"
@@ -74,10 +73,6 @@ func (s *liquidSafeSuite) setupNetwork(kr keyring.Keyring) {
 var smartContractVestingTotalIntegration = sdk.NewCoins(
 	sdk.NewCoin(utils.BaseDenom, sdkmath.NewInt(3000).MulRaw(1e18)),
 )
-
-func ptrTime(t time.Time) *time.Time {
-	return &t
-}
 
 // createClawbackVestingAccountForSmartContract converts an existing smart
 // contract account into a ClawbackVestingAccount for integration tests.
@@ -382,28 +377,31 @@ var _ = Describe("Liquid Vesting precompile with Gnosis Safe (smart contract wal
 			Expect(ownerTwoFinal.Balance.Amount).To(Equal(islmOwnerTwoBaseline),
 				"owner2 balance must be unchanged by the native vesting wrap")
 
-			// 7) Authorize Safe to call MsgLiquidate and MsgRedeem on behalf of
-			//    owner1.
+			// 7) No authorization is granted, and that is the point of this step.
 			//
-			// The precompile requires authz whenever the EVM caller (Safe)
-			// differs from tx origin (owner1). Grant it natively here so the
-			// tested action remains the Safe EVM execution path, while setup
-			// stays minimal for this step.
-			grantExpiry := ptrTime(s.network.GetContext().BlockTime().Add(time.Hour))
-			Expect(s.network.App.AuthzKeeper.SaveGrant(
-				s.network.GetContext(),
-				safeWalletAccAddr,
-				safeOwnerOne.AccAddr,
-				sdkauthz.NewGenericAuthorization(sdk.MsgTypeURL(&liquidtypes.MsgLiquidate{})),
-				grantExpiry,
-			)).To(Succeed(), "failed to grant Safe authz to liquidate via precompile")
-			Expect(s.network.App.AuthzKeeper.SaveGrant(
-				s.network.GetContext(),
-				safeWalletAccAddr,
-				safeOwnerOne.AccAddr,
-				sdkauthz.NewGenericAuthorization(sdk.MsgTypeURL(&liquidtypes.MsgRedeem{})),
-				grantExpiry,
-			)).To(Succeed(), "failed to grant Safe authz to redeem via precompile")
+			// Every call below names the Safe as the liquidate/redeem sender, so the
+			// Safe is acting on its own vesting position: the granter is the sender
+			// carried by the message, the immediate EVM caller is that same Safe, and
+			// the Safe's own owner threshold is the authorization. Nothing is
+			// delegated, so there is nothing to grant.
+			//
+			// This used to grant MsgLiquidate and MsgRedeem from owner1 to the Safe,
+			// on the reading that the precompile needs authz whenever the caller
+			// differs from tx.origin. That made the executor EOA stand in for the
+			// wallet owner, which is the smart-contract-wallet defect the identity
+			// model fixes. Assert the absence of those grants so the specs below
+			// provably exercise the ungated path and cannot silently start passing
+			// off an executor's grant again.
+			for _, msgURL := range []string{
+				sdk.MsgTypeURL(&liquidtypes.MsgLiquidate{}),
+				sdk.MsgTypeURL(&liquidtypes.MsgRedeem{}),
+			} {
+				grant, _ := s.network.App.AuthzKeeper.GetAuthorization(
+					s.network.GetContext(), safeWalletAccAddr, safeOwnerOne.AccAddr, msgURL,
+				)
+				Expect(grant).To(BeNil(),
+					"the Safe must act on its own position with no grant from its executor: %s", msgURL)
+			}
 
 			liquidVestingModuleAddr := authtypes.NewModuleAddress(liquidtypes.ModuleName)
 

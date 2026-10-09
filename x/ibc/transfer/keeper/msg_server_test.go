@@ -7,14 +7,17 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	errortypes "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
+	"github.com/haqq-network/haqq/contracts"
 	"github.com/haqq-network/haqq/testutil/integration/haqq/keyring"
 	testutils "github.com/haqq-network/haqq/testutil/integration/haqq/utils"
+	evmtypes "github.com/haqq-network/haqq/x/evm/types"
 	"github.com/haqq-network/haqq/x/ibc/transfer/keeper"
 )
 
@@ -307,6 +310,77 @@ func (suite *KeeperTestSuite) TestTransfer() {
 			} else {
 				suite.Require().Error(err)
 			}
+		})
+	}
+}
+
+// TestTransferFromPrecompileDoesNotConvert checks that a transfer reached from a
+// stateful precompile never auto-converts a native ERC20. The conversion is a
+// nested EVM call that would commit behind the calling transaction's StateDB,
+// letting the caller re-spend the tokens it just escrowed; such a transfer has
+// to be funded with coins that were converted beforehand.
+func (suite *KeeperTestSuite) TestTransferFromPrecompileDoesNotConvert() {
+	mockChannelKeeper := &MockChannelKeeper{}
+	mockChannelKeeper.On("GetNextSequenceSend", mock.Anything, mock.Anything, mock.Anything).Return(1, true)
+	mockChannelKeeper.On("GetChannel", mock.Anything, mock.Anything, mock.Anything).Return(channeltypes.Channel{Counterparty: channeltypes.NewCounterparty("transfer", "channel-1")}, true)
+	authAddr := authtypes.NewModuleAddress(govtypes.ModuleName).String()
+
+	testCases := []struct {
+		name         string
+		convertFirst bool
+		expErr       error
+	}{
+		{"refused - only ERC20 balance, conversion would be needed", false, errortypes.ErrInsufficientFunds},
+		{"pass - coins converted beforehand", true, nil},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			sender := suite.keyring.GetKey(0)
+
+			suite.network.App.TransferKeeper = keeper.NewKeeper(
+				suite.network.App.AppCodec(), suite.network.App.GetKey(types.StoreKey), suite.network.App.GetSubspace(types.ModuleName),
+				&MockICS4Wrapper{},
+				mockChannelKeeper, suite.network.App.IBCKeeper.PortKeeper,
+				suite.network.App.AccountKeeper, suite.network.App.BankKeeper, suite.network.App.ScopedTransferKeeper,
+				suite.network.App.Erc20Keeper,
+				authAddr,
+			)
+
+			contractAddr, err := suite.DeployContract("coin", "token", uint8(6))
+			suite.Require().NoError(err)
+			pairs, err := testutils.RegisterERC20(suite.factory, suite.network, testutils.ERC20RegistrationData{
+				Addresses:    []string{contractAddr.Hex()},
+				ProposerPriv: sender.Priv,
+			})
+			suite.Require().NoError(err)
+			suite.Require().Len(pairs, 1)
+
+			amt := math.NewInt(10)
+			_, err = suite.MintERC20Token(contractAddr, sender.Addr, amt.BigInt())
+			suite.Require().NoError(err)
+			if tc.convertFirst {
+				suite.Require().NoError(suite.ConvertERC20(sender, contractAddr, amt))
+			}
+
+			ctx := suite.network.GetContext()
+			erc20ABI := contracts.ERC20MinterBurnerDecimalsContract.ABI
+			erc20Before := suite.network.App.Erc20Keeper.BalanceOf(ctx, erc20ABI, contractAddr, sender.Addr)
+
+			msg := types.NewMsgTransfer("transfer", "channel-0", sdk.NewCoin(pairs[0].Denom, amt), sender.AccAddr.String(), "", timeoutHeight, 0, "")
+			_, err = suite.network.App.TransferKeeper.Transfer(evmtypes.WithPrecompileContext(ctx, nil), msg)
+			if tc.expErr != nil {
+				suite.Require().ErrorIs(err, tc.expErr)
+			} else {
+				suite.Require().NoError(err)
+			}
+
+			erc20After := suite.network.App.Erc20Keeper.BalanceOf(ctx, erc20ABI, contractAddr, sender.Addr)
+			suite.Require().Equal(erc20Before.String(), erc20After.String(), "no ERC20 may be converted from inside a precompile")
+			// the coins were either never minted or escrowed for the packet
+			coins := suite.network.App.BankKeeper.GetBalance(ctx, sender.AccAddr, pairs[0].Denom)
+			suite.Require().True(coins.IsZero())
 		})
 	}
 }

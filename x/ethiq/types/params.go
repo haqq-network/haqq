@@ -14,7 +14,19 @@ const (
 	DisplayDenom = "HAQQ"
 )
 
-// Parameter store keys
+// Parameter store keys.
+//
+// One key per field, and it has to stay that way: x/ethiq shipped in v1.9.3 and its params
+// are already written under these keys on every live chain. Collapsing them into a single
+// key is a state break - GetParamSet would read a missing key, legacy amino would fail to
+// unmarshal nil and Subspace.Get would panic - and it needs a module migration to be safe.
+//
+// The cross-field rules (MinMintPerTx < MaxMintPerTx <= MaxSupply) are enforced by
+// Params.Validate, which Keeper.SetParams runs on the whole set before writing. That is the
+// only write path in the module: there is no MsgUpdateParams, and the app registers no
+// legacy gov router, so x/params Subspace.Update - the one caller that would apply a single
+// field with only that field's validator - is unreachable here. Should either of those
+// appear, route it through SetParams rather than reshaping the store.
 var (
 	ParamStoreKeyEnabled      = []byte("Enabled")
 	ParamStoreKeyMinMintPerTx = []byte("MinMintPerTx")
@@ -54,9 +66,18 @@ func validateBool(i interface{}) error {
 }
 
 func validateInt(i interface{}) error {
-	_, ok := i.(sdkmath.Int)
+	val, ok := i.(sdkmath.Int)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	// The zero value of sdkmath.Int wraps a nil big.Int: IsPositive and String both
+	// dereference it. A genesis document that omits the field produces exactly that,
+	// so the nil case must be rejected before any other method is called on val.
+	if val.IsNil() {
+		return fmt.Errorf("parameter must be set, got: nil")
+	}
+	if !val.IsPositive() {
+		return fmt.Errorf("parameter must be positive, got: %s", val.String())
 	}
 	return nil
 }

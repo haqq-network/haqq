@@ -33,7 +33,7 @@ func Approve(
 	ctx sdk.Context,
 	authzKeeper authzkeeper.Keeper,
 	channelKeeper channelkeeper.Keeper,
-	precompileAddr, grantee, origin common.Address,
+	precompileAddr, grantee, granter common.Address,
 	approvalExpiration time.Duration,
 	transferAuthz *transfertypes.TransferAuthorization,
 	event abi.Event,
@@ -47,9 +47,9 @@ func Approve(
 		}
 	}
 
-	// Only the origin can approve a transfer to the grantee address
+	// The granter is the immediate EVM caller, so an account only ever grants for itself
 	expiration := ctx.BlockTime().Add(approvalExpiration).UTC()
-	if err := authzKeeper.SaveGrant(ctx, grantee.Bytes(), origin.Bytes(), transferAuthz, &expiration); err != nil {
+	if err := authzKeeper.SaveGrant(ctx, grantee.Bytes(), granter.Bytes(), transferAuthz, &expiration); err != nil {
 		return err
 	}
 
@@ -61,7 +61,7 @@ func Approve(
 		stateDB,
 		precompileAddr,
 		grantee,
-		origin,
+		granter,
 		allocations,
 	)
 }
@@ -70,14 +70,14 @@ func Approve(
 func Revoke(
 	ctx sdk.Context,
 	authzKeeper authzkeeper.Keeper,
-	precompileAddr, grantee, origin common.Address,
+	precompileAddr, grantee, granter common.Address,
 	event abi.Event,
 	stateDB vm.StateDB,
 ) error {
 	// NOTE: we do not need to check the expiration as it will return nil if both not found or expired
-	msgAuthz, _, err := authorization.CheckAuthzExists(ctx, authzKeeper, grantee, origin, TransferMsgURL)
+	msgAuthz, _, err := authorization.CheckAuthzExists(ctx, authzKeeper, grantee, granter, TransferMsgURL)
 	if err != nil {
-		return fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, grantee, origin)
+		return fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, grantee, granter)
 	}
 
 	// check that the stored authorization matches the transfer authorization
@@ -85,7 +85,7 @@ func Revoke(
 		return authz.ErrUnknownAuthorizationType
 	}
 
-	if err = authzKeeper.DeleteGrant(ctx, grantee.Bytes(), origin.Bytes(), TransferMsgURL); err != nil {
+	if err = authzKeeper.DeleteGrant(ctx, grantee.Bytes(), granter.Bytes(), TransferMsgURL); err != nil {
 		return err
 	}
 
@@ -95,7 +95,7 @@ func Revoke(
 		stateDB,
 		precompileAddr,
 		grantee,
-		origin,
+		granter,
 		[]cmn.ICS20Allocation{},
 	)
 }

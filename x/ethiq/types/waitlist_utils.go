@@ -14,6 +14,23 @@ func IsApplicationExists(appID uint64) bool {
 	return appID < uint64(len(registeredApplications))
 }
 
+// IsApplicationCanceled reports whether the application was withdrawn before execution.
+// A canceled entry carries a zero burn amount and can never be executed, matching the
+// IsCanceled flag ApplicationListItem.AsBurnApplication derives.
+// A non-existent ID is not canceled; callers check existence separately.
+func IsApplicationCanceled(appID uint64) bool {
+	if !IsApplicationExists(appID) {
+		return false
+	}
+
+	amount, ok := sdkmath.NewIntFromString(registeredApplications[appID].IslmAmount)
+	if !ok {
+		return false
+	}
+
+	return amount.IsZero()
+}
+
 func TotalNumberOfApplications() uint64 {
 	return uint64(len(registeredApplications))
 }

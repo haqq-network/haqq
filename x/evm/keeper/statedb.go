@@ -72,8 +72,32 @@ func (k *Keeper) ForEachStorage(ctx sdk.Context, addr common.Address, cb func(ke
 	}
 }
 
+// refuseWriteFromPrecompile keeps code reached from a stateful precompile from
+// writing EVM state behind the back of the calling transaction's StateDB, which
+// would keep serving and finally re-commit the values it already holds (see
+// types.WithPrecompileContext). Such code has to write through the StateDB
+// attached to its context instead.
+//
+// The calling transaction's StateDB is unaffected: it flushes and commits on its
+// own contexts, which are never marked. A StateDB created by code running inside
+// a precompile is not: its context derives from the marked one, so its flushes
+// and its commit are refused as well. A committing nested EVM call is refused
+// before it starts (ApplyMessageWithConfig); a read-only one runs, but if it
+// reaches a stateful precompile while its dirty set is non-empty, that
+// precompile's flush is refused and the call fails. No precompile path makes
+// such a nested call today.
+func refuseWriteFromPrecompile(ctx sdk.Context, write string) error {
+	if !types.IsPrecompileContext(ctx) {
+		return nil
+	}
+	return errorsmod.Wrap(types.ErrPrecompileStateWrite, write)
+}
+
 // SetBalance update account's balance, compare with current balance first, then decide to mint or burn.
 func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.Int) error {
+	if err := refuseWriteFromPrecompile(ctx, "set balance of "+addr.Hex()); err != nil {
+		return err
+	}
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 
 	params := k.GetParams(ctx)
@@ -107,11 +131,18 @@ func (k *Keeper) SetBalance(ctx sdk.Context, addr common.Address, amount *big.In
 
 // SetAccount updates nonce/balance/codeHash together.
 func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account statedb.Account) error {
+	if err := refuseWriteFromPrecompile(ctx, "set account "+addr.Hex()); err != nil {
+		return err
+	}
 	// update account
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
 		acct = k.accountKeeper.NewAccountWithAddress(ctx, cosmosAddr)
+	}
+
+	if _, isModuleAccount := acct.(sdk.ModuleAccountI); isModuleAccount {
+		return k.checkModuleAccountUnchanged(ctx, addr, cosmosAddr, account.Balance)
 	}
 
 	if err := acct.SetSequence(account.Nonce); err != nil {
@@ -142,8 +173,54 @@ func (k *Keeper) SetAccount(ctx sdk.Context, addr common.Address, account stated
 	return nil
 }
 
+// checkModuleAccountUnchanged refuses a commit that would reconcile a Cosmos module
+// account's balance against the EVM's view of it, and is a no-op when the two already
+// agree.
+//
+// A module account's balance belongs to its module and moves through bank calls that
+// leave no EVM journal entry - which is what every stateful precompile does. The two
+// sides also read from different places: StateDB.getStateObject loads balances from
+// the transaction context, while a precompile writes through the StateDB's cache
+// context, so an account first loaded into the StateDB *after* a precompile moved it
+// carries the balance it had before the call.
+//
+// SetBalance would then treat that stale number as the truth and mint or burn the
+// difference. A contract can delegate X and send 1 wei to the bonded pool in the same
+// transaction: the pool loads at its pre-delegation balance B, the journal dirties it
+// at B+1, and commit burns X-1 out of the pool while the delegation shares survive -
+// leaving staking unable to pay out what it still owes.
+//
+// There is no correct amount to write here, so nothing is written. The EVM cannot
+// legitimately author a module account's balance: a module account has no key, so the
+// only EVM-side change is a transfer into it, and bank already refuses that because
+// module accounts are blocked recipients. This makes the other direction fail the same
+// way instead of silently destroying module funds. Nothing that works today reaches
+// this error: a module account only enters the dirty set when an EVM transfer targeted
+// it, and mirroring a precompile's bank movement into the journal (as the precompiles
+// do for the accounts they move) leaves the two sides equal and this check silent.
+func (k *Keeper) checkModuleAccountUnchanged(
+	ctx sdk.Context,
+	addr common.Address,
+	cosmosAddr sdk.AccAddress,
+	evmBalance *big.Int,
+) error {
+	bankBalance := k.GetBalance(ctx, addr)
+	if bankBalance.Cmp(evmBalance) == 0 {
+		return nil
+	}
+
+	return errorsmod.Wrapf(
+		types.ErrInvalidAccount,
+		"%s is a module account: the EVM may not change its balance (evm view %s, bank %s)",
+		cosmosAddr, evmBalance, bankBalance,
+	)
+}
+
 // SetState update contract storage, delete if value is empty.
-func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash, value []byte) {
+func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash, value []byte) error {
+	if err := refuseWriteFromPrecompile(ctx, "set state of "+addr.Hex()); err != nil {
+		return err
+	}
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.AddressStoragePrefix(addr))
 	action := "updated"
 	if len(value) == 0 {
@@ -157,10 +234,14 @@ func (k *Keeper) SetState(ctx sdk.Context, addr common.Address, key common.Hash,
 		"ethereum-address", addr.Hex(),
 		"key", key.Hex(),
 	)
+	return nil
 }
 
 // SetCode set contract code, delete if code is empty.
-func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) {
+func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) error {
+	if err := refuseWriteFromPrecompile(ctx, "set code "+common.BytesToHash(codeHash).Hex()); err != nil {
+		return err
+	}
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixCode)
 
 	// store or delete code
@@ -175,6 +256,7 @@ func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) {
 		fmt.Sprintf("code %s", action),
 		"code-hash", common.BytesToHash(codeHash).Hex(),
 	)
+	return nil
 }
 
 // DeleteAccount handles contract's suicide call:
@@ -183,6 +265,9 @@ func (k *Keeper) SetCode(ctx sdk.Context, codeHash, code []byte) {
 // - remove states
 // - remove auth account
 func (k *Keeper) DeleteAccount(ctx sdk.Context, addr common.Address) error {
+	if err := refuseWriteFromPrecompile(ctx, "delete account "+addr.Hex()); err != nil {
+		return err
+	}
 	cosmosAddr := sdk.AccAddress(addr.Bytes())
 	acct := k.accountKeeper.GetAccount(ctx, cosmosAddr)
 	if acct == nil {
@@ -201,10 +286,14 @@ func (k *Keeper) DeleteAccount(ctx sdk.Context, addr common.Address) error {
 	}
 
 	// clear storage
+	var err error
 	k.ForEachStorage(ctx, addr, func(key, _ common.Hash) bool {
-		k.SetState(ctx, addr, key, nil)
-		return true
+		err = k.SetState(ctx, addr, key, nil)
+		return err == nil
 	})
+	if err != nil {
+		return err
+	}
 
 	// remove auth account
 	k.accountKeeper.RemoveAccount(ctx, acct)

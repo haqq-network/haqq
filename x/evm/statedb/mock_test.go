@@ -77,7 +77,7 @@ func (k MockKeeper) SetAccount(_ sdk.Context, addr common.Address, account state
 	return nil
 }
 
-func (k MockKeeper) SetState(_ sdk.Context, addr common.Address, key common.Hash, value []byte) {
+func (k MockKeeper) SetState(_ sdk.Context, addr common.Address, key common.Hash, value []byte) error {
 	if acct, ok := k.accounts[addr]; ok {
 		if len(value) == 0 {
 			delete(acct.states, key)
@@ -85,10 +85,12 @@ func (k MockKeeper) SetState(_ sdk.Context, addr common.Address, key common.Hash
 			acct.states[key] = common.BytesToHash(value)
 		}
 	}
+	return nil
 }
 
-func (k MockKeeper) SetCode(_ sdk.Context, codeHash []byte, code []byte) {
+func (k MockKeeper) SetCode(_ sdk.Context, codeHash []byte, code []byte) error {
 	k.codes[common.BytesToHash(codeHash)] = code
+	return nil
 }
 
 func (k MockKeeper) DeleteAccount(_ sdk.Context, addr common.Address) error {

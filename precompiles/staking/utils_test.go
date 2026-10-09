@@ -11,12 +11,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	"cosmossdk.io/math"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -57,6 +59,34 @@ func (s *PrecompileTestSuite) ApproveAndCheckAuthz(method abi.Method, granter, g
 	s.Require().NotNil(auth)
 	s.Require().Equal(auth.AuthorizationType, staking.DelegateAuthz)
 	s.Require().Equal(auth.MaxTokens, &sdk.Coin{Denom: s.bondDenom, Amount: math.NewIntFromBigInt(amount)})
+}
+
+// withdrawnRewards sums the amounts of denom reported by the distribution
+// `withdraw_rewards` events of a tx result.
+//
+// Staking messages auto-claim outstanding rewards onto the delegator's withdraw
+// address before touching shares, so balance assertions around a precompile call
+// need the amount actually paid out in that very tx. Querying pending rewards
+// beforehand only yields a lower bound, which would let a phantom credit minted
+// at Commit pass unnoticed.
+func withdrawnRewards(events []abcitypes.Event, denom string) math.Int {
+	total := math.ZeroInt()
+	for _, ev := range events {
+		if ev.Type != distrtypes.EventTypeWithdrawRewards {
+			continue
+		}
+		for _, attr := range ev.Attributes {
+			if attr.Key != sdk.AttributeKeyAmount {
+				continue
+			}
+			coins, err := sdk.ParseCoinsNormalized(attr.Value)
+			if err != nil {
+				continue
+			}
+			total = total.Add(coins.AmountOf(denom))
+		}
+	}
+	return total
 }
 
 // CheckAuthorizationWithContext is a helper function to check if the authorization is set and if it is the correct type.
@@ -121,17 +151,29 @@ func CheckAuthorization(gh grpc.Handler, ir cdctypes.InterfaceRegistry, authoriz
 func (s *PrecompileTestSuite) CreateAuthorization(ctx sdk.Context, granter, grantee sdk.AccAddress, authzType stakingtypes.AuthorizationType, coin *sdk.Coin) error {
 	// Get all available validators and filter out jailed validators
 	validators := make([]sdk.ValAddress, 0)
+	var iterErr error
 	err := s.network.App.StakingKeeper.IterateValidators(
 		ctx, func(_ int64, validator stakingtypes.ValidatorI) (stop bool) {
 			if validator.IsJailed() {
 				return
 			}
-			validators = append(validators, sdk.ValAddress(validator.GetOperator()))
+			// ValidatorI.GetOperator() returns a bech32 string in cosmos-sdk v0.50, so it
+			// has to be decoded: sdk.ValAddress of the raw string bytes produces an
+			// allowlist that StakeAuthorization.Accept rejects as unauthorized.
+			valAddr, err := sdk.ValAddressFromBech32(validator.GetOperator())
+			if err != nil {
+				iterErr = err
+				return true
+			}
+			validators = append(validators, valAddr)
 			return
 		},
 	)
 	if err != nil {
 		return err
+	}
+	if iterErr != nil {
+		return iterErr
 	}
 
 	stakingAuthz, err := stakingtypes.NewStakeAuthorization(validators, nil, authzType, coin)
@@ -196,7 +238,14 @@ func (s *PrecompileTestSuite) SetupApproval(
 	)
 }
 
-// SetupApprovalWithContractCalls is a helper function used to setup the allowance for the given spender.
+// SetupApprovalWithContractCalls makes the calling contract create the allowance
+// through the precompile.
+//
+// The granter is the contract itself, not the account that signed the transaction:
+// grant creation is bound to the immediate EVM caller. The resulting grant
+// therefore authorizes the grantee over the *contract's* stake. Use
+// SetupApprovalFromEOA when a test goes on to move the signer's stake -- a contract
+// can no longer mint that grant on the signer's behalf.
 func (s *PrecompileTestSuite) SetupApprovalWithContractCalls(
 	granter testkeyring.Key,
 	txArgs evmtypes.EvmTxArgs,
@@ -235,12 +284,73 @@ func (s *PrecompileTestSuite) SetupApprovalWithContractCalls(
 		case staking.CancelUnbondingDelegationMsg:
 			expectedAuthz = staking.CancelUnbondingDelegationAuthz
 		}
-		authz, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, expectedAuthz, *txArgs.To, granter.Addr)
+		// The contract created the grant, so the contract is the granter.
+		authz, expirationTime, err := CheckAuthorization(s.grpcHandler, s.network.GetEncodingConfig().InterfaceRegistry, expectedAuthz, *txArgs.To, *txArgs.To)
 		Expect(err).To(BeNil())
 		Expect(authz).ToNot(BeNil(), "expected authorization to be set")
 		Expect(authz.MaxTokens.Amount).To(Equal(math.NewInt(expAmount.Int64())), "expected different allowance")
 		Expect(authz.MsgTypeURL()).To(Equal(msgType), "expected different message type")
 		Expect(expirationTime).ToNot(BeNil(), "expected expiration time to not be nil")
+
+		// and not attributed to the transaction signer
+		fromSigner, _ := CheckAuthorizationWithContext(s.network.GetContext(), s.network.App.AuthzKeeper, expectedAuthz, *txArgs.To, granter.Addr)
+		Expect(fromSigner).To(BeNil(), "a contract must not create a grant on behalf of tx.origin")
+	}
+}
+
+// SetupApprovalFromEOA creates the same allowance as SetupApprovalWithContractCalls,
+// but with the transaction signer as the granter, which is what a contract needs in
+// order to move that signer's stake.
+//
+// The signer has to issue it directly -- here through the keeper, the way the unit
+// tests do it -- because the precompile binds grant creation to the immediate EVM
+// caller.
+func (s *PrecompileTestSuite) SetupApprovalFromEOA(
+	granter testkeyring.Key,
+	txArgs evmtypes.EvmTxArgs,
+	approvalArgs factory.CallArgs,
+) {
+	grantee := *txArgs.To
+
+	msgTypes, ok := approvalArgs.Args[1].([]string)
+	Expect(ok).To(BeTrue(), "failed to convert msgTypes to []string")
+	expAmount, ok := approvalArgs.Args[2].(*big.Int)
+	Expect(ok).To(BeTrue(), "failed to convert amount to big.Int")
+
+	coin := sdk.Coin{Denom: s.bondDenom, Amount: math.NewIntFromBigInt(expAmount)}
+	for _, msgType := range msgTypes {
+		authzType, err := authzTypeFromMsgURL(msgType)
+		Expect(err).To(BeNil(), "unexpected staking message type %q", msgType)
+
+		Expect(s.CreateAuthorization(
+			s.network.GetContext(), granter.AccAddr, grantee.Bytes(), authzType, &coin,
+		)).To(BeNil(), "error while creating the authorization")
+	}
+	Expect(s.network.NextBlock()).To(BeNil())
+
+	for _, msgType := range msgTypes {
+		authzType, err := authzTypeFromMsgURL(msgType)
+		Expect(err).To(BeNil())
+
+		authz, _ := CheckAuthorizationWithContext(s.network.GetContext(), s.network.App.AuthzKeeper, authzType, grantee, granter.Addr)
+		Expect(authz).ToNot(BeNil(), "expected the signer to own the grant")
+		Expect(authz.MaxTokens.Amount).To(Equal(math.NewIntFromBigInt(expAmount)), "expected different allowance")
+	}
+}
+
+// authzTypeFromMsgURL maps a staking message type URL to its authorization type.
+func authzTypeFromMsgURL(msgType string) (stakingtypes.AuthorizationType, error) {
+	switch msgType {
+	case staking.DelegateMsg:
+		return staking.DelegateAuthz, nil
+	case staking.UndelegateMsg:
+		return staking.UndelegateAuthz, nil
+	case staking.RedelegateMsg:
+		return staking.RedelegateAuthz, nil
+	case staking.CancelUnbondingDelegationMsg:
+		return staking.CancelUnbondingDelegationAuthz, nil
+	default:
+		return stakingtypes.AuthorizationType_AUTHORIZATION_TYPE_UNSPECIFIED, fmt.Errorf("unknown staking message type: %s", msgType)
 	}
 }
 

@@ -3,10 +3,13 @@ package ucdao
 import (
 	"fmt"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
+	cmn "github.com/haqq-network/haqq/precompiles/common"
+	"github.com/haqq-network/haqq/utils"
 	"github.com/haqq-network/haqq/x/evm/core/vm"
 	ucdaokeeper "github.com/haqq-network/haqq/x/ucdao/keeper"
 	ucdaotypes "github.com/haqq-network/haqq/x/ucdao/types"
@@ -24,8 +27,84 @@ const (
 // ConvertToHaqqMsgURL defines the authorization type for MsgConvertToHaqq
 var ConvertToHaqqMsgURL = sdk.MsgTypeURL(&ucdaotypes.MsgConvertToHaqq{})
 
-// TransferOwnershipMsgURL defines the authorization type for MsgTransferOwnership
-var TransferOwnershipMsgURL = sdk.MsgTypeURL(&ucdaotypes.MsgTransferOwnership{})
+// TransferOwnershipWithAmountMsgURL is the authorization type URL for ucDAO ownership
+// grants.
+//
+// It names MsgTransferOwnershipWithAmount, not MsgTransferOwnership, and that is
+// deliberate. ucdaotypes.TransferOwnershipAuthorization reports
+// MsgTransferOwnershipWithAmount from MsgTypeURL() and its Accept casts the message to
+// *MsgTransferOwnershipWithAmount, so that is the key authzkeeper.SaveGrant writes under
+// and the key cosmos authz DispatchActions looks up. The precompile previously used
+// MsgTransferOwnership here, which meant approve() wrote a grant nothing else could
+// find: revoke, allowance and the allowance deltas all missed it, leaving a grant that
+// could not be revoked from the EVM at all.
+//
+// The full-balance transferOwnership message carries no amount, so a spend limit cannot
+// be expressed for it; it has no authorization type and cannot be authorized through the
+// precompile. See TransferOwnership below.
+var TransferOwnershipWithAmountMsgURL = sdk.MsgTypeURL(&ucdaotypes.MsgTransferOwnershipWithAmount{})
+
+// escrowBaseSnapshot pairs a UC DAO holder with the aISLM bank balance of their
+// escrow, captured immediately before a keeper call.
+type escrowBaseSnapshot struct {
+	holder     sdk.AccAddress
+	baseBefore sdkmath.Int
+}
+
+func (p *Precompile) snapshotEscrowBase(ctx sdk.Context, holder sdk.AccAddress) escrowBaseSnapshot {
+	return escrowBaseSnapshot{
+		holder:     holder,
+		baseBefore: p.daoKeeper.GetBalance(ctx, holder, utils.BaseDenom).Amount,
+	}
+}
+
+// mirrorEscrowBaseDeltasIntoStateDB mirrors per-escrow bank deltas of the EVM
+// gas denom (aISLM) into the EVM StateDB journal when the precompile is invoked
+// from another contract (caller != origin).
+//
+// UC DAO funds live on derived escrow accounts. SendCoins/burn update those
+// escrows in cacheCtx but do not journal SubBalance/AddBalance. If an escrow was
+// already dirty in StateDB (e.g. a 1 wei touch), Commit SetBalance restores the
+// stale EVM balance and mints the transferred amount back.
+//
+// Snapshots must be taken immediately before the keeper/msg work. Journal
+// entries target the escrow EVM address (not the holder). Duplicate holders are
+// mirrored once so a single net delta is applied.
+func (p *Precompile) mirrorEscrowBaseDeltasIntoStateDB(
+	ctx sdk.Context,
+	isCallerOrigin bool,
+	snapshots ...escrowBaseSnapshot,
+) {
+	if isCallerOrigin {
+		return
+	}
+	seen := make(map[string]struct{}, len(snapshots))
+	for _, s := range snapshots {
+		key := s.holder.String()
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+
+		netBaseDelta := s.baseBefore.Sub(p.daoKeeper.GetBalance(ctx, s.holder, utils.BaseDenom).Amount)
+		if netBaseDelta.IsZero() {
+			continue
+		}
+		// GetEscrowAddress returns sha256(...)[:20] today, so this conversion is exact.
+		// It still goes through the shared helper rather than common.BytesToAddress: that
+		// is the rule for every Cosmos-to-EVM boundary, and it keeps the mirror correct if
+		// the derivation ever widens.
+		escrowHex, ok := cmn.EVMAddressFromCosmos(ucdaotypes.GetEscrowAddress(s.holder))
+		if !ok {
+			continue
+		}
+		if netBaseDelta.IsNegative() {
+			p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(escrowHex, netBaseDelta.Neg().BigInt(), cmn.Add))
+			continue
+		}
+		p.AddBalanceChangeEntries(cmn.NewBalanceChangeEntry(escrowHex, netBaseDelta.BigInt(), cmn.Sub))
+	}
+}
 
 func (p *Precompile) ConvertToHaqq(
 	ctx sdk.Context,
@@ -55,11 +134,12 @@ func (p *Precompile) ConvertToHaqq(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == sender
+	isCallerOrigin := contract.CallerAddress == origin
 
-	// If the contract caller is not the same as the sender, the sender must be the origin
-	if isCallerSender {
-		sender = origin
-	} else if origin != sender {
+	// The sender stays as the message carries it -- it is the account being debited, and
+	// therefore the authz granter. Rebinding it to the origin here left msg.Sender pointing
+	// at the caller while the grant was demanded from, and charged to, the origin.
+	if !isCallerSender && origin != sender {
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
 	}
 
@@ -68,11 +148,16 @@ func (p *Precompile) ConvertToHaqq(
 		return nil, err
 	}
 
+	senderAcc := sdk.MustAccAddressFromBech32(msg.Sender)
+	senderEscrowBefore := p.snapshotEscrowBase(ctx, senderAcc)
+
 	msgSrv := ucdaokeeper.NewMsgServerImpl(p.daoKeeper)
 	res, err := msgSrv.ConvertToHaqq(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
+
+	p.mirrorEscrowBaseDeltasIntoStateDB(ctx, isCallerOrigin, senderEscrowBefore)
 
 	if err = EmitMintHaqqEventWithAmount(
 		ctx,
@@ -117,24 +202,42 @@ func (p *Precompile) TransferOwnership(
 		),
 	)
 
-	// isCallerSender is true when the contract caller is the same as the sender
-	isCallerSender := contract.CallerAddress == owner
+	isCallerOrigin := contract.CallerAddress == origin
 
-	// If the contract caller is not the same as the sender, the sender must be the origin
-	if isCallerSender {
-		owner = origin
-	} else if origin != owner {
-		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), owner.String())
+	// This message cannot be delegated, and the single guard below is exactly that
+	// statement: nobody may call it for an account other than themselves.
+	//
+	// It carries no amount, so no spend limit can be expressed for it, and ucDAO
+	// registers no authorization type under MsgTransferOwnership -- SaveGrant keys a
+	// grant by authorization.MsgTypeURL(), TransferOwnershipAuthorization reports
+	// MsgTransferOwnershipWithAmount, and CheckAndAcceptAuthorizationIfNeeded rejects
+	// anything that is not one of the two ucDAO types. So a lookup here could never
+	// succeed, and saying why beats a generic "grant does not exist" that suggests
+	// issuing one would help.
+	//
+	// Gating on the caller rather than on the origin is what the rest of the identity
+	// model does. When the caller is the owner nothing is being delegated: the account
+	// is moving its own escrow and its own code -- a contract wallet's owner threshold
+	// -- is the authorization, exactly as in TransferOwnershipWithAmount, which skips
+	// the authz lookup on the same condition. Gating on `caller == origin` instead
+	// turned away a contract acting on itself, with an error saying it was acting "on
+	// behalf of another account", while the very same escrow could be moved through
+	// transferOwnershipWithAmount.
+	if contract.CallerAddress != owner {
+		return nil, fmt.Errorf(ErrTransferOwnershipNotDelegatable, TransferOwnershipWithAmountMsgURL)
 	}
 
-	// Check and accept authorization if needed
-	if err := CheckAndAcceptAuthorizationIfNeeded(ctx, contract, owner, p.AuthzKeeper, msg); err != nil {
-		return nil, err
-	}
-
-	// Ensure origin is the owner
-	if origin != owner {
-		return nil, fmt.Errorf("origin (%s) must be the owner (%s)", origin.String(), owner.String())
+	// The snapshots and the mirror call below are live for a contract caller and a no-op
+	// for a direct EOA call, where the guard above already forces owner == caller ==
+	// origin and mirrorEscrowBaseDeltasIntoStateDB returns immediately. They are kept
+	// next to the keeper call deliberately: a mirror added back later, away from the code
+	// that moves the coins, is exactly how the double-credit bug in
+	// TransferOwnershipWithAmount happened. The cost on the EOA path is two bank reads.
+	ownerAcc := sdk.MustAccAddressFromBech32(msg.Owner)
+	newOwnerAcc := sdk.MustAccAddressFromBech32(msg.NewOwner)
+	escrowBefore := []escrowBaseSnapshot{
+		p.snapshotEscrowBase(ctx, ownerAcc),
+		p.snapshotEscrowBase(ctx, newOwnerAcc),
 	}
 
 	msgSrv := ucdaokeeper.NewMsgServerImpl(p.daoKeeper)
@@ -142,6 +245,8 @@ func (p *Precompile) TransferOwnership(
 	if err != nil {
 		return nil, err
 	}
+
+	p.mirrorEscrowBaseDeltasIntoStateDB(ctx, isCallerOrigin, escrowBefore...)
 
 	return []byte{}, nil
 }
@@ -174,11 +279,12 @@ func (p *Precompile) TransferOwnershipWithAmount(
 
 	// isCallerSender is true when the contract caller is the same as the sender
 	isCallerSender := contract.CallerAddress == owner
+	isCallerOrigin := contract.CallerAddress == origin
 
-	// If the contract caller is not the same as the sender, the sender must be the origin
-	if isCallerSender {
-		owner = origin
-	} else if origin != owner {
+	// The owner stays as the message carries it -- it is the account whose escrow position
+	// moves, and therefore the authz granter. Rebinding it to the origin here left msg.Owner
+	// pointing at the caller while the grant was demanded from the origin.
+	if !isCallerSender && origin != owner {
 		return nil, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), owner.String())
 	}
 
@@ -187,9 +293,11 @@ func (p *Precompile) TransferOwnershipWithAmount(
 		return nil, err
 	}
 
-	// Ensure origin is the owner
-	if origin != owner {
-		return nil, fmt.Errorf("origin (%s) must be the owner (%s)", origin.String(), owner.String())
+	ownerAcc := sdk.MustAccAddressFromBech32(msg.Owner)
+	newOwnerAcc := sdk.MustAccAddressFromBech32(msg.NewOwner)
+	escrowBefore := []escrowBaseSnapshot{
+		p.snapshotEscrowBase(ctx, ownerAcc),
+		p.snapshotEscrowBase(ctx, newOwnerAcc),
 	}
 
 	msgSrv := ucdaokeeper.NewMsgServerImpl(p.daoKeeper)
@@ -197,6 +305,8 @@ func (p *Precompile) TransferOwnershipWithAmount(
 	if err != nil {
 		return nil, err
 	}
+
+	p.mirrorEscrowBaseDeltasIntoStateDB(ctx, isCallerOrigin, escrowBefore...)
 
 	return []byte{}, nil
 }

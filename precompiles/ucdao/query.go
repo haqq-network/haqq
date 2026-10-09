@@ -31,15 +31,24 @@ func (p Precompile) Allowance(
 		return method.Outputs.Pack(big.NewInt(0))
 	}
 
-	convAuthz, isConvertAuthz := msgAuthz.(*ucdaotypes.ConvertToHaqqAuthorization)
-	_, isTransferAuthz := msgAuthz.(*ucdaotypes.TransferOwnershipAuthorization)
-	if !isConvertAuthz && !isTransferAuthz {
+	// A type switch, not two assertions: the previous shape kept the value of the
+	// *first* assertion and read SpendLimit off it after the *second* one had
+	// accepted the grant, so a TransferOwnershipAuthorization dereferenced a nil
+	// *ConvertToHaqqAuthorization. allowance is a view method reachable from
+	// eth_call, and cmn.HandleGasError re-raises anything that is not
+	// ErrorOutOfGas, so that panic left the precompile.
+	switch grant := msgAuthz.(type) {
+	case *ucdaotypes.ConvertToHaqqAuthorization:
+		if grant.SpendLimit == nil {
+			return method.Outputs.Pack(abi.MaxUint256)
+		}
+		return method.Outputs.Pack(grant.SpendLimit.Amount.BigInt())
+	case *ucdaotypes.TransferOwnershipAuthorization:
+		if grant.SpendLimit == nil {
+			return method.Outputs.Pack(abi.MaxUint256)
+		}
+		return method.Outputs.Pack(grant.SpendLimit.Amount.BigInt())
+	default:
 		return nil, fmt.Errorf(cmn.ErrInvalidType, "ucdao authorization", fmt.Sprintf("%T or %T", &ucdaotypes.ConvertToHaqqAuthorization{}, &ucdaotypes.TransferOwnershipAuthorization{}), msgAuthz)
 	}
-
-	if convAuthz.SpendLimit == nil {
-		return method.Outputs.Pack(abi.MaxUint256)
-	}
-
-	return method.Outputs.Pack(convAuthz.SpendLimit.Amount.BigInt())
 }

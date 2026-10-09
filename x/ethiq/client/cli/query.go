@@ -72,7 +72,7 @@ Example:
 	return cmd
 }
 
-func GetCmdQueryCalculate() *cobra.Command { //nolint: dupl // similar, but not the duplicate
+func GetCmdQueryCalculate() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "calculate [islm-amount]",
 		Short: "Calculate the estimated aHAQQ amount to be minted for a given aISLM amount",
@@ -116,7 +116,7 @@ Example:
 	return cmd
 }
 
-func GetCmdQueryCalculateForApplication() *cobra.Command { //nolint: dupl // similar, but not the duplicate
+func GetCmdQueryCalculateForApplication() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "calculate-for-app [app_id]",
 		Short: "Calculate the estimated aHAQQ amount to be minted by an execution of present application",
@@ -136,16 +136,16 @@ Example:
 				return err
 			}
 
-			appID, ok := sdkmath.NewIntFromString(args[0])
-			if !ok {
-				return fmt.Errorf("invalid app_id: %s", args[0])
+			appID, err := parseApplicationID(args[0])
+			if err != nil {
+				return err
 			}
 
 			queryClient := types.NewQueryClient(clientCtx)
 			ctx := cmd.Context()
 
 			res, err := queryClient.CalculateForApplication(ctx, &types.QueryCalculateForApplicationRequest{
-				ApplicationId: appID.Uint64(),
+				ApplicationId: appID,
 			})
 			if err != nil {
 				return err

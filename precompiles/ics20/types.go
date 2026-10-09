@@ -379,35 +379,25 @@ func convertToAllocation(allocs []transfertypes.Allocation) []cmn.ICS20Allocatio
 	return allocations
 }
 
-// CheckOriginAndSender ensures the correct sender is being used.
-func CheckOriginAndSender(contract *vm.Contract, origin common.Address, sender common.Address) (common.Address, error) {
-	if contract.CallerAddress == sender {
-		return sender, nil
-	} else if origin != sender {
-		return common.Address{}, fmt.Errorf(ErrDifferentOriginFromSender, origin.String(), sender.String())
-	}
-	return sender, nil
-}
-
 // CheckAndAcceptAuthorizationIfNeeded checks if authorization exists and accepts the grant.
-// In case the origin is the caller of the address, no authorization is required.
+// No authorization is required when the caller is the granter: it is acting on its own account.
 func CheckAndAcceptAuthorizationIfNeeded(
 	ctx sdk.Context,
 	contract *vm.Contract,
-	origin common.Address,
+	granter common.Address,
 	authzKeeper authzkeeper.Keeper,
 	msg *transfertypes.MsgTransfer,
 ) (*authz.AcceptResponse, *time.Time, error) {
-	if contract.CallerAddress == origin {
+	if contract.CallerAddress == granter {
 		return nil, nil, nil
 	}
 
-	auth, expiration, err := authorization.CheckAuthzExists(ctx, authzKeeper, contract.CallerAddress, origin, TransferMsgURL)
+	auth, expiration, err := authorization.CheckAuthzExists(ctx, authzKeeper, contract.CallerAddress, granter, TransferMsgURL)
 	if err != nil {
-		return nil, nil, fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, contract.CallerAddress, origin)
+		return nil, nil, fmt.Errorf(authorization.ErrAuthzDoesNotExistOrExpired, contract.CallerAddress, granter)
 	}
 
-	resp, err := AcceptGrant(ctx, contract.CallerAddress, origin, msg, auth)
+	resp, err := AcceptGrant(ctx, contract.CallerAddress, granter, msg, auth)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -415,10 +405,10 @@ func CheckAndAcceptAuthorizationIfNeeded(
 	return resp, expiration, nil
 }
 
-// UpdateGrantIfNeeded updates the grant in case the contract caller is not the origin of the message.
-func UpdateGrantIfNeeded(ctx sdk.Context, contract *vm.Contract, authzKeeper authzkeeper.Keeper, origin common.Address, expiration *time.Time, resp *authz.AcceptResponse) error {
-	if contract.CallerAddress != origin {
-		return UpdateGrant(ctx, authzKeeper, contract.CallerAddress, origin, expiration, resp)
+// UpdateGrantIfNeeded updates the grant in case the contract caller is not the granter of the message.
+func UpdateGrantIfNeeded(ctx sdk.Context, contract *vm.Contract, authzKeeper authzkeeper.Keeper, granter common.Address, expiration *time.Time, resp *authz.AcceptResponse) error {
+	if contract.CallerAddress != granter {
+		return UpdateGrant(ctx, authzKeeper, contract.CallerAddress, granter, expiration, resp)
 	}
 	return nil
 }
